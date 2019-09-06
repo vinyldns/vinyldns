@@ -27,13 +27,13 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
-import vinyldns.api.domain.access.AccessValidationAlgebra
+import vinyldns.api.domain.access.AccessValidationsAlgebra
 
 object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
-      accessValidation: AccessValidationAlgebra): RecordSetService =
+      accessValidation: AccessValidationsAlgebra): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -52,7 +52,7 @@ class RecordSetService(
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
     messageQueue: MessageQueue,
-    accessValidation: AccessValidationAlgebra)
+    accessValidation: AccessValidationsAlgebra)
     extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._

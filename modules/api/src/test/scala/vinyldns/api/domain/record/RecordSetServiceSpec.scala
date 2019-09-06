@@ -68,7 +68,7 @@ class RecordSetServiceSpec
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
-    AccessValidations)
+    new AccessValidations())
 
   "addRecordSet" should {
     "return the recordSet change as the result" in {

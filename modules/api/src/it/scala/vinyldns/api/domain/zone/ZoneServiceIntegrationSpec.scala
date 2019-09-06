@@ -24,14 +24,14 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
-import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
+import vinyldns.core.TestMembershipData.{okAuth, okUser}
+import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
-import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.Await
@@ -117,7 +117,7 @@ class ZoneServiceIntegrationSpec
       mock[ZoneConnectionValidator],
       TestMessageQueue,
       new ZoneValidations(1000),
-      AccessValidations
+      new AccessValidations()
     )
   }
 

@@ -2320,7 +2320,7 @@ def test_update_to_invalid_record_owner_group_fails(shared_zone_test_context):
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
+def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
     """
     Test that updating to a record owner group that the user is not in fails
     """
@@ -2345,6 +2345,30 @@ def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
             delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
+def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
+    """
+    Test that updating an owned recordset fails if the user has a global acl rule but is not in the record owner group
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test-global-acl', 'A', [{'address': '1.1.1.1'}], 200, 'shared-zone-group')
+        create_response = shared_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+        update = create_rs
+        update['ttl'] = 400
+        error = dummy_client.update_recordset(update, status=403)
+        assert_that(error, is_('User dummy does not have access to update test-global-acl.shared.'))
+
+    finally:
+        if create_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 def test_update_ds_success(shared_zone_test_context):
     """

@@ -25,17 +25,17 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
 import vinyldns.api.domain.access.AccessValidations
-import vinyldns.core.domain.HighValueDomainError
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.domain.HighValueDomainError
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-import vinyldns.core.domain.record._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -242,7 +242,7 @@ class RecordSetServiceIntegrationSpec
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestMessageQueue,
-      AccessValidations)
+      new AccessValidations())
   }
 
   def tearDown(): Unit = ()

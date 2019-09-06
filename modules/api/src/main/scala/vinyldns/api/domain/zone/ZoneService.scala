@@ -17,7 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.implicits._
-import vinyldns.api.domain.access.AccessValidationAlgebra
+import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.{Interfaces, VinylDNSConfig}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
@@ -32,7 +32,7 @@ object ZoneService {
       connectionValidator: ZoneConnectionValidatorAlgebra,
       messageQueue: MessageQueue,
       zoneValidations: ZoneValidations,
-      accessValidation: AccessValidationAlgebra): ZoneService =
+      accessValidation: AccessValidationsAlgebra): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -53,7 +53,7 @@ class ZoneService(
     connectionValidator: ZoneConnectionValidatorAlgebra,
     messageQueue: MessageQueue,
     zoneValidations: ZoneValidations,
-    accessValidation: AccessValidationAlgebra)
+    accessValidation: AccessValidationsAlgebra)
     extends ZoneServiceAlgebra {
 
   import accessValidation._
