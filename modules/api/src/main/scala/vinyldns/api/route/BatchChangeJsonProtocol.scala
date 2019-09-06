@@ -91,8 +91,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
         (js \ "ttl").optional[Long],
-        recordType.andThen(extractRecord(_, js \ "record")),
-        (js \ "id").optional[String]).mapN(AddChangeInput.apply)
+        recordType.andThen(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
     }
 
     override def toJson(aci: AddChangeInput): JValue =
@@ -110,8 +109,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
 
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
-        recordType,
-        (js \ "id").optional[String]).mapN(DeleteRRSetChangeInput(_, _, _))
+        recordType).mapN(DeleteRRSetChangeInput(_, _))
     }
 
     override def toJson(drsci: DeleteRRSetChangeInput): JValue =
@@ -128,9 +126,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
-        recordType.andThen(extractRecord(_, js \ "record")),
-        (js \ "id").optional[String]
-      ).mapN(DeleteRecordChangeInput(_, _, _, _))
+        recordType.andThen(extractRecord(_, js \ "record"))
+      ).mapN(DeleteRecordChangeInput(_, _, _))
     }
 
     override def toJson(drci: DeleteRecordChangeInput): JValue =

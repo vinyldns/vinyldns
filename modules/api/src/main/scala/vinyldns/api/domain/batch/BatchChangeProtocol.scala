@@ -32,7 +32,7 @@ final case class BatchChangeInput(
     changes: List[ChangeInput],
     ownerGroupId: Option[String] = None,
     scheduledTime: Option[DateTime] = None,
-    id: Option[String] = None)
+    id: String = UUID.randomUUID().toString)
 
 object BatchChangeInput {
   def apply(batchChange: BatchChange): BatchChangeInput = {
@@ -46,14 +46,14 @@ object BatchChangeInput {
       changes,
       batchChange.ownerGroupId,
       batchChange.scheduledTime,
-      Some(batchChange.id))
+      batchChange.id)
   }
 }
 
 sealed trait ChangeInput {
   val inputName: String
   val typ: RecordType
-  val id: Option[String]
+  val id: String
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange
 }
 
@@ -62,7 +62,7 @@ final case class AddChangeInput(
     typ: RecordType,
     ttl: Option[Long],
     record: RecordData,
-    id: Option[String] = None)
+    id: String = UUID.randomUUID().toString)
     extends ChangeInput {
 
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange = {
@@ -80,7 +80,7 @@ final case class AddChangeInput(
       None,
       None,
       errors.toList.map(SingleChangeError(_)),
-      id.getOrElse(UUID.randomUUID().toString)
+      id
     )
   }
 }
@@ -88,7 +88,7 @@ final case class AddChangeInput(
 final case class DeleteRRSetChangeInput(
     inputName: String,
     typ: RecordType,
-    id: Option[String] = None)
+    id: String = UUID.randomUUID().toString)
     extends ChangeInput {
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
     SingleDeleteRRSetChange(
@@ -101,7 +101,8 @@ final case class DeleteRRSetChangeInput(
       None,
       None,
       None,
-      errors.toList.map(SingleChangeError(_))
+      errors.toList.map(SingleChangeError(_)),
+      id
     )
 }
 
@@ -111,7 +112,7 @@ final case class DeleteRecordChangeInput(
     inputName: String,
     typ: RecordType,
     record: RecordData,
-    id: Option[String] = None)
+    id: String = UUID.randomUUID().toString)
     extends ChangeInput {
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
     SingleDeleteRecordChange(
@@ -126,7 +127,7 @@ final case class DeleteRecordChangeInput(
       None,
       None,
       errors.toList.map(SingleChangeError(_)),
-      id.getOrElse(UUID.randomUUID().toString)
+      id
     )
 }
 // $COVERAGE-ON$
@@ -136,50 +137,42 @@ object AddChangeInput {
       inputName: String,
       typ: RecordType,
       ttl: Option[Long],
-      record: RecordData,
-      id: Option[String] = None): AddChangeInput = {
+      record: RecordData): AddChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new AddChangeInput(transformName, typ, ttl, record, id)
+    new AddChangeInput(transformName, typ, ttl, record)
   }
 
   def apply(sc: SingleAddChange): AddChangeInput =
-    AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData, Some(sc.id))
+    AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData, sc.id)
 }
 
 object DeleteRRSetChangeInput {
-  def apply(
-      inputName: String,
-      typ: RecordType,
-      id: Option[String] = None): DeleteRRSetChangeInput = {
+  def apply(inputName: String, typ: RecordType): DeleteRRSetChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteRRSetChangeInput(transformName, typ, id)
+    new DeleteRRSetChangeInput(transformName, typ)
   }
 
   def apply(sc: SingleDeleteRRSetChange): DeleteRRSetChangeInput =
-    DeleteRRSetChangeInput(sc.inputName, sc.typ, Some(sc.id))
+    DeleteRRSetChangeInput(sc.inputName, sc.typ, sc.id)
 }
 
 object DeleteRecordChangeInput {
-  def apply(
-      inputName: String,
-      typ: RecordType,
-      record: RecordData,
-      id: Option[String] = None): DeleteRecordChangeInput = {
+  def apply(inputName: String, typ: RecordType, record: RecordData): DeleteRecordChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteRecordChangeInput(transformName, typ, record, id)
+    new DeleteRecordChangeInput(transformName, typ, record)
   }
 
   def apply(sdrc: SingleDeleteRecordChange): DeleteRecordChangeInput =
-    DeleteRecordChangeInput(sdrc.inputName, sdrc.typ, sdrc.recordData, Some(sdrc.id))
+    DeleteRecordChangeInput(sdrc.inputName, sdrc.typ, sdrc.recordData, sdrc.id)
 }
 
 object ChangeInputType extends Enumeration {

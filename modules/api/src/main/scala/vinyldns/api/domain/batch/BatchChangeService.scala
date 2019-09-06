@@ -16,8 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import java.util.UUID
-
 import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
@@ -409,7 +407,7 @@ class BatchChangeService(
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
-            case Valid(v) => v.asStoredChange(input.id)
+            case Valid(v) => v.asStoredChange(Some(input.id))
             case Invalid(e) => input.asNewStoredChange(e)
           }
       }
@@ -422,14 +420,14 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.PendingReview,
         scheduledTime = batchChangeInput.scheduledTime,
-        id = batchChangeInput.id.getOrElse(UUID.randomUUID().toString)
+        id = batchChangeInput.id
       ).asRight
     }
 
     // Respond with a response to process immediately
     def processNowResponse = {
       val changes = transformed.getValid.zip(batchChangeInput.changes).map {
-        case (validated, input) => validated.asStoredChange(input.id)
+        case (validated, input) => validated.asStoredChange(Some(input.id))
       }
       BatchChange(
         auth.userId,
@@ -440,7 +438,7 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved,
         scheduledTime = batchChangeInput.scheduledTime,
-        id = batchChangeInput.id.getOrElse(UUID.randomUUID().toString)
+        id = batchChangeInput.id
       ).asRight
     }
 
