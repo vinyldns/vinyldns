@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.data._
 import cats.implicits._
+import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
@@ -64,6 +65,12 @@ trait BatchChangeValidationsAlgebra {
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+
+  def validatePendingBatchChangeEdit(
+      batchChange: BatchChange,
+      scheduledTime: Option[DateTime],
+      authPrincipal: AuthPrincipal,
+      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
@@ -90,7 +97,7 @@ class BatchChangeValidations(
         .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
         .toEither
         .toBatchResult
-      _ <- validateScheduledChange(input, scheduledChangesEnabled).toBatchResult
+      _ <- validateScheduledChange(input.scheduledTime, scheduledChangesEnabled).toBatchResult
     } yield ()
   }
 
@@ -120,27 +127,40 @@ class BatchChangeValidations(
       authPrincipal: AuthPrincipal,
       bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange, bypassTestValidation) |+| validateBatchChangePendingReview(
-      batchChange)
+      batchChange,
+      "rejected")
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange, isTestChange) |+| validateBatchChangePendingReview(
-      batchChange) |+| validateScheduledApproval(batchChange)
+      batchChange,
+      "approved") |+| validateScheduledApproval(batchChange)
 
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateBatchChangePendingReview(batchChange) |+| validateCreatorCancellation(
+    validateBatchChangePendingReview(batchChange, "cancelled") |+| validateCreatorCancellation(
       batchChange,
       authPrincipal)
 
+  def validatePendingBatchChangeEdit(
+      batchChange: BatchChange,
+      scheduledTime: Option[DateTime],
+      authPrincipal: AuthPrincipal,
+      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    validateBatchChangePendingReview(batchChange, "edited") |+| validateAuthorizedEditor(
+      batchChange,
+      authPrincipal,
+      isTestChange: Boolean) |+| validateScheduledChange(scheduledTime, scheduledChangesEnabled)
+
   def validateBatchChangePendingReview(
-      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
+      batchChange: BatchChange,
+      action: String): Either[BatchChangeErrorResponse, Unit] =
     batchChange.approvalStatus match {
       case BatchChangeApprovalStatus.PendingReview => ().asRight
-      case _ => BatchChangeNotPendingReview(batchChange.id).asLeft
+      case _ => BatchChangeNotPendingReview(batchChange.id, action).asLeft
     }
 
   def validateAuthorizedReviewer(
@@ -149,6 +169,16 @@ class BatchChangeValidations(
       bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
     if (auth.isSystemAdmin && (bypassTestValidation || !auth.isTestUser)) {
       // bypassTestValidation = true for a test change
+      ().asRight
+    } else {
+      UserNotAuthorizedError(batchChange.id).asLeft
+    }
+
+  def validateAuthorizedEditor(
+      batchChange: BatchChange,
+      auth: AuthPrincipal,
+      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    if (auth.isSystemAdmin || batchChange.userId == auth.userId && (bypassTestValidation || !auth.isTestUser)) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
@@ -570,9 +600,9 @@ class BatchChangeValidations(
     }
 
   def validateScheduledChange(
-      input: BatchChangeInput,
+      scheduledTime: Option[DateTime],
       scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    (scheduledChangesEnabled, input.scheduledTime) match {
+    (scheduledChangesEnabled, scheduledTime) match {
       case (_, None) => Right(())
       case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)

@@ -138,6 +138,17 @@ class BatchChangeRoute(
               complete(StatusCodes.OK, chg)
             }
           }
+        } ~
+        path("zones" / "batchrecordchanges" / Segment / "edit") { id =>
+          (put & monitor("Endpoint.editBatchChange")) {
+            authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
+              (authPrincipal, input) => batchChangeService.editBatchChange(id, input, authPrincipal)
+            ) { chg =>
+              {
+                complete(StatusCodes.Accepted, chg)
+              }
+            }
+          }
         }
 
     if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes

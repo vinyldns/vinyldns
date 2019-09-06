@@ -181,6 +181,34 @@ class BatchChangeService(
       _ <- notifiers.notify(Notification(cancelledBatchChange)).toBatchResult
     } yield cancelledBatchChange
 
+  def editBatchChange(
+      batchChangeId: String,
+      batchChangeInput: BatchChangeInput,
+      authPrincipal: AuthPrincipal): BatchResult[BatchChange] =
+    for {
+      batchChange <- getExistingBatchChange(batchChangeId)
+      requesterAuth <- EitherT.fromOptionF(
+        authProvider.getAuthPrincipalByUserId(batchChange.userId),
+        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
+      )
+      _ <- validatePendingBatchChangeEdit(
+        batchChange,
+        batchChangeInput.scheduledTime,
+        authPrincipal,
+        requesterAuth.isTestUser).toBatchResult
+      rescheduledBatchChange <- updateScheduledTime(batchChange, batchChangeInput.scheduledTime)
+    } yield rescheduledBatchChange
+
+  def updateScheduledTime(
+      batchChange: BatchChange,
+      scheduledTime: Option[DateTime]): BatchResult[BatchChange] = {
+    val rescheduledBatch = batchChange.copy(
+      scheduledTime = scheduledTime,
+    )
+
+    batchChangeRepo.save(rescheduledBatch).toBatchResult
+  }
+
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)
