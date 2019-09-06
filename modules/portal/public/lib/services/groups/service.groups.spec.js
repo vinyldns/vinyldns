@@ -174,11 +174,9 @@ describe('Service: groupsService', function () {
 
     it('getGroupMemberList method should return 200 with valid group', function (done) {
         var uuid = 123;
-        var id = 12;
-        var count = 2;
         var url = '/api/groups/:groupId/members';
         this.$httpBackend.whenRoute('GET', url).respond(200, getJSONFixture('mockGroupGetMemberList.json'));
-        this.groupsService.getGroupMemberList(uuid, id, count)
+        this.groupsService.getGroupMemberList(uuid)
             .then(function (response) {
                 expect(response.status).toBe(200);
                 done();
@@ -191,11 +189,9 @@ describe('Service: groupsService', function () {
 
     it('getGroupMemberList method should return 400 with invalid group', function (done) {
         var uuid = 123;
-        var id = 12;
-        var count = 2;
         var url = '/api/groups/:groupId/members';
         this.$httpBackend.whenRoute('GET', url).respond(400, getJSONFixture('mockGroupGetMemberList.json'));
-        this.groupsService.getGroupMemberList(uuid, id, count)
+        this.groupsService.getGroupMemberList(uuid)
             .then(function (response) {
                 fail('getGroupMemberList expected 400, but got ' + response.status.toString());
                 done();
@@ -208,11 +204,9 @@ describe('Service: groupsService', function () {
 
     it('getGroupMemberList method should return 403 with invalid group', function (done) {
         var uuid = 123;
-        var id = 12;
-        var count = 2;
         var url = '/api/groups/:groupId/members';
         this.$httpBackend.whenRoute('GET', url).respond(403, getJSONFixture('mockGroupGetMemberList.json'));
-        this.groupsService.getGroupMemberList(uuid, id, count)
+        this.groupsService.getGroupMemberList(uuid)
             .then(function (response) {
                 fail('getGroupMemberList expected 403, but got ' + response.status.toString());
                 done();
@@ -225,11 +219,9 @@ describe('Service: groupsService', function () {
 
     it('getGroupMemberList method should return 503 with invalid group', function (done) {
         var uuid = 123;
-        var id = 12;
-        var count = 2;
         var url = '/api/groups/:groupId/members';
         this.$httpBackend.whenRoute('GET', url).respond(503, getJSONFixture('mockGroupGetMemberList.json'));
-        this.groupsService.getGroupMemberList(uuid, id, count)
+        this.groupsService.getGroupMemberList(uuid)
             .then(function (response) {
                 fail('getGroupMemberList expected 503, but got ' + response.status.toString());
                 done();

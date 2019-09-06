@@ -54,9 +54,9 @@ angular.module('service.groups', [])
             return $http.put(url, data, {headers: utilityService.getCsrfHeader()});
         };
 
-        this.getGroupMemberList = function (uuid, id, count) {
+        this.getGroupMemberList = function (uuid) {
             var url = '/api/groups/' + uuid + '/members';
-            url = this.urlBuilder(url, { 'startFrom': id, 'maxItems': count });
+            url = this.urlBuilder(url, { maxItems: 1000 });
             return $http.get(url);
         };
 

@@ -196,6 +196,14 @@ object TestDataLoader {
     memberIds = Set(testUser.id),
     adminUserIds = Set(testUser.id))
 
+  final val duGroup = Group(
+    name = "duGroup",
+    id = "duGroup-id",
+    email = "test@test.com",
+    memberIds = listOfDummyUsers.map(_.id).toSet + testUser.id,
+    adminUserIds = listOfDummyUsers.map(_.id).toSet + testUser.id
+  )
+
   // NOTE: this is intentionally not a flagged test zone for validating our test users cannot access regular zone info
   // All other test zones should be flagged as test
   final val nonTestSharedZone = Zone(
@@ -237,6 +245,7 @@ object TestDataLoader {
       _ <- groupRepo.save(sharedZoneGroup)
       _ <- groupRepo.save(globalACLGroup)
       _ <- groupRepo.save(anotherGlobalACLGroup)
+      _ <- groupRepo.save(duGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id))
@@ -246,6 +255,7 @@ object TestDataLoader {
       _ <- membershipRepo.addMembers(
         groupId = "another-global-acl-group",
         memberUserIds = Set(testUser.id))
+      _ <- membershipRepo.addMembers(groupId = duGroup.id, memberUserIds = duGroup.memberIds)
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()
