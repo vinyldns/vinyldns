@@ -14,6 +14,7 @@ class SharedZoneTestContext(object):
         self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey', 'sharedZoneUserSecretKey')
         self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
         self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey', 'listGroupSecretKey')
+        self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'testUserAccessKey', 'testUserSecretKey')
 
         self.dummy_group = None
         self.ok_group = None
