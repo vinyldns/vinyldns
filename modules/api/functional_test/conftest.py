@@ -1,11 +1,7 @@
 import os
-import pytest
-import boto.dynamodb2
-from boto.dynamodb2.table import Table
-from boto.dynamodb2.fields import HashKey
-from boto.dynamodb2.fields import GlobalAllIndex
 
 from vinyldns_context import VinylDNSTestContext
+
 
 def pytest_addoption(parser):
     """
@@ -35,6 +31,8 @@ def pytest_addoption(parser):
                      help="CIM_ENV that we are testing against.")
     parser.addoption("--log-level", dest="logging_level",
                      help="logging level should be CRITICAL, ERROR, WARNING, INFO or DEBUG")
+    parser.addoption("--fixture-file", dest="fixture_file",
+                     help="fixture file to be used for loading an existing test fixture")
 
 
 def pytest_configure(config):
@@ -61,10 +59,12 @@ def pytest_configure(config):
     sys.dont_write_bytecode = True
 
     VinylDNSTestContext.configure(config.getoption("dns_ip"),
-                               config.getoption("dns_zone"),
-                               config.getoption("dns_key_name"),
-                               config.getoption("dns_key"),
-                               config.getoption("url"))
+                                  config.getoption("dns_zone"),
+                                  config.getoption("dns_key_name"),
+                                  config.getoption("dns_key"),
+                                  config.getoption("url"),
+                                  config.getoption("fixture_file"))
+
 
 def pytest_report_header(config):
     """
