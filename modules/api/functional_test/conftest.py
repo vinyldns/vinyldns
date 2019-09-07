@@ -29,8 +29,6 @@ def pytest_addoption(parser):
                      help="OAuth credentials in consumer:secret format")
     parser.addoption("--environment", dest="cim_env", action="store", default="test",
                      help="CIM_ENV that we are testing against.")
-    parser.addoption("--log-level", dest="logging_level",
-                     help="logging level should be CRITICAL, ERROR, WARNING, INFO or DEBUG")
     parser.addoption("--fixture-file", dest="fixture_file",
                      help="fixture file to be used for loading an existing test fixture")
 
@@ -64,6 +62,29 @@ def pytest_configure(config):
                                   config.getoption("dns_key"),
                                   config.getoption("url"),
                                   config.getoption("fixture_file"))
+
+    if not hasattr(config, 'workerinput'):
+        print "HEY MASTER!!!"
+        from shared_zone_test_context import SharedZoneTestContext
+        ctx = SharedZoneTestContext()
+        ctx.out_fixture_file("tmp.out")
+    else:
+        print "NOT A MASTER!!!"
+
+
+def pytest_unconfigure(config):
+    # this attribute is only set on workers
+    print "\r\n\r\n!!! BYE !!!"
+    if not hasattr(config, 'workerinput'):
+        from shared_zone_test_context import SharedZoneTestContext
+        ctx = SharedZoneTestContext("tmp.out")
+        ctx.tear_down()
+
+        import os
+        os.remove("tmp.out")
+        print "\r\n\r\n!!! BYE MASTER !!!"
+    else:
+        print "\r\n\r\n!!! BYE WORKER !!!"
 
 
 def pytest_report_header(config):

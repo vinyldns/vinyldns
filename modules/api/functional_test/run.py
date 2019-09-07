@@ -16,15 +16,6 @@ if not os.path.exists(report_dir):
 execfile(activate_virtualenv, dict(__file__=activate_virtualenv))
 
 import pytest
-
-# Let's generate our test fixture
-sys.path.append(os.path.abspath("./live_tests/shared_zone_test_context.py"))
-from shared_zone_test_context import SharedZoneTestContext
-
-
-
-result = 1
-
 result = pytest.main(list(sys.argv[1:]))
 
 sys.exit(result)

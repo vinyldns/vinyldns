@@ -22,8 +22,12 @@ class SharedZoneTestContext(object):
 
         # if we are using an existing fixture, load the fixture file and pull all of our data from there
         if fixture_file:
+            print "\r\n!!! FIXTURE FILE IS SET !!!"
             self.load_fixture_file(fixture_file)
+            import json
+            print json.dumps(self.ok_group, indent=3)
         else:
+            print "\r\n!!! FIXTURE FILE NOT SET, BUILDING FIXTURE !!!"
             # No fixture file, so we have to build everything ourselves
             self.tear_down() # ensures that the environment is clean before starting
             try:
@@ -369,6 +373,7 @@ class SharedZoneTestContext(object):
             self.non_test_shared_zone = data['non_test_shared_zone']
 
     def out_fixture_file(self, fixture_file):
+        print "\r\n!!! PRINTING OUT FIXTURE FILE !!!"
         import json
         # output the fixture file, be sure to be in sync with the load_fixture_file
         data = {'ok_group': self.ok_group, 'ok_zone': self.ok_zone, 'dummy_group': self.dummy_group,

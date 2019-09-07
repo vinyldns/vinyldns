@@ -275,7 +275,7 @@ def test_create_aaaa_recordset_with_normal_record(shared_zone_test_context):
     try:
         new_rs = {
             'zoneId': shared_zone_test_context.ok_zone['id'],
-            'name': 'testAAAA',
+            'name': 'test-create-aaaa-recordset-with-normal-record',
             'type': 'AAAA',
             'ttl': 100,
             'records': [
@@ -313,7 +313,7 @@ def test_create_recordset_conflict(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     new_rs = {
         'zoneId': shared_zone_test_context.ok_zone['id'],
-        'name': 'test_create_recordset_conflict',
+        'name': 'test-create-recordset-conflict',
         'type': 'A',
         'ttl': 100,
         'records': [
@@ -331,7 +331,7 @@ def test_create_recordset_conflict(shared_zone_test_context):
     try:
         result = client.create_recordset(new_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        client.create_recordset(result_rs, status=409)
+        client.create_recordset(new_rs, status=409)
     finally:
         if result_rs:
             result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
@@ -346,7 +346,7 @@ def test_create_recordset_conflict_with_case_insensitive_name(shared_zone_test_c
     client = shared_zone_test_context.ok_vinyldns_client
     first_rs = {
         'zoneId': shared_zone_test_context.ok_zone['id'],
-        'name': 'test_create_recordset_conflict',
+        'name': 'test-create-recordset-conflict-with-case-insensitive-name',
         'type': 'A',
         'ttl': 100,
         'records': [
@@ -364,7 +364,7 @@ def test_create_recordset_conflict_with_case_insensitive_name(shared_zone_test_c
     try:
         result = client.create_recordset(first_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        first_rs['name'] = 'test_create_recordset_CONFLICT'
+        first_rs['name'] = 'test-create-recordset-conflict-with-case-insensitive-NAME'
         client.create_recordset(first_rs, status=409)
     finally:
         if result_rs:
@@ -428,9 +428,7 @@ def test_create_recordset_conflict_with_dns(shared_zone_test_context):
 
     try:
         dns_add(shared_zone_test_context.ok_zone, "backend-conflict", 200, "A", "1.2.3.4")
-        print "\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n"
         result = client.create_recordset(new_rs, status=202)
-        print json.dumps(result, indent=3)
         client.wait_until_recordset_change_status(result, 'Failed')
 
     finally:
@@ -631,6 +629,8 @@ def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
             delete_result = client.delete_recordset(apex_a_rs['zoneId'], apex_a_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
+@pytest.mark.serial
 def test_create_dotted_a_record_apex_with_trailing_dot_succeeds(shared_zone_test_context):
     """
     Test that creating an apex A record set containing dots succeeds (with trailing dot)
@@ -769,6 +769,7 @@ def test_create_cname_with_existing_record_with_name_fails(shared_zone_test_cont
         ]
     }
 
+    a_record = None
     try:
         a_create = client.create_recordset(a_rs, status=202)
         a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
@@ -777,8 +778,9 @@ def test_create_cname_with_existing_record_with_name_fails(shared_zone_test_cont
         assert_that(error, is_('RecordSet with name duplicate-test-name already exists in zone system-test., CNAME record cannot use duplicate name'))
 
     finally:
-        delete_result = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result, 'Complete')
+        if a_record:
+            delete_result = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_create_record_with_existing_cname_fails(shared_zone_test_context):
@@ -811,6 +813,7 @@ def test_create_record_with_existing_cname_fails(shared_zone_test_context):
         ]
     }
 
+    cname_record = None
     try:
         cname_create = client.create_recordset(cname_rs, status=202)
         cname_record = client.wait_until_recordset_change_status(cname_create, 'Complete')['recordSet']
@@ -819,8 +822,9 @@ def test_create_record_with_existing_cname_fails(shared_zone_test_context):
         assert_that(error, is_('RecordSet with name duplicate-test-name and type CNAME already exists in zone system-test.'))
 
     finally:
-        delete_result = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result, 'Complete')
+        if cname_record:
+            delete_result = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_create_cname_forces_record_to_be_absolute(shared_zone_test_context):
@@ -841,6 +845,7 @@ def test_create_cname_forces_record_to_be_absolute(shared_zone_test_context):
         ]
     }
 
+    result_rs = None
     try:
         result = client.create_recordset(new_rs, status=202)
         result_rs = result['recordSet']
@@ -1522,6 +1527,7 @@ def test_create_record_with_escape_characters_in_record_data_succeeds(shared_zon
 
 
 
+@pytest.mark.serial
 def test_create_record_with_existing_wildcard_succeeds(shared_zone_test_context):
     """
     Test that creating a record when a wildcard record of the same type already exists succeeds
@@ -1560,16 +1566,19 @@ def test_create_record_with_existing_wildcard_succeeds(shared_zone_test_context)
         test_rs = client.wait_until_recordset_change_status(test_create, 'Complete')['recordSet']
     finally:
         try:
-            delete_result = client.delete_recordset(wildcard_rs['zoneId'], wildcard_rs['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result, 'Complete')
+            if 'id' in wildcard_rs:
+                delete_result = client.delete_recordset(wildcard_rs['zoneId'], wildcard_rs['id'], status=202)
+                client.wait_until_recordset_change_status(delete_result, 'Complete')
         finally:
             try:
-                delete_result = client.delete_recordset(test_rs['zoneId'], test_rs['id'], status=202)
-                client.wait_until_recordset_change_status(delete_result, 'Complete')
+                if 'id' in test_rs:
+                    delete_result = client.delete_recordset(test_rs['zoneId'], test_rs['id'], status=202)
+                    client.wait_until_recordset_change_status(delete_result, 'Complete')
             except:
                 pass
 
 
+@pytest.mark.serial
 def test_create_record_with_existing_cname_wildcard_succeed(shared_zone_test_context):
     """
     Test that creating a record when a CNAME wildcard record already exists succeeds
@@ -2084,6 +2093,7 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     assert_that(error, is_('User not in record owner group with id "' + group['id'] + '"'))
 
 
+@pytest.mark.serial
 def test_create_ds_success(shared_zone_test_context):
     """
     Test that creating a valid DS record succeeds
