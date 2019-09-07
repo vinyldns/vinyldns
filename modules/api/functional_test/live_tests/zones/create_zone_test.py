@@ -36,6 +36,8 @@ records_in_dns = [
      'type': u'A',
      'records': [{u'address': u'6.6.6.6'}]}]
 
+
+@pytest.mark.serial
 def test_create_zone_success(shared_zone_test_context):
     """
     Test successfully creating a zone
@@ -164,6 +166,7 @@ def test_create_invalid_zone_data(shared_zone_test_context):
     assert_that(errors, contains_inanyorder('Do not know how to convert JString(invalid_value) into boolean'))
 
 
+@pytest.mark.serial
 def test_create_zone_with_connection_failure(shared_zone_test_context):
     """
     Test creating a new zone with a an invalid key and connection info fails
@@ -209,6 +212,7 @@ def test_create_zone_returns_400_for_invalid_data(shared_zone_test_context):
 
 
 @pytest.mark.skip_production
+@pytest.mark.serial
 def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -230,7 +234,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
         assert_that(zone['name'], is_(zone_name+'.'))
         print "'connection' not in zone = " + 'connection' not in zone
 
-        assert_that('connection' not in zone)#KeyError: 'connection'
+        assert_that('connection' not in zone)
         assert_that('transferConnection' not in zone)
 
         # Check that it was internally stored correctly using GET
@@ -244,6 +248,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
             client.abandon_zones([zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_zone_connection_only(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -304,6 +309,7 @@ def test_zone_connection_only(shared_zone_test_context):
             client.abandon_zones([zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_zone_bad_connection(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -324,6 +330,7 @@ def test_zone_bad_connection(shared_zone_test_context):
     client.create_zone(zone, status=400)
 
 
+@pytest.mark.serial
 def test_zone_bad_transfer_connection(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -350,6 +357,7 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
     client.create_zone(zone, status=400)
 
 
+@pytest.mark.serial
 def test_zone_transfer_connection(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -410,6 +418,7 @@ def test_zone_transfer_connection(shared_zone_test_context):
             client.abandon_zones([zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_user_cannot_create_zone_with_nonmember_admin_group(shared_zone_test_context):
     """
     Test user cannot create a zone with an admin group they are not a member of
