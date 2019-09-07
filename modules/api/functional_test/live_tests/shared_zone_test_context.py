@@ -4,6 +4,7 @@ from vinyldns_context import VinylDNSTestContext
 from hamcrest import *
 from utils import *
 from list_zones_test_context import ListZonesTestContext
+from list_recordsets_test_context import ListRecordSetsTestContext
 
 
 class SharedZoneTestContext(object):
@@ -20,6 +21,7 @@ class SharedZoneTestContext(object):
         self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'history-key', 'history-secret')
         self.list_zones = ListZonesTestContext()
         self.list_zones_client = self.list_zones.client
+        self.list_records_context = ListRecordSetsTestContext()
 
         self.dummy_group = None
         self.ok_group = None
@@ -389,6 +391,9 @@ class SharedZoneTestContext(object):
                 # note: there are no state to load, the tests only need the client
                 self.list_zones_client = self.list_zones.client
 
+                # build the list of records; note: we do need to save the test records
+                self.list_records_context.build()
+
             except:
                 # teardown if there was any issue in setup
                 try:
@@ -522,6 +527,7 @@ class SharedZoneTestContext(object):
         deleting all records (even in the old shared model)
         """
         self.list_zones.tear_down()
+        self.list_records_context.tear_down()
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
         clear_zones(self.history_client)
