@@ -895,6 +895,7 @@ def test_create_cname_does_not_change_absolute_record(shared_zone_test_context):
             }
         ]
     }
+    result_rs = None
 
     try:
         result = client.create_recordset(new_rs, status=202)
