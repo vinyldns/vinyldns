@@ -82,7 +82,7 @@ class ListRecordSetsFixture():
             assert_that(list_results_recordSets_page[i]['accessLevel'], is_('Delete'))
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def rs_fixture(request, shared_zone_test_context):
 
     fix = ListRecordSetsFixture(shared_zone_test_context)
@@ -103,6 +103,7 @@ def test_list_recordsets_no_start(rs_fixture):
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=19, offset=0)
+
 
 def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     """

@@ -3,6 +3,8 @@ from vinyldns_python import VinylDNSClient
 from vinyldns_context import VinylDNSTestContext
 from hamcrest import *
 from utils import *
+from list_zones_test_context import ListZonesTestContext
+
 
 class SharedZoneTestContext(object):
     """
@@ -16,6 +18,8 @@ class SharedZoneTestContext(object):
         self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey', 'listGroupSecretKey')
         self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'testUserAccessKey', 'testUserSecretKey')
         self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'history-key', 'history-secret')
+        self.list_zones = ListZonesTestContext()
+        self.list_zones_client = self.list_zones.client
 
         self.dummy_group = None
         self.ok_group = None
@@ -379,6 +383,12 @@ class SharedZoneTestContext(object):
                 # initialize history
                 self.init_history()
 
+                # initialize list zones, only do this when constructing the whole!
+                self.list_zones.build()
+
+                # note: there are no state to load, the tests only need the client
+                self.list_zones_client = self.list_zones.client
+
             except:
                 # teardown if there was any issue in setup
                 try:
@@ -511,6 +521,7 @@ class SharedZoneTestContext(object):
         We shouldn't have to do any checks now, as zone admins have full rights to all zones, including
         deleting all records (even in the old shared model)
         """
+        self.list_zones.tear_down()
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
         clear_zones(self.history_client)
@@ -518,7 +529,8 @@ class SharedZoneTestContext(object):
         clear_groups(self.ok_vinyldns_client, "global-acl-group-id")
         clear_groups(self.history_client)
 
-    def confirm_member_in_group(self, client, group):
+    @staticmethod
+    def confirm_member_in_group(client, group):
         retries = 2
         success = group in client.list_all_my_groups(status=200)
         while retries >= 0 and not success:

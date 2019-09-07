@@ -2370,6 +2370,7 @@ def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
     """
     Test that updating an owned recordset fails if the user has a global acl rule but is not in the record owner group
