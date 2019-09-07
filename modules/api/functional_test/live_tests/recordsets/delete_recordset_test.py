@@ -443,6 +443,7 @@ def test_delete_recordset_with_different_dns_data(shared_zone_test_context):
                 pass
 
 
+@pytest.mark.serial
 def test_user_can_delete_record_via_user_acl_rule(shared_zone_test_context):
     """
     Test user DELETE ACL rule - delete
@@ -472,6 +473,7 @@ def test_user_can_delete_record_via_user_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_cannot_delete_record_with_write_txt_read_all(shared_zone_test_context):
     """
     Test user WRITE TXT READ all ACL rule
@@ -507,6 +509,7 @@ def test_user_cannot_delete_record_with_write_txt_read_all(shared_zone_test_cont
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_delete_record_via_group_acl_rule(shared_zone_test_context):
     """
     Test group DELETE ACL rule - delete
@@ -582,6 +585,7 @@ def test_ns_delete_existing_ns_origin_fails(shared_zone_test_context):
     apex_ns = [item for item in list_results_page if item['type'] == 'NS' and item['name'] in zone['name']][0]
 
     client.delete_recordset(apex_ns['zoneId'], apex_ns['id'], status=422)
+
 
 def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """
