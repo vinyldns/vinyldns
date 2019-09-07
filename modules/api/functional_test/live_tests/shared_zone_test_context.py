@@ -15,10 +15,12 @@ class SharedZoneTestContext(object):
         self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
         self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey', 'listGroupSecretKey')
         self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'testUserAccessKey', 'testUserSecretKey')
+        self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'history-key', 'history-secret')
 
         self.dummy_group = None
         self.ok_group = None
         self.shared_record_group = None
+        self.history_group = None
 
         # if we are using an existing fixture, load the fixture file and pull all of our data from there
         if fixture_file:
@@ -62,6 +64,38 @@ class SharedZoneTestContext(object):
                     'admins': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'}  ]
                 }
                 self.shared_record_group = self.ok_vinyldns_client.create_group(shared_record_group, status=200)
+
+                history_group = {
+                    'name': 'history-group',
+                    'email': 'test@test.com',
+                    'description': 'this is a description',
+                    'members': [ { 'id': 'history-id'} ],
+                    'admins': [ { 'id': 'history-id'} ]
+                }
+                self.history_group = self.history_client.create_group(history_group, status=200)
+                self.confirm_member_in_group(self.history_client, self.history_group)
+
+                history_zone_change = self.history_client.create_zone(
+                    {
+                        'name': 'system-test-history.',
+                        'email': 'i.changed.this.1.times@history-test.com',
+                        'shared': False,
+                        'adminGroupId': self.history_group['id'],
+                        'isTest': True,
+                        'connection': {
+                            'name': 'vinyldns.',
+                            'keyName': VinylDNSTestContext.dns_key_name,
+                            'key': VinylDNSTestContext.dns_key,
+                            'primaryServer': VinylDNSTestContext.dns_ip
+                        },
+                        'transferConnection': {
+                            'name': 'vinyldns.',
+                            'keyName': VinylDNSTestContext.dns_key_name,
+                            'key': VinylDNSTestContext.dns_key,
+                            'primaryServer': VinylDNSTestContext.dns_ip
+                        }
+                    }, status=202)
+                self.history_zone = history_zone_change['zone']
 
                 ok_zone_change = self.ok_vinyldns_client.create_zone(
                     {
@@ -326,6 +360,7 @@ class SharedZoneTestContext(object):
                 self.ok_vinyldns_client.wait_until_zone_active(parent_zone_change[u'zone'][u'id'])
                 self.ok_vinyldns_client.wait_until_zone_active(ds_zone_change[u'zone'][u'id'])
                 self.ok_vinyldns_client.wait_until_zone_active(requires_review_zone_change[u'zone'][u'id'])
+                self.history_client.wait_until_zone_active(history_zone_change[u'zone'][u'id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
                 shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
@@ -341,6 +376,9 @@ class SharedZoneTestContext(object):
                 zones = self.shared_zone_vinyldns_client.list_zones()['zones']
                 assert_that(len(zones), is_(2))
 
+                # initialize history
+                self.init_history()
+
             except:
                 # teardown if there was any issue in setup
                 try:
@@ -348,6 +386,65 @@ class SharedZoneTestContext(object):
                 except:
                     pass
                 raise
+
+    def init_history(self):
+        from test_data import TestData
+        import copy
+        # Initialize the zone history
+        # change the zone nine times to we have update events in zone change history,
+        # ten total changes including creation
+        for i in range(2, 11):
+            zone_update = copy.deepcopy(self.history_zone)
+            zone_update['connection']['key'] = VinylDNSTestContext.dns_key
+            zone_update['transferConnection']['key'] = VinylDNSTestContext.dns_key
+            zone_update['email'] = 'i.changed.this.{0}.times@history-test.com'.format(i)
+            zone_update = self.history_client.update_zone(zone_update, status=202)['zone']
+
+        # create some record sets
+        test_a = TestData.A.copy()
+        test_a['zoneId'] = self.history_zone['id']
+        test_aaaa = TestData.AAAA.copy()
+        test_aaaa['zoneId'] = self.history_zone['id']
+        test_cname = TestData.CNAME.copy()
+        test_cname['zoneId'] = self.history_zone['id']
+
+        a_record = self.history_client.create_recordset(test_a, status=202)['recordSet']
+        aaaa_record = self.history_client.create_recordset(test_aaaa, status=202)['recordSet']
+        cname_record = self.history_client.create_recordset(test_cname, status=202)['recordSet']
+
+        # wait here for all the record sets to be created
+        self.history_client.wait_until_recordset_exists(a_record['zoneId'], a_record['id'])
+        self.history_client.wait_until_recordset_exists(aaaa_record['zoneId'], aaaa_record['id'])
+        self.history_client.wait_until_recordset_exists(cname_record['zoneId'], cname_record['id'])
+
+        # update the record sets
+        a_record_update = copy.deepcopy(a_record)
+        a_record_update['ttl'] += 100
+        a_record_update['records'][0]['address'] = '9.9.9.9'
+        a_change = self.history_client.update_recordset(a_record_update, status=202)
+
+        aaaa_record_update = copy.deepcopy(aaaa_record)
+        aaaa_record_update['ttl'] += 100
+        aaaa_record_update['records'][0]['address'] = '2003:db8:0:0:0:0:0:4'
+        aaaa_change = self.history_client.update_recordset(aaaa_record_update, status=202)
+
+        cname_record_update = copy.deepcopy(cname_record)
+        cname_record_update['ttl'] += 100
+        cname_record_update['records'][0]['cname'] = 'changed-cname.'
+        cname_change = self.history_client.update_recordset(cname_record_update, status=202)
+
+        self.history_client.wait_until_recordset_change_status(a_change, 'Complete')
+        self.history_client.wait_until_recordset_change_status(aaaa_change, 'Complete')
+        self.history_client.wait_until_recordset_change_status(cname_change, 'Complete')
+
+        # delete the recordsets
+        self.history_client.delete_recordset(a_record['zoneId'], a_record['id'])
+        self.history_client.delete_recordset(aaaa_record['zoneId'], aaaa_record['id'])
+        self.history_client.delete_recordset(cname_record['zoneId'], cname_record['id'])
+
+        self.history_client.wait_until_recordset_deleted(a_record['zoneId'], a_record['id'])
+        self.history_client.wait_until_recordset_deleted(aaaa_record['zoneId'], aaaa_record['id'])
+        self.history_client.wait_until_recordset_deleted(cname_record['zoneId'], cname_record['id'])
 
     def load_fixture_file(self, fixture_file):
         # The fixture file contains all of the groups and zones,
@@ -371,6 +468,8 @@ class SharedZoneTestContext(object):
             self.requires_review_zone = data['requires_review_zone']
             self.shared_zone = data['shared_zone']
             self.non_test_shared_zone = data['non_test_shared_zone']
+            self.history_zone = data['history_zone']
+            self.history_group = data['history_group']
 
     def out_fixture_file(self, fixture_file):
         print "\r\n!!! PRINTING OUT FIXTURE FILE !!!"
@@ -383,7 +482,8 @@ class SharedZoneTestContext(object):
                 'classless_zone_delegation_zone': self.classless_zone_delegation_zone,
                 'system_test_zone': self.system_test_zone, 'parent_zone': self.parent_zone, 'ds_zone': self.ds_zone,
                 'requires_review_zone': self.requires_review_zone, 'shared_zone': self.shared_zone,
-                'non_test_shared_zone': self.non_test_shared_zone}
+                'non_test_shared_zone': self.non_test_shared_zone, 'history_zone': self.history_zone,
+                'history_group': self.history_group}
         with open(fixture_file, 'w') as out_file:
             json.dump(data, out_file)
 
@@ -413,8 +513,10 @@ class SharedZoneTestContext(object):
         """
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
+        clear_zones(self.history_client)
         clear_groups(self.dummy_vinyldns_client, "global-acl-group-id")
         clear_groups(self.ok_vinyldns_client, "global-acl-group-id")
+        clear_groups(self.history_client)
 
     def confirm_member_in_group(self, client, group):
         retries = 2
