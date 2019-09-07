@@ -7,6 +7,7 @@ from vinyldns_context import VinylDNSTestContext
 from utils import *
 
 
+@pytest.mark.serial
 def test_update_zone_success(shared_zone_test_context):
     """
     Test updating a zone
@@ -106,7 +107,7 @@ def test_update_acl_no_group_or_user_fails(shared_zone_test_context):
     client.update_zone(zone, status=400)
 
 
-
+@pytest.mark.serial
 def test_update_missing_zone_data(shared_zone_test_context):
     """
     Test that updating a zone without providing necessary data returns errors and fails the update
@@ -158,6 +159,7 @@ def test_update_missing_zone_data(shared_zone_test_context):
             client.abandon_zones([result_zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_update_invalid_zone_data(shared_zone_test_context):
     """
     Test that creating a zone with invalid data returns errors and fails the update
@@ -207,6 +209,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
             client.abandon_zones([result_zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
     """
     Test updating a zone returns a 404 if the zone was not found
@@ -418,6 +421,7 @@ def test_create_acl_user_rule_multiple_non_cidr_failure(shared_zone_test_context
     assert_that(errors,contains_string("Multiple record types including PTR must have no mask"))
 
 
+@pytest.mark.serial
 def test_create_acl_idempotent(shared_zone_test_context):
     """
     Test creating the same acl rule multiple times results in only one rule added
@@ -443,6 +447,7 @@ def test_create_acl_idempotent(shared_zone_test_context):
     verify_acl_rule_is_present_once(acl_rule, acl)
 
 
+@pytest.mark.serial
 def test_delete_acl_group_rule_success(shared_zone_test_context):
     """
     Test deleting an acl rule successfully
@@ -474,6 +479,7 @@ def test_delete_acl_group_rule_success(shared_zone_test_context):
     verify_acl_rule_is_not_present(acl_rule, zone['acl'])
 
 
+@pytest.mark.serial
 def test_delete_acl_user_rule_success(shared_zone_test_context):
     """
     Test deleting an acl rule successfully
@@ -691,11 +697,11 @@ def test_user_cannot_update_zone_to_nonexisting_admin_group(shared_zone_test_con
     shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=400)
 
 
+@pytest.mark.serial
 def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
     """
     Test user can update a zone with an admin group they are a member of
     """
-    #dummy is member, not admin
 
     client = shared_zone_test_context.dummy_vinyldns_client
     group = None
@@ -750,7 +756,6 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
             shared_zone_test_context.ok_vinyldns_client.delete_group(group['id'], status=(200, 404))
 
 
-
 def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_context):
     """
     Test user cannot update a zone adminGroupId to a group they are not a member of
@@ -758,18 +763,6 @@ def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_conte
 
     zone_update = shared_zone_test_context.ok_zone
     zone_update['adminGroupId'] = shared_zone_test_context.dummy_group['id']
-    zone_update['connection']['key'] = VinylDNSTestContext.dns_key
-
-    shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=400)
-
-
-def test_user_cannot_update_zone_to_nonexisting_admin_group(shared_zone_test_context):
-    """
-    Test user cannot update a zone adminGroupId to a group that does not exist
-    """
-
-    zone_update = shared_zone_test_context.ok_zone
-    zone_update['adminGroupId'] = "some-bad-id"
     zone_update['connection']['key'] = VinylDNSTestContext.dns_key
 
     shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=400)
