@@ -16,11 +16,12 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
     Test that updating a A record fails if the name change conflicts with an existing CNAME name
     """
     client = shared_zone_test_context.ok_vinyldns_client
-
+    cname_record = None
+    a_record = None
     try:
         cname_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name',
+            'name': 'duplicate-test-name1',
             'type': 'CNAME',
             'ttl': 500,
             'records': [
@@ -32,7 +33,7 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
 
         a_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name',
+            'name': 'unique-test-name1',
             'type': 'A',
             'ttl': 500,
             'records': [
@@ -49,15 +50,17 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
         a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
 
         a_rs_update = copy.deepcopy(a_record)
-        a_rs_update['name'] = 'duplicate-test-name'
+        a_rs_update['name'] = 'duplicate-test-name1'
 
         error = client.update_recordset(a_rs_update, status=409)
-        assert_that(error, is_('RecordSet with name duplicate-test-name and type CNAME already exists in zone system-test.'))
+        assert_that(error, is_('RecordSet with name duplicate-test-name1 and type CNAME already exists in zone system-test.'))
     finally:
-        delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-        delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if cname_record:
+            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
+        if a_record:
+            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
 
 
 def test_update_cname_with_same_name_as_another_record(shared_zone_test_context):
@@ -65,11 +68,12 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
     Test that updating a CNAME record fails if the name change conflicts with an existing record name
     """
     client = shared_zone_test_context.ok_vinyldns_client
-
+    cname_record = None
+    a_record = None
     try:
         cname_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name',
+            'name': 'unique-test-name2',
             'type': 'CNAME',
             'ttl': 500,
             'records': [
@@ -81,7 +85,7 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
 
         a_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name',
+            'name': 'duplicate-test-name2',
             'type': 'A',
             'ttl': 500,
             'records': [
@@ -98,15 +102,18 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
         a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
 
         cname_rs_update = copy.deepcopy(cname_record)
-        cname_rs_update['name'] = 'duplicate-test-name'
+        cname_rs_update['name'] = 'duplicate-test-name2'
 
         error = client.update_recordset(cname_rs_update, status=409)
-        assert_that(error, is_('RecordSet with name duplicate-test-name already exists in zone system-test., CNAME record cannot use duplicate name'))
+        assert_that(error, is_('RecordSet with name duplicate-test-name2 already exists in zone system-test., CNAME record cannot use duplicate name'))
     finally:
-        delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-        delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if cname_record:
+            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
+
+        if a_record:
+            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
 
 
 def test_update_cname_with_multiple_records(shared_zone_test_context):
@@ -146,9 +153,8 @@ def test_update_cname_with_multiple_records(shared_zone_test_context):
         assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
     finally:
         if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
+            r = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            client.wait_until_recordset_change_status(r, 'Complete')
 
 
 def test_update_cname_with_multiple_records(shared_zone_test_context):
@@ -1027,6 +1033,7 @@ def test_user_can_update_record_via_group_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
     """
     Test user rule takes priority over group rule
@@ -1057,6 +1064,7 @@ def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
     """
     Test more restrictive rule takes priority
@@ -1083,6 +1091,7 @@ def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_type_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1119,6 +1128,7 @@ def test_acl_rule_with_record_type_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1151,6 +1161,7 @@ def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip4_failure(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1178,6 +1189,7 @@ def test_acl_rule_with_cidr_ip4_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip6_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1210,6 +1222,7 @@ def test_acl_rule_with_cidr_ip6_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip6_failure(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1237,6 +1250,7 @@ def test_acl_rule_with_cidr_ip6_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
     """
     Test more restrictive cidr rule takes priority
@@ -1263,6 +1277,7 @@ def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_more_restrictive_cidr_ip6_rule_priority(shared_zone_test_context):
     """
     Test more restrictive cidr rule takes priority
@@ -1290,6 +1305,7 @@ def test_more_restrictive_cidr_ip6_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
     """
     A and AAAA should have read from mixed rule, PTR should have Write from rule with mask
@@ -1336,6 +1352,7 @@ def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_wrong_record_type(shared_zone_test_context):
     """
     Test a rule on a specific record type does not apply to other types
@@ -1364,6 +1381,7 @@ def test_acl_rule_with_wrong_record_type(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_empty_acl_record_type_applies_to_all(shared_zone_test_context):
     """
     Test an empty record set rule applies to all types
@@ -1396,6 +1414,7 @@ def test_empty_acl_record_type_applies_to_all(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_fewer_record_types_prioritized(shared_zone_test_context):
     """
     Test a rule on a specific record type takes priority over a group of types
@@ -1431,6 +1450,7 @@ def test_acl_rule_with_fewer_record_types_prioritized(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_user_over_record_type_priority(shared_zone_test_context):
     """
     Test the user priority takes precedence over record type priority
@@ -1465,6 +1485,7 @@ def test_acl_rule_user_over_record_type_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_mask_success(shared_zone_test_context):
     """
     Test rule with record mask allows user to update record
@@ -1497,6 +1518,7 @@ def test_acl_rule_with_record_mask_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_mask_failure(shared_zone_test_context):
     """
     Test rule with unmatching record mask is not applied
@@ -1523,6 +1545,7 @@ def test_acl_rule_with_record_mask_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_defined_mask_prioritized(shared_zone_test_context):
     """
     Test a rule on a specific record mask takes priority over All
@@ -1558,6 +1581,7 @@ def test_acl_rule_with_defined_mask_prioritized(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_rule_over_mask_prioritized(shared_zone_test_context):
     """
     Test user/group logic priority over record mask
@@ -2304,7 +2328,7 @@ def test_update_to_invalid_record_owner_group_fails(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner2', 'A', [{'address': '1.1.1.1'}])
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
@@ -2331,7 +2355,7 @@ def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner1', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
 
@@ -2370,6 +2394,8 @@ def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
             delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
+@pytest.mark.serial
 def test_update_ds_success(shared_zone_test_context):
     """
     Test that creating a valid DS record succeeds
@@ -2404,6 +2430,7 @@ def test_update_ds_success(shared_zone_test_context):
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_update_ds_data_failures(shared_zone_test_context):
     """
     Test that updating a DS record fails with bad hex, digest, algorithm
@@ -2446,6 +2473,7 @@ def test_update_ds_data_failures(shared_zone_test_context):
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_update_ds_bad_ttl(shared_zone_test_context):
     """
     Test that updating a DS record with unmatching TTL fails
@@ -2470,6 +2498,7 @@ def test_update_ds_bad_ttl(shared_zone_test_context):
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
+
 def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_test_context):
     """
     Test that a 422 is returned if the zoneId in the body and route do not match
@@ -2481,7 +2510,7 @@ def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_
     created = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_update_zone_id', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_update_zone_id1', 'A', [{'address': '1.1.1.1'}])
         create_response = client.create_recordset(record_json, status=202)
         created = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
 
