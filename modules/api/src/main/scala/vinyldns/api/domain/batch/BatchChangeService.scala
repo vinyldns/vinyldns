@@ -499,7 +499,7 @@ class BatchChangeService(
       batchChange: BatchChange): Either[BatchChangeErrorResponse, BatchChange] =
     batchChange.approvalStatus match {
       case ManuallyApproved => batchChange.asRight
-      case _ => BatchChangeFailedApproval(batchChange.changes).asLeft
+      case _ => BatchChangeFailedApproval(batchChange).asLeft
     }
 
   def addOwnerGroupNamesToSummaries(

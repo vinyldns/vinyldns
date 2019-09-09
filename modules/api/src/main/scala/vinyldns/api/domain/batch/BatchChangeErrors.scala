@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 import vinyldns.core.domain.DomainValidationError
-import vinyldns.core.domain.batch.SingleChange
+import vinyldns.core.domain.batch.{BatchChange, SingleChange}
 
 /* Error response options */
 sealed trait BatchChangeErrorResponse
@@ -33,7 +33,7 @@ final case class InvalidBatchChangeResponses(
     changeRequestResponses: ValidatedBatch[ChangeForValidation])
     extends BatchChangeErrorResponse
 
-final case class BatchChangeFailedApproval(changes: List[SingleChange])
+final case class BatchChangeFailedApproval(batchChange: BatchChange)
     extends BatchChangeErrorResponse
 
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {

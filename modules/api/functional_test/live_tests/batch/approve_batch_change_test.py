@@ -71,7 +71,7 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
     approver = shared_zone_test_context.support_user_client
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("needs-review.ok.", address="4.3.2.1"),
+            get_change_A_AAAA_json("needs-review.nonexistent.", address="4.3.2.1"),
             get_change_A_AAAA_json("zone.does.not.exist.")
         ],
         "ownerGroupId": shared_zone_test_context.ok_group['id']
@@ -88,23 +88,19 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
         assert_that(get_batch['changes'][1]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][1]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
 
-        ok_zone = client.get_zone_by_name(shared_zone_test_context.system_test_zone['name'], status=200)['zone']
+        approval_response = approver.approve_batch_change(result['id'], status=400)
+        assert_that((approval_response[0]['errors'][0]), contains_string('Zone Discovery Failed'))
+        assert_that((approval_response[1]['errors'][0]), contains_string('Zone Discovery Failed'))
 
-        new_rs_json = get_recordset_json(ok_zone, "needs-review", "A", [{"address": "1.2.3.4"}])
-        new_rs = client.create_recordset(new_rs_json, status=202)
-        complete_rs = client.wait_until_recordset_change_status(new_rs, 'Complete')['recordSet']
-
-        approver.approve_batch_change(result['id'], status=400)
         updated_batch = client.get_batch_change(result['id'], status=200)
-
         assert_that(updated_batch['status'], is_('PendingReview'))
         assert_that(updated_batch['approvalStatus'], is_('PendingReview'))
         assert_that(updated_batch, not(has_key('reviewerId')))
         assert_that(updated_batch, not(has_key('reviewerUserName')))
         assert_that(updated_batch, not(has_key('reviewTimestamp')))
         assert_that(updated_batch, not(has_key('cancelledTimestamp')))
-        assert_that(updated_batch['changes'][0]['status'], is_('Pending'))
-        assert_that(len(updated_batch['changes'][0]['validationErrors']), is_(0))
+        assert_that(updated_batch['changes'][0]['status'], is_('NeedsReview'))
+        assert_that(updated_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
         assert_that(updated_batch['changes'][1]['status'], is_('NeedsReview'))
         assert_that(updated_batch['changes'][1]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
     finally:
