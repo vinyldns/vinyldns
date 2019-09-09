@@ -246,12 +246,15 @@ class BatchChangeValidations(
         validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
-      case del: DeleteRRSetChangeForValidation
+      // These cases MUST be below adds because:
+      // - order matters
+      // - all AddChangeForValidations are covered by this point
+      case del
           if groupedChanges
             .getLogicalChangeType(del.recordKey)
             .contains(LogicalChangeType.FullDelete) =>
         validateDeleteWithContext(del, groupedChanges, auth, isApproved)
-      case deleteUpdate: DeleteRRSetChangeForValidation =>
+      case deleteUpdate =>
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
 
@@ -278,17 +281,35 @@ class BatchChangeValidations(
     else
       ().validNel
 
+  def ensureDeleteRecordEntryExists(
+      change: ChangeForValidation,
+      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
+    change match {
+      // For DeleteRecord inputs, need to verify that the record data actually exists
+      case deleteRecord: DeleteRecordChangeForValidation
+          if !groupedChanges
+            .getExistingRecordSet(change.recordKey)
+            .exists(_.records.contains(deleteRecord.inputChange.record)) =>
+        DeleteRecordDataDoesNotExist(
+          deleteRecord.inputChange.inputName,
+          deleteRecord.inputChange.record).invalidNel
+      case _ =>
+        ().validNel
+    }
+
   def validateDeleteWithContext(
-      change: DeleteRRSetChangeForValidation,
+      change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean): SingleValidation[ChangeForValidation] = {
+
     val validations =
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
-            zoneDoesNotRequireManualReview(change, isApproved)
+            zoneDoesNotRequireManualReview(change, isApproved) |+|
+            ensureDeleteRecordEntryExists(change, groupedChanges)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
     validations.map(_ => change)
@@ -329,7 +350,7 @@ class BatchChangeValidations(
   }
 
   def validateDeleteUpdateWithContext(
-      change: DeleteRRSetChangeForValidation,
+      change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean): SingleValidation[ChangeForValidation] = {
@@ -339,7 +360,8 @@ class BatchChangeValidations(
           val adds = groupedChanges.getProposedAdds(change.recordKey).toList
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
-            zoneDoesNotRequireManualReview(change, isApproved)
+            zoneDoesNotRequireManualReview(change, isApproved) |+|
+            ensureDeleteRecordEntryExists(change, groupedChanges)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }

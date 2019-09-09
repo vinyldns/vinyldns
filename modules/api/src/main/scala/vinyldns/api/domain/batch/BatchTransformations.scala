@@ -147,7 +147,6 @@ object BatchTransformations {
     def isAddChangeForValidation: Boolean = false
   }
 
-  // $COVERAGE-OFF$
   final case class DeleteRecordChangeForValidation(
       zone: Zone,
       recordName: String,
@@ -171,8 +170,6 @@ object BatchTransformations {
 
     def isAddChangeForValidation: Boolean = false
   }
-
-  // $COVERAGE-ON$
 
   final case class BatchConversionOutput(
       batchChange: BatchChange,

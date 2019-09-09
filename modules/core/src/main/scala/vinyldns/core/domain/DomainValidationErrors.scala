@@ -16,7 +16,7 @@
 
 package vinyldns.core.domain
 
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
@@ -182,6 +182,11 @@ final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false
 
 final case class UnsupportedOperation(operation: String) extends DomainValidationError {
   def message: String = s"$operation is not yet implemented/supported in VinylDNS."
+}
+
+final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: RecordData)
+    extends DomainValidationError {
+  def message: String = s"Record data $recordData does not exist for $inputName."
 }
 
 // $COVERAGE-ON$
