@@ -19,7 +19,7 @@ package vinyldns.api.domain.batch
 import vinyldns.api.domain.batch.BatchChangeInterfaces.BatchResult
 import vinyldns.api.domain.batch.BatchTransformations.{
   BatchConversionOutput,
-  ExistingRecordSets,
+  ChangeForValidationMap,
   ExistingZones
 }
 import vinyldns.core.domain.batch.BatchChange
@@ -29,6 +29,6 @@ trait BatchChangeConverterAlgebra {
   def sendBatchForProcessing(
       batchChange: BatchChange,
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
+      groupedChanges: ChangeForValidationMap,
       ownerGroupId: Option[String]): BatchResult[BatchConversionOutput]
 }
