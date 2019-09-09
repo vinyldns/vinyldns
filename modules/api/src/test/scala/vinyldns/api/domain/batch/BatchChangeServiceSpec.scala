@@ -183,7 +183,7 @@ class BatchChangeServiceSpec
     def sendBatchForProcessing(
         batchChange: BatchChange,
         existingZones: ExistingZones,
-        existingRecordSets: ExistingRecordSets,
+        groupedChanges: ChangeForValidationMap,
         ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
@@ -2201,7 +2201,11 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(
         underTestManualEnabled
-          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .convertOrSave(
+            batchChange,
+            ExistingZones(Set()),
+            ChangeForValidationMap(List(), ExistingRecordSets(List())),
+            None)
           .value)
       result.reviewComment shouldBe Some("batchSentToConverter")
     }
@@ -2217,7 +2221,11 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(
         underTestManualEnabled
-          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .convertOrSave(
+            batchChange,
+            ExistingZones(Set()),
+            ChangeForValidationMap(List(), ExistingRecordSets(List())),
+            None)
           .value)
 
       // not sent to converter
@@ -2237,7 +2245,11 @@ class BatchChangeServiceSpec
 
       val result = leftResultOf(
         underTest
-          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .convertOrSave(
+            batchChange,
+            ExistingZones(Set()),
+            ChangeForValidationMap(List(), ExistingRecordSets(List())),
+            None)
           .value)
 
       result shouldBe an[UnknownConversionError]
@@ -2254,7 +2266,11 @@ class BatchChangeServiceSpec
 
       val result = leftResultOf(
         underTest
-          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .convertOrSave(
+            batchChange,
+            ExistingZones(Set()),
+            ChangeForValidationMap(List(), ExistingRecordSets(List())),
+            None)
           .value)
       result shouldBe an[UnknownConversionError]
     }
