@@ -160,6 +160,28 @@ class BatchChangeValidationsSpec
     List(),
     approvalStatus = BatchChangeApprovalStatus.AutoApproved)
 
+  private def makeAddUpdateRecord(
+      recordName: String,
+      aData: AData = AData("1.2.3.4")): AddChangeForValidation =
+    AddChangeForValidation(
+      okZone,
+      s"$recordName",
+      AddChangeInput(s"$recordName.ok.", RecordType.A, ttl, aData))
+
+  private def makeDeleteUpdateDeleteRRSet(recordName: String): DeleteRRSetChangeForValidation =
+    DeleteRRSetChangeForValidation(
+      okZone,
+      s"$recordName",
+      DeleteRRSetChangeInput(s"$recordName.ok.", RecordType.A))
+
+  private def makeDeleteUpdateDeleteRecord(
+      recordName: String,
+      aData: AData = AData("1.1.1.1")): DeleteRecordChangeForValidation =
+    DeleteRecordChangeForValidation(
+      okZone,
+      s"$recordName",
+      DeleteRecordChangeInput(s"$recordName.ok.", RecordType.A, aData))
+
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
     validateBatchChangeInputSize(BatchChangeInput(None, List())) should
       haveInvalid[DomainValidationError](BatchChangeIsEmpty(maxChanges))
@@ -702,31 +724,96 @@ class BatchChangeValidationsSpec
   }
 
   property("validateChangesWithContext: should succeed for valid update inputs") {
-    val existingRecord = rsOk.copy(zoneId = okZone.id, name = "update", ttl = 300)
-    val addUpdateA = AddChangeForValidation(
-      okZone,
-      "update",
-      AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteUpdateA =
-      DeleteRRSetChangeForValidation(
-        okZone,
-        "Update",
-        DeleteRRSetChangeInput("update.ok.", RecordType.A))
+    // Existing records
+    val deleteRRSet =
+      rsOk.copy(name = "deleteRRSet", records = List(AData("1.1.1.1"), AData("1.1.1.2")))
+    val deleteSingleEntry = deleteRRSet.copy(name = "deleteSingleEntry")
+    val deleteSingleEntryAndRRSet = deleteRRSet.copy(name = "deleteSingleEntryAndRRSet")
+    val deleteAllEntries = deleteRRSet.copy(name = "deleteAllEntries")
+    val deleteAllEntriesAndRRSet = deleteRRSet.copy(name = "deleteAllEntriesAndRRSet")
+    val deleteSingleEntryMultipleAdd = deleteRRSet.copy(name = "deleteSingleEntryMultipleAdd")
+
     val result = validateChangesWithContext(
       ChangeForValidationMap(
-        List(addUpdateA.validNel, deleteUpdateA.validNel),
-        ExistingRecordSets(List(existingRecord))),
+        List(
+          makeAddUpdateRecord("deleteRRSet"), // DeleteRRSet
+          makeDeleteUpdateDeleteRRSet("deleteRRSet"),
+          makeAddUpdateRecord("deleteSingleEntry"), // Single entry
+          makeDeleteUpdateDeleteRecord("deleteSingleEntry"),
+          makeAddUpdateRecord("deleteSingleEntryAndRRSet"), // Single entry and DeleteRRSet
+          makeDeleteUpdateDeleteRecord("deleteSingleEntryAndRRSet"),
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet"),
+          makeAddUpdateRecord("deleteAllEntries"), // Delete all entries
+          makeDeleteUpdateDeleteRecord("deleteAllEntries"),
+          makeDeleteUpdateDeleteRecord("deleteAllEntries", AData("1.1.1.2")),
+          makeAddUpdateRecord("deleteAllEntriesAndRRSet"), // Delete all entries and DeleteRRSet
+          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet"),
+          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet", AData("1.1.1.2")),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet"),
+          makeAddUpdateRecord("deleteSingleEntryMultipleAdd"), // Delete single entry and multiple adds
+          makeAddUpdateRecord("deleteSingleEntryMultipleAdd", AData("2.3.4.5")),
+          makeDeleteUpdateDeleteRecord("deleteSingleEntryMultipleAdd")
+        ).map(_.validNel),
+        ExistingRecordSets(
+          List(
+            deleteRRSet,
+            deleteSingleEntry,
+            deleteSingleEntryAndRRSet,
+            deleteAllEntries,
+            deleteAllEntriesAndRRSet,
+            deleteSingleEntryMultipleAdd)
+        )
+      ),
       okAuth,
       false,
-      None)
+      None
+    )
 
-    result(0) shouldBe valid
-    result(1) shouldBe valid
+    result.foreach(_ shouldBe valid)
+  }
+
+  property("validateChangesWithContext: should succeed for valid delete inputs") {
+    // Existing records
+    val deleteRRSet =
+      rsOk.copy(name = "deleteRRSet", records = List(AData("1.1.1.1"), AData("1.1.1.2")))
+    val deleteSingleEntry = deleteRRSet.copy(name = "deleteSingleEntry")
+    val deleteSingleEntryAndRRSet = deleteRRSet.copy(name = "deleteSingleEntryAndRRSet")
+    val deleteAllEntries = deleteRRSet.copy(name = "deleteAllEntries")
+    val deleteAllEntriesAndRRSet = deleteRRSet.copy(name = "deleteAllEntriesAndRRSet")
+
+    val result = validateChangesWithContext(
+      ChangeForValidationMap(
+        List(
+          makeDeleteUpdateDeleteRRSet("deleteRRSet"), // DeleteRRSet
+          makeDeleteUpdateDeleteRecord("deleteSingleEntry"), // Single entry
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet"), // Single entry and DeleteRRSet
+          makeDeleteUpdateDeleteRecord("deleteSingleEntryAndRRSet"),
+          makeDeleteUpdateDeleteRecord("deleteAllEntries"), // Delete all entries
+          makeDeleteUpdateDeleteRecord("deleteAllEntries", AData("1.1.1.2")),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet"), // Delete all entries and DeleteRRSet
+          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet"),
+          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet", AData("1.1.1.2"))
+        ).map(_.validNel),
+        ExistingRecordSets(
+          List(
+            deleteRRSet,
+            deleteSingleEntry,
+            deleteSingleEntryAndRRSet,
+            deleteAllEntries,
+            deleteAllEntriesAndRRSet
+          ))
+      ),
+      okAuth,
+      false,
+      None
+    )
+
+    result.foreach(_ shouldBe valid)
   }
 
   property("validateChangesWithContext: should succeed for update for user with only write access") {
     val writeAcl = ACLRule(accessLevel = AccessLevel.Write, userId = Some(notAuth.userId))
-    val existingRecord = rsOk.copy(zoneId = okZone.id, name = "update", ttl = 300)
+    val existingRecord = rsOk.copy(name = "update", ttl = 300)
     val addUpdateA = AddChangeForValidation(
       okZone.addACLRule(writeAcl),
       "update",
@@ -751,7 +838,7 @@ class BatchChangeValidationsSpec
     "validateChangesWithContext: should fail for update if user does not have sufficient access") {
     val readAcl =
       ACLRule(accessLevel = AccessLevel.Read, userId = Some(notAuth.signedInUser.userName))
-    val existingRecord = rsOk.copy(zoneId = okZone.id, name = "update", ttl = 300)
+    val existingRecord = rsOk.copy(name = "update", ttl = 300)
     val addUpdateA = AddChangeForValidation(
       okZone.addACLRule(readAcl),
       "update",
@@ -768,32 +855,47 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorized(notAuth.signedInUser.userName))
-    result(1) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorized(notAuth.signedInUser.userName))
+    result.foreach(
+      _ should haveInvalid[DomainValidationError](
+        UserIsNotAuthorized(notAuth.signedInUser.userName)))
   }
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
-    val addUpdateA = AddChangeForValidation(
-      okZone,
-      "does-not-exist",
-      AddChangeInput("does-not-exist.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteUpdateA = DeleteRRSetChangeForValidation(
-      okZone,
-      "does-not-exist",
-      DeleteRRSetChangeInput("does-not-exist.ok.", RecordType.A))
+    val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
+    val deleteRecord = makeDeleteUpdateDeleteRecord("deleteRecord")
+    val deleteNonExistentEntry = makeDeleteUpdateDeleteRecord("ok")
     val result = validateChangesWithContext(
       ChangeForValidationMap(
-        List(addUpdateA.validNel, deleteUpdateA.validNel),
-        ExistingRecordSets(List())),
+        List(
+          makeAddUpdateRecord("deleteRRSet"), // Record does not exist
+          deleteRRSet,
+          makeAddUpdateRecord("deleteRecord"), // Record does not exist
+          deleteRecord,
+          makeAddUpdateRecord("ok"), // Entry does not exist
+          deleteNonExistentEntry
+        ).map(_.validNel),
+        ExistingRecordSets(List(rsOk))
+      ),
       okAuth,
       false,
-      None)
+      None
+    )
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
+      RecordDoesNotExist(deleteRRSet.inputChange.inputName))
+    result(3) should haveInvalid[DomainValidationError](
+      RecordDoesNotExist(deleteRecord.inputChange.inputName)
+    )
+    result(3) should haveInvalid[DomainValidationError](
+      RecordDoesNotExist(deleteRecord.inputChange.inputName)
+    )
+    result(4) shouldBe valid
+    result(5) should haveInvalid[DomainValidationError](
+      DeleteRecordDataDoesNotExist(
+        deleteNonExistentEntry.inputChange.inputName,
+        deleteNonExistentEntry.inputChange.record)
+    )
   }
 
   property(
@@ -824,25 +926,33 @@ class BatchChangeValidationsSpec
 
   property("""validateChangesWithContext: should succeed adding a record
       |if an existing CNAME with the same name exists but is being deleted""".stripMargin) {
-    val existingCname = rsOk.copy(zoneId = okZone.id, name = "existing", typ = RecordType.CNAME)
-    val addA = AddChangeForValidation(
+    val existingCname = rsOk.copy(name = "deleteRRSet", typ = RecordType.CNAME)
+    val existingCname2 =
+      existingCname.copy(name = "deleteRecord", records = List(CNAMEData("cname.data.")))
+    val deleteCnameRRSet = DeleteRRSetChangeForValidation(
       okZone,
-      "existing",
-      AddChangeInput("existing.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteCname = DeleteRRSetChangeForValidation(
+      "deleteRRSet",
+      DeleteRRSetChangeInput("deleteRRSet.ok.", RecordType.CNAME))
+    val deleteCnameEntry = DeleteRecordChangeForValidation(
       okZone,
-      "existing",
-      DeleteRRSetChangeInput("existing.ok.", RecordType.CNAME))
+      "deleteRecord",
+      DeleteRecordChangeInput("deleteRecord.ok.", RecordType.CNAME, CNAMEData("cname.data."))
+    )
     val result = validateChangesWithContext(
       ChangeForValidationMap(
-        List(addA.validNel, deleteCname.validNel),
-        ExistingRecordSets(List(existingCname))),
+        List(
+          makeAddUpdateRecord("deleteRRSet"), // DeleteRRSet
+          deleteCnameRRSet,
+          makeAddUpdateRecord("deleteRecord"), // Delete record
+          deleteCnameEntry).map(_.validNel),
+        ExistingRecordSets(List(existingCname, existingCname2))
+      ),
       okAuth,
       false,
-      None)
+      None
+    )
 
-    result(0) shouldBe valid
-    result(1) shouldBe valid
+    result.foreach(_ shouldBe valid)
   }
 
   property("""validateChangesWithContext: should fail AddChangeForValidation with
@@ -1218,19 +1328,21 @@ class BatchChangeValidationsSpec
   property(
     """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
       |if record does not exist""".stripMargin) {
-    val deleteA = DeleteRRSetChangeForValidation(
-      validZone,
-      "record-does-not-exist",
-      DeleteRRSetChangeInput("record-does-not-exist.ok.", RecordType.A))
+    val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
+    val deleteRecord = makeDeleteUpdateDeleteRecord("record-also-does-not-exist")
     val result =
       validateChangesWithContext(
-        ChangeForValidationMap(List(deleteA.validNel), ExistingRecordSets(recordSetList)),
+        ChangeForValidationMap(
+          List(deleteRRSet.validNel, deleteRecord.validNel),
+          ExistingRecordSets(recordSetList)),
         okAuth,
         false,
         None)
 
     result(0) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteA.inputChange.inputName))
+      RecordDoesNotExist(deleteRRSet.inputChange.inputName))
+    result(1) should haveInvalid[DomainValidationError](
+      RecordDoesNotExist(deleteRecord.inputChange.inputName))
   }
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
@@ -2051,8 +2163,7 @@ class BatchChangeValidationsSpec
     result(4) shouldBe valid
   }
 
-  property(
-    """validateChangesWithContext: should succeed deleting existing dotted host records""".stripMargin) {
+  property("validateChangesWithContext: should succeed deleting existing dotted host records") {
     val existingA = rsOk.copy(name = "existing.dotted.a")
     val existingAAAA = aaaa.copy(name = "existing.dotted.aaaa")
     val existingCname = cname.copy(name = "existing.dotted.cname")
@@ -2100,8 +2211,7 @@ class BatchChangeValidationsSpec
     result(4) shouldBe valid
   }
 
-  property(
-    """validateChangesWithContext: should succeed updating existing dotted host records""".stripMargin) {
+  property("validateChangesWithContext: should succeed updating existing dotted host records") {
     val existingA = rsOk.copy(name = "existing.dotted.a")
     val existingAAAA = aaaa.copy(name = "existing.dotted.aaaa")
     val existingCname = cname.copy(name = "existing.dotted.cname")
