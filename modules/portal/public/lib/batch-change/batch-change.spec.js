@@ -102,8 +102,8 @@ describe('BatchChange', function(){
 
                 expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
 
-                var errorData = {changes: [{changeType: "Add", inputName: "onofe.ok.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, status: "Pending", recordName: "", zoneName: "", zoneId:"", validationErrors: []},
-                {changeType: "Add", inputName: "wfonef.wfoefn.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, status: "NeedsReview", recordName: "", zoneName: "", zoneId:"", validationErrors: [{errorType: "Zone Discovery Failed", message: 'Zone Discovery Failed: zone for "wfonef.wfoefn." doesn\'t exists'}]}]}
+                var errorData = {data: [{changeType: "Add", inputName: "onofe.ok.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}},
+                {changeType: "Add", inputName: "wfonef.wfoefn.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, errors: ['Zone Discovery Failed: zone for "wfonef.wfoefn." doesn\'t exists']}]}
 
                 deferred.reject({data: errorData, status: 400});
                 this.rootScope.$apply();
