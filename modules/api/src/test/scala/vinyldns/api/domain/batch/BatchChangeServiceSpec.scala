@@ -606,7 +606,7 @@ class BatchChangeServiceSpec
             .rejectBatchChange(batchChange.id, supportUserAuth, RejectBatchChangeInput())
             .value)
 
-      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id, "rejected")
     }
 
     "fail if the batchChange reviewer is not authorized" in {
@@ -707,7 +707,7 @@ class BatchChangeServiceSpec
             .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
             .value)
 
-      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id, "approved")
     }
 
     "fail if the batchChange reviewer is not authorized" in {
@@ -813,7 +813,7 @@ class BatchChangeServiceSpec
             .cancelBatchChange(batchChange.id, auth)
             .value)
 
-      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id, "cancelled")
     }
 
     "fail if the batchChange is not PendingReview and the user did not create it" in {
@@ -833,7 +833,7 @@ class BatchChangeServiceSpec
             .cancelBatchChange(batchChange.id, supportUserAuth)
             .value)
 
-      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id, "cancelled")
     }
   }
 

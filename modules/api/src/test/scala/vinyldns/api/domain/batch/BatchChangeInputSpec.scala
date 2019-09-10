@@ -104,11 +104,12 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         Some("msg"),
         None,
         None,
-        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
+        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err")),
+        id = "123"
       )
 
       val expectedAddChange =
-        AddChangeInput("testRname.testZoneName.", A, Some(1234), AData("1.2.3.4"))
+        AddChangeInput("testRname.testZoneName.", A, Some(1234), AData("1.2.3.4"), "123")
 
       val singleDelChange = SingleDeleteRRSetChange(
         Some("testZoneId"),
@@ -120,11 +121,12 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         Some("msg"),
         None,
         None,
-        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
+        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err")),
+        id = "321"
       )
 
       val expectedDelChange =
-        DeleteRRSetChangeInput("testRname.testZoneName.", A)
+        DeleteRRSetChangeInput("testRname.testZoneName.", A, "321")
 
       val change = BatchChange(
         "userId",
@@ -133,14 +135,16 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         DateTime.now(),
         List(singleAddChange, singleDelChange),
         Some("owner"),
-        BatchChangeApprovalStatus.PendingReview
+        BatchChangeApprovalStatus.PendingReview,
+        id = "abc"
       )
 
       val expectedInput =
         BatchChangeInput(
           Some("comments"),
           List(expectedAddChange, expectedDelChange),
-          Some("owner"))
+          Some("owner"),
+          id = "abc")
 
       BatchChangeInput(change) shouldBe expectedInput
     }

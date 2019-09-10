@@ -91,7 +91,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
         (js \ "ttl").optional[Long],
-        recordType.andThen(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
+        recordType.andThen(extractRecord(_, js \ "record")))
+        .mapN(AddChangeInput(_, _, _, _))
     }
 
     override def toJson(aci: AddChangeInput): JValue =

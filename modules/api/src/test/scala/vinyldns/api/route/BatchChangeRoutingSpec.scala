@@ -376,7 +376,7 @@ class BatchChangeRoutingSpec()
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case _ => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
+        case _ => EitherT(IO.pure(BatchChangeNotPendingReview("batchId", "rejected").asLeft))
       }
 
     def approveBatchChange(
@@ -392,7 +392,7 @@ class BatchChangeRoutingSpec()
           EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
         case ("schedNotPastDue", _) =>
           EitherT(IO.pure(ScheduledChangeNotDue(DateTime.now).asLeft))
-        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
+        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId", "approved").asLeft))
       }
 
     def cancelBatchChange(
@@ -401,8 +401,19 @@ class BatchChangeRoutingSpec()
       (batchChangeId, authPrincipal.userId.equals("ok")) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) => EitherT(IO.pure(UserNotAuthorizedError("support").asLeft))
-        case ("batchId", _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
+        case ("batchId", _) =>
+          EitherT(IO.pure(BatchChangeNotPendingReview("batchId", "cancelled").asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotFound("notFoundId").asLeft))
+      }
+
+    def updateScheduledTime(
+        batchChangeId: String,
+        batchChangeInput: BatchChangeInput,
+        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+      batchChangeInput.scheduledTime.isDefined match {
+        case true => EitherT(IO.pure(genericValidResponse.asRight))
+        case false =>
+          EitherT(IO.pure(UserNotAuthorizedError("support").asLeft))
       }
   }
 

@@ -614,9 +614,8 @@ class BatchChangeValidations(
       batchChange: BatchChange,
       scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
     (scheduledChangesEnabled, batchChange.scheduledTime) match {
-      case (true, Some(_)) => Right()
+      case (true, Some(_)) => Right(())
       case (_, None) => Left(BatchChangeNotScheduled(batchChange.id))
-      case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
     }
   def zoneDoesNotRequireManualReview(

@@ -139,10 +139,11 @@ class BatchChangeRoute(
             }
           }
         } ~
-        path("zones" / "batchrecordchanges" / Segment / "edit") { id =>
+        path("zones" / "batchrecordchanges" / Segment) { id =>
           (put & monitor("Endpoint.editBatchChange")) {
             authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
-              (authPrincipal, input) => batchChangeService.updateScheduledTime(id, input, authPrincipal)
+              (authPrincipal, input) =>
+                batchChangeService.updateScheduledTime(id, input, authPrincipal)
             ) { chg =>
               {
                 complete(StatusCodes.Accepted, chg)

@@ -201,21 +201,19 @@ class BatchChangeValidationsSpec
 
   property(
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled") {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
-    validateScheduledChange(input, scheduledChangesEnabled = false) should
+    validateScheduledChange(Some(DateTime.now.plusHours(1)), scheduledChangesEnabled = false) should
       beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
   }
 
   property(
     "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled") {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now.plusHours(1)))
-    validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
+    validateScheduledChange(Some(DateTime.now.plusHours(1)), scheduledChangesEnabled = true) should beRight(
+      ())
   }
 
   property(
     "validateScheduledChange: should succeed if batch is not scheduled and scheduled change disabled") {
-    val input = BatchChangeInput(None, List(), scheduledTime = None)
-    validateScheduledChange(input, scheduledChangesEnabled = false) should beRight(())
+    validateScheduledChange(None, scheduledChangesEnabled = false) should beRight(())
   }
 
   property("validateInputChanges: should succeed if all inputs are good") {
@@ -324,12 +322,12 @@ class BatchChangeValidationsSpec
   }
 
   property("validateBatchChangePendingReview: should succeed if batch change is PendingReview") {
-    validateBatchChangePendingReview(validPendingBatchChange) should be(right)
+    validateBatchChangePendingReview(validPendingBatchChange, "cancelled") should be(right)
   }
 
   property("validateBatchChangePendingReview: should fail if batch change is not PendingReview") {
-    validateBatchChangePendingReview(invalidPendingBatchChange) shouldBe
-      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
+    validateBatchChangePendingReview(invalidPendingBatchChange, "rejected") shouldBe
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id, "rejected"))
   }
 
   property("validateScheduledApproval: should fail if scheduled time is not due") {
@@ -399,7 +397,7 @@ class BatchChangeValidationsSpec
 
   property("validateBatchChangeRejection: should fail if batch change is not pending review") {
     validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth, false).value shouldBe
-      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id, "rejected"))
   }
 
   property("validateBatchChangeRejection: should fail if reviewer is not authorized") {
@@ -424,7 +422,7 @@ class BatchChangeValidationsSpec
     "validateBatchChangeCancellation: should fail if user was the creator" +
       " but batch change is not pending review") {
     validateBatchChangeCancellation(invalidPendingBatchChange, okAuth).value shouldBe
-      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id, "cancelled"))
   }
 
   property(
