@@ -2261,7 +2261,7 @@ class BatchChangeServiceSpec
   }
 
   "buildResponseForApprover" should {
-    "return batch change has ManuallyApproved approval status" in {
+    "return batch change with ManuallyApproved approval status" in {
       val updatedBatchChange = BatchChange(
         auth.userId,
         auth.signedInUser.userName,
