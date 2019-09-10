@@ -162,7 +162,7 @@ class BatchChangeService(
       changeForConversion <- rebuildBatchChangeForUpdate(
         batchChange,
         validationOutput.validatedChanges,
-        reviewInfo)
+        reviewInfo).toRightBatchResult
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
@@ -443,7 +443,7 @@ class BatchChangeService(
   def rebuildBatchChangeForUpdate(
       existingBatchChange: BatchChange,
       transformed: ValidatedBatch[ChangeForValidation],
-      reviewInfo: BatchChangeReviewInfo): BatchResult[BatchChange] = {
+      reviewInfo: BatchChangeReviewInfo): BatchChange = {
     val changes = transformed.zip(existingBatchChange.changes).map {
       case (validated, existing) =>
         validated match {
@@ -462,9 +462,8 @@ class BatchChangeService(
           reviewComment = reviewInfo.reviewComment,
           reviewTimestamp = Some(reviewInfo.reviewTimestamp)
         )
-        .toRightBatchResult
     } else {
-      existingBatchChange.copy(changes = changes).toRightBatchResult
+      existingBatchChange.copy(changes = changes)
     }
   }
 

@@ -1817,20 +1817,18 @@ class BatchChangeServiceSpec
     }
     val reviewInfo = BatchChangeReviewInfo(supportUser.id, Some("some approval comment"))
     "return a BatchChange if all data inputs are valid" in {
-      val result = rightResultOf(
-        underTestManualEnabled
-          .rebuildBatchChangeForUpdate(
-            batchChangeNeedsApproval,
-            List(
-              AddChangeForValidation(
-                baseZone,
-                singleChangeGood.inputName.split('.').head,
-                asAdds.head).validNel,
-              AddChangeForValidation(baseZone, singleChangeNR.inputName.split('.').head, asAdds(1)).validNel
-            ),
-            reviewInfo
-          )
-          .value)
+      val result = underTestManualEnabled
+        .rebuildBatchChangeForUpdate(
+          batchChangeNeedsApproval,
+          List(
+            AddChangeForValidation(
+              baseZone,
+              singleChangeGood.inputName.split('.').head,
+              asAdds.head).validNel,
+            AddChangeForValidation(baseZone, singleChangeNR.inputName.split('.').head, asAdds(1)).validNel
+          ),
+          reviewInfo
+        )
 
       result shouldBe a[BatchChange]
       result.changes.head shouldBe singleChangeGood
@@ -1838,20 +1836,18 @@ class BatchChangeServiceSpec
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
     }
     "return a BatchChange with current failures if any data is invalid" in {
-      val result = rightResultOf(
-        underTestManualEnabled
-          .rebuildBatchChangeForUpdate(
-            batchChangeNeedsApproval,
-            List(
-              AddChangeForValidation(
-                baseZone,
-                singleChangeGood.inputName.split('.').head,
-                asAdds.head).validNel,
-              fatalError.invalidNel
-            ),
-            reviewInfo
-          )
-          .value)
+      val result = underTestManualEnabled
+        .rebuildBatchChangeForUpdate(
+          batchChangeNeedsApproval,
+          List(
+            AddChangeForValidation(
+              baseZone,
+              singleChangeGood.inputName.split('.').head,
+              asAdds.head).validNel,
+            fatalError.invalidNel
+          ),
+          reviewInfo
+        )
 
       result shouldBe a[BatchChange]
     }
@@ -1880,7 +1876,7 @@ class BatchChangeServiceSpec
       result.ignoreAccess shouldBe false
 
       result.batchChanges.length shouldBe 1
-      result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
+      result.batchChanges.head.createdTimestamp shouldBe batchChange.createdTimestamp
       result.batchChanges(0).ownerGroupId shouldBe None
       result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
       result.batchChanges(0).reviewerName shouldBe Some(superUser.userName)
