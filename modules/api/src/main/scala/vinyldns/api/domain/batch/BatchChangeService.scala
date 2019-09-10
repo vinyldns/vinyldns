@@ -159,10 +159,10 @@ class BatchChangeService(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment)
       validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
-      changeForConversion <- rebuildBatchChangeForUpdate(
+      changeForConversion = rebuildBatchChangeForUpdate(
         batchChange,
         validationOutput.validatedChanges,
-        reviewInfo).toRightBatchResult
+        reviewInfo)
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
