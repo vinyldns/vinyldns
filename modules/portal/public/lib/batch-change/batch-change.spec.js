@@ -95,9 +95,6 @@ describe('BatchChange', function(){
             }));
 
             it('should reject the promise', inject(function(batchChangeService) {
-                this.scope.batch.changes = [{changeType: "Add", inputName: "onofe.ok.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, status: "Pending", recordName: "", zoneName: "", zoneId:"", validationErrors: []},
-                {changeType: "Add", inputName: "wfonef.wfoefn.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, status: "NeedsReview", recordName: "", zoneName: "", zoneId:"", validationErrors: []}]
-
                 this.scope.confirmApprove("notPendingBatchChange", "great");
 
                 expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
