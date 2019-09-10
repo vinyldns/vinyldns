@@ -49,7 +49,7 @@ trait BatchChangeServiceAlgebra {
 
   def cancelBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange]
 
-  def editBatchChange(
+  def updateScheduledTime(
       batchChangeId: String,
       batchChangeInput: BatchChangeInput,
       authPrincipal: AuthPrincipal): BatchResult[BatchChange]

@@ -52,7 +52,7 @@ final case class UnknownConversionError(message: String) extends BatchChangeErro
 final case class BatchChangeNotPendingReview(id: String, action: String)
     extends BatchChangeErrorResponse {
   def message: String =
-    s"""Batch change $id is not pending review, so it cannot be $action."""
+    s"Batch change $id is not pending review, so it cannot be $action."
 }
 
 final case class BatchRequesterNotFound(userId: String, userName: String)

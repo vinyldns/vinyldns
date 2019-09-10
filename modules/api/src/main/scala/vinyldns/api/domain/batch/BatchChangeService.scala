@@ -181,7 +181,7 @@ class BatchChangeService(
       _ <- notifiers.notify(Notification(cancelledBatchChange)).toBatchResult
     } yield cancelledBatchChange
 
-  def editBatchChange(
+  def updateScheduledTime(
       batchChangeId: String,
       batchChangeInput: BatchChangeInput,
       authPrincipal: AuthPrincipal): BatchResult[BatchChange] =
@@ -196,20 +196,10 @@ class BatchChangeService(
         batchChangeInput.scheduledTime,
         authPrincipal,
         requesterAuth.isTestUser).toBatchResult
-      rescheduledBatchChange <- updateScheduledTime(batchChange, batchChangeInput.scheduledTime)
+      rescheduledBatchChange = batchChange.copy(scheduledTime = batchChangeInput.scheduledTime)
       asInput = BatchChangeInput(rescheduledBatchChange)
-      thing <- applyBatchChange(asInput, authPrincipal, true)
-    } yield thing
-
-  def updateScheduledTime(
-      batchChange: BatchChange,
-      scheduledTime: Option[DateTime]): BatchResult[BatchChange] = {
-    val rescheduledBatch = batchChange.copy(
-      scheduledTime = scheduledTime,
-    )
-
-    batchChangeRepo.save(rescheduledBatch).toBatchResult
-  }
+      updatedBatchChange <- applyBatchChange(asInput, authPrincipal, true)
+    } yield updatedBatchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
