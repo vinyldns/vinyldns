@@ -175,15 +175,6 @@ class BatchChangeServiceSpec
     validationErrors = List.empty
   )
 
-  private val singleChangeNRPostFailedReview = singleChangeNR.copy(
-    validationErrors = List(
-      SingleChangeError(
-        DomainValidationErrorType.RecordAlreadyExists,
-        s"""Record "test" Already Exists: cannot add an existing record; to update it, """ +
-          "issue a DeleteRecordSet then an Add."
-      ))
-  )
-
   private val batchChangeRepo = new InMemoryBatchChangeRepository
   private val mockNotifier = mock[Notifier]
   private val mockNotifiers = AllNotifiers(List(mockNotifier))
@@ -1863,9 +1854,6 @@ class BatchChangeServiceSpec
           .value)
 
       result shouldBe a[BatchChange]
-      result.changes.head shouldBe singleChangeGood
-      result.changes(1) shouldBe singleChangeNRPostFailedReview
-      result.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
     }
   }
   "listBatchChangeSummaries" should {
@@ -2295,7 +2283,7 @@ class BatchChangeServiceSpec
 
       result shouldBe a[BatchChange]
     }
-    "return InvalidBatchChangeResponses error if batch change has PendingReview approval status" in {
+    "return BatchChangeFailedApproval error if batch change has PendingReview approval status" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -2308,9 +2296,9 @@ class BatchChangeServiceSpec
 
       val result = underTest.buildResponseForApprover(batchChange).left.value
 
-      result shouldBe an[BatchChangeFailedApproval]
+      result shouldBe a[BatchChangeFailedApproval]
     }
-    "return InvalidBatchChangeResponses if batch change has an approval status other than" +
+    "return BatchChangeFailedApproval if batch change has an approval status other than" +
       "ManuallyApproved or PendingReview" in {
       val batchChange =
         BatchChange(
@@ -2324,7 +2312,7 @@ class BatchChangeServiceSpec
 
       val result = underTest.buildResponseForApprover(batchChange).left.value
 
-      result shouldBe an[BatchChangeFailedApproval]
+      result shouldBe a[BatchChangeFailedApproval]
     }
   }
 }

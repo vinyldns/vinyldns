@@ -29,7 +29,13 @@ import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, C
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, SingleChangeError, ZoneDiscoveryError}
+import vinyldns.core.domain.{
+  DomainValidationErrorType,
+  InvalidIpv4Address,
+  InvalidTTL,
+  SingleChangeError,
+  ZoneDiscoveryError
+}
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
@@ -519,6 +525,65 @@ class BatchChangeJsonProtocolSpec
       )
 
       val result = BatchChangeErrorListSerializer.toJson(batchChangeErrorList)
+
+      result shouldBe expected
+    }
+  }
+
+  "Serializing BatchChangeRevalidationErrorList" should {
+    "serialize a mix of valid and invalid inputs" in {
+      val errorMessage = "Zone Discovery Failed: zone for \"foo.\" does not exist in VinylDNS. " +
+        "If zone exists, then it must be connected to in VinylDNS."
+      val delete = SingleDeleteRRSetChange(
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
+        "foo",
+        A,
+        Pending,
+        None,
+        None,
+        None,
+        id = "id")
+      val add = SingleAddChange(
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
+        "foo",
+        A,
+        3600,
+        AData("1.1.1.1"),
+        Pending,
+        None,
+        None,
+        None,
+        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, errorMessage)),
+        id = "id"
+      )
+
+      val time = DateTime.now
+      val batchChange = BatchChange(
+        "someUserId",
+        "someUserName",
+        Some("these be comments!"),
+        time,
+        List(add, delete),
+        None,
+        BatchChangeApprovalStatus.PendingReview,
+        None,
+        None,
+        None,
+        "someId")
+      val result =
+        BatchChangeRevalidationErrorListSerializer.toJson(BatchChangeFailedApproval(batchChange))
+
+      val expected = decompose(
+        List(
+          decompose(addAChangeInput)
+            .asInstanceOf[JObject] ~ ("errors" -> List(fooDiscoveryError.message)),
+          decompose(deleteAChangeInput)
+        )
+      )
 
       result shouldBe expected
     }

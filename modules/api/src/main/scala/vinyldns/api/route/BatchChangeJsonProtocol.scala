@@ -226,9 +226,9 @@ trait BatchChangeJsonProtocol extends JsonValidation {
 
   case object BatchChangeRevalidationErrorListSerializer
       extends ValidationSerializer[BatchChangeFailedApproval] {
-    override def toJson(bc: BatchChangeFailedApproval): JValue = {
-      val asInput = BatchChangeInput(bc.batchChange)
-      bc.batchChange.changes.zip(asInput.changes).map {
+    override def toJson(bcfa: BatchChangeFailedApproval): JValue = {
+      val asInput = BatchChangeInput(bcfa.batchChange)
+      bcfa.batchChange.changes.zip(asInput.changes).map {
         case (sc, ci) if sc.validationErrors.isEmpty => Extraction.decompose(ci)
         case (sc, ci) =>
           val change = Extraction.decompose(ci)
