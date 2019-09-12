@@ -5,7 +5,7 @@ from hamcrest import *
 from utils import *
 from list_zones_test_context import ListZonesTestContext
 from list_recordsets_test_context import ListRecordSetsTestContext
-
+from list_batch_summaries_test_context import ListBatchChangeSummariesTestContext
 
 class SharedZoneTestContext(object):
     """
@@ -22,6 +22,7 @@ class SharedZoneTestContext(object):
         self.list_zones = ListZonesTestContext()
         self.list_zones_client = self.list_zones.client
         self.list_records_context = ListRecordSetsTestContext()
+        self.list_batch_summaries_context = None
 
         self.dummy_group = None
         self.ok_group = None
@@ -402,6 +403,9 @@ class SharedZoneTestContext(object):
                     pass
                 raise
 
+        # We need to load somethings AFTER we are all initialized, do that here
+        self.list_batch_summaries_context = ListBatchChangeSummariesTestContext(self)
+
     def init_history(self):
         from test_data import TestData
         import copy
@@ -528,6 +532,9 @@ class SharedZoneTestContext(object):
         """
         self.list_zones.tear_down()
         self.list_records_context.tear_down()
+
+        if self.list_batch_summaries_context:
+            self.list_batch_summaries_context.tear_down(self)
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
         clear_zones(self.history_client)

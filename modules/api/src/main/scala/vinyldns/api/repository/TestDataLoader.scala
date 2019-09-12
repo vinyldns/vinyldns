@@ -154,6 +154,14 @@ object TestDataLoader {
     isTest = true
   )
 
+  final val listBatchChangeSummariesGroup = Group(
+    name = "testListBatchChangeSummariesGroup",
+    id = "list-summaries-group",
+    email = "email",
+    memberIds = Set(listBatchChangeSummariesUser.id),
+    adminUserIds = Set(listBatchChangeSummariesUser.id)
+  )
+
   final val listZeroBatchChangeSummariesUser = User(
     userName = "list-zero-summaries-user",
     id = "list-zero-summaries-id",
@@ -258,6 +266,7 @@ object TestDataLoader {
       _ <- groupRepo.save(globalACLGroup)
       _ <- groupRepo.save(anotherGlobalACLGroup)
       _ <- groupRepo.save(duGroup)
+      _ <- groupRepo.save(listBatchChangeSummariesGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id))
@@ -268,6 +277,9 @@ object TestDataLoader {
         groupId = "another-global-acl-group",
         memberUserIds = Set(testUser.id))
       _ <- membershipRepo.addMembers(groupId = duGroup.id, memberUserIds = duGroup.memberIds)
+      _ <- membershipRepo.addMembers(
+        groupId = listBatchChangeSummariesGroup.id,
+        memberUserIds = listBatchChangeSummariesGroup.memberIds)
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()
