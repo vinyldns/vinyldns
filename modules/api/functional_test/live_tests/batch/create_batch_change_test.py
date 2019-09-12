@@ -104,7 +104,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         to_delete = set(record_set_list) # set here because multiple items in the batch combine to one RS
 
-        ## validate initial response
+        # validate initial response
         assert_that(result['comments'], is_("this is optional"))
         assert_that(result['userName'], is_("ok"))
         assert_that(result['userId'], is_("ok"))
@@ -145,7 +145,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         completed_status = [change['status'] == 'Complete' for change in completed_batch['changes']]
         assert_that(all(completed_status), is_(True))
 
-        ## get all the recordsets created by this batch, validate
+        # get all the recordsets created by this batch, validate
         rs1 = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
         expected1 = {'name': 'parent.com.',
                     'zoneId': parent_zone['id'],
@@ -416,27 +416,27 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
     ok_zone_acl = generate_acl_rule('Delete', groupId=shared_zone_test_context.dummy_group['id'], recordMask='.*', recordTypes=['CNAME'])
     classless_zone_delegation_zone_acl = generate_acl_rule('Write', groupId=shared_zone_test_context.dummy_group['id'], recordTypes=['PTR'])
 
-    rs_delete_dummy = get_recordset_json(dummy_zone, "delete", "AAAA", [{"address": "1:2:3:4:5:6:7:8"}])
-    rs_update_dummy = get_recordset_json(dummy_zone, "update", "A", [{"address": "1.2.3.4"}])
-    rs_delete_ok = get_recordset_json(ok_zone, "delete", "CNAME", [{"cname": "delete.cname."}])
-    rs_update_classless = get_recordset_json(classless_zone_delegation_zone, "193", "PTR", [{"ptrdname": "will.change."}])
-    txt_delete_dummy = get_recordset_json(dummy_zone, "delete-txt", "TXT", [{"text": "test"}])
-    mx_delete_dummy = get_recordset_json(dummy_zone, "delete-mx", "MX", [{"preference": 1, "exchange": "foo.bar."}])
-    mx_update_dummy = get_recordset_json(dummy_zone, "update-mx", "MX", [{"preference": 1, "exchange": "foo.bar."}])
+    rs_delete_dummy = get_recordset_json(dummy_zone, "delete2", "AAAA", [{"address": "1:2:3:4:5:6:7:8"}])
+    rs_update_dummy = get_recordset_json(dummy_zone, "update2", "A", [{"address": "1.2.3.4"}])
+    rs_delete_ok = get_recordset_json(ok_zone, "delete2", "CNAME", [{"cname": "delete.cname."}])
+    rs_update_classless = get_recordset_json(classless_zone_delegation_zone, "194", "PTR", [{"ptrdname": "will.change."}])
+    txt_delete_dummy = get_recordset_json(dummy_zone, "delete-txt2", "TXT", [{"text": "test"}])
+    mx_delete_dummy = get_recordset_json(dummy_zone, "delete-mx2", "MX", [{"preference": 1, "exchange": "foo.bar."}])
+    mx_update_dummy = get_recordset_json(dummy_zone, "update-mx2", "MX", [{"preference": 1, "exchange": "foo.bar."}])
 
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("delete.dummy.", record_type="AAAA", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("update.dummy.", ttl=300, address="1.2.3.4"),
-            get_change_A_AAAA_json("Update.dummy.", change_type="DeleteRecordSet"),
-            get_change_CNAME_json("delete.ok.", change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.193", ttl=300, ptrdname="has.changed."),
-            get_change_PTR_json("192.0.2.193", change_type="DeleteRecordSet"),
-            get_change_TXT_json("delete-txt.dummy.", change_type="DeleteRecordSet"),
-            get_change_MX_json("delete-mx.dummy.", change_type="DeleteRecordSet"),
-            get_change_MX_json("update-mx.dummy.", change_type="DeleteRecordSet"),
-            get_change_MX_json("update-mx.dummy.", preference=1000)
+            get_change_A_AAAA_json("delete2.dummy.", record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update2.dummy.", ttl=300, address="1.2.3.4"),
+            get_change_A_AAAA_json("Update2.dummy.", change_type="DeleteRecordSet"),
+            get_change_CNAME_json("delete2.ok.", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.194", ttl=300, ptrdname="has.changed."),
+            get_change_PTR_json("192.0.2.194", change_type="DeleteRecordSet"),
+            get_change_TXT_json("delete-txt2.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("delete-mx2.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("update-mx2.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("update-mx2.dummy.", preference=1000)
         ]
     }
 
@@ -453,6 +453,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
             create_rs = create_client.create_recordset(rs, status=202)
             create_client.wait_until_recordset_change_status(create_rs, 'Complete')
 
+        # TODO: We should not need to configure ACL rules???
         # Configure ACL rules
         add_ok_acl_rules(shared_zone_test_context, [ok_zone_acl])
         add_classless_acl_rules(shared_zone_test_context, [classless_zone_delegation_zone_acl])
@@ -464,7 +465,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
 
         to_delete = set(record_set_list) # set here because multiple items in the batch combine to one RS
 
-        ## validate initial response
+        # validate initial response
         assert_that(result['comments'], is_("this is optional"))
         assert_that(result['userName'], is_("dummy"))
         assert_that(result['userId'], is_("dummy"))
@@ -472,31 +473,31 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_that(completed_batch['status'], is_("Complete"))
 
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=0, record_name="delete",
-                                              input_name="delete.dummy.", record_data=None, record_type="AAAA", change_type="DeleteRecordSet")
+                                              input_name="delete2.dummy.", record_data=None, record_type="AAAA", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=1, record_name="update", ttl=300,
-                                              input_name="update.dummy.", record_data="1.2.3.4")
+                                              input_name="update2.dummy.", record_data="1.2.3.4")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=2, record_name="Update",
-                                              input_name="Update.dummy.", record_data=None, change_type="DeleteRecordSet")
+                                              input_name="Update2.dummy.", record_data=None, change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=3, record_name="delete",
-                                              input_name="delete.ok.", record_data=None, record_type="CNAME", change_type="DeleteRecordSet")
+                                              input_name="delete2.ok.", record_data=None, record_type="CNAME", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=4, record_name="193", ttl=300,
-                                              input_name="192.0.2.193", record_data="has.changed.", record_type="PTR")
+                                              input_name="192.0.2.194", record_data="has.changed.", record_type="PTR")
         assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=5, record_name="193",
-                                              input_name="192.0.2.193", record_data=None, record_type="PTR", change_type="DeleteRecordSet")
+                                              input_name="192.0.2.194", record_data=None, record_type="PTR", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=6, record_name="delete-txt",
-                                              input_name="delete-txt.dummy.", record_data=None, record_type="TXT", change_type="DeleteRecordSet")
+                                              input_name="delete-txt2.dummy.", record_data=None, record_type="TXT", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=7, record_name="delete-mx",
-                                              input_name="delete-mx.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
+                                              input_name="delete-mx2.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=8, record_name="update-mx",
-                                              input_name="update-mx.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
+                                              input_name="update-mx2.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=9, record_name="update-mx",
-                                              input_name="update-mx.dummy.", record_data={'preference': 1000, 'exchange': 'foo.bar.'}, record_type="MX")
+                                              input_name="update-mx2.dummy.", record_data={'preference': 1000, 'exchange': 'foo.bar.'}, record_type="MX")
 
         rs1 = dummy_client.get_recordset(record_set_list[0][0], record_set_list[0][1], status=404)
         assert_that(rs1, is_("RecordSet with id " + record_set_list[0][1] + " does not exist in zone dummy."))
 
         rs2 = dummy_client.get_recordset(record_set_list[1][0], record_set_list[1][1])['recordSet']
-        expected2 = {'name': 'update',
+        expected2 = {'name': 'update2',
                       'zoneId': dummy_zone['id'],
                       'type': 'A',
                       'ttl': 300,
@@ -511,7 +512,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_that(rs4, is_("RecordSet with id " + record_set_list[3][1] + " does not exist in zone ok."))
 
         rs5 = dummy_client.get_recordset(record_set_list[4][0], record_set_list[4][1])['recordSet']
-        expected5 = {'name': '193',
+        expected5 = {'name': '194',
                      'zoneId': classless_zone_delegation_zone['id'],
                      'type': 'PTR',
                      'ttl': 300,
@@ -529,7 +530,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_that(rs8, is_("RecordSet with id " + record_set_list[7][1] + " does not exist in zone dummy."))
 
         rs9 = dummy_client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
-        expected9 = {'name': 'update-mx',
+        expected9 = {'name': 'update-mx2',
                      'zoneId': dummy_zone['id'],
                      'type': 'MX',
                      'ttl': 200,
@@ -1221,8 +1222,8 @@ def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zo
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    rs_A_delete = get_recordset_json(shared_zone_test_context.ok_zone, "delete", "A", [{"address": "10.1.1.1"}])
-    rs_CNAME_delete = get_recordset_json(shared_zone_test_context.ok_zone, "delete-this", "CNAME", [{"cname": "cname."}])
+    rs_A_delete = get_recordset_json(shared_zone_test_context.ok_zone, "delete1", "A", [{"address": "10.1.1.1"}])
+    rs_CNAME_delete = get_recordset_json(shared_zone_test_context.ok_zone, "delete-this1", "CNAME", [{"cname": "cname."}])
 
     to_create = [rs_A_delete, rs_CNAME_delete]
     to_delete = []
@@ -1230,12 +1231,12 @@ def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zo
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("thing.ok.", address="4.5.6.7"),
-            get_change_CNAME_json("thing.ok"),
-            get_change_A_AAAA_json("delete.ok", change_type="DeleteRecordSet"),
-            get_change_CNAME_json("delete.ok"),
-            get_change_A_AAAA_json("delete-this.ok", address="4.5.6.7"),
-            get_change_CNAME_json("delete-this.ok", change_type="DeleteRecordSet")
+            get_change_A_AAAA_json("thing1.ok.", address="4.5.6.7"),
+            get_change_CNAME_json("thing1.ok"),
+            get_change_A_AAAA_json("delete1.ok", change_type="DeleteRecordSet"),
+            get_change_CNAME_json("delete1.ok"),
+            get_change_A_AAAA_json("delete-this1.ok", address="4.5.6.7"),
+            get_change_CNAME_json("delete-this1.ok", change_type="DeleteRecordSet")
         ]
     }
 
@@ -1245,14 +1246,14 @@ def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zo
             to_delete.append(client.wait_until_recordset_change_status(create_result, 'Complete'))
 
         response = client.create_batch_change(batch_change_input, status=400)
-        assert_successful_change_in_error_response(response[0], input_name="thing.ok.", record_data="4.5.6.7")
-        assert_failed_change_in_error_response(response[1], input_name="thing.ok.", record_type="CNAME", record_data="test.com.",
-                                               error_messages=['Record Name "thing.ok." Not Unique In Batch Change:'
+        assert_successful_change_in_error_response(response[0], input_name="thing1.ok.", record_data="4.5.6.7")
+        assert_failed_change_in_error_response(response[1], input_name="thing1.ok.", record_type="CNAME", record_data="test.com.",
+                                               error_messages=['Record Name "thing1.ok." Not Unique In Batch Change:'
                                                                ' cannot have multiple "CNAME" records with the same name.'])
-        assert_successful_change_in_error_response(response[2], input_name="delete.ok.", change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[3], input_name="delete.ok.", record_type="CNAME", record_data="test.com.")
-        assert_successful_change_in_error_response(response[4], input_name="delete-this.ok.", record_data="4.5.6.7")
-        assert_successful_change_in_error_response(response[5], input_name="delete-this.ok.", change_type="DeleteRecordSet", record_type="CNAME")
+        assert_successful_change_in_error_response(response[2], input_name="delete1.ok.", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[3], input_name="delete1.ok.", record_type="CNAME", record_data="test.com.")
+        assert_successful_change_in_error_response(response[4], input_name="delete-this1.ok.", record_data="4.5.6.7")
+        assert_successful_change_in_error_response(response[5], input_name="delete-this1.ok.", change_type="DeleteRecordSet", record_type="CNAME")
 
     finally:
         clear_recordset_list(to_delete, client)
