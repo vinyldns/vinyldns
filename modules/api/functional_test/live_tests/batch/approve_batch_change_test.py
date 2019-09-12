@@ -59,8 +59,54 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         assert_that(get_batch, not(has_key('cancelledTimestamp')))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
-        if to_disconnect is not None:
+        if to_disconnect:
             approver.abandon_zones(to_disconnect['id'], status=202)
+
+@pytest.mark.manual_batch_review
+def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zone_test_context):
+    """
+    Test approving a batch change fails if there are still errors
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    approver = shared_zone_test_context.support_user_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("needs-review.nonexistent.", address="4.3.2.1"),
+            get_change_A_AAAA_json("zone.does.not.exist.")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+    complete_rs = None
+
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(result['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
+        assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+        assert_that(get_batch['changes'][1]['status'], is_('NeedsReview'))
+        assert_that(get_batch['changes'][1]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
+
+        approval_response = approver.approve_batch_change(result['id'], status=400)
+        assert_that((approval_response[0]['errors'][0]), contains_string('Zone Discovery Failed'))
+        assert_that((approval_response[1]['errors'][0]), contains_string('Zone Discovery Failed'))
+
+        updated_batch = client.get_batch_change(result['id'], status=200)
+        assert_that(updated_batch['status'], is_('PendingReview'))
+        assert_that(updated_batch['approvalStatus'], is_('PendingReview'))
+        assert_that(updated_batch, not(has_key('reviewerId')))
+        assert_that(updated_batch, not(has_key('reviewerUserName')))
+        assert_that(updated_batch, not(has_key('reviewTimestamp')))
+        assert_that(updated_batch, not(has_key('cancelledTimestamp')))
+        assert_that(updated_batch['changes'][0]['status'], is_('NeedsReview'))
+        assert_that(updated_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
+        assert_that(updated_batch['changes'][1]['status'], is_('NeedsReview'))
+        assert_that(updated_batch['changes'][1]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
+    finally:
+        if complete_rs:
+            delete_result = client.delete_recordset(complete_rs['zoneId'], complete_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 @pytest.mark.manual_batch_review
 def test_approve_batch_change_with_invalid_batch_change_id_fails(shared_zone_test_context):

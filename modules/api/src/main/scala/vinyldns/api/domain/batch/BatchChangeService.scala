@@ -32,7 +32,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.{CnameAtZoneApexError, ZoneDiscoveryError}
+import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.membership.{
   Group,
   GroupRepository,
@@ -159,17 +159,17 @@ class BatchChangeService(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment)
       validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
-      changeForConversion <- buildResponseForApprover(
+      changeForConversion = rebuildBatchChangeForUpdate(
         batchChange,
-        asInput,
         validationOutput.validatedChanges,
-        reviewInfo).toBatchResult
+        reviewInfo)
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges.existingRecordSets,
         batchChange.ownerGroupId)
-    } yield serviceCompleteBatch
+      response <- buildResponseForApprover(serviceCompleteBatch).toBatchResult
+    } yield response
 
   def cancelBatchChange(
       batchChangeId: String,
@@ -440,32 +440,32 @@ class BatchChangeService(
     }
   }
 
-  def buildResponseForApprover(
+  def rebuildBatchChangeForUpdate(
       existingBatchChange: BatchChange,
-      batchChangeInput: BatchChangeInput,
       transformed: ValidatedBatch[ChangeForValidation],
-      reviewInfo: BatchChangeReviewInfo): Either[BatchChangeErrorResponse, BatchChange] =
-    if (transformed.forall(_.isValid)) {
-      val changes = transformed.getValid.zip(existingBatchChange.changes).map {
-        case (newValidation, existing) => newValidation.asStoredChange(Some(existing.id))
-      }
-
-      BatchChange(
-        existingBatchChange.userId,
-        existingBatchChange.userName,
-        existingBatchChange.comments,
-        existingBatchChange.createdTimestamp,
-        changes,
-        existingBatchChange.ownerGroupId,
-        BatchChangeApprovalStatus.ManuallyApproved,
-        Some(reviewInfo.reviewerId),
-        reviewInfo.reviewComment,
-        Some(reviewInfo.reviewTimestamp),
-        id = existingBatchChange.id
-      ).asRight
-    } else {
-      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
+      reviewInfo: BatchChangeReviewInfo): BatchChange = {
+    val changes = transformed.zip(existingBatchChange.changes).map {
+      case (validated, existing) =>
+        validated match {
+          case Valid(v) => v.asStoredChange(Some(existing.id))
+          case Invalid(errors) =>
+            existing.updateValidationErrors(errors.map(e => SingleChangeError(e)).toList)
+        }
     }
+
+    if (transformed.forall(_.isValid)) {
+      existingBatchChange
+        .copy(
+          changes = changes,
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved,
+          reviewerId = Some(reviewInfo.reviewerId),
+          reviewComment = reviewInfo.reviewComment,
+          reviewTimestamp = Some(reviewInfo.reviewTimestamp)
+        )
+    } else {
+      existingBatchChange.copy(changes = changes)
+    }
+  }
 
   def convertOrSave(
       batchChange: BatchChange,
@@ -485,6 +485,7 @@ class BatchChangeService(
     case PendingReview if manualReviewEnabled =>
       // save the change, will need to return to it later on approval
       batchChangeRepo.save(batchChange).toBatchResult
+    // TODO: handle PendingReview if manualReviewEnabled is false
     case _ =>
       // this should not be called with a rejected change (or if manual review is off)!
       logger.error(
@@ -492,6 +493,13 @@ class BatchChangeService(
           s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled")
       UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }
+
+  def buildResponseForApprover(
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, BatchChange] =
+    batchChange.approvalStatus match {
+      case ManuallyApproved => batchChange.asRight
+      case _ => BatchChangeFailedApproval(batchChange).asLeft
+    }
 
   def addOwnerGroupNamesToSummaries(
       summaries: List[BatchChangeSummary],

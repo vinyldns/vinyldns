@@ -64,6 +64,7 @@ class BatchChangeServiceSpec
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val nonFatalError = ZoneDiscoveryError("test")
+  private val fatalError = RecordAlreadyExists("test")
 
   private val validations = new BatchChangeValidations(10, new AccessValidations())
   private val ttl = Some(200L)
@@ -1800,7 +1801,7 @@ class BatchChangeServiceSpec
     }
   }
 
-  "buildResponseForApprover" should {
+  "rebuildBatchChangeForUpdate" should {
     val batchChangeNeedsApproval = BatchChange(
       auth.userId,
       auth.signedInUser.userName,
@@ -1817,9 +1818,8 @@ class BatchChangeServiceSpec
     val reviewInfo = BatchChangeReviewInfo(supportUser.id, Some("some approval comment"))
     "return a BatchChange if all data inputs are valid" in {
       val result = underTestManualEnabled
-        .buildResponseForApprover(
+        .rebuildBatchChangeForUpdate(
           batchChangeNeedsApproval,
-          asInput,
           List(
             AddChangeForValidation(
               baseZone,
@@ -1829,31 +1829,27 @@ class BatchChangeServiceSpec
           ),
           reviewInfo
         )
-        .toOption
-        .get
 
       result shouldBe a[BatchChange]
       result.changes.head shouldBe singleChangeGood
       result.changes(1) shouldBe singleChangeNRPostReview
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
     }
-    "return an error even with valid/soft failures and manual review enabled" in {
+    "return a BatchChange with current failures if any data is invalid" in {
       val result = underTestManualEnabled
-        .buildResponseForApprover(
+        .rebuildBatchChangeForUpdate(
           batchChangeNeedsApproval,
-          asInput,
           List(
             AddChangeForValidation(
               baseZone,
               singleChangeGood.inputName.split('.').head,
               asAdds.head).validNel,
-            nonFatalError.invalidNel
+            fatalError.invalidNel
           ),
           reviewInfo
         )
-        .left
-        .value
 
-      result shouldBe an[InvalidBatchChangeResponses]
+      result shouldBe a[BatchChange]
     }
   }
   "listBatchChangeSummaries" should {
@@ -1880,7 +1876,7 @@ class BatchChangeServiceSpec
       result.ignoreAccess shouldBe false
 
       result.batchChanges.length shouldBe 1
-      result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
+      result.batchChanges.head.createdTimestamp shouldBe batchChange.createdTimestamp
       result.batchChanges(0).ownerGroupId shouldBe None
       result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
       result.batchChanges(0).reviewerName shouldBe Some(superUser.userName)
@@ -2264,4 +2260,55 @@ class BatchChangeServiceSpec
     }
   }
 
+  "buildResponseForApprover" should {
+    "return batch change with ManuallyApproved approval status" in {
+      val updatedBatchChange = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        Some("comments in"),
+        DateTime.now.minusDays(1),
+        List(singleChangeGood, singleChangeNR),
+        Some(authGrp.id),
+        BatchChangeApprovalStatus.ManuallyApproved,
+        Some("reviewer_id"),
+        Some("approved"),
+        Some(DateTime.now)
+      )
+
+      val result = underTest.buildResponseForApprover(updatedBatchChange).right.value
+
+      result shouldBe a[BatchChange]
+    }
+    "return BatchChangeFailedApproval error if batch change has PendingReview approval status" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("check approval status"),
+          DateTime.now,
+          List(singleChangeGood, singleChangeNR),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+
+      val result = underTest.buildResponseForApprover(batchChange).left.value
+
+      result shouldBe a[BatchChangeFailedApproval]
+    }
+    "return BatchChangeFailedApproval if batch change has an approval status other than" +
+      "ManuallyApproved or PendingReview" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("check approval status"),
+          DateTime.now,
+          List(singleChangeGood, singleChangeNR),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+
+      val result = underTest.buildResponseForApprover(batchChange).left.value
+
+      result shouldBe a[BatchChangeFailedApproval]
+    }
+  }
 }

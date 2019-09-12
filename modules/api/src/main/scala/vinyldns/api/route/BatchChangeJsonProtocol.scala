@@ -47,6 +47,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     SingleDeleteRecordChangeSerializer,
     BatchChangeSerializer,
     BatchChangeErrorListSerializer,
+    BatchChangeRevalidationErrorListSerializer,
     BatchChangeErrorSerializer,
     RejectBatchChangeInputSerializer,
     ApproveBatchChangeInputSerializer
@@ -221,6 +222,20 @@ trait BatchChangeJsonProtocol extends JsonValidation {
 
           change.merge(errors)
       }
+  }
+
+  case object BatchChangeRevalidationErrorListSerializer
+      extends ValidationSerializer[BatchChangeFailedApproval] {
+    override def toJson(bcfa: BatchChangeFailedApproval): JValue = {
+      val asInput = BatchChangeInput(bcfa.batchChange)
+      bcfa.batchChange.changes.zip(asInput.changes).map {
+        case (sc, ci) if sc.validationErrors.isEmpty => Extraction.decompose(ci)
+        case (sc, ci) =>
+          val change = Extraction.decompose(ci)
+          val errors: JValue = "errors" -> Extraction.decompose(sc.validationErrors.map(_.message))
+          change.merge(errors)
+      }
+    }
   }
 
   case object BatchChangeErrorSerializer extends ValidationSerializer[DomainValidationError] {
