@@ -1,6 +1,6 @@
 from hamcrest import *
 from utils import *
-
+import datetime
 
 @pytest.mark.serial
 @pytest.mark.manual_batch_review
@@ -70,19 +70,22 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
     """
     client = shared_zone_test_context.ok_vinyldns_client
     approver = shared_zone_test_context.support_user_client
+    dt = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
     batch_change_input = {
         "changes": [
             get_change_A_AAAA_json("needs-review.nonexistent.", address="4.3.2.1"),
             get_change_A_AAAA_json("zone.does.not.exist.")
         ],
-        "ownerGroupId": shared_zone_test_context.ok_group['id']
+        "ownerGroupId": shared_zone_test_context.ok_group['id'],
+        "scheduledTime": dt
     }
-    complete_rs = None
+    get_batch = None
 
     try:
         result = client.create_batch_change(batch_change_input, status=202)
         get_batch = client.get_batch_change(result['id'])
-        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['status'], is_('Scheduled'))
         assert_that(get_batch['approvalStatus'], is_('PendingReview'))
         assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
@@ -94,8 +97,9 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
         assert_that((approval_response[1]['errors'][0]), contains_string('Zone Discovery Failed'))
 
         updated_batch = client.get_batch_change(result['id'], status=200)
-        assert_that(updated_batch['status'], is_('PendingReview'))
+        assert_that(updated_batch['status'], is_('Scheduled'))
         assert_that(updated_batch['approvalStatus'], is_('PendingReview'))
+        assert_that(updated_batch['scheduledTime'], is_(dt))
         assert_that(updated_batch, not(has_key('reviewerId')))
         assert_that(updated_batch, not(has_key('reviewerUserName')))
         assert_that(updated_batch, not(has_key('reviewTimestamp')))
@@ -105,9 +109,38 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
         assert_that(updated_batch['changes'][1]['status'], is_('NeedsReview'))
         assert_that(updated_batch['changes'][1]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
     finally:
-        if complete_rs:
-            delete_result = client.delete_recordset(complete_rs['zoneId'], complete_rs['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result, 'Complete')
+        if get_batch:
+            approver.reject_batch_change(get_batch['id'], status=200)
+
+@pytest.mark.manual_batch_review
+def test_approve_scheduled_batch_change_fails_if_it_is_not_past_due(shared_zone_test_context):
+    """
+    Test approving a scheduled batch change fails if there are no errors, but the scheduled time is not in the past
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    approver = shared_zone_test_context.support_user_client
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("scheduled-record.shared.", address="4.3.2.1"),
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id'],
+        "scheduledTime": (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    }
+    get_batch = None
+
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(result['id'])
+        assert_that(get_batch['status'], is_('Scheduled'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        assert_that(get_batch['changes'][0]['status'], is_('Pending'))
+
+        error = approver.approve_batch_change(result['id'], status=403)
+        assert_that(error, contains_string("Cannot process scheduled change as it is not past the scheduled date of "))
+    finally:
+        if get_batch:
+            approver.reject_batch_change(get_batch['id'], status=200)
 
 @pytest.mark.manual_batch_review
 def test_approve_batch_change_with_invalid_batch_change_id_fails(shared_zone_test_context):

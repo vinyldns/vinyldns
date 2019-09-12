@@ -47,7 +47,7 @@ class BatchChangeRoute(
       complete(StatusCodes.BadRequest, ScheduledChangesDisabled.message)
     case ScheduledTimeMustBeInFuture =>
       complete(StatusCodes.BadRequest, ScheduledTimeMustBeInFuture.message)
-    case scnpd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnpd.message)
+    case scnd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnd.message)
   }
 
   final private val MAX_ITEMS_LIMIT: Int = 100

@@ -126,7 +126,7 @@ class BatchChangeValidations(
       authPrincipal: AuthPrincipal,
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange, isTestChange) |+| validateBatchChangePendingReview(
-      batchChange) |+| validateScheduledApproval(batchChange)
+      batchChange)
 
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
@@ -151,12 +151,6 @@ class BatchChangeValidations(
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
-    }
-
-  def validateScheduledApproval(batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
-    batchChange.scheduledTime match {
-      case Some(dt) if dt.isAfterNow => Left(ScheduledChangeNotDue(dt))
-      case _ => Right(())
     }
 
   def validateCreatorCancellation(

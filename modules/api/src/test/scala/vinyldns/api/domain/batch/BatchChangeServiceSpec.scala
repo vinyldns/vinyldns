@@ -2296,7 +2296,23 @@ class BatchChangeServiceSpec
 
       result shouldBe a[BatchChange]
     }
-    "return BatchChangeFailedApproval error if batch change has PendingReview approval status" in {
+    "return ScheduledChangeNotDue error if batch change has future scheduled time and no errors" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("check approval status"),
+          DateTime.now,
+          List(singleChangeGood),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview,
+          scheduledTime = Some(DateTime.now.plusDays(1))
+        )
+
+      val result = underTest.buildResponseForApprover(batchChange).left.value
+
+      result shouldBe a[ScheduledChangeNotDue]
+    }
+    "return BatchChangeFailedApproval error if batch change has future scheduled time and errors" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -2304,15 +2320,16 @@ class BatchChangeServiceSpec
           Some("check approval status"),
           DateTime.now,
           List(singleChangeGood, singleChangeNR),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview
+          approvalStatus = BatchChangeApprovalStatus.PendingReview,
+          scheduledTime = Some(DateTime.now.plusDays(1))
         )
 
       val result = underTest.buildResponseForApprover(batchChange).left.value
 
       result shouldBe a[BatchChangeFailedApproval]
     }
-    "return BatchChangeFailedApproval if batch change has an approval status other than" +
-      "ManuallyApproved or PendingReview" in {
+    "return BatchChangeFailedApproval if the batch change has an approval status other than" +
+      "ManuallyApproved or the batch change is scheduled in the future without errors" in {
       val batchChange =
         BatchChange(
           auth.userId,
