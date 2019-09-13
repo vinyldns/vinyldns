@@ -127,16 +127,13 @@ class BatchChangeJsonProtocolSpec
 
   val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
-  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A, "deleteAId")
+  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A)
 
-  val addAAAAChangeInput =
-    AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
+  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
-  val addCNAMEChangeInput =
-    AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
+  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
 
-  val addPTRChangeInput =
-    AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
+  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
 
   val fooDiscoveryError = ZoneDiscoveryError("foo.")
 
@@ -217,9 +214,7 @@ class BatchChangeJsonProtocolSpec
         record = Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.fromJson(json).value
 
-      result.inputName shouldBe "foo."
-      result.typ shouldBe A
-//      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
+      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1")).copy(id = result.id)
     }
 
     "return an error if the record is not specified for add" in {
@@ -307,7 +302,6 @@ class BatchChangeJsonProtocolSpec
           addCNAMEChangeInput.copy(id = resultChangeIds(3)),
           addPTRChangeInput.copy(id = resultChangeIds(4))
         ),
-        Some("owner-group-id"),
         Some("owner-group-id"),
         id = result.id
       )
