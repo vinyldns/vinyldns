@@ -379,10 +379,10 @@ def test_create_recordset_conflict_with_trailing_dot_insensitive_name(shared_zon
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
-
+    rs_name = generate_record_name()
     first_rs = {
         'zoneId': zone['id'],
-        'name': 'parent.com.',
+        'name': rs_name,
         'type': 'A',
         'ttl': 100,
         'records': [
@@ -398,7 +398,7 @@ def test_create_recordset_conflict_with_trailing_dot_insensitive_name(shared_zon
     try:
         result = client.create_recordset(first_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        first_rs['name'] = 'parent.com'
+        first_rs['name'] = rs_name
         client.create_recordset(first_rs, status=409)
 
     finally:

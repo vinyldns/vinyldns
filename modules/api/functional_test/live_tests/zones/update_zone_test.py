@@ -762,7 +762,7 @@ def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_conte
     """
 
     zone_update = shared_zone_test_context.ok_zone
-    zone_update['adminGroupId'] = shared_zone_test_context.dummy_group['id']
+    zone_update['adminGroupId'] = shared_zone_test_context.history_group['id']
     zone_update['connection']['key'] = VinylDNSTestContext.dns_key
 
     shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=400)

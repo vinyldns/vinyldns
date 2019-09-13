@@ -3814,6 +3814,7 @@ def test_create_batch_with_irrelevant_global_acl_rule_applied_fails(shared_zone_
             shared_client.wait_until_recordset_change_status(delete_a_rs, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.skip_production
 def test_create_batch_duplicates_add_check(shared_zone_test_context):
     """
