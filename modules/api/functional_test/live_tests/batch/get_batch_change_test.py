@@ -9,8 +9,8 @@ def test_get_batch_change_success(shared_zone_test_context):
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
-            get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60")
+            get_change_A_AAAA_json(generate_record_name("parent.com."), address="4.5.6.7"),
+            get_change_A_AAAA_json(generate_record_name("ok."), record_type="AAAA", address="fd69:27cc:fe91::60")
         ]
     }
     to_delete = []
@@ -80,13 +80,15 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     temp_group = {
-        'name': 'test-get-batch-record-owner-group',
+        'name': 'test-get-batch-record-owner-group2',
         'email': 'test@test.com',
         'description': 'for testing that a get batch change still works when record owner group is deleted',
         'members': [ { 'id': 'sharedZoneUser'} ],
         'admins': [ { 'id': 'sharedZoneUser'} ]
     }
 
+    rs_name = generate_record_name()
+    rs_fqdn = rs_name + ".shared."
     record_to_delete = []
     try:
 
@@ -95,7 +97,7 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
         batch_change_input = {
             "comments": "this is optional",
             "changes": [
-                get_change_A_AAAA_json("testing-get-batch-with-owner-group.shared.", address="1.1.1.1")
+                get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
             ],
             "ownerGroupId": group_to_delete['id']
         }
@@ -106,7 +108,7 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         record_to_delete = set(record_set_list)
 
-        #delete records and owner group
+        # delete records and owner group
         temp = record_to_delete.copy()
         for result_rs in temp:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
@@ -117,7 +119,7 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
         client.delete_group(group_to_delete['id'], status=200)
         del completed_batch['ownerGroupName']
 
-        #the batch should not be updated with deleted group data
+        # the batch should not be updated with deleted group data
         result = client.get_batch_change(batch_change['id'], status=200)
         assert_that(result, is_(completed_batch))
         assert_that(result['ownerGroupId'], is_(group_to_delete['id']))
