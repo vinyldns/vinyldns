@@ -151,15 +151,12 @@ object AddChangeInput {
 }
 
 object DeleteRRSetChangeInput {
-  def apply(
-      inputName: String,
-      typ: RecordType,
-      id: String = UUID.randomUUID().toString): DeleteRRSetChangeInput = {
+  def apply(inputName: String, typ: RecordType): DeleteRRSetChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteRRSetChangeInput(transformName, typ, id)
+    new DeleteRRSetChangeInput(transformName, typ)
   }
 
   def apply(sc: SingleDeleteRRSetChange): DeleteRRSetChangeInput =
@@ -167,16 +164,12 @@ object DeleteRRSetChangeInput {
 }
 
 object DeleteRecordChangeInput {
-  def apply(
-      inputName: String,
-      typ: RecordType,
-      record: RecordData,
-      id: String = UUID.randomUUID().toString): DeleteRecordChangeInput = {
+  def apply(inputName: String, typ: RecordType, record: RecordData): DeleteRecordChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteRecordChangeInput(transformName, typ, record, id)
+    new DeleteRecordChangeInput(transformName, typ, record)
   }
 
   def apply(sdrc: SingleDeleteRecordChange): DeleteRecordChangeInput =

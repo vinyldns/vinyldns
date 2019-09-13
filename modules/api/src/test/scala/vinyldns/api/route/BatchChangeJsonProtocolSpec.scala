@@ -127,13 +127,16 @@ class BatchChangeJsonProtocolSpec
 
   val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
-  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A)
+  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A, "deleteAId")
 
-  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
+  val addAAAAChangeInput =
+    AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
-  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
+  val addCNAMEChangeInput =
+    AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
 
-  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
+  val addPTRChangeInput =
+    AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
 
   val fooDiscoveryError = ZoneDiscoveryError("foo.")
 
@@ -147,32 +150,32 @@ class BatchChangeJsonProtocolSpec
     "successfully serialize valid add change data" in {
       val resultA = ChangeInputSerializer.fromJson(addAChangeInputJson).value
 
-      resultA shouldBe addAChangeInput
+      resultA shouldBe addAChangeInput.copy(id = resultA.id)
 
       val resultAAAA = ChangeInputSerializer.fromJson(addAAAAChangeInputJson).value
 
-      resultAAAA shouldBe addAAAAChangeInput
+      resultAAAA shouldBe addAAAAChangeInput.copy(id = resultAAAA.id)
 
       val resultCNAME = ChangeInputSerializer.fromJson(addCNAMEChangeInputJson).value
 
-      resultCNAME shouldBe addCNAMEChangeInput
+      resultCNAME shouldBe addCNAMEChangeInput.copy(id = resultCNAME.id)
 
       val resultPTR = ChangeInputSerializer.fromJson(addPTRChangeInputJson).value
 
-      resultPTR shouldBe addPTRChangeInput
+      resultPTR shouldBe addPTRChangeInput.copy(id = resultPTR.id)
     }
 
     "successfully serialize valid data for delete" in {
       val json = deleteAChangeInputJson
       val result = ChangeInputSerializer.fromJson(json).value
 
-      result shouldBe deleteAChangeInput
+      result shouldBe deleteAChangeInput.copy(id = result.id)
     }
 
     "successfully serialize valid data for DeleteRecord" in {
-      ChangeInputSerializer
-        .fromJson(deleteRecordChangeInputJson)
-        .value shouldBe deleteARecordChangeInput
+      val result = ChangeInputSerializer.fromJson(deleteRecordChangeInputJson).value
+
+      result shouldBe deleteARecordChangeInput.copy(id = result.id)
     }
 
     "return an error if changeType is not specified" in {
@@ -214,7 +217,9 @@ class BatchChangeJsonProtocolSpec
         record = Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.fromJson(json).value
 
-      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
+      result.inputName shouldBe "foo."
+      result.typ shouldBe A
+//      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
     }
 
     "return an error if the record is not specified for add" in {
@@ -233,27 +238,46 @@ class BatchChangeJsonProtocolSpec
   "De-serializing BatchChangeInput from JSON" should {
     "successfully serialize valid add change data with comment and without owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value
+      val resultChangeIds = result.changes.map(_.id)
 
       result shouldBe BatchChangeInput(
         Some("some comment"),
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
-        None)
+        List(
+          addAChangeInput.copy(id = resultChangeIds.head),
+          addAAAAChangeInput.copy(id = resultChangeIds(1)),
+          addCNAMEChangeInput.copy(id = resultChangeIds(2)),
+          addPTRChangeInput.copy(id = resultChangeIds(3))
+        ),
+        None
+      ).copy(id = result.id)
     }
 
     "successfully serialize valid add change data without comment and owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addChangeList).value
+      val resultChangeIds = result.changes.map(_.id)
 
       result shouldBe BatchChangeInput(
         None,
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
+        List(
+          addAChangeInput.copy(id = resultChangeIds.head),
+          addAAAAChangeInput.copy(id = resultChangeIds(1)),
+          addCNAMEChangeInput.copy(id = resultChangeIds(2)),
+          addPTRChangeInput.copy(id = resultChangeIds(3))
+        )
+      ).copy(id = result.id)
     }
 
     "successfully serialize valid add and delete change data without comment and owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addDeleteChangeList).value
+      val resultChangeIds = result.changes.map(_.id)
 
       result shouldBe BatchChangeInput(
         None,
-        List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
+        List(
+          deleteAChangeInput.copy(id = resultChangeIds.head),
+          addAAAAChangeInput.copy(id = resultChangeIds(1)),
+          addCNAMEChangeInput.copy(id = resultChangeIds(2)))
+      ).copy(id = result.id)
     }
 
     "successfully serialize valid add and delete change with comment and owner group ID" in {
@@ -264,13 +288,31 @@ class BatchChangeJsonProtocolSpec
           addAChangeInput,
           addAAAAChangeInput,
           addCNAMEChangeInput,
-          addPTRChangeInput),
+          addPTRChangeInput
+        ),
         Some("owner-group-id")
       )
 
-      BatchChangeInputSerializer
+      val result = BatchChangeInputSerializer
         .fromJson(BatchChangeInputSerializer.toJson(batchChange))
-        .value shouldBe batchChange
+        .value
+      val resultChangeIds = result.changes.map(_.id)
+
+      val batchChangeResult = BatchChangeInput(
+        Some("some comment"),
+        List(
+          deleteAChangeInput.copy(id = resultChangeIds.head),
+          addAChangeInput.copy(id = resultChangeIds(1)),
+          addAAAAChangeInput.copy(id = resultChangeIds(2)),
+          addCNAMEChangeInput.copy(id = resultChangeIds(3)),
+          addPTRChangeInput.copy(id = resultChangeIds(4))
+        ),
+        Some("owner-group-id"),
+        Some("owner-group-id"),
+        id = result.id
+      )
+
+      result shouldBe batchChangeResult
     }
 
     "successfully serialize valid add and delete change without comment and with owner group ID" in {
@@ -285,9 +327,25 @@ class BatchChangeJsonProtocolSpec
         Some("owner-group-id")
       )
 
-      BatchChangeInputSerializer
+      val result = BatchChangeInputSerializer
         .fromJson(BatchChangeInputSerializer.toJson(batchChange))
-        .value shouldBe batchChange
+        .value
+      val resultChangesIds = result.changes.map(_.id)
+
+      val batchChangeResult = BatchChangeInput(
+        None,
+        List(
+          deleteAChangeInput.copy(id = resultChangesIds.head),
+          addAChangeInput.copy(id = resultChangesIds(1)),
+          addAAAAChangeInput.copy(id = resultChangesIds(2)),
+          addCNAMEChangeInput.copy(id = resultChangesIds(3)),
+          addPTRChangeInput.copy(id = resultChangesIds(4)),
+        ),
+        Some("owner-group-id"),
+        id = result.id
+      )
+
+      result shouldBe batchChangeResult
     }
 
     "return an error if the changes are not specified" in {
@@ -654,9 +712,11 @@ class BatchChangeJsonProtocolSpec
     "succeed" in {
       val deleteRecordChangeInput =
         DeleteRecordChangeInput("recordName.zoneName.", A, AData("3.2.4.1"))
-      DeleteRecordChangeInputSerializer.fromJson(
-        DeleteRecordChangeInputSerializer.toJson(deleteRecordChangeInput)) shouldBe
-        deleteRecordChangeInput.validNel
+
+      val result = DeleteRecordChangeInputSerializer.fromJson(
+        DeleteRecordChangeInputSerializer.toJson(deleteRecordChangeInput))
+
+      result shouldBe deleteRecordChangeInput.copy(id = result.value.id).validNel
     }
   }
 }
