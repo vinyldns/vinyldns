@@ -81,6 +81,6 @@ def test_cancel_batch_change_fails_when_not_pending_approval(shared_zone_test_co
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         error = client.cancel_batch_change(completed_batch['id'], status=400)
         assert_that(error, is_("Batch change " + completed_batch['id'] +
-                               " is not pending review, so it cannot be rejected."))
+                               " is not pending review, so it cannot be cancelled."))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
