@@ -12,5 +12,4 @@ dnspython==1.14.0
 boto==2.48.0
 future==0.17.0
 requests==2.20.0
-pytest-sugar
 pytest-xdist==1.29.0

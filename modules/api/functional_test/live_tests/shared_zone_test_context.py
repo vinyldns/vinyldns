@@ -33,8 +33,6 @@ class SharedZoneTestContext(object):
         if fixture_file:
             print "\r\n!!! FIXTURE FILE IS SET !!!"
             self.load_fixture_file(fixture_file)
-            import json
-            print json.dumps(self.ok_group, indent=3)
         else:
             print "\r\n!!! FIXTURE FILE NOT SET, BUILDING FIXTURE !!!"
             # No fixture file, so we have to build everything ourselves
