@@ -1,49 +1,12 @@
 import pytest
-import json
-
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
 from utils import *
-from vinyldns_context import VinylDNSTestContext
 
-class ListGroupsSearchContext(object):
-    def __init__(self):
-        self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, access_key='listGroupAccessKey', secret_key='listGroupSecretKey')
-        self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
-        self.tear_down() # ensures that the environment is clean before starting
-
-        try:
-            for runner in range(0, 50):
-                new_group = {
-                    'name': "test-list-my-groups-{0:0>3}".format(runner),
-                    'email': 'test@test.com',
-                    'members': [ { 'id': 'list-group-user'} ],
-                    'admins': [ { 'id': 'list-group-user'} ]
-                }
-                self.client.create_group(new_group, status=200)
-
-        except:
-            # teardown if there was any issue in setup
-            try:
-                self.tear_down()
-            except:
-                pass
-            raise
-
-    def tear_down(self):
-        clear_zones(self.client)
-        clear_groups(self.client)
 
 @pytest.fixture(scope="module")
-def list_my_groups_context(request):
-    ctx = ListGroupsSearchContext()
+def list_my_groups_context(request, shared_zone_test_context):
+    return shared_zone_test_context.list_groups_context
 
-    def fin():
-        ctx.tear_down()
-
-    request.addfinalizer(fin)
-
-    return ctx
 
 def test_list_my_groups_no_parameters(list_my_groups_context):
     """
@@ -97,7 +60,7 @@ def test_list_my_groups_paging(list_my_groups_context):
     """
     Tests that we can return all items by paging
     """
-    results=list_my_groups_context.client.list_my_groups(max_items=20, status=200)
+    results = list_my_groups_context.client.list_my_groups(max_items=20, status=200)
 
     assert_that(results, has_length(4))  # 4 fields
     assert_that(results, has_key('groups'))
@@ -144,25 +107,27 @@ def test_list_my_groups_filter_matches(list_my_groups_context):
     results['groups'] = sorted(results['groups'], key=lambda x: x['name'])
 
     for i in range(0, 10):
-        assert_that(results['groups'][i]['name'], is_("test-list-my-groups-{0:0>3}".format(i+10)))
+        assert_that(results['groups'][i]['name'], is_("test-list-my-groups-{0:0>3}".format(i + 10)))
 
 
 def test_list_my_groups_no_deleted(list_my_groups_context):
     """
     Tests that no deleted groups are returned
     """
-    results=list_my_groups_context.client.list_my_groups(max_items=100, status=200)
+    results = list_my_groups_context.client.list_my_groups(max_items=100, status=200)
 
     assert_that(results, has_key('groups'))
     for g in results['groups']:
         assert_that(g['status'], is_not('Deleted'))
 
     while 'nextId' in results:
-        results = client.list_my_groups(max_items=20, group_name_filter="test-list-my-groups-", start_from=results['nextId'], status=200)
+        results = client.list_my_groups(max_items=20, group_name_filter="test-list-my-groups-",
+                                        start_from=results['nextId'], status=200)
 
         assert_that(results, has_key('groups'))
         for g in results['groups']:
             assert_that(g['status'], is_not('Deleted'))
+
 
 def test_list_my_groups_with_ignore_access_true(list_my_groups_context):
     """
@@ -181,6 +146,7 @@ def test_list_my_groups_with_ignore_access_true(list_my_groups_context):
     for i in range(0, 50):
         assert_that(my_results['groups'][i]['name'], is_("test-list-my-groups-{0:0>3}".format(i)))
 
+
 def test_list_my_groups_as_support_user(list_my_groups_context):
     """
     Test that we can get all the groups as a support user, even without ignore_access
@@ -191,6 +157,7 @@ def test_list_my_groups_as_support_user(list_my_groups_context):
     assert_that(len(results['groups']), greater_than(50))
     assert_that(results['maxItems'], is_(100))
     assert_that(results['ignoreAccess'], is_(False))
+
 
 def test_list_my_groups_as_support_user_with_ignore_access_true(list_my_groups_context):
     """

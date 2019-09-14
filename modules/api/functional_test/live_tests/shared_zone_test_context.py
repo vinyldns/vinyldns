@@ -6,6 +6,7 @@ from utils import *
 from list_zones_test_context import ListZonesTestContext
 from list_recordsets_test_context import ListRecordSetsTestContext
 from list_batch_summaries_test_context import ListBatchChangeSummariesTestContext
+from list_groups_test_context import ListGroupsTestContext
 
 class SharedZoneTestContext(object):
     """
@@ -22,6 +23,7 @@ class SharedZoneTestContext(object):
         self.list_zones = ListZonesTestContext()
         self.list_zones_client = self.list_zones.client
         self.list_records_context = ListRecordSetsTestContext()
+        self.list_groups_context = ListGroupsTestContext()
         self.list_batch_summaries_context = None
 
         self.dummy_group = None
@@ -36,7 +38,7 @@ class SharedZoneTestContext(object):
         else:
             print "\r\n!!! FIXTURE FILE NOT SET, BUILDING FIXTURE !!!"
             # No fixture file, so we have to build everything ourselves
-            self.tear_down() # ensures that the environment is clean before starting
+            self.tear_down()  # ensures that the environment is clean before starting
             try:
                 ok_group = {
                     'name': 'ok-group',
@@ -393,6 +395,9 @@ class SharedZoneTestContext(object):
                 # build the list of records; note: we do need to save the test records
                 self.list_records_context.build()
 
+                # build the list of groups
+                self.list_groups_context.build()
+
             except:
                 # teardown if there was any issue in setup
                 try:
@@ -533,6 +538,10 @@ class SharedZoneTestContext(object):
 
         if self.list_batch_summaries_context:
             self.list_batch_summaries_context.tear_down(self)
+
+        if self.list_groups_context:
+            self.list_groups_context.tear_down()
+
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
         clear_zones(self.history_client)
