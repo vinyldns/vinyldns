@@ -258,6 +258,7 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
     try:
         new_rs = dict(test_rs, zoneId=shared_zone_test_context.system_test_zone['id'])
+        new_rs['name'] = generate_record_name() + test_rs['type']
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))

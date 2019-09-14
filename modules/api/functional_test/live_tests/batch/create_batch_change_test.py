@@ -2466,7 +2466,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    existing_ptr = get_recordset_json(shared_zone_test_context.ip6_16_nibble_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0",
+    existing_ptr = get_recordset_json(shared_zone_test_context.ip6_16_nibble_zone, "b.b.b.b.0.0.0.0.0.0.0.0.0.0.0.0",
                                       "PTR", [{"ptrdname": "test.com."}], 100)
 
     batch_change_input = {
@@ -2483,7 +2483,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
             get_change_PTR_json("fedc:ba98:7654::abc", ptrdname="zone.discovery.error."),
 
             # context validation failures
-            get_change_PTR_json("fd69:27cc:fe91:1000::aaaa", ptrdname="existing.ptr.")
+            get_change_PTR_json("fd69:27cc:fe91:1000::bbbb", ptrdname="existing.ptr.")
         ]
     }
 
@@ -2520,10 +2520,10 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
                                                    "Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: existing record sets pre-request
-        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91:1000::aaaa", record_type="PTR",
+        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91:1000::bbbb", record_type="PTR",
                                                record_data="existing.ptr.",
                                                error_messages=[
-                                                   "Record \"fd69:27cc:fe91:1000::aaaa\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+                                                   "Record \"fd69:27cc:fe91:1000::bbbb\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
 
     finally:
         clear_recordset_list(to_delete, client)
