@@ -1,6 +1,5 @@
 from hamcrest import *
 from utils import *
-from vinyldns_python import VinylDNSClient
 
 
 def check_zone_changes_page_accuracy(results, expected_first_change, expected_num_results):
@@ -10,12 +9,13 @@ def check_zone_changes_page_accuracy(results, expected_first_change, expected_nu
         change_email = 'i.changed.this.{0}.times@history-test.com'.format(change_num)
         assert_that(change['zone']['email'], is_(change_email))
         # should return changes in reverse order (most recent 1st)
-        change_num-=1
+        change_num -= 1
 
 
 def check_zone_changes_responses(response, zoneId=True, zoneChanges=True, nextId=True, startFrom=True, maxItems=True):
     assert_that(response, has_key('zoneId')) if zoneId else assert_that(response, is_not(has_key('zoneId')))
-    assert_that(response, has_key('zoneChanges')) if zoneChanges else assert_that(response, is_not(has_key('zoneChanges')))
+    assert_that(response, has_key('zoneChanges')) if zoneChanges else assert_that(response,
+                                                                                  is_not(has_key('zoneChanges')))
     assert_that(response, has_key('nextId')) if nextId else assert_that(response, is_not(has_key('nextId')))
     assert_that(response, has_key('startFrom')) if startFrom else assert_that(response, is_not(has_key('startFrom')))
     assert_that(response, has_key('maxItems')) if maxItems else assert_that(response, is_not(has_key('maxItems')))
@@ -39,6 +39,7 @@ def test_list_zone_changes_member_auth_success(shared_zone_test_context):
     client.list_zone_changes(zone['id'], status=200)
 
 
+@pytest.mark.serial
 def test_list_zone_changes_member_auth_no_access(shared_zone_test_context):
     """
     Test list zone changes fails for user not in admin group with no acl rules
@@ -48,6 +49,7 @@ def test_list_zone_changes_member_auth_no_access(shared_zone_test_context):
     client.list_zone_changes(zone['id'], status=403)
 
 
+@pytest.mark.serial
 def test_list_zone_changes_member_auth_with_acl(shared_zone_test_context):
     """
     Test list zone changes succeeds for user with acl rules

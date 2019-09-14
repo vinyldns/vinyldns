@@ -56,7 +56,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
             delete_result = client.delete_recordset(rs_zone['id'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
             list_results = client.list_recordsets(rs_zone['id'], status=200)
-            rs_fixture.check_recordsets_page_accuracy(list_results, size=19, offset=0)
+            rs_fixture.check_recordsets_page_accuracy(list_results, size=22, offset=0)
 
 
 def test_list_recordsets_multiple_pages(rs_fixture):
@@ -253,7 +253,7 @@ def test_list_recordsets_with_acl(shared_zone_test_context):
     """
     Test listing all recordsets
     """
-    rs_zone = shared_zone_test_context.rs_zone
+    rs_zone = shared_zone_test_context.ok_zone
     client = shared_zone_test_context.ok_vinyldns_client
     new_rs = []
 

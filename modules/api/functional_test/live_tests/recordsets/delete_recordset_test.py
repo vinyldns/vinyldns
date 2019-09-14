@@ -18,6 +18,7 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
 
     try:
         new_rs = dict(test_rs, zoneId=shared_zone_test_context.system_test_zone['id'])
+        new_rs['name'] = generate_record_name()
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
@@ -51,6 +52,7 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
 def test_delete_recordset_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
@@ -235,6 +237,7 @@ def test_delete_recordset_no_authorization(shared_zone_test_context):
     client.delete_recordset(shared_zone_test_context.ok_zone['id'], '1234', sign_request=False, status=401)
 
 
+@pytest.mark.serial
 def test_delete_ipv4_ptr_recordset(shared_zone_test_context):
     """
     Test deleting an IPv4 PTR recordset deletes the record
@@ -550,7 +553,7 @@ def test_ns_delete_for_admin_group_passes(shared_zone_test_context):
     try:
         new_rs = {
             'zoneId': zone['id'],
-            'name': 'someNS',
+            'name': generate_record_name(),
             'type': 'NS',
             'ttl': 38400,
             'records': [

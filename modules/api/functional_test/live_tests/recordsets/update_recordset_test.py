@@ -290,11 +290,14 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
 def test_reverse_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
     Test updating a record set in a reverse zone
     """
+    # TODO: reverse records are difficult to run in parallel because there aren't many, need to
+    # coordinate across tests
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
 
@@ -970,6 +973,7 @@ def test_at_update_recordset(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_update_record_via_user_acl_rule(shared_zone_test_context):
     """
     Test user WRITE ACL rule - update
@@ -1002,6 +1006,7 @@ def test_user_can_update_record_via_user_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_update_record_via_group_acl_rule(shared_zone_test_context):
     """
     Test group WRITE ACL rule - update
@@ -2230,6 +2235,7 @@ def test_update_from_unassociated_user_in_shared_zone_passes_when_record_type_is
             delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
 def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_context):
     """
     Test that updating with a user that does not have write access fails in a shared zone
@@ -2257,6 +2263,7 @@ def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_con
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):
     """
     Test that updating with a user that has an acl passes when the zone is set to shared

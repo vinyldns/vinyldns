@@ -58,6 +58,7 @@ def test_list_recordset_changes_member_auth_no_access(shared_zone_test_context):
     client.list_recordset_changes(zone['id'], status=403)
 
 
+@pytest.mark.serial
 def test_list_recordset_changes_member_auth_with_acl(shared_zone_test_context):
     """
     Test recordset changes succeeds for user with acl rules

@@ -1123,6 +1123,7 @@ def test_create_recordset_forward_record_types(shared_zone_test_context, record_
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
 def test_reverse_create_recordset_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
@@ -1952,6 +1953,7 @@ def test_create_with_owner_group_in_shared_zone_by_admin_passes(shared_zone_test
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_create_with_owner_group_in_private_zone_by_acl_passes(shared_zone_test_context):
     """
     Test that creating a record with an owner group in a non shared zone by a user with acl access passes
@@ -1979,6 +1981,7 @@ def test_create_with_owner_group_in_private_zone_by_acl_passes(shared_zone_test_
             shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_context):
     """
     Test that creating a record with an owner group in a shared zone by a user with acl access passes
@@ -2035,7 +2038,7 @@ def test_create_in_shared_zone_by_unassociated_user_succeeds_if_record_type_is_a
     zone = shared_zone_test_context.shared_zone
     group = shared_zone_test_context.dummy_group
 
-    record_json = get_recordset_json(zone, 'test_shared_approved_record_type', 'A', [{'address': '1.1.1.1'}])
+    record_json = get_recordset_json(zone, generate_record_name(), 'A', [{'address': '1.1.1.1'}])
     record_json['ownerGroupId'] = group['id']
 
     create_rs = None
