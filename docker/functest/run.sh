@@ -47,21 +47,21 @@ cd /app
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
     ./run-tests.py live_tests -n0 -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
     if [ $? -eq 0 ]; then
       # run serial tests second (serial marker)
-      echo "./run-tests.py live_tests -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+      echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
       ./run-tests.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
     fi
 else
     # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-    ./run-tests.py live_tests -n0 -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    echo "./run-tests.py live_tests -n0 -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -n0 -v -m "not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
 
     if [ $? -eq 0 ]; then
       # run serial tests second (serial marker)
-      echo "./run-tests.py live_tests -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-      ./run-tests.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+      echo "./run-tests.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+      ./run-tests.py live_tests -n0 -v -m "serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
     fi
 fi
