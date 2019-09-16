@@ -590,7 +590,7 @@ class BatchChangeJsonProtocolSpec
         Some("zoneId"),
         Some("zoneName"),
         Some("recordName"),
-        "foo",
+        "foo.",
         A,
         Pending,
         None,
