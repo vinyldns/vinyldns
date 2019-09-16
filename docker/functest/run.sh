@@ -46,9 +46,22 @@ cd /app
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
-    echo "./run-tests.py live_tests -m \"not skip_production\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-    ./run-tests.py live_tests -n0 -v -m "not skip_production" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    # run parallel tests first (not serial)
+    echo "./run-tests.py live_tests -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -n0 -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    if [ $? -eq 0 ]; then
+      # run serial tests second (serial marker)
+      echo "./run-tests.py live_tests -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    fi
 else
-    echo "./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-    ./run-tests.py live_tests -n0 -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    # run parallel tests first (not serial)
+    echo "./run-tests.py live_tests -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -n0 -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+
+    if [ $? -eq 0 ]; then
+      # run serial tests second (serial marker)
+      echo "./run-tests.py live_tests -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+      ./run-tests.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    fi
 fi
