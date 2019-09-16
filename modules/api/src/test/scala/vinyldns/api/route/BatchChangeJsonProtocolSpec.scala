@@ -29,7 +29,13 @@ import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, C
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, SingleChangeError, ZoneDiscoveryError}
+import vinyldns.core.domain.{
+  DomainValidationErrorType,
+  InvalidIpv4Address,
+  InvalidTTL,
+  SingleChangeError,
+  ZoneDiscoveryError
+}
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
