@@ -327,7 +327,7 @@ class BatchChangeJsonProtocolSpec
           addAChangeInput.copy(id = resultChangesIds(1)),
           addAAAAChangeInput.copy(id = resultChangesIds(2)),
           addCNAMEChangeInput.copy(id = resultChangesIds(3)),
-          addPTRChangeInput.copy(id = resultChangesIds(4)),
+          addPTRChangeInput.copy(id = resultChangesIds(4))
         ),
         Some("owner-group-id"),
         id = result.id
