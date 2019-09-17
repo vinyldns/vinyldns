@@ -591,3 +591,21 @@ def generate_record_name(zone_name=None):
         return '{0}-{1}.{2}'.format(function_name[:58], line_number, zone_name).replace('_', '-')
     else:
         return '{0}-{1}'.format(function_name[:58], line_number).replace('_', '-')
+
+
+def find_recordset_by_name(zone_id, rs_name, client):
+    r = client.list_recordsets(zone_id, record_name_filter=rs_name, status=200)
+    if r and 'recordSets' in r and len(r['recordSets']) > 0:
+        return r['recordSets'][0]
+    else:
+        return None
+
+
+def delete_recordset_by_name(zone_id, rs_name, client):
+    rs = find_recordset_by_name(zone_id, rs_name, client)
+    if rs:
+        client.delete_recordset(rs['zoneId'], rs['id'])
+        client.wait_until_recordset_deleted(rs['zoneId'], rs['id'])
+        return rs
+    else:
+        return None

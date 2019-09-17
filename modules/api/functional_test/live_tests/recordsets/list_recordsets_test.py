@@ -49,7 +49,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
         rs_from_list = (r for r in list_results['recordSets'] if r['id'] == result_rs['id']).next()
         assert_that(rs_from_list['name'], is_("test-owned-recordset"))
         assert_that(rs_from_list['ownerGroupId'], is_(shared_group['id']))
-        assert_that(rs_from_list['ownerGroupName'], is_("record-ownergroup"))
+        assert_that(rs_from_list['ownerGroupName'], is_(shared_group['name']))
 
     finally:
         if result_rs:

@@ -43,6 +43,10 @@ echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 
 cd /app
 
+# Cleanup any errant cached file copies
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -delete
+
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand

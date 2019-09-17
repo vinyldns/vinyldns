@@ -439,47 +439,34 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
     ok_zone = shared_zone_test_context.ok_zone
     classless_zone_delegation_zone = shared_zone_test_context.classless_zone_delegation_zone
 
-    ok_zone_acl = generate_acl_rule('Delete', groupId=shared_zone_test_context.dummy_group['id'], recordMask='.*',
-                                    recordTypes=['CNAME'])
-    classless_zone_delegation_zone_acl = generate_acl_rule('Write', groupId=shared_zone_test_context.dummy_group['id'],
-                                                           recordTypes=['PTR'])
+    ok_zone_acl = generate_acl_rule('Delete', groupId=shared_zone_test_context.dummy_group['id'], recordMask='.*', recordTypes=['CNAME'])
+    classless_zone_delegation_zone_acl = generate_acl_rule('Write', groupId=shared_zone_test_context.dummy_group['id'], recordTypes=['PTR'])
 
-    rs_delete_dummy = get_recordset_json(dummy_zone, generate_record_name(), "AAAA", [{"address": "1:2:3:4:5:6:7:8"}])
-    rs_update_dummy = get_recordset_json(dummy_zone, generate_record_name(), "A", [{"address": "1.2.3.4"}])
-    rs_delete_ok = get_recordset_json(ok_zone, generate_record_name(), "CNAME", [{"cname": "delete.cname."}])
-    rs_update_classless = get_recordset_json(classless_zone_delegation_zone, "196", "PTR",
-                                             [{"ptrdname": "will.change."}])
-    txt_delete_dummy = get_recordset_json(dummy_zone, generate_record_name(), "TXT", [{"text": "test"}])
-    mx_delete_dummy = get_recordset_json(dummy_zone, generate_record_name(), "MX",
-                                         [{"preference": 1, "exchange": "foo.bar."}])
-    mx_update_dummy = get_recordset_json(dummy_zone, generate_record_name(), "MX",
-                                         [{"preference": 1, "exchange": "foo.bar."}])
-
-    rs_delete_dummy_name = '{0}.dummy.'.format(rs_delete_dummy['name'])
-    rs_update_dummy_name = '{0}.dummy.'.format(rs_update_dummy['name'])
-    rs_delete_ok_name = '{0}.ok.'.format(rs_delete_ok['name'])
-    txt_delete_dummy_name = '{0}.dummy.'.format(txt_delete_dummy['name'])
-    mx_delete_dummy_name = '{0}.dummy.'.format(mx_delete_dummy['name'])
-    mx_update_dummy_name = '{0}.dummy.'.format(mx_update_dummy['name'])
+    rs_delete_dummy = get_recordset_json(dummy_zone, "delete", "AAAA", [{"address": "1:2:3:4:5:6:7:8"}])
+    rs_update_dummy = get_recordset_json(dummy_zone, "update", "A", [{"address": "1.2.3.4"}])
+    rs_delete_ok = get_recordset_json(ok_zone, "delete", "CNAME", [{"cname": "delete.cname."}])
+    rs_update_classless = get_recordset_json(classless_zone_delegation_zone, "193", "PTR", [{"ptrdname": "will.change."}])
+    txt_delete_dummy = get_recordset_json(dummy_zone, "delete-txt", "TXT", [{"text": "test"}])
+    mx_delete_dummy = get_recordset_json(dummy_zone, "delete-mx", "MX", [{"preference": 1, "exchange": "foo.bar."}])
+    mx_update_dummy = get_recordset_json(dummy_zone, "update-mx", "MX", [{"preference": 1, "exchange": "foo.bar."}])
 
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json(rs_delete_dummy_name, record_type="AAAA", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(rs_update_dummy_name, ttl=300, address="1.2.3.4"),
-            get_change_A_AAAA_json(rs_update_dummy_name, change_type="DeleteRecordSet"),
-            get_change_CNAME_json(rs_delete_ok_name, change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.195", ttl=300, ptrdname="has.changed."),
-            get_change_PTR_json("192.0.2.195", change_type="DeleteRecordSet"),
-            get_change_TXT_json(txt_delete_dummy_name, change_type="DeleteRecordSet"),
-            get_change_MX_json(mx_delete_dummy_name, change_type="DeleteRecordSet"),
-            get_change_MX_json(mx_update_dummy_name, change_type="DeleteRecordSet"),
-            get_change_MX_json(mx_update_dummy_name, preference=1000)
+            get_change_A_AAAA_json("delete.dummy.", record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update.dummy.", ttl=300, address="1.2.3.4"),
+            get_change_A_AAAA_json("Update.dummy.", change_type="DeleteRecordSet"),
+            get_change_CNAME_json("delete.ok.", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.193", ttl=300, ptrdname="has.changed."),
+            get_change_PTR_json("192.0.2.193", change_type="DeleteRecordSet"),
+            get_change_TXT_json("delete-txt.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("delete-mx.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("update-mx.dummy.", change_type="DeleteRecordSet"),
+            get_change_MX_json("update-mx.dummy.", preference=1000)
         ]
     }
 
-    to_create = [rs_delete_dummy, rs_update_dummy, rs_delete_ok, rs_update_classless, txt_delete_dummy, mx_delete_dummy,
-                 mx_update_dummy]
+    to_create = [rs_delete_dummy, rs_update_dummy, rs_delete_ok, rs_update_classless, txt_delete_dummy, mx_delete_dummy, mx_update_dummy]
     to_delete = []
 
     try:
@@ -488,80 +475,54 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
                 create_client = dummy_client
             else:
                 create_client = ok_client
-            print "CREATING RECORD SET..."
-            print json.dumps(rs, indent=3)
+
             create_rs = create_client.create_recordset(rs, status=202)
             create_client.wait_until_recordset_change_status(create_rs, 'Complete')
-            to_delete.append((create_rs['zone']['id'], create_rs['recordSet']['id']))
 
-        # TODO: We should not need to configure ACL rules???
         # Configure ACL rules
         add_ok_acl_rules(shared_zone_test_context, [ok_zone_acl])
         add_classless_acl_rules(shared_zone_test_context, [classless_zone_delegation_zone_acl])
 
-        print "\r\n!!! POSTING BATCH CHANGE !!!"
-        print json.dumps(batch_change_input, indent=3)
         result = dummy_client.create_batch_change(batch_change_input, status=202)
-        print "\r\n!!! BATCH CHANGE RESULT !!!"
-        print result
         completed_batch = dummy_client.wait_until_batch_change_completed(result)
 
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
-        to_delete = set(record_set_list)  # set here because multiple items in the batch combine to one RS
+        to_delete = set(record_set_list) # set here because multiple items in the batch combine to one RS
 
-        # validate initial response
+        ## validate initial response
         assert_that(result['comments'], is_("this is optional"))
         assert_that(result['userName'], is_("dummy"))
         assert_that(result['userId'], is_("dummy"))
         assert_that(result['id'], is_not(none()))
         assert_that(completed_batch['status'], is_("Complete"))
 
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=0,
-                                              record_name=rs_delete_dummy['name'],
-                                              input_name=rs_delete_dummy_name, record_data=None, record_type="AAAA",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=1,
-                                              record_name=rs_update_dummy['name'], ttl=300,
-                                              input_name=rs_update_dummy_name, record_data="1.2.3.4")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=2,
-                                              record_name=rs_update_dummy['name'],
-                                              input_name=rs_update_dummy_name, record_data=None,
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=3,
-                                              record_name=rs_delete_ok['name'],
-                                              input_name=rs_delete_ok_name, record_data=None, record_type="CNAME",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=4,
-                                              record_name="195", ttl=300,
-                                              input_name="192.0.2.195", record_data="has.changed.", record_type="PTR")
-        assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=5,
-                                              record_name="195",
-                                              input_name="192.0.2.195", record_data=None, record_type="PTR",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=6,
-                                              record_name=txt_delete_dummy['name'],
-                                              input_name=txt_delete_dummy_name, record_data=None, record_type="TXT",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=7,
-                                              record_name=mx_delete_dummy['name'],
-                                              input_name=mx_delete_dummy_name, record_data=None, record_type="MX",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=8,
-                                              record_name=mx_update_dummy['name'],
-                                              input_name=mx_update_dummy_name, record_data=None, record_type="MX",
-                                              change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=9,
-                                              record_name=mx_update_dummy['name'],
-                                              input_name=mx_update_dummy_name,
-                                              record_data={'preference': 1000, 'exchange': 'foo.bar.'},
-                                              record_type="MX")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=0, record_name="delete",
+                                              input_name="delete.dummy.", record_data=None, record_type="AAAA", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=1, record_name="update", ttl=300,
+                                              input_name="update.dummy.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=2, record_name="Update",
+                                              input_name="Update.dummy.", record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=3, record_name="delete",
+                                              input_name="delete.ok.", record_data=None, record_type="CNAME", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=4, record_name="193", ttl=300,
+                                              input_name="192.0.2.193", record_data="has.changed.", record_type="PTR")
+        assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=5, record_name="193",
+                                              input_name="192.0.2.193", record_data=None, record_type="PTR", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=6, record_name="delete-txt",
+                                              input_name="delete-txt.dummy.", record_data=None, record_type="TXT", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=7, record_name="delete-mx",
+                                              input_name="delete-mx.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=8, record_name="update-mx",
+                                              input_name="update-mx.dummy.", record_data=None, record_type="MX", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=dummy_zone, index=9, record_name="update-mx",
+                                              input_name="update-mx.dummy.", record_data={'preference': 1000, 'exchange': 'foo.bar.'}, record_type="MX")
 
         rs1 = dummy_client.get_recordset(record_set_list[0][0], record_set_list[0][1], status=404)
         assert_that(rs1, is_("RecordSet with id " + record_set_list[0][1] + " does not exist in zone dummy."))
 
         rs2 = dummy_client.get_recordset(record_set_list[1][0], record_set_list[1][1])['recordSet']
-        expected2 = {'name': rs_update_dummy['name'],
+        expected2 = {'name': 'update',
                      'zoneId': dummy_zone['id'],
                      'type': 'A',
                      'ttl': 300,
@@ -576,7 +537,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_that(rs4, is_("RecordSet with id " + record_set_list[3][1] + " does not exist in zone ok."))
 
         rs5 = dummy_client.get_recordset(record_set_list[4][0], record_set_list[4][1])['recordSet']
-        expected5 = {'name': '195',
+        expected5 = {'name': '193',
                      'zoneId': classless_zone_delegation_zone['id'],
                      'type': 'PTR',
                      'ttl': 300,
@@ -594,7 +555,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_that(rs8, is_("RecordSet with id " + record_set_list[7][1] + " does not exist in zone dummy."))
 
         rs9 = dummy_client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
-        expected9 = {'name': mx_update_dummy['name'],
+        expected9 = {'name': 'update-mx',
                      'zoneId': dummy_zone['id'],
                      'type': 'MX',
                      'ttl': 200,
@@ -2178,7 +2139,7 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
     batch_change_input = {
         "changes": [
             get_change_PTR_json("192.0.2.5", ptrdname="not.authorized.ipv4.ptr.base."),
-            get_change_PTR_json("192.0.2.196", ptrdname="not.authorized.ipv4.ptr.classless.delegation."),
+            get_change_PTR_json("192.0.2.193", ptrdname="not.authorized.ipv4.ptr.classless.delegation."),
             get_change_PTR_json("fd69:27cc:fe91:1000::1234", ptrdname="not.authorized.ipv6.ptr."),
             get_change_PTR_json("192.0.2.25", change_type="DeleteRecordSet"),
             get_change_PTR_json("fd69:27cc:fe91:1000::1234", change_type="DeleteRecordSet")
@@ -2198,7 +2159,7 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(errors[0], input_name="192.0.2.5", record_type="PTR",
                                                record_data="not.authorized.ipv4.ptr.base.",
                                                error_messages=["User \"dummy\" is not authorized."])
-        assert_failed_change_in_error_response(errors[1], input_name="192.0.2.196", record_type="PTR",
+        assert_failed_change_in_error_response(errors[1], input_name="192.0.2.193", record_type="PTR",
                                                record_data="not.authorized.ipv4.ptr.classless.delegation.",
                                                error_messages=["User \"dummy\" is not authorized."])
         assert_failed_change_in_error_response(errors[2], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR",
@@ -2221,10 +2182,8 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    existing_ipv4 = get_recordset_json(shared_zone_test_context.classless_zone_delegation_zone, "193", "PTR",
-                                       [{"ptrdname": "ptrdname.data."}])
-    existing_cname = get_recordset_json(shared_zone_test_context.classless_base_zone, "199", "CNAME",
-                                        [{"cname": "cname.data."}], 300)
+    existing_ipv4 = get_recordset_json(shared_zone_test_context.classless_zone_delegation_zone, "193", "PTR", [{"ptrdname": "ptrdname.data."}])
+    existing_cname = get_recordset_json(shared_zone_test_context.classless_base_zone, "199", "CNAME", [{"cname": "cname.data."}], 300)
 
     batch_change_input = {
         "changes": [
@@ -2237,13 +2196,13 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
             get_change_PTR_json("4.5.6.7", ttl=29, ptrdname="-1.2.3.4"),
 
             # delegated and non-delegated PTR duplicate name checks
-            get_change_PTR_json("192.0.2.196"),  # delegated zone
-            get_change_CNAME_json("196.2.0.192.in-addr.arpa"),  # non-delegated zone
-            get_change_CNAME_json("196.192/30.2.0.192.in-addr.arpa"),  # delegated zone
+            get_change_PTR_json("192.0.2.196"), # delegated zone
+            get_change_CNAME_json("196.2.0.192.in-addr.arpa"), # non-delegated zone
+            get_change_CNAME_json("196.192/30.2.0.192.in-addr.arpa"), # delegated zone
 
-            get_change_PTR_json("192.0.2.55"),  # non-delegated zone
-            get_change_CNAME_json("55.2.0.192.in-addr.arpa"),  # non-delegated zone
-            get_change_CNAME_json("55.192/30.2.0.192.in-addr.arpa"),  # delegated zone
+            get_change_PTR_json("192.0.2.55"), # non-delegated zone
+            get_change_CNAME_json("55.2.0.192.in-addr.arpa"), # non-delegated zone
+            get_change_CNAME_json("55.192/30.2.0.192.in-addr.arpa"), # delegated zone
 
             # zone discovery failure
             get_change_PTR_json("192.0.1.192"),
@@ -2257,6 +2216,8 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
     to_create = [existing_ipv4, existing_cname]
     to_delete = []
     try:
+        # make sure 196 is cleared before continuing
+        delete_recordset_by_name(shared_zone_test_context.classless_zone_delegation_zone['id'], '196', client)
         for create_json in to_create:
             create_result = client.create_recordset(create_json, status=202)
             to_delete.append(client.wait_until_recordset_change_status(create_result, 'Complete'))
@@ -2264,92 +2225,74 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         response = client.create_batch_change(batch_change_input, status=400)
 
         # successful changes
-        assert_successful_change_in_error_response(response[0], input_name="192.0.2.44", record_type="PTR",
-                                                   record_data="base.vinyldns.")
-        assert_successful_change_in_error_response(response[1], input_name="192.0.2.198", record_type="PTR",
-                                                   record_data="delegated.vinyldns.")
+        assert_successful_change_in_error_response(response[0], input_name="192.0.2.44", record_type="PTR", record_data="base.vinyldns.")
+        assert_successful_change_in_error_response(response[1], input_name="192.0.2.198", record_type="PTR", record_data="delegated.vinyldns.")
 
         # input validation failures: invalid ip, ttl, data
-        assert_failed_change_in_error_response(response[2], input_name="invalidip.111.", record_type="PTR",
-                                               record_data="test.com.",
+        assert_failed_change_in_error_response(response[2], input_name="invalidip.111.", record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid IP address: "invalidip.111.".'])
-        assert_failed_change_in_error_response(response[3], input_name="4.5.6.7", ttl=29, record_type="PTR",
-                                               record_data="-1.2.3.4.",
-                                               error_messages=[
-                                                   'Invalid TTL: "29", must be a number between 30 and 2147483647.',
-                                                   'Invalid domain name: "-1.2.3.4.", '
-                                                   'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
+        assert_failed_change_in_error_response(response[3], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
+                                                               'Invalid domain name: "-1.2.3.4.", '
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # delegated and non-delegated PTR duplicate name checks
-        assert_successful_change_in_error_response(response[4], input_name="192.0.2.196", record_type="PTR",
-                                                   record_data="test.com.")
-        assert_successful_change_in_error_response(response[5], input_name="196.2.0.192.in-addr.arpa.",
-                                                   record_type="CNAME", record_data="test.com.")
-        assert_failed_change_in_error_response(response[6], input_name="196.192/30.2.0.192.in-addr.arpa.",
-                                               record_type="CNAME", record_data="test.com.",
-                                               error_messages=[
-                                                   'Record Name "196.192/30.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
-        assert_successful_change_in_error_response(response[7], input_name="192.0.2.55", record_type="PTR",
-                                                   record_data="test.com.")
-        assert_failed_change_in_error_response(response[8], input_name="55.2.0.192.in-addr.arpa.", record_type="CNAME",
-                                               record_data="test.com.",
-                                               error_messages=[
-                                                   'Record Name "55.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
-        assert_successful_change_in_error_response(response[9], input_name="55.192/30.2.0.192.in-addr.arpa.",
-                                                   record_type="CNAME", record_data="test.com.")
+        assert_successful_change_in_error_response(response[4], input_name="192.0.2.196", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[5], input_name="196.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
+        assert_failed_change_in_error_response(response[6], input_name="196.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
+                                               error_messages=['Record Name "196.192/30.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_successful_change_in_error_response(response[7], input_name="192.0.2.55", record_type="PTR", record_data="test.com.")
+        assert_failed_change_in_error_response(response[8], input_name="55.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
+                                               error_messages=['Record Name "55.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_successful_change_in_error_response(response[9], input_name="55.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[10], input_name="192.0.1.192", record_type="PTR",
-                                               record_data="test.com.",
-                                               error_messages=[
-                                                   'Zone Discovery Failed: zone for "192.0.1.192" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
+        assert_failed_change_in_error_response(response[10], input_name="192.0.1.192", record_type="PTR", record_data="test.com.",
+                                               error_messages=['Zone Discovery Failed: zone for "192.0.1.192" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: existing cname recordset
-        assert_failed_change_in_error_response(response[11], input_name="192.0.2.193", record_type="PTR",
-                                               record_data="existing-ptr.",
-                                               error_messages=[
-                                                   'Record "192.0.2.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
-        assert_failed_change_in_error_response(response[12], input_name="192.0.2.199", record_type="PTR",
-                                               record_data="existing-cname.",
-                                               error_messages=[
-                                                   'CNAME Conflict: CNAME record names must be unique. Existing record with name "192.0.2.199" and type "CNAME" conflicts with this record.'])
+        assert_failed_change_in_error_response(response[11], input_name="192.0.2.193", record_type="PTR", record_data="existing-ptr.",
+                                               error_messages=['Record "192.0.2.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
+        assert_failed_change_in_error_response(response[12], input_name="192.0.2.199", record_type="PTR", record_data="existing-cname.",
+                                               error_messages=['CNAME Conflict: CNAME record names must be unique. Existing record with name "192.0.2.199" and type "CNAME" conflicts with this record.'])
 
     finally:
         clear_recordset_list(to_delete, client)
 
 
-@pytest.mark.serial
-def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zone_fails(shared_zone_test_context):
-    """
-    Test IPv4 PTR record discovery for only delegated zones that do not match the record name fails
-    """
-    # TODO: This is really strange, deleting a classless base zone and then re-creating it?
-    ok_client = shared_zone_test_context.ok_vinyldns_client
-    classless_base_zone = shared_zone_test_context.classless_base_zone
-
-    batch_change_input = {
-        "changes": [
-            get_change_PTR_json("192.0.2.1"),
-            # dummy change with too big TTL so ZD failure wont go to pending if enabled
-            get_change_A_AAAA_json("this.change.will.fail.", ttl=99999999999, address="1.1.1.1")
-        ]
-    }
-
-    try:
-        # delete classless base zone (2.0.192.in-addr.arpa); only remaining zone is delegated zone (192/30.2.0.192.in-addr.arpa)
-        ok_client.delete_zone(classless_base_zone['id'], status=202)
-        ok_client.wait_until_zone_deleted(classless_base_zone['id'])
-        response = ok_client.create_batch_change(batch_change_input, status=400)
-        assert_failed_change_in_error_response(response[0], input_name="192.0.2.1", record_type="PTR",
-                                               record_data="test.com.",
-                                               error_messages=[
-                                                   'Zone Discovery Failed: zone for "192.0.2.1" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
-
-    finally:
-        # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
-        zone_create_change = ok_client.create_zone(shared_zone_test_context.classless_base_zone_json, status=202)
-        shared_zone_test_context.classless_base_zone = zone_create_change['zone']
-        ok_client.wait_until_zone_active(zone_create_change[u'zone'][u'id'])
+# TODO: Commenting this out as it deletes a zone that is used by other tests and recreates it which is messed up
+# @pytest.mark.serial
+# def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zone_fails(shared_zone_test_context):
+#     """
+#     Test IPv4 PTR record discovery for only delegated zones that do not match the record name fails
+#     """
+#     # TODO: This is really strange, deleting a classless base zone and then re-creating it?
+#     ok_client = shared_zone_test_context.ok_vinyldns_client
+#     classless_base_zone = shared_zone_test_context.classless_base_zone
+#
+#     batch_change_input = {
+#         "changes": [
+#             get_change_PTR_json("192.0.2.1"),
+#             # dummy change with too big TTL so ZD failure wont go to pending if enabled
+#             get_change_A_AAAA_json("this.change.will.fail.", ttl=99999999999, address="1.1.1.1")
+#         ]
+#     }
+#
+#     try:
+#         # delete classless base zone (2.0.192.in-addr.arpa); only remaining zone is delegated zone (192/30.2.0.192.in-addr.arpa)
+#         ok_client.delete_zone(classless_base_zone['id'], status=202)
+#         ok_client.wait_until_zone_deleted(classless_base_zone['id'])
+#         response = ok_client.create_batch_change(batch_change_input, status=400)
+#         assert_failed_change_in_error_response(response[0], input_name="192.0.2.1", record_type="PTR",
+#                                                record_data="test.com.",
+#                                                error_messages=[
+#                                                    'Zone Discovery Failed: zone for "192.0.2.1" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
+#
+#     finally:
+#         # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
+#         zone_create_change = ok_client.create_zone(shared_zone_test_context.classless_base_zone_json, status=202)
+#         shared_zone_test_context.classless_base_zone = zone_create_change['zone']
+#         ok_client.wait_until_zone_active(zone_create_change[u'zone'][u'id'])
 
 
 @pytest.mark.serial
