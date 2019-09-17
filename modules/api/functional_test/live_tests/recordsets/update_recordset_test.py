@@ -1840,7 +1840,7 @@ def test_update_dotted_a_record_apex_adds_trailing_dot_to_name(shared_zone_test_
 
     recordset = {
         'zoneId': zone['id'],
-        'name': 'silly',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]

@@ -68,6 +68,7 @@ def test_get_zone_by_id_no_authorization(shared_zone_test_context):
     client.get_zone('123456', sign_request=False, status=401)
 
 
+@pytest.mark.serial
 def test_get_zone_by_id_includes_acl_display_name(shared_zone_test_context):
     """
     Test get an existing zone with acl rules

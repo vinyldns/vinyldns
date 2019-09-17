@@ -8,7 +8,8 @@ from vinyldns_python import VinylDNSClient
 class ListBatchChangeSummariesTestContext():
     def __init__(self, shared_zone_test_context):
         # Note: this fixture is designed so it will load summaries instead of creating them
-        self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listBatchSummariesAccessKey', 'listBatchSummariesSecretKey')
+        self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listBatchSummariesAccessKey',
+                                     'listBatchSummariesSecretKey')
         self.completed_changes = []
         self.to_delete = None
 
@@ -39,14 +40,6 @@ class ListBatchChangeSummariesTestContext():
             ]
         }
 
-        batch_change_input_pending = {
-            "comments": '',
-            "changes": [
-                get_change_A_AAAA_json("listing-batch-with-owner-group.non-existent-zone.", address="1.1.1.1")
-            ],
-            "ownerGroupId": self.group['id']
-        }
-
         batch_change_input_with_owner = {
             "comments": '',
             "changes": [
@@ -55,7 +48,8 @@ class ListBatchChangeSummariesTestContext():
             "ownerGroupId": self.group['id']
         }
 
-        batch_change_inputs = [batch_change_input_one, batch_change_input_two, batch_change_input_three, batch_change_input_pending, batch_change_input_with_owner]
+        batch_change_inputs = [batch_change_input_one, batch_change_input_two, batch_change_input_three,
+                               batch_change_input_with_owner]
 
         record_set_list = []
         self.completed_changes = []
@@ -74,16 +68,19 @@ class ListBatchChangeSummariesTestContext():
                 time.sleep(1)
 
             self.completed_changes = self.client.list_batch_change_summaries(status=200)['batchChanges']
-
             assert_that(len(self.completed_changes), equal_to(len(batch_change_inputs)))
         else:
             self.completed_changes = initial_db_check['batchChanges']
 
+        import json
+        print "\r\n!!! SUMMARIES..."
+        print json.dumps(self.completed_changes, indent=3)
         self.to_delete = set(record_set_list)
 
     def tear_down(self, shared_zone_test_context):
         for result_rs in self.to_delete:
-            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(result_rs[0], result_rs[1],
+                                                                                         status=202)
             shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
         clear_ok_acl_rules(shared_zone_test_context)
 
@@ -112,7 +109,8 @@ class ListBatchChangeSummariesTestContext():
             assert_that(summary["userId"], equal_to("list-batch-summaries-id"))
             assert_that(summary["userName"], equal_to("list-batch-summaries-user"))
             assert_that(summary["comments"], equal_to(self.completed_changes[i + start_from]["comments"]))
-            assert_that(summary["createdTimestamp"], equal_to(self.completed_changes[i + start_from]["createdTimestamp"]))
+            assert_that(summary["createdTimestamp"],
+                        equal_to(self.completed_changes[i + start_from]["createdTimestamp"]))
             assert_that(summary["totalChanges"], equal_to(self.completed_changes[i + start_from]["totalChanges"]))
             assert_that(summary["status"], equal_to(self.completed_changes[i + start_from]["status"]))
             assert_that(summary["id"], equal_to(self.completed_changes[i + start_from]["id"]))

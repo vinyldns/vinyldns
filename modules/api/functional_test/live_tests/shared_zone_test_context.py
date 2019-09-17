@@ -1,24 +1,32 @@
 import time
-from vinyldns_python import VinylDNSClient
-from vinyldns_context import VinylDNSTestContext
 from hamcrest import *
 from utils import *
-from list_zones_test_context import ListZonesTestContext
-from list_recordsets_test_context import ListRecordSetsTestContext
+from vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
+
 from list_batch_summaries_test_context import ListBatchChangeSummariesTestContext
 from list_groups_test_context import ListGroupsTestContext
+from list_recordsets_test_context import ListRecordSetsTestContext
+from list_zones_test_context import ListZonesTestContext
+
 
 class SharedZoneTestContext(object):
     """
     Creates multiple zones to test authorization / access to shared zones across users
     """
+
     def __init__(self, fixture_file=None):
         self.ok_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'okAccessKey', 'okSecretKey')
-        self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'dummyAccessKey', 'dummySecretKey')
-        self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey', 'sharedZoneUserSecretKey')
-        self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
-        self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey', 'listGroupSecretKey')
-        self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'testUserAccessKey', 'testUserSecretKey')
+        self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'dummyAccessKey',
+                                                    'dummySecretKey')
+        self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey',
+                                                          'sharedZoneUserSecretKey')
+        self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey',
+                                                  'supportUserSecretKey')
+        self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey',
+                                                  'listGroupSecretKey')
+        self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'testUserAccessKey',
+                                               'testUserSecretKey')
         self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'history-key', 'history-secret')
         self.list_zones = ListZonesTestContext()
         self.list_zones_client = self.list_zones.client
@@ -30,6 +38,8 @@ class SharedZoneTestContext(object):
         self.ok_group = None
         self.shared_record_group = None
         self.history_group = None
+        self.group_activity_created = None
+        self.group_activity_updated = None
 
         # if we are using an existing fixture, load the fixture file and pull all of our data from there
         if fixture_file:
@@ -44,8 +54,8 @@ class SharedZoneTestContext(object):
                     'name': 'ok-group',
                     'email': 'test@test.com',
                     'description': 'this is a description',
-                    'members': [ { 'id': 'ok'}, { 'id': 'support-user-id'} ],
-                    'admins': [ { 'id': 'ok'} ]
+                    'members': [{'id': 'ok'}, {'id': 'support-user-id'}],
+                    'admins': [{'id': 'ok'}]
                 }
 
                 self.ok_group = self.ok_vinyldns_client.create_group(ok_group, status=200)
@@ -56,8 +66,8 @@ class SharedZoneTestContext(object):
                     'name': 'dummy-group',
                     'email': 'test@test.com',
                     'description': 'this is a description',
-                    'members': [ { 'id': 'dummy'} ],
-                    'admins': [ { 'id': 'dummy'} ]
+                    'members': [{'id': 'dummy'}],
+                    'admins': [{'id': 'dummy'}]
                 }
                 self.dummy_group = self.dummy_vinyldns_client.create_group(dummy_group, status=200)
                 # in theory this shouldn't be needed, but getting 'user is not in group' errors on zone creation
@@ -67,8 +77,8 @@ class SharedZoneTestContext(object):
                     'name': 'record-ownergroup',
                     'email': 'test@test.com',
                     'description': 'this is a description',
-                    'members': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'} ],
-                    'admins': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'}  ]
+                    'members': [{'id': 'sharedZoneUser'}, {'id': 'ok'}],
+                    'admins': [{'id': 'sharedZoneUser'}, {'id': 'ok'}]
                 }
                 self.shared_record_group = self.ok_vinyldns_client.create_group(shared_record_group, status=200)
 
@@ -76,8 +86,8 @@ class SharedZoneTestContext(object):
                     'name': 'history-group',
                     'email': 'test@test.com',
                     'description': 'this is a description',
-                    'members': [ { 'id': 'history-id'} ],
-                    'admins': [ { 'id': 'history-id'} ]
+                    'members': [{'id': 'history-id'}],
+                    'admins': [{'id': 'history-id'}]
                 }
                 self.history_group = self.history_client.create_group(history_group, status=200)
                 self.confirm_member_in_group(self.history_client, self.history_group)
@@ -369,9 +379,16 @@ class SharedZoneTestContext(object):
                 self.ok_vinyldns_client.wait_until_zone_active(requires_review_zone_change[u'zone'][u'id'])
                 self.history_client.wait_until_zone_active(history_zone_change[u'zone'][u'id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
+
+                import json
+                print "\r\n!!! SHARED ZONE..."
+                print json.dumps(self.shared_zone, indent=3)
+                print json.dumps(self.non_test_shared_zone, indent=3)
                 shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
-                non_test_shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.non_test_shared_zone['id'])
+                non_test_shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(
+                    self.non_test_shared_zone['id'])
+
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_sync_change)
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_sync_change)
 
@@ -385,6 +402,9 @@ class SharedZoneTestContext(object):
 
                 # initialize history
                 self.init_history()
+
+                # initalize group activity
+                self.init_group_activity()
 
                 # initialize list zones, only do this when constructing the whole!
                 self.list_zones.build()
@@ -468,6 +488,45 @@ class SharedZoneTestContext(object):
         self.history_client.wait_until_recordset_deleted(aaaa_record['zoneId'], aaaa_record['id'])
         self.history_client.wait_until_recordset_deleted(cname_record['zoneId'], cname_record['id'])
 
+    def init_group_activity(self):
+        client = self.ok_vinyldns_client
+        created_group = None
+
+        group_name = 'test-list-group-activity-max-item-success'
+
+        # cleanup existing group if it's already in there
+        groups = client.list_all_my_groups()
+        existing = [grp for grp in groups if grp['name'] == group_name]
+        for grp in existing:
+            client.delete_group(grp['id'], status=200)
+
+        members = [{'id': 'ok'}]
+        new_group = {
+            'name': group_name,
+            'email': 'test@test.com',
+            'members': members,
+            'admins': [{'id': 'ok'}]
+        }
+        created_group = client.create_group(new_group, status=200)
+
+        update_groups = []
+        updated_groups = []
+        # each update changes the member
+        for runner in range(0, 10):
+            id = "dummy{0:0>3}".format(runner)
+            members = [{'id': id}]
+            update_groups.append({
+                'id': created_group['id'],
+                'name': group_name,
+                'email': 'test@test.com',
+                'members': members,
+                'admins': [{'id': 'ok'}]
+            })
+            updated_groups.append(client.update_group(update_groups[runner]['id'], update_groups[runner], status=200))
+
+        self.group_activity_created = created_group
+        self.group_activity_updated = updated_groups
+
     def load_fixture_file(self, fixture_file):
         # The fixture file contains all of the groups and zones,
         # The format is simply json where groups = [] and zones = []
@@ -492,6 +551,8 @@ class SharedZoneTestContext(object):
             self.non_test_shared_zone = data['non_test_shared_zone']
             self.history_zone = data['history_zone']
             self.history_group = data['history_group']
+            self.group_activity_created = data['group_activity_created']
+            self.group_activity_updated = data['group_activity_updated']
 
     def out_fixture_file(self, fixture_file):
         print "\r\n!!! PRINTING OUT FIXTURE FILE !!!"
@@ -505,7 +566,8 @@ class SharedZoneTestContext(object):
                 'system_test_zone': self.system_test_zone, 'parent_zone': self.parent_zone, 'ds_zone': self.ds_zone,
                 'requires_review_zone': self.requires_review_zone, 'shared_zone': self.shared_zone,
                 'non_test_shared_zone': self.non_test_shared_zone, 'history_zone': self.history_zone,
-                'history_group': self.history_group}
+                'history_group': self.history_group, 'group_activity_created': self.group_activity_created,
+                'group_activity_updated': self.group_activity_updated}
         with open(fixture_file, 'w') as out_file:
             json.dump(data, out_file)
 

@@ -75,6 +75,7 @@ def assert_error(input_json, error_messages):
     assert_that(len(input_json['errors']), is_(len(error_messages)))
 
 
+@pytest.mark.serial
 def test_create_batch_change_with_adds_success(shared_zone_test_context):
     """
     Test successfully creating a batch change with adds

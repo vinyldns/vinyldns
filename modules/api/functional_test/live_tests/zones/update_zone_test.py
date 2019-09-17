@@ -773,6 +773,8 @@ def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_conte
     Test user cannot update a zone adminGroupId to a group they are not a member of
     """
     # TODO: I don't know why this consistently fails but marking serial
+    # TODO: STRANGE!  When doing ALL serially it returns 400, when separating PAR from SER it returns a 403
+    # TODO: somehow changing the order of when this run changes the status code!  Who is messing with the ok_zone?
     zone_update = shared_zone_test_context.ok_zone
     zone_update['adminGroupId'] = shared_zone_test_context.history_group['id']
 

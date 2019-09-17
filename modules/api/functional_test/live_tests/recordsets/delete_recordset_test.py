@@ -48,7 +48,7 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
     finally:
         if result_rs:
             result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
+            if result and 'status' in result:
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
