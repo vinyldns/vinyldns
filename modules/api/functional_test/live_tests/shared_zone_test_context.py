@@ -380,10 +380,6 @@ class SharedZoneTestContext(object):
                 self.history_client.wait_until_zone_active(history_zone_change[u'zone'][u'id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
 
-                import json
-                print "\r\n!!! SHARED ZONE..."
-                print json.dumps(self.shared_zone, indent=3)
-                print json.dumps(self.non_test_shared_zone, indent=3)
                 shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
                 self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
                 non_test_shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(

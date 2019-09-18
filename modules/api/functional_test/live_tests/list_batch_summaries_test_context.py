@@ -71,10 +71,6 @@ class ListBatchChangeSummariesTestContext():
             assert_that(len(self.completed_changes), equal_to(len(batch_change_inputs)))
         else:
             self.completed_changes = initial_db_check['batchChanges']
-
-        import json
-        print "\r\n!!! SUMMARIES..."
-        print json.dumps(self.completed_changes, indent=3)
         self.to_delete = set(record_set_list)
 
     def tear_down(self, shared_zone_test_context):

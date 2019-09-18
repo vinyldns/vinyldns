@@ -397,10 +397,6 @@ def clear_zones(client):
 
     zones = client.list_zones()['zones']
 
-    import json
-    for zone in zones:
-        print json.dumps(zone, indent=3)
-
     # we only want to delete zones that the ok user "owns"
     zones_to_delete = filter(lambda x: (x['adminGroupId'] in group_ids) or (x['account'] in group_ids), zones)
     zoneids_to_delete = map(lambda x: x['id'], zones_to_delete)

@@ -30,8 +30,6 @@ def test_list_group_activity_start_from_success(group_activity_context, shared_z
     # our start from will align with the created on the 3rd change in the list
     start_from_index = 2
     start_from = page_one['changes'][start_from_index]['created']  # start from a known good timestamp
-    print "OUR ANCHOR IS..."  # NOTE: Yields dummy007
-    print json.dumps(page_one['changes'][start_from_index], indent=3)
 
     # now, we say give me all changes since the start_from, which should yield 8-7-6-5-4
     result = client.get_group_changes(created_group['id'], start_from=start_from, max_items=5, status=200)

@@ -29,8 +29,8 @@ def pytest_addoption(parser):
                      help="OAuth credentials in consumer:secret format")
     parser.addoption("--environment", dest="cim_env", action="store", default="test",
                      help="CIM_ENV that we are testing against.")
-    parser.addoption("--fixture-file", dest="fixture_file",
-                     help="fixture file to be used for loading an existing test fixture")
+    parser.addoption("--teardown", dest="teardown", action="store", default="True",
+                     help="True | False - Whether to teardown the test fixture, or leave it for another run")
 
 
 def pytest_configure(config):
@@ -61,30 +61,34 @@ def pytest_configure(config):
                                   config.getoption("dns_key_name"),
                                   config.getoption("dns_key"),
                                   config.getoption("url"),
-                                  config.getoption("fixture_file"))
+                                  config.getoption("teardown"))
 
+    from shared_zone_test_context import SharedZoneTestContext
     if not hasattr(config, 'workerinput'):
-        print "HEY MASTER!!!"
-        from shared_zone_test_context import SharedZoneTestContext
-        ctx = SharedZoneTestContext()
-        ctx.out_fixture_file("tmp.out")
+        print 'Master, standing up the test fixture...'
+        # use the fixture file if it exists
+        if os.path.isfile('tmp.out'):
+            print 'Fixture file found, assuming the fixture file'
+            SharedZoneTestContext('tmp.out')
+        else:
+            print 'No fixture file found, loading a new test fixture'
+            ctx = SharedZoneTestContext()
+            ctx.out_fixture_file("tmp.out")
     else:
-        print "NOT A MASTER!!!"
+        print 'This is a worker'
 
 
 def pytest_unconfigure(config):
     # this attribute is only set on workers
-    print "\r\n\r\n!!! BYE !!!"
-    if not hasattr(config, 'workerinput'):
+    print 'Master exiting...'
+    if not hasattr(config, 'workerinput') and VinylDNSTestContext.teardown:
+        print 'Master cleaning up...'
         from shared_zone_test_context import SharedZoneTestContext
-        ctx = SharedZoneTestContext("tmp.out")
+        ctx = SharedZoneTestContext('tmp.out')
         ctx.tear_down()
-
-        import os
-        os.remove("tmp.out")
-        print "\r\n\r\n!!! BYE MASTER !!!"
+        os.remove('tmp.out')
     else:
-        print "\r\n\r\n!!! BYE WORKER !!!"
+        print 'Worker exiting...'
 
 
 def pytest_report_header(config):

@@ -1,10 +1,7 @@
-import pytest
-import uuid
 import json
 
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from vinyldns_context import VinylDNSTestContext
+
 
 def test_create_group_success(shared_zone_test_context):
     """
@@ -18,11 +15,10 @@ def test_create_group_success(shared_zone_test_context):
             'name': 'test-create-group-success',
             'email': 'test@test.com',
             'description': 'this is a description',
-            'members': [ { 'id': 'ok'} ],
-            'admins': [ { 'id': 'ok'} ]
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
         }
         result = client.create_group(new_group, status=200)
-        print json.dumps(result, indent=3)
 
         assert_that(result['name'], is_(new_group['name']))
         assert_that(result['email'], is_(new_group['email']))
@@ -52,11 +48,10 @@ def test_creator_is_an_admin(shared_zone_test_context):
             'name': 'test-create-group-success',
             'email': 'test@test.com',
             'description': 'this is a description',
-            'members': [ { 'id': 'ok'} ],
+            'members': [{'id': 'ok'}],
             'admins': []
         }
         result = client.create_group(new_group, status=200)
-        print json.dumps(result, indent=3)
 
         assert_that(result['name'], is_(new_group['name']))
         assert_that(result['email'], is_(new_group['email']))
@@ -83,8 +78,8 @@ def test_create_group_without_name(shared_zone_test_context):
     new_group = {
         'email': 'test@test.com',
         'description': 'this is a description',
-        'members': [ { 'id': 'ok'} ],
-        'admins': [ { 'id': 'ok'} ]
+        'members': [{'id': 'ok'}],
+        'admins': [{'id': 'ok'}]
     }
     errors = client.create_group(new_group, status=400)['errors']
     assert_that(errors[0], is_("Missing Group.name"))
@@ -99,8 +94,8 @@ def test_create_group_without_email(shared_zone_test_context):
     new_group = {
         'name': 'without-email',
         'description': 'this is a description',
-        'members': [ { 'id': 'ok'} ],
-        'admins': [ { 'id': 'ok'} ]
+        'members': [{'id': 'ok'}],
+        'admins': [{'id': 'ok'}]
     }
     errors = client.create_group(new_group, status=400)['errors']
     assert_that(errors[0], is_("Missing Group.email"))
@@ -114,8 +109,8 @@ def test_create_group_without_name_or_email(shared_zone_test_context):
 
     new_group = {
         'description': 'this is a description',
-        'members': [ { 'id': 'ok'} ],
-        'admins': [ { 'id': 'ok'} ]
+        'members': [{'id': 'ok'}],
+        'admins': [{'id': 'ok'}]
     }
     errors = client.create_group(new_group, status=400)['errors']
     assert_that(errors, has_length(2))
@@ -157,7 +152,7 @@ def test_create_group_adds_admins_as_members(shared_zone_test_context):
             'email': 'test@test.com',
             'description': 'this is a description',
             'members': [],
-            'admins': [ { 'id': 'ok'} ]
+            'admins': [{'id': 'ok'}]
         }
         result = client.create_group(new_group, status=200)
 
@@ -171,7 +166,7 @@ def test_create_group_adds_admins_as_members(shared_zone_test_context):
         assert_that(result['admins'][0]['id'], is_('ok'))
     finally:
         if result:
-            client.delete_group(result['id'], status=(200,404))
+            client.delete_group(result['id'], status=(200, 404))
 
 
 def test_create_group_duplicate(shared_zone_test_context):
@@ -185,8 +180,8 @@ def test_create_group_duplicate(shared_zone_test_context):
             'name': 'test-create-group-duplicate',
             'email': 'test@test.com',
             'description': 'this is a description',
-            'members': [ { 'id': 'ok'} ],
-            'admins': [ { 'id': 'ok'} ]
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
         }
 
         result = client.create_group(new_group, status=200)
@@ -194,7 +189,7 @@ def test_create_group_duplicate(shared_zone_test_context):
 
     finally:
         if result:
-            client.delete_group(result['id'], status=(200,404))
+            client.delete_group(result['id'], status=(200, 404))
 
 
 def test_create_group_no_members(shared_zone_test_context):
@@ -218,7 +213,8 @@ def test_create_group_no_members(shared_zone_test_context):
         assert_that(result['admins'][0]['id'], is_('ok'))
     finally:
         if result:
-            client.delete_group(result['id'], status=(200,404))
+            client.delete_group(result['id'], status=(200, 404))
+
 
 def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
     """
@@ -232,8 +228,8 @@ def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
             'name': 'test-create-group-add-admins-to-members',
             'email': 'test@test.com',
             'description': 'this is a description',
-            'members': [ {'id': 'ok'} ],
-            'admins': [ {'id': 'dummy'} ]
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'dummy'}]
         }
 
         result = client.create_group(new_group, status=200)
@@ -241,4 +237,4 @@ def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
         assert_that(result['admins'][0]['id'], is_('dummy'))
     finally:
         if result:
-            client.delete_group(result['id'], status=(200,404))
+            client.delete_group(result['id'], status=(200, 404))

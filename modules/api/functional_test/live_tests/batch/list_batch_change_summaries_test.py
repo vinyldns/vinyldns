@@ -18,7 +18,7 @@ def test_list_batch_change_summaries_success(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=3)
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=4)
 
 
 def test_list_batch_change_summaries_with_max_items(list_fixture):
@@ -38,7 +38,7 @@ def test_list_batch_change_summaries_with_start_from(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200, start_from=1)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=2, start_from=1)
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=3, start_from=1)
 
 
 def test_list_batch_change_summaries_with_next_id(list_fixture):
@@ -53,21 +53,38 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
 
     next_page_result = client.list_batch_change_summaries(status=200, start_from=batch_change_summaries_result['nextId'])
 
-    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result['nextId'])
+    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=2, start_from=batch_change_summaries_result['nextId'])
 
 
 @pytest.mark.manual_batch_review
-def test_list_batch_change_summaries_with_pending_status(list_fixture):
+def test_list_batch_change_summaries_with_pending_status(shared_zone_test_context):
     """
     Test listing a limited number of user's batch change summaries with approvalStatus filter
     """
-    client = list_fixture.client
-    batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    batch_change_input = {
+        "comments": '',
+        "changes": [
+            get_change_A_AAAA_json("listing-batch-with-owner-group.non-existent-zone.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
 
-    for batchChange in batch_change_summaries_result['batchChanges']:
-        assert_that(batchChange['approvalStatus'], is_('PendingReview'))
-        assert_that(batchChange['status'], is_('PendingReview'))
-        assert_that(batchChange['totalChanges'], equal_to(1))
+    pending_bc = None
+    try:
+        pending_bc = client.create_batch_change(batch_change_input, status=202)
+
+        batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
+
+        for batchChange in batch_change_summaries_result['batchChanges']:
+            assert_that(batchChange['approvalStatus'], is_('PendingReview'))
+            assert_that(batchChange['status'], is_('PendingReview'))
+            assert_that(batchChange['totalChanges'], equal_to(1))
+    finally:
+        if pending_bc:
+            rejecter = shared_zone_test_context.support_user_client
+            rejecter.reject_batch_change(pending_bc['id'], status=200)
 
 
 def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_changes_passes():
@@ -219,43 +236,3 @@ def test_list_batch_change_summaries_with_pending_status(shared_zone_test_contex
         if pending_bc:
             rejecter = shared_zone_test_context.support_user_client
             rejecter.reject_batch_change(pending_bc['id'], status=200)
-
-
-@pytest.mark.skip_production
-def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_test_context):
-    """
-    Test that getting a batch change summary with an record owner group set returns the record owner group name and id
-    """
-    client = shared_zone_test_context.shared_zone_vinyldns_client
-    group = shared_zone_test_context.shared_record_group
-    batch_change_input = {
-        "comments": '',
-        "changes": [
-            get_change_A_AAAA_json("listing-batch-with-owner-group.shared.", address="1.1.1.1")
-        ],
-        "ownerGroupId": group['id']
-    }
-
-    record_to_delete = []
-
-    try:
-        batch_change = client.create_batch_change(batch_change_input, status=202)
-        completed_batch = client.wait_until_batch_change_completed(batch_change)
-
-        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
-        record_to_delete = set(record_set_list)
-
-        batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
-
-        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
-        assert_that(under_test, has_length(1))
-
-        under_test = under_test[0]
-        assert_that(under_test['ownerGroupId'], is_(group['id']))
-        assert_that(under_test['ownerGroupName'], is_(group['name']))
-
-    finally:
-        for result_rs in record_to_delete:
-            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
-            client.wait_until_recordset_change_status(delete_result, 'Complete')
-

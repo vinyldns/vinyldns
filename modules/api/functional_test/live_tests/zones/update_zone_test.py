@@ -635,8 +635,6 @@ def test_update_reverse_v4_zone(shared_zone_test_context):
     zone = shared_zone_test_context.ip4_reverse_zone
     zone['email'] = 'update-test@bar.com'
 
-    import json
-    print json.dumps(zone, indent=4)
     update_result = client.update_zone(zone, status=202)
     client.wait_until_zone_change_status_synced(update_result)
 

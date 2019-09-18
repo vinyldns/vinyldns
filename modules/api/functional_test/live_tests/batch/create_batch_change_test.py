@@ -1891,8 +1891,6 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
             to_delete.append(client.wait_until_recordset_change_status(create_result, 'Complete'))
 
         response = client.create_batch_change(batch_change_input, status=400)
-        print "\r\n!!! JSON "
-        print json.dumps(response, indent=3)
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name=forward_fqdn,
@@ -2044,7 +2042,6 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
         ok_client.get_recordset(ok_zone['id'], 'non-existent', status=404)
 
         response = ok_client.create_batch_change(batch_change_input, status=400)
-        print json.dumps(response, indent=3)
 
         # valid changes - forward zone
         assert_successful_change_in_error_response(response[0], input_name="delete3.ok.", record_type="CNAME",
@@ -2609,8 +2606,6 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
             to_delete.append(client.wait_until_recordset_change_status(create_result, 'Complete'))
 
         response = client.create_batch_change(batch_change_input, status=400)
-        print "\r\n!!! JSON ..."
-        print json.dumps(response, indent=3)
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name=good_record_fqdn, record_type="TXT",
