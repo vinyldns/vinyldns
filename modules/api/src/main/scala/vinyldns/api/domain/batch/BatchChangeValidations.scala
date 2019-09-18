@@ -249,11 +249,11 @@ class BatchChangeValidations(
       // These cases MUST be below adds because:
       // - order matters
       // - all AddChangeForValidations are covered by this point
-      case del
+      case delete
           if groupedChanges
-            .getLogicalChangeType(del.recordKey)
+            .getLogicalChangeType(delete.recordKey)
             .contains(LogicalChangeType.FullDelete) =>
-        validateDeleteWithContext(del, groupedChanges, auth, isApproved)
+        validateDeleteWithContext(delete, groupedChanges, auth, isApproved)
       case deleteUpdate =>
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
@@ -281,7 +281,7 @@ class BatchChangeValidations(
     else
       ().validNel
 
-  def ensureDeleteRecordEntryExists(
+  def ensureRecordExists(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
     change match {
@@ -309,7 +309,7 @@ class BatchChangeValidations(
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureDeleteRecordEntryExists(change, groupedChanges)
+            ensureRecordExists(change, groupedChanges)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
     validations.map(_ => change)
@@ -361,7 +361,7 @@ class BatchChangeValidations(
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureDeleteRecordEntryExists(change, groupedChanges)
+            ensureRecordExists(change, groupedChanges)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
