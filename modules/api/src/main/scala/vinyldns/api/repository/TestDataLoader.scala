@@ -130,6 +130,18 @@ object TestDataLoader {
     isTest = true
   )
 
+  final val listRecordsUser = User(
+    userName = "list-records-user",
+    id = "list-records-user",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "listRecordsAccessKey",
+    secretKey = "listRecordsSecretKey",
+    firstName = Some("list-records"),
+    lastName = Some("list-records"),
+    email = Some("test@test.com"),
+    isTest = true
+  )
+
   final val listBatchChangeSummariesUser = User(
     userName = "list-batch-summaries-user",
     id = "list-batch-summaries-id",
@@ -140,6 +152,14 @@ object TestDataLoader {
     lastName = Some("list-batch-summaries"),
     email = Some("test@test.com"),
     isTest = true
+  )
+
+  final val listBatchChangeSummariesGroup = Group(
+    name = "testListBatchChangeSummariesGroup",
+    id = "list-summaries-group",
+    email = "email",
+    memberIds = Set(listBatchChangeSummariesUser.id),
+    adminUserIds = Set(listBatchChangeSummariesUser.id)
   )
 
   final val listZeroBatchChangeSummariesUser = User(
@@ -221,7 +241,7 @@ object TestDataLoader {
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
-        listOfDummyUsers).map { user =>
+        listRecordsUser :: listOfDummyUsers).map { user =>
         userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out
@@ -246,6 +266,7 @@ object TestDataLoader {
       _ <- groupRepo.save(globalACLGroup)
       _ <- groupRepo.save(anotherGlobalACLGroup)
       _ <- groupRepo.save(duGroup)
+      _ <- groupRepo.save(listBatchChangeSummariesGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id))
@@ -256,6 +277,9 @@ object TestDataLoader {
         groupId = "another-global-acl-group",
         memberUserIds = Set(testUser.id))
       _ <- membershipRepo.addMembers(groupId = duGroup.id, memberUserIds = duGroup.memberIds)
+      _ <- membershipRepo.addMembers(
+        groupId = listBatchChangeSummariesGroup.id,
+        memberUserIds = listBatchChangeSummariesGroup.memberIds)
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()

@@ -20,6 +20,8 @@ def test_get_status_success(shared_zone_test_context):
     assert_that(result['keyName'], not_none())
     assert_that(result['version'], not_none())
 
+
+@pytest.mark.serial
 @pytest.mark.skip_production
 def test_toggle_processing(shared_zone_test_context):
     """

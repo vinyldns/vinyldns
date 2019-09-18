@@ -6,11 +6,13 @@ class VinylDNSTestContext:
     dns_key_name = 'vinyldns.'
     dns_key = 'nzisn+4G2ldMn0q1CV3vsg=='
     vinyldns_url = 'http://localhost:9000'
+    teardown = True
 
     @staticmethod
-    def configure(ip, zone, key_name, key, url):
+    def configure(ip, zone, key_name, key, url, teardown):
         VinylDNSTestContext.dns_ip = ip
         VinylDNSTestContext.dns_zone_name = zone
         VinylDNSTestContext.dns_key_name = key_name
         VinylDNSTestContext.dns_key = key
         VinylDNSTestContext.vinyldns_url = url
+        VinylDNSTestContext.teardown = teardown.lower() == 'true'

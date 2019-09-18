@@ -2,6 +2,7 @@ from hamcrest import *
 from utils import *
 
 
+@pytest.mark.serial
 @pytest.mark.manual_batch_review
 def test_approve_pending_batch_change_success(shared_zone_test_context):
     """

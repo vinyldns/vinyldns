@@ -1,6 +1,5 @@
 from hamcrest import *
 from utils import *
-from vinyldns_python import VinylDNSClient
 
 
 def check_zone_changes_page_accuracy(results, expected_first_change, expected_num_results):
@@ -10,12 +9,13 @@ def check_zone_changes_page_accuracy(results, expected_first_change, expected_nu
         change_email = 'i.changed.this.{0}.times@history-test.com'.format(change_num)
         assert_that(change['zone']['email'], is_(change_email))
         # should return changes in reverse order (most recent 1st)
-        change_num-=1
+        change_num -= 1
 
 
 def check_zone_changes_responses(response, zoneId=True, zoneChanges=True, nextId=True, startFrom=True, maxItems=True):
     assert_that(response, has_key('zoneId')) if zoneId else assert_that(response, is_not(has_key('zoneId')))
-    assert_that(response, has_key('zoneChanges')) if zoneChanges else assert_that(response, is_not(has_key('zoneChanges')))
+    assert_that(response, has_key('zoneChanges')) if zoneChanges else assert_that(response,
+                                                                                  is_not(has_key('zoneChanges')))
     assert_that(response, has_key('nextId')) if nextId else assert_that(response, is_not(has_key('nextId')))
     assert_that(response, has_key('startFrom')) if startFrom else assert_that(response, is_not(has_key('startFrom')))
     assert_that(response, has_key('maxItems')) if maxItems else assert_that(response, is_not(has_key('maxItems')))
@@ -39,6 +39,7 @@ def test_list_zone_changes_member_auth_success(shared_zone_test_context):
     client.list_zone_changes(zone['id'], status=200)
 
 
+@pytest.mark.serial
 def test_list_zone_changes_member_auth_no_access(shared_zone_test_context):
     """
     Test list zone changes fails for user not in admin group with no acl rules
@@ -48,6 +49,7 @@ def test_list_zone_changes_member_auth_no_access(shared_zone_test_context):
     client.list_zone_changes(zone['id'], status=403)
 
 
+@pytest.mark.serial
 def test_list_zone_changes_member_auth_with_acl(shared_zone_test_context):
     """
     Test list zone changes succeeds for user with acl rules
@@ -64,24 +66,24 @@ def test_list_zone_changes_member_auth_with_acl(shared_zone_test_context):
         clear_ok_acl_rules(shared_zone_test_context)
 
 
-def test_list_zone_changes_no_start(zone_history_context):
+def test_list_zone_changes_no_start(shared_zone_test_context):
     """
     Test getting all zone changes on one page (max items will default to default value)
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
     response = client.list_zone_changes(original_zone['id'], start_from=None)
 
     check_zone_changes_page_accuracy(response['zoneChanges'], expected_first_change=10, expected_num_results=10)
     check_zone_changes_responses(response, startFrom=False, nextId=False)
 
 
-def test_list_zone_changes_paging(zone_history_context):
+def test_list_zone_changes_paging(shared_zone_test_context):
     """
     Test paging for zone changes can use previous nextId as start key of next page
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     response_1 = client.list_zone_changes(original_zone['id'], start_from=None, max_items=3)
     response_2 = client.list_zone_changes(original_zone['id'], start_from=response_1['nextId'], max_items=3)
@@ -96,36 +98,36 @@ def test_list_zone_changes_paging(zone_history_context):
     check_zone_changes_responses(response_3)
 
 
-def test_list_zone_changes_exhausted(zone_history_context):
+def test_list_zone_changes_exhausted(shared_zone_test_context):
     """
     Test next id is none when zone changes are exhausted
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     response = client.list_zone_changes(original_zone['id'], start_from=None, max_items=11)
     check_zone_changes_page_accuracy(response['zoneChanges'], expected_first_change=10, expected_num_results=10)
     check_zone_changes_responses(response, startFrom=False, nextId=False)
 
 
-def test_list_zone_changes_default_max_items(zone_history_context):
+def test_list_zone_changes_default_max_items(shared_zone_test_context):
     """
     Test default max items is 100
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     response = client.list_zone_changes(original_zone['id'], start_from=None, max_items=None)
     assert_that(response['maxItems'], is_(100))
     check_zone_changes_responses(response, startFrom=None, nextId=None)
 
 
-def test_list_zone_changes_max_items_boundaries(zone_history_context):
+def test_list_zone_changes_max_items_boundaries(shared_zone_test_context):
     """
     Test 0 < max_items <= 100
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     too_large = client.list_zone_changes(original_zone['id'], start_from=None, max_items=101, status=400)
     too_small = client.list_zone_changes(original_zone['id'], start_from=None, max_items=0, status=400)

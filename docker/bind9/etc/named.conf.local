@@ -187,3 +187,9 @@ zone "zone.requires.review" {
 	file "/var/bind/zone.requires.review.hosts";
 	allow-update { key "vinyldns."; };
 	};
+
+zone "list-records" {
+	type master;
+	file "/var/bind/list-records.hosts";
+	allow-update { key "vinyldns."; };
+	};

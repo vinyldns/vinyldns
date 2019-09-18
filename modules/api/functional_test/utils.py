@@ -37,7 +37,7 @@ def gen_zone():
     Generates a random zone
     """
     return {
-        'name': str(uuid.uuid4())+'.',
+        'name': str(uuid.uuid4()) + '.',
         'email': 'test@test.com',
         'adminGroupId': 'test-group-id'
     }
@@ -249,6 +249,7 @@ def add_rules_to_zone(zone, new_rules):
     updated_zone['acl']['rules'] = updated_rules
     return updated_zone
 
+
 def remove_rules_from_zone(zone, deleted_rules):
     import copy
 
@@ -259,30 +260,36 @@ def remove_rules_from_zone(zone, deleted_rules):
 
     return updated_zone
 
+
 def add_ok_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ok_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def add_shared_zone_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.shared_zone, rules)
     update_change = test_context.shared_zone_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def add_ip4_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ip4_reverse_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def add_ip6_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ip6_reverse_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def add_classless_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.classless_zone_delegation_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def remove_ok_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ok_zone['id'])['zone']
@@ -290,11 +297,13 @@ def remove_ok_acl_rules(test_context, rules):
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def remove_ip4_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ip4_reverse_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def remove_ip6_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ip6_reverse_zone['id'])['zone']
@@ -302,11 +311,13 @@ def remove_ip6_acl_rules(test_context, rules):
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def remove_classless_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.classless_zone_delegation_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def clear_ok_acl_rules(test_context):
     zone = test_context.ok_zone
@@ -314,11 +325,13 @@ def clear_ok_acl_rules(test_context):
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def clear_shared_zone_acl_rules(test_context):
     zone = test_context.shared_zone
     zone['acl']['rules'] = []
     update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=202)
     test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def clear_ip4_acl_rules(test_context):
     zone = test_context.ip4_reverse_zone
@@ -326,11 +339,13 @@ def clear_ip4_acl_rules(test_context):
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+
 def clear_ip6_acl_rules(test_context):
     zone = test_context.ip6_reverse_zone
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 
 def clear_classless_acl_rules(test_context):
     zone = test_context.classless_zone_delegation_zone
@@ -338,7 +353,8 @@ def clear_classless_acl_rules(test_context):
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
-def seed_text_recordset(client, record_name, zone, records=[{'text':'someText'}]):
+
+def seed_text_recordset(client, record_name, zone, records=[{'text': 'someText'}]):
     new_rs = {
         'zoneId': zone['id'],
         'name': record_name,
@@ -355,7 +371,8 @@ def seed_text_recordset(client, record_name, zone, records=[{'text':'someText'}]
 
     return result_rs
 
-def seed_ptr_recordset(client, record_name, zone, records=[{'ptrdname':'foo.com.'}]):
+
+def seed_ptr_recordset(client, record_name, zone, records=[{'ptrdname': 'foo.com.'}]):
     new_rs = {
         'zoneId': zone['id'],
         'name': record_name,
@@ -380,19 +397,8 @@ def clear_zones(client):
 
     zones = client.list_zones()['zones']
 
-    import json
-    for zone in zones:
-        print "list zones found..."
-        print json.dumps(zone, indent=3)
-
     # we only want to delete zones that the ok user "owns"
     zones_to_delete = filter(lambda x: (x['adminGroupId'] in group_ids) or (x['account'] in group_ids), zones)
-    zone_names_to_delete = map(lambda x: x['name'], zones_to_delete)
-
-    print "zones to delete:"
-    for name in zone_names_to_delete:
-        print name
-
     zoneids_to_delete = map(lambda x: x['id'], zones_to_delete)
 
     client.abandon_zones(zoneids_to_delete)
@@ -405,6 +411,7 @@ def clear_groups(client, exclude=[]):
     for group_id in group_ids:
         if not group_id in exclude:
             client.delete_group(group_id, status=200)
+
 
 def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.1", change_type="Add"):
     if change_type == "Add":
@@ -435,6 +442,7 @@ def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.
             }
     return json
 
+
 def get_change_CNAME_json(input_name, ttl=200, cname="test.com", change_type="Add"):
     if change_type == "Add":
         json = {
@@ -453,6 +461,7 @@ def get_change_CNAME_json(input_name, ttl=200, cname="test.com", change_type="Ad
             "type": "CNAME"
         }
     return json
+
 
 def get_change_PTR_json(ip, ttl=200, ptrdname="test.com", change_type="Add"):
     if change_type == "Add":
@@ -514,6 +523,7 @@ def get_change_MX_json(input_name, ttl=200, preference=1, exchange="foo.bar.", c
         }
     return json
 
+
 def get_recordset_json(zone, rname, type, rdata_list, ttl=200, ownergroup_id=None):
     json = {
         "zoneId": zone['id'],
@@ -526,6 +536,7 @@ def get_recordset_json(zone, rname, type, rdata_list, ttl=200, ownergroup_id=Non
         json["ownerGroupId"] = ownergroup_id
 
     return json
+
 
 def clear_recordset_list(to_delete, client):
     delete_changes = []
@@ -541,6 +552,7 @@ def clear_recordset_list(to_delete, client):
         except:
             pass
 
+
 def clear_zoneid_rsid_tuple_list(to_delete, client):
     delete_changes = []
     for tup in to_delete:
@@ -555,7 +567,9 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
         except:
             pass
 
-def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{ 'id': 'ok' }], admins=[{ 'id': 'ok' }]):
+
+def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{'id': 'ok'}],
+                   admins=[{'id': 'ok'}]):
     return {
         'name': group_name,
         'email': email,
@@ -563,3 +577,31 @@ def get_group_json(group_name, email="test@test.com", description="this is a des
         'members': members,
         'admins': admins
     }
+
+
+def generate_record_name(zone_name=None):
+    import inspect
+    previous_frame = inspect.currentframe().f_back
+    (filename, line_number, function_name, lines, index) = inspect.getframeinfo(previous_frame)
+    if zone_name:
+        return '{0}-{1}.{2}'.format(function_name[:58], line_number, zone_name).replace('_', '-')
+    else:
+        return '{0}-{1}'.format(function_name[:58], line_number).replace('_', '-')
+
+
+def find_recordset_by_name(zone_id, rs_name, client):
+    r = client.list_recordsets(zone_id, record_name_filter=rs_name, status=200)
+    if r and 'recordSets' in r and len(r['recordSets']) > 0:
+        return r['recordSets'][0]
+    else:
+        return None
+
+
+def delete_recordset_by_name(zone_id, rs_name, client):
+    rs = find_recordset_by_name(zone_id, rs_name, client)
+    if rs:
+        client.delete_recordset(rs['zoneId'], rs['id'])
+        client.wait_until_recordset_deleted(rs['zoneId'], rs['id'])
+        return rs
+    else:
+        return None

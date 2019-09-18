@@ -18,6 +18,7 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
 
     try:
         new_rs = dict(test_rs, zoneId=shared_zone_test_context.system_test_zone['id'])
+        new_rs['name'] = generate_record_name() + new_rs['type']
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
@@ -47,10 +48,11 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
     finally:
         if result_rs:
             result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
+            if result and 'status' in result:
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
 def test_delete_recordset_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
@@ -235,6 +237,7 @@ def test_delete_recordset_no_authorization(shared_zone_test_context):
     client.delete_recordset(shared_zone_test_context.ok_zone['id'], '1234', sign_request=False, status=401)
 
 
+@pytest.mark.serial
 def test_delete_ipv4_ptr_recordset(shared_zone_test_context):
     """
     Test deleting an IPv4 PTR recordset deletes the record
@@ -285,7 +288,7 @@ def test_delete_ipv6_ptr_recordset(shared_zone_test_context):
     try:
         orig_rs = {
             'zoneId': shared_zone_test_context.ip6_reverse_zone['id'],
-            'name': '0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
+            'name': '0.7.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
             'type': 'PTR',
             'ttl': 100,
             'records': [
@@ -332,6 +335,7 @@ def test_delete_recordset_not_found(shared_zone_test_context):
     client.delete_recordset(shared_zone_test_context.ok_zone['id'], '1234', status=404)
 
 
+@pytest.mark.serial
 def test_at_delete_recordset(shared_zone_test_context):
     """
     Test deleting a recordset with name @ in an existing zone
@@ -443,6 +447,7 @@ def test_delete_recordset_with_different_dns_data(shared_zone_test_context):
                 pass
 
 
+@pytest.mark.serial
 def test_user_can_delete_record_via_user_acl_rule(shared_zone_test_context):
     """
     Test user DELETE ACL rule - delete
@@ -472,6 +477,7 @@ def test_user_can_delete_record_via_user_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_cannot_delete_record_with_write_txt_read_all(shared_zone_test_context):
     """
     Test user WRITE TXT READ all ACL rule
@@ -507,6 +513,7 @@ def test_user_cannot_delete_record_with_write_txt_read_all(shared_zone_test_cont
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_delete_record_via_group_acl_rule(shared_zone_test_context):
     """
     Test group DELETE ACL rule - delete
@@ -547,7 +554,7 @@ def test_ns_delete_for_admin_group_passes(shared_zone_test_context):
     try:
         new_rs = {
             'zoneId': zone['id'],
-            'name': 'someNS',
+            'name': generate_record_name(),
             'type': 'NS',
             'ttl': 38400,
             'records': [
@@ -582,6 +589,7 @@ def test_ns_delete_existing_ns_origin_fails(shared_zone_test_context):
     apex_ns = [item for item in list_results_page if item['type'] == 'NS' and item['name'] in zone['name']][0]
 
     client.delete_recordset(apex_ns['zoneId'], apex_ns['id'], status=422)
+
 
 def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """

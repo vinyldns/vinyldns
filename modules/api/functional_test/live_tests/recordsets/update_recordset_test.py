@@ -1,14 +1,11 @@
-import pytest
 import copy
+import json
+import pytest
+from hamcrest import *
+from requests.compat import urljoin
 from utils import *
 
-from hamcrest import *
-from vinyldns_python import VinylDNSClient
 from test_data import TestData
-from vinyldns_context import VinylDNSTestContext
-import time
-import json
-from requests.compat import urljoin
 
 
 def test_update_a_with_same_name_as_cname(shared_zone_test_context):
@@ -16,11 +13,12 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
     Test that updating a A record fails if the name change conflicts with an existing CNAME name
     """
     client = shared_zone_test_context.ok_vinyldns_client
-
+    cname_record = None
+    a_record = None
     try:
         cname_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name',
+            'name': 'duplicate-test-name1',
             'type': 'CNAME',
             'ttl': 500,
             'records': [
@@ -32,7 +30,7 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
 
         a_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name',
+            'name': 'unique-test-name1',
             'type': 'A',
             'ttl': 500,
             'records': [
@@ -49,15 +47,18 @@ def test_update_a_with_same_name_as_cname(shared_zone_test_context):
         a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
 
         a_rs_update = copy.deepcopy(a_record)
-        a_rs_update['name'] = 'duplicate-test-name'
+        a_rs_update['name'] = 'duplicate-test-name1'
 
         error = client.update_recordset(a_rs_update, status=409)
-        assert_that(error, is_('RecordSet with name duplicate-test-name and type CNAME already exists in zone system-test.'))
+        assert_that(error,
+                    is_('RecordSet with name duplicate-test-name1 and type CNAME already exists in zone system-test.'))
     finally:
-        delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-        delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if cname_record:
+            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
+        if a_record:
+            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
 
 
 def test_update_cname_with_same_name_as_another_record(shared_zone_test_context):
@@ -65,11 +66,12 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
     Test that updating a CNAME record fails if the name change conflicts with an existing record name
     """
     client = shared_zone_test_context.ok_vinyldns_client
-
+    cname_record = None
+    a_record = None
     try:
         cname_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name',
+            'name': 'unique-test-name2',
             'type': 'CNAME',
             'ttl': 500,
             'records': [
@@ -81,7 +83,7 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
 
         a_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name',
+            'name': 'duplicate-test-name2',
             'type': 'A',
             'ttl': 500,
             'records': [
@@ -98,15 +100,19 @@ def test_update_cname_with_same_name_as_another_record(shared_zone_test_context)
         a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
 
         cname_rs_update = copy.deepcopy(cname_record)
-        cname_rs_update['name'] = 'duplicate-test-name'
+        cname_rs_update['name'] = 'duplicate-test-name2'
 
         error = client.update_recordset(cname_rs_update, status=409)
-        assert_that(error, is_('RecordSet with name duplicate-test-name already exists in zone system-test., CNAME record cannot use duplicate name'))
+        assert_that(error, is_(
+            'RecordSet with name duplicate-test-name2 already exists in zone system-test., CNAME record cannot use duplicate name'))
     finally:
-        delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-        delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if cname_record:
+            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
+
+        if a_record:
+            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
 
 
 def test_update_cname_with_multiple_records(shared_zone_test_context):
@@ -146,9 +152,8 @@ def test_update_cname_with_multiple_records(shared_zone_test_context):
         assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
     finally:
         if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
+            r = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            client.wait_until_recordset_change_status(r, 'Complete')
 
 
 def test_update_cname_with_multiple_records(shared_zone_test_context):
@@ -252,6 +257,7 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
     try:
         new_rs = dict(test_rs, zoneId=shared_zone_test_context.system_test_zone['id'])
+        new_rs['name'] = generate_record_name() + test_rs['type']
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
@@ -284,11 +290,14 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
 def test_reverse_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
     Test updating a record set in a reverse zone
     """
+    # TODO: reverse records are difficult to run in parallel because there aren't many, need to
+    # coordinate across tests
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
 
@@ -356,7 +365,7 @@ def test_update_recordset_long_name(shared_zone_test_context):
         update_rs = {
             'id': 'abc',
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'a'*256,
+            'name': 'a' * 256,
             'type': 'A',
             'ttl': 100,
             'records': [
@@ -558,10 +567,6 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
             }
         ]
         result_rs['records'] = modified_records
-
-        import json
-        print "UPDATING RECORD SET, NEW RECORD SET IS..."
-        print json.dumps(result_rs, indent=3)
 
         result = client.update_recordset(result_rs, status=202)
         assert_that(result['status'], is_('Pending'))
@@ -964,6 +969,7 @@ def test_at_update_recordset(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_update_record_via_user_acl_rule(shared_zone_test_context):
     """
     Test user WRITE ACL rule - update
@@ -987,7 +993,8 @@ def test_user_can_update_record_via_user_acl_rule(shared_zone_test_context):
 
         # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -996,6 +1003,7 @@ def test_user_can_update_record_via_user_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_can_update_record_via_group_acl_rule(shared_zone_test_context):
     """
     Test group WRITE ACL rule - update
@@ -1018,7 +1026,8 @@ def test_user_can_update_record_via_group_acl_rule(shared_zone_test_context):
 
         # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1027,6 +1036,7 @@ def test_user_can_update_record_via_group_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
     """
     Test user rule takes priority over group rule
@@ -1043,12 +1053,13 @@ def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
         expected_ttl = result_rs['ttl'] + 1000
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #add rules
+        # add rules
         add_ok_acl_rules(shared_zone_test_context, [group_acl_rule, user_acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1057,6 +1068,7 @@ def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
     """
     Test more restrictive rule takes priority
@@ -1071,10 +1083,10 @@ def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
         result_rs = seed_text_recordset(client, "test_more_restrictive_acl_rule_priority", ok_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #add rules
+        # add rules
         add_ok_acl_rules(shared_zone_test_context, [read_rule, write_rule])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1083,6 +1095,7 @@ def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_type_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1099,18 +1112,17 @@ def test_acl_rule_with_record_type_success(shared_zone_test_context):
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
         z = client.get_zone(ok_zone['id'])
-        print "this is the zone before we try an update..."
-        print json.dumps(z, indent=3)
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1119,6 +1131,7 @@ def test_acl_rule_with_record_type_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1134,15 +1147,16 @@ def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
         expected_ttl = result_rs['ttl'] + 1000
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ip4_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ip4_acl_rules(shared_zone_test_context)
@@ -1151,6 +1165,7 @@ def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip4_failure(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1163,13 +1178,13 @@ def test_acl_rule_with_cidr_ip4_failure(shared_zone_test_context):
 
         result_rs = seed_ptr_recordset(client, "0.1", ip4_zone)
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ip4_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user still cant update record
+        # Dummy user still cant update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
         clear_ip4_acl_rules(shared_zone_test_context)
@@ -1178,6 +1193,7 @@ def test_acl_rule_with_cidr_ip4_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip6_success(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1186,22 +1202,24 @@ def test_acl_rule_with_cidr_ip6_success(shared_zone_test_context):
     ip6_zone = shared_zone_test_context.ip6_reverse_zone
     client = shared_zone_test_context.ok_vinyldns_client
     try:
-        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/127")
+        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'],
+                                     recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/127")
 
         result_rs = seed_ptr_recordset(client, "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", ip6_zone)
 
         expected_ttl = result_rs['ttl'] + 1000
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ip6_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ip6_acl_rules(shared_zone_test_context)
@@ -1210,6 +1228,7 @@ def test_acl_rule_with_cidr_ip6_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_cidr_ip6_failure(shared_zone_test_context):
     """
     Test a rule on a specific record type applies to that type
@@ -1218,17 +1237,18 @@ def test_acl_rule_with_cidr_ip6_failure(shared_zone_test_context):
     ip6_zone = shared_zone_test_context.ip6_reverse_zone
     client = shared_zone_test_context.ok_vinyldns_client
     try:
-        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/127")
+        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'],
+                                     recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/127")
 
         result_rs = seed_ptr_recordset(client, "0.0.0.0.0.0.0.0.0.0.0.0.0.0.5.0.0.0.0.0", ip6_zone)
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ip6_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user still cant update record
+        # Dummy user still cant update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
         clear_ip6_acl_rules(shared_zone_test_context)
@@ -1237,6 +1257,7 @@ def test_acl_rule_with_cidr_ip6_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
     """
     Test more restrictive cidr rule takes priority
@@ -1251,10 +1272,10 @@ def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
         result_rs = seed_ptr_recordset(client, "0.0", ip4_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #add rules
+        # add rules
         add_ip4_acl_rules(shared_zone_test_context, [slash16_rule, slash32_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
     finally:
         clear_ip4_acl_rules(shared_zone_test_context)
@@ -1263,6 +1284,7 @@ def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_more_restrictive_cidr_ip6_rule_priority(shared_zone_test_context):
     """
     Test more restrictive cidr rule takes priority
@@ -1271,17 +1293,18 @@ def test_more_restrictive_cidr_ip6_rule_priority(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
     try:
-        slash50_rule = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR'], recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/50")
-        slash100_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/100")
-
+        slash50_rule = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR'],
+                                         recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/50")
+        slash100_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'],
+                                          recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/100")
 
         result_rs = seed_ptr_recordset(client, "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", ip6_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #add rules
+        # add rules
         add_ip6_acl_rules(shared_zone_test_context, [slash50_rule, slash100_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
     finally:
         clear_ip6_acl_rules(shared_zone_test_context)
@@ -1290,6 +1313,7 @@ def test_more_restrictive_cidr_ip6_rule_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
     """
     A and AAAA should have read from mixed rule, PTR should have Write from rule with mask
@@ -1302,8 +1326,9 @@ def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
     result_rs_AAAA = None
 
     try:
-        mixed_type_rule_no_mask = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR','AAAA','A'])
-        ptr_rule_with_mask = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/50")
+        mixed_type_rule_no_mask = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR', 'AAAA', 'A'])
+        ptr_rule_with_mask = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'],
+                                               recordMask="fd69:27cc:fe91:0000:0000:0000:0000:0000/50")
 
         result_rs_PTR = seed_ptr_recordset(client, "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", ip6_zone)
         result_rs_PTR['ttl'] = result_rs_PTR['ttl'] + 1000
@@ -1314,11 +1339,11 @@ def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
         result_rs_AAAA = seed_text_recordset(client, "test_more_restrictive_acl_rule_priority_2", ok_zone)
         result_rs_AAAA['ttl'] = result_rs_AAAA['ttl'] + 1000
 
-        #add rules
+        # add rules
         add_ip6_acl_rules(shared_zone_test_context, [mixed_type_rule_no_mask, ptr_rule_with_mask])
         add_ok_acl_rules(shared_zone_test_context, [mixed_type_rule_no_mask, ptr_rule_with_mask])
 
-        #Dummy user cannot update record for A,AAAA, but can for PTR
+        # Dummy user cannot update record for A,AAAA, but can for PTR
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs_PTR, status=202)
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs_A, status=403)
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs_AAAA, status=403)
@@ -1336,6 +1361,7 @@ def test_mix_of_cidr_ip6_and_acl_rules_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_wrong_record_type(shared_zone_test_context):
     """
     Test a rule on a specific record type does not apply to other types
@@ -1349,13 +1375,13 @@ def test_acl_rule_with_wrong_record_type(shared_zone_test_context):
         result_rs = seed_text_recordset(client, "test_acl_rule_with_wrong_record_type", ok_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1364,6 +1390,7 @@ def test_acl_rule_with_wrong_record_type(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_empty_acl_record_type_applies_to_all(shared_zone_test_context):
     """
     Test an empty record set rule applies to all types
@@ -1379,15 +1406,16 @@ def test_empty_acl_record_type_applies_to_all(shared_zone_test_context):
         expected_ttl = result_rs['ttl'] + 1000
         result_rs['ttl'] = expected_ttl
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403, retries=3)
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1396,6 +1424,7 @@ def test_empty_acl_record_type_applies_to_all(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_fewer_record_types_prioritized(shared_zone_test_context):
     """
     Test a rule on a specific record type takes priority over a group of types
@@ -1414,14 +1443,15 @@ def test_acl_rule_with_fewer_record_types_prioritized(shared_zone_test_context):
 
         add_ok_acl_rules(shared_zone_test_context, [acl_rule_base])
 
-        #Dummy user can update record in zone with base rule
+        # Dummy user can update record in zone with base rule
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule1, acl_rule2])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         result_rs['ttl'] = result_rs['ttl'] + 1000
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
@@ -1431,6 +1461,7 @@ def test_acl_rule_with_fewer_record_types_prioritized(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_user_over_record_type_priority(shared_zone_test_context):
     """
     Test the user priority takes precedence over record type priority
@@ -1448,14 +1479,15 @@ def test_acl_rule_user_over_record_type_priority(shared_zone_test_context):
 
         add_ok_acl_rules(shared_zone_test_context, [acl_rule_base])
 
-        #Dummy user can update record in zone with base rule
+        # Dummy user can update record in zone with base rule
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule1, acl_rule2])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         result_rs['ttl'] = result_rs['ttl'] + 1000
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
@@ -1465,6 +1497,7 @@ def test_acl_rule_user_over_record_type_priority(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_mask_success(shared_zone_test_context):
     """
     Test rule with record mask allows user to update record
@@ -1480,15 +1513,16 @@ def test_acl_rule_with_record_mask_success(shared_zone_test_context):
         expected_ttl = result_rs['ttl'] + 1000
         result_rs['ttl'] = expected_ttl
 
-        #Dummy user cannot update record in zone
+        # Dummy user cannot update record in zone
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user can update record
+        # Dummy user can update record
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
         assert_that(result_rs['ttl'], is_(expected_ttl))
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1497,6 +1531,7 @@ def test_acl_rule_with_record_mask_success(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_record_mask_failure(shared_zone_test_context):
     """
     Test rule with unmatching record mask is not applied
@@ -1511,10 +1546,10 @@ def test_acl_rule_with_record_mask_failure(shared_zone_test_context):
         result_rs = seed_text_recordset(client, "test_acl_rule_with_record_mask_failure", ok_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1523,6 +1558,7 @@ def test_acl_rule_with_record_mask_failure(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_acl_rule_with_defined_mask_prioritized(shared_zone_test_context):
     """
     Test a rule on a specific record mask takes priority over All
@@ -1541,14 +1577,15 @@ def test_acl_rule_with_defined_mask_prioritized(shared_zone_test_context):
 
         add_ok_acl_rules(shared_zone_test_context, [acl_rule_base])
 
-        #Dummy user can update record in zone with base rule
+        # Dummy user can update record in zone with base rule
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule1, acl_rule2])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         result_rs['ttl'] = result_rs['ttl'] + 1000
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
@@ -1558,6 +1595,7 @@ def test_acl_rule_with_defined_mask_prioritized(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_user_rule_over_mask_prioritized(shared_zone_test_context):
     """
     Test user/group logic priority over record mask
@@ -1576,14 +1614,15 @@ def test_user_rule_over_mask_prioritized(shared_zone_test_context):
 
         add_ok_acl_rules(shared_zone_test_context, [acl_rule_base])
 
-        #Dummy user can update record in zone with base rule
+        # Dummy user can update record in zone with base rule
         result = shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
-        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        result_rs = shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(result, 'Complete')[
+            'recordSet']
 
-        #add rule
+        # add rule
         add_ok_acl_rules(shared_zone_test_context, [acl_rule1, acl_rule2])
 
-        #Dummy user cannot update record
+        # Dummy user cannot update record
         result_rs['ttl'] = result_rs['ttl'] + 1000
         shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
     finally:
@@ -1624,7 +1663,7 @@ def test_ns_update_passes(shared_zone_test_context):
 
     finally:
         if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
+            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
 
@@ -1666,8 +1705,9 @@ def test_ns_update_for_unapproved_server_fails(shared_zone_test_context):
         client.update_recordset(changed_rs, status=422)
     finally:
         if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
+            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
+
 
 def test_update_to_txt_dotted_host_succeeds(shared_zone_test_context):
     """
@@ -1720,7 +1760,7 @@ def test_ns_update_change_ns_name_to_origin_fails(shared_zone_test_context):
 
     finally:
         if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
+            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
 
@@ -1731,13 +1771,14 @@ def test_ns_update_existing_ns_origin_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
 
-    list_results_page = client.list_recordsets(zone['id'],  status=200)['recordSets']
+    list_results_page = client.list_recordsets(zone['id'], status=200)['recordSets']
 
     apex_ns = [item for item in list_results_page if item['type'] == 'NS' and item['name'] in zone['name']][0]
 
     apex_ns['ttl'] = apex_ns['ttl'] + 100
 
     client.update_recordset(apex_ns, status=422)
+
 
 def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
     """
@@ -1749,7 +1790,7 @@ def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
 
     dotted_host_rs = {
         'zoneId': zone['id'],
-        'name': 'fubu',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]
@@ -1763,11 +1804,12 @@ def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
     try:
         error = client.update_recordset(create_rs, status=422)
         assert_that(error, is_("Record with name " + create_rs['name'] + " and type A is a dotted host which is "
-                                "not allowed in zone " + zone['name']))
+                                                                         "not allowed in zone " + zone['name']))
 
     finally:
         delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
         client.wait_until_recordset_change_status(delete_result, 'Complete')
+
 
 def test_update_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """
@@ -1780,7 +1822,7 @@ def test_update_dotted_a_record_apex_succeeds(shared_zone_test_context):
 
     apex_rs = {
         'zoneId': zone['id'],
-        'name': 'fubu',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]
@@ -1799,6 +1841,7 @@ def test_update_dotted_a_record_apex_succeeds(shared_zone_test_context):
         delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
         client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
 def test_update_dotted_a_record_apex_adds_trailing_dot_to_name(shared_zone_test_context):
     """
     Test that updating an A record set to apex adds a trailing dot to the name if it is not already in the name.
@@ -1810,7 +1853,7 @@ def test_update_dotted_a_record_apex_adds_trailing_dot_to_name(shared_zone_test_
 
     recordset = {
         'zoneId': zone['id'],
-        'name': 'silly',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]
@@ -1855,6 +1898,7 @@ def test_update_existing_dotted_a_record_succeeds(shared_zone_test_context):
         revert_rs_update = client.update_recordset(update_rs, status=202)
         client.wait_until_recordset_change_status(revert_rs_update, 'Complete')
 
+
 def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
     """
     Test that updating a CNAME record set with record name matching dotted apex returns an error.
@@ -1879,11 +1923,12 @@ def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
 
     try:
         error = client.update_recordset(create_rs, status=422)
-        assert_that(error,is_("CNAME RecordSet cannot have name '@' because it points to zone origin"))
+        assert_that(error, is_("CNAME RecordSet cannot have name '@' because it points to zone origin"))
 
     finally:
-        delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
+        delete_response = client.delete_recordset(zone['id'], create_rs['id'], status=202)['status']
         client.wait_until_recordset_deleted(delete_response, 'Complete')
+
 
 def test_update_cname_to_dotted_host_fails(shared_zone_test_context):
     """
@@ -1909,11 +1954,13 @@ def test_update_cname_to_dotted_host_fails(shared_zone_test_context):
 
     try:
         error = client.update_recordset(create_rs, status=422)
-        assert_that(error,is_("Record with name dotted.name and type CNAME is a dotted host which is not allowed in zone parent.com."))
+        assert_that(error, is_(
+            "Record with name dotted.name and type CNAME is a dotted host which is not allowed in zone parent.com."))
 
     finally:
-        delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
+        delete_response = client.delete_recordset(zone['id'], create_rs['id'], status=202)['status']
         client.wait_until_recordset_deleted(delete_response, 'Complete')
+
 
 def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
     """
@@ -1924,11 +1971,8 @@ def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
     zone = shared_zone_test_context.ok_zone
 
     recordsets = client.list_recordsets(zone['id'], record_name_filter="dottedc.name", status=200)['recordSets']
-
     update_rs = recordsets[0]
-
     update_rs['records'] = [{'cname': 'got.reference'}]
-
     try:
         update_response = client.update_recordset(update_rs, status=202)
         updated_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
@@ -1939,6 +1983,7 @@ def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
         revert_rs_update = client.update_recordset(update_rs, status=202)
         client.wait_until_recordset_change_status(revert_rs_update, 'Complete')
 
+
 def test_update_succeeds_for_applied_unsynced_record_change(shared_zone_test_context):
     """
     Update should succeed if record change is not synced with DNS backend, but has already been applied
@@ -1947,7 +1992,8 @@ def test_update_succeeds_for_applied_unsynced_record_change(shared_zone_test_con
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
 
-    a_rs = get_recordset_json(zone, 'already-applied-unsynced-update', 'A', [{'address': '1.1.1.1'}, {'address': '2.2.2.2'}])
+    a_rs = get_recordset_json(zone, 'already-applied-unsynced-update', 'A',
+                              [{'address': '1.1.1.1'}, {'address': '2.2.2.2'}])
 
     create_rs = {}
 
@@ -2006,7 +2052,8 @@ def test_update_fails_for_unapplied_unsynced_record_change(shared_zone_test_cont
         update_response = client.update_recordset(update_rs, status=202)
         response = client.wait_until_recordset_change_status(update_response, 'Failed')
         assert_that(response['systemMessage'], is_("Failed validating update to DNS for change " + response['id'] +
-           ":" + a_rs['name'] + ": This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."))
+                                                   ":" + a_rs[
+                                                       'name'] + ": This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."))
 
     finally:
         try:
@@ -2023,12 +2070,13 @@ def test_update_high_value_domain_fails(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_system = shared_zone_test_context.system_test_zone
-    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    list_results_page_system = client.list_recordsets(zone_system['id'], status=200)['recordSets']
     record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain'][0]
     record_system['ttl'] = record_system['ttl'] + 100
 
     errors_system = client.update_recordset(record_system, status=422)
-    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(errors_system, is_(
+        'Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_update_high_value_domain_fails_case_insensitive(shared_zone_test_context):
@@ -2038,12 +2086,13 @@ def test_update_high_value_domain_fails_case_insensitive(shared_zone_test_contex
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_system = shared_zone_test_context.system_test_zone
-    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    list_results_page_system = client.list_recordsets(zone_system['id'], status=200)['recordSets']
     record_system = [item for item in list_results_page_system if item['name'] == 'high-VALUE-domain-UPPER-CASE'][0]
     record_system['ttl'] = record_system['ttl'] + 100
 
     errors_system = client.update_recordset(record_system, status=422)
-    assert_that(errors_system, is_('Record name "high-VALUE-domain-UPPER-CASE.system-test." is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(errors_system, is_(
+        'Record name "high-VALUE-domain-UPPER-CASE.system-test." is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
@@ -2052,12 +2101,13 @@ def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip4 = shared_zone_test_context.classless_base_zone
-    list_results_page_ip4 = client.list_recordsets(zone_ip4['id'],  status=200)['recordSets']
+    list_results_page_ip4 = client.list_recordsets(zone_ip4['id'], status=200)['recordSets']
     record_ip4 = [item for item in list_results_page_ip4 if item['name'] == '253'][0]
     record_ip4['ttl'] = record_ip4['ttl'] + 100
 
     errors_ip4 = client.update_recordset(record_ip4, status=422)
-    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(errors_ip4,
+                is_('Record name "192.0.2.253" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
@@ -2067,12 +2117,14 @@ def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip6 = shared_zone_test_context.ip6_reverse_zone
-    list_results_page_ip6 = client.list_recordsets(zone_ip6['id'],  status=200)['recordSets']
-    record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][0]
+    list_results_page_ip6 = client.list_recordsets(zone_ip6['id'], status=200)['recordSets']
+    record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][
+        0]
     record_ip6['ttl'] = record_ip6['ttl'] + 100
 
     errors_ip6 = client.update_recordset(record_ip6, status=422)
-    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(errors_ip6, is_(
+        'Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_no_update_access_non_test_zone(shared_zone_test_context):
@@ -2083,7 +2135,7 @@ def test_no_update_access_non_test_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     zone_id = shared_zone_test_context.non_test_shared_zone['id']
 
-    list_results = client.list_recordsets(zone_id,  status=200)['recordSets']
+    list_results = client.list_recordsets(zone_id, status=200)['recordSets']
     record_update = [item for item in list_results if item['name'] == 'update-test'][0]
     record_update['ttl'] = record_update['ttl'] + 100
 
@@ -2107,7 +2159,6 @@ def test_update_from_user_in_record_owner_group_for_private_zone_fails(shared_zo
         create_response = ok_client.create_recordset(record_json, status=202)
         create_rs = ok_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(create_rs['ownerGroupId'], is_(shared_record_group['id']))
-
 
         update = create_rs
         update['ttl'] = update['ttl'] + 100
@@ -2138,7 +2189,6 @@ def test_update_owner_group_from_user_in_record_owner_group_for_shared_zone_pass
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(update['ownerGroupId'], is_(shared_record_group['id']))
 
-
         update['ttl'] = update['ttl'] + 100
         update_response = ok_client.update_recordset(update, status=202)
         update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
@@ -2167,7 +2217,6 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(update, is_not(has_key('ownerGroupId')))
 
-
         update['ownerGroupId'] = group['id']
         update['ttl'] = update['ttl'] + 100
         update_response = shared_client.update_recordset(update, status=202)
@@ -2179,6 +2228,7 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
         if update_rs:
             delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
 
 def test_update_from_unassociated_user_in_shared_zone_passes_when_record_type_is_approved(shared_zone_test_context):
     """
@@ -2206,6 +2256,7 @@ def test_update_from_unassociated_user_in_shared_zone_passes_when_record_type_is
             delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
 def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_context):
     """
     Test that updating with a user that does not have write access fails in a shared zone
@@ -2217,7 +2268,8 @@ def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_con
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_unapproved_record_type', 'MX', [{'preference': 3, 'exchange': 'mx'}])
+        record_json = get_recordset_json(zone, 'test_shared_unapproved_record_type', 'MX',
+                                         [{'preference': 3, 'exchange': 'mx'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(create_rs, is_not(has_key('ownerGroupId')))
@@ -2233,6 +2285,7 @@ def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_con
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):
     """
     Test that updating with a user that has an acl passes when the zone is set to shared
@@ -2304,7 +2357,7 @@ def test_update_to_invalid_record_owner_group_fails(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner2', 'A', [{'address': '1.1.1.1'}])
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
@@ -2331,7 +2384,7 @@ def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner1', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
 
@@ -2346,6 +2399,7 @@ def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+@pytest.mark.serial
 def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
     """
     Test that updating an owned recordset fails if the user has a global acl rule but is not in the record owner group
@@ -2356,7 +2410,8 @@ def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test-global-acl', 'A', [{'address': '1.1.1.1'}], 200, 'shared-zone-group')
+        record_json = get_recordset_json(zone, 'test-global-acl', 'A', [{'address': '1.1.1.1'}], 200,
+                                         'shared-zone-group')
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
 
@@ -2370,6 +2425,8 @@ def test_update_with_global_acl_rule_only_fails(shared_zone_test_context):
             delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
+@pytest.mark.serial
 def test_update_ds_success(shared_zone_test_context):
     """
     Test that creating a valid DS record succeeds
@@ -2382,7 +2439,8 @@ def test_update_ds_success(shared_zone_test_context):
     ]
     record_data_update = [
         {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'},
-        {'keytag': 60485, 'algorithm': 5, 'digesttype': 2, 'digest': 'D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A'}
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 2,
+         'digest': 'D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A'}
     ]
     record_json = get_recordset_json(zone, 'dskey', 'DS', record_data_create, ttl=3600)
     result_rs = None
@@ -2400,10 +2458,11 @@ def test_update_ds_success(shared_zone_test_context):
         verify_recordset(get_result, update_json)
     finally:
         if result_rs:
-            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_update_ds_data_failures(shared_zone_test_context):
     """
     Test that updating a DS record fails with bad hex, digest, algorithm
@@ -2442,10 +2501,11 @@ def test_update_ds_data_failures(shared_zone_test_context):
         client.update_recordset(update_json_bad_dig, status=400)
     finally:
         if result_rs:
-            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
+@pytest.mark.serial
 def test_update_ds_bad_ttl(shared_zone_test_context):
     """
     Test that updating a DS record with unmatching TTL fails
@@ -2467,8 +2527,9 @@ def test_update_ds_bad_ttl(shared_zone_test_context):
         client.update_recordset(update_json, status=422)
     finally:
         if result_rs:
-            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
+
 
 def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_test_context):
     """
@@ -2481,7 +2542,7 @@ def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_
     created = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_update_zone_id', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_update_zone_id1', 'A', [{'address': '1.1.1.1'}])
         create_response = client.create_recordset(record_json, status=202)
         created = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
 
@@ -2491,7 +2552,7 @@ def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_
 
         url = urljoin(client.index_url, u'/zones/{0}/recordsets/{1}'.format(zone[u'id'], update[u'id']))
         response, error = client.make_request(url, u'PUT', client.headers, json.dumps(update), not_found_ok=True,
-                                             status=422)
+                                              status=422)
 
         assert_that(error, is_("Cannot update RecordSet's zoneId attribute"))
 

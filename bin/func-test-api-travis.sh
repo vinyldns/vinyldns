@@ -27,13 +27,13 @@ echo "Copy the vinyldns.jar to the api docker folder so it is in context..."
 if [[ ! -f $DIR/../modules/api/target/scala-2.12/vinyldns.jar ]]; then
     echo "vinyldns jar not found, building..."
     cd $DIR/../
-    sbt api/clean api/assembly
+    sbt build-api
     cd $DIR
 fi
 cp -f $DIR/../modules/api/target/scala-2.12/vinyldns.jar $WORK_DIR/docker/api
 
 echo "Starting docker environment and running func tests..."
-docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker up --exit-code-from functest
+docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker up --build --exit-code-from functest
 test_result=$?
 
 echo "Grabbing the logs..."

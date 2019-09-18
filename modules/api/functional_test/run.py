@@ -16,9 +16,6 @@ if not os.path.exists(report_dir):
 execfile(activate_virtualenv, dict(__file__=activate_virtualenv))
 
 import pytest
-
-result = 1
-
 result = pytest.main(list(sys.argv[1:]))
 
 sys.exit(result)

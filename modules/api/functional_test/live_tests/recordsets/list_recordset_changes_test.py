@@ -58,6 +58,7 @@ def test_list_recordset_changes_member_auth_no_access(shared_zone_test_context):
     client.list_recordset_changes(zone['id'], status=403)
 
 
+@pytest.mark.serial
 def test_list_recordset_changes_member_auth_with_acl(shared_zone_test_context):
     """
     Test recordset changes succeeds for user with acl rules
@@ -74,12 +75,12 @@ def test_list_recordset_changes_member_auth_with_acl(shared_zone_test_context):
         clear_ok_acl_rules(shared_zone_test_context)
 
 
-def test_list_recordset_changes_no_start(zone_history_context):
+def test_list_recordset_changes_no_start(shared_zone_test_context):
     """
     Test getting all recordset changes on one page (max items will default to default value)
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
     response = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=None)
     check_changes_response(response, recordChanges=True, startFrom=False, nextId=False)
 
@@ -95,12 +96,12 @@ def test_list_recordset_changes_no_start(zone_history_context):
         assert_that(change['changeType'], is_('Create'))
 
 
-def test_list_recordset_changes_paging(zone_history_context):
+def test_list_recordset_changes_paging(shared_zone_test_context):
     """
     Test paging for recordset changes can use previous nextId as start key of next page
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     response_1 = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=3)
     response_2 = client.list_recordset_changes(original_zone['id'], start_from=response_1['nextId'], max_items=3)
@@ -120,12 +121,12 @@ def test_list_recordset_changes_paging(zone_history_context):
         assert_that(change['changeType'], is_('Create'))
 
 
-def test_list_recordset_changes_exhausted(zone_history_context):
+def test_list_recordset_changes_exhausted(shared_zone_test_context):
     """
     Test next id is none when zone changes are exhausted
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
     response = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=17)
     check_changes_response(response, recordChanges=True, startFrom=False, nextId=False, maxItems=17)
 
@@ -141,33 +142,33 @@ def test_list_recordset_changes_exhausted(zone_history_context):
         assert_that(change['changeType'], is_('Create'))
 
 
-def test_list_recordset_returning_no_changes(zone_history_context):
+def test_list_recordset_returning_no_changes(shared_zone_test_context):
     """
     Pass in startFrom of 0 should return empty list because start key is created time
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
     response = client.list_recordset_changes(original_zone['id'], start_from='0', max_items=None)
     check_changes_response(response, recordChanges=False, startFrom='0', nextId=False)
 
 
-def test_list_recordset_changes_default_max_items(zone_history_context):
+def test_list_recordset_changes_default_max_items(shared_zone_test_context):
     """
     Test default max items is 100
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     response = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=None)
     check_changes_response(response, recordChanges=True, startFrom=False, nextId=False, maxItems=100)
 
 
-def test_list_recordset_changes_max_items_boundaries(zone_history_context):
+def test_list_recordset_changes_max_items_boundaries(shared_zone_test_context):
     """
     Test 0 < max_items <= 100
     """
-    client = zone_history_context.client
-    original_zone = zone_history_context.results['zone']
+    client = shared_zone_test_context.history_client
+    original_zone = shared_zone_test_context.history_zone
 
     too_large = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=101, status=400)
     too_small = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=0, status=400)

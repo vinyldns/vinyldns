@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [u'VinylDNSClient', u'MAX_RETRIES', u'RETRY_WAIT']
 
-MAX_RETRIES = 30
+MAX_RETRIES = 40
 RETRY_WAIT = 0.05
 
 class VinylDNSClient(object):
@@ -832,7 +832,6 @@ class VinylDNSClient(object):
         while change['status'] != expected_status and retries > 0:
             latest_change = self.get_recordset_change(change['recordSet']['zoneId'], change['recordSet']['id'],
                                                       change['id'], status=(200,404))
-            print "\r\n --- latest change is " + str(latest_change)
             if "Unable to find record set change" in latest_change:
                 change = change
             else:
@@ -843,6 +842,7 @@ class VinylDNSClient(object):
 
         if change['status'] != expected_status:
             print 'Failed waiting for record change status'
+            print json.dumps(change, indent=3)
             if 'systemMessage' in change:
                 print 'systemMessage is ' + change['systemMessage']
 
@@ -864,7 +864,6 @@ class VinylDNSClient(object):
 
         while not self.batch_is_completed(change) and retries > 0:
             latest_change = self.get_batch_change(change['id'], status=(200,404))
-            print "\r\n --- latest change is " + str(latest_change)
             if "cannot be found" in latest_change:
                 change = change
             else:

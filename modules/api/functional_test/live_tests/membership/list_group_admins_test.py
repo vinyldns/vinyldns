@@ -33,7 +33,6 @@ def test_list_group_admins_success(shared_zone_test_context):
         assert_that([admin_user_1_id, admin_user_2_id], has_item(result['admins'][1]['id']))
 
         result = client.list_group_admins(saved_group['id'], status=200)
-        print json.dumps(result, indent=3)
 
         result = sorted(result['admins'], key=lambda user: user['userName'])
         assert_that(result, has_length(2))

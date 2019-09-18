@@ -7,6 +7,8 @@ services:
     container_name: "vinyldns-mysql"
     ports:
       - "19002:3306"
+    logging:
+      driver: none
 
   dynamodb-local:
     image: "cnadiminti/dynamodb-local:2017-02-16"
@@ -15,6 +17,8 @@ services:
     container_name: "vinyldns-dynamodb"
     ports:
       - "19000:8000"
+    logging:
+      driver: none
 
   bind9:
     image: "vinyldns/bind9:0.0.4"
@@ -27,6 +31,8 @@ services:
     ports:
       - "19001:53/tcp"
       - "19001:53/udp"
+    logging:
+      driver: none
 
   elasticmq:
     image: s12v/elasticmq:0.13.8
@@ -37,6 +43,8 @@ services:
       - "9324:9324"
     volumes:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
+    logging:
+      driver: none
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
@@ -52,6 +60,8 @@ services:
       - bind9
       - elasticmq
       - dynamodb-local
+    logging:
+      driver: none
 
   functest:
     build:

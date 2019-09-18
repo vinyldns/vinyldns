@@ -530,6 +530,6 @@ addCommandAlias("verify", "; project root; killDocker; " +
 )
 
 // Build the artifacts for release
-addCommandAlias("build-api", ";project api;clean;assembly")
-addCommandAlias("build-portal", ";project portal;clean;preparePortal;dist")
+addCommandAlias("build-api", ";project api;clean;coverageOff;assembly")
+addCommandAlias("build-portal", ";project portal;clean;coverageOff;preparePortal;dist")
 addCommandAlias("build", ";build-api;build-portal")

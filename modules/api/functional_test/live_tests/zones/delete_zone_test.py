@@ -7,6 +7,7 @@ from vinyldns_context import VinylDNSTestContext
 from utils import *
 
 
+@pytest.mark.serial
 def test_delete_zone_success(shared_zone_test_context):
     """
     Test deleting a zone
@@ -48,6 +49,7 @@ def test_delete_zone_success(shared_zone_test_context):
             client.abandon_zones([result_zone['id']], status=202)
 
 
+@pytest.mark.serial
 def test_delete_zone_twice(shared_zone_test_context):
     """
     Test deleting a zone with deleted status returns 404

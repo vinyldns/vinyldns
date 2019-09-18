@@ -90,6 +90,7 @@ def test_get_recordset_doesnt_exist(shared_zone_test_context):
     client.get_recordset(shared_zone_test_context.ok_zone['id'], '123', status=404)
 
 
+@pytest.mark.serial
 def test_at_get_recordset(shared_zone_test_context):
     """
     Test getting a recordset with name @
