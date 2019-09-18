@@ -28,6 +28,7 @@ import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.queue.MessageQueue
 
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
@@ -143,6 +144,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             logicalChangeType,
             singleChangeNel,
             zone,
+            recordKey.recordType,
             proposedRecordData,
             userId,
             existingRecordSet,
@@ -156,6 +158,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       logicalChangeType: LogicalChangeType.LogicalChangeType,
       singleChangeNel: NonEmptyList[SingleChange],
       zone: Zone,
+      recordType: RecordType,
       proposedRecordData: Set[RecordData],
       userId: String,
       existingRecordSet: Option[RecordSet],
@@ -171,27 +174,39 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       None
     }
 
-    // New record set for add/update
-    lazy val newRecordSet = singleChangeNel
-      .collect {
-        case sac: SingleAddChange => sac
-      }
-      .headOption
-      .flatMap { singleAddChange =>
-        singleAddChange.recordName.map { recordName =>
-          RecordSet(
-            zone.id,
-            recordName,
-            singleAddChange.typ,
-            singleAddChange.ttl,
-            RecordSetStatus.Pending,
-            DateTime.now,
-            None,
-            proposedRecordData.toList,
-            ownerGroupId = setOwnerGroupId
+    val firstAddChange = singleChangeNel.collect {
+      case sac: SingleAddChange => sac
+    }.headOption
+
+    // New record set for add/update or single delete
+    lazy val newRecordSet = {
+      // For adds, grab the first ttl; for updates via single DeleteRecord, use existing TTL
+      val newTtl = firstAddChange
+        .flatMap(a => Some(a.ttl))
+        .orElse(existingRecordSet.map(_.ttl))
+
+      val caseSensitiveRecordName = firstAddChange
+        .flatMap(_.recordName)
+        .orElse(existingRecordSet.map(_.name))
+
+      (newTtl, caseSensitiveRecordName) match {
+        case (Some(ttl), Some(rn)) =>
+          Some(
+            RecordSet(
+              zone.id,
+              rn,
+              recordType,
+              ttl,
+              RecordSetStatus.Pending,
+              DateTime.now,
+              None,
+              proposedRecordData.toList,
+              ownerGroupId = setOwnerGroupId
+            )
           )
-        }
+        case _ => None
       }
+    }
 
     // Generate RecordSetChange based on logical type
     logicalChangeType match {
