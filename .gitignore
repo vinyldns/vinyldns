@@ -27,3 +27,5 @@ package-lock.json
 *trustStore.jks
 .bloop
 .metals
+tmp.out
+
