@@ -165,7 +165,7 @@ def test_get_group_changes_unauthed(shared_zone_test_context):
     saved_group = None
     try:
         new_group = {
-            'name': 'test-list-group-admins-unauthed',
+            'name': 'test-list-group-admins-unauthed-2',
             'email': 'test@test.com',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]

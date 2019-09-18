@@ -1790,7 +1790,7 @@ def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
 
     dotted_host_rs = {
         'zoneId': zone['id'],
-        'name': 'fubu',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]
@@ -1822,7 +1822,7 @@ def test_update_dotted_a_record_apex_succeeds(shared_zone_test_context):
 
     apex_rs = {
         'zoneId': zone['id'],
-        'name': 'fubu',
+        'name': generate_record_name(),
         'type': 'A',
         'ttl': 500,
         'records': [{'address': '127.0.0.1'}]
