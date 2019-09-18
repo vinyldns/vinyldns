@@ -335,6 +335,7 @@ def test_delete_recordset_not_found(shared_zone_test_context):
     client.delete_recordset(shared_zone_test_context.ok_zone['id'], '1234', status=404)
 
 
+@pytest.mark.serial
 def test_at_delete_recordset(shared_zone_test_context):
     """
     Test deleting a recordset with name @ in an existing zone

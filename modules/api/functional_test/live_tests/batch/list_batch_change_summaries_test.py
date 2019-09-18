@@ -18,7 +18,7 @@ def test_list_batch_change_summaries_success(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=4)
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=3)
 
 
 def test_list_batch_change_summaries_with_max_items(list_fixture):
@@ -38,7 +38,7 @@ def test_list_batch_change_summaries_with_start_from(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200, start_from=1)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=3, start_from=1)
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=2, start_from=1)
 
 
 def test_list_batch_change_summaries_with_next_id(list_fixture):
@@ -53,7 +53,7 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
 
     next_page_result = client.list_batch_change_summaries(status=200, start_from=batch_change_summaries_result['nextId'])
 
-    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=2, start_from=batch_change_summaries_result['nextId'])
+    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result['nextId'])
 
 
 @pytest.mark.manual_batch_review
@@ -95,19 +95,6 @@ def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_ch
 
     batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
     assert_that(batch_change_summaries_result, has_length(0))
-
-
-def test_list_batch_change_summaries_with_record_owner_group_passes(list_fixture):
-    """
-    Test that getting a batch change summary with an record owner group set returns the record owner group name and id
-    """
-    client = list_fixture.client
-    group = list_fixture.group
-
-    batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
-    under_test = batch_change_summaries_result[0]
-    assert_that(under_test['ownerGroupId'], is_(group['id']))
-    assert_that(under_test['ownerGroupName'], is_(group['name']))
 
 
 def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shared_zone_test_context):
