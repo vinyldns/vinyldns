@@ -1971,11 +1971,8 @@ def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
     zone = shared_zone_test_context.ok_zone
 
     recordsets = client.list_recordsets(zone['id'], record_name_filter="dottedc.name", status=200)['recordSets']
-
     update_rs = recordsets[0]
-
     update_rs['records'] = [{'cname': 'got.reference'}]
-
     try:
         update_response = client.update_recordset(update_rs, status=202)
         updated_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']

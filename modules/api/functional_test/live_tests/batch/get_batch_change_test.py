@@ -151,8 +151,8 @@ def test_get_batch_change_with_unauthorized_user_fails(shared_zone_test_context)
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
-            get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60")
+            get_change_A_AAAA_json(generate_record_name("parent.com."), address="4.5.6.7"),
+            get_change_A_AAAA_json(generate_record_name("ok."), record_type="AAAA", address="fd69:27cc:fe91::60")
         ]
     }
     to_delete = []

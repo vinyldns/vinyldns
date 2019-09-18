@@ -6,9 +6,8 @@ from vinyldns_python import VinylDNSClient
 
 
 @pytest.fixture(scope="module")
-def list_fixture(request, shared_zone_test_context):
-    fix = shared_zone_test_context.list_batch_summaries_context
-    return fix
+def list_fixture(shared_zone_test_context):
+    return shared_zone_test_context.list_batch_summaries_context
 
 
 def test_list_batch_change_summaries_success(list_fixture):

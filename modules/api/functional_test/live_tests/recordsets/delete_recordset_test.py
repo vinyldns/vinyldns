@@ -288,7 +288,7 @@ def test_delete_ipv6_ptr_recordset(shared_zone_test_context):
     try:
         orig_rs = {
             'zoneId': shared_zone_test_context.ip6_reverse_zone['id'],
-            'name': '0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
+            'name': '0.7.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
             'type': 'PTR',
             'ttl': 100,
             'records': [

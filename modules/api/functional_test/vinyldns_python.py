@@ -842,6 +842,7 @@ class VinylDNSClient(object):
 
         if change['status'] != expected_status:
             print 'Failed waiting for record change status'
+            print json.dumps(change, indent=3)
             if 'systemMessage' in change:
                 print 'systemMessage is ' + change['systemMessage']
 
