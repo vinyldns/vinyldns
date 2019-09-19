@@ -146,8 +146,13 @@ object AddChangeInput {
     new AddChangeInput(transformName, typ, ttl, record, id)
   }
 
-  def apply(sc: SingleAddChange): AddChangeInput =
-    AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData, sc.id)
+  def apply(sc: SingleAddChange): AddChangeInput = {
+    val transformName = sc.typ match {
+      case PTR => sc.inputName
+      case _ => ensureTrailingDot(sc.inputName)
+    }
+    AddChangeInput(transformName, sc.typ, Some(sc.ttl), sc.recordData, sc.id)
+  }
 }
 
 object DeleteRRSetChangeInput {
@@ -159,8 +164,13 @@ object DeleteRRSetChangeInput {
     new DeleteRRSetChangeInput(transformName, typ)
   }
 
-  def apply(sc: SingleDeleteRRSetChange): DeleteRRSetChangeInput =
-    DeleteRRSetChangeInput(sc.inputName, sc.typ, sc.id)
+  def apply(sc: SingleDeleteRRSetChange): DeleteRRSetChangeInput = {
+    val transformName = sc.typ match {
+      case PTR => sc.inputName
+      case _ => ensureTrailingDot(sc.inputName)
+    }
+    DeleteRRSetChangeInput(transformName, sc.typ, sc.id)
+  }
 }
 
 object DeleteRecordChangeInput {

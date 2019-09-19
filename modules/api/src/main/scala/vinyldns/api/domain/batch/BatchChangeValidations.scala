@@ -179,7 +179,7 @@ class BatchChangeValidations(
       batchChange: BatchChange,
       auth: AuthPrincipal,
       bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.isSystemAdmin || batchChange.userId == auth.userId && (bypassTestValidation || !auth.isTestUser)) {
+    if ((auth.isSystemAdmin || batchChange.userId == auth.userId) && (bypassTestValidation || !auth.isTestUser)) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft

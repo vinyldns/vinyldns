@@ -133,7 +133,7 @@ class BatchChangeRoute(
           }
         } ~
         path("zones" / "batchrecordchanges" / Segment / "cancel") { id =>
-          (post & monitor("Endpoint.approveBatchChange")) {
+          (post & monitor("Endpoint.cancelBatchChange")) {
             authenticateAndExecute(batchChangeService.cancelBatchChange(id, _)) { chg =>
               complete(StatusCodes.OK, chg)
             }

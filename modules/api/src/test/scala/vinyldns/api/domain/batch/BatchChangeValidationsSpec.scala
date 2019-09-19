@@ -152,6 +152,16 @@ class BatchChangeValidationsSpec
     List(),
     approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
+  private val validScheduledBatchChange = BatchChange(
+    okUser.id,
+    okUser.userName,
+    None,
+    DateTime.now,
+    List(),
+    scheduledTime = Some(DateTime.now.plusDays(1)),
+    approvalStatus = BatchChangeApprovalStatus.PendingReview
+  )
+
   private val invalidPendingBatchChange = BatchChange(
     okUser.id,
     okUser.userName,
@@ -221,6 +231,21 @@ class BatchChangeValidationsSpec
       val result = validateInputChanges(input, false)
       result.map(_ shouldBe valid)
     }
+  }
+
+  property("validateScheduledTimeExists: should fail if there is no scheduled time") {
+    validateScheduledTimeExists(validPendingBatchChange, true) should
+      beLeft[BatchChangeErrorResponse](BatchChangeNotScheduled(validPendingBatchChange.id))
+  }
+
+  property("validateScheduledTimeExists: should fail if scheduled changes are disabled") {
+    validateScheduledTimeExists(validScheduledBatchChange, false) should
+      beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
+  }
+
+  property(
+    "validateScheduledTimeExists: should succeed if there is a scheduled time and scheduled changes are enabled") {
+    validateScheduledTimeExists(validScheduledBatchChange, true) should beRight(())
   }
 
   property("validateOwnerGroupId: should succeed if owner group ID is undefined") {
@@ -371,6 +396,36 @@ class BatchChangeValidationsSpec
 
   property("validateAuthorizedReviewer: should fail if the reviewer is not a super or support user") {
     validateAuthorizedReviewer(okAuth, validPendingBatchChange, false) shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property("validateAuthorizedEditor: should succeed if the editor is the batch change creator") {
+    validateAuthorizedEditor(validPendingBatchChange, okAuth, false) should be(right)
+  }
+
+  property("validateAuthorizedEditor: should succeed if the editor is a super user") {
+    validateAuthorizedEditor(validPendingBatchChange, superUserAuth, false) should be(right)
+  }
+
+  property("validateAuthorizedEditor: should succeed if the editor is a support user") {
+    validateAuthorizedEditor(validPendingBatchChange, supportUserAuth, false) should be(right)
+  }
+
+  property("validateAuthorizedEditor: should fail if a test editor tries to edit a non-test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateAuthorizedEditor(validPendingBatchChange, AuthPrincipal(testSupport, List()), false).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property("validateAuthorizedEditor: should succeed if a test editor tries to edit a test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateAuthorizedEditor(validPendingBatchChange, AuthPrincipal(testSupport, List()), true).value should be(
+      right)
+  }
+
+  property(
+    "validateAuthorizedEditor: should fail if the editor is not a system admin or the creator") {
+    validateAuthorizedEditor(validPendingBatchChange, xyzAuth, false) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 

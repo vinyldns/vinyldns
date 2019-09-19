@@ -409,12 +409,19 @@ class BatchChangeRoutingSpec()
     def updateScheduledTime(
         batchChangeId: String,
         batchChangeInput: BatchChangeInput,
-        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
-      batchChangeInput.scheduledTime.isDefined match {
-        case true => EitherT(IO.pure(genericValidResponse.asRight))
-        case false =>
-          EitherT(IO.pure(UserNotAuthorizedError("support").asLeft))
+        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] = {
+      val validScheduledTime = batchChangeInput.scheduledTime.isEmpty || batchChangeInput.scheduledTime.get
+        .isAfterNow
+      (batchChangeId, validScheduledTime, authPrincipal.userId.equals("ok")) match {
+        case ("scheduledChangeId", true, true) => EitherT(IO.pure(genericValidResponse.asRight))
+        case ("scheduledChangeId", true, false) =>
+          EitherT(IO.pure(UserNotAuthorizedError(batchChangeId).asLeft))
+        case ("scheduledChangeId", false, _) => EitherT(IO.pure(ScheduledTimeMustBeInFuture.asLeft))
+        case ("notPendingBatchId", _, _) =>
+          EitherT(IO.pure(BatchChangeNotPendingReview(batchChangeId, "edited").asLeft))
+        case _ => EitherT(IO.pure(BatchChangeNotFound(batchChangeId).asLeft))
       }
+    }
   }
 
   "POST batch change" should {
@@ -852,6 +859,93 @@ class BatchChangeRoutingSpec()
 
     "return NotFound if batch change does not exist" in {
       Post("/zones/batchrecordchanges/notFoundId/cancel") ~> batchChangeRoute ~> check {
+        status shouldBe NotFound
+      }
+    }
+  }
+
+  "PUT edit batch change" should {
+    "return OK if batch change is scheduled and user created it" in {
+      val validRequestWithScheduledTime: String =
+        compact(
+          render(("id" -> "scheduledChangeId") ~~
+            ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
+            .decompose(testScheduledTime.plusDays(1))) ~~ changeList)
+        )
+
+      Put("/zones/batchrecordchanges/scheduledChangeId").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
+        batchChangeRoute ~> check {
+
+        status shouldBe Accepted
+      }
+    }
+
+    "return Bad Request if batch change isn't pending review" in {
+      val validRequestWithScheduledTime: String =
+        compact(
+          render(("id" -> "notPendingBatchId") ~~
+            ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
+            .decompose(testScheduledTime.minusDays(1))) ~~ changeList)
+        )
+
+      Put("/zones/batchrecordchanges/notPendingBatchId").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
+        batchChangeRoute ~> check {
+
+        status shouldBe BadRequest
+        response.entity.toString should include(
+          "Batch change notPendingBatchId is not pending review, so it cannot be edited."
+        )
+      }
+    }
+
+    "return Bad Request if new scheduled time is in the past" in {
+      val validRequestWithScheduledTime: String =
+        compact(
+          render(("id" -> "scheduledChangeId") ~~
+            ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
+            .decompose(testScheduledTime.minusDays(1))) ~~ changeList)
+        )
+
+      Put("/zones/batchrecordchanges/scheduledChangeId").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
+        batchChangeRoute ~> check {
+
+        status shouldBe BadRequest
+        response.entity.toString should include(ScheduledTimeMustBeInFuture.message)
+      }
+    }
+
+    "return Forbidden if requester is not batch change creator or system admin" in {
+      val request: String =
+        compact(
+          render(("id" -> "scheduledChangeId") ~~
+            ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
+            .decompose(testScheduledTime.plusDays(1))) ~~ changeList)
+        )
+
+      Put("/zones/batchrecordchanges/scheduledChangeId").withEntity(
+        HttpEntity(ContentTypes.`application/json`, request)) ~>
+        notAuthRoute ~> check {
+
+        status shouldBe Forbidden
+        response.entity.toString should include("User does not have access to item")
+      }
+    }
+
+    "return NotFound if batch change doesn't exist" in {
+      val request: String =
+        compact(
+          render(
+            ("id" -> "notFoundId") ~~
+              ("comments" -> "validChangeWithCommentsAndScheduled") ~~ changeList)
+        )
+
+      Put("/zones/batchrecordchanges/notFoundId").withEntity(
+        HttpEntity(ContentTypes.`application/json`, request)) ~>
+        batchChangeRoute ~> check {
+
         status shouldBe NotFound
       }
     }
