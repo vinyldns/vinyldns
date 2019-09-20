@@ -407,6 +407,17 @@ class BatchChangeRoutingSpec()
         case ("batchId", _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotFound("notFoundId").asLeft))
       }
+
+    def revalidateBatchChange(
+        batchChangeId: String,
+        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+      (batchChangeId, authPrincipal.signedInUser.userName) match {
+        case ("pendingBatchId", "super") => EitherT(IO.pure(genericValidResponse.asRight))
+        case ("pendingBatchId", "support") => EitherT(IO.pure(genericValidResponse.asRight))
+        case ("pendingBatchId", _) => EitherT(IO.pure(UserNotAuthorizedError(batchChangeId).asLeft))
+        case ("batchId", _) => EitherT(IO.pure(BatchChangeNotPendingReview(batchChangeId).asLeft))
+        case (_, _) => EitherT(IO.pure(BatchChangeNotFound(batchChangeId).asLeft))
+      }
   }
 
   "POST batch change" should {
@@ -842,7 +853,33 @@ class BatchChangeRoutingSpec()
     }
 
     "return NotFound if batch change does not exist" in {
-      Post("/zones/batchrecordchanges/notFoundId/cancel") ~> batchChangeRoute ~> check {
+      Post("/zones/batchrecordchanges/notFoundId/revalidate") ~> batchChangeRoute ~> check {
+        status shouldBe NotFound
+      }
+    }
+  }
+
+  "POST revalidate batch change" should {
+    "return OK if batch is pending and user is a system admin" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/revalidate") ~> supportUserRoute ~> check {
+        status shouldBe OK
+      }
+    }
+
+    "return Forbidden if user is not a system admin" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/revalidate") ~> batchChangeRoute ~> check {
+        status shouldBe Forbidden
+      }
+    }
+
+    "return BadRequest if batch change is not pending review" in {
+      Post("/zones/batchrecordchanges/batchId/revalidate") ~> batchChangeRoute ~> check {
+        status shouldBe BadRequest
+      }
+    }
+
+    "return NotFound if batch change does not exist" in {
+      Post("/zones/batchrecordchanges/notFoundId/revalidate") ~> batchChangeRoute ~> check {
         status shouldBe NotFound
       }
     }

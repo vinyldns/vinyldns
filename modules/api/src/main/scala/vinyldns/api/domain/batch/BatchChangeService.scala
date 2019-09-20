@@ -153,7 +153,7 @@ class BatchChangeService(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
-      _ <- validateBatchChangeApproval(batchChange, authPrincipal, requesterAuth.isTestUser).toBatchResult
+      _ <- validateBatchChangeReview(batchChange, authPrincipal, requesterAuth.isTestUser).toBatchResult
       asInput = BatchChangeInput(batchChange)
       reviewInfo = BatchChangeReviewInfo(
         authPrincipal.userId,
@@ -180,6 +180,21 @@ class BatchChangeService(
       cancelledBatchChange <- cancelBatchChange(batchChange)
       _ <- notifiers.notify(Notification(cancelledBatchChange)).toBatchResult
     } yield cancelledBatchChange
+
+  def revalidateBatchChange(
+      batchChangeId: String,
+      authPrincipal: AuthPrincipal): BatchResult[BatchChange] =
+    for {
+      batchChange <- getExistingBatchChange(batchChangeId)
+      requesterAuth <- EitherT.fromOptionF(
+        authProvider.getAuthPrincipalByUserId(batchChange.userId),
+        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
+      )
+      _ <- validateBatchChangeReview(batchChange, authPrincipal, authPrincipal.isTestUser).toBatchResult
+      batchChangeInput = BatchChangeInput(batchChange)
+      revalidate <- applyBatchChangeValidationFlow(batchChangeInput, requesterAuth, false)
+      revalidatedBatchChange <- saveRevalidatedBatchChange(batchChange, revalidate.validatedChanges)
+    } yield revalidatedBatchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
@@ -467,6 +482,22 @@ class BatchChangeService(
     } else {
       existingBatchChange.copy(changes = changes)
     }
+  }
+
+  def saveRevalidatedBatchChange(
+      existingBatchChange: BatchChange,
+      transformed: ValidatedBatch[ChangeForValidation]): BatchResult[BatchChange] = {
+    val changes = transformed.zip(existingBatchChange.changes).map {
+      case (validated, existing) =>
+        validated match {
+          case Valid(v) => v.asStoredChange(Some(existing.id))
+          case Invalid(errors) =>
+            existing.updateValidationErrors(errors.map(e => SingleChangeError(e)).toList)
+        }
+    }
+
+    val revalidatedBatchChange = existingBatchChange.copy(changes = changes)
+    batchChangeRepo.save(revalidatedBatchChange).toBatchResult
   }
 
   def convertOrSave(

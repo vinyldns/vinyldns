@@ -48,5 +48,7 @@ trait BatchChangeServiceAlgebra {
       approveBatchChangeInput: ApproveBatchChangeInput): BatchResult[BatchChange]
 
   def cancelBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange]
+
+  def revalidateBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange]
 }
 // $COVERAGE-ON$

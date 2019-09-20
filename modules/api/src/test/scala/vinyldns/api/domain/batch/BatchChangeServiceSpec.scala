@@ -837,6 +837,73 @@ class BatchChangeServiceSpec
     }
   }
 
+  "revalidateBatchChange" should {
+    "succeed if the batchChange is PendingReview and user is a support admin" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        rightResultOf(
+          underTest
+            .revalidateBatchChange(batchChange.id, supportUserAuth)
+            .value)
+
+      result.status shouldBe BatchChangeStatus.PendingReview
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Pending)
+      result.reviewTimestamp should not be defined
+      result.cancelledTimestamp should not be defined
+    }
+
+    "succeed if the batchChange is PendingReview and user is a super admin" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        rightResultOf(
+          underTest
+            .revalidateBatchChange(batchChange.id, superUserAuth)
+            .value)
+
+      result.status shouldBe BatchChangeStatus.PendingReview
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Pending)
+      result.reviewTimestamp should not be defined
+      result.cancelledTimestamp should not be defined
+    }
+
+    "fail if the batchChange is PendingReview but user is not a system admin" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.revalidateBatchChange(batchChange.id, auth).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+  }
+
   "getBatchChange" should {
     "Succeed if batchChange id exists" in {
       val batchChange =

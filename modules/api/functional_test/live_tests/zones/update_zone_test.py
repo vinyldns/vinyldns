@@ -776,7 +776,7 @@ def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_conte
     zone_update = shared_zone_test_context.ok_zone
     zone_update['adminGroupId'] = shared_zone_test_context.history_group['id']
 
-    shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=403)
+    shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=(400, 403))
 
 
 @pytest.mark.serial

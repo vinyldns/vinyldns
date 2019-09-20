@@ -611,6 +611,16 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, u'POST', self.headers, **kwargs)
         return data
 
+    def revalidate_batch_change(self, batch_change_id, **kwargs):
+        """
+        Revalidates an existing batch change that is pending manual review
+        :param batch_change_id: ID of the batch change to revalidate
+        :return: the content of the response
+        """
+        url = urljoin(self.index_url, u'/zones/batchrecordchanges/{0}/revalidate'.format(batch_change_id))
+        _, data = self.make_request(url, u'POST', self.headers, **kwargs)
+        return data
+
     def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None, **kwargs):
         """
         Gets list of user's batch change summaries

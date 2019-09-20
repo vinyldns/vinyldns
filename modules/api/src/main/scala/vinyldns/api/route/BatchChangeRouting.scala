@@ -138,6 +138,13 @@ class BatchChangeRoute(
               complete(StatusCodes.OK, chg)
             }
           }
+        } ~
+        path("zones" / "batchrecordchanges" / Segment / "revalidate") { id =>
+          (post & monitor("Endpoint.revalidateBatchChange")) {
+            authenticateAndExecute(batchChangeService.revalidateBatchChange(id, _)) { chg =>
+              complete(StatusCodes.OK, chg)
+            }
+          }
         }
 
     if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes

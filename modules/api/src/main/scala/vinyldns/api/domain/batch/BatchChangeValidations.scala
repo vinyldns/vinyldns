@@ -56,7 +56,7 @@ trait BatchChangeValidationsAlgebra {
       authPrincipal: AuthPrincipal,
       bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit]
 
-  def validateBatchChangeApproval(
+  def validateBatchChangeReview(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit]
@@ -110,7 +110,7 @@ class BatchChangeValidations(
       case (None, _) => ().validNel
       case (Some(groupId), None) => GroupDoesNotExist(groupId).invalidNel
       case (Some(groupId), Some(_)) =>
-        if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSuper) ().validNel
+        if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin) ().validNel
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
@@ -121,7 +121,7 @@ class BatchChangeValidations(
     validateAuthorizedReviewer(authPrincipal, batchChange, bypassTestValidation) |+| validateBatchChangePendingReview(
       batchChange)
 
-  def validateBatchChangeApproval(
+  def validateBatchChangeReview(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
