@@ -131,27 +131,29 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         case (recordKey, singleChangeList) => (recordKey, singleChangeList.toNel)
       }
 
-    supportedChangesByKey.flatMap {
-      case (Some(recordKey), Some(singleChangeNel)) =>
-        val existingRecordSet = groupedChanges.getExistingRecordSet(recordKey)
-        val proposedRecordData = groupedChanges.getProposedRecordData(recordKey)
+    supportedChangesByKey
+      .collect {
+        case (Some(recordKey), Some(singleChangeNel)) =>
+          val existingRecordSet = groupedChanges.getExistingRecordSet(recordKey)
+          val proposedRecordData = groupedChanges.getProposedRecordData(recordKey)
 
-        for {
-          zoneName <- singleChangeNel.head.zoneName
-          zone <- existingZones.getByName(zoneName)
-          logicalChangeType <- groupedChanges.getLogicalChangeType(recordKey)
-          recordSetChange <- generateRecordSetChange(
-            logicalChangeType,
-            singleChangeNel,
-            zone,
-            recordKey.recordType,
-            proposedRecordData,
-            userId,
-            existingRecordSet,
-            ownerGroupId)
-        } yield recordSetChange
-      case _ => None
-    }.toList
+          for {
+            zoneName <- singleChangeNel.head.zoneName
+            zone <- existingZones.getByName(zoneName)
+            logicalChangeType <- groupedChanges.getLogicalChangeType(recordKey)
+            recordSetChange <- generateRecordSetChange(
+              logicalChangeType,
+              singleChangeNel,
+              zone,
+              recordKey.recordType,
+              proposedRecordData,
+              userId,
+              existingRecordSet,
+              ownerGroupId)
+          } yield recordSetChange
+      }
+      .toList
+      .flatten
   }
 
   def generateRecordSetChange(
@@ -165,46 +167,49 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       ownerGroupId: Option[String]): Option[RecordSetChange] = {
 
     val singleChangeIds = singleChangeNel.map(_.id).toList
-    lazy val setOwnerGroupId = if (zone.shared) {
-      existingRecordSet match {
-        case Some(existingRs) if existingRs.ownerGroupId.isDefined => existingRs.ownerGroupId
-        case _ => ownerGroupId
-      }
-    } else {
-      None
-    }
 
-    val firstAddChange = singleChangeNel.collect {
-      case sac: SingleAddChange => sac
-    }.headOption
+    // Determine owner group for add/update
+    lazy val setOwnerGroupId = existingRecordSet match {
+      // Update
+      case Some(existingRs) =>
+        if (zone.shared && existingRs.ownerGroupId.isEmpty) {
+          ownerGroupId
+        } else {
+          existingRs.ownerGroupId
+        }
+      // Add
+      case None =>
+        if (zone.shared) {
+          ownerGroupId
+        } else {
+          None
+        }
+    }
 
     // New record set for add/update or single delete
     lazy val newRecordSet = {
+      val firstAddChange = singleChangeNel.collect {
+        case sac: SingleAddChange => sac
+      }.headOption
+
       // For adds, grab the first ttl; for updates via single DeleteRecord, use existing TTL
-      val newTtl = firstAddChange
-        .flatMap(a => Some(a.ttl))
-        .orElse(existingRecordSet.map(_.ttl))
+      val newTtlRecordNameTuple = firstAddChange
+        .map(add => (Some(add.ttl), add.recordName))
+        .orElse(existingRecordSet.map(rs => (Some(rs.ttl), Some(rs.name))))
 
-      val caseSensitiveRecordName = firstAddChange
-        .flatMap(_.recordName)
-        .orElse(existingRecordSet.map(_.name))
-
-      (newTtl, caseSensitiveRecordName) match {
-        case (Some(ttl), Some(rn)) =>
-          Some(
-            RecordSet(
-              zone.id,
-              rn,
-              recordType,
-              ttl,
-              RecordSetStatus.Pending,
-              DateTime.now,
-              None,
-              proposedRecordData.toList,
-              ownerGroupId = setOwnerGroupId
-            )
+      newTtlRecordNameTuple.collect {
+        case (Some(ttl), Some(recordName)) =>
+          RecordSet(
+            zone.id,
+            recordName,
+            recordType,
+            ttl,
+            RecordSetStatus.Pending,
+            DateTime.now,
+            None,
+            proposedRecordData.toList,
+            ownerGroupId = setOwnerGroupId
           )
-        case _ => None
       }
     }
 
@@ -219,12 +224,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           RecordSetChangeGenerator.forDelete(existingRs, zone, userId, singleChangeIds)
         }
       case Update =>
-        (existingRecordSet, newRecordSet) match {
-          case (Some(existingRs), Some(newRs)) =>
-            Some(
-              RecordSetChangeGenerator.forUpdate(existingRs, newRs, zone, userId, singleChangeIds))
-          case _ => None
-        }
+        for {
+          existingRs <- existingRecordSet
+          newRs <- newRecordSet
+        } yield RecordSetChangeGenerator.forUpdate(existingRs, newRs, zone, userId, singleChangeIds)
       case _ => None // This case should never happen
     }
   }
