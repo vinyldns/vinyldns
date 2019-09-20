@@ -39,7 +39,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       approvalStatus: BatchChangeApprovalStatus,
       reviewerId: Option[String],
       reviewComment: Option[String],
-      reviewTimestamp: Option[DateTime])
+      reviewTimestamp: Option[DateTime],
+      scheduledTime: Option[DateTime])
   object StoredBatchChange {
     def apply(batchChange: BatchChange): StoredBatchChange =
       new StoredBatchChange(
@@ -53,7 +54,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         batchChange.approvalStatus,
         batchChange.reviewerId,
         batchChange.reviewComment,
-        batchChange.reviewTimestamp
+        batchChange.reviewTimestamp,
+        batchChange.scheduledTime
       )
   }
 
@@ -88,7 +90,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           sc.reviewerId,
           sc.reviewComment,
           sc.reviewTimestamp,
-          sc.id
+          sc.id,
+          sc.scheduledTime
         )
       }
     }
@@ -132,7 +135,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         sc.reviewerId,
         sc.reviewComment,
         sc.reviewTimestamp,
-        sc.id
+        sc.id,
+        sc.scheduledTime
       )
     } yield BatchChangeSummary(batchChange)
     val sorted = batchChangeSummaries.sortBy(_.createdTimestamp)

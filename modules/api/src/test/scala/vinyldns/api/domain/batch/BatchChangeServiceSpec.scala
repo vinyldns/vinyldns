@@ -376,7 +376,7 @@ class BatchChangeServiceSpec
     TestZoneRepo,
     TestRecordSetRepo,
     TestGroupRepo,
-    validations,
+    new BatchChangeValidations(10, new AccessValidations(), scheduledChangesEnabled = true),
     batchChangeRepo,
     EmptyBatchConverter,
     TestUserRepo,
@@ -656,7 +656,7 @@ class BatchChangeServiceSpec
       Some(authGrp.id),
       BatchChangeApprovalStatus.PendingReview
     )
-    "succeed if the batchChange is PendingReview and reviewer is authorized" in {
+    "succeed if the batchChange is PendingReview and reviewer is support admin" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
       val result =
@@ -678,6 +678,31 @@ class BatchChangeServiceSpec
       result.changes shouldBe List(singleChangeGood, singleChangeNRPostReview)
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
       result.reviewerId shouldBe Some(supportUserAuth.userId)
+      result.reviewComment shouldBe Some("reviewed!")
+      result.reviewTimestamp shouldBe defined
+    }
+    "succeed if the batchChange is PendingReview and reviewer is super admin" in {
+      batchChangeRepo.save(batchChangeNeedsApproval)
+
+      val result =
+        rightResultOf(
+          underTestManualEnabled
+            .approveBatchChange(
+              batchChangeNeedsApproval.id,
+              superUserAuth,
+              ApproveBatchChangeInput(Some("reviewed!")))
+            .value)
+
+      result.userId shouldBe batchChangeNeedsApproval.userId
+      result.userName shouldBe batchChangeNeedsApproval.userName
+      result.comments shouldBe batchChangeNeedsApproval.comments
+      result.createdTimestamp shouldBe batchChangeNeedsApproval.createdTimestamp
+      result.ownerGroupId shouldBe batchChangeNeedsApproval.ownerGroupId
+      result.id shouldBe batchChangeNeedsApproval.id
+
+      result.changes shouldBe List(singleChangeGood, singleChangeNRPostReview)
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
+      result.reviewerId shouldBe Some(superUserAuth.userId)
       result.reviewComment shouldBe Some("reviewed!")
       result.reviewTimestamp shouldBe defined
     }
@@ -834,6 +859,108 @@ class BatchChangeServiceSpec
             .value)
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id, "cancelled")
+    }
+  }
+
+  "updateScheduledTime" should {
+    val scheduledBatchChange = BatchChange(
+      auth.userId,
+      auth.signedInUser.userName,
+      Some("comments in"),
+      DateTime.now,
+      List(singleChangeGood, singleChangeNR),
+      Some(authGrp.id),
+      BatchChangeApprovalStatus.PendingReview,
+      scheduledTime = Some(DateTime.now.plusHours(1))
+    )
+
+    "succeed if the batchChange is PendingReview, Scheduled, user is the batch change creator, " +
+      "and new scheduled time is in the future" in {
+      batchChangeRepo.save(scheduledBatchChange)
+
+      val tomorrow = DateTime.now.plusDays(1)
+
+      val batchChangeUpdate =
+        BatchChangeInput(scheduledBatchChange).copy(scheduledTime = Some(tomorrow))
+
+      val result =
+        rightResultOf(
+          underTestScheduledEnabled
+            .updateScheduledTime(scheduledBatchChange.id, batchChangeUpdate, auth)
+            .value)
+
+      result.status shouldBe BatchChangeStatus.Scheduled
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Pending)
+      result.scheduledTime shouldBe Some(tomorrow)
+    }
+
+    "fail if the batchChange is PendingReview, Scheduled, new scheduled time is in the future," +
+      " but user is a super admin" in {
+      batchChangeRepo.save(scheduledBatchChange)
+
+      val tomorrow = DateTime.now.plusDays(1)
+
+      val batchChangeUpdate =
+        BatchChangeInput(scheduledBatchChange).copy(scheduledTime = Some(tomorrow))
+
+      val result =
+        leftResultOf(
+          underTestScheduledEnabled
+            .updateScheduledTime(scheduledBatchChange.id, batchChangeUpdate, superUserAuth)
+            .value)
+
+      result shouldBe UserNotAuthorizedError(scheduledBatchChange.id)
+    }
+
+    "fail if the batchChange is PendingReview, Scheduled, new scheduled time is in the future," +
+      " but user is a support user" in {
+      batchChangeRepo.save(scheduledBatchChange)
+
+      val tomorrow = DateTime.now.plusDays(1)
+
+      val batchChangeUpdate =
+        BatchChangeInput(scheduledBatchChange).copy(scheduledTime = Some(tomorrow))
+
+      val result =
+        leftResultOf(
+          underTestScheduledEnabled
+            .updateScheduledTime(scheduledBatchChange.id, batchChangeUpdate, supportUserAuth)
+            .value)
+
+      result shouldBe UserNotAuthorizedError(scheduledBatchChange.id)
+    }
+
+    "fail if the proposed scheduled time is in the past" in {
+      batchChangeRepo.save(scheduledBatchChange)
+      val yesterday = DateTime.now.minusDays(1)
+
+      val batchChangeUpdate =
+        BatchChangeInput(scheduledBatchChange).copy(scheduledTime = Some(yesterday))
+
+      val result =
+        leftResultOf(
+          underTestScheduledEnabled
+            .updateScheduledTime(scheduledBatchChange.id, batchChangeUpdate, auth)
+            .value)
+
+      result shouldBe ScheduledTimeMustBeInFuture
+    }
+
+    "fail if scheduled changes are disabled" in {
+      batchChangeRepo.save(scheduledBatchChange)
+      val tomorrow = DateTime.now.plusDays(1)
+
+      val batchChangeUpdate =
+        BatchChangeInput(scheduledBatchChange).copy(scheduledTime = Some(tomorrow))
+
+      val result =
+        leftResultOf(
+          underTest
+            .updateScheduledTime(scheduledBatchChange.id, batchChangeUpdate, auth)
+            .value)
+
+      result shouldBe ScheduledChangesDisabled
     }
   }
 

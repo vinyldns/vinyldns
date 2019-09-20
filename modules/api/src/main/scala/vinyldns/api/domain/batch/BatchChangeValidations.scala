@@ -153,7 +153,7 @@ class BatchChangeValidations(
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
     validateBatchChangePendingReview(batchChange, "edited") |+|
       validateScheduledTimeExists(batchChange, scheduledChangesEnabled) |+|
-      validateAuthorizedEditor(batchChange, authPrincipal, isTestChange: Boolean) |+|
+      validateCreator(batchChange, authPrincipal) |+|
       validateScheduledChange(scheduledTime, scheduledChangesEnabled)
 
   def validateBatchChangePendingReview(
@@ -170,16 +170,6 @@ class BatchChangeValidations(
       bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
     if (auth.isSystemAdmin && (bypassTestValidation || !auth.isTestUser)) {
       // bypassTestValidation = true for a test change
-      ().asRight
-    } else {
-      UserNotAuthorizedError(batchChange.id).asLeft
-    }
-
-  def validateAuthorizedEditor(
-      batchChange: BatchChange,
-      auth: AuthPrincipal,
-      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    if ((auth.isSystemAdmin || batchChange.userId == auth.userId) && (bypassTestValidation || !auth.isTestUser)) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft

@@ -399,36 +399,6 @@ class BatchChangeValidationsSpec
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
-  property("validateAuthorizedEditor: should succeed if the editor is the batch change creator") {
-    validateAuthorizedEditor(validPendingBatchChange, okAuth, false) should be(right)
-  }
-
-  property("validateAuthorizedEditor: should succeed if the editor is a super user") {
-    validateAuthorizedEditor(validPendingBatchChange, superUserAuth, false) should be(right)
-  }
-
-  property("validateAuthorizedEditor: should succeed if the editor is a support user") {
-    validateAuthorizedEditor(validPendingBatchChange, supportUserAuth, false) should be(right)
-  }
-
-  property("validateAuthorizedEditor: should fail if a test editor tries to edit a non-test change") {
-    val testSupport = supportUser.copy(isTest = true)
-    validateAuthorizedEditor(validPendingBatchChange, AuthPrincipal(testSupport, List()), false).value shouldBe
-      Left(UserNotAuthorizedError(validPendingBatchChange.id))
-  }
-
-  property("validateAuthorizedEditor: should succeed if a test editor tries to edit a test change") {
-    val testSupport = supportUser.copy(isTest = true)
-    validateAuthorizedEditor(validPendingBatchChange, AuthPrincipal(testSupport, List()), true).value should be(
-      right)
-  }
-
-  property(
-    "validateAuthorizedEditor: should fail if the editor is not a system admin or the creator") {
-    validateAuthorizedEditor(validPendingBatchChange, xyzAuth, false) shouldBe
-      Left(UserNotAuthorizedError(validPendingBatchChange.id))
-  }
-
   property(
     "validateBatchChangeRejection: should succeed if batch change is pending review and reviewer" +
       "is authorized") {
