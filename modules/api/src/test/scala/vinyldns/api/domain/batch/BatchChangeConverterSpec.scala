@@ -21,7 +21,8 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.CatsHelpers
-import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
+import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
 import vinyldns.core.TestMembershipData.okUser
@@ -69,6 +70,23 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       None)
   }
 
+  private def makeAddChangeForValidation(
+      recordName: String,
+      recordData: RecordData,
+      typ: RecordType = RecordType.A): AddChangeForValidation =
+    AddChangeForValidation(
+      okZone,
+      s"$recordName",
+      AddChangeInput(s"$recordName.ok.", typ, Some(123), recordData))
+
+  private def makeDeleteRRSetChangeForValidation(
+      recordName: String,
+      typ: RecordType = RecordType.A): DeleteRRSetChangeForValidation =
+    DeleteRRSetChangeForValidation(
+      okZone,
+      s"$recordName",
+      DeleteRRSetChangeInput(s"$recordName.ok.", typ))
+
   private val addSingleChangesGood = List(
     makeSingleAddChange("one", AData("1.1.1.1")),
     makeSingleAddChange("two", AData("1.1.1.2")),
@@ -81,12 +99,32 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleAddChange("mxRecord", MXData(1, "foo.bar."), MX)
   )
 
+  private val addChangeForValidationGood = List(
+    makeAddChangeForValidation("one", AData("1.1.1.1")),
+    makeAddChangeForValidation("two", AData("1.1.1.2")),
+    makeAddChangeForValidation("repeat", AData("1.1.1.3")),
+    makeAddChangeForValidation("repeat", AData("1.1.1.4")),
+    makeAddChangeForValidation("aaaaRecord", AAAAData("1::1"), AAAA),
+    makeAddChangeForValidation("cnameRecord", CNAMEData("cname.com."), CNAME),
+    makeAddChangeForValidation("10.1.1.1", PTRData("ptrData"), PTR),
+    makeAddChangeForValidation("txtRecord", TXTData("text"), TXT),
+    makeAddChangeForValidation("mxRecord", MXData(1, "foo.bar."), MX)
+  )
+
   private val deleteSingleChangesGood = List(
     makeSingleDeleteRRSetChange("aToDelete", A),
     makeSingleDeleteRRSetChange("cnameToDelete", CNAME),
     makeSingleDeleteRRSetChange("cnameToDelete", CNAME), // duplicate should basically be ignored
     makeSingleDeleteRRSetChange("txtToDelete", TXT),
     makeSingleDeleteRRSetChange("mxToDelete", MX)
+  )
+
+  private val deleteRRSetChangeForValidationGood = List(
+    makeDeleteRRSetChangeForValidation("aToDelete"),
+    makeDeleteRRSetChangeForValidation("cnameToDelete", CNAME),
+    makeDeleteRRSetChangeForValidation("cnameToDelete", CNAME), // duplicate should basically be ignored
+    makeDeleteRRSetChangeForValidation("txtToDelete", TXT),
+    makeDeleteRRSetChangeForValidation("mxToDelete", MX)
   )
 
   private val updateSingleChangesGood = List(
@@ -100,16 +138,39 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleAddChange("mxToUpdate", MXData(1, "update.com."), MX)
   )
 
+  private val updateChangeForValidationGood = List(
+    makeDeleteRRSetChangeForValidation("aToUpdate", A),
+    makeAddChangeForValidation("aToUpdate", AData("1.1.1.1")),
+    makeDeleteRRSetChangeForValidation("cnameToUpdate", CNAME),
+    makeAddChangeForValidation("cnameToUpdate", CNAMEData("newcname.com."), CNAME),
+    makeDeleteRRSetChangeForValidation("txtToUpdate", TXT),
+    makeAddChangeForValidation("txtToUpdate", TXTData("update"), TXT),
+    makeDeleteRRSetChangeForValidation("mxToUpdate", MX),
+    makeAddChangeForValidation("mxToUpdate", MXData(1, "update.com."), MX)
+  )
+
   private val singleChangesOneBad = List(
     makeSingleAddChange("one", AData("1.1.1.1")),
     makeSingleAddChange("two", AData("1.1.1.2")),
     makeSingleAddChange("bad", AData("1.1.1.1"))
   )
 
+  private val changeForValidationOneBad = List(
+    makeAddChangeForValidation("one", AData("1.1.1.1")),
+    makeAddChangeForValidation("two", AData("1.1.1.2")),
+    makeAddChangeForValidation("bad", AData("1.1.1.1"))
+  )
+
   private val singleChangesOneUnsupported = List(
     makeSingleAddChange("one", AData("1.1.1.1")),
     makeSingleAddChange("two", AData("1.1.1.2")),
     makeSingleAddChange("wrongType", TXTData("Unsupported!"), UNKNOWN)
+  )
+
+  private val changeForValidationOneUnsupported = List(
+    makeAddChangeForValidation("one", AData("1.1.1.1")),
+    makeAddChangeForValidation("two", AData("1.1.1.2")),
+    makeAddChangeForValidation("wrongType", TXTData("Unsupported!"), UNKNOWN)
   )
 
   private def existingZones = ExistingZones(Set(okZone, sharedZone))
@@ -201,7 +262,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   private val batchChangeRepo = new InMemoryBatchChangeRepository
   private val underTest = new BatchChangeConverter(batchChangeRepo, TestMessageQueue)
 
-  "convertAndSendBatchForProcessing" should {
+  "sendBatchForProcessing" should {
     "successfully generate add RecordSetChange and map IDs for all adds" in {
       val batchChange =
         BatchChange(
@@ -213,7 +274,11 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChange,
+            existingZones,
+            ChangeForValidationMap(addChangeForValidationGood.map(_.validNel), existingRecordSets),
+            None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -240,7 +305,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChange,
+            existingZones,
+            ChangeForValidationMap(
+              deleteRRSetChangeForValidationGood.map(_.validNel),
+              existingRecordSets),
+            None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -277,7 +348,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChange,
+            existingZones,
+            ChangeForValidationMap(
+              updateChangeForValidationGood.map(_.validNel),
+              existingRecordSets),
+            None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -301,6 +378,8 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "successfully handle a combination of adds, updates, and deletes" in {
       val changes = addSingleChangesGood ++ deleteSingleChangesGood ++ updateSingleChangesGood
+      val changeForValidation = addChangeForValidationGood ++ deleteRRSetChangeForValidationGood ++
+        updateChangeForValidationGood
       val batchChange =
         BatchChange(
           okUser.id,
@@ -311,7 +390,11 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidation.map(_.validNel), existingRecordSets),
+            None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -355,7 +438,11 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChange,
+            existingZones,
+            ChangeForValidationMap(List(), existingRecordSets),
+            None)
           .value)
 
       result.batchChange shouldBe batchChange
@@ -372,7 +459,11 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchWithBadChange, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneBad.map(_.validNel), existingRecordSets),
+            None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -411,7 +502,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = leftResultOf(
         underTest
-          .sendBatchForProcessing(batchChangeUnsupported, existingZones, existingRecordSets, None)
+          .sendBatchForProcessing(
+            batchChangeUnsupported,
+            existingZones,
+            ChangeForValidationMap(
+              changeForValidationOneUnsupported.map(_.validNel),
+              existingRecordSets),
+            None)
           .value)
       result shouldBe an[BatchConversionError]
 
@@ -427,10 +524,14 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "generate record set changes for shared zone without owner group ID if not provided" in {
       val result =
-        underTest.generateAddChange(
+        underTest.generateRecordSetChange(
+          Add,
           NonEmptyList.of(singleAddChange),
-          existingZones,
+          sharedZone,
+          singleAddChange.typ,
+          Set(singleAddChange.recordData),
           okUser.id,
+          None,
           None)
       result shouldBe defined
       result.foreach(_.recordSet.ownerGroupId shouldBe None)
@@ -438,10 +539,14 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "generate record set changes for shared zone with owner group ID if provided" in {
       val result =
-        underTest.generateAddChange(
+        underTest.generateRecordSetChange(
+          Add,
           NonEmptyList.of(singleAddChange),
-          existingZones,
+          sharedZone,
+          singleAddChange.typ,
+          Set(singleAddChange.recordData),
           okUser.id,
+          None,
           ownerGroupId)
       result shouldBe defined
       result.foreach(_.recordSet.ownerGroupId shouldBe ownerGroupId)
@@ -449,10 +554,14 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "generate record set changes for non-shared zone without owner group ID" in {
       val result =
-        underTest.generateAddChange(
+        underTest.generateRecordSetChange(
+          Add,
           NonEmptyList.fromListUnsafe(addSingleChangesGood),
-          existingZones,
+          okZone,
+          singleAddChange.typ,
+          Set(singleAddChange.recordData),
           okUser.id,
+          None,
           ownerGroupId)
       result shouldBe defined
       result.foreach(_.recordSet.ownerGroupId shouldBe None)
@@ -465,12 +574,14 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "not overwrite existing owner group ID for existing record set in shared zone" in {
       val result =
-        underTest.generateUpdateChange(
-          NonEmptyList.of(deleteChange),
-          NonEmptyList.of(addChange),
-          existingZones,
-          ExistingRecordSets(List(sharedZoneRecord)),
+        underTest.generateRecordSetChange(
+          Update,
+          NonEmptyList.of(deleteChange, addChange),
+          sharedZone,
+          deleteChange.typ,
+          Set(addChange.recordData),
           okUser.id,
+          Some(sharedZoneRecord),
           Some("new-owner-group-id")
         )
       result shouldBe defined
@@ -480,12 +591,14 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     "use specified owner group ID if undefined for existing record set in shared zone" in {
       val ownerGroupId = Some("new-owner-group-id")
       val result =
-        underTest.generateUpdateChange(
-          NonEmptyList.of(deleteChange),
-          NonEmptyList.of(addChange),
-          existingZones,
-          ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None))),
+        underTest.generateRecordSetChange(
+          Update,
+          NonEmptyList.of(deleteChange, addChange),
+          sharedZone,
+          addChange.typ,
+          Set(addChange.recordData),
           okUser.id,
+          Some(sharedZoneRecord.copy(ownerGroupId = None)),
           ownerGroupId
         )
       result shouldBe defined
@@ -494,13 +607,17 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "generate record set without updating owner group ID for record set in unshared zone" in {
       val result =
-        underTest.generateUpdateChange(
+        underTest.generateRecordSetChange(
+          Update,
           NonEmptyList.of(
-            deleteChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))),
-          NonEmptyList.of(addChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))),
-          existingZones,
-          ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None, zoneId = okZone.id))),
+            deleteChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name)),
+            addChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))
+          ),
+          okZone,
+          addChange.typ,
+          Set(addChange.recordData),
           okUser.id,
+          Some(sharedZoneRecord.copy(ownerGroupId = None, zoneId = okZone.id)),
           Some("new-owner-group-id")
         )
       result shouldBe defined

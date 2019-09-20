@@ -104,7 +104,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.groupedChanges.existingRecordSets,
+        validationOutput.groupedChanges,
         batchChangeInput.ownerGroupId)
     } yield serviceCompleteBatch
 
@@ -166,7 +166,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.groupedChanges.existingRecordSets,
+        validationOutput.groupedChanges,
         batchChange.ownerGroupId)
       response <- buildResponseForApprover(serviceCompleteBatch).toBatchResult
     } yield response
@@ -470,17 +470,17 @@ class BatchChangeService(
   def convertOrSave(
       batchChange: BatchChange,
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
+      groupedChanges: ChangeForValidationMap,
       ownerGroupId: Option[String]): BatchResult[BatchChange] = batchChange.approvalStatus match {
     case AutoApproved =>
       // send on to the converter, it will be saved there
       batchChangeConverter
-        .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
+        .sendBatchForProcessing(batchChange, existingZones, groupedChanges, ownerGroupId)
         .map(_.batchChange)
     case ManuallyApproved if manualReviewEnabled =>
       // send on to the converter, it will be saved there
       batchChangeConverter
-        .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
+        .sendBatchForProcessing(batchChange, existingZones, groupedChanges, ownerGroupId)
         .map(_.batchChange)
     case PendingReview if manualReviewEnabled =>
       // save the change, will need to return to it later on approval

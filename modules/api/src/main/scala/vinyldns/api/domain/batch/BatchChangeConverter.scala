@@ -22,16 +22,13 @@ import cats.syntax.functor._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
-import vinyldns.api.domain.batch.BatchTransformations.{
-  BatchConversionOutput,
-  ExistingRecordSets,
-  ExistingZones
-}
+import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.domain.record.RecordSetChangeGenerator
-import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.queue.MessageQueue
 
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
@@ -42,7 +39,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def sendBatchForProcessing(
       batchChange: BatchChange,
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
+      groupedChanges: ChangeForValidationMap,
       ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] = {
     logger.info(
       s"Converting BatchChange [${batchChange.id}] with SingleChanges [${batchChange.changes.map(_.id)}]")
@@ -50,7 +47,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       recordSetChanges <- createRecordSetChangesForBatch(
         batchChange.changes,
         existingZones,
-        existingRecordSets,
+        groupedChanges,
         batchChange.userId,
         ownerGroupId).toRightBatchResult
       _ <- allChangesWereConverted(batchChange.changes, recordSetChanges)
@@ -123,140 +120,115 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def createRecordSetChangesForBatch(
       changes: List[SingleChange],
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
+      groupedChanges: ChangeForValidationMap,
       userId: String,
       ownerGroupId: Option[String]): List[RecordSetChange] = {
     // NOTE: this also assumes we are past approval and know the zone/record split at this point
-    val changesByKey = for {
-      c <- changes
-      rk <- c.recordKey.toList
-    } yield (rk, c)
+    val supportedChangesByKey = changes
+      .filter(sc => SupportedBatchChangeRecordTypes.get.contains(sc.typ))
+      .groupBy(_.recordKey)
+      .map {
+        case (recordKey, singleChangeList) => (recordKey, singleChangeList.toNel)
+      }
 
-    val groupedChangeTuples =
-      changesByKey.groupBy { case (recordKey, _) => recordKey }.values.toList
-    groupedChangeTuples.flatMap { gc =>
-      combineChanges(
-        gc.map { case (_, singleChange) => singleChange },
-        existingZones,
-        existingRecordSets,
-        userId,
-        ownerGroupId)
-    }
+    supportedChangesByKey
+      .collect {
+        case (Some(recordKey), Some(singleChangeNel)) =>
+          val existingRecordSet = groupedChanges.getExistingRecordSet(recordKey)
+          val proposedRecordData = groupedChanges.getProposedRecordData(recordKey)
+
+          for {
+            zoneName <- singleChangeNel.head.zoneName
+            zone <- existingZones.getByName(zoneName)
+            logicalChangeType <- groupedChanges.getLogicalChangeType(recordKey)
+            recordSetChange <- generateRecordSetChange(
+              logicalChangeType,
+              singleChangeNel,
+              zone,
+              recordKey.recordType,
+              proposedRecordData,
+              userId,
+              existingRecordSet,
+              ownerGroupId)
+          } yield recordSetChange
+      }
+      .toList
+      .flatten
   }
 
-  def combineChanges(
-      changes: List[SingleChange],
-      existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
+  def generateRecordSetChange(
+      logicalChangeType: LogicalChangeType.LogicalChangeType,
+      singleChangeNel: NonEmptyList[SingleChange],
+      zone: Zone,
+      recordType: RecordType,
+      proposedRecordData: Set[RecordData],
       userId: String,
+      existingRecordSet: Option[RecordSet],
       ownerGroupId: Option[String]): Option[RecordSetChange] = {
-    val adds = NonEmptyList.fromList {
-      changes.collect {
-        case add: SingleAddChange if SupportedBatchChangeRecordTypes.get.contains(add.typ) => add
-      }
-    }
-    val deletes = NonEmptyList.fromList {
-      changes.collect {
-        case del: SingleDeleteRRSetChange
-            if SupportedBatchChangeRecordTypes.get.contains(del.typ) =>
-          del
-      }
-    }
 
-    // Note: deletes are applied before adds by this logic
-    (deletes, adds) match {
-      case (None, Some(a)) => generateAddChange(a, existingZones, userId, ownerGroupId)
-      case (Some(d), None) => generateDeleteChange(d, existingZones, existingRecordSets, userId)
-      case (Some(d), Some(a)) =>
-        generateUpdateChange(d, a, existingZones, existingRecordSets, userId, ownerGroupId)
-      case _ => None
-    }
-  }
+    val singleChangeIds = singleChangeNel.map(_.id).toList
 
-  def generateUpdateChange(
-      deleteChanges: NonEmptyList[SingleDeleteRRSetChange],
-      addChanges: NonEmptyList[SingleAddChange],
-      existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
-      userId: String,
-      ownerGroupId: Option[String]): Option[RecordSetChange] =
-    for {
-      deleteChange <- Some(deleteChanges.head)
-      zoneName <- deleteChange.zoneName
-      key <- deleteChange.recordKey
-      zone <- existingZones.getByName(zoneName)
-      existingRecordSet <- existingRecordSets.get(key)
-      newRecordSet <- {
-        val setOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
+    // Determine owner group for add/update
+    lazy val setOwnerGroupId = existingRecordSet match {
+      // Update
+      case Some(existingRs) =>
+        if (zone.shared && existingRs.ownerGroupId.isEmpty) {
           ownerGroupId
         } else {
-          existingRecordSet.ownerGroupId
+          existingRs.ownerGroupId
         }
-        combineAddChanges(addChanges, zone, setOwnerGroupId)
+      // Add
+      case None =>
+        if (zone.shared) {
+          ownerGroupId
+        } else {
+          None
+        }
+    }
+
+    // New record set for add/update or single delete
+    lazy val newRecordSet = {
+      val firstAddChange = singleChangeNel.collect {
+        case sac: SingleAddChange => sac
+      }.headOption
+
+      // For adds, grab the first ttl; for updates via single DeleteRecord, use existing TTL
+      val newTtlRecordNameTuple = firstAddChange
+        .map(add => (Some(add.ttl), add.recordName))
+        .orElse(existingRecordSet.map(rs => (Some(rs.ttl), Some(rs.name))))
+
+      newTtlRecordNameTuple.collect {
+        case (Some(ttl), Some(recordName)) =>
+          RecordSet(
+            zone.id,
+            recordName,
+            recordType,
+            ttl,
+            RecordSetStatus.Pending,
+            DateTime.now,
+            None,
+            proposedRecordData.toList,
+            ownerGroupId = setOwnerGroupId
+          )
       }
-      changeIds = deleteChanges.map(_.id) ++ addChanges.map(_.id).toList
-    } yield
-      RecordSetChangeGenerator.forUpdate(
-        existingRecordSet,
-        newRecordSet,
-        zone,
-        userId,
-        changeIds.toList)
+    }
 
-  def generateDeleteChange(
-      deleteChanges: NonEmptyList[SingleDeleteRRSetChange],
-      existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
-      userId: String): Option[RecordSetChange] =
-    for {
-      deleteChange <- Some(deleteChanges.head)
-      zoneName <- deleteChange.zoneName
-      key <- deleteChange.recordKey
-      zone <- existingZones.getByName(zoneName)
-      existingRecordSet <- existingRecordSets.get(key)
-    } yield
-      RecordSetChangeGenerator.forDelete(
-        existingRecordSet,
-        zone,
-        userId,
-        deleteChanges.map(_.id).toList)
-
-  def generateAddChange(
-      addChanges: NonEmptyList[SingleAddChange],
-      existingZones: ExistingZones,
-      userId: String,
-      ownerGroupId: Option[String]): Option[RecordSetChange] =
-    for {
-      zoneName <- addChanges.head.zoneName
-      zone <- existingZones.getByName(zoneName)
-      newRecordSet <- {
-        val setOwnerGroupId = if (zone.shared) ownerGroupId else None
-        combineAddChanges(addChanges, zone, setOwnerGroupId)
-      }
-      ids = addChanges.map(_.id)
-    } yield RecordSetChangeGenerator.forAdd(newRecordSet, zone, userId, ids.toList)
-
-  // Combines changes where the RecordData can just be appended to list (A, AAAA, CNAME, PTR)
-  // NOTE: CNAME & PTR will only have one data field due to validations, so the combination is fine
-  def combineAddChanges(
-      changes: NonEmptyList[SingleAddChange],
-      zone: Zone,
-      ownerGroupId: Option[String]): Option[RecordSet] = {
-    val combinedData =
-      changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
-    // recordName and typ are shared by all changes passed into this function, can pull those from any change
-    // TTL choice is arbitrary here; this is taking the 1st
-    changes.head.recordName.map { recordName =>
-      record.RecordSet(
-        zone.id,
-        recordName,
-        changes.head.typ,
-        changes.head.ttl,
-        RecordSetStatus.Pending,
-        DateTime.now,
-        None,
-        combinedData,
-        ownerGroupId = ownerGroupId)
+    // Generate RecordSetChange based on logical type
+    logicalChangeType match {
+      case Add =>
+        newRecordSet.map { newRs =>
+          RecordSetChangeGenerator.forAdd(newRs, zone, userId, singleChangeIds)
+        }
+      case FullDelete =>
+        existingRecordSet.map { existingRs =>
+          RecordSetChangeGenerator.forDelete(existingRs, zone, userId, singleChangeIds)
+        }
+      case Update =>
+        for {
+          existingRs <- existingRecordSet
+          newRs <- newRecordSet
+        } yield RecordSetChangeGenerator.forUpdate(existingRs, newRs, zone, userId, singleChangeIds)
+      case _ => None // This case should never happen
     }
   }
 }
