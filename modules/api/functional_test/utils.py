@@ -427,7 +427,7 @@ def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.
     else:
         if change_type == "DeleteRecord":
             json = {
-                "changeType": "DeleteRecord",
+                "changeType": change_type,
                 "inputName": input_name,
                 "type": record_type,
                 "record": {
@@ -495,11 +495,21 @@ def get_change_TXT_json(input_name, record_type="TXT", ttl=200, text="test", cha
             }
         }
     else:
-        json = {
-            "changeType": "DeleteRecordSet",
-            "inputName": input_name,
-            "type": record_type
-        }
+        if change_type == "DeleteRecord":
+            json = {
+                "changeType": change_type,
+                "inputName": input_name,
+                "type": record_type,
+                "record": {
+                    "text": text
+                }
+            }
+        else:
+            json = {
+                "changeType": "DeleteRecordSet",
+                "inputName": input_name,
+                "type": record_type
+            }
     return json
 
 
