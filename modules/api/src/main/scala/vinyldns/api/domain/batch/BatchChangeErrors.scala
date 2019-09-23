@@ -63,7 +63,7 @@ final case class BatchRequesterNotFound(userId: String, userName: String)
 
 final case class BatchChangeNotScheduled(id: String) extends BatchChangeErrorResponse {
   def message: String =
-    s"""Batch change $id is not scheduled, so it cannot be updated."""
+    s"Batch change $id is not scheduled, so it cannot be updated."
 }
 
 case object ScheduledChangesDisabled extends BatchChangeErrorResponse {

@@ -608,6 +608,7 @@ class BatchChangeValidations(
       case (_, None) => Left(BatchChangeNotScheduled(batchChange.id))
       case (false, _) => Left(ScheduledChangesDisabled)
     }
+
   def zoneDoesNotRequireManualReview(
       change: ChangeForValidation,
       isApproved: Boolean): SingleValidation[Unit] =

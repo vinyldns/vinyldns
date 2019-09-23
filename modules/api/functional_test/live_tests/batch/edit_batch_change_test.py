@@ -43,6 +43,7 @@ def test_edit_batch_change_with_new_scheduled_time_succeeds_for_creator(shared_z
             rejecter = shared_zone_test_context.support_user_client
             rejecter.reject_batch_change(result['id'], status=200)
 
+
 def test_edit_batch_change_with_new_scheduled_time_fails_for_non_creator(shared_zone_test_context):
     """
     Test changing the time of a scheduled batch change fails if not updated by the batch change creator
