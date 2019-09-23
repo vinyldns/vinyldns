@@ -69,7 +69,6 @@ trait BatchChangeValidationsAlgebra {
 class BatchChangeValidations(
     changeLimit: Int,
     accessValidation: AccessValidationsAlgebra,
-    multiRecordEnabled: Boolean = false,
     scheduledChangesEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
 
@@ -176,9 +175,7 @@ class BatchChangeValidations(
     input.map {
       case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
       case d: DeleteRRSetChangeInput => validateInputName(d, isApproved).map(_ => d)
-      // TODO: Add DeleteRecordChangeInput validations
-      case _: DeleteRecordChangeInput =>
-        UnsupportedOperation("DeleteRecordChangeInput").invalidNel
+      case d: DeleteRecordChangeInput => validateInputName(d, isApproved).map(_ => d)
     }
 
   def validateAddChangeInput(
@@ -258,23 +255,6 @@ class BatchChangeValidations(
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
 
-  def existingRecordSetIsNotMulti(
-      change: ChangeForValidation,
-      recordSet: RecordSet): SingleValidation[Unit] =
-    if (!multiRecordEnabled & recordSet.records.length > 1) {
-      ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
-    } else ().validNel
-
-  def newRecordSetIsNotMulti(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
-    lazy val matchingAddRecords = groupedChanges
-      .getProposedAdds(change.recordKey)
-    if (!multiRecordEnabled && matchingAddRecords.size > 1)
-      NewMultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
-    else ().validNel
-  }
-
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     if (change.recordName != change.zone.name && change.recordName.contains("."))
       ZoneDiscoveryError(change.inputChange.inputName).invalidNel
@@ -307,7 +287,6 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -325,7 +304,7 @@ class BatchChangeValidations(
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
       case CNAME => recordIsUniqueInBatch(change, groupedChanges)
-      case _ => newRecordSetIsNotMulti(change, groupedChanges)
+      case _ => ().validNel
     }
 
     val commonValidations: SingleValidation[Unit] = {
@@ -337,7 +316,6 @@ class BatchChangeValidations(
               groupedChanges.existingRecordSets
                 .get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -359,7 +337,6 @@ class BatchChangeValidations(
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(change.recordKey).toList
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None =>
@@ -377,13 +354,12 @@ class BatchChangeValidations(
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetIsNotMulti(change, groupedChanges) |+|
-          newRecordSetIsNotDotted(change)
+        newRecordSetIsNotDotted(change)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case TXT | PTR =>
-        newRecordSetIsNotMulti(change, groupedChanges)
+        ().validNel
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
@@ -496,7 +472,7 @@ class BatchChangeValidations(
         input.inputChange.typ,
         input.zone,
         ownerGroupId,
-        addRecords.toList
+        addRecords
       )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }

@@ -31,7 +31,6 @@ import vinyldns.core.domain.record._
 
 trait BatchChangeJsonProtocol extends JsonValidation {
 
-  // TODO: Add DeleteRecordChangeInputSerializer for DeleteRecord
   val batchChangeSerializers = Seq(
     JsonEnumV(ChangeInputType),
     JsonEnumV(SingleChangeStatus),
@@ -42,6 +41,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     ChangeInputSerializer,
     AddChangeInputSerializer,
     DeleteRRSetChangeInputSerializer,
+    DeleteRecordChangeInputSerializer,
     SingleAddChangeSerializer,
     SingleDeleteRRSetChangeSerializer,
     SingleDeleteRecordChangeSerializer,
@@ -178,7 +178,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   case object SingleDeleteRecordChangeSerializer
       extends ValidationSerializer[SingleDeleteRecordChange] {
     override def toJson(sdrc: SingleDeleteRecordChange): JValue =
-      ("changeType" -> "DeleteRecordSet") ~
+      ("changeType" -> "DeleteRecord") ~
         ("inputName" -> sdrc.inputName) ~
         ("type" -> Extraction.decompose(sdrc.typ)) ~
         ("status" -> sdrc.status.toString) ~
