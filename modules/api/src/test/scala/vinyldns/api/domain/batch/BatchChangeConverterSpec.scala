@@ -558,7 +558,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           Add,
           NonEmptyList.fromListUnsafe(addSingleChangesGood),
           okZone,
-          singleAddChange.typ,
+          A,
           Set(singleAddChange.recordData),
           okUser.id,
           None,

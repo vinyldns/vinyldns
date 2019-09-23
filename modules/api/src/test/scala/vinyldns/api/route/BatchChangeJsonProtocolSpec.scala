@@ -48,8 +48,7 @@ class BatchChangeJsonProtocolSpec
     with ValidatedValues
     with ValidatedMatchers {
 
-  // TODO: Remove DeleteRecordChangeInputSerializer
-  val serializers: Seq[Serializer[_]] = batchChangeSerializers :+ DeleteRecordChangeInputSerializer
+  val serializers: Seq[Serializer[_]] = batchChangeSerializers
 
   def buildAddChangeInputJson(
       inputName: Option[String] = None,
@@ -406,7 +405,7 @@ class BatchChangeJsonProtocolSpec
         ("recordSetId" -> decompose(None)) ~
         ("validationErrors" -> decompose(List(SingleChangeError(barDiscoveryError)))) ~
         ("id" -> "id") ~
-        ("changeType" -> "DeleteRecordSet")
+        ("changeType" -> "DeleteRecord")
     }
   }
 
