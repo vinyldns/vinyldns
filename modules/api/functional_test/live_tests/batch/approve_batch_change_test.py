@@ -61,7 +61,7 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
         if to_disconnect:
-            approver.abandon_zones(to_disconnect['id'], status=202)
+            approver.abandon_zones([to_disconnect['id']], status=202)
 
 @pytest.mark.manual_batch_review
 def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zone_test_context):

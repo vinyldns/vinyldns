@@ -11,7 +11,7 @@ def test_revalidate_pending_batch_change_success(shared_zone_test_context):
     approver = shared_zone_test_context.support_user_client
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("test-approve-success.not.loaded.", address="4.3.2.1"),
+            get_change_A_AAAA_json("test-revalidate-success.not.loaded.", address="4.3.2.1"),
             get_change_A_AAAA_json("needs-review.not.loaded.", address="4.3.2.1"),
             get_change_A_AAAA_json("zone-name-flagged-for-manual-review.zone.requires.review.")
         ],
@@ -56,7 +56,7 @@ def test_revalidate_pending_batch_change_success(shared_zone_test_context):
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
         if to_disconnect:
-            approver.abandon_zones(to_disconnect['id'], status=202)
+            approver.abandon_zones([to_disconnect['id']], status=202)
 
 
 @pytest.mark.manual_batch_review
