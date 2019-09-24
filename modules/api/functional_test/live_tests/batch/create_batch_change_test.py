@@ -3965,6 +3965,7 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         result = client.create_batch_change(batch_change_input, status=202)
         client.wait_until_batch_change_completed(result)
 
+        # Check batch change response
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data=None, change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=1, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data="1.2.3.4")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=2, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data="4.5.6.7")
@@ -4002,6 +4003,41 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=29, input_name=a_delete_record_and_record_set_fqdn, record_name=a_delete_record_and_record_set_name, record_data=None, change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=30, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data="hello", change_type="DeleteRecord")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=31, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
+
+        # Perform look up to verify record set data
+        for rs in to_delete:
+            rs_name = rs['recordSet']['name']
+            rs_id = rs['recordSet']['id']
+            zone_id = rs['zone']['id']
+
+            # deletes should not exist
+            if rs_name in [a_delete_record_set_name, txt_delete_record_set_name, a_delete_record_name,
+               txt_delete_record_name, a_delete_record_and_record_set_name, txt_delete_record_and_record_set_name]:
+                client.get_recordset(zone_id, rs_id, status=404)
+            else:
+                result_rs = client.get_recordset(zone_id, rs_id, status=200)
+                records = result_rs['recordSet']['records']
+
+                # full deletes with updates
+                if rs_name in [a_update_record_set_name, a_update_record_full_name]:
+                    assert_that(records, contains({"address": "1.2.3.4"}, {"address": "4.5.6.7"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"}, {"address": "1.1.1.2"})))
+                elif rs_name in [txt_update_record_set_name, txt_update_record_full_name]:
+                    assert_that(records, contains({"text": "some-multi-text"}, {"text": "more-multi-text"}))
+                    assert_that(records, is_not(contains({"text": "hello"}, {"text": "again"})))
+                # single entry delete with adds
+                elif rs_name == a_update_record_name:
+                    assert_that(records, contains({"address": "1.1.1.2"}, {"address": "1.2.3.4"}, {"address": "4.5.6.7"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"})))
+                elif rs_name == txt_update_record_name:
+                    assert_that(records, contains({"text": "again"}, {"text": "some-multi-text"}, {"text": "more-multi-text"}))
+                    assert_that(records, is_not(contains({"text": "hello"})))
+                elif rs_name == a_update_record_only_name:
+                    assert_that(records, contains({"address": "1.1.1.2"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"})))
+                elif rs_name == txt_update_record_only_name:
+                    assert_that(records, contains({"text": "again"}))
+                    assert_that(records, is_not(contains({"text": "hello"})))
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -4067,6 +4103,8 @@ def test_create_batch_delete_record_succeeds(shared_zone_test_context):
 
     result = client.create_batch_change(batch_change_input, status=202)
     client.wait_until_batch_change_completed(result)
+
+    client.get_recordset(create_rs['zone']['id'], create_rs['recordSet']['id'], status=404)
 
 
 @pytest.mark.serial
