@@ -244,7 +244,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecord", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecord", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
