@@ -106,8 +106,8 @@
                                     </td>
                                     <td>
                                         <select class="form-control" ng-model="change.type">
-                                            <option value="A+PTR" selected>A+PTR</option>
-                                            <option>AAAA+PTR</option>
+                                            <option ng-if="change.changeType!=='DeleteRecordSet'" value="A+PTR" selected>A+PTR</option>
+                                            <option ng-if="change.changeType!=='DeleteRecordSet'">AAAA+PTR</option>
                                             <option>A</option>
                                             <option>AAAA</option>
                                             <option>CNAME</option>
