@@ -100,13 +100,14 @@
                                     <td>
                                         <select class="form-control changeType" ng-model="change.changeType">
                                             <option value="Add">Add</option>
+                                            <option value="DeleteRecord">DeleteRecord</option>
                                             <option value="DeleteRecordSet">DeleteRecordSet</option>
                                         </select>
                                     </td>
                                     <td>
                                         <select class="form-control" ng-model="change.type">
-                                            <option value="A+PTR" selected>A+PTR</option>
-                                            <option>AAAA+PTR</option>
+                                            <option ng-if="change.changeType!=='DeleteRecordSet'" value="A+PTR" selected>A+PTR</option>
+                                            <option ng-if="change.changeType!=='DeleteRecordSet'">AAAA+PTR</option>
                                             <option>A</option>
                                             <option>AAAA</option>
                                             <option>CNAME</option>
@@ -129,7 +130,7 @@
                                             <span ng-show="createBatchChangeForm.ttl_{{$index}}.$error.number || createBatchChangeForm.ttl_{{$index}}.$error.min || createBatchChangeForm.ttl_{{$index}}.$error.max" class="batch-change-error-help">TTL must be between 30 and 2147483647.</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.changeType=='DeleteRecordSet'">
+                                    <td ng-if="change.changeType != 'Add'">
                                         <input class="form-control" disabled/>
                                     </td>
                                     <!--TTL based on change type-->
@@ -151,42 +152,42 @@
                                             <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv6" class="batch-change-error-help">must be a valid IPv6 Address!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='A' && change.changeType=='Add'">
-                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1.1.1.1" ng-disabled="change.changeType=='DeleteRecordSet'" ipv4>
+                                    <td ng-if="change.type=='A' && change.changeType != 'DeleteRecordSet'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. 1.1.1.1" ng-disabled="change.changeType=='DeleteRecordSet'" ipv4>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv4" class="batch-change-error-help">must be a valid IPv4 Address!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='AAAA' && change.changeType=='Add'">
-                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. fd69:27cc:fe91::60" ng-disabled="change.changeType=='DeleteRecordSet'" ipv6>
+                                    <td ng-if="change.type=='AAAA' && change.changeType != 'DeleteRecordSet'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. fd69:27cc:fe91::60" ng-disabled="change.changeType=='DeleteRecordSet'" ipv6>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv6" class="batch-change-error-help">must be a valid IPv6 Address!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='CNAME' && change.changeType=='Add'">
-                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
+                                    <td ng-if="change.type=='CNAME' && change.changeType != 'DeleteRecordSet'">
+                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be absolute!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='PTR' && change.changeType=='Add'">
-                                        <input name="record_ptr_{{$index}}" type="text" ng-model="change.record.ptrdname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.com." ng-disabled="change.changeType=='DeleteRecordSet'">
+                                    <td ng-if="change.type=='PTR' && change.changeType != 'DeleteRecordSet'">
+                                        <input name="record_ptr_{{$index}}" type="text" ng-model="change.record.ptrdname" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. test.com." ng-disabled="change.changeType=='DeleteRecordSet'">
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_ptr_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='TXT' && change.changeType=='Add'">
-                                        <textarea name="record_txt_{{$index}}" type="text" ng-model="change.record.text" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. attr=val" ng-disabled="change.changeType=='DeleteRecordSet'"></textarea>
+                                    <td ng-if="change.type=='TXT' && change.changeType != 'DeleteRecordSet'">
+                                        <textarea name="record_txt_{{$index}}" type="text" ng-model="change.record.text" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. attr=val" ng-disabled="change.changeType=='DeleteRecordSet'"></textarea>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_txt_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                         </p>
                                     </td>
-                                    <td ng-if="change.type=='MX' && change.changeType=='Add'">
+                                    <td ng-if="change.type=='MX' && change.changeType != 'DeleteRecordSet'">
                                         <label class="batch-label">Preference</label>
-                                        <input name="record_mx_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535" ng-disabled="change.changeType=='DeleteRecordSet'">
+                                        <input name="record_mx_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535" ng-disabled="change.changeType=='DeleteRecordSet'">
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.required" class="batch-change-error-help">Preference is required!</span>
                                             <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
@@ -197,7 +198,7 @@
                                         <br />
 
                                         <label class="batch-label">Exchange</label>
-                                        <input name="record_mx_exchange_{{$index}}" type="text" ng-model="change.record.exchange" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
+                                        <input name="record_mx_exchange_{{$index}}" type="text" ng-model="change.record.exchange" ng-required="change.changeType != 'DeleteRecordSet'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.required" class="batch-change-error-help">Exchange data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.fqdn" class="batch-change-error-help">Exchange data must be absolute!</span>
