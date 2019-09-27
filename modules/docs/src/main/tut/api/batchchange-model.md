@@ -101,16 +101,13 @@ validationErrors | Array of BatchChangeError | Array containing any validation e
 id            | string        | The unique identifier for this change. |
 
 #### ChangeType Values <a id="changetype-values" />
-There are three valid changeTypes for a SingleChange. These values determine whether you are adding, removing or updating DNS records. 
+There are three valid changeTypes for a SingleChange, **Add**, **DeleteRecordSet** and **Delete**.
+Used alone, or in conjunction with one another, they determine if you are creating, removing or modifying DNS records. Below are the change types to use based on intended outcome.
 
-- **Add**: To add a single DNS record.
-- **DeleteRecordSet**: To delete an entire recordset. This applies to record types that allow multi-record recordsets.
-- **DeleteRecord**: To delete one record in a recordset (i.e. A records). Record types that only support one record data entry (i.e. CNAME records) will treat a DeleteRecord changeType as DeleteRecordSet.
-
-To add a new record to an existing multi-record recordset you must first delete a single record in the recordset (DeleteRecord) and then add the new record data (Add) in the same batch change.
-
-To update an existing recordset that only supports one record, you must first delete the recordset (DeleteRecordSet) and then add the new record data (Add) in the same batch change.
-You can also use DeleteRecordSet to clear all the record data entries of a multi-record recordset followed by one or more Adds with new record data.
+- Create a new DNS record: **Add** changeType,
+- Delete an entire recordset: **DeleteRecordSet** changeType,
+- Delete a single record in a multi-record recordset: **DeleteRecord** changeType. Record types that only support one record data entry (i.e. CNAME records) will treat a DeleteRecord changeType as DeleteRecordSet.
+- Update an existing recordset: at least one entry with a **DeleteRecord** or **DeleteRecordSet** changeType and at least one entry with a **Add** changeType.
 
 #### BATCH CHANGE EXAMPLE <a id="batchchange-example" />
 
