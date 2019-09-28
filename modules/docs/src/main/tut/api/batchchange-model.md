@@ -68,7 +68,7 @@ A successful batch change response consists of a corresponding [SingleAddChange]
 
 name          | type          | description |
  ------------ | :------------ | :---------- |
-changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**. |
+changeType    | ChangeInputType | Type of change input. Can be an **Add**, **DeleteRecordSet**, or **DeleteRecord**. [See full details](#changetype-values).|
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
 type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
 ttl           | long          | The time-to-live in seconds. |
@@ -87,7 +87,7 @@ id            | string        | The unique identifier for this change. |
 
 name          | type          | description |
  ------------ | :------------ | :---------- |
-changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**. |
+changeType    | ChangeInputType | Type of change input. Can be an **Add**, **DeleteRecordSet**, or **DeleteRecord**. [See full details](#changetype-values).|
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
 type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. | 
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
@@ -100,6 +100,14 @@ recordSetId   | string        | Conditional: The unique identifier for the recor
 validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteRRSetChange. *Note: These will only exist on `NeedsReview` or `Rejected` SingleChanges* |
 id            | string        | The unique identifier for this change. |
 
+#### ChangeType Values <a id="changetype-values" />
+There are three valid changeTypes for a SingleChange, **Add**, **DeleteRecordSet** and **DeleteRecord**.
+Used alone, or in conjunction with one another, they determine if you are creating, removing or modifying DNS records. Below are the change types to use based on intended outcome.
+
+- Create a new DNS record: **Add** changeType
+- Delete an entire recordset: **DeleteRecordSet** changeType
+- Delete a single record in a multi-record recordset: **DeleteRecord** changeType. Record types that only support one record data entry (i.e. CNAME records) will treat a DeleteRecord changeType as DeleteRecordSet.
+- Update an existing recordset: at least one entry with a **DeleteRecord** or **DeleteRecordSet** changeType and at least one entry with a **Add** changeType.
 
 #### BATCH CHANGE EXAMPLE <a id="batchchange-example" />
 
@@ -137,6 +145,22 @@ Successful batch change response example with a [SingleAddChange](#singleaddchan
             "status": "Complete", 
             "recordName": "recordName", 
             "zoneName": "zoneName.", 
+            "zoneId": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
+            "recordChangeId": "4754b322-5f81-11e8-9c2d-fa7ae01bbebc",
+            "recordSetId": "4754b084-5f81-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
+            "id": "c29d33e4-9bee-4417-a99b-6e815fdeb748"
+        },
+        {
+            "changeType": "DeleteRecord",
+            "inputName": "RecordName.zoneName.",
+            "type": "A",
+            "record": {
+                "address": "1.1.1.1"
+            },
+            "status": "Complete",
+            "recordName": "recordName",
+            "zoneName": "zoneName.",
             "zoneId": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
             "recordChangeId": "4754b322-5f81-11e8-9c2d-fa7ae01bbebc",
             "recordSetId": "4754b084-5f81-11e8-9c2d-fa7ae01bbebc",
