@@ -7,7 +7,7 @@ object Dependencies {
   lazy val pureConfigV = "0.9.2"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
-  lazy val catsEffectV = "1.0.0"
+  lazy val catsEffectV = "2.0.0"
   lazy val configV = "1.3.2"
   lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
@@ -16,7 +16,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "1.0.0"
+  lazy val fs2V = "2.0.1"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,

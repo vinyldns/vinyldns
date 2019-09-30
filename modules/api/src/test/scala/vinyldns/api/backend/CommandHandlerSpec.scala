@@ -107,7 +107,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
+        .through(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -120,7 +120,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
+        .through(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -133,7 +133,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
+        .through(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -145,7 +145,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
+        .through(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -172,13 +172,25 @@ class CommandHandlerSpec
     "retry messages" in {
       val msg = RetryMessage(TestCommandMessage(pendingCreateAAAA, "foo"))
       doReturn(IO.unit).when(mq).requeue(msg.message)
-      Stream.emit(msg).covary[IO].to(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
+      Stream
+        .emit(msg)
+        .covary[IO]
+        .through(CommandHandler.messageSink(mq))
+        .compile
+        .drain
+        .unsafeRunSync()
       verify(mq).requeue(msg.message)
     }
     "remove messages" in {
       val msg = DeleteMessage(TestCommandMessage(pendingCreateAAAA, "foo"))
       doReturn(IO.unit).when(mq).remove(msg.message)
-      Stream.emit(msg).covary[IO].to(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
+      Stream
+        .emit(msg)
+        .covary[IO]
+        .through(CommandHandler.messageSink(mq))
+        .compile
+        .drain
+        .unsafeRunSync()
       verify(mq).remove(msg.message)
     }
   }
