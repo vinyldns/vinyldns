@@ -43,6 +43,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Michael Pilquist
 - Sriram Ramakrishnan
 - Khalid Reid
+- Timo Schmid
 - Trent Schmidt
 - Ghafar Shah
 - Jess Stodola
