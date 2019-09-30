@@ -129,7 +129,7 @@ class BatchChangeRoutingSpec()
           ttl.map("ttl" -> JInt(_)),
           record.map("record" -> Extraction.decompose(_))).flatten)
 
-    def buildDeleteRRSetChangeInput(
+    def buildDeleteChangeInput(
         inputName: Option[String] = None,
         typ: Option[RecordType] = None): JObject =
       JObject(List(
@@ -138,7 +138,7 @@ class BatchChangeRoutingSpec()
 
     val addAChangeInput: JObject =
       buildAddChangeInput(Some("bar."), Some(A), Some(3600), Some(AData("127.0.0.1")))
-    val deleteAChangeInput: JObject = buildDeleteRRSetChangeInput(Some("bar."), Some(A))
+    val deleteAChangeInput: JObject = buildDeleteChangeInput(Some("bar."), Some(A))
 
     val changeList: JObject = "changes" -> List(
       ("changeType" -> Extraction.decompose(Add)) ~~ addAChangeInput,

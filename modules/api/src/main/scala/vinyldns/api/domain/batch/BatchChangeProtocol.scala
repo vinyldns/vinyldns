@@ -90,6 +90,8 @@ final case class DeleteRRSetChangeInput(inputName: String, typ: RecordType) exte
     )
 }
 
+// TODO: Remove coverage on/off
+// $COVERAGE-OFF$
 final case class DeleteRecordChangeInput(inputName: String, typ: RecordType, record: RecordData)
     extends ChangeInput {
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
@@ -107,6 +109,7 @@ final case class DeleteRecordChangeInput(inputName: String, typ: RecordType, rec
       errors.toList.map(SingleChangeError(_))
     )
 }
+// $COVERAGE-ON$
 
 object AddChangeInput {
   def apply(

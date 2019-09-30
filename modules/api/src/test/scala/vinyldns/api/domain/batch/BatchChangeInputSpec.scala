@@ -20,12 +20,7 @@ import cats.data.NonEmptyList
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.domain.{
-  DeleteRecordDataDoesNotExist,
-  DomainValidationErrorType,
-  SingleChangeError,
-  ZoneDiscoveryError
-}
+import vinyldns.core.domain.{DomainValidationErrorType, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
@@ -77,7 +72,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asAdd.recordChangeId shouldBe None
       asAdd.recordSetId shouldBe None
     }
-    "Convert a DeleteRRSetChangeInput into SingleDeleteRRSetChange" in {
+    "Convert a DeleteChangeInput into SingleDeleteRRSetChange" in {
       val changeA = DeleteRRSetChangeInput("some.test.com", A)
       val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
 
@@ -89,25 +84,6 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asDelete.recordName shouldBe None
       asDelete.inputName shouldBe "some.test.com."
       asDelete.typ shouldBe A
-      asDelete.status shouldBe SingleChangeStatus.NeedsReview
-      asDelete.systemMessage shouldBe None
-      asDelete.recordChangeId shouldBe None
-      asDelete.recordSetId shouldBe None
-    }
-    "Convert a DeleteRecordChangeInput into SingleDeleteRecordChange" in {
-      val changeA = DeleteRecordChangeInput("some.test.com.", A, AData("1.1.1.1"))
-      val converted = changeA.asNewStoredChange(
-        NonEmptyList.of(DeleteRecordDataDoesNotExist("some.test.com.", AData("1.1.1.1"))))
-
-      converted shouldBe a[SingleDeleteRecordChange]
-      val asDelete = converted.asInstanceOf[SingleDeleteRecordChange]
-
-      asDelete.zoneId shouldBe None
-      asDelete.zoneName shouldBe None
-      asDelete.recordName shouldBe None
-      asDelete.inputName shouldBe "some.test.com."
-      asDelete.typ shouldBe A
-      asDelete.recordData shouldBe AData("1.1.1.1")
       asDelete.status shouldBe SingleChangeStatus.NeedsReview
       asDelete.systemMessage shouldBe None
       asDelete.recordChangeId shouldBe None
@@ -134,7 +110,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       val expectedAddChange =
         AddChangeInput("testRname.testZoneName.", A, Some(1234), AData("1.2.3.4"))
 
-      val singleDeleteRRSetChange = SingleDeleteRRSetChange(
+      val singleDelChange = SingleDeleteRRSetChange(
         Some("testZoneId"),
         Some("testZoneName"),
         Some("testRname"),
@@ -147,32 +123,15 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
       )
 
-      val expectedDeleteRRSetChange =
+      val expectedDelChange =
         DeleteRRSetChangeInput("testRname.testZoneName.", A)
-
-      val singleDeleteRecordChange = SingleDeleteRecordChange(
-        Some("testZoneId"),
-        Some("testZoneName"),
-        Some("testRname"),
-        "testRname.testZoneName.",
-        A,
-        AData("1.1.1.1"),
-        SingleChangeStatus.NeedsReview,
-        Some("msg"),
-        None,
-        None,
-        List(SingleChangeError(DomainValidationErrorType.DeleteRecordDataDoesNotExist, "test err"))
-      )
-
-      val expectedDeleteRecordChange =
-        DeleteRecordChangeInput("testRname.testZoneName.", A, AData("1.1.1.1"))
 
       val change = BatchChange(
         "userId",
         "userName",
         Some("comments"),
         DateTime.now(),
-        List(singleAddChange, singleDeleteRRSetChange, singleDeleteRecordChange),
+        List(singleAddChange, singleDelChange),
         Some("owner"),
         BatchChangeApprovalStatus.PendingReview
       )
@@ -180,7 +139,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       val expectedInput =
         BatchChangeInput(
           Some("comments"),
-          List(expectedAddChange, expectedDeleteRRSetChange, expectedDeleteRecordChange),
+          List(expectedAddChange, expectedDelChange),
           Some("owner"))
 
       BatchChangeInput(change) shouldBe expectedInput
