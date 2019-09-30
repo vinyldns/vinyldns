@@ -16,20 +16,22 @@
 
 package vinyldns.api.notifier.sns
 
-import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
 import cats.syntax.functor._
-import vinyldns.core.domain.batch.BatchChange
-import vinyldns.api.route.VinylDNSJsonProtocol
-import org.json4s.jackson.JsonMethods._
 import com.amazonaws.services.sns.AmazonSNS
-import com.amazonaws.services.sns.model.PublishRequest
-import com.amazonaws.services.sns.model.MessageAttributeValue
+import com.amazonaws.services.sns.model.{MessageAttributeValue, PublishRequest}
 import org.json4s.JsonAST.JNull
+import org.json4s.jackson.JsonMethods._
+import org.slf4j.LoggerFactory
+import vinyldns.api.route.VinylDNSJsonProtocol
+import vinyldns.core.domain.batch.BatchChange
+import vinyldns.core.notifier.{Notification, Notifier}
 
 class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
     extends Notifier
     with VinylDNSJsonProtocol {
+
+  private val logger = LoggerFactory.getLogger(classOf[SnsNotifier])
 
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
@@ -41,10 +43,15 @@ class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
     IO {
       val message =
         compact(render(BatchChangeSerializer.toJson(bc).replace(List("changes"), JNull)).noNulls)
+      logger.info(s"Sending batchChange='${bc.id}'; userName='${bc.userName}'; json='$message'")
+
       val request = new PublishRequest(config.topicArn, message)
       request.addMessageAttributesEntry(
         "userName",
         new MessageAttributeValue().withDataType("String").withStringValue(bc.userName))
       sns.publish(request)
+      logger.info(s"Sending batch change success; batchChange='${bc.id}'")
+    }.handleErrorWith { e =>
+      IO(logger.error(s"Failed sending batch change; batchChange='${bc.id}'", e))
     }.void
 }
