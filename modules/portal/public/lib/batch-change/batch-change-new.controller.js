@@ -176,10 +176,8 @@
                         if (headers[j] == "changeType") {
                             if (rowContent[j].match(/add/i)) {
                                change[headers[j]] = "Add"
-                            } else if (rowContent[j].match(/deleterecordset/i)) {
+                            } else if (rowContent[j].match(/delete/i)) {
                                 change[headers[j]] = "DeleteRecordSet"
-                            } else if (rowContent[j].match(/deleterecord/i)) {
-                                change[headers[j]] = "DeleteRecord"
                             }
                         } else if (headers[j] == "type") {
                             change[headers[j]] = rowContent[j].trim().toUpperCase()
