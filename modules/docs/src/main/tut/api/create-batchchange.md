@@ -25,14 +25,14 @@ name          | type          | required?   | description |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes   | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
 ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
-scheduledTime | date-time      | no         | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date time string.|
+scheduledTime | date-time      | no          | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date time string.|
 allowManualReview | boolean   | no          | Optional override to control whether manual review is enabled for the batch change request. Default value is `true`. Must be passed in as a query parameter, not in the request body. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
 
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
-changeType    | ChangeInputType | yes       | Type of change input. Must be set to **Add** for *AddChangeInput*. [See full details](../api/batchchange-model/#changetype-values). |
+changeType    | ChangeInputType | yes       | Type of change input. Must be set to **Add** for *AddChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being added. For **PTR**, the input name is a valid IPv4 or IPv6 address. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
 ttl           | long          | no          | The time-to-live in seconds. The minimum and maximum values are 30 and 2147483647, respectively. If excluded, this will be set to the system default for new adds, or the existing TTL for updates |
@@ -42,10 +42,10 @@ record        | [RecordData](../api/recordset-model#record-data) | yes         |
 
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
-changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecord** or **DeleteRecordSet** for *DeleteChangeInput*. [See full details](../api/batchchange-model/#changetype-values). |
+changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecordSet** for *DeleteChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being deleted. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
-record        | [RecordData](../api/recordset-model#record-data) | sometimes         | One existing record data entry in the recordset. Required if the changeType is DeleteRecord. |
+
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -69,14 +69,6 @@ record        | [RecordData](../api/recordset-model#record-data) | sometimes    
             "ttl": 3600,
             "record": {
                 "ptrdname": "ptrdata.data."
-            }
-        },
-        {
-            "inputName": "single.delete.example.",
-            "changeType": "DeleteRecord",
-            "type": "A",
-            "record": {
-                "address": "1.1.1.1"
             }
         }, 
         {

@@ -110,7 +110,7 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
 final case class RecordAlreadyExists(name: String) extends DomainValidationError {
   def message: String =
     s"""Record "$name" Already Exists: cannot add an existing record; to update it, """ +
-      "issue a DeleteRecord or DeleteRecordSet then an Add."
+      "issue a DeleteRecordSet then an Add."
 }
 
 final case class RecordDoesNotExist(name: String) extends DomainValidationError {
@@ -127,6 +127,18 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
 
 final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
   def message: String = s"""User "$userName" is not authorized."""
+}
+
+final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
+    extends DomainValidationError {
+  def message: String =
+    s"""Record Name "$name" Not Unique In Batch Change: cannot have multiple "$typ" records with the same name."""
+}
+
+final case class RecordInReverseZoneError(name: String, typ: String) extends DomainValidationError {
+  def message: String =
+    "Invalid Record Type In Reverse Zone: record with name " +
+      s""""$name" and type "$typ" is not allowed in a reverse zone."""
 }
 
 final case class HighValueDomainError(name: String) extends DomainValidationError {
@@ -174,20 +186,7 @@ final case class UnsupportedOperation(operation: String) extends DomainValidatio
 
 final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: RecordData)
     extends DomainValidationError {
-  def message: String = s"""Record data $recordData does not exist for "$inputName"."""
-}
-
-// Deprecated errors
-final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
-    extends DomainValidationError {
-  def message: String =
-    s"""Record Name "$name" Not Unique In Batch Change: cannot have multiple "$typ" records with the same name."""
-}
-
-final case class RecordInReverseZoneError(name: String, typ: String) extends DomainValidationError {
-  def message: String =
-    "Invalid Record Type In Reverse Zone: record with name " +
-      s""""$name" and type "$typ" is not allowed in a reverse zone."""
+  def message: String = s"Record data $recordData does not exist for $inputName."
 }
 
 // $COVERAGE-ON$

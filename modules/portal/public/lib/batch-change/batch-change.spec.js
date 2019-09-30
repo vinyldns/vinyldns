@@ -225,8 +225,8 @@ describe('BatchChange', function(){
                 }, 1000);
             })
 
-            it('handles "deleterecordset" change type', function(done) {
-                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\nDeleterecordset,A+PTR,test.example.,200,1.1.1.1"], { type: 'text/csv' });
+            it('handles "delete" change type', function(done) {
+                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\nDelete,A+PTR,test.example.,200,1.1.1.1"], { type: 'text/csv' });
                 var batchChange = this.scope.newBatch;
                 this.scope.uploadCSV(fileBlob);
 
@@ -237,20 +237,8 @@ describe('BatchChange', function(){
                 }, 1000);
             })
 
-            it('handles "deleterecord" change type', function(done) {
-                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\nDeleterecord,A+PTR,test.example.,200,1.1.1.1"], { type: 'text/csv' });
-                var batchChange = this.scope.newBatch;
-                this.scope.uploadCSV(fileBlob);
-
-                setTimeout(function() {
-                    expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecord", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
-                    done();
-                }, 1000);
-            })
-
             it('handles whitespace', function(done) {
-                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\nDeleterecordset, A+PTR ,test.example.  ,200,1.1.1.1"], { type: 'text/csv' });
+                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\nDelete, A+PTR ,test.example.  ,200,1.1.1.1"], { type: 'text/csv' });
                 var batchChange = this.scope.newBatch;
                 this.scope.uploadCSV(fileBlob);
 
@@ -275,7 +263,7 @@ describe('BatchChange', function(){
             })
 
             it('does not include empty lines', function(done) {
-                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\n,,,,,\nDeleteRecordSet,A+PTR,test.example.,200,1.1.1.1"], { type: 'text/csv' });
+                var fileBlob = new Blob(["Change Type,Record Type,Input Name,TTL,Record Data\n,,,,,\nDelete,A+PTR,test.example.,200,1.1.1.1"], { type: 'text/csv' });
                 var batchChange = this.scope.newBatch;
                 this.scope.uploadCSV(fileBlob);
 
