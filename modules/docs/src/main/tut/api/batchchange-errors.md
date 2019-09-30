@@ -123,6 +123,8 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Missing Owner Group Id](#MissingOwnerGroupId)
 - [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 - [High Value Domain](#HighValueDomain)
+- [RecordSet has Multiple Records](#ExistingMultiRecordError)
+- [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 - [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
 ### Non-Fatal Errors <a id="non-fatal-errors"></a>
@@ -415,6 +417,7 @@ User "<user name>" must be a member of group "<group ID>" to apply this group to
 You must be a member of the group you are assigning for record ownership in the batch change. 
 
 
+
 #### High Value Domain <a id="HighValueDomain"></a>
 
 ##### Error Message:
@@ -428,6 +431,36 @@ Record Name "<record name>" is configured as a High Value Domain, so it cannot b
 You are trying to create a record with a name that is not permitted in VinylDNS.
 The list of high value domains is specific to each VinylDNS instance.
 You should reach out to your VinylDNS administrators for more information.
+
+
+#### RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
+
+##### Error Message:
+
+```
+RecordSet with name <name> and type <type> cannot be updated in a single Batch Change because it contains multiple DNS records (<count>).
+```
+
+##### Details:
+
+This error means that the recordset you are attempting to update/delete has multiple records within it.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
+
+
+#### Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
+
+##### Error Message:
+
+```
+Multi-record recordsets are not enabled for this instance of VinylDNS. Cannot create a new record set with multiple records for inputName <name> and type <type>
+```
+
+##### Details:
+
+This error means that you have multiple Add entries with the same name and type in a batch change.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
 
 
 #### CNAME at the Zone Apex is not Allowed <a id="CnameApexError"></a>
