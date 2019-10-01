@@ -1797,7 +1797,7 @@ class BatchChangeServiceSpec
           true
         )
 
-      result.value shouldBe Left(ManualReviewRequiresOwnerGroup)
+      result shouldBe Left(ManualReviewRequiresOwnerGroup)
     }
   }
 

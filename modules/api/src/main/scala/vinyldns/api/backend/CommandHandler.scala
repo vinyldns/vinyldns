@@ -70,7 +70,10 @@ object CommandHandler {
     // concurrently run 4 message batches, so we can have 40 messages max running concurrently
     def flow(): Stream[IO, Unit] =
       messageSource
-        .map(_.observe(increaseTimeoutWhenSyncing).through(changeRequestProcessor).to(updateQueue))
+        .map(
+          _.observe(increaseTimeoutWhenSyncing)
+            .through(changeRequestProcessor)
+            .through(updateQueue))
         .parJoin(maxOpen)
         .handleErrorWith { error =>
           logger.error("Encountered unexpected error in main flow", error)
@@ -111,7 +114,7 @@ object CommandHandler {
   }
 
   /* We should only change visibility timeout for zone syncs and creates, which could take minutes */
-  def changeVisibilityTimeoutWhenSyncing(mq: MessageQueue): Sink[IO, CommandMessage] =
+  def changeVisibilityTimeoutWhenSyncing(mq: MessageQueue): Pipe[IO, CommandMessage, Unit] =
     _.evalMap[IO, Any] { message =>
       message.command match {
         case sync: ZoneChange
@@ -163,7 +166,7 @@ object CommandHandler {
       }
 
   /* On success, delete the message; on failure retry */
-  def messageSink(mq: MessageQueue): Sink[IO, MessageOutcome] =
+  def messageSink(mq: MessageQueue): Pipe[IO, MessageOutcome, Unit] =
     _.evalMap[IO, Any] {
       case DeleteMessage(msg) =>
         mq.remove(msg)

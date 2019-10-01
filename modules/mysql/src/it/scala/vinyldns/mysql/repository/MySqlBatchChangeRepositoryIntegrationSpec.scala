@@ -18,7 +18,6 @@ package vinyldns.mysql.repository
 
 import java.util.UUID
 
-import cats.implicits._
 import cats.effect._
 import org.joda.time.DateTime
 import org.scalatest._
