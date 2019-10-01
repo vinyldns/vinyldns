@@ -42,6 +42,8 @@ class Settings(private val config: Configuration) {
   val ldapCtxFactory: String = config.get[String]("LDAP.context.initialContextFactory")
   val ldapSecurityAuthentication: String = config.get[String]("LDAP.context.securityAuthentication")
   val ldapProviderUrl: URI = new URI(config.get[String]("LDAP.context.providerUrl"))
+  val ldapUserNameField: String =
+    config.getOptional[String]("LDAP.userNameField").getOrElse("sAMAccountName")
 
   val ldapSyncEnabled: Boolean =
     config.getOptional[Boolean]("LDAP.user-sync.enabled").getOrElse(false)

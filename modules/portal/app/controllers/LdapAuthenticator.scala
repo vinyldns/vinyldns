@@ -22,8 +22,9 @@ import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import controllers.LdapAuthenticator.LdapByDomainAuthenticator
 import controllers.VinylDNS.UserDetails
-import javax.naming.directory._
 import javax.naming.Context
+import javax.naming.directory._
+import org.slf4j.LoggerFactory
 import vinyldns.core.domain.membership.User
 import vinyldns.core.health.HealthCheck._
 
@@ -42,10 +43,10 @@ object LdapUserDetails {
   private def getValue(attributes: Attributes, attributeName: String): Option[String] =
     Option(attributes.get(attributeName)).map(_.get.toString)
 
-  def apply(rawResult: SearchResult): LdapUserDetails = {
+  def apply(rawResult: SearchResult, userNameField: String): LdapUserDetails = {
     val attributes = rawResult.getAttributes
     val nameInNamespace = rawResult.getNameInNamespace
-    val username = attributes.get("sAMAccountName").get.toString
+    val username = attributes.get(userNameField).get.toString
     val email = getValue(attributes, "mail")
     val firstName = getValue(attributes, "givenName")
     val lastName = getValue(attributes, "sn")
@@ -59,6 +60,7 @@ case class ServiceAccount(domain: String, name: String, password: String)
 // $COVERAGE-OFF$
 object LdapAuthenticator {
   type ContextCreator = (String, String) => Either[LdapException, DirContext]
+  private val logger = LoggerFactory.getLogger("LdapAuthenticator")
 
   /**
     * contains the functionality to build an LDAP directory context; essentially isolates LDAP connection stuff from
@@ -74,15 +76,14 @@ object LdapAuthenticator {
         Context.PROVIDER_URL -> settings.ldapProviderUrl.toString
       )
 
-      val searchScope = 2 //recursive
-      val searchControls = new SearchControls()
-      searchControls.setSearchScope(searchScope)
-
       val envHashtable = new util.Hashtable[String, String](env.asJava)
+
+      logger.info(s"LDAP Creating Context user='$username'")
 
       Try(new InitialDirContext(envHashtable)) match {
         case Success(dirContext) => Right(dirContext)
-        case Failure(_: javax.naming.AuthenticationException) =>
+        case Failure(authEx: javax.naming.AuthenticationException) =>
+          logger.error("LDAP Authentication Exception", authEx)
           Left(InvalidCredentials(username))
         case Failure(e) =>
           Left(LdapServiceException(e.toString))
@@ -117,16 +118,23 @@ object LdapAuthenticator {
         val searchControls = new SearchControls()
         searchControls.setSearchScope(2)
 
+        logger.info(
+          s"LDAP Search: org='${SEARCH_BASE(organization)}'; userName='$lookupUserName'; field='${settings.ldapUserNameField}'")
+
         val result = dirContext.search(
           SEARCH_BASE(organization),
-          s"(sAMAccountName=$lookupUserName)",
+          s"(${settings.ldapUserNameField}=$lookupUserName)",
           searchControls
         )
 
-        if (result.hasMore) Right(LdapUserDetails(result.next()))
+        if (result.hasMore) Right(LdapUserDetails(result.next(), settings.ldapUserNameField))
         else Left(UserDoesNotExistException(s"[$lookupUserName] LDAP entity does not exist"))
       } catch {
-        case unexpectedError: Throwable => Left(LdapServiceException(unexpectedError.getMessage))
+        case unexpectedError: Throwable =>
+          logger.error(
+            s"LDAP Unexpected Error searching for user; userName='$lookupUserName'",
+            unexpectedError)
+          Left(LdapServiceException(unexpectedError.getMessage))
       } finally {
         Try(dirContext.close())
       }
@@ -134,19 +142,39 @@ object LdapAuthenticator {
     private[controllers] def authenticate(
         searchDomain: LdapSearchDomain,
         username: String,
-        password: String): Either[LdapException, LdapUserDetails] =
-      createContext(s"${searchDomain.organization}\\$username", password).flatMap { context =>
-        searchContext(context, searchDomain.organization, username)
-      }
+        password: String): Either[LdapException, LdapUserDetails] = {
+
+      // Login as the service account
+      val qualifiedName =
+        if (settings.ldapDomain.isEmpty) settings.ldapUser
+        else s"${settings.ldapDomain}\\${settings.ldapUser}"
+
+      logger.info(s"LDAP authenticate attempt for user $qualifiedName")
+
+      // 1. Login as the service account
+      // 2. Find the user information (if it is in this search domain)
+      // 3. Login as the user that was found (if the user was found) to authenticate
+      for {
+        ctx <- createContext(qualifiedName, settings.ldapPwd)
+        user <- searchContext(ctx, searchDomain.organization, username)
+        _ <- createContext(user.nameInNamespace, password)
+      } yield user
+    }
 
     private[controllers] def lookup(
         searchDomain: LdapSearchDomain,
         user: String,
-        serviceAccount: ServiceAccount): Either[LdapException, LdapUserDetails] =
-      createContext(s"${serviceAccount.domain}\\${serviceAccount.name}", serviceAccount.password)
+        serviceAccount: ServiceAccount): Either[LdapException, LdapUserDetails] = {
+
+      // User lookup is done using the service account
+      val qualifiedName =
+        if (serviceAccount.domain.isEmpty) serviceAccount.name
+        else s"${serviceAccount.domain}\\${serviceAccount.name}"
+      createContext(qualifiedName, serviceAccount.password)
         .flatMap { context =>
           searchContext(context, searchDomain.organization, user)
         }
+    }
   }
 
   def apply(settings: Settings): Authenticator = {
@@ -192,6 +220,7 @@ class LdapAuthenticator(
     serviceAccount: ServiceAccount)
     extends Authenticator {
 
+  private val logger = LoggerFactory.getLogger(classOf[LdapAuthenticator])
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -224,8 +253,11 @@ class LdapAuthenticator(
       case h :: t =>
         f(h).recoverWith {
           case _: UserDoesNotExistException =>
+            logger.info(s"user='$userName' not found in search context $h")
             findUserDetails(t, userName, f, allDomainConnectionsUp)
-          case _ => findUserDetails(t, userName, f, false)
+          case other =>
+            logger.error(s"Unexpected error finding user details; user='$userName'", other)
+            findUserDetails(t, userName, f, false)
         }
     }
 

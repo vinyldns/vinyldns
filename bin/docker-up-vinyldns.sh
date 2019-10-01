@@ -52,8 +52,8 @@ function usage {
 function clean_images {
 	if (( $CLEAN == 1 )); then
 		echo "cleaning docker images..."
-		docker rmi vinyldns/api:"$VINYLDNS_VERSION"
-		docker rmi vinyldns/portal:"$VINYLDNS_VERSION"
+		docker rmi vinyldns/api:$VINYLDNS_VERSION
+		docker rmi vinyldns/portal:$VINYLDNS_VERSION
 	fi
 }
 
@@ -93,7 +93,7 @@ while [ "$1" != "" ]; do
 		-t | --timeout  	) TIMEOUT="$2";  shift;;
 		-a | --api-only 	) SERVICE="api";;
 		-c | --clean    	) CLEAN=1;;
-		-v | --version		) export VINYLDNS_VERSION="$2"; shift;;
+		-v | --version		) export VINYLDNS_VERSION=$2; shift;;
 		* ) usage; exit;;
 	esac
 	shift
@@ -102,7 +102,7 @@ done
 clean_images
 
 echo "timeout is set to ${TIMEOUT}"
-echo "vinyldns version is set to ${VINYLDNS_VERSION}"
+echo "vinyldns version is set to '${VINYLDNS_VERSION}'"
 
 echo "Starting vinyldns and all dependencies in the background..."
 docker-compose -f "$DOCKER_COMPOSE_CONFIG" up -d ${SERVICE}
