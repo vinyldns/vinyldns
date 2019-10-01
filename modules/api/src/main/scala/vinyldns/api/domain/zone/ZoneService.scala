@@ -126,7 +126,6 @@ class ZoneService(
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
       zone <- getZoneByNameOrFail(ensureTrailingDot(zoneName))
-      _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
       accessLevel = getZoneAccess(auth, zone)
