@@ -39,6 +39,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Patrick Lee
 - Sheree Liu
 - Deepak Mohanakrishnan
+- Palash Nigam
 - Joshulyne Park
 - Michael Pilquist
 - Sriram Ramakrishnan
