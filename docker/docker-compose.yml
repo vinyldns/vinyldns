@@ -51,3 +51,8 @@ services:
       - "19025:25"
     volumes:
       - ./email:/var/lib/mock-smtp
+
+  ldap:
+    image: rroemhild/test-openldap
+    ports:
+      - "19008:389"
