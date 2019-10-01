@@ -360,14 +360,14 @@ class BatchChangeValidationsSpec
   property(
     "validateAuthorizedReviewer: should fail if a test reviewer tries to approve a non-test change") {
     val testSupport = supportUser.copy(isTest = true)
-    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, false).value shouldBe
+    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, false) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateAuthorizedReviewer: should succeed if a test reviewer tries to approve a test change") {
     val testSupport = supportUser.copy(isTest = true)
-    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, true).value should be(
+    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, true) should be(
       right)
   }
 
@@ -379,58 +379,57 @@ class BatchChangeValidationsSpec
   property(
     "validateBatchChangeRejection: should succeed if batch change is pending review and reviewer" +
       "is authorized") {
-    validateBatchChangeRejection(validPendingBatchChange, supportUserAuth, false).value should be(
-      right)
+    validateBatchChangeRejection(validPendingBatchChange, supportUserAuth, false) should be(right)
   }
 
   property(
     "validateBatchChangeRejection: should fail if a test reviewer tries to reject a non-test change") {
     val testSupport = supportUser.copy(isTest = true)
-    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), false).value shouldBe
+    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), false) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeRejection: should succeed if a test reviewer tries to reject a test change") {
     val testSupport = supportUser.copy(isTest = true)
-    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), true).value should be(
+    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), true) should be(
       right)
   }
 
   property("validateBatchChangeRejection: should fail if batch change is not pending review") {
-    validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth, false).value shouldBe
+    validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth, false) shouldBe
       Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
   property("validateBatchChangeRejection: should fail if reviewer is not authorized") {
-    validateBatchChangeRejection(validPendingBatchChange, okAuth, false).value shouldBe
+    validateBatchChangeRejection(validPendingBatchChange, okAuth, false) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeRejection: should fail if batch change is not pending review and reviewer is not" +
       "authorized") {
-    validateBatchChangeRejection(invalidPendingBatchChange, okAuth, false).value shouldBe
+    validateBatchChangeRejection(invalidPendingBatchChange, okAuth, false) shouldBe
       Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeCancellation: should succeed if batch change is pending review" +
       " and user was the creator") {
-    validateBatchChangeCancellation(validPendingBatchChange, okAuth).value should be(right)
+    validateBatchChangeCancellation(validPendingBatchChange, okAuth) should be(right)
   }
 
   property(
     "validateBatchChangeCancellation: should fail if user was the creator" +
       " but batch change is not pending review") {
-    validateBatchChangeCancellation(invalidPendingBatchChange, okAuth).value shouldBe
+    validateBatchChangeCancellation(invalidPendingBatchChange, okAuth) shouldBe
       Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeCancellation: should fail if batch change is pending review" +
       " but user was not the creator") {
-    validateBatchChangeCancellation(validPendingBatchChange, supportUserAuth).value shouldBe
+    validateBatchChangeCancellation(validPendingBatchChange, supportUserAuth) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
