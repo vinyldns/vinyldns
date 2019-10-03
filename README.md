@@ -58,7 +58,7 @@ There exist several clients at <https://github.com/vinyldns> that can be used to
 
 ## Things to try in the portal
 1. View the portal at <http://localhost:9001> in a web browser
-1. Login with the credentials ***testuser*** and ***testpassword***
+1. Login with the credentials ***professor*** and ***professor***
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
 1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
 1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones> (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
