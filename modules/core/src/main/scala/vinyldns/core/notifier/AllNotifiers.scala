@@ -35,7 +35,7 @@ final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: Contex
     monitor(notifier.getClass.getSimpleName) {
       notifier.notify(notification).handleErrorWith { e =>
         IO {
-          logger.error(s"Notifi er ${notifier.getClass.getSimpleName} failed.", e)
+          logger.error(s"Notifier ${notifier.getClass.getSimpleName} failed.", e)
         }
       }
     }
