@@ -7,14 +7,6 @@ services:
     ports:
       - "19002:3306"
 
-  dynamodb-local:
-    image: "cnadiminti/dynamodb-local:2017-02-16"
-    env_file:
-      .env
-    ports:
-      - "19000:8000"
-    command: "--sharedDb --inMemory"
-
   bind9:
     image: "vinyldns/bind9:0.0.4"
     env_file:
@@ -25,13 +17,6 @@ services:
     volumes:
       - ./bind9/etc:/var/cache/bind/config
       - ./bind9/zones:/var/cache/bind/zones
-
-  elasticmq:
-    image: s12v/elasticmq:0.13.8
-    ports:
-      - "9324:9324"
-    volumes:
-      - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   localstack:
     image: localstack/localstack
