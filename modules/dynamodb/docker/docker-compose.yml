@@ -1,7 +1,12 @@
 version: "3.0"
 services:
-  dynamodb-local:
-    image: "cnadiminti/dynamodb-local:2017-02-16"
+  localstack:
+    image: localstack/localstack
     ports:
-      - "19003:8000"
-    command: "--sharedDb --inMemory"
+      - "19003:19003"
+    environment:
+      - SERVICES=dynamodb:19003
+      - START_WEB=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"

@@ -1,8 +1,12 @@
 version: "3.0"
 services:
-  elasticmq:
-    image: s12v/elasticmq:0.13.8
+  localstack:
+    image: localstack/localstack
     ports:
-    - "19005:9324"
+      - "19005:19005"
+    environment:
+      - SERVICES=sqs:19005
+      - START_WEB=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-    - ./custom.conf:/etc/elasticmq/elasticmq.conf
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"

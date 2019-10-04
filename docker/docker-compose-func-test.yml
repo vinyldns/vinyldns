@@ -10,16 +10,6 @@ services:
     logging:
       driver: none
 
-  dynamodb-local:
-    image: "cnadiminti/dynamodb-local:2017-02-16"
-    env_file:
-      .env
-    container_name: "vinyldns-dynamodb"
-    ports:
-      - "19000:8000"
-    logging:
-      driver: none
-
   bind9:
     image: "vinyldns/bind9:0.0.4"
     env_file:
@@ -34,17 +24,19 @@ services:
     logging:
       driver: none
 
-  elasticmq:
-    image: s12v/elasticmq:0.13.8
-    env_file:
-      .env
-    container_name: "vinyldns-elasticmq"
+  localstack:
+    image: localstack/localstack
+    container_name: "vinyldns-localstack"
     ports:
-      - "9324:9324"
+      - "19000:19000"
+      - "19006:19006"
+      - "19007:19007"
+    environment:
+      - SERVICES=dynamodb:19000,sns:19006,sqs:19007
+      - START_WEB=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
-    logging:
-      driver: none
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
@@ -58,8 +50,6 @@ services:
     depends_on:
       - mysql
       - bind9
-      - elasticmq
-      - dynamodb-local
     logging:
       driver: none
 
