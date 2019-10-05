@@ -50,8 +50,8 @@ class FrontendController @Inject()(
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.batchChanges
-        .batchChanges(request.user.userName, canReview)))
+      Ok(views.html.dnsChanges
+        .dnsChanges(request.user.userName, canReview)))
   }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
@@ -74,19 +74,19 @@ class FrontendController @Inject()(
   def viewAllBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.batchChanges
-        .batchChanges(request.user.userName, canReview)))
+      Ok(views.html.dnsChanges
+        .dnsChanges(request.user.userName, canReview)))
   }
 
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.batchChanges
-        .batchChangeDetail(request.user.userName, canReview)))
+      Ok(views.html.dnsChanges
+        .dnsChangeDetail(request.user.userName, canReview)))
   }
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.batchChanges.batchChangeNew(request.user.userName)))
+    Future(Ok(views.html.dnsChanges.dnsChangeNew(request.user.userName)))
   }
 }
