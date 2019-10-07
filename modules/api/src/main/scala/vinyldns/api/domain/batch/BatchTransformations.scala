@@ -87,7 +87,8 @@ object BatchTransformations {
         case a: AddChangeInput => AddChangeForValidation(zone, recordName, a)
         case d: DeleteRRSetChangeInput =>
           DeleteRRSetChangeForValidation(zone, recordName, d)
-        // TODO: Support DeleteRecordChangeInput in ChangeForValidation
+        case d: DeleteRecordChangeInput if VinylDNSConfig.multiRecordBatchUpdateEnabled =>
+          DeleteRecordChangeForValidation(zone, recordName, d)
         case _: DeleteRecordChangeInput =>
           throw new UnsupportedOperationException(
             "DeleteRecordChangeInput is not yet implemented/supported in VinylDNS.")
