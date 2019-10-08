@@ -37,7 +37,7 @@ import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 import scala.util.Random
 
 class BatchChangeValidationsSpec
-  extends PropSpec
+    extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
     with EitherMatchers
@@ -161,8 +161,8 @@ class BatchChangeValidationsSpec
     approvalStatus = BatchChangeApprovalStatus.AutoApproved)
 
   private def makeAddUpdateRecord(
-                                   recordName: String,
-                                   aData: AData = AData("1.2.3.4")): AddChangeForValidation =
+      recordName: String,
+      aData: AData = AData("1.2.3.4")): AddChangeForValidation =
     AddChangeForValidation(
       okZone,
       s"$recordName",
@@ -175,8 +175,8 @@ class BatchChangeValidationsSpec
       DeleteRRSetChangeInput(s"$recordName.ok.", RecordType.A))
 
   private def makeDeleteUpdateDeleteRecord(
-                                            recordName: String,
-                                            aData: AData = AData("1.1.1.1")): DeleteRecordChangeForValidation =
+      recordName: String,
+      aData: AData = AData("1.1.1.1")): DeleteRecordChangeForValidation =
     DeleteRecordChangeForValidation(
       okZone,
       s"$recordName",
