@@ -520,6 +520,14 @@ sns {
   }
 }
 
+### Multi-Record Batch Update Enabled
+Configuration setting that determines if users are able to make Batch Changes that include changes to mult-record recordsets.
+If enabled, users can create and delete multi-record recordsets through Batch Change. They can also delete individual records in a multi-record recordset.
+
+```yaml
+enable-multi-record-batch-update = false
+```
+
 ### Batch Manual Review Enabled <a id="manual-review" />
 Configuration setting that determines whether batch changes with non-fatal errors can be reviewed rather than failing immediately.
 When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
@@ -528,6 +536,14 @@ manual review.
 
 ```yaml
 manual-batch-review-enabled = true
+```
+
+### Scheduled Batch Changes Enabled
+Configuration setting that determines if users are able to make Batch Changes with a scheduled time. `manual-batch-review-enabled` must be enabled as well.
+If enabled, a VinylDNS administrator cannot approve the Batch Change until after the scheduled time. An administrator could also reject the Batch Change.
+
+```yaml
+scheduled-changes-enabled = true
 ```
 
 ### Manual Review Domains
@@ -549,14 +565,6 @@ manual-review-domains = {
     "zone.requires.review."
   ]
 }
-```
-
-### Scheduled Batch Changes Enabled
-Configuration setting that determines if users are able to make Batch Changes with a scheduled time. `manual-batch-review-enabled` must be enabled as well.
-If enabled, a VinylDNS administrator cannot approve the Batch Change until after the scheduled time. An administrator could also reject the Batch Change.
-
-```yaml
-scheduled-changes-enabled = true
 ```
 
 ### IPv6 Zone Discovery Boundaries
@@ -724,7 +732,7 @@ vinyldns {
   batch-change-limit = 1000
   
   # true if you want to allow batch changes to update/delete multi-record recordsets, false if not.
-  enable-multi-record-batch-update = true
+  enable-multi-record-batch-update = false
   
   # notifier configuration
   notifiers = ["email", "sns"]
