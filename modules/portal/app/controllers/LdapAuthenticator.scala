@@ -119,15 +119,15 @@ object LdapAuthenticator {
         searchControls.setSearchScope(2)
 
         logger.info(
-          s"LDAP Search: org='${SEARCH_BASE(organization)}'; userName='$lookupUserName'; field='${settings.ldapUserNameField}'")
+          s"LDAP Search: org='${SEARCH_BASE(organization)}'; userName='$lookupUserName'; field='${settings.ldapUserNameAttribute}'")
 
         val result = dirContext.search(
           SEARCH_BASE(organization),
-          s"(${settings.ldapUserNameField}=$lookupUserName)",
+          s"(${settings.ldapUserNameAttribute}=$lookupUserName)",
           searchControls
         )
 
-        if (result.hasMore) Right(LdapUserDetails(result.next(), settings.ldapUserNameField))
+        if (result.hasMore) Right(LdapUserDetails(result.next(), settings.ldapUserNameAttribute))
         else Left(UserDoesNotExistException(s"[$lookupUserName] LDAP entity does not exist"))
       } catch {
         case unexpectedError: Throwable =>
