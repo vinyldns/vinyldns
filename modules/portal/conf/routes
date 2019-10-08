@@ -13,9 +13,6 @@ GET           /groups                            @controllers.FrontendController
 GET           /groups/:gid                       @controllers.FrontendController.viewGroup(gid: String)
 GET           /zones                             @controllers.FrontendController.viewAllZones
 GET           /zones/:zid                        @controllers.FrontendController.viewZone(zid: String)
-GET           /batchchanges                      @controllers.FrontendController.viewAllBatchChanges
-GET           /batchchanges/new                  @controllers.FrontendController.viewNewBatchChange
-GET           /batchchanges/:id                  @controllers.FrontendController.viewBatchChange(id: String)
 GET           /dnschanges                        @controllers.FrontendController.viewAllBatchChanges
 GET           /dnschanges/new                    @controllers.FrontendController.viewNewBatchChange
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
