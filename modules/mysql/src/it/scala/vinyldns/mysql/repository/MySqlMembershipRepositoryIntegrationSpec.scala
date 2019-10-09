@@ -17,13 +17,12 @@
 package vinyldns.mysql.repository
 
 import org.scalatest._
-import scalikejdbc.DB
+import scalikejdbc.{DB, _}
 import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.mysql.TestMySqlInstance
-import scalikejdbc._
 
 class MySqlMembershipRepositoryIntegrationSpec
-  extends WordSpec
+    extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {
@@ -112,7 +111,9 @@ class MySqlMembershipRepositoryIntegrationSpec
       repo.addMembers(groupIdTwo, userIds).unsafeRunSync() shouldBe userIds
 
       val expectedGroups = Set(groupIdOne, groupIdTwo)
-      repo.getGroupsForUser(userIds.head).unsafeRunSync() should contain theSameElementsAs expectedGroups
+      repo
+        .getGroupsForUser(userIds.head)
+        .unsafeRunSync() should contain theSameElementsAs expectedGroups
     }
   }
 
@@ -136,7 +137,9 @@ class MySqlMembershipRepositoryIntegrationSpec
       getAllRecords should contain theSameElementsAs userIds.map(Tuple2(_, groupId))
 
       val toBeRemoved = userIds.take(5)
-      repo.removeMembers(groupId, toBeRemoved).unsafeRunSync() should contain theSameElementsAs toBeRemoved
+      repo
+        .removeMembers(groupId, toBeRemoved)
+        .unsafeRunSync() should contain theSameElementsAs toBeRemoved
       val expectedUserIds = userIds -- toBeRemoved
       getAllRecords should contain theSameElementsAs expectedUserIds.map(Tuple2(_, groupId))
     }
@@ -172,7 +175,9 @@ class MySqlMembershipRepositoryIntegrationSpec
       // not adding to group three
 
       val expectedGroups = Set(groupIdOne, groupIdTwo)
-      repo.getGroupsForUser(underTest.head).unsafeRunSync() should contain theSameElementsAs expectedGroups
+      repo
+        .getGroupsForUser(underTest.head)
+        .unsafeRunSync() should contain theSameElementsAs expectedGroups
     }
 
     "return empty when no groups for user" in {
