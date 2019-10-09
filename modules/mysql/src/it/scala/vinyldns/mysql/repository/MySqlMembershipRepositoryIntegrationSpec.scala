@@ -57,6 +57,17 @@ class MySqlMembershipRepositoryIntegrationSpec
     }
 
   "MySqlMembershipRepo.addMembers" should {
+    "do nothing if member ids is empty" in {
+      val originalResult = getAllRecords
+      val groupId = "group-id-1"
+      val userIds: Set[String] = Set()
+      val addResult = repo.addMembers(groupId, userIds).unsafeRunSync()
+      addResult shouldBe empty
+
+      // records remain the same as original
+      getAllRecords should contain theSameElementsAs originalResult
+    }
+
     "add a member successfully" in {
       val groupId = "group-id-1"
       val userIds = Set("user-id-1")
@@ -128,6 +139,18 @@ class MySqlMembershipRepositoryIntegrationSpec
       repo.removeMembers(groupId, toBeRemoved).unsafeRunSync() should contain theSameElementsAs toBeRemoved
       val expectedUserIds = userIds -- toBeRemoved
       getAllRecords should contain theSameElementsAs expectedUserIds.map(Tuple2(_, groupId))
+    }
+
+    "do nothing if the member set is empty" in {
+      val groupId = "group-id-1"
+      val userIds = Set("user-id-1")
+
+      repo.addMembers(groupId, userIds).unsafeRunSync()
+      val originalResult = getAllRecords
+      val result = repo.removeMembers(groupId, Set()).unsafeRunSync()
+      result shouldBe empty
+
+      getAllRecords should contain theSameElementsAs originalResult
     }
   }
 
