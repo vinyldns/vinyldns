@@ -1,12 +1,9 @@
 version: "3.0"
 services:
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:0.10.4<skipPull>
     ports:
       - "19005:19005"
     environment:
       - SERVICES=sqs:19005
       - START_WEB=0
-      - DOCKER_HOST=unix:///var/run/docker.sock
-    volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
