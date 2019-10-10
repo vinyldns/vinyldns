@@ -19,9 +19,9 @@ package vinyldns.mysql.repository
 import cats.effect.IO
 import cats.implicits._
 import org.slf4j.LoggerFactory
+import scalikejdbc._
 import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.core.route.Monitored
-import scalikejdbc._
 
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
@@ -38,40 +38,46 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
     """.stripMargin
 
   def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
-    monitor("repo.Membership.addMembers") {
-      IO {
-        logger.info(s"Saving into group $groupId members $memberUserIds")
-        DB.localTx { implicit s =>
-          val memberUserIdList = memberUserIds.toList
-          val valueClause = " VALUES " + memberUserIdList.as("(?, ?)").mkString(",")
-          val query = BASE_ADD_MEMBERS + valueClause
-          val valueParams: List[String] = memberUserIdList.flatMap(Seq(_, groupId))
-          SQL(query)
-            .bind(valueParams: _*)
-            .update
-            .apply()
+    memberUserIds.toList match {
+      case Nil => IO.pure(memberUserIds)
+      case nonEmpty =>
+        monitor("repo.Membership.addMembers") {
+          IO {
+            logger.info(s"Saving into group $groupId members $nonEmpty")
+            DB.localTx { implicit s =>
+              val valueClause = " VALUES " + nonEmpty.as("(?, ?)").mkString(",")
+              val query = BASE_ADD_MEMBERS + valueClause
+              val valueParams: List[String] = nonEmpty.flatMap(Seq(_, groupId))
+              SQL(query)
+                .bind(valueParams: _*)
+                .update
+                .apply()
 
-          memberUserIds
+              memberUserIds
+            }
+          }
         }
-      }
     }
 
   def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
-    monitor("repo.Membership.removeMembers") {
-      IO {
-        logger.info(s"Removing from group $groupId members $memberUserIds")
-        DB.localTx { implicit s =>
-          val memberUserIdList = memberUserIds.toList
-          val inClause = " AND user_id IN (" + memberUserIdList.as("?").mkString(",") + ")"
-          val query = BASE_REMOVE_MEMBERS + inClause
-          SQL(query)
-            .bind(groupId :: memberUserIdList: _*)
-            .update()
-            .apply()
+    memberUserIds.toList match {
+      case Nil => IO.pure(memberUserIds)
+      case nonEmpty =>
+        monitor("repo.Membership.removeMembers") {
+          IO {
+            logger.info(s"Removing from group $groupId members $nonEmpty")
+            DB.localTx { implicit s =>
+              val inClause = " AND user_id IN (" + nonEmpty.as("?").mkString(",") + ")"
+              val query = BASE_REMOVE_MEMBERS + inClause
+              SQL(query)
+                .bind(groupId :: nonEmpty: _*)
+                .update()
+                .apply()
 
-          memberUserIds
+              memberUserIds
+            }
+          }
         }
-      }
     }
 
   def getGroupsForUser(userId: String): IO[Set[String]] =

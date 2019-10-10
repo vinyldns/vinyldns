@@ -54,7 +54,18 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     val user1 = genString
     val user2 = genString
     "add members successfully" in {
-      repo.addMembers(groupId, Set(user1, user2)).unsafeRunSync() should contain theSameElementsAs Set(user1, user2)
+      repo
+        .addMembers(groupId, Set(user1, user2))
+        .unsafeRunSync() should contain theSameElementsAs Set(user1, user2)
+    }
+
+    "add members with no member ids invokes no change" in {
+      val user1 = genString
+      repo.addMembers(groupId, Set(user1)).unsafeRunSync()
+
+      val originalResult = repo.getGroupsForUser(user1).unsafeRunSync()
+      repo.addMembers(groupId, Set()).unsafeRunSync()
+      repo.getGroupsForUser(user1).unsafeRunSync() should contain theSameElementsAs originalResult
     }
 
     "add a group to an existing user" in {
@@ -102,6 +113,15 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
         } yield userGroups
 
       f.unsafeRunSync() shouldBe empty
+    }
+
+    "remove members with no member ids invokes no change" in {
+      val user1 = genString
+      repo.addMembers(groupId, Set(user1)).unsafeRunSync()
+
+      val originalResult = repo.getGroupsForUser(user1).unsafeRunSync()
+      repo.removeMembers(groupId, Set()).unsafeRunSync()
+      repo.getGroupsForUser(user1).unsafeRunSync() should contain theSameElementsAs originalResult
     }
 
     "remove all groups for user" in {
