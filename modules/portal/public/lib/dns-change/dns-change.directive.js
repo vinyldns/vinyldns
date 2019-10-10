@@ -86,9 +86,9 @@
             link: function (scope, elm, attrs, ctrl) {
                 elm.on('change', function (e) {
                     if (e.target.files.length > 0) {
-                        return ctrl.$setViewValue(e.target.files[0]);
+                        ctrl.$setViewValue(e.target.files[0]);
                     }
-                    return ctrl.$setViewValue();
+                    ctrl.$setViewValue();
                 });
             }
         };
