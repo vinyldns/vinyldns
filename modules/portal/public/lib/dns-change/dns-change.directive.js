@@ -72,7 +72,7 @@
             link: function(scope, elm, attrs, ctrl) {
                 ctrl.$validators.ipv6 = function (modelValue, viewValue) {
                     if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
-                        return IPV4_REGEX.test(viewValue);
+                        return IPV6_REGEX.test(viewValue);
                     }
                     return true;
                 };
