@@ -176,9 +176,6 @@ class BatchChangeValidations(
     input.map {
       case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
       case d: DeleteRRSetChangeInput => validateInputName(d, isApproved).map(_ => d)
-      // TODO: Add DeleteRecordChangeInput validations
-      case _: DeleteRecordChangeInput =>
-        UnsupportedOperation("DeleteRecordChangeInput").invalidNel
     }
 
   def validateAddChangeInput(
@@ -286,13 +283,14 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
     change match {
       // For DeleteRecord inputs, need to verify that the record data actually exists
-      case deleteRecord: DeleteRecordChangeForValidation
+      case DeleteRRSetChangeForValidation(
+          _,
+          _,
+          DeleteRRSetChangeInput(inputName, _, Some(recordData)))
           if !groupedChanges
             .getExistingRecordSet(change.recordKey)
-            .exists(_.records.contains(deleteRecord.inputChange.record)) =>
-        DeleteRecordDataDoesNotExist(
-          deleteRecord.inputChange.inputName,
-          deleteRecord.inputChange.record).invalidNel
+            .exists(_.records.contains(recordData)) =>
+        DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
       case _ =>
         ().validNel
     }
@@ -496,7 +494,7 @@ class BatchChangeValidations(
         input.inputChange.typ,
         input.zone,
         ownerGroupId,
-        addRecords.toList
+        addRecords
       )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }

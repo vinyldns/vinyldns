@@ -87,10 +87,6 @@ object BatchTransformations {
         case a: AddChangeInput => AddChangeForValidation(zone, recordName, a)
         case d: DeleteRRSetChangeInput =>
           DeleteRRSetChangeForValidation(zone, recordName, d)
-        // TODO: Support DeleteRecordChangeInput in ChangeForValidation
-        case _: DeleteRecordChangeInput =>
-          throw new UnsupportedOperationException(
-            "DeleteRecordChangeInput is not yet implemented/supported in VinylDNS.")
       }
   }
 
@@ -131,29 +127,6 @@ object BatchTransformations {
       extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange =
       SingleDeleteRRSetChange(
-        Some(zone.id),
-        Some(zone.name),
-        Some(recordName),
-        inputChange.inputName,
-        inputChange.typ,
-        SingleChangeStatus.Pending,
-        None,
-        None,
-        None,
-        List.empty,
-        changeId.getOrElse(UUID.randomUUID().toString)
-      )
-
-    def isAddChangeForValidation: Boolean = false
-  }
-
-  final case class DeleteRecordChangeForValidation(
-      zone: Zone,
-      recordName: String,
-      inputChange: DeleteRecordChangeInput)
-      extends ChangeForValidation {
-    def asStoredChange(changeId: Option[String] = None): SingleChange =
-      SingleDeleteRecordChange(
         Some(zone.id),
         Some(zone.name),
         Some(recordName),
@@ -221,8 +194,12 @@ object BatchTransformations {
       // existing DNS entries in the event of DeleteRecordSet
       val deleteChangeSet = changes
         .collect {
+          case DeleteRRSetChangeForValidation(
+              _,
+              _,
+              DeleteRRSetChangeInput(_, _, Some(recordData))) =>
+            Set(recordData)
           case _: DeleteRRSetChangeForValidation => existingRecords
-          case del: DeleteRecordChangeForValidation => Set(del.inputChange.record)
         }
         .toSet
         .flatten

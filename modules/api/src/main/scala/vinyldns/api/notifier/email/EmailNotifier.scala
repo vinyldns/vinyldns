@@ -24,7 +24,6 @@ import vinyldns.core.domain.batch.{
   SingleAddChange,
   SingleChange,
   SingleDeleteRRSetChange,
-  SingleDeleteRecordChange
 }
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.domain.membership.User
@@ -143,10 +142,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       s"""<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td>
         |     <td>$ttl</td><td>${formatRecordData(recordData)}</td><td>$status</td>
         |     <td>${systemMessage.getOrElse("")}</td></tr>"""
-    case SingleDeleteRRSetChange(_, _, _, inputName, typ, status, systemMessage, _, _, _, _) =>
-      s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
-        |     <td></td><td></td><td>$status</td><td>${systemMessage.getOrElse("")}</td></tr>"""
-    case SingleDeleteRecordChange(
+    case SingleDeleteRRSetChange(
         _,
         _,
         _,
@@ -159,8 +155,9 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         _,
         _,
         _) =>
+      val recordDataValue = recordData.map(_.toString).getOrElse("")
       s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
-         |     <td></td><td>$recordData</td><td>$status</td><td>${systemMessage
+        |     <td></td><td>$recordDataValue</td><td>$status</td><td>${systemMessage
         .getOrElse("")}</td></tr>"""
   }
 

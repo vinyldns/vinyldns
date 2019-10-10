@@ -31,7 +31,6 @@ import vinyldns.core.domain.record._
 
 trait BatchChangeJsonProtocol extends JsonValidation {
 
-  // TODO: Add DeleteRecordChangeInputSerializer for DeleteRecord
   val batchChangeSerializers = Seq(
     JsonEnumV(ChangeInputType),
     JsonEnumV(SingleChangeStatus),
@@ -44,7 +43,6 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     DeleteRRSetChangeInputSerializer,
     SingleAddChangeSerializer,
     SingleDeleteRRSetChangeSerializer,
-    SingleDeleteRecordChangeSerializer,
     BatchChangeSerializer,
     BatchChangeErrorListSerializer,
     BatchChangeRevalidationErrorListSerializer,
@@ -78,7 +76,6 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         case Add => js.required[AddChangeInput]("Invalid AddChangeInput json")
         case DeleteRecordSet =>
           js.required[DeleteRRSetChangeInput]("Invalid DeleteChangeInput json")
-        case DeleteRecord => js.required[DeleteRecordChangeInput]("Invalid DeleteChangeInput json")
       }
     }
   }
@@ -106,35 +103,22 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       extends ValidationSerializer[DeleteRRSetChangeInput] {
     override def fromJson(js: JValue): ValidatedNel[String, DeleteRRSetChangeInput] = {
       val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
+      val recordData = {
+        val jsonValue = (js \ "record").toOption
+        if (jsonValue.isEmpty) None.validNel
+        else recordType.andThen(extractRecord(_, js \ "record").map(Some(_)))
+      }
 
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
-        recordType).mapN(DeleteRRSetChangeInput(_, _))
+        recordType,
+        recordData).mapN(DeleteRRSetChangeInput.apply)
     }
 
     override def toJson(drsci: DeleteRRSetChangeInput): JValue =
       ("changeType" -> Extraction.decompose(DeleteRecordSet)) ~
         ("inputName" -> drsci.inputName) ~
         ("type" -> Extraction.decompose(drsci.typ))
-  }
-
-  case object DeleteRecordChangeInputSerializer
-      extends ValidationSerializer[DeleteRecordChangeInput] {
-    override def fromJson(js: JValue): ValidatedNel[String, DeleteRecordChangeInput] = {
-      val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
-
-      (
-        (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
-        recordType,
-        recordType.andThen(extractRecord(_, js \ "record")))
-        .mapN(DeleteRecordChangeInput(_, _, _))
-    }
-
-    override def toJson(drci: DeleteRecordChangeInput): JValue =
-      ("changeType" -> Extraction.decompose(DeleteRecord)) ~
-        ("inputName" -> drci.inputName) ~
-        ("type" -> Extraction.decompose(drci.typ)) ~
-        ("record" -> Extraction.decompose(drci.record))
   }
 
   // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatibility with clients
@@ -159,38 +143,20 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatibility with clients
   case object SingleDeleteRRSetChangeSerializer
       extends ValidationSerializer[SingleDeleteRRSetChange] {
-    override def toJson(sac: SingleDeleteRRSetChange): JValue =
+    override def toJson(sdc: SingleDeleteRRSetChange): JValue =
       ("changeType" -> "DeleteRecordSet") ~
-        ("inputName" -> sac.inputName) ~
-        ("type" -> Extraction.decompose(sac.typ)) ~
-        ("status" -> sac.status.toString) ~
-        ("recordName" -> sac.recordName.getOrElse("")) ~
-        ("zoneName" -> sac.zoneName.getOrElse("")) ~
-        ("zoneId" -> sac.zoneId.getOrElse("")) ~
-        ("systemMessage" -> sac.systemMessage) ~
-        ("recordChangeId" -> sac.recordChangeId) ~
-        ("recordSetId" -> sac.recordSetId) ~
-        ("validationErrors" -> Extraction.decompose(sac.validationErrors)) ~
-        ("id" -> sac.id)
-  }
-
-  // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatibility with clients
-  case object SingleDeleteRecordChangeSerializer
-      extends ValidationSerializer[SingleDeleteRecordChange] {
-    override def toJson(sdrc: SingleDeleteRecordChange): JValue =
-      ("changeType" -> "DeleteRecordSet") ~
-        ("inputName" -> sdrc.inputName) ~
-        ("type" -> Extraction.decompose(sdrc.typ)) ~
-        ("status" -> sdrc.status.toString) ~
-        ("recordName" -> sdrc.recordName.getOrElse("")) ~
-        ("record" -> Extraction.decompose(sdrc.recordData)) ~
-        ("zoneName" -> sdrc.zoneName.getOrElse("")) ~
-        ("zoneId" -> sdrc.zoneId.getOrElse("")) ~
-        ("systemMessage" -> sdrc.systemMessage) ~
-        ("recordChangeId" -> sdrc.recordChangeId) ~
-        ("recordSetId" -> sdrc.recordSetId) ~
-        ("validationErrors" -> Extraction.decompose(sdrc.validationErrors)) ~
-        ("id" -> sdrc.id)
+        ("inputName" -> sdc.inputName) ~
+        ("type" -> Extraction.decompose(sdc.typ)) ~
+        ("record" -> Extraction.decompose(sdc.recordData)) ~
+        ("status" -> sdc.status.toString) ~
+        ("recordName" -> sdc.recordName.getOrElse("")) ~
+        ("zoneName" -> sdc.zoneName.getOrElse("")) ~
+        ("zoneId" -> sdc.zoneId.getOrElse("")) ~
+        ("systemMessage" -> sdc.systemMessage) ~
+        ("recordChangeId" -> sdc.recordChangeId) ~
+        ("recordSetId" -> sdc.recordSetId) ~
+        ("validationErrors" -> Extraction.decompose(sdc.validationErrors)) ~
+        ("id" -> sdc.id)
   }
 
   case object BatchChangeSerializer extends ValidationSerializer[BatchChange] {
