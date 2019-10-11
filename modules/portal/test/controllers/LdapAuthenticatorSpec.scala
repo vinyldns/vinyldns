@@ -393,7 +393,10 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
 
         "call contextCreator.apply" in {
-          there.was(one(mocks.contextCreator).apply("someDomain\\foo", "bar"))
+          // We first authenticate to the service account, and then to the user
+          there.was(
+            one(mocks.contextCreator).apply("test\\test", "test"),
+            one(mocks.contextCreator).apply("", "bar"))
         }
 
         "call the correct search on context" in {
