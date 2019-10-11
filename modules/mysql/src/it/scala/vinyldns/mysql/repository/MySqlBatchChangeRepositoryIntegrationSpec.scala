@@ -69,6 +69,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         Some("delete"),
         "delete.somezone.com.",
         A,
+        None,
         Pending,
         None,
         None,
@@ -213,8 +214,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         case sad: SingleAddChange =>
           sad.copy(recordName = sad.recordName.map(name => s"updated-$name"))
         case sdc: SingleDeleteRRSetChange =>
-          sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
-        case sdc: SingleDeleteRecordChange =>
           sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
       }
       val updatedBatch = batchChange.copy(
