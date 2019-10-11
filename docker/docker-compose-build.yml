@@ -21,7 +21,7 @@ services:
       - ./bind9/zones:/var/cache/bind/zones
 
   localstack:
-    image: localstack/localstack:0.10.4<skipPull>
+    image: localstack/localstack:0.10.4
     container_name: "vinyldns-localstack"
     ports:
       - "19000:19000"
