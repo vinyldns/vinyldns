@@ -1764,6 +1764,24 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
   }
 
+  property(
+    "validateDeleteChangeInput: should succeed for valid data when no record data is passed in") {
+    val input = DeleteRRSetChangeInput("a.ok.", RecordType.A, None)
+    validateDeleteRRSetChangeInput(input, false) shouldBe valid
+  }
+
+  property("validateDeleteChangeInput: should succeed for valid data when record data is passed in") {
+    val input = DeleteRRSetChangeInput("a.ok.", RecordType.A, Some(AData("1.1.1.1")))
+    validateDeleteRRSetChangeInput(input, false) shouldBe valid
+  }
+
+  property("validateDeleteChangeInput: should fail when invalid record data is passed in") {
+    val invalidIp = "invalid IP address"
+    val input = DeleteRRSetChangeInput("a.ok.", RecordType.A, Some(AData(invalidIp)))
+    val result = validateDeleteRRSetChangeInput(input, false)
+    result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIp))
+  }
+
   property("validateChangesWithContext: should fail if MX record in batch already exists") {
     val existingMX = rsOk.copy(
       zoneId = okZone.id,

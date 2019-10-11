@@ -175,7 +175,7 @@ class BatchChangeValidations(
       isApproved: Boolean): ValidatedBatch[ChangeInput] =
     input.map {
       case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
-      case d: DeleteRRSetChangeInput => validateInputName(d, isApproved).map(_ => d)
+      case d: DeleteRRSetChangeInput => validateDeleteRRSetChangeInput(d, isApproved).map(_ => d)
     }
 
   def validateAddChangeInput(
@@ -186,6 +186,18 @@ class BatchChangeValidations(
     val validInput = validateInputName(addChangeInput, isApproved)
 
     validTTL |+| validRecord |+| validInput
+  }
+
+  def validateDeleteRRSetChangeInput(
+      deleteRRSetChangeInput: DeleteRRSetChangeInput,
+      isApproved: Boolean): SingleValidation[Unit] = {
+    val validRecord = deleteRRSetChangeInput.record match {
+      case Some(recordData) => validateRecordData(recordData)
+      case None => ().validNel
+    }
+    val validInput = validateInputName(deleteRRSetChangeInput, isApproved)
+
+    validRecord |+| validInput
   }
 
   def validateRecordData(record: RecordData): SingleValidation[Unit] =
