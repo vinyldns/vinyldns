@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-(function(){
-
+(function () {
     var app = angular.module('batch-change');
     var FQDN_REGEX = /\./;
     var IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -39,50 +38,58 @@
                                 ')$'
     ].join(''));
 
-    app.directive('fqdn', function() {
+    app.directive('fqdn', function () {
         return {
             require: 'ngModel',
-            link: function(scope, elm, attrs, ctrl) {
-                ctrl.$validators.fqdn = function(modelValue, viewValue) {
-                    return FQDN_REGEX.test(viewValue);
+            link: function (scope, elm, attrs, ctrl) {
+                ctrl.$validators.fqdn = function (modelValue, viewValue) {
+                    if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
+                        return FQDN_REGEX.test(viewValue);
+                    }
+                    return true;
+                };
+            }
+        };
+    });
+
+    app.directive('ipv4', function () {
+        return {
+            require: 'ngModel',
+            link: function (scope, elm, attrs, ctrl) {
+                ctrl.$validators.ipv4 = function (modelValue, viewValue) {
+                    if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
+                        return IPV4_REGEX.test(viewValue);
+                    }
+                    return true;
                 }
             }
         };
     });
 
-    app.directive('ipv4', function() {
+    app.directive('ipv6', function () {
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
-                ctrl.$validators.ipv4 = function(modelValue, viewValue) {
-                    return IPV4_REGEX.test(viewValue);
-                }
+                ctrl.$validators.ipv6 = function (modelValue, viewValue) {
+                    if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
+                        return IPV6_REGEX.test(viewValue);
+                    }
+                    return true;
+                };
             }
         };
     });
 
-    app.directive('ipv6', function() {
+    app.directive('batchChangeFile', function () {
         return {
             require: 'ngModel',
-            link: function(scope, elm, attrs, ctrl) {
-                ctrl.$validators.ipv6 = function(modelValue, viewValue) {
-                    return IPV6_REGEX.test(viewValue);
-                }
-            }
-        };
-    });
-
-    app.directive('batchChangeFile', function() {
-        return {
-            require: 'ngModel',
-            link: function(scope, elm, attrs, ctrl) {
-                elm.on('change', function(e){
+            link: function (scope, elm, attrs, ctrl) {
+                elm.on('change', function (e) {
                     if (e.target.files.length > 0) {
                         ctrl.$setViewValue(e.target.files[0]);
-                    } else {
-                        ctrl.$setViewValue();
                     }
-                })
+                    ctrl.$setViewValue();
+                });
             }
         };
     });
