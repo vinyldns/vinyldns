@@ -115,7 +115,7 @@ object DeleteRRSetChangeInput {
   def apply(
       inputName: String,
       typ: RecordType,
-      record: Option[RecordData]): DeleteRRSetChangeInput = {
+      record: Option[RecordData] = None): DeleteRRSetChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
