@@ -44,6 +44,8 @@ services:
     container_name: "vinyldns-api"
     ports:
       - "${REST_PORT}:${REST_PORT}"
+    volumes:
+      - ./api/docker.conf:/opt/docker/conf/application.conf      
     depends_on:
       - mysql
       - bind9
