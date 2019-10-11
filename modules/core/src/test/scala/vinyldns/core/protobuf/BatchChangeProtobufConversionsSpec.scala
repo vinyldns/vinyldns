@@ -19,12 +19,7 @@ package vinyldns.core.protobuf
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
-import vinyldns.core.domain.batch.{
-  SingleAddChange,
-  SingleChangeStatus,
-  SingleDeleteRRSetChange,
-  SingleDeleteRecordChange
-}
+import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteRRSetChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeProtobufConversionsSpec
@@ -51,12 +46,13 @@ class BatchChangeProtobufConversionsSpec
     List(testDVError),
     "id"
   )
-  private val testDeleteRRSetChange = SingleDeleteRRSetChange(
+  private val testDeleteRRSetChangeWithoutRecordData = SingleDeleteRRSetChange(
     Some("zoneId"),
     Some("zoneName"),
     Some("recordName"),
     "inputName",
     RecordType.A,
+    None,
     SingleChangeStatus.Pending,
     Some("systemMessage"),
     Some("recordChangeId"),
@@ -64,13 +60,13 @@ class BatchChangeProtobufConversionsSpec
     List(testDVError, SingleChangeError(HighValueDomainError("hvd"))),
     "id"
   )
-  private val testDeleteRecordChange = SingleDeleteRecordChange(
+  private val testDeleteRRSetChangeWithRecordData = SingleDeleteRRSetChange(
     Some("zoneId"),
     Some("zoneName"),
     Some("recordName"),
     "inputName",
     RecordType.A,
-    AData("1.1.1.1"),
+    Some(AData("1.1.1.1")),
     SingleChangeStatus.Pending,
     Some("systemMessage"),
     Some("recordChangeId"),
@@ -88,13 +84,13 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single delete changes with all values provided" in {
-      val rrSetPb = toPB(testDeleteRRSetChange)
-      val recordPb = toPB(testDeleteRecordChange)
-      val rrSetRoundTrip = fromPB(rrSetPb.toOption.get)
-      val recordRoundTrip = fromPB(recordPb.toOption.get)
+      val rrSetWithoutDataPb = toPB(testDeleteRRSetChangeWithoutRecordData)
+      val rrSetWithDataPb = toPB(testDeleteRRSetChangeWithRecordData)
+      val rrSetWithoutDataRoundTrip = fromPB(rrSetWithoutDataPb.toOption.get)
+      val rrSetWithDataRoundTrip = fromPB(rrSetWithDataPb.toOption.get)
 
-      rrSetRoundTrip shouldBe Right(testDeleteRRSetChange)
-      recordRoundTrip shouldBe Right(testDeleteRecordChange)
+      rrSetWithoutDataRoundTrip shouldBe Right(testDeleteRRSetChangeWithoutRecordData)
+      rrSetWithDataRoundTrip shouldBe Right(testDeleteRRSetChangeWithRecordData)
     }
 
     "round trip single add changes when optional values are not present" in {
@@ -127,6 +123,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         "testInputName",
         RecordType.A,
+        None,
         SingleChangeStatus.Pending,
         None,
         None,
@@ -148,6 +145,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         "testInputName",
         RecordType.A,
+        None,
         SingleChangeStatus.NeedsReview,
         None,
         None,
@@ -169,6 +167,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         "testInputName",
         RecordType.A,
+        None,
         SingleChangeStatus.Rejected,
         None,
         None,

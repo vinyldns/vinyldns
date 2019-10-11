@@ -1608,6 +1608,7 @@ class BatchChangeServiceSpec
         None,
         "some.test.delete.",
         TXT,
+        None,
         SingleChangeStatus.NeedsReview,
         None,
         None,

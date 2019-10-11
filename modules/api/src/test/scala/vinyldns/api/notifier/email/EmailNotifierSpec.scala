@@ -183,6 +183,7 @@ class EmailNotifierSpec
           Some(""),
           "deleteme.test.com",
           RecordType.A,
+          None,
           SingleChangeStatus.Failed,
           Some("message for you"),
           None,
@@ -222,9 +223,6 @@ class EmailNotifierSpec
             row.contains(ac.ttl.toString) should be(true)
           case _: SingleDeleteRRSetChange =>
             row.contains("Delete") should be(true)
-          case dc: SingleDeleteRecordChange =>
-            row.contains("Delete") should be(true)
-            row.contains(dc.recordData) should be(true)
         }
       }
 

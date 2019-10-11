@@ -118,6 +118,7 @@ class SnsNotifierSpec
           Some(""),
           "deleteme.test.com",
           RecordType.A,
+          None,
           SingleChangeStatus.Failed,
           Some("message for you"),
           None,
@@ -128,15 +129,14 @@ class SnsNotifierSpec
 
       notifier.notify(Notification(change)).unsafeRunSync()
 
-      val request = requestArgument.getValue()
+      val request = requestArgument.getValue
 
-      request.getTopicArn() should be("batches")
-      val userNameAttribute = request.getMessageAttributes().get("userName")
-      userNameAttribute.getDataType() should be("String")
-      userNameAttribute.getStringValue() should be("testUser")
+      request.getTopicArn should be("batches")
+      val userNameAttribute = request.getMessageAttributes.get("userName")
+      userNameAttribute.getDataType should be("String")
+      userNameAttribute.getStringValue should be("testUser")
 
-      request
-        .getMessage() should be(
+      request.getMessage should be(
         """{"userId":"test","userName":"testUser","comments":"notes",""" +
           """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","approvalStatus":"AutoApproved",""" +
           """"id":"testBatch"}""")

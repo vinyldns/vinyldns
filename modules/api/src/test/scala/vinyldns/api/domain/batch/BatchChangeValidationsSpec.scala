@@ -168,19 +168,13 @@ class BatchChangeValidationsSpec
       s"$recordName",
       AddChangeInput(s"$recordName.ok.", RecordType.A, ttl, aData))
 
-  private def makeDeleteUpdateDeleteRRSet(recordName: String): DeleteRRSetChangeForValidation =
+  private def makeDeleteUpdateDeleteRRSet(
+      recordName: String,
+      recordData: Option[RecordData] = None): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
-      DeleteRRSetChangeInput(s"$recordName.ok.", RecordType.A))
-
-  private def makeDeleteUpdateDeleteRecord(
-      recordName: String,
-      aData: AData = AData("1.1.1.1")): DeleteRecordChangeForValidation =
-    DeleteRecordChangeForValidation(
-      okZone,
-      s"$recordName",
-      DeleteRecordChangeInput(s"$recordName.ok.", RecordType.A, aData))
+      DeleteRRSetChangeInput(s"$recordName.ok.", RecordType.A, recordData))
 
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
     validateBatchChangeInputSize(BatchChangeInput(None, List())) should
@@ -738,20 +732,20 @@ class BatchChangeValidationsSpec
           makeAddUpdateRecord("deleteRRSet"), // DeleteRRSet
           makeDeleteUpdateDeleteRRSet("deleteRRSet"),
           makeAddUpdateRecord("deleteSingleEntry"), // Single entry
-          makeDeleteUpdateDeleteRecord("deleteSingleEntry"),
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntry", Some(AData("1.1.1.1"))),
           makeAddUpdateRecord("deleteSingleEntryAndRRSet"), // Single entry and DeleteRRSet
-          makeDeleteUpdateDeleteRecord("deleteSingleEntryAndRRSet"),
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet", Some(AData("1.1.1.1"))),
           makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet"),
           makeAddUpdateRecord("deleteAllEntries"), // Delete all entries
-          makeDeleteUpdateDeleteRecord("deleteAllEntries"),
-          makeDeleteUpdateDeleteRecord("deleteAllEntries", AData("1.1.1.2")),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntries", Some(AData("1.1.1.1"))),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntries", Some(AData("1.1.1.2"))),
           makeAddUpdateRecord("deleteAllEntriesAndRRSet"), // Delete all entries and DeleteRRSet
-          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet"),
-          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet", AData("1.1.1.2")),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet", Some(AData("1.1.1.1"))),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet", Some(AData("1.1.1.2"))),
           makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet"),
           makeAddUpdateRecord("deleteSingleEntryMultipleAdd"), // Delete single entry and multiple adds
           makeAddUpdateRecord("deleteSingleEntryMultipleAdd", AData("2.3.4.5")),
-          makeDeleteUpdateDeleteRecord("deleteSingleEntryMultipleAdd")
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntryMultipleAdd", Some(AData("1.1.1.1")))
         ).map(_.validNel),
         ExistingRecordSets(
           List(
@@ -784,14 +778,14 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(
         List(
           makeDeleteUpdateDeleteRRSet("deleteRRSet"), // DeleteRRSet
-          makeDeleteUpdateDeleteRecord("deleteSingleEntry"), // Single entry
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntry", Some(AData("1.1.1.1"))), // Single entry
           makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet"), // Single entry and DeleteRRSet
-          makeDeleteUpdateDeleteRecord("deleteSingleEntryAndRRSet"),
-          makeDeleteUpdateDeleteRecord("deleteAllEntries"), // Delete all entries
-          makeDeleteUpdateDeleteRecord("deleteAllEntries", AData("1.1.1.2")),
+          makeDeleteUpdateDeleteRRSet("deleteSingleEntryAndRRSet", Some(AData("1.1.1.1"))),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntries", Some(AData("1.1.1.1"))), // Delete all entries
+          makeDeleteUpdateDeleteRRSet("deleteAllEntries", Some(AData("1.1.1.2"))),
           makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet"), // Delete all entries and DeleteRRSet
-          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet"),
-          makeDeleteUpdateDeleteRecord("deleteAllEntriesAndRRSet", AData("1.1.1.2"))
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet", Some(AData("1.1.1.1"))),
+          makeDeleteUpdateDeleteRRSet("deleteAllEntriesAndRRSet", Some(AData("1.1.1.2")))
         ).map(_.validNel),
         ExistingRecordSets(
           List(
@@ -861,8 +855,8 @@ class BatchChangeValidationsSpec
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
-    val deleteRecord = makeDeleteUpdateDeleteRecord("deleteRecord")
-    val deleteNonExistentEntry = makeDeleteUpdateDeleteRecord("ok")
+    val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
+    val deleteNonExistentEntry = makeDeleteUpdateDeleteRRSet("ok", Some(AData("1.1.1.1")))
     val result = validateChangesWithContext(
       ChangeForValidationMap(
         List(
@@ -890,11 +884,11 @@ class BatchChangeValidationsSpec
       RecordDoesNotExist(deleteRecord.inputChange.inputName)
     )
     result(4) shouldBe valid
-    result(5) should haveInvalid[DomainValidationError](
-      DeleteRecordDataDoesNotExist(
-        deleteNonExistentEntry.inputChange.inputName,
-        deleteNonExistentEntry.inputChange.record)
-    )
+    deleteNonExistentEntry.inputChange.record.foreach { record =>
+      result(5) should haveInvalid[DomainValidationError](
+        DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
+      )
+    }
   }
 
   property(
@@ -932,10 +926,10 @@ class BatchChangeValidationsSpec
       okZone,
       "deleteRRSet",
       DeleteRRSetChangeInput("deleteRRSet.ok.", RecordType.CNAME))
-    val deleteCnameEntry = DeleteRecordChangeForValidation(
+    val deleteCnameEntry = DeleteRRSetChangeForValidation(
       okZone,
       "deleteRecord",
-      DeleteRecordChangeInput("deleteRecord.ok.", RecordType.CNAME, CNAMEData("cname.data."))
+      DeleteRRSetChangeInput("deleteRecord.ok.", RecordType.CNAME, Some(CNAMEData("cname.data.")))
     )
     val result = validateChangesWithContext(
       ChangeForValidationMap(
@@ -1328,7 +1322,8 @@ class BatchChangeValidationsSpec
     """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
       |if record does not exist""".stripMargin) {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
-    val deleteRecord = makeDeleteUpdateDeleteRecord("record-also-does-not-exist")
+    val deleteRecord =
+      makeDeleteUpdateDeleteRRSet("record-also-does-not-exist", Some(AData("1.1.1.1")))
     val result =
       validateChangesWithContext(
         ChangeForValidationMap(
