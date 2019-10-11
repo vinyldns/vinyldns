@@ -22,8 +22,8 @@ services:
       .env
     container_name: "vinyldns-bind9"
     volumes:
-      - ../bind9/etc:/var/cache/bind/config
-      - ../bind9/zones:/var/cache/bind/zones
+      - ../../../../docker/bind9/etc:/var/cache/bind/config
+      - ../../../../docker/bind9/zones:/var/cache/bind/zones
     ports:
       - "19001:53/tcp"
       - "19001:53/udp"
@@ -36,12 +36,12 @@ services:
     ports:
       - "9324:9324"
     volumes:
-      - ../elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
+      - ../../../../docker/elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
     build:
-      context: ../build-api
+      context: ../api
     env_file:
       .env
     container_name: "vinyldns-api"
