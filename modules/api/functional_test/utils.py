@@ -413,7 +413,7 @@ def clear_groups(client, exclude=[]):
             client.delete_group(group_id, status=200)
 
 
-def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.1", change_type="Add"):
+def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address=None, change_type="Add"):
     if change_type == "Add":
         json = {
             "changeType": change_type,
@@ -421,77 +421,7 @@ def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.
             "type": record_type,
             "ttl": ttl,
             "record": {
-                "address": address
-            }
-        }
-    else:
-        if change_type == "DeleteRecord":
-            json = {
-                "changeType": "DeleteRecord",
-                "inputName": input_name,
-                "type": record_type,
-                "record": {
-                    "address": address
-                }
-            }
-        else:
-            json = {
-                "changeType": "DeleteRecordSet",
-                "inputName": input_name,
-                "type": record_type
-            }
-    return json
-
-
-def get_change_CNAME_json(input_name, ttl=200, cname="test.com", change_type="Add"):
-    if change_type == "Add":
-        json = {
-            "changeType": change_type,
-            "inputName": input_name,
-            "type": "CNAME",
-            "ttl": ttl,
-            "record": {
-                "cname": cname
-            }
-        }
-    else:
-        json = {
-            "changeType": "DeleteRecordSet",
-            "inputName": input_name,
-            "type": "CNAME"
-        }
-    return json
-
-
-def get_change_PTR_json(ip, ttl=200, ptrdname="test.com", change_type="Add"):
-    if change_type == "Add":
-        json = {
-            "changeType": change_type,
-            "inputName": ip,
-            "type": "PTR",
-            "ttl": ttl,
-            "record": {
-                "ptrdname": ptrdname
-            }
-        }
-    else:
-        json = {
-            "changeType": "DeleteRecordSet",
-            "inputName": ip,
-            "type": "PTR"
-        }
-    return json
-
-
-def get_change_TXT_json(input_name, record_type="TXT", ttl=200, text="test", change_type="Add"):
-    if change_type == "Add":
-        json = {
-            "changeType": change_type,
-            "inputName": input_name,
-            "type": record_type,
-            "ttl": ttl,
-            "record": {
-                "text": text
+                "address": address or "1.1.1.1"
             }
         }
     else:
@@ -500,10 +430,86 @@ def get_change_TXT_json(input_name, record_type="TXT", ttl=200, text="test", cha
             "inputName": input_name,
             "type": record_type
         }
+        if address is not None:
+            json["record"] = {
+                "address": address
+            }
     return json
 
 
-def get_change_MX_json(input_name, ttl=200, preference=1, exchange="foo.bar.", change_type="Add"):
+def get_change_CNAME_json(input_name, ttl=200, cname=None, change_type="Add"):
+    if change_type == "Add":
+        json = {
+            "changeType": change_type,
+            "inputName": input_name,
+            "type": "CNAME",
+            "ttl": ttl,
+            "record": {
+                "cname": cname or "test.com"
+            }
+        }
+    else:
+        json = {
+            "changeType": "DeleteRecordSet",
+            "inputName": input_name,
+            "type": "CNAME"
+        }
+        if cname is not None:
+            json["record"] = {
+                "cname": cname
+            }
+    return json
+
+
+def get_change_PTR_json(ip, ttl=200, ptrdname=None, change_type="Add"):
+    if change_type == "Add":
+        json = {
+            "changeType": change_type,
+            "inputName": ip,
+            "type": "PTR",
+            "ttl": ttl,
+            "record": {
+                "ptrdname": ptrdname or "test.com"
+            }
+        }
+    else:
+        json = {
+            "changeType": "DeleteRecordSet",
+            "inputName": ip,
+            "type": "PTR"
+        }
+        if ptrdname is not None:
+            json["record"] = {
+                "ptrdname": ptrdname
+            }
+    return json
+
+
+def get_change_TXT_json(input_name, record_type="TXT", ttl=200, text=None, change_type="Add"):
+    if change_type == "Add":
+        json = {
+            "changeType": change_type,
+            "inputName": input_name,
+            "type": record_type,
+            "ttl": ttl,
+            "record": {
+                "text": text or "test"
+            }
+        }
+    else:
+        json = {
+            "changeType": "DeleteRecordSet",
+            "inputName": input_name,
+            "type": record_type
+        }
+        if text is not None:
+            json["record"] = {
+                "text": text
+            }
+    return json
+
+
+def get_change_MX_json(input_name, ttl=200, preference=None, exchange=None, change_type="Add"):
     if change_type == "Add":
         json = {
             "changeType": change_type,
@@ -512,15 +518,25 @@ def get_change_MX_json(input_name, ttl=200, preference=1, exchange="foo.bar.", c
             "ttl": ttl,
             "record": {
                 "preference": preference,
-                "exchange": exchange
+                "exchange": exchange or "foo.bar."
             }
         }
+        if preference is None:
+            json["record"]["preference"] = 1
     else:
         json = {
             "changeType": "DeleteRecordSet",
             "inputName": input_name,
-            "type": "MX"
+            "type": "MX",
         }
+        if preference is not None or exchange is not None:
+            json["record"] = {
+                "preference": preference,
+                "exchange": exchange or "foo.bar."
+            }
+            if preference is None:
+                json["record"]["preference"] = 1
+
     return json
 
 
