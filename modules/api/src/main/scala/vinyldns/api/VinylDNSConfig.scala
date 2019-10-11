@@ -131,7 +131,7 @@ object VinylDNSConfig {
   lazy val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
   lazy val defaultTtl: Long = vinyldnsConfig.as[Option[Long]](s"default-ttl").getOrElse(7200L)
   lazy val multiRecordBatchUpdateEnabled: Boolean =
-    vinyldnsConfig.as[Option[Boolean]]("enable-multi-record-batch-update").getOrElse(false)
+    vinyldnsConfig.as[Option[Boolean]]("multi-record-batch-change-enabled").getOrElse(false)
   lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)

@@ -324,7 +324,7 @@ class BatchChangeJsonProtocolSpec
   }
 
   "Serializing SingleDeleteRRSetChange to JSON" should {
-    "successfully serialize" in {
+    "successfully serialize when record data is not provided" in {
       val toJson = SingleDeleteRRSetChange(
         Some("zoneId"),
         Some("zoneName"),
@@ -347,6 +347,38 @@ class BatchChangeJsonProtocolSpec
         ("inputName" -> "fqdn") ~
         ("type" -> decompose(A)) ~
         ("record" -> decompose(None)) ~
+        ("status" -> decompose(Pending)) ~
+        ("systemMessage" -> "systemMessage") ~
+        ("recordChangeId" -> decompose(None)) ~
+        ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List(SingleChangeError(barDiscoveryError)))) ~
+        ("id" -> "id") ~
+        ("changeType" -> "DeleteRecordSet")
+    }
+
+    "successfully serialize when record data is provided" in {
+      val toJson = SingleDeleteRRSetChange(
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
+        "fqdn",
+        A,
+        Some(AData("1.2.3.4")),
+        Pending,
+        Some("systemMessage"),
+        None,
+        None,
+        List(SingleChangeError(barDiscoveryError)),
+        id = "id"
+      )
+      val result = SingleDeleteRRSetChangeSerializer.toJson(toJson)
+
+      result shouldBe ("zoneId" -> "zoneId") ~
+        ("zoneName" -> "zoneName") ~
+        ("recordName" -> "recordName") ~
+        ("inputName" -> "fqdn") ~
+        ("type" -> decompose(A)) ~
+        ("record" -> decompose(Some(AData("1.2.3.4")))) ~
         ("status" -> decompose(Pending)) ~
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~

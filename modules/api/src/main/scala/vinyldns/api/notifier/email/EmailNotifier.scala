@@ -23,7 +23,7 @@ import vinyldns.core.domain.batch.{
   BatchChangeApprovalStatus,
   SingleAddChange,
   SingleChange,
-  SingleDeleteRRSetChange,
+  SingleDeleteRRSetChange
 }
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.domain.membership.User
