@@ -55,8 +55,8 @@ if [ "${PROD_ENV}" = "true" ]; then
     ./run-tests.py live_tests -n2 -v -m "not skip_production and not serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     if [ $? -eq 0 ]; then
       # run serial tests second (serial marker)
-      echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial and not multi_record_disabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
+      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
     fi
 else
     # run parallel tests first (not serial)
