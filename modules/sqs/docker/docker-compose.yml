@@ -1,8 +1,9 @@
 version: "3.0"
 services:
-  elasticmq:
-    image: s12v/elasticmq:0.13.8
+  localstack:
+    image: localstack/localstack:0.10.4<skipPull>
     ports:
-    - "19005:9324"
-    volumes:
-    - ./custom.conf:/etc/elasticmq/elasticmq.conf
+      - "19005:19005"
+    environment:
+      - SERVICES=sqs:19005
+      - START_WEB=0
