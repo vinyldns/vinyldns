@@ -4,20 +4,29 @@ ARG branch=master
 
 RUN git clone -b ${branch} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
 
-RUN cd /vinyldns ; sbt api/stage
+# Needed for preparePortal
+RUN apt-get update \
+    && apt-get install -y \
+    curl \
+    gnupg \
+    && curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g grunt-cli
+
+RUN cd /vinyldns ; sbt --debug portal/preparePortal universal:packageZipTarball
 
 FROM openjdk:8u201-jdk-alpine3.9
 
 RUN apk add --update --no-cache netcat-openbsd bash
 
-COPY --from=builder /vinyldns/modules/api/target/universal/stage /opt/docker
+COPY --from=builder /vinyldns/modules/portal/target/universal/portal.tgz /
+
+RUN mkdir -p /opt && tar -xzvf /portal.tgz && mv /portal /opt/docker && mkdir -p /opt/docker/lib_extra
 
 ARG BUILD_VERSION=unknown
 
 # This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
 ENV VINYLDNS_VERSION=$build_ver
-
-RUN mkdir -p /opt/docker/lib_extra
 
 # Mount the volume for config file and lib extras
 # Note: These volume names are used in the build.sbt
@@ -25,4 +34,4 @@ VOLUME ["/opt/docker/lib_extra/", "/opt/docker/conf"]
 
 EXPOSE 9000
 
-ENTRYPOINT ["/opt/docker/bin/api"]
+ENTRYPOINT ["/opt/docker/bin/portal"]
