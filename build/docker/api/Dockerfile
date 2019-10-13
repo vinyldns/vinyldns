@@ -1,10 +1,13 @@
 FROM hseeberger/scala-sbt:8u212_1.2.8_2.12.9 as builder
 
-ARG branch=master
+ARG BRANCH=master
+ARG VINYLDNS_VERSION
 
-RUN git clone -b ${branch} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
 
-RUN cd /vinyldns ; sbt api/stage
+COPY .jvmopts /vinyldns
+
+RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" api/stage
 
 FROM openjdk:8u201-jdk-alpine3.9
 
@@ -12,10 +15,11 @@ RUN apk add --update --no-cache netcat-openbsd bash
 
 COPY --from=builder /vinyldns/modules/api/target/universal/stage /opt/docker
 
-ARG BUILD_VERSION=unknown
-
 # This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ENV VINYLDNS_VERSION=$build_ver
+ARG VINYLDNS_VERSION
+ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
+
+RUN echo "VINYLDNS VERSION = ${VINYLDNS_VERSION}"
 
 RUN mkdir -p /opt/docker/lib_extra
 

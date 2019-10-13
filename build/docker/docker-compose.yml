@@ -11,24 +11,26 @@ services:
       - "19002:3306"
 
   bind9:
-    image: "vinyldns/test-bind9:${VINYLDNS_VERSION}"
+    build:
+      context: ./test-bind9
+      args:
+          BRANCH: master
     container_name: "vinyldns-bind9"
     ports:
       - "19001:53/udp"
       - "19001:53"
 
   api:
-    image: "vinyldns/api:${VINYLDNS_VERSION}"
+    build:
+      context: ./api
     container_name: "vinyldns-api"
-    env_file:
-      .env
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
       MYSQL_ROOT_HOST: '%'
     ports:
       - "9000:9000"
     volumes:
-      - ./docker.conf:/opt/docker/conf/application.conf
+      - ./api/application.conf:/opt/docker/conf/application.conf
     depends_on:
       - mysql
 
@@ -39,25 +41,25 @@ services:
       - "19008:389"
 
   portal:
-    image: "vinyldns/portal:${VINYLDNS_VERSION}"
+    build:
+      context: ./portal
     container_name: "vinyldns-portal"
-    env_file:
-      .env
+    environment:
+      MYSQL_ROOT_PASSWORD: 'pass'
+      MYSQL_ROOT_HOST: '%'
     ports:
       - "9001:9000"
     volumes:
-      - ./portal.conf:/opt/docker/conf/application.conf
+      - ./portal/application.conf:/opt/docker/conf/application.conf
     depends_on:
       - api
       - ldap
 
-#  functest:
-#    image: "vinyldns/functest:${VINYLDNS_VERSION}"
-#    env_file:
-#      .env
-#    environment:
-#      TEST_PATTERN: 'verify_production'
-#      PROD_ENV: 'true'
-#    container_name: "vinyldns-functest"
-#    depends_on:
-#      - api
+  functest:
+    build:
+      context: ./test
+    environment:
+      TEST_PATTERN: "verify_production"
+    container_name: "vinyldns-functest"
+    depends_on:
+      - api

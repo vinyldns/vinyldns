@@ -1,8 +1,8 @@
 FROM alpine/git:1.0.7 as gitcheckout
 
-ARG branch=master
+ARG BRANCH=master
 
-RUN git clone -b ${branch} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
 
 FROM python:2.7.16-alpine3.9
 

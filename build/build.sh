@@ -50,8 +50,15 @@ TEST_TAG="vinyldns/test:$VINYLDNS_VERSION"
 # TODO: MAKE SURE TO USE NO-CACHE ON ALL OF THESE WHEN READY !!!
 # TODO: USE DOCKER COMPOSE FOR BUILD AND BUILD IN PARALLEL !!!
 set -x
+
+docker-compose -f $CURDIR/docker/docker-compose.yml build \
+  --no-cache \
+  --parallel \
+  --build-arg VINYLDNS_VERSION="$VINYLDNS_VERSION" \
+  --build-arg BRANCH="master"
+
 #docker build -t $API_TAG $CURDIR/docker/api \
-#  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
+#  --build-arg VINYLDNS_VERSION="$VINYLDNS_VERSION"
 
 #docker build --no-cache -t $PORTAL_TAG $CURDIR/docker/portal \
 #  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
@@ -59,5 +66,5 @@ set -x
 #docker build --no-cache -t $BIND_TAG $CURDIR/docker/test-bind9 \
 #  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
 
-docker build --no-cache -t $TEST_TAG $CURDIR/docker/test \
-  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
+#docker build --no-cache -t $TEST_TAG $CURDIR/docker/test \
+#  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"

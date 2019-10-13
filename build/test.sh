@@ -20,4 +20,4 @@ while [ "$1" != "" ]; do
 done
 
 set -x
-docker-compose -f $CURDIR/docker/test/docker-compose.yml up -d
+docker-compose -f $CURDIR/docker/docker-compose.yml --log-level ERROR up --exit-code-from functest
