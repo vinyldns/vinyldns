@@ -1,14 +1,11 @@
-FROM vinyldns/bind9:0.0.4
+FROM alpine/git:1.0.7 as gitcheckout
 
 ARG branch=master
 
 RUN git clone -b ${branch} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
 
-COPY /vinyldns/docker/bind9/zones/* /var/cache/bind/zones/
+FROM vinyldns/bind9:0.0.5
 
-COPY /vinyldns/docker/bind9/etc/named.conf.local /var/cache/bind/config/named.conf.local
+COPY --from=gitcheckout /vinyldns/docker/bind9/zones/* /var/cache/bind/zones/
 
-ARG BUILD_VERSION=unknown
-
-# This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ENV VINYLDNS_VERSION=$build_ver
+COPY --from=gitcheckout /vinyldns/docker/bind9/etc/named.conf.local /var/cache/bind/config

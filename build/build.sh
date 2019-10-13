@@ -44,6 +44,7 @@ mkdir -p $DISTDIR
 echo "BUILDING $VINYLDNS_VERSION..."
 API_TAG="vinyldns/api:$VINYLDNS_VERSION"
 PORTAL_TAG="vinyldns/portal:$VINYLDNS_VERSION"
+BIND_TAG="vinyldns/test-bind9:$VINYLDNS_VERSION"
 
 # TODO: MAKE SURE TO USE NO-CACHE ON ALL OF THESE WHEN READY !!!
 # TODO: USE DOCKER COMPOSE FOR BUILD AND BUILD IN PARALLEL !!!
@@ -51,8 +52,8 @@ set -x
 #docker build -t $API_TAG $CURDIR/docker/api \
 #  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
 
-docker build --no-cache -t $PORTAL_TAG $CURDIR/docker/portal \
-  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
-
-#docker build -t $API_TAG $CURDIR/docker/bind9 \
+#docker build --no-cache -t $PORTAL_TAG $CURDIR/docker/portal \
 #  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
+
+docker build --no-cache -t $BIND_TAG $CURDIR/docker/test-bind9 \
+  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
