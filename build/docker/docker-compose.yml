@@ -10,12 +10,12 @@ services:
     ports:
       - "19002:3306"
 
-#  bind9:
-#    image: "vinyldns/test-bind9:${VINYLDNS_VERSION}"
-#    container_name: "vinyldns-bind9"
-#    ports:
-#      - "19001:53/udp"
-#      - "19001:53"
+  bind9:
+    image: "vinyldns/test-bind9:${VINYLDNS_VERSION}"
+    container_name: "vinyldns-bind9"
+    ports:
+      - "19001:53/udp"
+      - "19001:53"
 
   api:
     image: "vinyldns/api:${VINYLDNS_VERSION}"
