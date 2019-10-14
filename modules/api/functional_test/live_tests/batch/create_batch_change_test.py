@@ -1093,15 +1093,24 @@ def test_create_batch_change_with_bad_A_record_data_fails(shared_zone_test_conte
     Test creating a batch change with malformed A record address fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_A_data_request = {
+    bad_A_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("thing.thing.com.", address="bad address")
         ]
     }
-    errors = client.create_batch_change(bad_A_data_request, status=400)
 
-    assert_error(errors, error_messages=["A must be a valid IPv4 Address"])
+    bad_A_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("thing.thing.com.", address="bad address", change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_A_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_A_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["A must be a valid IPv4 Address"])
+    assert_error(error2, error_messages=["A must be a valid IPv4 Address"])
 
 
 def test_create_batch_change_with_bad_AAAA_record_data_fails(shared_zone_test_context):
@@ -1109,15 +1118,24 @@ def test_create_batch_change_with_bad_AAAA_record_data_fails(shared_zone_test_co
     Test creating a batch change with malformed AAAA record address fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_AAAA_data_request = {
+    bad_AAAA_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("thing.thing.com.", record_type="AAAA", address="bad address")
         ]
     }
-    errors = client.create_batch_change(bad_AAAA_data_request, status=400)
 
-    assert_error(errors, error_messages=["AAAA must be a valid IPv6 Address"])
+    bad_AAAA_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("thing.thing.com.", record_type="AAAA", address="bad address", change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_AAAA_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_AAAA_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["AAAA must be a valid IPv6 Address"])
+    assert_error(error2, error_messages=["AAAA must be a valid IPv6 Address"])
 
 
 def test_create_batch_change_with_incorrect_CNAME_record_attribute_fails(shared_zone_test_context):
@@ -1173,15 +1191,24 @@ def test_create_batch_change_with_bad_CNAME_record_attribute_fails(shared_zone_t
     Test creating a batch change with malformed CNAME record fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_CNAME_data_request = {
+    bad_CNAME_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_CNAME_json(input_name="bizz.baz.", cname="s." + "s" * 256)
         ]
     }
-    errors = client.create_batch_change(bad_CNAME_data_request, status=400)
 
-    assert_error(errors, error_messages=["CNAME domain name must not exceed 255 characters"])
+    bad_CNAME_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_CNAME_json(input_name="bizz.baz.", cname="s." + "s" * 256, change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_CNAME_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_CNAME_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["CNAME domain name must not exceed 255 characters"])
+    assert_error(error2, error_messages=["CNAME domain name must not exceed 255 characters"])
 
 
 def test_create_batch_change_with_bad_PTR_record_attribute_fails(shared_zone_test_context):
@@ -1189,16 +1216,24 @@ def test_create_batch_change_with_bad_PTR_record_attribute_fails(shared_zone_tes
     Test creating a batch change with malformed PTR record fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_PTR_data_request = {
+    bad_PTR_data_request_add = {
         "comments": "this is optional",
         "changes": [
-            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256)
+            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256),
         ]
     }
-    errors = client.create_batch_change(bad_PTR_data_request, status=400)
 
-    assert_error(errors, error_messages=["PTR must be less than 255 characters"])
+    bad_PTR_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256),
+        ]
+    }
+    error1 = client.create_batch_change(bad_PTR_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_PTR_data_request_delete_record_set, status=400)
 
+    assert_error(error1, error_messages=["PTR must be less than 255 characters"])
+    assert_error(error2, error_messages=["PTR must be less than 255 characters"])
 
 def test_create_batch_change_with_missing_input_name_for_delete_fails(shared_zone_test_context):
     """
@@ -1244,25 +1279,43 @@ def test_mx_recordtype_cannot_have_invalid_preference(shared_zone_test_context):
     """
     ok_client = shared_zone_test_context.ok_vinyldns_client
 
-    batch_change_input_low = {
+    batch_change_input_low_add = {
         "comments": "this is optional",
         "changes": [
             get_change_MX_json("too-small.ok.", preference=-1)
         ]
     }
 
-    batch_change_input_high = {
+    batch_change_input_high_add = {
         "comments": "this is optional",
         "changes": [
             get_change_MX_json("too-big.ok.", preference=65536)
         ]
     }
 
-    error_low = ok_client.create_batch_change(batch_change_input_low, status=400)
-    error_high = ok_client.create_batch_change(batch_change_input_high, status=400)
+    batch_change_input_low_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_MX_json("too-small.ok.", preference=-1, change_type="DeleteRecordSet")
+        ]
+    }
 
-    assert_error(error_low, error_messages=["MX.preference must be a 16 bit integer"])
-    assert_error(error_high, error_messages=["MX.preference must be a 16 bit integer"])
+    batch_change_input_high_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_MX_json("too-big.ok.", preference=65536, change_type="DeleteRecordSet")
+        ]
+    }
+
+    error_low_add = ok_client.create_batch_change(batch_change_input_low_add, status=400)
+    error_high_add = ok_client.create_batch_change(batch_change_input_high_add, status=400)
+    error_low_delete_record_set = ok_client.create_batch_change(batch_change_input_low_delete_record_set, status=400)
+    error_high_delete_record_set = ok_client.create_batch_change(batch_change_input_high_delete_record_set, status=400)
+
+    assert_error(error_low_add, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_high_add, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_low_delete_record_set, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_high_delete_record_set, error_messages=["MX.preference must be a 16 bit integer"])
 
 
 def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zone_test_context):
