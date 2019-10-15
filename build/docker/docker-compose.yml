@@ -6,7 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
       MYSQL_ROOT_HOST: '%'
-    container_name: "vinyldns-mysql"
+    logging:
+      driver: none
     ports:
       - "19002:3306"
 
@@ -16,6 +17,8 @@ services:
       args:
           BRANCH: master
     container_name: "vinyldns-bind9"
+    logging:
+      driver: none
     ports:
       - "19001:53/udp"
       - "19001:53"
@@ -27,6 +30,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
       MYSQL_ROOT_HOST: '%'
+    logging:
+      driver: none
     ports:
       - "9000:9000"
     volumes:
@@ -47,6 +52,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
       MYSQL_ROOT_HOST: '%'
+    logging:
+      driver: none
     ports:
       - "9001:9000"
     volumes:
@@ -59,7 +66,7 @@ services:
     build:
       context: ./test
     environment:
-      TEST_PATTERN: "verify_production"
+      TEST_PATTERN: "test_verify_production"
     container_name: "vinyldns-functest"
     depends_on:
       - api

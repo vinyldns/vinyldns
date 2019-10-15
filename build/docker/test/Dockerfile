@@ -15,14 +15,14 @@ COPY run-tests.py /app/run-tests.py
 RUN chmod a+x /app/run.sh && chmod a+x /app/run-tests.py
 
 # Copy over the functional test directory, this must have been copied into the build context previous to this building!
-COPY --from=gitcheckout /vinyldns/modules/api/functional_test/* /app/
+COPY --from=gitcheckout /vinyldns/modules/api/functional_test/ /app/
 
 # Install our func test requirements
 RUN pip install --index-url https://pypi.python.org/simple/ -r /app/requirements.txt
 
 ENV VINYLDNS_URL=""
 ENV DNS_IP=""
-ENV TEST_PATTERN="verify_production"
+ENV TEST_PATTERN="test_verify_production"
 
 # set the entry point for the container to start vinyl, specify the config resource
 ENTRYPOINT ["/app/run.sh"]

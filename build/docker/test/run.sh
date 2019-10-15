@@ -47,12 +47,30 @@ cd /app
 find . -name "*.pyc" -delete
 find . -name "__pycache__" -delete
 
+ls -al
+
 # -m plays havoc with -k, using variables is a headache, so doing this by hand
 # run parallel tests first (not serial)
-echo "./run-tests.py live_tests -n2 -v -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-./run-tests.py live_tests -n2 -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
-if [ $? -eq 0 ]; then
-  # run serial tests second (serial marker)
-  echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-  ./run-tests.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+set -x
+./run-tests.py live_tests -n2 -v -m "not skip_production and not serial" ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} --teardown=False
+ret1=$?
+
+# IMPORTANT! pytest exists status code 5 if no tests are run, force that to 0
+if [ "$ret1" = 5 ]; then
+  echo "No tests collected."
+  ret1=0
 fi
+
+./run-tests.py live_tests -n0 -v -m "not skip_production and serial" ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} --teardown=True
+ret2=$?
+if [ "$ret2" = 5 ]; then
+  echo "No tests collected."
+  ret2=0
+fi
+
+if [ $ret1 -ne 0 ] || [ $ret2 -ne 0 ]; then
+  exit 1
+else
+  exit 0
+fi
+

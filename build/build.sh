@@ -12,7 +12,6 @@ TAG=
 while [ "$1" != "" ]; do
 	case "$1" in
 		-t | --tag  	) TAG="$2";  shift;;
-		-c | --clean    	) CLEAN=1;;
 		* ) usage; exit;;
 	esac
 	shift
@@ -28,6 +27,7 @@ fi
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASEDIR=$CURDIR/../
 
+# Calculate the version by using version.sbut, this will pull out something like 0.9.4
 V=$(find $BASEDIR -name "version.sbt" | head -n1 | xargs grep "[ \\t]*version in ThisBuild :=" | head -n1 | sed 's/.*"\(.*\)".*/\1/')
 echo "VERSION IS ${V}..."
 if [[ "$V" == *-SNAPSHOT ]]
@@ -37,34 +37,12 @@ else
   export VINYLDNS_VERSION="$V${BUILD_TAG}"
 fi
 
-echo "ENSURING DIST DIR..."
-DISTDIR=$CURDIR/dist
-mkdir -p $DISTDIR
-
 echo "BUILDING $VINYLDNS_VERSION..."
-API_TAG="vinyldns/api:$VINYLDNS_VERSION"
-PORTAL_TAG="vinyldns/portal:$VINYLDNS_VERSION"
-BIND_TAG="vinyldns/test-bind9:$VINYLDNS_VERSION"
-TEST_TAG="vinyldns/test:$VINYLDNS_VERSION"
-
-# TODO: MAKE SURE TO USE NO-CACHE ON ALL OF THESE WHEN READY !!!
-# TODO: USE DOCKER COMPOSE FOR BUILD AND BUILD IN PARALLEL !!!
 set -x
 
+# Builds the images
 docker-compose -f $CURDIR/docker/docker-compose.yml build \
   --no-cache \
   --parallel \
   --build-arg VINYLDNS_VERSION="$VINYLDNS_VERSION" \
   --build-arg BRANCH="master"
-
-#docker build -t $API_TAG $CURDIR/docker/api \
-#  --build-arg VINYLDNS_VERSION="$VINYLDNS_VERSION"
-
-#docker build --no-cache -t $PORTAL_TAG $CURDIR/docker/portal \
-#  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
-
-#docker build --no-cache -t $BIND_TAG $CURDIR/docker/test-bind9 \
-#  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"
-
-#docker build --no-cache -t $TEST_TAG $CURDIR/docker/test \
-#  --build-arg BUILD_VERSION="$VINYLDNS_VERSION"

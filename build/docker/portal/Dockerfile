@@ -5,6 +5,7 @@ ARG VINYLDNS_VERSION
 
 RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
 
+# The default jvmopts are huge, meant for running everything, use a paired down version
 COPY .jvmopts /vinyldns
 
 # Needed for preparePortal
