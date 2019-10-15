@@ -175,10 +175,7 @@ class BatchChangeValidations(
       isApproved: Boolean): ValidatedBatch[ChangeInput] =
     input.map {
       case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
-      case d: DeleteRRSetChangeInput => validateInputName(d, isApproved).map(_ => d)
-      // TODO: Add DeleteRecordChangeInput validations
-      case _: DeleteRecordChangeInput =>
-        UnsupportedOperation("DeleteRecordChangeInput").invalidNel
+      case d: DeleteRRSetChangeInput => validateDeleteRRSetChangeInput(d, isApproved).map(_ => d)
     }
 
   def validateAddChangeInput(
@@ -189,6 +186,18 @@ class BatchChangeValidations(
     val validInput = validateInputName(addChangeInput, isApproved)
 
     validTTL |+| validRecord |+| validInput
+  }
+
+  def validateDeleteRRSetChangeInput(
+      deleteRRSetChangeInput: DeleteRRSetChangeInput,
+      isApproved: Boolean): SingleValidation[Unit] = {
+    val validRecord = deleteRRSetChangeInput.record match {
+      case Some(recordData) => validateRecordData(recordData)
+      case None => ().validNel
+    }
+    val validInput = validateInputName(deleteRRSetChangeInput, isApproved)
+
+    validRecord |+| validInput
   }
 
   def validateRecordData(record: RecordData): SingleValidation[Unit] =
@@ -286,13 +295,14 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
     change match {
       // For DeleteRecord inputs, need to verify that the record data actually exists
-      case deleteRecord: DeleteRecordChangeForValidation
+      case DeleteRRSetChangeForValidation(
+          _,
+          _,
+          DeleteRRSetChangeInput(inputName, _, Some(recordData)))
           if !groupedChanges
             .getExistingRecordSet(change.recordKey)
-            .exists(_.records.contains(deleteRecord.inputChange.record)) =>
-        DeleteRecordDataDoesNotExist(
-          deleteRecord.inputChange.inputName,
-          deleteRecord.inputChange.record).invalidNel
+            .exists(_.records.contains(recordData)) =>
+        DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
       case _ =>
         ().validNel
     }
@@ -496,7 +506,7 @@ class BatchChangeValidations(
         input.inputChange.typ,
         input.zone,
         ownerGroupId,
-        addRecords.toList
+        addRecords
       )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }

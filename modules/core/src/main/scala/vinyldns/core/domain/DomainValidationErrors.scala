@@ -186,7 +186,7 @@ final case class UnsupportedOperation(operation: String) extends DomainValidatio
 
 final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: RecordData)
     extends DomainValidationError {
-  def message: String = s"Record data $recordData does not exist for $inputName."
+  def message: String = s"""Record data $recordData does not exist for "$inputName"."""
 }
 
 // $COVERAGE-ON$

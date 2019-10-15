@@ -116,6 +116,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         Some("testRname"),
         "testRname.testZoneName.",
         A,
+        None,
         SingleChangeStatus.NeedsReview,
         Some("msg"),
         None,

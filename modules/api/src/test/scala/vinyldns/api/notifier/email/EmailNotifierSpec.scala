@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
 import vinyldns.core.notifier.NotifierConfig
 
 object MockTransport extends MockitoSugar {
-  val mockTransport = mock[Transport]
+  val mockTransport: Transport = mock[Transport]
 }
 
 class MockTransport(session: Session, urlname: URLName) extends Transport(session, urlname) {
@@ -64,8 +64,8 @@ class EmailNotifierSpec
 
   import MockTransport._
 
-  val mockUserRepository = mock[UserRepository]
-  val session = Session.getInstance(new Properties())
+  val mockUserRepository: UserRepository = mock[UserRepository]
+  val session: Session = Session.getInstance(new Properties())
   session.setProvider(
     new Provider(
       Provider.Type.TRANSPORT,
@@ -183,6 +183,7 @@ class EmailNotifierSpec
           Some(""),
           "deleteme.test.com",
           RecordType.A,
+          None,
           SingleChangeStatus.Failed,
           Some("message for you"),
           None,
@@ -193,13 +194,13 @@ class EmailNotifierSpec
 
       notifier.notify(Notification(change)).unsafeRunSync()
 
-      val message = messageArgument.getValue()
+      val message = messageArgument.getValue
 
-      message.getFrom() should be(Array(fromAddress))
-      message.getContentType() should be("text/html; charset=us-ascii")
-      message.getAllRecipients() should be(expectedAddresses)
-      message.getSubject() should be("VinylDNS Batch change testBatch results")
-      val content = message.getContent().asInstanceOf[String]
+      message.getFrom should be(Array(fromAddress))
+      message.getContentType should be("text/html; charset=us-ascii")
+      message.getAllRecipients should be(expectedAddresses)
+      message.getSubject should be("VinylDNS Batch change testBatch results")
+      val content = message.getContent.asInstanceOf[String]
 
       content.contains(change.id) should be(true)
       content.contains(description) should be(true)
@@ -220,11 +221,13 @@ class EmailNotifierSpec
               case _ => row.contains(ac.recordData) should be(true)
             }
             row.contains(ac.ttl.toString) should be(true)
-          case _: SingleDeleteRRSetChange =>
+          case dc: SingleDeleteRRSetChange =>
             row.contains("Delete") should be(true)
-          case dc: SingleDeleteRecordChange =>
-            row.contains("Delete") should be(true)
-            row.contains(dc.recordData) should be(true)
+            dc.recordData match {
+              case Some(AData(address)) => row.contains(address) should be(true)
+              case Some(recordData) => row.contains(recordData) should be(true)
+              case None => row.contains(dc.recordData) should be(false)
+            }
         }
       }
 

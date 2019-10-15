@@ -45,8 +45,6 @@ sealed trait SingleChange {
       add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
     case delete: SingleDeleteRRSetChange =>
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
-    case delete: SingleDeleteRecordChange =>
-      delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
@@ -57,11 +55,6 @@ sealed trait SingleChange {
           systemMessage = message,
           recordChangeId = Some(failedRecordChangeId))
       case delete: SingleDeleteRRSetChange =>
-        delete.copy(
-          status = SingleChangeStatus.Failed,
-          systemMessage = message,
-          recordChangeId = Some(failedRecordChangeId))
-      case delete: SingleDeleteRecordChange =>
         delete.copy(
           status = SingleChangeStatus.Failed,
           systemMessage = message,
@@ -79,31 +72,22 @@ sealed trait SingleChange {
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId))
-    case delete: SingleDeleteRecordChange =>
-      delete.copy(
-        status = SingleChangeStatus.Complete,
-        recordChangeId = Some(completeRecordChangeId),
-        recordSetId = Some(recordSetId))
   }
 
   def reject: SingleChange = this match {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
     case sdc: SingleDeleteRRSetChange => sdc.copy(status = SingleChangeStatus.Rejected)
-    case sdrc: SingleDeleteRecordChange => sdrc.copy(status = SingleChangeStatus.Rejected)
   }
 
   def cancel: SingleChange = this match {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Cancelled)
     case sdc: SingleDeleteRRSetChange => sdc.copy(status = SingleChangeStatus.Cancelled)
-    // TODO: Implement cancel once DeleteRecord is connected in batch change process flow
-    case _ => throw new RuntimeException("Not yet implemented")
   }
 
   def updateValidationErrors(errors: List[SingleChangeError]): SingleChange =
     this match {
       case sad: SingleAddChange => sad.copy(validationErrors = errors)
       case sdc: SingleDeleteRRSetChange => sdc.copy(validationErrors = errors)
-      case sdrc: SingleDeleteRecordChange => sdrc.copy(validationErrors = errors)
     }
 }
 
@@ -129,21 +113,7 @@ final case class SingleDeleteRRSetChange(
     recordName: Option[String],
     inputName: String,
     typ: RecordType,
-    status: SingleChangeStatus,
-    systemMessage: Option[String],
-    recordChangeId: Option[String],
-    recordSetId: Option[String],
-    validationErrors: List[SingleChangeError] = List.empty,
-    id: String = UUID.randomUUID().toString)
-    extends SingleChange
-
-final case class SingleDeleteRecordChange(
-    zoneId: Option[String],
-    zoneName: Option[String],
-    recordName: Option[String],
-    inputName: String,
-    typ: RecordType,
-    recordData: RecordData,
+    recordData: Option[RecordData],
     status: SingleChangeStatus,
     systemMessage: Option[String],
     recordChangeId: Option[String],

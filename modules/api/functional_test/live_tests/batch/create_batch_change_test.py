@@ -92,7 +92,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         "changes": [
             get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
             get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60"),
-            get_change_A_AAAA_json("relative.parent.com.", address="1.1.1.1"),
+            get_change_A_AAAA_json("relative.parent.com."),
             get_change_CNAME_json("CNAME.PARENT.COM", cname="nice.parent.com"),
             get_change_CNAME_json("_2cname.parent.com", cname="nice.parent.com"),
             get_change_CNAME_json("4.2.0.192.in-addr.arpa.", cname="4.4/30.2.0.192.in-addr.arpa."),
@@ -420,7 +420,7 @@ def test_create_batch_change_with_zone_discovery_error_without_owner_group_fails
 
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("some.non-existent.zone.", address="1.1.1.1")
+            get_change_A_AAAA_json("some.non-existent.zone.")
         ]
     }
 
@@ -926,7 +926,7 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
             get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:0"),
             get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:0", change_type="DeleteRecordSet"),
 
-            get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
+            get_change_A_AAAA_json("i-can-be-touched.ok.")
         ]
     }
 
@@ -985,7 +985,7 @@ def test_create_batch_change_with_domains_requiring_review_succeeds(shared_zone_
             get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:2"),
             get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:2", change_type="DeleteRecordSet"),
 
-            get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
+            get_change_A_AAAA_json("i-can-be-touched.ok.")
         ]
     }
     response = None
@@ -1093,15 +1093,24 @@ def test_create_batch_change_with_bad_A_record_data_fails(shared_zone_test_conte
     Test creating a batch change with malformed A record address fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_A_data_request = {
+    bad_A_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("thing.thing.com.", address="bad address")
         ]
     }
-    errors = client.create_batch_change(bad_A_data_request, status=400)
 
-    assert_error(errors, error_messages=["A must be a valid IPv4 Address"])
+    bad_A_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("thing.thing.com.", address="bad address", change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_A_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_A_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["A must be a valid IPv4 Address"])
+    assert_error(error2, error_messages=["A must be a valid IPv4 Address"])
 
 
 def test_create_batch_change_with_bad_AAAA_record_data_fails(shared_zone_test_context):
@@ -1109,15 +1118,24 @@ def test_create_batch_change_with_bad_AAAA_record_data_fails(shared_zone_test_co
     Test creating a batch change with malformed AAAA record address fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_AAAA_data_request = {
+    bad_AAAA_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("thing.thing.com.", record_type="AAAA", address="bad address")
         ]
     }
-    errors = client.create_batch_change(bad_AAAA_data_request, status=400)
 
-    assert_error(errors, error_messages=["AAAA must be a valid IPv6 Address"])
+    bad_AAAA_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("thing.thing.com.", record_type="AAAA", address="bad address", change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_AAAA_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_AAAA_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["AAAA must be a valid IPv6 Address"])
+    assert_error(error2, error_messages=["AAAA must be a valid IPv6 Address"])
 
 
 def test_create_batch_change_with_incorrect_CNAME_record_attribute_fails(shared_zone_test_context):
@@ -1173,15 +1191,24 @@ def test_create_batch_change_with_bad_CNAME_record_attribute_fails(shared_zone_t
     Test creating a batch change with malformed CNAME record fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_CNAME_data_request = {
+    bad_CNAME_data_request_add = {
         "comments": "this is optional",
         "changes": [
             get_change_CNAME_json(input_name="bizz.baz.", cname="s." + "s" * 256)
         ]
     }
-    errors = client.create_batch_change(bad_CNAME_data_request, status=400)
 
-    assert_error(errors, error_messages=["CNAME domain name must not exceed 255 characters"])
+    bad_CNAME_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_CNAME_json(input_name="bizz.baz.", cname="s." + "s" * 256, change_type="DeleteRecordSet")
+        ]
+    }
+    error1 = client.create_batch_change(bad_CNAME_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_CNAME_data_request_delete_record_set, status=400)
+
+    assert_error(error1, error_messages=["CNAME domain name must not exceed 255 characters"])
+    assert_error(error2, error_messages=["CNAME domain name must not exceed 255 characters"])
 
 
 def test_create_batch_change_with_bad_PTR_record_attribute_fails(shared_zone_test_context):
@@ -1189,16 +1216,24 @@ def test_create_batch_change_with_bad_PTR_record_attribute_fails(shared_zone_tes
     Test creating a batch change with malformed PTR record fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    bad_PTR_data_request = {
+    bad_PTR_data_request_add = {
         "comments": "this is optional",
         "changes": [
-            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256)
+            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256),
         ]
     }
-    errors = client.create_batch_change(bad_PTR_data_request, status=400)
 
-    assert_error(errors, error_messages=["PTR must be less than 255 characters"])
+    bad_PTR_data_request_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_PTR_json("4.5.6.7", ptrdname="s" * 256),
+        ]
+    }
+    error1 = client.create_batch_change(bad_PTR_data_request_add, status=400)
+    error2 = client.create_batch_change(bad_PTR_data_request_delete_record_set, status=400)
 
+    assert_error(error1, error_messages=["PTR must be less than 255 characters"])
+    assert_error(error2, error_messages=["PTR must be less than 255 characters"])
 
 def test_create_batch_change_with_missing_input_name_for_delete_fails(shared_zone_test_context):
     """
@@ -1244,25 +1279,43 @@ def test_mx_recordtype_cannot_have_invalid_preference(shared_zone_test_context):
     """
     ok_client = shared_zone_test_context.ok_vinyldns_client
 
-    batch_change_input_low = {
+    batch_change_input_low_add = {
         "comments": "this is optional",
         "changes": [
             get_change_MX_json("too-small.ok.", preference=-1)
         ]
     }
 
-    batch_change_input_high = {
+    batch_change_input_high_add = {
         "comments": "this is optional",
         "changes": [
             get_change_MX_json("too-big.ok.", preference=65536)
         ]
     }
 
-    error_low = ok_client.create_batch_change(batch_change_input_low, status=400)
-    error_high = ok_client.create_batch_change(batch_change_input_high, status=400)
+    batch_change_input_low_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_MX_json("too-small.ok.", preference=-1, change_type="DeleteRecordSet")
+        ]
+    }
 
-    assert_error(error_low, error_messages=["MX.preference must be a 16 bit integer"])
-    assert_error(error_high, error_messages=["MX.preference must be a 16 bit integer"])
+    batch_change_input_high_delete_record_set = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_MX_json("too-big.ok.", preference=65536, change_type="DeleteRecordSet")
+        ]
+    }
+
+    error_low_add = ok_client.create_batch_change(batch_change_input_low_add, status=400)
+    error_high_add = ok_client.create_batch_change(batch_change_input_high_add, status=400)
+    error_low_delete_record_set = ok_client.create_batch_change(batch_change_input_low_delete_record_set, status=400)
+    error_high_delete_record_set = ok_client.create_batch_change(batch_change_input_high_delete_record_set, status=400)
+
+    assert_error(error_low_add, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_high_add, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_low_delete_record_set, error_messages=["MX.preference must be a 16 bit integer"])
+    assert_error(error_high_delete_record_set, error_messages=["MX.preference must be a 16 bit integer"])
 
 
 def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zone_test_context):
@@ -3012,14 +3065,14 @@ def test_user_validation_ownership(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("add-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("add-test-batch.non.test.shared."),
             get_change_A_AAAA_json("update-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("update-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared."),
             get_change_A_AAAA_json("delete-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
 
-            get_change_A_AAAA_json("add-test-batch.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("add-test-batch.shared."),
             get_change_A_AAAA_json("update-test-batch.shared.", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("update-test-batch.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.shared."),
             get_change_A_AAAA_json("delete-test-batch.shared.", change_type="DeleteRecordSet"),
         ],
         "ownerGroupId": "shared-zone-group"
@@ -3054,9 +3107,9 @@ def test_user_validation_shared(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("add-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("add-test-batch.non.test.shared."),
             get_change_A_AAAA_json("update-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("update-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared."),
             get_change_A_AAAA_json("delete-test-batch.non.test.shared.", change_type="DeleteRecordSet")
         ],
         "ownerGroupId": shared_zone_test_context.ok_group['id']
@@ -3497,7 +3550,7 @@ def test_create_batch_change_validation_without_owner_group_id(shared_zone_test_
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_create_batch_delete_record_for_unassociated_user_in_owner_group_succeeds(shared_zone_test_context):
+def test_create_batch_delete_recordset_for_unassociated_user_in_owner_group_succeeds(shared_zone_test_context):
     """
     Test delete change in batch for a record in a shared zone for an unassociated user belonging to the record owner group succeeds
     """
@@ -3528,7 +3581,7 @@ def test_create_batch_delete_record_for_unassociated_user_in_owner_group_succeed
                                           change_type="DeleteRecordSet")
 
 
-def test_create_batch_delete_record_for_unassociated_user_not_in_owner_group_fails(shared_zone_test_context):
+def test_create_batch_delete_recordset_for_unassociated_user_not_in_owner_group_fails(shared_zone_test_context):
     """
     Test delete change in batch for a record in a shared zone for an unassociated user not belonging to the record owner group fails
     """
@@ -3565,7 +3618,7 @@ def test_create_batch_delete_record_for_unassociated_user_not_in_owner_group_fai
             shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
 
 
-def test_create_batch_delete_record_for_zone_admin_not_in_owner_group_succeeds(shared_zone_test_context):
+def test_create_batch_delete_recordset_for_zone_admin_not_in_owner_group_succeeds(shared_zone_test_context):
     """
     Test delete change in batch for a record in a shared zone for a zone admin not belonging to the record owner group succeeds
     """
@@ -3664,7 +3717,7 @@ def test_create_batch_with_global_acl_rule_applied_succeeds(shared_zone_test_con
         "changes": [
             get_change_A_AAAA_json(a_fqdn, record_type="A", ttl=200, address="192.0.2.44"),
             get_change_PTR_json("192.0.2.44", ptrdname=a_fqdn),
-            get_change_A_AAAA_json(a_fqdn, record_type="A", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_fqdn, record_type="A", address="1.1.1.1", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.44", change_type="DeleteRecordSet")
         ]
     }
@@ -3753,6 +3806,7 @@ def test_create_batch_with_irrelevant_global_acl_rule_applied_fails(shared_zone_
             shared_client.wait_until_recordset_change_status(delete_a_rs, 'Complete')
 
 
+@pytest.mark.multi_record_disabled
 @pytest.mark.serial
 @pytest.mark.skip_production
 def test_create_batch_duplicates_add_check(shared_zone_test_context):
@@ -3794,8 +3848,76 @@ def test_create_batch_duplicates_add_check(shared_zone_test_context):
     assert_error(response[7], error_messages=[err("multi-mx.ok.", "MX")])
 
 
+@pytest.mark.manual_batch_review
+def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_context):
+    """
+    Confirm that individual changes matching zone names requiring review get correctly flagged for manual review
+    """
+    rejecter = shared_zone_test_context.support_user_client
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("add-test-batch.zone.requires.review."),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review."),
+            get_change_A_AAAA_json("delete-test-batch.zone.requires.review.", change_type="DeleteRecordSet")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    response = None
+
+    try:
+        response = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(response['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        for i in xrange(0, 3):
+            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
+            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+
+    finally:
+        # Clean up so data doesn't change
+        if response:
+            rejecter.reject_batch_change(response['id'], status=200)
+
+def test_create_batch_delete_record_for_invalid_record_data_fails(shared_zone_test_context):
+    """
+    Test delete record set fails for non-existent record and non-existent record data
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    a_delete_name = generate_record_name()
+    a_delete_fqdn = a_delete_name + ".ok."
+    a_delete = get_recordset_json(shared_zone_test_context.ok_zone, a_delete_fqdn, "A", [{"address": "1.1.1.1"}])
+
+    batch_change_input = {
+        "comments": "test delete record failures",
+        "changes": [
+            get_change_A_AAAA_json("delete-non-existent-record.ok.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_delete_fqdn, address="4.5.6.7", change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+
+    try:
+        create_rs = client.create_recordset(a_delete, status=202)
+        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+
+        errors = client.create_batch_change(batch_change_input, status=400)
+
+        assert_failed_change_in_error_response(errors[0], input_name="delete-non-existent-record.ok.", record_data="1.1.1.1", change_type="DeleteRecordSet",
+                                               error_messages=['Record "delete-non-existent-record.ok." Does Not Exist: cannot delete a record that does not exist.'])
+        assert_failed_change_in_error_response(errors[1], input_name=a_delete_fqdn, record_data="4.5.6.7", change_type="DeleteRecordSet",
+                                               error_messages=['Record data AData(4.5.6.7) does not exist for "' + a_delete_fqdn + '".'])
+
+    finally:
+        clear_recordset_list(to_delete, client)
+
+@pytest.mark.multi_record_disabled
 @pytest.mark.skip_production
-def test_create_batch_duplicates_update_check(shared_zone_test_context):
+def test_create_batch_multi_record_update_fails(shared_zone_test_context):
     """
     Test recordsets with multiple records cannot be edited in batch (relies on config, skip-prod)
     """
@@ -3869,47 +3991,75 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         clear_recordset_list(to_delete, client)
 
 
-@pytest.mark.manual_batch_review
-def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_context):
+@pytest.mark.multi_record_disabled
+def test_create_batch_deletes_fails(shared_zone_test_context):
     """
-    Confirm that individual changes matching zone names requiring review get correctly flagged for manual review
-    """
-    rejecter = shared_zone_test_context.support_user_client
-    client = shared_zone_test_context.ok_vinyldns_client
-    batch_change_input = {
-        "changes": [
-            get_change_A_AAAA_json("add-test-batch.zone.requires.review.", address="1.1.1.1"),
-            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", address="1.1.1.1"),
-            get_change_A_AAAA_json("delete-test-batch.zone.requires.review.", change_type="DeleteRecordSet")
-        ],
-        "ownerGroupId": shared_zone_test_context.ok_group['id']
-    }
-
-    response = None
-
-    try:
-        response = client.create_batch_change(batch_change_input, status=202)
-        get_batch = client.get_batch_change(response['id'])
-        assert_that(get_batch['status'], is_('PendingReview'))
-        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
-        for i in xrange(0, 3):
-            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
-            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
-
-    finally:
-        # Clean up so data doesn't change
-        if response:
-            rejecter.reject_batch_change(response['id'], status=200)
-
-
-def test_create_batch_delete_record_fails(shared_zone_test_context):
-    """
-    Test creating batch change with DeleteRecord change input type is not recognized
+    Test creating batch change with DeleteRecordSets when multi-record support is disabled
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
     ok_group = shared_zone_test_context.ok_group
+
+    rs_name = generate_record_name()
+    rs_name_2 = generate_record_name()
+    multi_rs_name = generate_record_name()
+    multi_rs_name_2 = generate_record_name()
+    rs_fqdn = rs_name + ".ok."
+    rs_fqdn_2 = rs_name + ".ok."
+    multi_rs_fqdn = multi_rs_name + ".ok."
+    multi_rs_fqdn_2 = multi_rs_name_2 + ".ok."
+    rs_to_create = get_recordset_json(ok_zone, rs_name, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
+    rs_to_create_2 = get_recordset_json(ok_zone, rs_name_2, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
+    multi_record_rs_to_create = get_recordset_json(ok_zone, multi_rs_name, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
+    multi_record_rs_to_create_2 = get_recordset_json(ok_zone, multi_rs_name_2, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json(rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_fqdn_2, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(multi_rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(multi_rs_fqdn_2, change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+
+    try:
+        create_rs = client.create_recordset(rs_to_create, status=202)
+        create_rs_2 = client.create_recordset(rs_to_create_2, status=202)
+        create_multi_rs = client.create_recordset(multi_record_rs_to_create, status=202)
+        create_multi_rs_2 = client.create_recordset(multi_record_rs_to_create_2, status=202)
+        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_rs_2, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs_2, 'Complete'))
+
+        response = client.create_batch_change(batch_change_input, status=400)
+
+        assert_successful_change_in_error_response(response[0], input_name=rs_fqdn, record_type="A", record_data="1.2.3.4", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], input_name=rs_fqdn_2, record_type="A", change_type="DeleteRecordSet")
+        assert_failed_change_in_error_response(response[2], input_name=multi_rs_fqdn, record_type="A", record_data="1.2.3.4", change_type="DeleteRecordSet",
+                                               error_messages=['RecordSet with name ' + multi_rs_fqdn + ' and type A cannot be updated in a single Batch Change because it contains multiple DNS records (2).'])
+        assert_failed_change_in_error_response(response[3], input_name=multi_rs_fqdn_2, record_type="A", change_type="DeleteRecordSet",
+                                               error_messages=['RecordSet with name ' + multi_rs_fqdn_2 + ' and type A cannot be updated in a single Batch Change because it contains multiple DNS records (2).'])
+
+    finally:
+        clear_recordset_list(to_delete, client)
+
+
+@pytest.mark.multi_record_disabled
+@pytest.mark.serial
+@pytest.mark.skip_production
+def test_create_batch_change_with_multi_record_adds_without_multi_record_support(shared_zone_test_context):
+    """
+    Test new recordsets with multiple records cannot be added in batch, and existing recordsets cannot be added to
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    ok_group = shared_zone_test_context.ok_group
+
+    to_delete = []
 
     rs_name = generate_record_name()
     rs_fqdn = rs_name + ".ok."
@@ -3918,19 +4068,421 @@ def test_create_batch_delete_record_fails(shared_zone_test_context):
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json(rs_fqdn, change_type="DeleteRecord")
+            get_change_A_AAAA_json("multi.ok.", address="1.2.3.4"),
+            get_change_A_AAAA_json("multi.ok.", address="4.5.6.7"),
+            get_change_PTR_json("192.0.2.44", ptrdname="multi.test"),
+            get_change_PTR_json("192.0.2.44", ptrdname="multi2.test"),
+            get_change_TXT_json("multi-txt.ok.", text="some-multi-text"),
+            get_change_TXT_json("multi-txt.ok.", text="more-multi-text"),
+            get_change_MX_json("multi-mx.ok.", preference=0),
+            get_change_MX_json("multi-mx.ok.", preference=1000, exchange="bar.foo."),
+            get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
         ]
     }
 
-    create_rs = None
     try:
         create_rs = client.create_recordset(rs_to_create, status=202)
-        client.wait_until_recordset_change_status(create_rs, 'Complete')
+        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+        response = client.create_batch_change(batch_change_input, status=400)
 
-        # TODO: Update this when DeleteRecord is supported
-        client.create_batch_change(batch_change_input, status=400)
+        def err(name, type):
+            return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
+                   'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name,
+                                                                                                               type)
+
+        assert_error(response[0], error_messages=[err("multi.ok.", "A")])
+        assert_error(response[1], error_messages=[err("multi.ok.", "A")])
+        assert_error(response[2], error_messages=[err("192.0.2.44", "PTR")])
+        assert_error(response[3], error_messages=[err("192.0.2.44", "PTR")])
+        assert_error(response[4], error_messages=[err("multi-txt.ok.", "TXT")])
+        assert_error(response[5], error_messages=[err("multi-txt.ok.", "TXT")])
+        assert_error(response[6], error_messages=[err("multi-mx.ok.", "MX")])
+        assert_error(response[7], error_messages=[err("multi-mx.ok.", "MX")])
+        assert_failed_change_in_error_response(response[8], input_name=rs_fqdn, record_data="1.1.1.1",
+                                               error_messages=['Record "' + rs_fqdn + '" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
 
     finally:
-        if create_rs:
-            delete_rs = client.delete_recordset(ok_zone['id'], create_rs['recordSet']['id'], status=202)
-            client.wait_until_recordset_change_status(delete_rs, 'Complete')
+        clear_recordset_list(to_delete, client)
+
+
+@pytest.mark.multi_record_enabled
+@pytest.mark.serial
+def test_create_batch_delete_record_access_checks(shared_zone_test_context):
+    """
+    Test access for full-delete DeleteRecord (delete) and non-full-delete DeleteRecord (update)
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    dummy_group_id = shared_zone_test_context.dummy_group['id']
+
+    a_delete_acl = generate_acl_rule('Delete', groupId=dummy_group_id, recordMask='.*', recordTypes=['A'])
+    txt_write_acl = generate_acl_rule('Write', groupId=dummy_group_id, recordMask='.*', recordTypes=['TXT'])
+
+    a_update_name = generate_record_name()
+    a_update_fqdn = a_update_name + ".ok."
+    a_update = get_recordset_json(ok_zone, a_update_name, "A", [{"address": "1.1.1.1"}])
+
+    a_delete_name = generate_record_name()
+    a_delete_fqdn = a_delete_name + ".ok."
+    a_delete = get_recordset_json(ok_zone, a_delete_name, "A", [{"address": "1.1.1.1"}])
+
+    txt_update_name = generate_record_name()
+    txt_update_fqdn = txt_update_name + ".ok."
+    txt_update = get_recordset_json(ok_zone, txt_update_name, "TXT", [{"text": "test"}])
+
+    txt_delete_name = generate_record_name()
+    txt_delete_fqdn = txt_delete_name + ".ok."
+    txt_delete = get_recordset_json(ok_zone, txt_delete_name, "TXT", [{"text": "test"}])
+
+    batch_change_input = {
+        "comments": "Testing DeleteRecord access levels",
+        "changes": [
+            get_change_A_AAAA_json(a_update_fqdn, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_update_fqdn, address="4.5.6.7"),
+            get_change_A_AAAA_json(a_delete_fqdn, change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_fqdn, change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_fqdn, text="updated text"),
+            get_change_TXT_json(txt_delete_fqdn, change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+    try:
+        add_ok_acl_rules(shared_zone_test_context, [a_delete_acl, txt_write_acl])
+
+        for create_json in [a_update, a_delete, txt_update, txt_delete]:
+            create_result = ok_client.create_recordset(create_json, status=202)
+            to_delete.append(ok_client.wait_until_recordset_change_status(create_result, 'Complete'))
+
+        response = dummy_client.create_batch_change(batch_change_input, status=400)
+
+        assert_successful_change_in_error_response(response[0], input_name=a_update_fqdn, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], input_name=a_update_fqdn, record_data="4.5.6.7")
+        assert_successful_change_in_error_response(response[2], input_name=a_delete_fqdn, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[3], input_name=txt_update_fqdn, record_type="TXT", record_data="test", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=txt_update_fqdn, record_type="TXT", record_data="updated text")
+        assert_failed_change_in_error_response(response[5], input_name=txt_delete_fqdn, record_type="TXT", record_data="test", change_type="DeleteRecordSet",
+                                               error_messages=['User "dummy" is not authorized.'])
+
+    finally:
+        clear_ok_acl_rules(shared_zone_test_context)
+        clear_recordset_list(to_delete, ok_client)
+
+
+@pytest.mark.multi_record_enabled
+@pytest.mark.skip_production
+def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
+    """
+    Test record sets with multiple records can be added, updated and deleted in batch (relies on skip-prod)
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+
+    # record sets to setup
+    a_update_record_set_name = generate_record_name()
+    a_update_record_set_fqdn = a_update_record_set_name + ".ok."
+    a_update_record_set = get_recordset_json(ok_zone, a_update_record_set_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_update_record_set_name = generate_record_name()
+    txt_update_record_set_fqdn = txt_update_record_set_name + ".ok."
+    txt_update_record_set = get_recordset_json(ok_zone, txt_update_record_set_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_update_record_full_name = generate_record_name()
+    a_update_record_full_fqdn = a_update_record_full_name + ".ok."
+    a_update_record_full = get_recordset_json(ok_zone, a_update_record_full_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_update_record_full_name = generate_record_name()
+    txt_update_record_full_fqdn = txt_update_record_full_name + ".ok."
+    txt_update_record_full = get_recordset_json(ok_zone, txt_update_record_full_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_update_record_name = generate_record_name()
+    a_update_record_fqdn = a_update_record_name + ".ok."
+    a_update_record = get_recordset_json(ok_zone, a_update_record_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_update_record_name = generate_record_name()
+    txt_update_record_fqdn = txt_update_record_name + ".ok."
+    txt_update_record = get_recordset_json(ok_zone, txt_update_record_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_update_record_only_name = generate_record_name()
+    a_update_record_only_fqdn = a_update_record_only_name + ".ok."
+    a_update_record_only = get_recordset_json(ok_zone, a_update_record_only_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_update_record_only_name = generate_record_name()
+    txt_update_record_only_fqdn = txt_update_record_only_name + ".ok."
+    txt_update_record_only = get_recordset_json(ok_zone, txt_update_record_only_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_delete_record_set_name = generate_record_name()
+    a_delete_record_set_fqdn = a_delete_record_set_name + ".ok."
+    a_delete_record_set = get_recordset_json(ok_zone, a_delete_record_set_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_delete_record_set_name = generate_record_name()
+    txt_delete_record_set_fqdn = txt_delete_record_set_name + ".ok."
+    txt_delete_record_set = get_recordset_json(ok_zone, txt_delete_record_set_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_delete_record_name = generate_record_name()
+    a_delete_record_fqdn = a_delete_record_name + ".ok."
+    a_delete_record = get_recordset_json(ok_zone, a_delete_record_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_delete_record_name = generate_record_name()
+    txt_delete_record_fqdn = txt_delete_record_name + ".ok."
+    txt_delete_record = get_recordset_json(ok_zone, txt_delete_record_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    a_delete_record_and_record_set_name = generate_record_name()
+    a_delete_record_and_record_set_fqdn = a_delete_record_and_record_set_name + ".ok."
+    a_delete_record_and_record_set = get_recordset_json(ok_zone, a_delete_record_and_record_set_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
+
+    txt_delete_record_and_record_set_name = generate_record_name()
+    txt_delete_record_and_record_set_fqdn = txt_delete_record_and_record_set_name + ".ok."
+    txt_delete_record_and_record_set = get_recordset_json(ok_zone, txt_delete_record_and_record_set_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            ## Updates
+            # Add + DeleteRRSet
+            get_change_A_AAAA_json(a_update_record_set_fqdn, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_update_record_set_fqdn, address="1.2.3.4"),
+            get_change_A_AAAA_json(a_update_record_set_fqdn, address="4.5.6.7"),
+
+            get_change_TXT_json(txt_update_record_set_fqdn, change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_record_set_fqdn, text="some-multi-text"),
+            get_change_TXT_json(txt_update_record_set_fqdn, text="more-multi-text"),
+
+            # Add + DeleteRecord (full delete)
+            get_change_A_AAAA_json(a_update_record_full_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_update_record_full_fqdn, address="1.1.1.2", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_update_record_full_fqdn, address="1.2.3.4"),
+            get_change_A_AAAA_json(a_update_record_full_fqdn, address="4.5.6.7"),
+
+            get_change_TXT_json(txt_update_record_full_fqdn, text="hello", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_record_full_fqdn, text="again", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_record_full_fqdn, text="some-multi-text"),
+            get_change_TXT_json(txt_update_record_full_fqdn, text="more-multi-text"),
+
+            # Add + single DeleteRecord
+            get_change_A_AAAA_json(a_update_record_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_update_record_fqdn, address="1.2.3.4"),
+            get_change_A_AAAA_json(a_update_record_fqdn, address="4.5.6.7"),
+
+            get_change_TXT_json(txt_update_record_fqdn, text="hello", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_record_fqdn, text="some-multi-text"),
+            get_change_TXT_json(txt_update_record_fqdn, text="more-multi-text"),
+
+            # Single DeleteRecord
+            get_change_A_AAAA_json(a_update_record_only_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_update_record_only_fqdn, text="hello", change_type="DeleteRecordSet"),
+
+            ## Full deletes
+            # Delete RRSet
+            get_change_A_AAAA_json(a_delete_record_set_fqdn, change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_delete_record_set_fqdn, change_type="DeleteRecordSet"),
+
+            # DeleteRecord (full delete)
+            get_change_A_AAAA_json(a_delete_record_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_delete_record_fqdn, address="1.1.1.2", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_delete_record_fqdn, text="hello", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_delete_record_fqdn, text="again", change_type="DeleteRecordSet"),
+
+            # DeleteRecord + DeleteRRSet
+            get_change_A_AAAA_json(a_delete_record_and_record_set_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(a_delete_record_and_record_set_fqdn, change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_delete_record_and_record_set_fqdn, text="hello", change_type="DeleteRecordSet"),
+            get_change_TXT_json(txt_delete_record_and_record_set_fqdn, change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+    try:
+        for rs in [a_update_record_set, txt_update_record_set, a_update_record_full, txt_update_record_full, a_update_record, txt_update_record, a_update_record_only, txt_update_record_only,
+                   a_delete_record_set, txt_delete_record_set, a_delete_record, txt_delete_record, a_delete_record_and_record_set, txt_delete_record_and_record_set]:
+            create_rs = client.create_recordset(rs, status=202)
+            to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+
+        result = client.create_batch_change(batch_change_input, status=202)
+        client.wait_until_batch_change_completed(result)
+
+        # Check batch change response
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=1, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=2, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data="4.5.6.7")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=3, input_name=txt_update_record_set_fqdn, record_name=txt_update_record_set_name, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=4, input_name=txt_update_record_set_fqdn, record_name=txt_update_record_set_name, record_type="TXT", record_data="some-multi-text")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=5, input_name=txt_update_record_set_fqdn, record_name=txt_update_record_set_name, record_type="TXT", record_data="more-multi-text")
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=6, input_name=a_update_record_full_fqdn, record_name=a_update_record_full_name, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=7, input_name=a_update_record_full_fqdn, record_name=a_update_record_full_name, record_data="1.1.1.2", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=8, input_name=a_update_record_full_fqdn, record_name=a_update_record_full_name, record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=9, input_name=a_update_record_full_fqdn, record_name=a_update_record_full_name, record_data="4.5.6.7")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=10, input_name=txt_update_record_full_fqdn, record_name=txt_update_record_full_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=11, input_name=txt_update_record_full_fqdn, record_name=txt_update_record_full_name, record_type="TXT", record_data="again", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=12, input_name=txt_update_record_full_fqdn, record_name=txt_update_record_full_name, record_type="TXT", record_data="some-multi-text")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=13, input_name=txt_update_record_full_fqdn, record_name=txt_update_record_full_name, record_type="TXT", record_data="more-multi-text")
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=14, input_name=a_update_record_fqdn, record_name=a_update_record_name, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=15, input_name=a_update_record_fqdn, record_name=a_update_record_name, record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=16, input_name=a_update_record_fqdn, record_name=a_update_record_name, record_data="4.5.6.7")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=17, input_name=txt_update_record_fqdn, record_name=txt_update_record_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=18, input_name=txt_update_record_fqdn, record_name=txt_update_record_name, record_type="TXT", record_data="some-multi-text")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=19, input_name=txt_update_record_fqdn, record_name=txt_update_record_name, record_type="TXT", record_data="more-multi-text")
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=20, input_name=a_update_record_only_fqdn, record_name=a_update_record_only_name, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=21, input_name=txt_update_record_only_fqdn, record_name=txt_update_record_only_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=22, input_name=a_delete_record_set_fqdn, record_name=a_delete_record_set_name, record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=23, input_name=txt_delete_record_set_fqdn, record_name=txt_delete_record_set_name, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=24, input_name=a_delete_record_fqdn, record_name=a_delete_record_name, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=25, input_name=a_delete_record_fqdn, record_name=a_delete_record_name, record_data="1.1.1.2", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=26, input_name=txt_delete_record_fqdn, record_name=txt_delete_record_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=27, input_name=txt_delete_record_fqdn, record_name=txt_delete_record_name, record_type="TXT", record_data="again", change_type="DeleteRecordSet")
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=28, input_name=a_delete_record_and_record_set_fqdn, record_name=a_delete_record_and_record_set_name, record_data="1.1.1.1", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=29, input_name=a_delete_record_and_record_set_fqdn, record_name=a_delete_record_and_record_set_name, record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=30, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=31, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
+
+        # Perform look up to verify record set data
+        for rs in to_delete:
+            rs_name = rs['recordSet']['name']
+            rs_id = rs['recordSet']['id']
+            zone_id = rs['zone']['id']
+
+            # deletes should not exist
+            if rs_name in [a_delete_record_set_name, txt_delete_record_set_name, a_delete_record_name,
+                           txt_delete_record_name, a_delete_record_and_record_set_name, txt_delete_record_and_record_set_name]:
+                client.get_recordset(zone_id, rs_id, status=404)
+            else:
+                result_rs = client.get_recordset(zone_id, rs_id, status=200)
+                records = result_rs['recordSet']['records']
+
+                # full deletes with updates
+                if rs_name in [a_update_record_set_name, a_update_record_full_name]:
+                    assert_that(records, contains({"address": "1.2.3.4"}, {"address": "4.5.6.7"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"}, {"address": "1.1.1.2"})))
+                elif rs_name in [txt_update_record_set_name, txt_update_record_full_name]:
+                    assert_that(records, contains({"text": "some-multi-text"}, {"text": "more-multi-text"}))
+                    assert_that(records, is_not(contains({"text": "hello"}, {"text": "again"})))
+                # single entry delete with adds
+                elif rs_name == a_update_record_name:
+                    assert_that(records, contains({"address": "1.1.1.2"}, {"address": "1.2.3.4"}, {"address": "4.5.6.7"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"})))
+                elif rs_name == txt_update_record_name:
+                    assert_that(records, contains({"text": "again"}, {"text": "some-multi-text"}, {"text": "more-multi-text"}))
+                    assert_that(records, is_not(contains({"text": "hello"})))
+                elif rs_name == a_update_record_only_name:
+                    assert_that(records, contains({"address": "1.1.1.2"}))
+                    assert_that(records, is_not(contains({"address": "1.1.1.1"})))
+                elif rs_name == txt_update_record_only_name:
+                    assert_that(records, contains({"text": "again"}))
+                    assert_that(records, is_not(contains({"text": "hello"})))
+
+    finally:
+        clear_recordset_list(to_delete, client)
+
+@pytest.mark.multi_record_enabled
+def test_create_batch_deletes_succeeds(shared_zone_test_context):
+    """
+    Test creating batch change with DeleteRecordSet with valid record data succeeds
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    ok_group = shared_zone_test_context.ok_group
+
+    rs_name = generate_record_name()
+    rs_name_2 = generate_record_name()
+    multi_rs_name = generate_record_name()
+    multi_rs_name_2 = generate_record_name()
+    rs_fqdn = rs_name + ".ok."
+    rs_fqdn_2 = rs_name_2 + ".ok."
+    multi_rs_fqdn = multi_rs_name + ".ok."
+    multi_rs_fqdn_2 = multi_rs_name_2 + ".ok."
+    rs_to_create = get_recordset_json(ok_zone, rs_name, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
+    rs_to_create_2 = get_recordset_json(ok_zone, rs_name_2, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
+    multi_record_rs_to_create = get_recordset_json(ok_zone, multi_rs_name, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
+    multi_record_rs_to_create_2 = get_recordset_json(ok_zone, multi_rs_name_2, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json(rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_fqdn_2, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(multi_rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(multi_rs_fqdn_2, change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+
+    try:
+        create_rs = client.create_recordset(rs_to_create, status=202)
+        create_rs_2 = client.create_recordset(rs_to_create_2, status=202)
+        create_multi_rs = client.create_recordset(multi_record_rs_to_create, status=202)
+        create_multi_rs_2 = client.create_recordset(multi_record_rs_to_create_2, status=202)
+        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_rs_2, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs, 'Complete'))
+        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs_2, 'Complete'))
+
+        result = client.create_batch_change(batch_change_input, status=202)
+        client.wait_until_batch_change_completed(result)
+
+        client.get_recordset(create_rs['zone']['id'], create_rs['recordSet']['id'], status=404)
+        client.get_recordset(create_rs_2['zone']['id'], create_rs_2['recordSet']['id'], status=404)
+        updated_rs = client.get_recordset(create_multi_rs['zone']['id'], create_multi_rs['recordSet']['id'], status=200)['recordSet']
+        assert_that(updated_rs['records'], is_([{'address': '1.1.1.1'}]))
+        client.get_recordset(create_multi_rs_2['zone']['id'], create_multi_rs_2['recordSet']['id'], status=404)
+
+    finally:
+        clear_recordset_list(to_delete, client)
+
+
+@pytest.mark.multi_record_enabled
+@pytest.mark.serial
+@pytest.mark.skip_production
+def test_create_batch_change_with_multi_record_adds_with_multi_record_support(shared_zone_test_context):
+    """
+    Test new recordsets with multiple records can be added in batch, but existing recordsets cannot be added to
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    ok_group = shared_zone_test_context.ok_group
+
+    to_delete = []
+
+    rs_name = generate_record_name()
+    rs_fqdn = rs_name + ".ok."
+    rs_to_create = get_recordset_json(ok_zone, rs_name, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("multi.ok.", address="1.2.3.4"),
+            get_change_A_AAAA_json("multi.ok.", address="4.5.6.7"),
+            get_change_PTR_json("192.0.2.44", ptrdname="multi.test"),
+            get_change_PTR_json("192.0.2.44", ptrdname="multi2.test"),
+            get_change_TXT_json("multi-txt.ok.", text="some-multi-text"),
+            get_change_TXT_json("multi-txt.ok.", text="more-multi-text"),
+            get_change_MX_json("multi-mx.ok.", preference=0),
+            get_change_MX_json("multi-mx.ok.", preference=1000, exchange="bar.foo."),
+            get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
+        ]
+    }
+
+    try:
+        create_rs = client.create_recordset(rs_to_create, status=202)
+        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
+        response = client.create_batch_change(batch_change_input, status=400)
+
+        assert_successful_change_in_error_response(response[0], input_name="multi.ok.", record_data="1.2.3.4")
+        assert_successful_change_in_error_response(response[1], input_name="multi.ok.", record_data="4.5.6.7")
+        assert_successful_change_in_error_response(response[2], input_name="192.0.2.44", record_type="PTR", record_data="multi.test.")
+        assert_successful_change_in_error_response(response[3], input_name="192.0.2.44", record_type="PTR", record_data="multi2.test.")
+        assert_successful_change_in_error_response(response[4], input_name="multi-txt.ok.", record_type="TXT", record_data="some-multi-text")
+        assert_successful_change_in_error_response(response[5], input_name="multi-txt.ok.", record_type="TXT", record_data="more-multi-text")
+        assert_successful_change_in_error_response(response[6], input_name="multi-mx.ok.", record_type="MX", record_data={"preference": 0, "exchange": "foo.bar."})
+        assert_successful_change_in_error_response(response[7], input_name="multi-mx.ok.", record_type="MX", record_data={"preference": 1000, "exchange": "bar.foo."})
+        assert_failed_change_in_error_response(response[8], input_name=rs_fqdn, record_data="1.1.1.1",
+                                               error_messages=['Record "' + rs_fqdn + '" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
+
+    finally:
+        clear_recordset_list(to_delete, client)

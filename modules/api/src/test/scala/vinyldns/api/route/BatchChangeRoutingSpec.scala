@@ -96,6 +96,7 @@ class BatchChangeRoutingSpec()
             Some("recordName"),
             "fqdn",
             A,
+            None,
             Pending,
             Some("systemMessage"),
             None,
@@ -182,6 +183,7 @@ class BatchChangeRoutingSpec()
       None,
       "fqdn.two",
       A,
+      None,
       Pending,
       Some("systemMessage"),
       None,
@@ -193,6 +195,7 @@ class BatchChangeRoutingSpec()
       None,
       "fqdn.two",
       A,
+      None,
       Pending,
       Some("systemMessage"),
       None,
@@ -694,8 +697,7 @@ class BatchChangeRoutingSpec()
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
         resp.ignoreAccess shouldBe true
-        resp.approvalStatus.toString() shouldBe Some(BatchChangeApprovalStatus.PendingReview)
-          .toString()
+        resp.approvalStatus.toString shouldBe Some(BatchChangeApprovalStatus.PendingReview).toString
       }
     }
   }
