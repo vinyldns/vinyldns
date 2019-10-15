@@ -45,7 +45,7 @@ name          | type          | required?   | description |
 changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecordSet** for *DeleteChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being deleted. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
-record        | [RecordData](../api/recordset-model#record-data) | no         | The data for the record. If specified, only this DNS entry for the existing DNS recordset will be deleted; if unspecified, all DNS entries associated to the DNS recordset will be deleted. |
+record        | [RecordData](../api/recordset-model#record-data) | no         | The data for the record. If specified, only this DNS entry for the existing DNS recordset will be deleted; if unspecified, the entire DNS recordset will be deleted. |
 
 
 #### EXAMPLE HTTP REQUEST

@@ -110,7 +110,7 @@ There are two valid `changeType`s for a `SingleChange`: **Add** and **DeleteReco
 - Create a new DNS record: **Add** with record data
 - Delete an entire record set: 1. **DeleteRecordSet** without specifying existing record data *or* 2. **DeleteRecordSet** for each entry of the DNS record
 - Delete a single entry from DNS record with multiple entries: **DeleteRecordSet** specifying existing record data
-- Update an existing record set (i.e. value reassignment): 1. **DeleteRecordSet** specifying existing record data (single entry delete) or not specifying record data (full delete) *and* 2. **Add** with record data
+- Update an existing record set: 1. **DeleteRecordSet** specifying existing record data (single entry delete) or not specifying record data (full delete) *and* 2. **Add** with record data
 
 #### BATCH CHANGE EXAMPLE <a id="batchchange-example" />
 
