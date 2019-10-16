@@ -30,8 +30,6 @@ RUN mkdir -p /opt && \
     mv /portal /opt/docker && \
     mkdir -p /opt/docker/lib_extra
 
-ARG BUILD_VERSION=unknown
-
 # This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
 ARG VINYLDNS_VERSION
 ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
