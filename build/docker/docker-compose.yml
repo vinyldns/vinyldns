@@ -38,6 +38,7 @@ services:
       - "9000:9000"
     volumes:
       - ./api/application.conf:/opt/docker/conf/application.conf
+      - ./api/logback.xml:/opt/docker/conf/logback.xml
     depends_on:
       - mysql
 

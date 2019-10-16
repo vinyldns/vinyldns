@@ -17,7 +17,7 @@ RUN apt-get update \
     && apt-get install -y nodejs \
     && npm install -g grunt-cli
 
-RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" universal:packageZipTarball
+RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
 
 FROM openjdk:8u201-jdk-alpine3.9
 
