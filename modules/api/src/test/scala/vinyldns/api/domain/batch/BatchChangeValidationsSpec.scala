@@ -51,9 +51,7 @@ class BatchChangeValidationsSpec
   private val maxChanges = 10
   private val accessValidations = new AccessValidations()
   private val underTest =
-    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = true)
-  private val underTestMultiDisabled =
-    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = false)
+    new BatchChangeValidations(maxChanges, accessValidations)
 
   import underTest._
 
@@ -293,11 +291,8 @@ class BatchChangeValidationsSpec
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
       scheduledTime = Some(DateTime.now))
-    val bcv = new BatchChangeValidations(
-      maxChanges,
-      accessValidations,
-      multiRecordEnabled = true,
-      scheduledChangesEnabled = false)
+    val bcv =
+      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = false)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled)
   }
@@ -308,11 +303,8 @@ class BatchChangeValidationsSpec
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
       scheduledTime = Some(DateTime.now.minusHours(1)))
-    val bcv = new BatchChangeValidations(
-      maxChanges,
-      accessValidations,
-      multiRecordEnabled = true,
-      scheduledChangesEnabled = true)
+    val bcv =
+      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = true)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture)
   }
@@ -1953,8 +1945,7 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  property(
-    "validateChangesWithContext: succeed update/delete to a multi record existing RecordSet if multi enabled") {
+  property("validateChangesWithContext: succeed update/delete to a multi record existing RecordSet") {
     val existing = List(
       sharedZoneRecord.copy(
         name = updateSharedAddChange.recordName,
@@ -1992,49 +1983,7 @@ class BatchChangeValidationsSpec
     result(5) shouldBe valid
   }
 
-  property(
-    "validateChangesWithContext: fail on update/delete to a multi record existing RecordSet if multi disabled") {
-    val existing = List(
-      sharedZoneRecord.copy(
-        name = updateSharedAddChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2"))),
-      sharedZoneRecord.copy(
-        name = deleteSharedChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2"))),
-      rsOk.copy(name = updatePrivateAddChange.recordName),
-      rsOk.copy(name = deletePrivateChange.recordName)
-    )
-
-    val result = underTestMultiDisabled.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedAddChange.validNel,
-          updateSharedDeleteChange.validNel,
-          deleteSharedChange.validNel,
-          updatePrivateAddChange.validNel,
-          updatePrivateDeleteChange.validNel,
-          deletePrivateChange.validNel
-        ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
-
-    result(0) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(updateSharedAddChange.inputChange.inputName, existing(0)))
-    result(1) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(updateSharedDeleteChange.inputChange.inputName, existing(0)))
-    result(2) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(deleteSharedChange.inputChange.inputName, existing(1)))
-    // non duplicate
-    result(3) shouldBe valid
-    result(4) shouldBe valid
-    result(5) shouldBe valid
-  }
-
-  property("validateChangesWithContext: succeed on add/update to a multi record if multi enabled") {
+  property("validateChangesWithContext: succeed on add/update to a multi record") {
     val existing = List(
       sharedZoneRecord.copy(name = updateSharedAddChange.recordName)
     )
@@ -2075,58 +2024,6 @@ class BatchChangeValidationsSpec
     result(2) shouldBe valid
     result(3) shouldBe valid
     result(4) shouldBe valid
-    // non duplicate
-    result(5) shouldBe valid
-  }
-
-  property("validateChangesWithContext: fail on add/update to a multi record if multi disabled") {
-    val existing = List(
-      sharedZoneRecord.copy(
-        name = updateSharedAddChange.recordName,
-        records = List(AAAAData("1::1"))
-      )
-    )
-
-    val update1 = updateSharedAddChange.copy(
-      inputChange =
-        AddChangeInput("shared-update.shared", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
-    )
-    val update2 = updateSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-update.shared", RecordType.AAAA, ttl, AAAAData("1::1"))
-    )
-    val add1 = createSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-add.shared", RecordType.A, ttl, AData("1.2.3.4"))
-    )
-    val add2 = createSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-add.shared", RecordType.A, ttl, AData("5.6.7.8"))
-    )
-
-    val result = underTestMultiDisabled.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedDeleteChange.validNel,
-          update1.validNel,
-          update2.validNel,
-          add1.validNel,
-          add2.validNel,
-          updatePrivateAddChange.validNel
-        ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
-
-    result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(update1.inputChange.inputName, update1.inputChange.typ))
-    result(2) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(update2.inputChange.inputName, update2.inputChange.typ))
-    result(3) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(add1.inputChange.inputName, add1.inputChange.typ))
-    result(4) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(add2.inputChange.inputName, add2.inputChange.typ))
     // non duplicate
     result(5) shouldBe valid
   }

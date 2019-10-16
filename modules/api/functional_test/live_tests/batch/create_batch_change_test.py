@@ -3806,48 +3806,6 @@ def test_create_batch_with_irrelevant_global_acl_rule_applied_fails(shared_zone_
             shared_client.wait_until_recordset_change_status(delete_a_rs, 'Complete')
 
 
-@pytest.mark.multi_record_disabled
-@pytest.mark.serial
-@pytest.mark.skip_production
-def test_create_batch_duplicates_add_check(shared_zone_test_context):
-    """
-    Test recordsets with multiple records cannot be added in batch (relies on config, skip-prod)
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            get_change_A_AAAA_json("multi.ok.", address="1.2.3.4"),
-            get_change_A_AAAA_json("multi.ok.", address="4.5.6.7"),
-            get_change_PTR_json("192.0.2.44", ptrdname="multi.test"),
-            get_change_PTR_json("192.0.2.44", ptrdname="multi2.test"),
-            get_change_TXT_json("multi-txt.ok.", text="some-multi-text"),
-            get_change_TXT_json("multi-txt.ok.", text="more-multi-text"),
-            get_change_MX_json("multi-mx.ok.", preference=0),
-            get_change_MX_json("multi-mx.ok.", preference=1000, exchange="bar.foo."),
-
-            # adding an HVD so this will fail if accidentally run against wrong config
-            get_change_A_AAAA_json("high-value-domain")
-        ]
-    }
-
-    response = client.create_batch_change(batch_change_input, status=400)
-
-    def err(name, type):
-        return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-               'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name, type)
-
-    assert_error(response[0], error_messages=[err("multi.ok.", "A")])
-    assert_error(response[1], error_messages=[err("multi.ok.", "A")])
-    assert_error(response[2], error_messages=[err("192.0.2.44", "PTR")])
-    assert_error(response[3], error_messages=[err("192.0.2.44", "PTR")])
-    assert_error(response[4], error_messages=[err("multi-txt.ok.", "TXT")])
-    assert_error(response[5], error_messages=[err("multi-txt.ok.", "TXT")])
-    assert_error(response[6], error_messages=[err("multi-mx.ok.", "MX")])
-    assert_error(response[7], error_messages=[err("multi-mx.ok.", "MX")])
-
-
 @pytest.mark.manual_batch_review
 def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_context):
     """
@@ -3915,197 +3873,7 @@ def test_create_batch_delete_record_for_invalid_record_data_fails(shared_zone_te
     finally:
         clear_recordset_list(to_delete, client)
 
-@pytest.mark.multi_record_disabled
-@pytest.mark.skip_production
-def test_create_batch_multi_record_update_fails(shared_zone_test_context):
-    """
-    Test recordsets with multiple records cannot be edited in batch (relies on config, skip-prod)
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
 
-    # record sets to setup
-    a_update_name = generate_record_name()
-    a_update_fqdn = a_update_name + ".ok."
-    a_update = get_recordset_json(ok_zone, a_update_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
-
-    txt_update_name = generate_record_name()
-    txt_update_fqdn = txt_update_name + ".ok."
-    txt_update = get_recordset_json(ok_zone, txt_update_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
-
-    a_delete_name = generate_record_name()
-    a_delete_fqdn = a_delete_name + ".ok."
-    a_delete = get_recordset_json(ok_zone, a_delete_name, "A", [{"address": "1.1.1.1"}, {"address": "1.1.1.2"}], 200)
-
-    txt_delete_name = generate_record_name()
-    txt_delete_fqdn = txt_delete_name + ".ok."
-    txt_delete = get_recordset_json(ok_zone, txt_delete_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
-
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            get_change_A_AAAA_json(a_update_fqdn, change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(a_update_fqdn, address="1.2.3.4"),
-            get_change_A_AAAA_json(a_update_fqdn, address="4.5.6.7"),
-
-            get_change_TXT_json(txt_update_fqdn, change_type="DeleteRecordSet"),
-            get_change_TXT_json(txt_update_fqdn, text="some-multi-text"),
-            get_change_TXT_json(txt_update_fqdn, text="more-multi-text"),
-
-            get_change_A_AAAA_json(a_delete_fqdn, change_type="DeleteRecordSet"),
-            get_change_TXT_json(txt_delete_fqdn, change_type="DeleteRecordSet"),
-
-            # adding an HVD so this will fail if accidentally run against wrong config
-            get_change_A_AAAA_json("high-value-domain")
-        ]
-    }
-
-    to_delete = []
-    try:
-        for rs in [a_update, txt_update, a_delete, txt_delete]:
-            create_rs = client.create_recordset(rs, status=202)
-            to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
-
-        response = client.create_batch_change(batch_change_input, status=400)
-
-        def existing_err(name, type):
-            return 'RecordSet with name {} and type {} cannot be updated in a single '.format(name, type) + \
-                   'Batch Change because it contains multiple DNS records (2).'
-
-        def new_err(name, type):
-            return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-                   'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name,
-                                                                                                               type)
-
-        assert_error(response[0], error_messages=[existing_err(a_update_fqdn, "A")])
-        assert_error(response[1], error_messages=[existing_err(a_update_fqdn, "A"), new_err(a_update_fqdn, "A")])
-        assert_error(response[2], error_messages=[existing_err(a_update_fqdn, "A"), new_err(a_update_fqdn, "A")])
-        assert_error(response[3], error_messages=[existing_err(txt_update_fqdn, "TXT")])
-        assert_error(response[4],
-                     error_messages=[existing_err(txt_update_fqdn, "TXT"), new_err(txt_update_fqdn, "TXT")])
-        assert_error(response[5],
-                     error_messages=[existing_err(txt_update_fqdn, "TXT"), new_err(txt_update_fqdn, "TXT")])
-        assert_error(response[6], error_messages=[existing_err(a_delete_fqdn, "A")])
-        assert_error(response[7], error_messages=[existing_err(txt_delete_fqdn, "TXT")])
-    finally:
-        clear_recordset_list(to_delete, client)
-
-
-@pytest.mark.multi_record_disabled
-def test_create_batch_deletes_fails(shared_zone_test_context):
-    """
-    Test creating batch change with DeleteRecordSets when multi-record support is disabled
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
-    ok_group = shared_zone_test_context.ok_group
-
-    rs_name = generate_record_name()
-    rs_name_2 = generate_record_name()
-    multi_rs_name = generate_record_name()
-    multi_rs_name_2 = generate_record_name()
-    rs_fqdn = rs_name + ".ok."
-    rs_fqdn_2 = rs_name + ".ok."
-    multi_rs_fqdn = multi_rs_name + ".ok."
-    multi_rs_fqdn_2 = multi_rs_name_2 + ".ok."
-    rs_to_create = get_recordset_json(ok_zone, rs_name, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
-    rs_to_create_2 = get_recordset_json(ok_zone, rs_name_2, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
-    multi_record_rs_to_create = get_recordset_json(ok_zone, multi_rs_name, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
-    multi_record_rs_to_create_2 = get_recordset_json(ok_zone, multi_rs_name_2, "A", [{"address": "1.2.3.4"}, {"address": "1.1.1.1"}], 200, ok_group['id'])
-
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            get_change_A_AAAA_json(rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(rs_fqdn_2, change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(multi_rs_fqdn, address="1.2.3.4", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(multi_rs_fqdn_2, change_type="DeleteRecordSet")
-        ]
-    }
-
-    to_delete = []
-
-    try:
-        create_rs = client.create_recordset(rs_to_create, status=202)
-        create_rs_2 = client.create_recordset(rs_to_create_2, status=202)
-        create_multi_rs = client.create_recordset(multi_record_rs_to_create, status=202)
-        create_multi_rs_2 = client.create_recordset(multi_record_rs_to_create_2, status=202)
-        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
-        to_delete.append(client.wait_until_recordset_change_status(create_rs_2, 'Complete'))
-        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs, 'Complete'))
-        to_delete.append(client.wait_until_recordset_change_status(create_multi_rs_2, 'Complete'))
-
-        response = client.create_batch_change(batch_change_input, status=400)
-
-        assert_successful_change_in_error_response(response[0], input_name=rs_fqdn, record_type="A", record_data="1.2.3.4", change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[1], input_name=rs_fqdn_2, record_type="A", change_type="DeleteRecordSet")
-        assert_failed_change_in_error_response(response[2], input_name=multi_rs_fqdn, record_type="A", record_data="1.2.3.4", change_type="DeleteRecordSet",
-                                               error_messages=['RecordSet with name ' + multi_rs_fqdn + ' and type A cannot be updated in a single Batch Change because it contains multiple DNS records (2).'])
-        assert_failed_change_in_error_response(response[3], input_name=multi_rs_fqdn_2, record_type="A", change_type="DeleteRecordSet",
-                                               error_messages=['RecordSet with name ' + multi_rs_fqdn_2 + ' and type A cannot be updated in a single Batch Change because it contains multiple DNS records (2).'])
-
-    finally:
-        clear_recordset_list(to_delete, client)
-
-
-@pytest.mark.multi_record_disabled
-@pytest.mark.serial
-@pytest.mark.skip_production
-def test_create_batch_change_with_multi_record_adds_without_multi_record_support(shared_zone_test_context):
-    """
-    Test new recordsets with multiple records cannot be added in batch, and existing recordsets cannot be added to
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
-    ok_group = shared_zone_test_context.ok_group
-
-    to_delete = []
-
-    rs_name = generate_record_name()
-    rs_fqdn = rs_name + ".ok."
-    rs_to_create = get_recordset_json(ok_zone, rs_name, "A", [{"address": "1.2.3.4"}], 200, ok_group['id'])
-
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            get_change_A_AAAA_json("multi.ok.", address="1.2.3.4"),
-            get_change_A_AAAA_json("multi.ok.", address="4.5.6.7"),
-            get_change_PTR_json("192.0.2.44", ptrdname="multi.test"),
-            get_change_PTR_json("192.0.2.44", ptrdname="multi2.test"),
-            get_change_TXT_json("multi-txt.ok.", text="some-multi-text"),
-            get_change_TXT_json("multi-txt.ok.", text="more-multi-text"),
-            get_change_MX_json("multi-mx.ok.", preference=0),
-            get_change_MX_json("multi-mx.ok.", preference=1000, exchange="bar.foo."),
-            get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
-        ]
-    }
-
-    try:
-        create_rs = client.create_recordset(rs_to_create, status=202)
-        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
-        response = client.create_batch_change(batch_change_input, status=400)
-
-        def err(name, type):
-            return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-                   'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name,
-                                                                                                               type)
-
-        assert_error(response[0], error_messages=[err("multi.ok.", "A")])
-        assert_error(response[1], error_messages=[err("multi.ok.", "A")])
-        assert_error(response[2], error_messages=[err("192.0.2.44", "PTR")])
-        assert_error(response[3], error_messages=[err("192.0.2.44", "PTR")])
-        assert_error(response[4], error_messages=[err("multi-txt.ok.", "TXT")])
-        assert_error(response[5], error_messages=[err("multi-txt.ok.", "TXT")])
-        assert_error(response[6], error_messages=[err("multi-mx.ok.", "MX")])
-        assert_error(response[7], error_messages=[err("multi-mx.ok.", "MX")])
-        assert_failed_change_in_error_response(response[8], input_name=rs_fqdn, record_data="1.1.1.1",
-                                               error_messages=['Record "' + rs_fqdn + '" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
-
-    finally:
-        clear_recordset_list(to_delete, client)
-
-
-@pytest.mark.multi_record_enabled
 @pytest.mark.serial
 def test_create_batch_delete_record_access_checks(shared_zone_test_context):
     """
@@ -4169,8 +3937,6 @@ def test_create_batch_delete_record_access_checks(shared_zone_test_context):
         clear_ok_acl_rules(shared_zone_test_context)
         clear_recordset_list(to_delete, ok_client)
 
-
-@pytest.mark.multi_record_enabled
 @pytest.mark.skip_production
 def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
     """
@@ -4379,7 +4145,6 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
     finally:
         clear_recordset_list(to_delete, client)
 
-@pytest.mark.multi_record_enabled
 def test_create_batch_deletes_succeeds(shared_zone_test_context):
     """
     Test creating batch change with DeleteRecordSet with valid record data succeeds
@@ -4435,8 +4200,6 @@ def test_create_batch_deletes_succeeds(shared_zone_test_context):
     finally:
         clear_recordset_list(to_delete, client)
 
-
-@pytest.mark.multi_record_enabled
 @pytest.mark.serial
 @pytest.mark.skip_production
 def test_create_batch_change_with_multi_record_adds_with_multi_record_support(shared_zone_test_context):
