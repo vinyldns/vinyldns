@@ -10,30 +10,34 @@ This folder contains scripts and everything you need to build and test VinylDNS 
 
 1. If you are using image signing / docker notary, be sure you set the environment variable `export DOCKER_CONTENT_TRUST=1`.  
 Whether you sign or not is up to your organization.  You need to have notary setup to be able to sign properly.
-2. Be sure to login to your docker registry, typically done by `docker login` in the terminal you will release from.
-3. `./release.sh --build --push --tag 123`
+1. Be sure to login to your docker registry, typically done by `docker login` in the terminal you will release from.
+1. `./release.sh --clean --tag 123`
+1. Once complete, run a test `./start.sh --version 0.9.4-b123` (or whatever version was just built).
+1. Login to the portal at http://localhost:9001 to verify everything looks good
+1. Run `./stop.sh` to bring everything down
+1. Run `./release.sh --push --tag 123` to actually run the release if everything looks good
 
 ### Release Process
 
-1. The actual version number is pulled from the local `version.sbt`
-TODO: THE VERSION PULLED NEEDS TO COME OFF THE BRANCH!!! ARRRRRGH!!
+1. The actual version number is pulled from the local `version.sbt` based on the branch specified (defaults to master)
+1. The tag provided is appended to the version as `-b[TAG]`, for example, `0.9.4-b123`
+1. Each of the images are built using the branch specified and the correct version
+1. The func tests are run with only smoke tests against the API image to verify it is working
+1. If everything passes, and the user specifies `--push`, the images are tagged and released to the docker repository (defaults to docker hub)
 
 ### Release Script
-`./release.sh --build --push --tag 123`
+`./release.sh --clean --push --tag 123`
 
 The release script is used for doing a release.  It takes the following parameters:
 
-- `-b | --build` - a flag that indicates to perform a build.  If omitted, the release script will look for a 
+- `-b | --branch [BRANCH]` - what branch to pull from, can be any PR branch or a tag like `v0.9.3`, defaults to `master`
+- `-c | --clean` - a flag that indicates to perform a build.  If omitted, the release script will look for a 
 pre-built image locally
 - `-p | --push` - a flag that indicates to push to the remote docker registry.  The default docker registry 
 is `docker.io`
 - `-r | --repository [REPOSITORY]` - a URL to your docker registry, defaults to `docker.io`
 - `-t | --tag [TAG]` - a build qualifer for this build.  For example, pass in the build number for your 
 continuous integration tool
-
-Note: You can just run a build, but have to provide the full version, e.g. `./build.sh --version 0.9.4-SNAPSHOT`
-
-
 
 ## Docker Images
 
