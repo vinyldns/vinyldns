@@ -14,5 +14,3 @@ result = 1
 result = pytest.main(list(sys.argv[1:]))
 
 sys.exit(result)
-
-

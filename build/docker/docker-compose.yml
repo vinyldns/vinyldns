@@ -16,6 +16,7 @@ services:
       context: ./test-bind9
       args:
           BRANCH: master
+    image: "vinyldns/test-bind9:${VINYLDNS_VERSION}"
     container_name: "vinyldns-bind9"
     logging:
       driver: none
@@ -26,6 +27,7 @@ services:
   api:
     build:
       context: ./api
+    image: "vinyldns/api:${VINYLDNS_VERSION}"
     container_name: "vinyldns-api"
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
@@ -48,6 +50,7 @@ services:
   portal:
     build:
       context: ./portal
+    image: "vinyldns/portal:${VINYLDNS_VERSION}"
     container_name: "vinyldns-portal"
     environment:
       MYSQL_ROOT_PASSWORD: 'pass'
@@ -65,6 +68,7 @@ services:
   functest:
     build:
       context: ./test
+    image: "vinyldns/test:${VINYLDNS_VERSION}"
     environment:
       TEST_PATTERN: "test_verify_production"
     container_name: "vinyldns-functest"
