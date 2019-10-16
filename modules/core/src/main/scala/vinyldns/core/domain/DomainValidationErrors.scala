@@ -152,23 +152,6 @@ final case class MissingOwnerGroupId(recordName: String, zoneName: String)
     s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 
-final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
-    extends DomainValidationError {
-  def message: String =
-    s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
-       |because it contains multiple DNS records (${record.records.length}).""".stripMargin
-      .replaceAll("\n", " ")
-}
-
-final case class NewMultiRecordError(changeName: String, changeType: RecordType)
-    extends DomainValidationError {
-  def message: String =
-    s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
-       |Cannot create a new record set with multiple records for inputName $changeName and
-       |type $changeType.""".stripMargin
-      .replaceAll("\n", " ")
-}
-
 final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
   def message: String = s"""CNAME cannot be the same name as zone "$zoneName"."""
 }
@@ -187,6 +170,24 @@ final case class UnsupportedOperation(operation: String) extends DomainValidatio
 final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: RecordData)
     extends DomainValidationError {
   def message: String = s"""Record data $recordData does not exist for "$inputName"."""
+}
+
+// Deprecated errors
+final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
+    extends DomainValidationError {
+  def message: String =
+    s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
+       |because it contains multiple DNS records (${record.records.length}).""".stripMargin
+      .replaceAll("\n", " ")
+}
+
+final case class NewMultiRecordError(changeName: String, changeType: RecordType)
+    extends DomainValidationError {
+  def message: String =
+    s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
+       |Cannot create a new record set with multiple records for inputName $changeName and
+       |type $changeType.""".stripMargin
+      .replaceAll("\n", " ")
 }
 
 // $COVERAGE-ON$
