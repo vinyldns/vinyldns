@@ -1,16 +1,16 @@
 #!/bin/bash
 
-CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CURDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-function usage {
-    printf "usage: release.sh [OPTIONS]\n\n"
-    printf "builds and releases vinyldns artifacts\n\n"
-    printf "options:\n"
-    printf "\t-b, --branch: the branch of tag to use for the build; default is master\n"
-    printf "\t-c, --clean: indicates a fresh build or attempt to work with existing images; default is off\n"
-    printf "\t-p, --push: indicates docker will push to the repository; default is off\n"
-    printf "\t-r, --repository [REPOSITORY]: the docker repository where this image will be pushed; default is docker.io\n"
-    printf "\t-t, --tag [TAG]: sets the qualifier for the semver version; default is -SNAPSHOT\n"
+function usage() {
+  printf "usage: release.sh [OPTIONS]\n\n"
+  printf "builds and releases vinyldns artifacts\n\n"
+  printf "options:\n"
+  printf "\t-b, --branch: the branch of tag to use for the build; default is master\n"
+  printf "\t-c, --clean: indicates a fresh build or attempt to work with existing images; default is off\n"
+  printf "\t-p, --push: indicates docker will push to the repository; default is off\n"
+  printf "\t-r, --repository [REPOSITORY]: the docker repository where this image will be pushed; default is docker.io\n"
+  printf "\t-t, --tag [TAG]: sets the qualifier for the semver version; default is -SNAPSHOT\n"
 }
 
 # Default the build to -SNAPSHOT if not set
@@ -21,14 +21,32 @@ DO_BUILD=0
 BRANCH="master"
 
 while [ "$1" != "" ]; do
-	case "$1" in
-	  -b | --branch  	) BRANCH="$2";  shift 2;;
-    -c | --clean  	) DO_BUILD=1;  shift;;
-    -p | --push  	) DOCKER_PUSH=1;  shift;;
-		-r | --repository  	) REPOSITORY="$2";  shift 2;;
-		-t | --tag  	) BUILD_TAG="-b$2";  shift 2;;
-		* ) usage; exit;;
-	esac
+  case "$1" in
+  -b | --branch)
+    BRANCH="$2"
+    shift 2
+    ;;
+  -c | --clean)
+    DO_BUILD=1
+    shift
+    ;;
+  -p | --push)
+    DOCKER_PUSH=1
+    shift
+    ;;
+  -r | --repository)
+    REPOSITORY="$2"
+    shift 2
+    ;;
+  -t | --tag)
+    BUILD_TAG="-b$2"
+    shift 2
+    ;;
+  *)
+    usage
+    exit
+    ;;
+  esac
 done
 
 BASEDIR=$CURDIR/../
@@ -42,8 +60,7 @@ wget "https://raw.githubusercontent.com/vinyldns/vinyldns/${BRANCH}/version.sbt"
 # Calculate the version by using version.sbt, this will pull out something like 0.9.4
 V=$(find $CURDIR/target -name "version.sbt" | head -n1 | xargs grep "[ \\t]*version in ThisBuild :=" | head -n1 | sed 's/.*"\(.*\)".*/\1/')
 echo "VERSION ON BRANCH ${BRANCH} IS ${V}"
-if [[ "$V" == *-SNAPSHOT ]]
-then
+if [[ "$V" == *-SNAPSHOT ]]; then
   export VINYLDNS_VERSION="${V%?????????}${BUILD_TAG}"
 else
   export VINYLDNS_VERSION="$V${BUILD_TAG}"
