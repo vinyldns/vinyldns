@@ -6,10 +6,10 @@ function usage {
     printf "usage: build.sh [OPTIONS]\n\n"
     printf "builds vinyldns artifacts locally\n\n"
     printf "options:\n"
-    printf "\t-b, --build: indicates a fresh build or attempt to work with existing images\n"
-    printf "\t-p, --push: indicates docker will push to the repository\n"
-    printf "\t-r, --repository [REPOSITORY]: the docker repository where this image will be pushed\n"
-    printf "\t-t, --tag [TAG]: sets the qualifier for the semver version\n"
+    printf "\t-b, --build: indicates a fresh build or attempt to work with existing images; default is off\n"
+    printf "\t-p, --push: indicates docker will push to the repository; default is off\n"
+    printf "\t-r, --repository [REPOSITORY]: the docker repository where this image will be pushed; default is docker.io\n"
+    printf "\t-t, --tag [TAG]: sets the qualifier for the semver version; default is -SNAPSHOT\n"
 }
 
 # Default the build to -SNAPSHOT if not set
