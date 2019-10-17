@@ -6,26 +6,30 @@ This folder contains scripts and everything you need to build and test VinylDNS 
 
 - `docker` - you will need docker and docker-compose installed locally
 
-## Quick Start
+## Local Build and Test
+
+1. `./release.sh --clean`
+1. Open up `version.sbt` in the root to know the directory (or capture in the script output)
+1. Once complete, run a test `./start.sh --version 0.9.4-SNAPSHOT` (replace 0.9.4 with the value in version.sbt).
+1. Login to the portal at http://localhost:9001 to verify everything looks good
+1. Run `./stop.sh` to bring everything down
+
+### Release Process
 
 1. If you are using image signing / docker notary, be sure you set the environment variable `export DOCKER_CONTENT_TRUST=1`.  
 Whether you sign or not is up to your organization.  You need to have notary setup to be able to sign properly.
 1. Be sure to login to your docker registry, typically done by `docker login` in the terminal you will release from.
-1. `./release.sh --clean --tag 123`
-1. Once complete, run a test `./start.sh --version 0.9.4-b123` (or whatever version was just built).
-1. Login to the portal at http://localhost:9001 to verify everything looks good
-1. Run `./stop.sh` to bring everything down
-1. Run `./release.sh --push --tag 123` to actually run the release if everything looks good
-
-### Release Process
-
 1. The actual version number is pulled from the local `version.sbt` based on the branch specified (defaults to master)
-1. The tag provided is appended to the version as `-b[TAG]`, for example, `0.9.4-b123`
+1. Run `./release.sh --push --clean --tag [your tag here] --branch [your branch here]`
+    1. typically the `tag` is a build number that you maintain, for example a build number in Jenkins it is recommended.  This is appended as `-b[TAG]`
+    1. the `branch` defaults to `master` if not specified, you can choose any branch or tag from https://github.com/vinyldns/vinyldns
+1. The version generated will be whatever the version is in the `version.sbt` on the `branch` specified (defaults to master)
 1. Each of the images are built using the branch specified and the correct version
 1. The func tests are run with only smoke tests against the API image to verify it is working
 1. If everything passes, and the user specifies `--push`, the images are tagged and released to the docker repository (defaults to docker hub)
 
 ### Release Script
+Does a clean build off of remote master and tags it with 
 `./release.sh --clean --push --tag 123`
 
 The release script is used for doing a release.  It takes the following parameters:
