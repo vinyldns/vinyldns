@@ -2,6 +2,7 @@
 [![Travis build](https://api.travis-ci.org/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.org/vinyldns/vinyldns)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2682/badge)](https://bestpractices.coreinfrastructure.org/projects/2682)
+![License](https://img.shields.io/github/license/vinyldns/vinyldns)
 
 <p align="left">
   <a href="http://www.vinyldns.io/">
