@@ -86,6 +86,18 @@
                             var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
                             payload.changes.splice(i+1, 0, newEntry)
                         }
+                        if(entry.changeType == 'DeleteRecordSet' && entry.record) {
+                            var attr;
+                            var status = true;
+                            for (attr in entry.record) {
+                                if (entry.record[attr] == undefined || entry.record[attr].length > 0) {
+                                    status = false
+                                }
+                            }
+                            if (status) {
+                                delete entry.record
+                            }
+                        }
                     }
                 }
 
