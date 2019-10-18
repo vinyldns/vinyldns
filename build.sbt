@@ -136,7 +136,6 @@ lazy val apiDockerSettings = Seq(
     ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
     Cmd("USER", "1001:0") // switch back to the daemon user
   ),
-  composeFile := baseDirectory.value.getAbsolutePath + "/../../docker/docker-compose.yml"
 )
 
 lazy val portalDockerSettings = Seq(
@@ -219,7 +218,7 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   scalaStyleSettings
 
 lazy val api = (project in file("modules/api"))
-  .enablePlugins(JavaAppPackaging, DockerComposePlugin, AutomateHeaderPlugin)
+  .enablePlugins(JavaAppPackaging, AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
@@ -230,7 +229,7 @@ lazy val api = (project in file("modules/api"))
   .dependsOn(sqs % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
-lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
+lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(headerSettings(IntegrationTest))
   .settings(sharedSettings)
@@ -290,7 +289,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   )
 
 lazy val dynamodb = (project in file("modules/dynamodb"))
-  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
@@ -308,7 +307,7 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(name := "dynamodb")
 
 lazy val mysql = (project in file("modules/mysql"))
-  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
@@ -324,7 +323,7 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(name := "mysql")
 
 lazy val sqs = (project in file("modules/sqs"))
-  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
@@ -520,9 +519,7 @@ addCommandAlias("validate", "; root/clean; " +
   "root/compile;root/test:compile;root/it:compile"
 )
 
-addCommandAlias("verify", "; project root; killDocker; " +
-  "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
-  "project sqs; dockerComposeUp;" +
+addCommandAlias("verify", "; project root; killDocker; dockerComposeUp; " +
   "project root; coverage; " +
   "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test " +
   "sqs/test sqs/it:test; " +

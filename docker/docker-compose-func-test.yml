@@ -34,6 +34,7 @@ services:
     environment:
       - SERVICES=dynamodb:19000,sns:19006,sqs:19007
       - START_WEB=0
+      - HOSTNAME_EXTERNAL=vinyldns-localstack
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
