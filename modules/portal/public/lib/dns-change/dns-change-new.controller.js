@@ -87,14 +87,13 @@
                             payload.changes.splice(i+1, 0, newEntry)
                         }
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
-                            var attr;
-                            var status = true;
-                            for (attr in entry.record) {
-                                if (entry.record[attr] == undefined || entry.record[attr].length > 0) {
-                                    status = false
+                            var recordDataEmpty = true;
+                            for (var attr in entry.record) {
+                                if (entry.record[attr] !== undefined && entry.record[attr].length > 0) {
+                                    recordDataEmpty = false
                                 }
                             }
-                            if (status) {
+                            if (recordDataEmpty) {
                                 delete entry.record
                             }
                         }
