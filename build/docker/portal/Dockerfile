@@ -11,6 +11,7 @@ COPY .jvmopts /vinyldns
 # Needed for preparePortal
 RUN apt-get update \
     && apt-get install -y \
+    apt-transport-https \
     curl \
     gnupg \
     && curl -sL https://deb.nodesource.com/setup_6.x | bash - \
