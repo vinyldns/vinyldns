@@ -117,6 +117,7 @@ object Dependencies {
     "io.netty"                  %  "netty-transport-native-unix-common" % "4.1.37.Final" % "test",
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
-    "co.fs2"                    %% "fs2-core"                       % fs2V
+    "co.fs2"                    %% "fs2-core"                       % fs2V,
+    "de.leanovate.play-mockws"  %% "play-mockws" % "2.7.1"          % "test"
   )
 }
