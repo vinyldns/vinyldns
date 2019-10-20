@@ -521,8 +521,7 @@ addCommandAlias("validate", "; root/clean; " +
 
 addCommandAlias("verify", "; project root; killDocker; dockerComposeUp; " +
   "project root; coverage; " +
-  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test " +
-  "sqs/test sqs/it:test; " +
+  "all test it:test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )
 
