@@ -38,7 +38,6 @@ services:
     image: localstack/localstack:0.10.4
     container_name: "vinyldns-localstack"
     ports:
-      - "19000:19000"
       - "19006:19006"
       - "19007:19007"
     environment:
