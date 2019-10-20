@@ -47,25 +47,31 @@ cd /app
 find . -name "*.pyc" -delete
 find . -name "__pycache__" -delete
 
+result=0
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     # run parallel tests first (not serial)
     echo "./run-tests.py live_tests -n2 -v -m \"not skip_production and not serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
     ./run-tests.py live_tests -n2 -v -m "not skip_production and not serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
-    if [ $? -eq 0 ]; then
+    result=$?
+    if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
       echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
       ./run-tests.py live_tests -n0 -v -m "not skip_production and serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      result=$?
     fi
 else
     # run parallel tests first (not serial)
     echo "./run-tests.py live_tests -n2 -v -m \"not serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
     ./run-tests.py live_tests -n2 -v -m "not serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
-
-    if [ $? -eq 0 ]; then
+    result=$?
+    if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
       echo "./run-tests.py live_tests -n0 -v -m \"serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
       ./run-tests.py live_tests -n0 -v -m "serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      result=$?
     fi
 fi
+
+exit $result
