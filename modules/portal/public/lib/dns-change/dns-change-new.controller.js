@@ -63,6 +63,10 @@
                 }
             };
 
+            $scope.clearRecordData = function(changeIndex) {
+                delete $scope.newBatch.changes[changeIndex].record;
+            };
+
             $scope.createBatchChange = function() {
                 //flag to prevent multiple clicks until previous promise has resolved.
                 $scope.processing = true;
@@ -90,7 +94,7 @@
                             var recordDataEmpty = true;
                             for (var attr in entry.record) {
                                 console.log(entry.record[attr])
-                                if (entry.record[attr] !== undefined && entry.record[attr].toString().length > 0) {
+                                if (entry.record[attr] != undefined && entry.record[attr].toString().length > 0) {
                                     recordDataEmpty = false
                                 }
                             }

@@ -104,7 +104,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-control" ng-model="change.type">
+                                        <select class="form-control" ng-model="change.type" ng-change="clearRecordData({{$index}})">
                                             <option value="A+PTR" selected>A+PTR</option>
                                             <option>AAAA+PTR</option>
                                             <option>A</option>
