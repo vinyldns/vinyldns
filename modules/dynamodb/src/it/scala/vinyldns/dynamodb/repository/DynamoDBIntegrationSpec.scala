@@ -28,7 +28,7 @@ trait DynamoDBIntegrationSpec
     with Inspectors {
 
   // port is defined in the docker/docker-compose.yml file for dynamodb
-  val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19003)
+  val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19000)
   val logger: Logger = LoggerFactory.getLogger("DynamoDBIntegrationSpec")
 
   // only used for teardown

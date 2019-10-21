@@ -19,6 +19,7 @@ package controllers
 import actions.{LegacySecuritySupport, SecuritySupport}
 import cats.effect.IO
 import controllers.VinylDNS.Alert
+import mockws.MockWS
 import org.junit.runner._
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
@@ -29,8 +30,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test._
-import play.api.{Configuration, Environment, Mode}
-import play.core.server.{Server, ServerConfig}
+import play.api.{Configuration, Environment}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
 
@@ -38,13 +38,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /* these verbs are renamed to avoid collisions with the verb identifiers in the standard values library file */
-import play.api.routing.sird.{
-  DELETE => backendDELETE,
-  GET => backendGET,
-  POST => backendPOST,
-  PUT => backendPUT,
-  _
-}
 
 @RunWith(classOf[JUnitRunner])
 class VinylDNSSpec extends Specification with Mockito with TestApplicationData with BeforeEach {
@@ -572,824 +565,630 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     }
 
     ".newGroup" should {
+      tag("slow")
       "return the group description on create - status ok (200)" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.newGroup()(
-              FakeRequest(POST, "/groups")
-                .withJsonBody(hobbitGroupRequest)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            hasCacheHeaders(result)
-            contentAsJson(result) must beEqualTo(hobbitGroup)
-          }
+        val client = MockWS {
+          case (POST, "http://localhost:9001/groups") =>
+            defaultActionBuilder { Results.Ok(hobbitGroup) }
         }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, "/groups")
+            .withJsonBody(hobbitGroupRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitGroup)
       }
       "return bad request (400) if the request is not properly made" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.BadRequest("user id not found")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.newGroup()(
-              FakeRequest(POST, "/groups")
-                .withJsonBody(invalidHobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(BAD_REQUEST)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (POST, "http://localhost:9001/groups") =>
+            defaultActionBuilder { Results.BadRequest("user id not found") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, "/groups")
+            .withJsonBody(invalidHobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(BAD_REQUEST)
+        hasCacheHeaders(result)
       }
       "return authentication failed (401) when auth fails in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.Unauthorized("Invalid credentials")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.newGroup()(
-              FakeRequest(POST, s"/groups")
-                .withJsonBody(hobbitGroupRequest)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (POST, "http://localhost:9001/groups") =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
         }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, s"/groups")
+            .withJsonBody(hobbitGroupRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
       }
       "return conflict (409) when the group exists already" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.Conflict("A group named 'hobbits' already exists")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.newGroup()(
-              FakeRequest(POST, "/groups")
-                .withJsonBody(hobbitGroupRequest)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(CONFLICT)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (POST, "http://localhost:9001/groups") =>
+            defaultActionBuilder { Results.Conflict("A group named 'hobbits' already exists") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, "/groups")
+            .withJsonBody(hobbitGroupRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(CONFLICT)
+        hasCacheHeaders(result)
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.newGroup()(
-              FakeRequest(POST, "/groups")
-                .withJsonBody(hobbitGroupRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, "/groups")
+            .withJsonBody(hobbitGroupRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 403
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.newGroup()(FakeRequest(POST, "/groups")
-              .withJsonBody(hobbitGroupRequest))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.newGroup()(
+          FakeRequest(POST, "/groups")
+            .withJsonBody(hobbitGroupRequest))
 
-            status(result) must beEqualTo(401)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
     }
 
     ".getGroup" should {
+      tag("slow")
       "return the group description if it is found - status ok (200)" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/${hobbitGroupId}") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            hasCacheHeaders(result)
-            contentAsJson(result) must beEqualTo(hobbitGroup)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/${hobbitGroupId}" =>
+            defaultActionBuilder { Results.Ok(hobbitGroup) }
         }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroup(hobbitGroupId)(
+            FakeRequest(GET, s"/groups/$hobbitGroupId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitGroup)
       }
       "return authentication failed (401) when auth fails in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Unauthorized("Invalid credentials")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/${hobbitGroupId}" =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
         }
-      }
-      "return a not found (404) if the group does not exist" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/not-hobbits") =>
-            defaultActionBuilder {
-              Results.NotFound
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getGroup("not-hobbits")(FakeRequest(GET, "/groups/not-hobbits")
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroup(hobbitGroupId)(
+            FakeRequest(GET, s"/groups/$hobbitGroupId")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
-            status(result) must beEqualTo(NOT_FOUND)
-            hasCacheHeaders(result)
-          }
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+      "return a not found (404) if the group does not exist" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == "http://localhost:9001/groups/not-hobbits" =>
+            defaultActionBuilder { Results.NotFound }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getGroup("not-hobbits")(
+          FakeRequest(GET, "/groups/not-hobbits")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
       }
       "return status forbidden (403) if the user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/${hobbitGroupId}") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result =
-              underTest.getGroup(hobbitGroupId)(
-                FakeRequest(GET, s"/groups/$hobbitGroupId")
-                  .withSession(
-                    "username" -> lockedFrodoUser.userName,
-                    "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result =
+          underTest.getGroup(hobbitGroupId)(
+            FakeRequest(GET, s"/groups/$hobbitGroupId")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/${hobbitGroupId}") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId"))
 
-            status(result) must beEqualTo(401)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
     }
 
     ".deleteGroup" should {
       "return ok with no content (204) when delete is successful" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.NoContent
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(NO_CONTENT)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.NoContent }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGroup(hobbitGroupId)(
+            FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NO_CONTENT)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.NoContent
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId"))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return forbidden (403) when user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.NoContent
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result =
-              underTest.deleteGroup(hobbitGroupId)(
-                FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                  .withSession(
-                    "username" -> lockedFrodoUser.userName,
-                    "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result =
+          underTest.deleteGroup(hobbitGroupId)(
+            FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return authentication failed (401) when authentication fails in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Unauthorized("Invalid credentials")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGroup(hobbitGroupId)(
+            FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
       }
       "return forbidden (403) when authorization fails in the backend" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/$hobbitGroupId") =>
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder {
               Results.Forbidden("You do not have access to delete this group")
             }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(FORBIDDEN)
-            hasCacheHeaders(result)
-          }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGroup(hobbitGroupId)(
+            FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(FORBIDDEN)
+        hasCacheHeaders(result)
       }
       "return a not found (404) if the group does not exist" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/groups/not-hobbits") =>
-            defaultActionBuilder {
-              Results.NotFound
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteGroup("not-hobbits")(FakeRequest(DELETE, "/groups/not-hobbits")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(NOT_FOUND)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (DELETE, "http://localhost:9001/groups/not-hobbits") =>
+            defaultActionBuilder { Results.NotFound }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGroup("not-hobbits")(
+            FakeRequest(DELETE, "/groups/not-hobbits")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
       }
     }
 
     ".updateGroup" should {
       "return the new group description if it is saved successfully - Ok (200)" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.updateGroup(hobbitGroupId)(
-              FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(hobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            contentAsJson(result) must beEqualTo(hobbitGroup)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.Ok(hobbitGroup) }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.updateGroup(hobbitGroupId)(
+          FakeRequest(PUT, s"/groups/$hobbitGroupId")
+            .withJsonBody(hobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        contentAsJson(result) must beEqualTo(hobbitGroup)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) if the user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.updateGroup(hobbitGroupId)(FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(hobbitGroup))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.updateGroup(hobbitGroupId)(
+            FakeRequest(PUT, s"/groups/$hobbitGroupId")
+              .withJsonBody(hobbitGroup))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return forbidden (403) if the user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroup)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.updateGroup(hobbitGroupId)(
-              FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(hobbitGroup)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.updateGroup(hobbitGroupId)(
+          FakeRequest(PUT, s"/groups/$hobbitGroupId")
+            .withJsonBody(hobbitGroup)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 403
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
+        hasCacheHeaders(result)
       }
       "return bad request (400) when the request is rejected by the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.BadRequest("Unknown user")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.updateGroup(hobbitGroupId)(
-              FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(invalidHobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(BAD_REQUEST)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.BadRequest("Unknown user") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.updateGroup(hobbitGroupId)(
+          FakeRequest(PUT, s"/groups/$hobbitGroupId")
+            .withJsonBody(invalidHobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(BAD_REQUEST)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/$hobbitGroupId") =>
-            defaultActionBuilder {
-              Results.Unauthorized("Authentication failed, bad signature")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.updateGroup(hobbitGroupId)(
-              FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(hobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.Unauthorized("Authentication failed, bad signature") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.updateGroup(hobbitGroupId)(
+          FakeRequest(PUT, s"/groups/$hobbitGroupId")
+            .withJsonBody(hobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
       }
       "return forbidden (403) when request fails permissions in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/${hobbitGroupId}") =>
-            defaultActionBuilder {
-              Results.Forbidden("Authentication failed, bad signature")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.updateGroup(hobbitGroupId)(
-              FakeRequest(PUT, s"/groups/$hobbitGroupId")
-                .withJsonBody(hobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(FORBIDDEN)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.Forbidden("Authentication failed, bad signature") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.updateGroup(hobbitGroupId)(
+          FakeRequest(PUT, s"/groups/$hobbitGroupId")
+            .withJsonBody(hobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(FORBIDDEN)
+        hasCacheHeaders(result)
       }
       "return not found (404) when the group is not found in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/groups/not-hobbits") =>
-            defaultActionBuilder {
-              Results.NotFound
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.updateGroup("not-hobbits")(
-              FakeRequest(PUT, "/groups/not-hobbits")
-                .withJsonBody(hobbitGroup)
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(NOT_FOUND)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
+            defaultActionBuilder { Results.NotFound }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.updateGroup("not-hobbits")(
+          FakeRequest(PUT, "/groups/not-hobbits")
+            .withJsonBody(hobbitGroup)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
       }
     }
 
     ".getMemberList" should {
       "return a list of members of the group when requested - Ok (200)" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroupMembers)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            hasCacheHeaders(result)
-            contentAsJson(result) must beEqualTo(hobbitGroupMembers)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
+            defaultActionBuilder { Results.Ok(hobbitGroupMembers) }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitGroupMembers)
       }
       "return unauthorized (401) if the user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroupMembers)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/data/groups/$hobbitGroupId/members"))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/data/groups/$hobbitGroupId/members"))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return forbidden (403) if the user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitGroupMembers)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) must beEqualTo(FORBIDDEN)
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) must beEqualTo(FORBIDDEN)
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return bad request (400) when the request is rejected by the back end" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.BadRequest("Invalid maxItems")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/groups/$hobbitGroupId/members?maxItems=0")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(BAD_REQUEST)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
+            defaultActionBuilder { Results.BadRequest("Invalid maxItems") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/groups/$hobbitGroupId/members?maxItems=0")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(BAD_REQUEST)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.Unauthorized("The supplied authentication is invalid")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
+            defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/groups/$hobbitGroupId/members")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
       }
       "return not found (404) when the group is not found in the backend" in new WithApplication(
         app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups/$hobbitGroupId/members") =>
-            defaultActionBuilder {
-              Results.NotFound
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getMemberList(hobbitGroupId)(
-              FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(NOT_FOUND)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
+            defaultActionBuilder { Results.NotFound }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getMemberList(hobbitGroupId)(
+          FakeRequest(GET, s"/groups/$hobbitGroupId/members")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
       }
     }
 
     ".myGroups" should {
       "return the list of groups when requested - Ok(200)" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(frodoGroupList)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            hasCacheHeaders(result)
-            contentAsJson(result) must beEqualTo(frodoGroupList)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups" =>
+            defaultActionBuilder { Results.Ok(frodoGroupList) }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getGroups()(
+          FakeRequest(GET, s"/api/groups")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(frodoGroupList)
       }
       "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(frodoGroupList)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups"))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return forbidden (403) when user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups") =>
-            defaultActionBuilder {
-              Results.Ok(frodoGroupList)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockLockedUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.getGroups()(
-              FakeRequest(GET, s"/api/groups")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.getGroups()(
+          FakeRequest(GET, s"/api/groups")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/groups") =>
-            defaultActionBuilder {
-              Results.Unauthorized("The supplied authentication is invalid")
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
-            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(UNAUTHORIZED)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups" =>
+            defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockUserAccessor,
+            client,
+            components,
+            crypto)
+        val result = underTest.getGroups()(
+          FakeRequest(GET, s"/api/groups")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
       }
     }
 
@@ -1564,1047 +1363,674 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
     ".getZones" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result = underTest.getZones()(FakeRequest(GET, s"/api/zones"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.getZones()(FakeRequest(GET, s"/api/zones"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getZones()(
-              FakeRequest(GET, s"/api/zones").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getZones()(
+          FakeRequest(GET, s"/api/zones").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".getZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getZone(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getZone(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getZone(hobbitZoneId)(
-              FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getZone(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".getZoneByName" should {
       "return ok (200) if the zone is found" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/name/$hobbitZoneName") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.getZoneByName(hobbitZoneName)(
-                FakeRequest(GET, s"/zones/name/$hobbitZoneName")
-                  .withSession(
-                    "username" -> frodoUser.userName,
-                    "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            hasCacheHeaders(result)
-            contentAsJson(result) must beEqualTo(hobbitZone)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/name/$hobbitZoneName" =>
+            defaultActionBuilder { Results.Ok(hobbitZone) }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneByName(hobbitZoneName)(
+            FakeRequest(GET, s"/zones/name/$hobbitZoneName")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitZone)
       }
       "return a not found (404) if the zone does not exist" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/name/not-hobbits") =>
-            defaultActionBuilder {
-              Results.NotFound
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
-            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest = withClient(client)
-            val result =
-              underTest.getZoneByName("not-hobbits")(FakeRequest(GET, "/zones/name/not-hobbits")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-            status(result) must beEqualTo(NOT_FOUND)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/name/not-hobbits" =>
+            defaultActionBuilder { Results.NotFound }
         }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneByName("not-hobbits")(
+            FakeRequest(GET, "/zones/name/not-hobbits")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/name/$hobbitZoneName") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getZoneByName(hobbitZoneName)(
-                FakeRequest(GET, s"/api/zones/name/$hobbitZoneName"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneByName(hobbitZoneName)(
+            FakeRequest(GET, s"/api/zones/name/$hobbitZoneName"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/name/$hobbitZoneName") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getZoneByName(hobbitZoneName)(
-              FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getZoneByName(hobbitZoneName)(
+          FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".syncZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/zones/$hobbitZoneId/sync") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.syncZone(hobbitZoneId)(FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.syncZone(hobbitZoneId)(FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId/sync") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.syncZone(hobbitZoneId)(
-              FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.syncZone(hobbitZoneId)(
+          FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".getRecordSets" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId/recordsets") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitRecordSet)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getRecordSets(hobbitZoneId)(
-                FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+        val client = mock[WSClient]
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        val underTest = withClient(client)
+        val result =
+          underTest.getRecordSets(hobbitZoneId)(
+            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId/recordsets") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitRecordSet)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getRecordSets(hobbitZoneId)(
-              FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getRecordSets(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".listRecordSetChanges" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId/recordsetchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitRecordSet)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.listRecordSetChanges(hobbitZoneId)(
-                FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.listRecordSetChanges(hobbitZoneId)(
+            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/$hobbitZoneId/recordsetchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitRecordSet)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.listRecordSetChanges(hobbitZoneId)(
-              FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
-                "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listRecordSetChanges(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".addZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/zones") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.addZone()(FakeRequest(POST, s"/api/zones").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.addZone()(FakeRequest(POST, s"/api/zones").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/zones") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.addZone()(
-              FakeRequest(POST, s"/api/zones")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.addZone()(
+          FakeRequest(POST, s"/api/zones")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".updateZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.updateZone(hobbitZoneId)(
-                FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.updateZone(hobbitZoneId)(
+            FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.updateZone(hobbitZoneId)(
-              FakeRequest(PUT, s"/api/zones/$hobbitZoneId")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.updateZone(hobbitZoneId)(
+          FakeRequest(PUT, s"/api/zones/$hobbitZoneId")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".addRecordSet" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/zones/$hobbitZoneId/recordsets") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.addRecordSet(hobbitRecordSetId)(
-                FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
-                  .withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.addRecordSet(hobbitRecordSetId)(
+            FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
+              .withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.addRecordSet(hobbitRecordSetId)(
-              FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.addRecordSet(hobbitRecordSetId)(
+          FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".deleteZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteZone(hobbitZoneId)(
-                FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteZone(hobbitZoneId)(
+            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/zones/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.deleteZone(hobbitZoneId)(
-              FakeRequest(DELETE, s"/api/zones/$hobbitZoneId")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.deleteZone(hobbitZoneId)(
+          FakeRequest(DELETE, s"/api/zones/$hobbitZoneId")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".updateRecordSet" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
-                FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
-                  .withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
+            FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+              .withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
-              FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
+          FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".deleteRecordSet" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
-                FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
+            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendDELETE(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
-              FakeRequest(DELETE, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
+          FakeRequest(DELETE, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".getBatchChange" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/batchrecordchanges/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getBatchChange(hobbitZoneId)(
-                FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
-                  .withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getBatchChange(hobbitZoneId)(
+            FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
+              .withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/batchrecordchanges/$hobbitZoneId") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getBatchChange(hobbitZoneId)(
-              FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getBatchChange(hobbitZoneId)(
+          FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".newBatchChange" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.newBatchChange()(
-                FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.newBatchChange()(
+            FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.newBatchChange()(
-              FakeRequest(POST, s"/api/dnschanges")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.newBatchChange()(
+          FakeRequest(POST, s"/api/dnschanges")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".cancelBatchChange" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/cancel") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.cancelBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/cancel"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.cancelBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/cancel"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/cancel") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.cancelBatchChange("123")(
-              FakeRequest(POST, s"/api/dnschanges/123/cancel")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.cancelBatchChange("123")(
+          FakeRequest(POST, s"/api/dnschanges/123/cancel")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".approveBatchChange" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/approve") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.approveBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/approve"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.approveBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/approve"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/approve") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.approveBatchChange("123")(
-              FakeRequest(POST, s"/api/dnschanges/123/approve")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.approveBatchChange("123")(
+          FakeRequest(POST, s"/api/dnschanges/123/approve")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".rejectBatchChange" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/reject") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.rejectBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/reject"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.rejectBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/reject"))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPOST(p"/batchrecordchanges/123/reject") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitBatchChange)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.rejectBatchChange("123")(
-              FakeRequest(POST, s"/api/dnschanges/123/reject")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.rejectBatchChange("123")(
+          FakeRequest(POST, s"/api/dnschanges/123/reject")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".listBatchChanges" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/batchrecordchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.listBatchChanges()(
-                FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.listBatchChanges()(
+            FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/batchrecordchanges") =>
-            defaultActionBuilder {
-              Results.Ok(hobbitZone)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.listBatchChanges()(
-              FakeRequest(GET, s"/api/dnschanges")
-                .withJsonBody(hobbitZoneRequest)
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listBatchChanges()(
+          FakeRequest(GET, s"/api/dnschanges")
+            .withJsonBody(hobbitZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
 
     ".lockUser" should {
       "return successful if requesting user is a super user" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${frodoUser.id}/lock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockMultiUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.lockUser(frodoUser.id)(
-              FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
-                .withSession(
-                  "username" -> superFrodoUser.userName,
-                  "accessKey" -> superFrodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            contentAsJson(result) must beEqualTo(userJson)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/users/${frodoUser.id}/lock" =>
+            defaultActionBuilder { Results.Ok(userJson) }
         }
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockMultiUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.lockUser(frodoUser.id)(
+          FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
+            .withSession(
+              "username" -> superFrodoUser.userName,
+              "accessKey" -> superFrodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        contentAsJson(result) must beEqualTo(userJson)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${frodoUser.id}/lock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockMultiUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result =
-              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock"))
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockMultiUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result =
+          underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock"))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return Forbidden if requesting user is not a super user" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${frodoUser.id}/lock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.lockUser(frodoUser.id)(
+            FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
-            status(result) must beEqualTo(403)
-            contentAsString(result) must beEqualTo("Request restricted to super users only.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) must beEqualTo(403)
+        contentAsString(result) must beEqualTo("Request restricted to super users only.")
+        hasCacheHeaders(result)
       }
     }
 
     ".unlockUser" should {
       "return successful if requesting user is a super user" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${lockedFrodoUser.id}/unlock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockMultiUserAccessor,
-                client,
-                components,
-                crypto,
-                mockOidcAuth)
-            val result = underTest.unlockUser(lockedFrodoUser.id)(
-              FakeRequest(PUT, s"/users/${lockedFrodoUser.id}/unlock")
-                .withSession(
-                  "username" -> superFrodoUser.userName,
-                  "accessKey" -> superFrodoUser.accessKey))
-
-            status(result) must beEqualTo(OK)
-            contentAsJson(result) must beEqualTo(userJson)
-            hasCacheHeaders(result)
-          }
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/users/${lockedFrodoUser.id}/unlock" =>
+            defaultActionBuilder { Results.Ok(userJson) }
         }
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockMultiUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth)
+        val result = underTest.unlockUser(lockedFrodoUser.id)(
+          FakeRequest(PUT, s"/users/${lockedFrodoUser.id}/unlock")
+            .withSession(
+              "username" -> superFrodoUser.userName,
+              "accessKey" -> superFrodoUser.accessKey))
+
+        status(result) must beEqualTo(OK)
+        contentAsJson(result) must beEqualTo(userJson)
+        hasCacheHeaders(result)
       }
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${frodoUser.id}/unlock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock"))
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock"))
 
-            status(result) mustEqual 401
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-            hasCacheHeaders(result)
-          }
-        }
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
       }
       "return forbidden (403) if requesting user is not a super user" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendPUT(p"/users/${frodoUser.id}/unlock") =>
-            defaultActionBuilder {
-              Results.Ok(userJson)
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.unlockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock")
-                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+        val client = mock[WSClient]
 
-            status(result) mustEqual 403
-            contentAsString(result) must beEqualTo("Request restricted to super users only.")
-            hasCacheHeaders(result)
-          }
-        }
+        val underTest = withClient(client)
+        val result =
+          underTest.unlockUser(frodoUser.id)(
+            FakeRequest(PUT, s"/users/${frodoUser.id}/unlock")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) mustEqual 403
+        contentAsString(result) must beEqualTo("Request restricted to super users only.")
+        hasCacheHeaders(result)
       }
     }
 
     "getBackendIds" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/backendids") =>
-            defaultActionBuilder {
-              Results.Ok(Json.parse("['backend-1', 'backend-2']"))
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withClient(client)
-            val result =
-              underTest.getBackendIds()(FakeRequest(GET, "/zones/backendids"))
+        val client = mock[WSClient]
 
-            status(result) mustEqual 401
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              "You are not logged in. Please login to continue.")
-          }
-        }
+        val underTest = withClient(client)
+        val result =
+          underTest.getBackendIds()(FakeRequest(GET, "/zones/backendids"))
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/backendids") =>
-            defaultActionBuilder {
-              Results.Ok(Json.parse("['backend-1', 'backend-2']"))
-            }
-        } { implicit port =>
-          WsTestClient.withClient { client =>
-            val underTest = withLockedClient(client)
-            val result = underTest.getBackendIds()(
-              FakeRequest(GET, "/zones/backendids")
-                .withSession(
-                  "username" -> lockedFrodoUser.userName,
-                  "accessKey" -> lockedFrodoUser.accessKey))
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getBackendIds()(
+          FakeRequest(GET, "/zones/backendids")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
 
-            status(result) mustEqual 403
-            hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo(
-              s"User account for `${lockedFrodoUser.userName}` is locked.")
-          }
-        }
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
     }
   }

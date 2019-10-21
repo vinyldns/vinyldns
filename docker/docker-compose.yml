@@ -1,14 +1,14 @@
 version: "3.0"
 services:
   mysql:
-    image: "mysql:5.7"
+    image: mysql:5.7<skipPull>
     env_file:
       .env
     ports:
       - "19002:3306"
 
   bind9:
-    image: "vinyldns/bind9:0.0.4"
+    image: vinyldns/bind9:0.0.4<skipPull>
     env_file:
       .env
     ports:
@@ -18,24 +18,31 @@ services:
       - ./bind9/etc:/var/cache/bind/config
       - ./bind9/zones:/var/cache/bind/zones
 
+  dynamodb-local:
+    image: cnadiminti/dynamodb-local:2017-02-16<skipPull>
+    env_file:
+      .env
+    ports:
+      - "19000:8000"
+    command: "--sharedDb --inMemory"
+
   localstack:
     image: localstack/localstack:0.10.4<skipPull>
     ports:
-      - "19000:19000"
       - "19006:19006"
       - "19007:19007"
     environment:
-      - SERVICES=dynamodb:19000,sns:19006,sqs:19007
+      - SERVICES=sns:19006,sqs:19007
       - START_WEB=0
 
   mail:
-    image: flaviovs/mock-smtp
+    image: flaviovs/mock-smtp:0.0.2<skipPull>
     ports:
       - "19025:25"
     volumes:
       - ./email:/var/lib/mock-smtp
 
   ldap:
-    image: rroemhild/test-openldap
+    image: rroemhild/test-openldap:latest<skipPull>
     ports:
       - "19008:389"

@@ -34,7 +34,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    settings {
           |      access-key = "x"
           |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19005/"
+          |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "queue-name"
           |    }
           |    """.stripMargin)
@@ -56,7 +56,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |      access-key = "x"
           |      secret-key = "x"
           |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19005/"
+          |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "new-queue"
           |    }
           |    """.stripMargin)
@@ -81,7 +81,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |      access-key = "x"
           |      secret-key = "x"
           |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19005/"
+          |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "bad*queue*name"
           |    }
           |    """.stripMargin)
@@ -101,7 +101,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |      access-key = "x"
           |      secret-key = "x"
           |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19005/"
+          |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "queue.fifo"
           |    }
           |    """.stripMargin)
@@ -123,7 +123,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |      access-key = "x"
           |      secret-key = "x"
           |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19005/"
+          |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "new-queue"
           |    }
           |    """.stripMargin)
