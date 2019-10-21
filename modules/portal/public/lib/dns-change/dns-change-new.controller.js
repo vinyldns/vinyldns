@@ -89,7 +89,8 @@
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
                             var recordDataEmpty = true;
                             for (var attr in entry.record) {
-                                if (entry.record[attr] !== undefined && entry.record[attr].length > 0) {
+                                console.log(entry.record[attr])
+                                if (entry.record[attr] !== undefined && entry.record[attr].toString().length > 0) {
                                     recordDataEmpty = false
                                 }
                             }
