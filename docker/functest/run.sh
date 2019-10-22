@@ -15,6 +15,10 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
+if [ -z "${PAR_CPU}" ]; then
+  export PAR_CPU=2
+fi
+
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -52,8 +56,8 @@ result=0
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -n2 -v -m \"not skip_production and not serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n2 -v -m "not skip_production and not serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not skip_production and not serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
+    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
@@ -63,8 +67,8 @@ if [ "${PROD_ENV}" = "true" ]; then
     fi
 else
     # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -n2 -v -m \"not serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n2 -v -m "not serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
+    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
