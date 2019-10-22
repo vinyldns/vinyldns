@@ -20,8 +20,6 @@ COPY --from=builder /vinyldns/modules/api/target/universal/stage /opt/docker
 ARG VINYLDNS_VERSION
 ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
 
-RUN echo "VINYLDNS VERSION = ${VINYLDNS_VERSION}"
-
 RUN mkdir -p /opt/docker/lib_extra
 
 # Mount the volume for config file and lib extras
