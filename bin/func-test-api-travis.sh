@@ -35,8 +35,9 @@ cp -f $DIR/../modules/api/target/scala-2.12/vinyldns.jar $WORK_DIR/docker/api
 echo "Starting docker environment and running func tests..."
 
 if [ -z "${PAR_CPU}" ]; then
-  PAR_CPU=2
+  export PAR_CPU=2
 fi
+
 docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker up --build --exit-code-from functest
 test_result=$?
 
