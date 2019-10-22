@@ -21,7 +21,7 @@ Whether you sign or not is up to your organization.  You need to have notary set
 1. Be sure to login to your docker registry, typically done by `docker login` in the terminal you will release from.
 1. The actual version number is pulled from the local `version.sbt` based on the branch specified (defaults to master)
 1. Run `./release.sh --push --clean --tag [your tag here] --branch [your branch here]`
-    1. typically the `tag` is a build number that you maintain, for example a build number in Jenkins it is recommended.  This is appended as `-b[TAG]`
+    1. typically the `tag` is a build number that you maintain, for example a build number in Jenkins.  Using this field is recommended.  This value will be appended to the generated version as `-b[TAG]`; for example `0.9.4-b123` if using `123` for the tag.
     1. the `branch` defaults to `master` if not specified, you can choose any branch or tag from https://github.com/vinyldns/vinyldns
 1. The version generated will be whatever the version is in the `version.sbt` on the `branch` specified (defaults to master)
 1. Each of the images are built using the branch specified and the correct version
