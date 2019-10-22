@@ -15,10 +15,6 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
-if [ -z "${PAR_CPU}" ]; then
-  PAR_CPU=2
-fi
-
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
