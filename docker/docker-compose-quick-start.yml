@@ -3,7 +3,7 @@ services:
   mysql:
     image: "mysql:5.7"
     env_file:
-      .env.build
+      .env.quickstart
     container_name: "vinyldns-mysql"
     ports:
       - "19002:3306"
@@ -11,7 +11,7 @@ services:
   bind9:
     image: "vinyldns/bind9:0.0.4"
     env_file:
-      .env.build
+      .env.quickstart
     container_name: "vinyldns-bind9"
     ports:
       - "19001:53/udp"
@@ -41,7 +41,7 @@ services:
   api:
     image: "vinyldns/api:${VINYLDNS_VERSION}"
     env_file:
-      .env.build
+      .env.quickstart
     container_name: "vinyldns-api"
     ports:
       - "${REST_PORT}:${REST_PORT}"
@@ -55,7 +55,7 @@ services:
   portal:
     image: "vinyldns/portal:${VINYLDNS_VERSION}"
     env_file:
-      .env.build
+      .env.quickstart
     ports:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     container_name: "vinyldns-portal"
