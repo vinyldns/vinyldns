@@ -16,5 +16,8 @@ ADD functional_test /app
 # Install our func test requirements
 RUN pip install --index-url https://pypi.python.org/simple/ -r /app/requirements.txt
 
+# Specifies how many CPUs to use for func tests; the more the better or specifiy "auto" for optimal results
+ENV PAR_CPU=2
+
 # set the entry point for the container to start vinyl, specify the config resource
 ENTRYPOINT ["/app/run.sh"]
