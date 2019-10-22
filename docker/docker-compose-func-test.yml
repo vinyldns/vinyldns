@@ -67,6 +67,8 @@ services:
       context: functest
     env_file:
       .env
+    environment:
+      - PAR_CPU=${PAR_CPU}
     container_name: "vinyldns-functest"
     depends_on:
       - api

@@ -33,6 +33,12 @@ fi
 cp -f $DIR/../modules/api/target/scala-2.12/vinyldns.jar $WORK_DIR/docker/api
 
 echo "Starting docker environment and running func tests..."
+
+# If PAR_CPU is unset; default to auto
+if [ -z "${PAR_CPU}" ]; then
+  export PAR_CPU=auto
+fi
+
 docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker --log-level ERROR up --build --exit-code-from functest
 test_result=$?
 
