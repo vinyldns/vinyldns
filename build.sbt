@@ -452,39 +452,13 @@ lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
   }
 })
 
-lazy val createSetDockerUpdateLatestCommand = ReleaseStep(action = state => {
-  // dockerUpdateLatest is set to true if the version is not a SNAPSHOT
-  val snap = Project.extract(state).get(Keys.version).endsWith("SNAPSHOT")
-
-  val setDockerUpdateLatest = if (!snap)
-    Command.command("setDockerUpdateLatest") {
-      "set every dockerUpdateLatest := true" ::
-      _
-    }
-  else
-    Command.command("setDockerUpdateLatest") {
-      "" ::
-      _
-    }
-
-  state.copy(definedCommands = state.definedCommands :+ setDockerUpdateLatest)
-})
-
 lazy val sonatypePublishStage = Seq[ReleaseStep](
   releaseStepCommandAndRemaining(";sonatypeReleaseCommand")
 )
 
-lazy val dockerPublishStage = Seq[ReleaseStep](
-  releaseStepCommandAndRemaining(";project api;docker:publish"),
-  releaseStepCommandAndRemaining(";project portal;docker:publish")
-)
-
-
 lazy val initReleaseStage = Seq[ReleaseStep](
   inquireVersions, // have a developer confirm versions
   setReleaseVersion,
-  createSetDockerUpdateLatestCommand,
-  releaseStepCommandAndRemaining(";setDockerUpdateLatest"),
   setSonatypeReleaseSettings
 )
 
@@ -497,7 +471,6 @@ lazy val finalReleaseStage = Seq[ReleaseStep] (
 
 releaseProcess :=
   initReleaseStage ++
-  dockerPublishStage ++
   sonatypePublishStage ++
   finalReleaseStage
 

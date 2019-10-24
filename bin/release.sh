@@ -14,6 +14,20 @@
 
 printf "\nnote: follow the guides in MAINTAINERS.md to setup notary delegation (Docker) and get sonatype key (Maven) \n"
 
+# If we are not in the main repository then fail fast
+REMOTE_REPO=$(git config --get remote.origin.url)
+echo "REMOTE REPO IS $REMOTE_REPO"
+#if [[ "$REMOTE_REPO" != *-vinyldns/vinyldns.git ]]; then
+#  printf "\nCannot run a release from this repository as it is not the main repository: $REMOTE_REPO \n"
+#  exit 1
+#fi
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+#if [[ "$BRANCH" != "master" ]]; then
+#  printf "\nCannot run a release from this branch: $BRANCH is not master \n"
+#  exit 1;
+#fi
+
 DIR=$( cd $(dirname $0) ; pwd -P )
 
 # gpg sbt plugin fails if this is not set
@@ -38,10 +52,10 @@ fi
 ##
 
 printf "\nchecking for notary key passphrase in env... \n"
-if [[ -z "${DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE}" ]]; then
-    printf "\nerror: DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE must be set in environment\n"
-    exit 1
-fi
+#if [[ -z "${DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE}" ]]; then
+#    printf "\nerror: DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE must be set in environment\n"
+#    exit 1
+#fi
 
 ##
 # running tests
@@ -77,8 +91,16 @@ fi
 ##
 # run release
 ##
+# First, run the docker image release as those need to be out before running SBT as SBT bumps version
+V=$(find $CURDIR/target -name "version.sbt" | head -n1 | xargs grep "[ \\t]*version in ThisBuild :=" | head -n1 | sed 's/.*"\(.*\)".*/\1/')
+VERSION="$V"
+if [[ "$V" == *-SNAPSHOT ]]; then
+  VERSION="${V%?????????}"
+fi
+
+"$DIR"/../build/release.sh --version $VERSION --branch "master" --push --clean
 
 printf "\nrunning sbt release... \n"
-cd "$DIR"/../ && sbt release
+cd "$DIR"/../ && sbt "release with-defaults"
 
 printf "\nrelease finished \n"
