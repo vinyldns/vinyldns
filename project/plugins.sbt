@@ -39,5 +39,3 @@ addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")
 
 addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.0.3")
-
-addSbtPlugin("org.scala-sbt" % "sbt-autoversion" % "1.0.0")
