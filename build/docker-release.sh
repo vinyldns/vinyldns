@@ -3,7 +3,7 @@
 CURDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 function usage() {
-  printf "usage: release.sh [OPTIONS]\n\n"
+  printf "usage: docker-release.sh [OPTIONS]\n\n"
   printf "builds and releases vinyldns artifacts\n\n"
   printf "options:\n"
   printf "\t-b, --branch: the branch of tag to use for the build; default is master\n"

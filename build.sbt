@@ -6,6 +6,7 @@ import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
 import ReleaseTransformations._
+import sbtrelease.Version
 
 resolvers ++= additionalResolvers
 
@@ -241,6 +242,11 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       import scala.sys.process._
       "./bin/remove-vinyl-containers.sh" !
     },
+    showNextVersion := {
+      val x = Version(version.value).map(_.bump(releaseVersionBump.value).withoutQualifier.string).getOrElse("Cannot calculate next version")
+      val y = Version(version.value).map(_.withoutQualifier.string).getOrElse("Cannot calculate next version")
+      println(s"NEXT VERSION = $y; BUMP = $x")
+    }
   )
   .aggregate(core, api, portal, dynamodb, mysql, sqs)
 
@@ -341,6 +347,7 @@ lazy val sqs = (project in file("modules/sqs"))
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
 val createJsHeaders = TaskKey[Unit]("createJsHeaders", "Runs script to prepend APL 2.0 license headers to files")
+val showNextVersion = TaskKey[Unit]("showNextVersion", "Show the next version calculated based on current release settings")
 
 lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, AutomateHeaderPlugin)
   .settings(sharedSettings)
