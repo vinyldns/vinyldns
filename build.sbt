@@ -243,9 +243,14 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       "./bin/remove-vinyl-containers.sh" !
     },
     showNextVersion := {
-      val x = Version(version.value).map(_.bump(releaseVersionBump.value).withoutQualifier.string).getOrElse("Cannot calculate next version")
-      val y = Version(version.value).map(_.withoutQualifier.string).getOrElse("Cannot calculate next version")
-      println(s"NEXT VERSION = $y; BUMP = $x")
+      if (releaseVersionBump.value == sbtrelease.Version.Bump.Bugfix) {
+        val nextV = Version(version.value).map(_.withoutQualifier.string).getOrElse("Cannot calculate next version")
+        println(s"NEXT VERSION=$nextV")
+      } else {
+        // We are set to bump to a Minor or Major, so we need to actually bump
+        val bumpV = Version(version.value).map(_.bump(releaseVersionBump.value).withoutQualifier.string).getOrElse("Cannot calculate next version")
+        println(s"NEXT VERSION=$bumpV")
+      }
     }
   )
   .aggregate(core, api, portal, dynamodb, mysql, sqs)

@@ -53,12 +53,12 @@ export GPG_TTY=$(tty)
 ##
 # Checking for uncommitted changes
 ##
-printf "\nchecking for uncommitted changes... \n"
-if ! (cd "$DIR" && git add . && git diff-index --quiet HEAD --)
-then
-    printf "\nerror: attempting to release with uncommitted changes\n"
-    exit 1
-fi
+#printf "\nchecking for uncommitted changes... \n"
+#if ! (cd "$DIR" && git add . && git diff-index --quiet HEAD --)
+#then
+#    printf "\nerror: attempting to release with uncommitted changes\n"
+#    exit 1
+#fi
 
 ##
 # running tests
@@ -89,14 +89,11 @@ fi
 ##
 # run release
 ##
-# First, run the docker image release as those need to be out before running SBT as SBT bumps version
-V=$(find $CURDIR/target -name "version.sbt" | head -n1 | xargs grep "[ \\t]*version in ThisBuild :=" | head -n1 | sed 's/.*"\(.*\)".*/\1/')
-VERSION="$V"
-if [[ "$V" == *-SNAPSHOT ]]; then
-  VERSION="${V%?????????}"
-fi
+# Calculate the version to be released
+VERSION=$(sbt "set releaseVersionBump := $BUMP" "showNextVersion")
+printf "VERSION TO BE RELEASED IS $VERSION"
 
 printf "\nrunning sbt release bumping $BUMP... \n"
-cd "$DIR"/../ && sbt "set releaseVersionBump := sbtrelease.Version.Bump.Major" "release with-defaults"
+#cd "$DIR"/../ && sbt "set releaseVersionBump := sbtrelease.Version.Bump.Major" "release with-defaults"
 
 printf "\nrelease finished \n"
