@@ -54,28 +54,23 @@ find . -name "__pycache__" -delete
 result=0
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
 if [ "${PROD_ENV}" = "true" ]; then
-    # -m plays havoc with -k, using variables is a headache, so doing this by hand
-    # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not skip_production and not serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
-    result=$?
-    if [ $result -eq 0 ]; then
-      # run serial tests second (serial marker)
-      echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial and not multi_record_enabled\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial and not multi_record_enabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
-      result=$?
-    fi
+    PARALLEL_TEST_MARKER="not skip_production and not serial"
+    SERIAL_TEST_MARKER="not skip_production and serial"
 else
-    # run parallel tests first (not serial)
-    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    PARALLEL_TEST_MARKER="not serial"
+    SERIAL_TEST_MARKER="serial"
+fi
+
+# -m plays havoc with -k, using variables is a headache, so doing this by hand
+# run parallel tests first (not serial)
+echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"${PARALLEL_TEST_MARKER}\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
+./run-tests.py live_tests -n${PAR_CPU} -v -m ${PARALLEL_TEST_MARKER} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+result=$?
+if [ $? -eq 0 ]; then
+    # run serial tests second (serial marker)
+    echo "./run-tests.py live_tests -n0 -v -m \"${SERIAL_TEST_MARKER}\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
+    ./run-tests.py live_tests -n0 -v -m ${SERIAL_TEST_MARKER} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
     result=$?
-    if [ $result -eq 0 ]; then
-      # run serial tests second (serial marker)
-      echo "./run-tests.py live_tests -n0 -v -m \"serial and not multi_record_disabled\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run-tests.py live_tests -n0 -v -m "serial and not multi_record_disabled" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
-      result=$?
-    fi
 fi
 
 exit $result

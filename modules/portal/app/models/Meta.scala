@@ -23,8 +23,7 @@ case class Meta(
     batchChangeLimit: Int,
     defaultTtl: Long,
     manualBatchChangeReviewEnabled: Boolean,
-    scheduledBatchChangesEnabled: Boolean,
-    multiRecordBatchChangeEnabled: Boolean)
+    scheduledBatchChangesEnabled: Boolean)
 object Meta {
   def apply(config: Configuration): Meta =
     Meta(
@@ -33,7 +32,6 @@ object Meta {
       config.getOptional[Int]("batch-change-limit").getOrElse(1000),
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
-      config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false),
-      config.getOptional[Boolean]("multi-record-batch-change-enabled").getOrElse(false)
+      config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false)
     )
 }
