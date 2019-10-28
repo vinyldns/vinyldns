@@ -32,7 +32,12 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, ZoneDiscoveryError}
+import vinyldns.core.domain.{
+  CnameAtZoneApexError,
+  SingleChangeError,
+  UserIsNotAuthorizedError,
+  ZoneDiscoveryError
+}
 import vinyldns.core.domain.membership.{
   Group,
   GroupRepository,
@@ -126,7 +131,40 @@ class BatchChangeService(
         auth,
         isApproved,
         batchChangeInput.ownerGroupId)
-    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, groupedChanges)
+      errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
+      validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
+    } yield BatchValidationFlowOutput(validatedSingleChangesWithGroups, zoneMap, groupedChanges)
+
+  def getGroupIdsFromUnauthorizedErrors(
+      changes: ValidatedBatch[ChangeForValidation]): BatchResult[Set[Group]] = {
+    val list = changes.getInvalid.collect {
+      case d: UserIsNotAuthorizedError => d.ownerGroupId
+    }.toSet
+    groupRepository.getGroups(list).toBatchResult
+  }
+
+  def errorGroupMapping(
+      groups: Set[Group],
+      validations: ValidatedBatch[ChangeForValidation]): ValidatedBatch[ChangeForValidation] =
+    validations.map {
+      case Invalid(err) =>
+        err.map {
+          case e: UserIsNotAuthorizedError =>
+            val group = groups.find(_.id == e.ownerGroupId)
+            val updatedError = UserIsNotAuthorizedError(
+              e.userName,
+              e.ownerGroupId,
+              group.map(_.email).getOrElse(e.contactEmail),
+              e.ownerType,
+              group.map(_.name))
+            logger.error(updatedError.message)
+            updatedError
+          case a =>
+            logger.error(a.message)
+            a
+        }.invalid
+      case Valid(a) => a.validNel
+    }
 
   def rejectBatchChange(
       batchChangeId: String,

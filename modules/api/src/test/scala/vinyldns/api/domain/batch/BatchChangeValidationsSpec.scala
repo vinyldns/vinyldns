@@ -840,9 +840,19 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result.foreach(
-      _ should haveInvalid[DomainValidationError](
-        UserIsNotAuthorized(notAuth.signedInUser.userName)))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        addUpdateA.zone.adminGroupId,
+        addUpdateA.zone.email,
+        "zone"))
+
+    result(1) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        deleteUpdateA.zone.adminGroupId,
+        deleteUpdateA.zone.email,
+        "zone"))
   }
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
@@ -1235,7 +1245,8 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(superUser.userName, addA.zone.adminGroupId, addA.zone.email, "zone"))
   }
 
   property(
@@ -1267,7 +1278,11 @@ class BatchChangeValidationsSpec
           None)
 
       result(0) should haveInvalid[DomainValidationError](
-        UserIsNotAuthorized(notAuth.signedInUser.userName))
+        UserIsNotAuthorizedError(
+          notAuth.signedInUser.userName,
+          input.zone.adminGroupId,
+          input.zone.email,
+          "zone"))
     }
   }
 
@@ -1387,7 +1402,12 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        superUser.userName,
+        deleteA.zone.adminGroupId,
+        deleteA.zone.email,
+        "zone"))
   }
 
   property(
@@ -1426,7 +1446,11 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorized(notAuth.signedInUser.userName))
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        deleteA.zone.adminGroupId,
+        deleteA.zone.email,
+        "zone"))
   }
 
   property("""validateChangesWithContext: should properly process batch that contains
@@ -1917,7 +1941,12 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should
-      haveInvalid[DomainValidationError](UserIsNotAuthorized(dummyAuth.signedInUser.userName))
+      haveInvalid[DomainValidationError](
+        UserIsNotAuthorizedError(
+          dummyAuth.signedInUser.userName,
+          sharedZoneRecord.ownerGroupId.get,
+          "",
+          "record"))
   }
 
   property(

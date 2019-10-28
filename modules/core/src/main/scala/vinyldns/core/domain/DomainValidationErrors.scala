@@ -125,8 +125,17 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
       s"""Existing record with name "$name" and type "$typ" conflicts with this record."""
 }
 
-final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
-  def message: String = s"""User "$userName" is not authorized."""
+final case class UserIsNotAuthorizedError(
+    userName: String,
+    ownerGroupId: String,
+    contactEmail: String,
+    ownerType: String,
+    ownerGroupName: Option[String] = None)
+    extends DomainValidationError {
+  def message: String =
+    s"""User "$userName" is not authorized. Contact $ownerType owner group:
+       |${ownerGroupName.getOrElse(ownerGroupId)} at $contactEmail.""".stripMargin
+      .replaceAll("\n", " ")
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
@@ -190,4 +199,8 @@ final case class NewMultiRecordError(changeName: String, changeType: RecordType)
       .replaceAll("\n", " ")
 }
 
+// deprecated in favor of more informative error message
+final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
+  def message: String = s"""User "$userName" is not authorized."""
+}
 // $COVERAGE-ON$

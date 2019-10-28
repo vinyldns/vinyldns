@@ -469,7 +469,15 @@ class BatchChangeValidations(
       input.inputChange.typ,
       input.zone,
       List(input.inputChange.record))
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(
+        _ =>
+          UserIsNotAuthorizedError(
+            authPrincipal.signedInUser.userName,
+            input.zone.adminGroupId,
+            input.zone.email,
+            "zone"))
+      .toValidatedNel
   }
 
   def userCanUpdateRecordSet(
@@ -486,7 +494,19 @@ class BatchChangeValidations(
         ownerGroupId,
         addRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, "", "record")
+          case None =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              input.zone.email,
+              "zone")
+      })
+      .toValidatedNel
   }
 
   def userCanDeleteRecordSet(
@@ -503,7 +523,19 @@ class BatchChangeValidations(
         ownerGroupId,
         existingRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, "", "record")
+          case None =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              input.zone.email,
+              "zone")
+      })
+      .toValidatedNel
   }
 
   def canGetBatchChange(
