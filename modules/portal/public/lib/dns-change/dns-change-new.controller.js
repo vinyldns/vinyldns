@@ -63,6 +63,10 @@
                 }
             };
 
+            $scope.clearRecordData = function(changeIndex) {
+                delete $scope.newBatch.changes[changeIndex].record;
+            };
+
             $scope.createBatchChange = function() {
                 //flag to prevent multiple clicks until previous promise has resolved.
                 $scope.processing = true;
@@ -85,6 +89,18 @@
                             entry.type = entry.type.slice(0, -4);
                             var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
                             payload.changes.splice(i+1, 0, newEntry)
+                        }
+                        if(entry.changeType == 'DeleteRecordSet' && entry.record) {
+                            var recordDataEmpty = true;
+                            for (var attr in entry.record) {
+                                console.log(entry.record[attr])
+                                if (entry.record[attr] != undefined && entry.record[attr].toString().length > 0) {
+                                    recordDataEmpty = false
+                                }
+                            }
+                            if (recordDataEmpty) {
+                                delete entry.record
+                            }
                         }
                     }
                 }
