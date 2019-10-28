@@ -104,7 +104,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-control" ng-model="change.type">
+                                        <select class="form-control" ng-model="change.type" ng-change="clearRecordData({{$index}})">
                                             <option value="A+PTR" selected>A+PTR</option>
                                             <option>AAAA+PTR</option>
                                             <option>A</option>
@@ -187,7 +187,7 @@
                                     </td>
                                     <td ng-if="change.type=='MX'">
                                         <label class="batch-label">Preference</label>
-                                        <input name="record_mx_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535" ng-disabled="change.changeType=='DeleteRecordSet' && !@meta.multiRecordBatchChangeEnabled">
+                                        <input name="record_mx_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType=='Add' || change.record.exchange" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535" ng-disabled="change.changeType=='DeleteRecordSet' && !@meta.multiRecordBatchChangeEnabled">
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.required" class="batch-change-error-help">Preference is required!</span>
                                             <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
@@ -198,7 +198,7 @@
                                         <br />
 
                                         <label class="batch-label">Exchange</label>
-                                        <input name="record_mx_exchange_{{$index}}" type="text" ng-model="change.record.exchange" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet' && !@meta.multiRecordBatchChangeEnabled" fqdn>
+                                        <input name="record_mx_exchange_{{$index}}" type="text" ng-model="change.record.exchange" ng-required="change.changeType=='Add' || change.record.preference==0 || change.record.preference>0" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet' && !@meta.multiRecordBatchChangeEnabled" fqdn>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.required" class="batch-change-error-help">Exchange data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.fqdn" class="batch-change-error-help">Exchange data must be absolute!</span>
