@@ -1,0 +1,77 @@
+version: "3.0"
+services:
+  mysql:
+    image: "mysql:5.7"
+    container_name: "vinyldns-mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: 'pass'
+      MYSQL_ROOT_HOST: '%'
+    logging:
+      driver: none
+    ports:
+      - "19002:3306"
+
+  bind9:
+    build:
+      context: ./test-bind9
+      args:
+          BRANCH: master
+    image: "vinyldns/test-bind9:${VINYLDNS_VERSION}"
+    container_name: "vinyldns-bind9"
+    logging:
+      driver: none
+    ports:
+      - "19001:53/udp"
+      - "19001:53"
+
+  api:
+    build:
+      context: ./api
+    image: "vinyldns/api:${VINYLDNS_VERSION}"
+    container_name: "vinyldns-api"
+    environment:
+      MYSQL_ROOT_PASSWORD: 'pass'
+      MYSQL_ROOT_HOST: '%'
+    logging:
+      driver: none
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./api/application.conf:/opt/docker/conf/application.conf
+      - ./api/logback.xml:/opt/docker/conf/logback.xml
+    depends_on:
+      - mysql
+
+  ldap:
+    image: rroemhild/test-openldap
+    container_name: "vinyldns-ldap"
+    ports:
+      - "19008:389"
+
+  portal:
+    build:
+      context: ./portal
+    image: "vinyldns/portal:${VINYLDNS_VERSION}"
+    container_name: "vinyldns-portal"
+    environment:
+      MYSQL_ROOT_PASSWORD: 'pass'
+      MYSQL_ROOT_HOST: '%'
+    logging:
+      driver: none
+    ports:
+      - "9001:9000"
+    volumes:
+      - ./portal/application.conf:/opt/docker/conf/application.conf
+    depends_on:
+      - api
+      - ldap
+
+  functest:
+    build:
+      context: ./test
+    image: "vinyldns/test:${VINYLDNS_VERSION}"
+    environment:
+      TEST_PATTERN: "test_verify_production"
+    container_name: "vinyldns-functest"
+    depends_on:
+      - api

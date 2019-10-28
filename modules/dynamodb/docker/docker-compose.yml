@@ -1,9 +1,0 @@
-version: "3.0"
-services:
-  localstack:
-    image: localstack/localstack:0.10.4<skipPull>
-    ports:
-      - "19003:19003"
-    environment:
-      - SERVICES=dynamodb:19003
-      - START_WEB=0

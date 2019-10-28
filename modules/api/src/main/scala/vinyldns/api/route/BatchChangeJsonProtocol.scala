@@ -118,7 +118,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     override def toJson(drsci: DeleteRRSetChangeInput): JValue =
       ("changeType" -> Extraction.decompose(DeleteRecordSet)) ~
         ("inputName" -> drsci.inputName) ~
-        ("type" -> Extraction.decompose(drsci.typ))
+        ("type" -> Extraction.decompose(drsci.typ)) ~
+        ("record" -> Extraction.decompose(drsci.record))
   }
 
   // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatibility with clients

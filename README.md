@@ -2,6 +2,7 @@
 [![Travis build](https://api.travis-ci.org/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.org/vinyldns/vinyldns)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2682/badge)](https://bestpractices.coreinfrastructure.org/projects/2682)
+[![License](https://img.shields.io/github/license/vinyldns/vinyldns)](https://github.com/vinyldns/vinyldns/blob/master/LICENSE)
 
 <p align="left">
   <a href="http://www.vinyldns.io/">
@@ -61,7 +62,7 @@ There exist several clients at <https://github.com/vinyldns> that can be used to
 1. Login with the credentials ***professor*** and ***professor***
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
 1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
-1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones> (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
+1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones>.  For a quick test, create a new zone named "ok" with an email of "test@test.com" and choose a group you created from the previous step. (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
 1. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the local docker DNS server 
 and VinylDNS automatically syncs records with the backend DNS server upon zone connection
 1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
@@ -71,11 +72,11 @@ TTL = 300, IP Addressess = 1.1.1.1`
 1. Click on the **Refresh** button under Records, you should see your new record created
 
 ## Other things to note
-1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
+1. Upon connecting to a zone for the first time, a zone sync is executed to provide VinylDNS a copy of the records in the zone
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
 1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the `bin/.env` file before execution.
-1. A similar `docker/.env` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
+1. A similar `docker/.env.quickstart` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 ## Code of Conduct
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
