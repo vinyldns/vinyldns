@@ -2328,4 +2328,39 @@ class BatchChangeServiceSpec
       result shouldBe a[BatchChangeFailedApproval]
     }
   }
+
+  "getGroupIdsFromUnauthorizedErrors" should {
+    val error =
+      UserIsNotAuthorizedError("test-user", okGroup.id, "test@example.com", "zone").invalidNel
+
+    "combine gets for each valid record" in {
+      val in = List(apexAddForVal.validNel, error)
+
+      val result = rightResultOf(underTest.getGroupIdsFromUnauthorizedErrors(in).value)
+
+      result shouldBe Set(okGroup)
+    }
+  }
+
+  "errorGroupMapping" should {
+    val error =
+      UserIsNotAuthorizedError("test-user", okGroup.id, "test@example.com", "zone").invalidNel
+
+    "combine gets for each valid record" in {
+      val in = List(error, apexAddForVal.validNel)
+
+      val result = underTest.errorGroupMapping(Set(okGroup), in)
+
+      result.head should haveInvalid[DomainValidationError](
+        UserIsNotAuthorizedError(
+          "test-user",
+          okGroup.id,
+          okGroup.email,
+          "zone",
+          Some(okGroup.name)))
+
+      result(1) should beValid[ChangeForValidation](
+        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA))
+    }
+  }
 }
