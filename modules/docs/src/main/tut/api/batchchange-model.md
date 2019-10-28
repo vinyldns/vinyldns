@@ -68,7 +68,7 @@ A successful batch change response consists of a corresponding [SingleAddChange]
 
 name          | type          | description |
  ------------ | :------------ | :---------- |
-changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**. |
+changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**.  [See more details](#changetype-values) about behavior of `changeType` interaction. |
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
 type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
 ttl           | long          | The time-to-live in seconds. |
@@ -87,9 +87,10 @@ id            | string        | The unique identifier for this change. |
 
 name          | type          | description |
  ------------ | :------------ | :---------- |
-changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**. |
+changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**.  [See more details](#changetype-values) about behavior of `changeType` interaction. |
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
-type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. | 
+type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+record        | [RecordData](../api/recordset-model#record-data)    | Optional. The data deleted for this record, which varies by record type.  If not provided, the entire DNS recordset was deleted. | 
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
 recordName    | string        | The name of the record. Record names for the apex will be match the zone name (including terminating dot). |
 zoneName      | string        | The name of the zone. |
@@ -100,6 +101,16 @@ recordSetId   | string        | Conditional: The unique identifier for the recor
 validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteRRSetChange. *Note: These will only exist on `NeedsReview` or `Rejected` SingleChanges* |
 id            | string        | The unique identifier for this change. |
 
+
+#### ChangeType Values <a id="changetype-values" />
+There are two valid `changeType`s for a `SingleChange`: **Add** and **DeleteRecordSet**
+
+`changeType`s can be used independently or combined to achieve the desired behavior described below.
+
+- Create a new DNS record: **Add** with record data
+- Delete an entire record set: 1. **DeleteRecordSet** without specifying existing record data *or* 2. **DeleteRecordSet** for each entry of the DNS record
+- Delete a single entry from DNS record with multiple entries: **DeleteRecordSet** specifying existing record data
+- Update an existing record set: 1. **DeleteRecordSet** specifying existing record data (single entry delete) or not specifying record data (full delete) *and* 2. **Add** with record data
 
 #### BATCH CHANGE EXAMPLE <a id="batchchange-example" />
 
@@ -142,6 +153,22 @@ Successful batch change response example with a [SingleAddChange](#singleaddchan
             "recordSetId": "4754b084-5f81-11e8-9c2d-fa7ae01bbebc",
             "validationErrors": [],
             "id": "c29d33e4-9bee-4417-a99b-6e815fdeb748"
+        },
+        {
+            "changeType": "DeleteRecordSet",
+            "inputName": "anotherRecordName.zoneName.",
+            "type": "A",
+            "record": {
+                "address": "1.1.1.1"
+            },
+            "status": "Complete",
+            "recordName": "recordName",
+            "zoneName": "zoneName.",
+            "zoneId": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
+            "recordChangeId": "9c449026-cffe-4379-beb7-217b8a31aadd",
+            "recordSetId": "e68776ab-f56f-41bf-a03e-c288b9469b53",
+            "validationErrors": [],
+            "id": "e68776ab-f56f-41bf-a03e-c288b9469b53"
         }
     ], 
     "status": "Complete", 
