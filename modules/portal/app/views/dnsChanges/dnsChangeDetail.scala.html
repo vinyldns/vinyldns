@@ -36,6 +36,14 @@
                 <notification ng-model="alert"></notification>
             </div>
         </div>
+        @for(link <- customLinks.links) {
+            @if(link.displayOnSidebar) {
+
+            }
+        }
+        <div ng-if="batch.status == 'Complete'" class="alert alert-info" role="alert">Your changes are fully implemented. Keep in mind it may take a few hours for the changes to fully propogate out. <a href="http://docs.vinyldns.comcast.net/getting-started/faq/#how-long-changes-vinyldns">See the docs for more information.</a></div>
+        <div ng-if="batch.approvalStatus == 'PendingReview' && !batch.scheduledTime" class="alert alert-info" role="alert">Your DNS Change requires further review. It will be approved and processed or rejected within 24 hours.</div>
+        <div ng-if="batch.status == 'Scheduled'" class="alert alert-info" role="alert">If there are any changes in your scheduled DNS Change with a status of Needs Review they will be addressed prior to the scheduled date and time.</div>
         <div class="row">
             <div class="col-md-12">
                 <p><strong>ID:</strong> {{batch.id}}</p>

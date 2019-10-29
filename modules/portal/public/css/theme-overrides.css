@@ -166,3 +166,9 @@ ul.bar_tabs>li a {
   background-color: #e6e6e6!important;
   border: 1px solid #adadad!important;
 }
+
+.alert-info {
+    color: #31708f!important;
+    background-color: #d9edf7!important;
+    border-color: #bce8f1!important;
+}
