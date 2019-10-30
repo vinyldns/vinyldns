@@ -72,7 +72,7 @@ def assert_change_success_response_values(changes_json, zone, index, record_name
 def assert_error(input_json, error_messages):
     for error in error_messages:
         assert_that(input_json['errors'], has_item(error))
-    assert_that(len(input_json['errors']), is_(len(error_messages)))
+        assert_that(len(input_json['errors']), is_(len(error_messages)))
 
 
 @pytest.mark.serial
@@ -1519,6 +1519,15 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     ok_zone = shared_zone_test_context.ok_zone
     dummy_zone = shared_zone_test_context.dummy_zone
 
+    group_to_delete = {}
+    temp_group = {
+        'name': 'test-group-for-record-in-private-zone',
+        'email': 'test@test.com',
+        'description': 'for testing that a get batch change still works when record owner group is deleted',
+        'members': [ { 'id': 'ok'}, {'id': 'dummy'} ],
+        'admins': [ { 'id': 'ok'}, {'id': 'dummy'} ]
+    }
+
     rs_delete_name = generate_record_name()
     rs_delete_fqdn = rs_delete_name + ".ok."
     rs_delete_ok = get_recordset_json(ok_zone, rs_delete_name, "A", [{'address': '1.1.1.1'}])
@@ -1534,6 +1543,10 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     rs_update_dummy_name = generate_record_name()
     rs_update_dummy_fqdn = rs_update_dummy_name + ".dummy."
     rs_update_dummy = get_recordset_json(dummy_zone, rs_update_dummy_name, "A", [{'address': '1.1.1.1'}])
+
+    rs_dummy_with_owner_name = generate_record_name()
+    rs_delete_dummy_with_owner_fqdn = rs_dummy_with_owner_name + ".dummy."
+    rs_update_dummy_with_owner_fqdn = rs_dummy_with_owner_name + ".dummy."
 
     batch_change_input = {
         "comments": "this is optional",
@@ -1558,7 +1571,9 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json("non-existent.ok.", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(rs_update_dummy_fqdn, ttl=300)
+            get_change_A_AAAA_json(rs_update_dummy_fqdn, ttl=300),
+            get_change_A_AAAA_json(rs_delete_dummy_with_owner_fqdn, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_update_dummy_with_owner_fqdn, ttl=300)
         ]
     }
 
@@ -1566,6 +1581,12 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     to_delete = []
 
     try:
+        group_to_delete = dummy_client.create_group(temp_group, status=200)
+
+        rs_update_dummy_with_owner = get_recordset_json(dummy_zone, rs_dummy_with_owner_name, "A", [{'address': '1.1.1.1'}], 100, group_to_delete['id'])
+        create_rs_update_dummy_with_owner = dummy_client.create_recordset(rs_update_dummy_with_owner, status=202)
+        to_delete.append(dummy_client.wait_until_recordset_change_status(create_rs_update_dummy_with_owner, 'Complete'))
+
         for rs in to_create:
             if rs['zoneId'] == dummy_zone['id']:
                 create_client = dummy_client
@@ -1629,6 +1650,10 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn, ttl=300,
                                                error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
+        assert_failed_change_in_error_response(response[14], input_name=rs_update_dummy_with_owner_fqdn, change_type="DeleteRecordSet",
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
+        assert_failed_change_in_error_response(response[15], input_name=rs_update_dummy_with_owner_fqdn, ttl=300,
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
 
     finally:
         # Clean up updates
@@ -1636,6 +1661,7 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
         ok_deletes = [rs for rs in to_delete if rs['zone']['id'] != dummy_zone['id']]
         clear_recordset_list(dummy_deletes, dummy_client)
         clear_recordset_list(ok_deletes, ok_client)
+        dummy_client.delete_group(group_to_delete['id'], status=200)
 
 
 def test_aaaa_recordtype_add_checks(shared_zone_test_context):

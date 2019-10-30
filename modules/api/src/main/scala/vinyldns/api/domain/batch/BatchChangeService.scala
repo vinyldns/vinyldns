@@ -154,8 +154,8 @@ class BatchChangeService(
             val updatedError = UserIsNotAuthorizedError(
               e.userName,
               e.ownerGroupId,
-              group.map(_.email).getOrElse(e.contactEmail),
               e.ownerType,
+              group.map(_.email),
               group.map(_.name))
             logger.error(updatedError.message)
             updatedError

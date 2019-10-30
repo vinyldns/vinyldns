@@ -27,7 +27,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -475,8 +475,8 @@ class BatchChangeValidations(
           UserIsNotAuthorizedError(
             authPrincipal.signedInUser.userName,
             input.zone.adminGroupId,
-            input.zone.email,
-            "zone"))
+            OwnerType.Zone,
+            Some(input.zone.email)))
       .toValidatedNel
   }
 
@@ -497,14 +497,14 @@ class BatchChangeValidations(
     result
       .leftMap(_ =>
         ownerGroupId match {
-          case Some(id) =>
-            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, "", "record")
-          case None =>
+          case Some(id) if input.zone.shared =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+          case _ =>
             UserIsNotAuthorizedError(
               authPrincipal.signedInUser.userName,
               input.zone.adminGroupId,
-              input.zone.email,
-              "zone")
+              OwnerType.Zone,
+              Some(input.zone.email))
       })
       .toValidatedNel
   }
@@ -527,13 +527,13 @@ class BatchChangeValidations(
       .leftMap(_ =>
         ownerGroupId match {
           case Some(id) =>
-            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, "", "record")
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
           case None =>
             UserIsNotAuthorizedError(
               authPrincipal.signedInUser.userName,
               input.zone.adminGroupId,
-              input.zone.email,
-              "zone")
+              OwnerType.Zone,
+              Some(input.zone.email))
       })
       .toValidatedNel
   }

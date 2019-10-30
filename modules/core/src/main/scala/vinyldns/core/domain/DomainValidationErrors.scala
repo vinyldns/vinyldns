@@ -16,6 +16,7 @@
 
 package vinyldns.core.domain
 
+import vinyldns.core.domain.batch.OwnerType.OwnerType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
@@ -128,13 +129,13 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
 final case class UserIsNotAuthorizedError(
     userName: String,
     ownerGroupId: String,
-    contactEmail: String,
-    ownerType: String,
+    ownerType: OwnerType,
+    contactEmail: Option[String] = None,
     ownerGroupName: Option[String] = None)
     extends DomainValidationError {
   def message: String =
-    s"""User "$userName" is not authorized. Contact $ownerType owner group:
-       |${ownerGroupName.getOrElse(ownerGroupId)} at $contactEmail.""".stripMargin
+    s"""User "$userName" is not authorized. Contact ${ownerType.toString.toLowerCase} owner group:
+       |${ownerGroupName.getOrElse(ownerGroupId)} at ${contactEmail.getOrElse("")}.""".stripMargin
       .replaceAll("\n", " ")
 }
 

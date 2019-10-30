@@ -30,7 +30,7 @@ import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -844,15 +844,15 @@ class BatchChangeValidationsSpec
       UserIsNotAuthorizedError(
         notAuth.signedInUser.userName,
         addUpdateA.zone.adminGroupId,
-        addUpdateA.zone.email,
-        "zone"))
+        OwnerType.Zone,
+        Some(addUpdateA.zone.email)))
 
     result(1) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
         notAuth.signedInUser.userName,
         deleteUpdateA.zone.adminGroupId,
-        deleteUpdateA.zone.email,
-        "zone"))
+        OwnerType.Zone,
+        Some(deleteUpdateA.zone.email)))
   }
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
@@ -1246,7 +1246,11 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorizedError(superUser.userName, addA.zone.adminGroupId, addA.zone.email, "zone"))
+      UserIsNotAuthorizedError(
+        superUser.userName,
+        addA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(addA.zone.email)))
   }
 
   property(
@@ -1281,8 +1285,8 @@ class BatchChangeValidationsSpec
         UserIsNotAuthorizedError(
           notAuth.signedInUser.userName,
           input.zone.adminGroupId,
-          input.zone.email,
-          "zone"))
+          OwnerType.Zone,
+          Some(input.zone.email)))
     }
   }
 
@@ -1406,8 +1410,8 @@ class BatchChangeValidationsSpec
       UserIsNotAuthorizedError(
         superUser.userName,
         deleteA.zone.adminGroupId,
-        deleteA.zone.email,
-        "zone"))
+        OwnerType.Zone,
+        Some(deleteA.zone.email)))
   }
 
   property(
@@ -1449,8 +1453,8 @@ class BatchChangeValidationsSpec
       UserIsNotAuthorizedError(
         notAuth.signedInUser.userName,
         deleteA.zone.adminGroupId,
-        deleteA.zone.email,
-        "zone"))
+        OwnerType.Zone,
+        Some(deleteA.zone.email)))
   }
 
   property("""validateChangesWithContext: should properly process batch that contains
@@ -1945,8 +1949,8 @@ class BatchChangeValidationsSpec
         UserIsNotAuthorizedError(
           dummyAuth.signedInUser.userName,
           sharedZoneRecord.ownerGroupId.get,
-          "",
-          "record"))
+          OwnerType.Record,
+          None))
   }
 
   property(
