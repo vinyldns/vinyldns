@@ -60,5 +60,10 @@
                 var data = reviewComment ? {'reviewComment': reviewComment} : {};
                 return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
             };
+
+            this.revalidateBatchChange = function (id) {
+                var url = '/api/dnschanges/' + id + '/revalidate';
+                return $http.post(url, {}, {headers: utilityService.getCsrfHeader()});
+            };
         });
 })();

@@ -58,6 +58,7 @@ POST          /api/dnschanges                    @controllers.VinylDNS.newBatchC
 POST          /api/dnschanges/:id/cancel         @controllers.VinylDNS.cancelBatchChange(id: String)
 POST          /api/dnschanges/:id/approve        @controllers.VinylDNS.approveBatchChange(id: String)
 POST          /api/dnschanges/:id/reject         @controllers.VinylDNS.rejectBatchChange(id: String)
+POST          /api/dnschanges/:id/revalidate     @controllers.VinylDNS.revalidateBatchChange(id: String)
 
 GET           /callback/:id                      @controllers.VinylDNS.oidcCallback(id: String)
 GET           /callback/set-oidc-session/:id              @controllers.VinylDNS.setOidcSession(id: String)

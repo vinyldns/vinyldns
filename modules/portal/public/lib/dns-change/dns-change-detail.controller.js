@@ -108,6 +108,21 @@
                     });
             };
 
+            $scope.revalidate = function() {
+                function success(response) {
+                    var alert = utilityService.success('DNS Change re-validated.', response, 'revalidateBatchChange: revalidateBatchChange successful');
+                    $scope.alerts.push(alert);
+                    $scope.refresh();
+                }
+
+                return batchChangeService
+                    .revalidateBatchChange($scope.batch.id)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'batchChangesService::revalidateBatchChange-failure');
+                    });
+            };
+
             function handleError(error, type) {
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);

@@ -175,6 +175,7 @@
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="!reviewType" class="pull-right">
+                                <button ng-if="batch.status == 'Scheduled'" class="btn btn-info" ng-click="revalidate()">Revalidate</button>
                                 <button class="btn btn-success" ng-click="approve()">Approve</button>
                                 <button class="btn btn-danger" ng-click="reject()">Reject</button>
                             </div>
