@@ -8,7 +8,7 @@ This folder contains scripts and everything you need to build and test VinylDNS 
 
 ## Local Build and Test
 
-1. `./release.sh --clean`
+1. `./docker-release.sh --clean`
 1. Open up `version.sbt` in the root to know the directory (or capture in the script output)
 1. Once complete, run a test `./start.sh --version 0.9.4-SNAPSHOT` (replace 0.9.4 with the value in version.sbt).
 1. Login to the portal at http://localhost:9001 to verify everything looks good
@@ -20,7 +20,7 @@ This folder contains scripts and everything you need to build and test VinylDNS 
 Whether you sign or not is up to your organization.  You need to have notary setup to be able to sign properly.
 1. Be sure to login to your docker registry, typically done by `docker login` in the terminal you will release from.
 1. The actual version number is pulled from the local `version.sbt` based on the branch specified (defaults to master)
-1. Run `./release.sh --push --clean --tag [your tag here] --branch [your branch here]`
+1. Run `./docker-release.sh --push --clean --tag [your tag here] --branch [your branch here]`
     1. typically the `tag` is a build number that you maintain, for example a build number in Jenkins.  Using this field is recommended.  This value will be appended to the generated version as `-b[TAG]`; for example `0.9.4-b123` if using `123` for the tag.
     1. the `branch` defaults to `master` if not specified, you can choose any branch or tag from https://github.com/vinyldns/vinyldns
 1. The version generated will be whatever the version is in the `version.sbt` on the `branch` specified (defaults to master)
@@ -30,7 +30,7 @@ Whether you sign or not is up to your organization.  You need to have notary set
 
 ### Release Script
 Does a clean build off of remote master and tags it with 
-`./release.sh --clean --push --tag 123`
+`./docker-release.sh --clean --push --tag 123`
 
 The release script is used for doing a release.  It takes the following parameters:
 
@@ -42,6 +42,7 @@ is `docker.io`
 - `-r | --repository [REPOSITORY]` - a URL to your docker registry, defaults to `docker.io`
 - `-t | --tag [TAG]` - a build qualifer for this build.  For example, pass in the build number for your 
 continuous integration tool
+- `-v | --version [VERSION]` - overrides the version calculation and forces the version passed in.  Used primarily for official releases
 
 ## Docker Images
 
