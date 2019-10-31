@@ -180,6 +180,6 @@ class VinylDNSService(
   val vinyldnsRoutes: Route =
     logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(allRoutes)
   val routes: Route =
-    handleRejections(validationRejectionHandler)(allRoutes)
+    handleRejections(validationRejectionHandler)(vinyldnsRoutes)
 }
 // $COVERAGE-ON$
