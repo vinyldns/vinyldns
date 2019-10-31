@@ -17,8 +17,8 @@
 (function() {
     'use strict';
 
-    angular.module('batch-change')
-        .service('batchChangeService', function ($http, utilityService) {
+    angular.module('dns-change')
+        .service('dnsChangeService', function ($http, utilityService) {
 
             this.getBatchChange = function (id) {
                 var url = '/api/dnschanges/' + id;
