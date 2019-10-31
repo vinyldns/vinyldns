@@ -159,11 +159,11 @@ class BatchChangeService(
               group.map(_.name))
             logger.error(updatedError.message)
             updatedError
-          case a =>
-            logger.error(a.message)
-            a
+          case e =>
+            logger.error(e.message)
+            e
         }.invalid
-      case Valid(a) => a.validNel
+      case valid => valid
     }
 
   def rejectBatchChange(

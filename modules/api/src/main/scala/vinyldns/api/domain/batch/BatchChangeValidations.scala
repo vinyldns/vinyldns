@@ -526,9 +526,9 @@ class BatchChangeValidations(
     result
       .leftMap(_ =>
         ownerGroupId match {
-          case Some(id) =>
+          case Some(id) if input.zone.shared =>
             UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
-          case None =>
+          case _ =>
             UserIsNotAuthorizedError(
               authPrincipal.signedInUser.userName,
               input.zone.adminGroupId,
