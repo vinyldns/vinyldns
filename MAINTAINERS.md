@@ -26,6 +26,8 @@ the [vinyldns organization](https://hub.docker.com/u/vinyldns/dashboard/). Namel
 * vinyldns/api: images for vinyldns core api engine 
 * vinyldns/portal: images for vinyldns web client
 * vinyldns/bind9: images for local DNS server used for testing 
+* vinyldns/test-bind9: contains the setup to run functional tests 
+* vinyldns/test: has the actual functional tests pinned to a version of VinylDNS 
 
 The offline root key and repository keys are managed by the core maintainer team. The keys managed are:
 
@@ -33,6 +35,8 @@ The offline root key and repository keys are managed by the core maintainer team
 * api key: used to sign tagged images in vinyldns/api
 * portal key: used to sign tagged images in vinyldns/portal
 * bind9 key: used to sign tagged images in the vinyldns/bind9
+* test-bind9 key: used to sign tagged images in the vinyldns/test-bind9
+* test key: used to sign tagged images in the vinyldns/test
 
 These keys are named in a <hash>.key format, e.g. 5526ecd15bd413e08718e66c440d17a28968d5cd2922b59a17510da802ca6572.key,
 do not change the names of the keys. 
@@ -156,11 +160,11 @@ running the release
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Make sure you're logged in to Docker with `docker login`
-1. Export `DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE` in your env with your notary key passphrase 
 1. Run `bin/release.sh` _Note: the arg "skip-tests" will skip unit, integration and functional testing before a release_
 1. You will be asked to confirm the version which originally comes from `version.sbt`. _NOTE: if the version ends with 
 `SNAPSHOT`, then the docker latest tag won't be applied and the core module will only be published to the sonatype
-staging repo._
+staging repo.
 1. When it comes to the sonatype stage, you will need the passphrase handy for the signing key, [Sonatype Credentials](#sonatype-credentials)
 1. Assuming things were successful, make a pr since sbt release auto-bumped `version.sbt` and made a commit for you
-
+1. Run `./build/docker-release.sh --branch [TAG CREATED FROM PREVIOUS STEP, e.g. v0.9.3] --clean --push`
+1. You will need to have your keys ready so you can sign each image as it is published.

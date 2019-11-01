@@ -75,7 +75,7 @@ function wait_for_portal {
 # initial var setup
 DIR=$( cd $(dirname $0) ; pwd -P )
 TIMEOUT=60
-DOCKER_COMPOSE_CONFIG="${DIR}/../docker/docker-compose-build.yml"
+DOCKER_COMPOSE_CONFIG="${DIR}/../docker/docker-compose-quick-start.yml"
 # empty service starts up all docker services in compose file
 SERVICE=""
 # when CLEAN is set to 1, existing docker images are deleted so they are re-pulled

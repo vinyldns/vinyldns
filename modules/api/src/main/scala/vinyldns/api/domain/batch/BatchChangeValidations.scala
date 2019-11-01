@@ -27,7 +27,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -69,7 +69,6 @@ trait BatchChangeValidationsAlgebra {
 class BatchChangeValidations(
     changeLimit: Int,
     accessValidation: AccessValidationsAlgebra,
-    multiRecordEnabled: Boolean = false,
     scheduledChangesEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
 
@@ -267,23 +266,6 @@ class BatchChangeValidations(
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
 
-  def existingRecordSetIsNotMulti(
-      change: ChangeForValidation,
-      recordSet: RecordSet): SingleValidation[Unit] =
-    if (!multiRecordEnabled & recordSet.records.length > 1) {
-      ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
-    } else ().validNel
-
-  def newRecordSetIsNotMulti(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
-    lazy val matchingAddRecords = groupedChanges
-      .getProposedAdds(change.recordKey)
-    if (!multiRecordEnabled && matchingAddRecords.size > 1)
-      NewMultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
-    else ().validNel
-  }
-
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     if (change.recordName != change.zone.name && change.recordName.contains("."))
       ZoneDiscoveryError(change.inputChange.inputName).invalidNel
@@ -317,7 +299,6 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -335,7 +316,7 @@ class BatchChangeValidations(
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
       case CNAME => recordIsUniqueInBatch(change, groupedChanges)
-      case _ => newRecordSetIsNotMulti(change, groupedChanges)
+      case _ => ().validNel
     }
 
     val commonValidations: SingleValidation[Unit] = {
@@ -347,7 +328,6 @@ class BatchChangeValidations(
               groupedChanges.existingRecordSets
                 .get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -369,7 +349,6 @@ class BatchChangeValidations(
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(change.recordKey).toList
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None =>
@@ -387,13 +366,12 @@ class BatchChangeValidations(
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetIsNotMulti(change, groupedChanges) |+|
-          newRecordSetIsNotDotted(change)
+        newRecordSetIsNotDotted(change)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case TXT | PTR =>
-        newRecordSetIsNotMulti(change, groupedChanges)
+        ().validNel
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
@@ -491,7 +469,15 @@ class BatchChangeValidations(
       input.inputChange.typ,
       input.zone,
       List(input.inputChange.record))
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(
+        _ =>
+          UserIsNotAuthorizedError(
+            authPrincipal.signedInUser.userName,
+            input.zone.adminGroupId,
+            OwnerType.Zone,
+            Some(input.zone.email)))
+      .toValidatedNel
   }
 
   def userCanUpdateRecordSet(
@@ -508,7 +494,19 @@ class BatchChangeValidations(
         ownerGroupId,
         addRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) if input.zone.shared =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+          case _ =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              OwnerType.Zone,
+              Some(input.zone.email))
+      })
+      .toValidatedNel
   }
 
   def userCanDeleteRecordSet(
@@ -525,7 +523,19 @@ class BatchChangeValidations(
         ownerGroupId,
         existingRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) if input.zone.shared =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+          case _ =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              OwnerType.Zone,
+              Some(input.zone.email))
+      })
+      .toValidatedNel
   }
 
   def canGetBatchChange(

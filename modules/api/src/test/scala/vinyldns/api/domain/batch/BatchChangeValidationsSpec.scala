@@ -30,7 +30,7 @@ import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -51,9 +51,7 @@ class BatchChangeValidationsSpec
   private val maxChanges = 10
   private val accessValidations = new AccessValidations()
   private val underTest =
-    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = true)
-  private val underTestMultiDisabled =
-    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = false)
+    new BatchChangeValidations(maxChanges, accessValidations)
 
   import underTest._
 
@@ -293,11 +291,8 @@ class BatchChangeValidationsSpec
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
       scheduledTime = Some(DateTime.now))
-    val bcv = new BatchChangeValidations(
-      maxChanges,
-      accessValidations,
-      multiRecordEnabled = true,
-      scheduledChangesEnabled = false)
+    val bcv =
+      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = false)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled)
   }
@@ -308,11 +303,8 @@ class BatchChangeValidationsSpec
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
       scheduledTime = Some(DateTime.now.minusHours(1)))
-    val bcv = new BatchChangeValidations(
-      maxChanges,
-      accessValidations,
-      multiRecordEnabled = true,
-      scheduledChangesEnabled = true)
+    val bcv =
+      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = true)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture)
   }
@@ -848,9 +840,19 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result.foreach(
-      _ should haveInvalid[DomainValidationError](
-        UserIsNotAuthorized(notAuth.signedInUser.userName)))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        addUpdateA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(addUpdateA.zone.email)))
+
+    result(1) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        deleteUpdateA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(deleteUpdateA.zone.email)))
   }
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
@@ -1243,7 +1245,12 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        superUser.userName,
+        addA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(addA.zone.email)))
   }
 
   property(
@@ -1275,7 +1282,11 @@ class BatchChangeValidationsSpec
           None)
 
       result(0) should haveInvalid[DomainValidationError](
-        UserIsNotAuthorized(notAuth.signedInUser.userName))
+        UserIsNotAuthorizedError(
+          notAuth.signedInUser.userName,
+          input.zone.adminGroupId,
+          OwnerType.Zone,
+          Some(input.zone.email)))
     }
   }
 
@@ -1395,7 +1406,12 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorizedError(
+        superUser.userName,
+        deleteA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(deleteA.zone.email)))
   }
 
   property(
@@ -1434,7 +1450,11 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorized(notAuth.signedInUser.userName))
+      UserIsNotAuthorizedError(
+        notAuth.signedInUser.userName,
+        deleteA.zone.adminGroupId,
+        OwnerType.Zone,
+        Some(deleteA.zone.email)))
   }
 
   property("""validateChangesWithContext: should properly process batch that contains
@@ -1925,7 +1945,12 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should
-      haveInvalid[DomainValidationError](UserIsNotAuthorized(dummyAuth.signedInUser.userName))
+      haveInvalid[DomainValidationError](
+        UserIsNotAuthorizedError(
+          dummyAuth.signedInUser.userName,
+          sharedZoneRecord.ownerGroupId.get,
+          OwnerType.Record,
+          None))
   }
 
   property(
@@ -1953,8 +1978,7 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  property(
-    "validateChangesWithContext: succeed update/delete to a multi record existing RecordSet if multi enabled") {
+  property("validateChangesWithContext: succeed update/delete to a multi record existing RecordSet") {
     val existing = List(
       sharedZoneRecord.copy(
         name = updateSharedAddChange.recordName,
@@ -1992,49 +2016,7 @@ class BatchChangeValidationsSpec
     result(5) shouldBe valid
   }
 
-  property(
-    "validateChangesWithContext: fail on update/delete to a multi record existing RecordSet if multi disabled") {
-    val existing = List(
-      sharedZoneRecord.copy(
-        name = updateSharedAddChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2"))),
-      sharedZoneRecord.copy(
-        name = deleteSharedChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2"))),
-      rsOk.copy(name = updatePrivateAddChange.recordName),
-      rsOk.copy(name = deletePrivateChange.recordName)
-    )
-
-    val result = underTestMultiDisabled.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedAddChange.validNel,
-          updateSharedDeleteChange.validNel,
-          deleteSharedChange.validNel,
-          updatePrivateAddChange.validNel,
-          updatePrivateDeleteChange.validNel,
-          deletePrivateChange.validNel
-        ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
-
-    result(0) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(updateSharedAddChange.inputChange.inputName, existing(0)))
-    result(1) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(updateSharedDeleteChange.inputChange.inputName, existing(0)))
-    result(2) should haveInvalid[DomainValidationError](
-      ExistingMultiRecordError(deleteSharedChange.inputChange.inputName, existing(1)))
-    // non duplicate
-    result(3) shouldBe valid
-    result(4) shouldBe valid
-    result(5) shouldBe valid
-  }
-
-  property("validateChangesWithContext: succeed on add/update to a multi record if multi enabled") {
+  property("validateChangesWithContext: succeed on add/update to a multi record") {
     val existing = List(
       sharedZoneRecord.copy(name = updateSharedAddChange.recordName)
     )
@@ -2075,58 +2057,6 @@ class BatchChangeValidationsSpec
     result(2) shouldBe valid
     result(3) shouldBe valid
     result(4) shouldBe valid
-    // non duplicate
-    result(5) shouldBe valid
-  }
-
-  property("validateChangesWithContext: fail on add/update to a multi record if multi disabled") {
-    val existing = List(
-      sharedZoneRecord.copy(
-        name = updateSharedAddChange.recordName,
-        records = List(AAAAData("1::1"))
-      )
-    )
-
-    val update1 = updateSharedAddChange.copy(
-      inputChange =
-        AddChangeInput("shared-update.shared", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
-    )
-    val update2 = updateSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-update.shared", RecordType.AAAA, ttl, AAAAData("1::1"))
-    )
-    val add1 = createSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-add.shared", RecordType.A, ttl, AData("1.2.3.4"))
-    )
-    val add2 = createSharedAddChange.copy(
-      inputChange = AddChangeInput("shared-add.shared", RecordType.A, ttl, AData("5.6.7.8"))
-    )
-
-    val result = underTestMultiDisabled.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedDeleteChange.validNel,
-          update1.validNel,
-          update2.validNel,
-          add1.validNel,
-          add2.validNel,
-          updatePrivateAddChange.validNel
-        ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
-
-    result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(update1.inputChange.inputName, update1.inputChange.typ))
-    result(2) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(update2.inputChange.inputName, update2.inputChange.typ))
-    result(3) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(add1.inputChange.inputName, add1.inputChange.typ))
-    result(4) should haveInvalid[DomainValidationError](
-      NewMultiRecordError(add2.inputChange.inputName, add2.inputChange.typ))
     // non duplicate
     result(5) shouldBe valid
   }

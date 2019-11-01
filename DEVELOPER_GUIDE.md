@@ -121,12 +121,12 @@ can also be run in the foreground.
 
 ### Starting the API Server
 To start the API for integration, functional, or portal testing.  Start up sbt by running `sbt` from the root directory.
+* `dockerComposeUp` to spin up the dependencies on your machine from the root project.
 * `project api` to change the sbt project to the API
-* `dockerComposeUp` to spin up the dependencies on your machine.
 * `reStart` to start up the API server
 * Wait until you see the message `VINYLDNS SERVER STARTED SUCCESSFULLY` before working with the server
 * To stop the VinylDNS server, run `reStop` from the api project
-* To stop the dependent Docker containers, run `dockerComposeStop` from the API project
+* To stop the dependent Docker containers, change to the root project `project root`, then run `dockerComposeStop` from the API project
 
 See the [API Configuration Guide](https://www.vinyldns.io/operator/config-api) for information regarding API configuration.
 
@@ -170,12 +170,13 @@ You should now be able to see the zone in the portal at localhost:9001 when logg
 Integration tests are used to test integration with _real_ dependent services.  We use Docker to spin up those
 backend services for integration test development.
 
-1. Integration tests are currently in the `api`, `dynamo`, `mysql`, and `sqs` modules.  Go to the target module in sbt, example: `project api`
+1. Integration tests are currently in the `api`, `dynamo`, `mysql`, and `sqs` modules.
 1. Type `dockerComposeUp` to start up dependent background services
+1. Go to the target module in sbt, example: `project api`
 1. Run all integration tests by typing `it:test`.
 1. Run an individual integration test by typing `it:testOnly *MyIntegrationSpec`
 1. You can background compile as well if working on a single spec by using `~it:testOnly *MyIntegrationSpec`
-1. You must stop (`dockerComposeStop`) and start (`dockerComposeUp`) the dependent services before you rerun the tests.
+1. You must stop (`dockerComposeStop`) and start (`dockerComposeUp`) the dependent services from the root project (`project root`) before you rerun the tests.
 1. For the mysql module, you may need to wait up to 30 seconds after starting the services before running the tests for setup to complete.
 
 #### Running both

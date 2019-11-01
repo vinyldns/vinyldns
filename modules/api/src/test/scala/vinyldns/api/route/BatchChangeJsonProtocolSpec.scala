@@ -209,6 +209,16 @@ class BatchChangeJsonProtocolSpec
     }
   }
 
+  "serializing ChangeInputSerializer to JSON" should {
+    "successfully serialize valid data for delete" in {
+      val deleteChangeInput = DeleteRRSetChangeInput("foo.", A, Some(AData("1.1.1.1")))
+      val json: JObject = buildDeleteRRSetInputJson(Some("foo."), Some(A), Some(AData("1.1.1.1")))
+      val result = ChangeInputSerializer.toJson(deleteChangeInput)
+
+      result shouldBe json
+    }
+  }
+
   "De-serializing BatchChangeInput from JSON" should {
     "successfully serialize valid add change data with comment and without owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value

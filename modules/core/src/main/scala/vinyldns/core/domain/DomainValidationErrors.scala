@@ -16,6 +16,7 @@
 
 package vinyldns.core.domain
 
+import vinyldns.core.domain.batch.OwnerType.OwnerType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
@@ -125,8 +126,17 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
       s"""Existing record with name "$name" and type "$typ" conflicts with this record."""
 }
 
-final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
-  def message: String = s"""User "$userName" is not authorized."""
+final case class UserIsNotAuthorizedError(
+    userName: String,
+    ownerGroupId: String,
+    ownerType: OwnerType,
+    contactEmail: Option[String] = None,
+    ownerGroupName: Option[String] = None)
+    extends DomainValidationError {
+  def message: String =
+    s"""User "$userName" is not authorized. Contact ${ownerType.toString.toLowerCase} owner group:
+       |${ownerGroupName.getOrElse(ownerGroupId)} at ${contactEmail.getOrElse("")}.""".stripMargin
+      .replaceAll("\n", " ")
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
@@ -152,23 +162,6 @@ final case class MissingOwnerGroupId(recordName: String, zoneName: String)
     s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 
-final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
-    extends DomainValidationError {
-  def message: String =
-    s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
-       |because it contains multiple DNS records (${record.records.length}).""".stripMargin
-      .replaceAll("\n", " ")
-}
-
-final case class NewMultiRecordError(changeName: String, changeType: RecordType)
-    extends DomainValidationError {
-  def message: String =
-    s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
-       |Cannot create a new record set with multiple records for inputName $changeName and
-       |type $changeType.""".stripMargin
-      .replaceAll("\n", " ")
-}
-
 final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
   def message: String = s"""CNAME cannot be the same name as zone "$zoneName"."""
 }
@@ -189,4 +182,26 @@ final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: Rec
   def message: String = s"""Record data $recordData does not exist for "$inputName"."""
 }
 
+// Deprecated errors
+final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
+    extends DomainValidationError {
+  def message: String =
+    s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
+       |because it contains multiple DNS records (${record.records.length}).""".stripMargin
+      .replaceAll("\n", " ")
+}
+
+final case class NewMultiRecordError(changeName: String, changeType: RecordType)
+    extends DomainValidationError {
+  def message: String =
+    s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
+       |Cannot create a new record set with multiple records for inputName $changeName and
+       |type $changeType.""".stripMargin
+      .replaceAll("\n", " ")
+}
+
+// deprecated in favor of more informative error message
+final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
+  def message: String = s"""User "$userName" is not authorized."""
+}
 // $COVERAGE-ON$

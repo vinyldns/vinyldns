@@ -1,0 +1,6 @@
+-Xms512M
+-Xmx1024M
+-Xss2M
+-XX:MaxMetaspaceSize=512M
+-XX:ReservedCodeCacheSize=512M
+-Djava.net.preferIPv4Stack=true

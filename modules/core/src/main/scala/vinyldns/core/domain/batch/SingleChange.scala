@@ -141,3 +141,8 @@ object RecordKey {
   def apply(zoneId: String, recordName: String, recordType: RecordType): RecordKey =
     new RecordKey(zoneId, recordName.toLowerCase, recordType)
 }
+
+object OwnerType extends Enumeration {
+  type OwnerType = Value
+  val Record, Zone = Value
+}

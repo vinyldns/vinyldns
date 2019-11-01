@@ -13,7 +13,7 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 **Note**: DNS Change is portal-only terminology. The API equivalent is [batch change](../api/batchchange-model).
 
 #### Access
-* Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** or **Delete** access.
+* Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name *or* delete of single entry of multi-record DNS record set, zone and record type combination) requires **Write** or **Delete** access.
 * <span class="important">**NEW**</span> **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.
 
 #### Supported record types

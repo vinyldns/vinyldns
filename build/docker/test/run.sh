@@ -15,10 +15,6 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
-if [ -z "${PAR_CPU}" ]; then
-  export PAR_CPU=2
-fi
-
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -51,27 +47,30 @@ cd /app
 find . -name "*.pyc" -delete
 find . -name "__pycache__" -delete
 
-result=0
-# If PROD_ENV is not true, we are in a local docker environment so do not skip anything
-if [ "${PROD_ENV}" = "true" ]; then
-    PARALLEL_TEST_MARKER="not skip_production and not serial"
-    SERIAL_TEST_MARKER="not skip_production and serial"
-else
-    PARALLEL_TEST_MARKER="not serial"
-    SERIAL_TEST_MARKER="serial"
-fi
+ls -al
 
 # -m plays havoc with -k, using variables is a headache, so doing this by hand
 # run parallel tests first (not serial)
-echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"${PARALLEL_TEST_MARKER}\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-./run-tests.py live_tests -n${PAR_CPU} -v -m ${PARALLEL_TEST_MARKER} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
-result=$?
-if [ $? -eq 0 ]; then
-    # run serial tests second (serial marker)
-    echo "./run-tests.py live_tests -n0 -v -m \"${SERIAL_TEST_MARKER}\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-    ./run-tests.py live_tests -n0 -v -m ${SERIAL_TEST_MARKER} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
-    result=$?
+set -x
+./run-tests.py live_tests -n2 -v -m "not skip_production and not serial" ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} --teardown=False
+ret1=$?
+
+# IMPORTANT! pytest exists status code 5 if no tests are run, force that to 0
+if [ "$ret1" = 5 ]; then
+  echo "No tests collected."
+  ret1=0
 fi
 
-exit $result
+./run-tests.py live_tests -n0 -v -m "not skip_production and serial" ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} --teardown=True
+ret2=$?
+if [ "$ret2" = 5 ]; then
+  echo "No tests collected."
+  ret2=0
+fi
+
+if [ $ret1 -ne 0 ] || [ $ret2 -ne 0 ]; then
+  exit 1
+else
+  exit 0
+fi
 

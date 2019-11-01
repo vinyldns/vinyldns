@@ -449,15 +449,6 @@ _that_ zone.
 sync-delay = 10000
 ```
 
-### Batch Multi-RecordSet Enabled
-In the Batch Interface, Add creates a single record, but deleteRecordSet deletes a whole recordset. Setting 
-this config value to false, create batch will fail if the changes update/delete an existing recordset that
-has multiple records. Create batch will also fail if the user is attempting to make a new multi-record recordset.
-
-```yaml
-enable-multi-record-batch-update = true
-```
-
 ### Notifiers
 VinylDNS provides the ability to send notifications via configured notifiers when a batch change is either implemented
 or rejected. Notifiers in VinylDNS are designed to be pluggable (ie. bring-your-own-implementation), granting users the 
@@ -722,9 +713,6 @@ vinyldns {
   # the max number of changes in a single batch change.  Change carefully as this has performance
   # implications
   batch-change-limit = 1000
-  
-  # true if you want to allow batch changes to update/delete multi-record recordsets, false if not.
-  enable-multi-record-batch-update = true
   
   # notifier configuration
   notifiers = ["email", "sns"]

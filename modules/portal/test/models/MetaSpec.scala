@@ -65,13 +65,5 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("scheduled-changes-enabled" -> true)
       Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beTrue
     }
-    "default to false if multi-record-batch-change-enabled is not found" in {
-      val config = Map("vinyldns.version" -> "foo-bar")
-      Meta(Configuration.from(config)).multiRecordBatchChangeEnabled must beFalse
-    }
-    "set to true if multi-record-batch-change-enabled is true in config" in {
-      val config = Map("multi-record-batch-change-enabled" -> true)
-      Meta(Configuration.from(config)).multiRecordBatchChangeEnabled must beTrue
-    }
   }
 }
