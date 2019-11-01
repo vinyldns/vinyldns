@@ -107,7 +107,7 @@
                          $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
                         if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
-                            handleError(error, 'batchChangesService::createBatchChange-failure');
+                            handleError(error, 'dnsChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
