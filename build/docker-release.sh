@@ -8,6 +8,7 @@ function usage() {
   printf "options:\n"
   printf "\t-b, --branch: the branch of tag to use for the build; default is master\n"
   printf "\t-c, --clean: indicates a fresh build or attempt to work with existing images; default is off\n"
+  printf "\t-l, --latest: indicates docker will tag image with latest; default is off\n"
   printf "\t-p, --push: indicates docker will push to the repository; default is off\n"
   printf "\t-r, --repository [REPOSITORY]: the docker repository where this image will be pushed; default is docker.io\n"
   printf "\t-t, --tag [TAG]: sets the qualifier for the semver version; default is to not use a build tag\n"
@@ -21,6 +22,7 @@ DOCKER_PUSH=0
 DO_BUILD=0
 BRANCH="master"
 V=
+TAG_LATEST=0
 
 while [ "$1" != "" ]; do
   case "$1" in
@@ -30,6 +32,10 @@ while [ "$1" != "" ]; do
     ;;
   -c | --clean)
     DO_BUILD=1
+    shift
+    ;;
+  -l | --latest)
+    TAG_LATEST=1
     shift
     ;;
   -p | --push)
@@ -105,6 +111,14 @@ if [ $DO_BUILD -eq 1 ]; then
     docker tag vinyldns/test:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test:$VINYLDNS_VERSION
     docker tag vinyldns/api:$VINYLDNS_VERSION $REPOSITORY/vinyldns/api:$VINYLDNS_VERSION
     docker tag vinyldns/portal:$VINYLDNS_VERSION $REPOSITORY/vinyldns/portal:$VINYLDNS_VERSION
+
+    if [ $TAG_LATEST -eq 1 ]; then
+        echo "Tagging latest..."
+        docker tag vinyldns/test-bind9:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test-bind9:latest
+        docker tag vinyldns/test:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test:latest
+        docker tag vinyldns/api:$VINYLDNS_VERSION $REPOSITORY/vinyldns/api:latest
+        docker tag vinyldns/portal:$VINYLDNS_VERSION $REPOSITORY/vinyldns/portal:latest
+    fi
   fi
 fi
 
@@ -113,4 +127,12 @@ if [ $DOCKER_PUSH -eq 1 ]; then
   docker push $REPOSITORY/vinyldns/test:$VINYLDNS_VERSION
   docker push $REPOSITORY/vinyldns/api:$VINYLDNS_VERSION
   docker push $REPOSITORY/vinyldns/portal:$VINYLDNS_VERSION
+
+  if [ $TAG_LATEST -eq 1 ]; then
+    echo "Pushing latest..."
+    docker push $REPOSITORY/vinyldns/test-bind9:latest
+    docker push $REPOSITORY/vinyldns/test:latest
+    docker push $REPOSITORY/vinyldns/api:latest
+    docker push $REPOSITORY/vinyldns/portal:latest
+  fi
 fi
