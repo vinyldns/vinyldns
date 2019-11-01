@@ -27,7 +27,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -469,7 +469,15 @@ class BatchChangeValidations(
       input.inputChange.typ,
       input.zone,
       List(input.inputChange.record))
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(
+        _ =>
+          UserIsNotAuthorizedError(
+            authPrincipal.signedInUser.userName,
+            input.zone.adminGroupId,
+            OwnerType.Zone,
+            Some(input.zone.email)))
+      .toValidatedNel
   }
 
   def userCanUpdateRecordSet(
@@ -486,7 +494,19 @@ class BatchChangeValidations(
         ownerGroupId,
         addRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) if input.zone.shared =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+          case _ =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              OwnerType.Zone,
+              Some(input.zone.email))
+      })
+      .toValidatedNel
   }
 
   def userCanDeleteRecordSet(
@@ -503,7 +523,19 @@ class BatchChangeValidations(
         ownerGroupId,
         existingRecords
       )
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+    result
+      .leftMap(_ =>
+        ownerGroupId match {
+          case Some(id) if input.zone.shared =>
+            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+          case _ =>
+            UserIsNotAuthorizedError(
+              authPrincipal.signedInUser.userName,
+              input.zone.adminGroupId,
+              OwnerType.Zone,
+              Some(input.zone.email))
+      })
+      .toValidatedNel
   }
 
   def canGetBatchChange(

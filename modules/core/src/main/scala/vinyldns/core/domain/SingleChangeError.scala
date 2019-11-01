@@ -32,9 +32,9 @@ object DomainValidationErrorType extends Enumeration {
   InvalidDomainName, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
   InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
-  CnameIsNotUniqueError, UserIsNotAuthorized, RecordNameNotUniqueInBatch, RecordInReverseZoneError,
-  HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError, NewMultiRecordError,
-  CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
+  CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
+  RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
+  NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
   DeleteRecordDataDoesNotExist = Value
 
   // $COVERAGE-OFF$
@@ -60,6 +60,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: RecordDoesNotExist => RecordDoesNotExist
       case _: CnameIsNotUniqueError => CnameIsNotUniqueError
       case _: UserIsNotAuthorized => UserIsNotAuthorized
+      case _: UserIsNotAuthorizedError => UserIsNotAuthorizedError
       case _: RecordNameNotUniqueInBatch => RecordNameNotUniqueInBatch
       case _: RecordInReverseZoneError => RecordInReverseZoneError
       case _: HighValueDomainError => HighValueDomainError

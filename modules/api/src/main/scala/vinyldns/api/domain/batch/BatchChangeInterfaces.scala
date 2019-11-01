@@ -66,6 +66,13 @@ object BatchChangeInterfaces {
     def getValid: List[A] = batch.collect {
       case Valid(input) => input
     }
+
+    def getInvalid: List[DomainValidationError] =
+      batch
+        .collect {
+          case Invalid(input) => input
+        }
+        .flatMap(_.toList)
   }
 
   implicit class SingleValidationImprovements[A](validation: SingleValidation[A]) {

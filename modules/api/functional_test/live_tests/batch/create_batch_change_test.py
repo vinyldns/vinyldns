@@ -72,7 +72,7 @@ def assert_change_success_response_values(changes_json, zone, index, record_name
 def assert_error(input_json, error_messages):
     for error in error_messages:
         assert_that(input_json['errors'], has_item(error))
-    assert_that(len(input_json['errors']), is_(len(error_messages)))
+        assert_that(len(input_json['errors']), is_(len(error_messages)))
 
 
 @pytest.mark.serial
@@ -1399,15 +1399,15 @@ def test_create_batch_change_with_readonly_user_fails(shared_zone_test_context):
         errors = dummy_client.create_batch_change(batch_change_input, status=400)
 
         assert_failed_change_in_error_response(errors[0], input_name="relative.ok.", record_data="4.5.6.7",
-                                               error_messages=['User \"dummy\" is not authorized.'])
+                                               error_messages=['User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com.'])
         assert_failed_change_in_error_response(errors[1], input_name="delete.ok.", change_type="DeleteRecordSet",
                                                record_data="4.5.6.7",
-                                               error_messages=['User "dummy" is not authorized.'])
+                                               error_messages=['User "dummy" is not authorized. Contact zone owner group: ok-group at test@test.com.'])
         assert_failed_change_in_error_response(errors[2], input_name="update.ok.", record_data="1.2.3.4",
-                                               error_messages=['User \"dummy\" is not authorized.'])
+                                               error_messages=['User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com.'])
         assert_failed_change_in_error_response(errors[3], input_name="update.ok.", change_type="DeleteRecordSet",
                                                record_data=None,
-                                               error_messages=['User \"dummy\" is not authorized.'])
+                                               error_messages=['User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com.'])
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
         clear_recordset_list(to_delete, ok_client)
@@ -1504,7 +1504,7 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
                                                    "CNAME Conflict: CNAME record names must be unique. Existing record with name \"" + existing_cname_fqdn + "\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[9], input_name="user-add-unauthorized.dummy.",
                                                record_data="1.2.3.4",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -1518,6 +1518,15 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
     dummy_zone = shared_zone_test_context.dummy_zone
+
+    group_to_delete = {}
+    temp_group = {
+        'name': 'test-group-for-record-in-private-zone',
+        'email': 'test@test.com',
+        'description': 'for testing that a get batch change still works when record owner group is deleted',
+        'members': [ { 'id': 'ok'}, {'id': 'dummy'} ],
+        'admins': [ { 'id': 'ok'}, {'id': 'dummy'} ]
+    }
 
     rs_delete_name = generate_record_name()
     rs_delete_fqdn = rs_delete_name + ".ok."
@@ -1534,6 +1543,10 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     rs_update_dummy_name = generate_record_name()
     rs_update_dummy_fqdn = rs_update_dummy_name + ".dummy."
     rs_update_dummy = get_recordset_json(dummy_zone, rs_update_dummy_name, "A", [{'address': '1.1.1.1'}])
+
+    rs_dummy_with_owner_name = generate_record_name()
+    rs_delete_dummy_with_owner_fqdn = rs_dummy_with_owner_name + ".dummy."
+    rs_update_dummy_with_owner_fqdn = rs_dummy_with_owner_name + ".dummy."
 
     batch_change_input = {
         "comments": "this is optional",
@@ -1558,7 +1571,9 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json("non-existent.ok.", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(rs_update_dummy_fqdn, ttl=300)
+            get_change_A_AAAA_json(rs_update_dummy_fqdn, ttl=300),
+            get_change_A_AAAA_json(rs_delete_dummy_with_owner_fqdn, change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_update_dummy_with_owner_fqdn, ttl=300)
         ]
     }
 
@@ -1566,6 +1581,12 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
     to_delete = []
 
     try:
+        group_to_delete = dummy_client.create_group(temp_group, status=200)
+
+        rs_update_dummy_with_owner = get_recordset_json(dummy_zone, rs_dummy_with_owner_name, "A", [{'address': '1.1.1.1'}], 100, group_to_delete['id'])
+        create_rs_update_dummy_with_owner = dummy_client.create_recordset(rs_update_dummy_with_owner, status=202)
+        to_delete.append(dummy_client.wait_until_recordset_change_status(create_rs_update_dummy_with_owner, 'Complete'))
+
         for rs in to_create:
             if rs['zoneId'] == dummy_zone['id']:
                 create_client = dummy_client
@@ -1623,12 +1644,16 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
                                                    'Record "non-existent.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                change_type="DeleteRecordSet",
-                                               error_messages=['User \"ok\" is not authorized.'])
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn,
                                                change_type="DeleteRecordSet",
-                                               error_messages=['User \"ok\" is not authorized.'])
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn, ttl=300,
-                                               error_messages=['User \"ok\" is not authorized.'])
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
+        assert_failed_change_in_error_response(response[14], input_name=rs_update_dummy_with_owner_fqdn, change_type="DeleteRecordSet",
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
+        assert_failed_change_in_error_response(response[15], input_name=rs_update_dummy_with_owner_fqdn, ttl=300,
+                                               error_messages=['User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
 
     finally:
         # Clean up updates
@@ -1636,6 +1661,7 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
         ok_deletes = [rs for rs in to_delete if rs['zone']['id'] != dummy_zone['id']]
         clear_recordset_list(dummy_deletes, dummy_client)
         clear_recordset_list(ok_deletes, ok_client)
+        dummy_client.delete_group(group_to_delete['id'], status=200)
 
 
 def test_aaaa_recordtype_add_checks(shared_zone_test_context):
@@ -1730,7 +1756,7 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
                                                    "CNAME Conflict: CNAME record names must be unique. Existing record with name \"" + existing_cname_fqdn+ "\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[9], input_name="user-add-unauthorized.dummy.",
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -1855,13 +1881,13 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_type="AAAA", record_data="1::1")
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         # Clean up updates
@@ -2016,7 +2042,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                    "CNAME Conflict: CNAME record names must be unique. Existing record with name \"" + existing_reverse_fqdn + "\" and type \"PTR\" conflicts with this record."])
         assert_failed_change_in_error_response(response[16], input_name="user-add-unauthorized.dummy.",
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -2147,13 +2173,13 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_type="CNAME", record_data="test.com.")
         assert_failed_change_in_error_response(response[13], input_name="delete-unauthorized3.dummy.",
                                                record_type="CNAME", change_type="DeleteRecordSet",
-                                               error_messages=['User "ok" is not authorized.'])
+                                               error_messages=['User "ok" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_failed_change_in_error_response(response[14], input_name="update-unauthorized3.dummy.",
                                                record_type="CNAME", change_type="DeleteRecordSet",
-                                               error_messages=['User "ok" is not authorized.'])
+                                               error_messages=['User "ok" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_failed_change_in_error_response(response[15], input_name="update-unauthorized3.dummy.",
                                                record_type="CNAME", ttl=300, record_data="test.com.",
-                                               error_messages=['User "ok" is not authorized.'])
+                                               error_messages=['User "ok" is not authorized. Contact zone owner group: dummy-group at test@test.com.'])
         assert_successful_change_in_error_response(response[16], input_name="existing-cname2.parent.com.",
                                                    record_type="CNAME", change_type="DeleteRecordSet")
         assert_failed_change_in_error_response(response[17], input_name="existing-cname2.parent.com.",
@@ -2209,19 +2235,19 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
 
         assert_failed_change_in_error_response(errors[0], input_name="192.0.2.5", record_type="PTR",
                                                record_data="not.authorized.ipv4.ptr.base.",
-                                               error_messages=["User \"dummy\" is not authorized."])
+                                               error_messages=["User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com."])
         assert_failed_change_in_error_response(errors[1], input_name="192.0.2.193", record_type="PTR",
                                                record_data="not.authorized.ipv4.ptr.classless.delegation.",
-                                               error_messages=["User \"dummy\" is not authorized."])
+                                               error_messages=["User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com."])
         assert_failed_change_in_error_response(errors[2], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR",
                                                record_data="not.authorized.ipv6.ptr.",
-                                               error_messages=["User \"dummy\" is not authorized."])
+                                               error_messages=["User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com."])
         assert_failed_change_in_error_response(errors[3], input_name="192.0.2.25", record_type="PTR", record_data=None,
                                                change_type="DeleteRecordSet",
-                                               error_messages=["User \"dummy\" is not authorized."])
+                                               error_messages=["User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com."])
         assert_failed_change_in_error_response(errors[4], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"dummy\" is not authorized."])
+                                               error_messages=["User \"dummy\" is not authorized. Contact zone owner group: ok-group at test@test.com."])
     finally:
         clear_recordset_list(to_delete, ok_client)
 
@@ -2695,7 +2721,7 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
                                                    "CNAME Conflict: CNAME record names must be unique. Existing record with name \"" + existing_cname_fqdn + "\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[7], input_name="user-add-unauthorized.dummy.",
                                                record_type="TXT", record_data="test",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -2806,13 +2832,13 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_data="test")
         assert_failed_change_in_error_response(response[9], input_name=rs_delete_dummy_fqdn, record_type="TXT",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[10], input_name=rs_update_dummy_fqdn, record_type="TXT",
                                                record_data="test",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[11], input_name=rs_update_dummy_fqdn, record_type="TXT",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         # Clean up updates
@@ -2918,7 +2944,7 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
                                                    "CNAME Conflict: CNAME record names must be unique. Existing record with name \"" + existing_cname_fqdn + "\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[10], input_name="user-add-unauthorized.dummy.",
                                                record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -3042,13 +3068,13 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_data={"preference": 1000, "exchange": "foo.bar."})
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn, record_type="MX",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn, record_type="MX",
                                                record_data={"preference": 1000, "exchange": "foo.bar."},
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn, record_type="MX",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["User \"ok\" is not authorized."])
+                                               error_messages=["User \"ok\" is not authorized. Contact zone owner group: dummy-group at test@test.com."])
 
     finally:
         # Clean up updates
@@ -3081,16 +3107,16 @@ def test_user_validation_ownership(shared_zone_test_context):
     response = client.create_batch_change(batch_change_input, status=400)
     assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.",
                                            record_data="1.1.1.1",
-                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+                                           error_messages=["User \"sharedZoneUser\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.",
                                            change_type="DeleteRecordSet",
-                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+                                           error_messages=["User \"sharedZoneUser\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.",
                                            record_data="1.1.1.1",
-                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+                                           error_messages=["User \"sharedZoneUser\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.",
                                            change_type="DeleteRecordSet",
-                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+                                           error_messages=["User \"sharedZoneUser\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
 
     assert_successful_change_in_error_response(response[4], input_name="add-test-batch.shared.")
     assert_successful_change_in_error_response(response[5], input_name="update-test-batch.shared.",
@@ -3118,16 +3144,16 @@ def test_user_validation_shared(shared_zone_test_context):
     response = client.create_batch_change(batch_change_input, status=400)
     assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.",
                                            record_data="1.1.1.1",
-                                           error_messages=["User \"ok\" is not authorized."])
+                                           error_messages=["User \"ok\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.",
                                            change_type="DeleteRecordSet",
-                                           error_messages=["User \"ok\" is not authorized."])
+                                           error_messages=["User \"ok\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.",
                                            record_data="1.1.1.1",
-                                           error_messages=["User \"ok\" is not authorized."])
+                                           error_messages=["User \"ok\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
     assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.",
                                            change_type="DeleteRecordSet",
-                                           error_messages=["User \"ok\" is not authorized."])
+                                           error_messages=["User \"ok\" is not authorized. Contact zone owner group: testSharedZoneGroup at email."])
 
 
 def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(shared_zone_test_context):
@@ -3610,7 +3636,7 @@ def test_create_batch_delete_recordset_for_unassociated_user_not_in_owner_group_
 
         assert_failed_change_in_error_response(response[0], input_name=shared_delete_fqdn,
                                                change_type="DeleteRecordSet",
-                                               error_messages=['User "list-group-user" is not authorized.'])
+                                               error_messages=['User "list-group-user" is not authorized. Contact record owner group: record-ownergroup at test@test.com.'])
 
     finally:
         if create_rs:
@@ -3798,7 +3824,7 @@ def test_create_batch_with_irrelevant_global_acl_rule_applied_fails(shared_zone_
         response = test_user_client.create_batch_change(batch_change_input, status=400)
         assert_failed_change_in_error_response(response[0], input_name=a_fqdn, record_type="A",
                                                change_type="Add", record_data="192.0.2.45",
-                                               error_messages=['User "testuser" is not authorized.'])
+                                               error_messages=['User "testuser" is not authorized. Contact record owner group: testSharedZoneGroup at email.'])
 
     finally:
         if create_a_rs:
@@ -3931,7 +3957,7 @@ def test_create_batch_delete_record_access_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[3], input_name=txt_update_fqdn, record_type="TXT", record_data="test", change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[4], input_name=txt_update_fqdn, record_type="TXT", record_data="updated text")
         assert_failed_change_in_error_response(response[5], input_name=txt_delete_fqdn, record_type="TXT", record_data="test", change_type="DeleteRecordSet",
-                                               error_messages=['User "dummy" is not authorized.'])
+                                               error_messages=['User "dummy" is not authorized. Contact zone owner group: ok-group at test@test.com.'])
 
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
