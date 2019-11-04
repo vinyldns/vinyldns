@@ -28,7 +28,7 @@ participating, you agree to this Code. Please report any violations to the code 
 
 Work on VinylDNS is tracked by [Github Issues](https://guides.github.com/features/issues/). To contribute to VinylDNS,
 you can join the discussion on an issue, submit a Pull Request to resolve the issue, or make an issue of your own.
-VinylDNS issues are generally labeled as bug reports, feature requests, or maintenance requests.  
+VinylDNS issues are generally labeled as bug reports, feature requests, or maintenance requests.
 
 ### Working on an Issue
 If you would like to contribute to VinylDNS, you can look through `good first issue` and `help wanted` issues.  We keep a list
@@ -37,7 +37,7 @@ choose a specific label to narrow down the issues to review.
 
 * **Beginner issues**: only require a few lines of code to complete, rather isolated to one or two files.  A good way
 to get through changing and testing your code, and meet everyone!
-* **Help wanted issues**: these are more involved than beginner issues, are items that tend to come near the top of our 
+* **Help wanted issues**: these are more involved than beginner issues, are items that tend to come near the top of our
 backlog but not necessarily in the current development stream.
 
 Besides those issues, you can sort the issue list by number of comments to find one that may be of interest.  You do
@@ -46,24 +46,24 @@ _not_ have to limit yourself to _only_ `good first issue` or `help wanted` issue
 When resolving an issue, you generally will do so by making a [Pull Request](#pull-requests), and adding a link to the issue.
 
 Before choosing an issue, see if anyone is assigned or has indicated they are working on it (either in comment or via Pull Request).
-If that is the case, then instead of making a Pull Request of your own, you can help out by reviewing their Pull Request. 
+If that is the case, then instead of making a Pull Request of your own, you can help out by reviewing their Pull Request.
 
 ### Submitting an Issue
 When submitting an issue you will notice there are three issue templates to choose from. Before making any issue, please
 go search the issue list (open and closed issues) and check to see if a similar issue has been made. If so, we ask that you do not duplicate an
-issue, but feel free to comment on the existing issue with additional details.  
+issue, but feel free to comment on the existing issue with additional details.
 
 * **Bug report**: If you find a bug in the project you can report it with this template and the VinylDNS team will take a
 look at it. Please be as detailed as possible as it will help us recreate the bug and figure out what exactly is going on.
 If you are unsure whether what you found is a bug, we encourage you to first pop in our [dev gitter](https://gitter.im/vinyldns/vinyldns), and we can
-help determine if what you're seeing is unexpected behavior, and if it is we will direct to make the bug report. 
-* **Feature request**: Use this template if you have something you wish to be added to the project. Please be detailed 
+help determine if what you're seeing is unexpected behavior, and if it is we will direct to make the bug report.
+* **Feature request**: Use this template if you have something you wish to be added to the project. Please be detailed
 when describing why you are requesting the feature, what you want it to do, and alternative solutions you have considered.
 If the feature is a substantial change to VinylDNS, it may be better suited as an RFC, through our [RFC process](https://github.com/vinyldns/rfcs).
-* **Maintenance request**: This template is for suggesting upgrades to the existing code base. This could include 
-code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the 
-reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and 
-what parts of the system will be impacted. 
+* **Maintenance request**: This template is for suggesting upgrades to the existing code base. This could include
+code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the
+reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and
+what parts of the system will be impacted.
 
 ### Discussion Process
 
@@ -73,14 +73,14 @@ If warranted, some issues may be moved to our [RFC process](https://github.com/v
 
 ## Pull Requests
 Contributions to VinylDNS are generally made via [Github Pull Requests](https://help.github.com/articles/about-pull-requests/).
-Most Pull Requests are related to an [issue](#issues), and will have a link to the issue in the Pull Request. 
+Most Pull Requests are related to an [issue](#issues), and will have a link to the issue in the Pull Request.
 
 ### General Flow
 We follow the standard *GitHub Flow* for taking code contributions.  The following is the process typically followed:
 
 1. Create a fork of the repository that you want to contribute code to
 1. Clone your forked repository to your local machine
-1. In your local machine, add a remote to the "main" repository, we call this "upstream" by running 
+1. In your local machine, add a remote to the "main" repository, we call this "upstream" by running
 `git remote add upstream https://github.com/vinyldns/vinyldns.git`.  Note: you can also use `ssh` instead of `https`
 1. Create a local branch for your work `git checkout -b your-user-name/user-branch-name`.  Add whatever your GitHub
 user name is before whatever you want your branch to be.
@@ -92,10 +92,10 @@ the build server to complete its job. See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.m
 to your _own fork_
 1. Go to the [VinylDNS main repository](https://github.com/vinyldns/vinyldns.git) (or whatever repo you are contributing to)
 and you will see your change waiting and a link to "Create a Pull Request".  Click the link to create a Pull Request.
-1. Be as detailed as possible in the description of your Pull Request. Describe what you changed, why you changed it, and 
-give a detailed list of changes and impacted files. If your Pull Request is related to an existing issue, be sure to link the 
-issue in the Pull Request itself, in addition to the Pull Request description. 
-1. You will receive comments on your Pull Request.  Use the Pull Request as a dialog on your changes. 
+1. Be as detailed as possible in the description of your Pull Request. Describe what you changed, why you changed it, and
+give a detailed list of changes and impacted files. If your Pull Request is related to an existing issue, be sure to link the
+issue in the Pull Request itself, in addition to the Pull Request description.
+1. You will receive comments on your Pull Request.  Use the Pull Request as a dialog on your changes.
 
 ### Pull Request Requirements
 
@@ -104,7 +104,7 @@ issue in the Pull Request itself, in addition to the Pull Request description.
 * Use the present tense ("Add validation" not "Added validation").
 * Use the imperative mood ("Move database call" not "Moves database call").
 * Reference issues and other pull requests liberally after the first line.  Use [GitHub Auto Linking](https://help.github.com/articles/autolinked-references-and-urls/)
-to link your Pull Request to other issues.  
+to link your Pull Request to other issues.
 * Use markdown syntax as much as you want
 
 #### Testing
@@ -117,14 +117,14 @@ as in `modules/docs/src/main/tut` for the docs you see on [vinyldns.io](https://
 an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it from going stale. The VinylDNS [gh-pages branch README](https://github.com/vinyldns/vinyldns/tree/gh-pages#vinyldns-documentation-site) has information on how to run and edit the documentation page.
 
 #### Style Guides
-* For Scala code we use [Scalastyle](https://www.scalastyle.org/). The configs are `scalastyle-config.xml` and 
+* For Scala code we use [Scalastyle](https://www.scalastyle.org/). The configs are `scalastyle-config.xml` and
 `scalastyle-test-config.xml` for source code and test code respectively
     * We have it set to fail builds if the styling rules are not followed. For example, one of our rules is that all lines must be <= 120 characters, and a build will fail if that is violated. 
 * For our python code that we use for functional testing, we generally try to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/)
 
 #### License Header Checks
 VinylDNS is configured with [sbt-header](https://github.com/sbt/sbt-header). All existing scala files have the appropriate
-header. To add or check for headers, follow these steps: 
+header. To add or check for headers, follow these steps:
 
 ##### API
 You can check for headers in the API in `sbt` with:
@@ -153,10 +153,10 @@ If you add a new file, you can add the appropriate header in `sbt` with:
 ```
 
 #### Contributor License Agreement
-Before Comcast merges your code into the project you must sign the 
+Before Comcast merges your code into the project you must sign the
 [Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a).
 
-If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. 
+If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request.
 Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
 
 ### Modifying your Pull Requests
