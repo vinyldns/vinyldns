@@ -36,6 +36,7 @@
                     if (response.data.reviewTimestamp) {
                         $scope.batch.reviewTimestamp = utilityService.formatDateTime(response.data.reviewTimestamp);
                     }
+                    $scope.notice = $scope.notices.find(notice => notice['status'] == $scope.batch.status)
                 }
 
                 return dnsChangeService

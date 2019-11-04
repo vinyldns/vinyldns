@@ -18,7 +18,7 @@ package controllers
 
 import actions.SecuritySupport
 import javax.inject.{Inject, Singleton}
-import models.{CustomLinks, Meta}
+import models.{CustomLinks, DnsChangeNotices, Meta}
 import org.slf4j.LoggerFactory
 import play.api.Configuration
 import play.api.mvc._
@@ -87,10 +87,11 @@ class FrontendController @Inject() (
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
     val canReview = request.user.isSuper || request.user.isSupport
+    val dnsChangeNotices = configuration.get[DnsChangeNotices]("dnsChangeNotices")
     Future(
       Ok(
         views.html.dnsChanges
-          .dnsChangeDetail(request.user.userName, canReview)
+          .dnsChangeDetail(request.user.userName, canReview, dnsChangeNotices)
       )
     )
   }

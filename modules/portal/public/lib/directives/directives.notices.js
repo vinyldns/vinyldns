@@ -14,4 +14,19 @@
  * limitations under the License.
  */
 
-angular.module('directives.module', ['directives.validations.module', 'directives.modals.module', 'directives.notifications.module', 'directives.notices.module']);
+angular.module('directives.notices.module', [])
+    .directive('notice', function($timeout) {
+      return {
+        restrict: 'E',
+        replace: true,
+        scope: {
+          ngModel: '='
+        },
+        templateUrl: "/public/templates/notice.html",
+//        link: function(scope, element, attrs) {
+//          $timeout(function() {
+//            element.fadeOut(50);
+//          }, 6000)
+//        }
+      }
+    });

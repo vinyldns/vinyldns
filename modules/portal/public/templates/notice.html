@@ -1,0 +1,4 @@
+<div class="alert" ng-class="'alert-'+ngModel.alertType" role="alert">
+    {{ngModel.text}}
+    <a ng-if="ngModel.href" href="{{ngModel.href}}" target="_blank">{{ngModel.hrefText}}</a>
+</div>
