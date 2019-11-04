@@ -49,7 +49,7 @@ choose a specific label to narrow down the issues to review.</p>
 <ul>
   <li><strong>Beginner issues</strong>: only require a few lines of code to complete, rather isolated to one or two files.  A good way
 to get through changing and testing your code, and meet everyone!</li>
-  <li><strong>Help wanted issues</strong>: these are more involved than beginner issues, are items that tend to come near the top of our 
+  <li><strong>Help wanted issues</strong>: these are more involved than beginner issues, are items that tend to come near the top of our
 backlog but not necessarily in the current development stream.</li>
 </ul>
 
@@ -71,12 +71,12 @@ issue, but feel free to comment on the existing issue with additional details.</
 look at it. Please be as detailed as possible as it will help us recreate the bug and figure out what exactly is going on.
 If you are unsure whether what you found is a bug, we encourage you to first pop in our <a href="https://gitter.im/vinyldns/vinyldns">dev gitter</a>, and we can
 help determine if what you’re seeing is unexpected behavior, and if it is we will direct to make the bug report.</li>
-  <li><strong>Feature request</strong>: Use this template if you have something you wish to be added to the project. Please be detailed 
+  <li><strong>Feature request</strong>: Use this template if you have something you wish to be added to the project. Please be detailed
 when describing why you are requesting the feature, what you want it to do, and alternative solutions you have considered.
 If the feature is a substantial change to VinylDNS, it may be better suited as an RFC, through our <a href="https://github.com/vinyldns/rfcs">RFC process</a>.</li>
-  <li><strong>Maintenance request</strong>: This template is for suggesting upgrades to the existing code base. This could include 
-code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the 
-reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and 
+  <li><strong>Maintenance request</strong>: This template is for suggesting upgrades to the existing code base. This could include
+code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the
+reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and
 what parts of the system will be impacted.</li>
 </ul>
 
@@ -96,7 +96,7 @@ Most Pull Requests are related to an <a href="#issues">issue</a>, and will have 
 <ol>
   <li>Create a fork of the repository that you want to contribute code to</li>
   <li>Clone your forked repository to your local machine</li>
-  <li>In your local machine, add a remote to the “main” repository, we call this “upstream” by running 
+  <li>In your local machine, add a remote to the “main” repository, we call this “upstream” by running
 <code class="highlighter-rouge">git remote add upstream https://github.com/vinyldns/vinyldns.git</code>.  Note: you can also use <code class="highlighter-rouge">ssh</code> instead of <code class="highlighter-rouge">https</code></li>
   <li>Create a local branch for your work <code class="highlighter-rouge">git checkout -b your-user-name/user-branch-name</code>.  Add whatever your GitHub
 user name is before whatever you want your branch to be.</li>
@@ -108,8 +108,8 @@ the build server to complete its job. See <a href="DEVELOPER_GUIDE.md">DEVELOPER
 to your <em>own fork</em></li>
   <li>Go to the <a href="https://github.com/vinyldns/vinyldns.git">VinylDNS main repository</a> (or whatever repo you are contributing to)
 and you will see your change waiting and a link to “Create a Pull Request”.  Click the link to create a Pull Request.</li>
-  <li>Be as detailed as possible in the description of your Pull Request. Describe what you changed, why you changed it, and 
-give a detailed list of changes and impacted files. If your Pull Request is related to an existing issue, be sure to link the 
+  <li>Be as detailed as possible in the description of your Pull Request. Describe what you changed, why you changed it, and
+give a detailed list of changes and impacted files. If your Pull Request is related to an existing issue, be sure to link the
 issue in the Pull Request itself, in addition to the Pull Request description.</li>
   <li>You will receive comments on your Pull Request.  Use the Pull Request as a dialog on your changes.</li>
 </ol>
@@ -137,7 +137,7 @@ an API endpoint, config, portal usage, etc, will also need corresponding documen
 
 <h4 id="style-guides">Style Guides</h4>
 <ul>
-  <li>For Scala code we use <a href="https://www.scalastyle.org/">Scalastyle</a>. The configs are <code class="highlighter-rouge">scalastyle-config.xml</code> and 
+  <li>For Scala code we use <a href="https://www.scalastyle.org/">Scalastyle</a>. The configs are <code class="highlighter-rouge">scalastyle-config.xml</code> and
 <code class="highlighter-rouge">scalastyle-test-config.xml</code> for source code and test code respectively
     <ul>
       <li>We have it set to fail builds if the styling rules are not followed. For example, one of our rules is that all lines must be &lt;= 120 characters, and a build will fail if that is violated.</li>
@@ -177,10 +177,10 @@ header. To add or check for headers, follow these steps:</p>
 </div>
 
 <h4 id="contributor-license-agreement">Contributor License Agreement</h4>
-<p>Before Comcast merges your code into the project you must sign the 
+<p>Before Comcast merges your code into the project you must sign the
 <a href="https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a">Comcast Contributor License Agreement (CLA)</a>.</p>
 
-<p>If you haven’t previously signed a Comcast CLA, you’ll automatically be asked to when you open a pull request. 
+<p>If you haven’t previously signed a Comcast CLA, you’ll automatically be asked to when you open a pull request.
 Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.</p>
 
 <h3 id="modifying-your-pull-requests">Modifying your Pull Requests</h3>
