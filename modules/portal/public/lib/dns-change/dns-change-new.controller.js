@@ -17,8 +17,8 @@
 (function() {
     'use strict';
 
-    angular.module('batch-change')
-        .controller('BatchChangeNewController', function($scope, $log, $location, $timeout, $q, batchChangeService, utilityService, groupsService){
+    angular.module('dns-change')
+        .controller('DnsChangeNewController', function($scope, $log, $location, $timeout, $q, dnsChangeService, utilityService, groupsService){
             groupsService.getGroups()
                 .then(function (results) {
                     $scope.myGroups = results['data']['groups'];
@@ -116,14 +116,14 @@
 
                 formatData(payload);
 
-                return batchChangeService.createBatchChange(payload, true)
+                return dnsChangeService.createBatchChange(payload, true)
                     .then(success)
                     .catch(function (error){
                         if(payload.scheduledTime) {
                          $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
                         if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
-                            handleError(error, 'batchChangesService::createBatchChange-failure');
+                            handleError(error, 'dnsChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;

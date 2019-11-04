@@ -17,8 +17,8 @@
 (function() {
     'use strict';
 
-    angular.module('batch-change')
-        .controller('BatchChangeDetailController', function($scope, $log, $location, $timeout, batchChangeService, utilityService){
+    angular.module('dns-change')
+        .controller('DnsChangeDetailController', function($scope, $log, $location, $timeout, dnsChangeService, utilityService){
 
             $scope.batch = {};
             $scope.alerts = [];
@@ -38,11 +38,11 @@
                     }
                 }
 
-                return batchChangeService
+                return dnsChangeService
                     .getBatchChange(batchChangeId)
                     .then(success)
                     .catch(function (error) {
-                        handleError(error, 'batchChangesService::getBatchChange-failure');
+                        handleError(error, 'dnsChangesService::getBatchChange-failure');
                     });
             };
 
@@ -74,7 +74,7 @@
                     $scope.refresh();
                 }
 
-                return batchChangeService
+                return dnsChangeService
                     .approveBatchChange($scope.batch.id, $scope.reviewComment)
                     .then(success)
                     .catch(function (error) {
@@ -88,9 +88,9 @@
                                 }
                             }
                             var errorAlert = {data: "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.", status: error.status}
-                            handleError(errorAlert, 'batchChangesService::approveBatchChange-failure');
+                            handleError(errorAlert, 'dnsChangesService::approveBatchChange-failure');
                         } else {
-                            handleError(error, 'batchChangesService::approveBatchChange-failure');
+                            handleError(error, 'dnsChangesService::approveBatchChange-failure');
                         }
                     });
             };
@@ -100,11 +100,11 @@
                     $scope.refresh();
                 }
 
-                return batchChangeService
+                return dnsChangeService
                     .rejectBatchChange($scope.batch.id, $scope.reviewComment)
                     .then(success)
                     .catch(function (error) {
-                        handleError(error, 'batchChangesService::rejectBatchChange-failure');
+                        handleError(error, 'dnsChangesService::rejectBatchChange-failure');
                     });
             };
 
@@ -125,11 +125,11 @@
                     $scope.refresh();
                 }
 
-                return batchChangeService
+                return dnsChangeService
                     .cancelBatchChange($scope.batch.id)
                     .then(success)
                     .catch(function (error){
-                        handleError(error, 'batchChangesService::cancelBatchChange-failure');
+                        handleError(error, 'dnsChangesService::cancelBatchChange-failure');
                     });
             };
 
