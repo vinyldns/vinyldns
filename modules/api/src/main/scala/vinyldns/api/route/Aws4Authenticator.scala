@@ -115,10 +115,10 @@ class Aws4Authenticator {
     // calculate the sig using the generated signing key
     val signature = calculateSig(canonicalRequest, dateTime, signatureScope, secret)
 
-    // This is worth while during the upgrade to akka http and beyond as debugging auth issues is difficult
+    // This is worthwhile during the upgrade to akka http and beyond as debugging auth issues is difficult
     val sb = new StringBuilder
     sb.append(s"SIGNATURE_SCOPE: $signatureScope\r\n")
-    sb.append(s"SIGNATURE_HEADRES: $signatureHeaders\r\n")
+    sb.append(s"SIGNATURE_HEADERS: $signatureHeaders\r\n")
     sb.append(s"SIGNED_HEADERS: $signedHeaders\r\n")
     sb.append(s"DATE_TIME: $dateTime\r\n")
     sb.append(s"HEADERS: $headers\r\n")

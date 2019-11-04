@@ -45,7 +45,7 @@ Code that is used across multiple modules in the VinylDNS ecosystem live in `cor
 ### API
 The API is the RESTful API for interacting with VinylDNS.  The following technologies are used:
 
-* [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) - Used primarily for REST and HTTP calls. 
+* [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) - Used primarily for REST and HTTP calls.
 * [FS2](https://functional-streams-for-scala.github.io/fs2/) - Used for backend change processing off of message queues.
 FS2 has back-pressure built in, and gives us tools like throttling and concurrency.
 * [Cats Effect](https://typelevel.org/cats-effect/) - We are currently migrating away from `Future` as our primary type
@@ -108,7 +108,7 @@ The portal code can be found in `modules/portal`.
 * `test` - unit tests for portal back-end
 
 ### Documentation
-Code used to build the microsite content for the API, operator and portal guides at https://www.vinyldns.io/. Some settings for the microsite 
+Code used to build the microsite content for the API, operator and portal guides at https://www.vinyldns.io/. Some settings for the microsite
 are also configured in `build.sbt` of the project root.
 
 #### Code Layout
@@ -137,13 +137,13 @@ that is done, in the same `sbt` session or a different one, go to `project porta
 See the [Portal Configuration Guide](https://www.vinyldns.io/operator/config-portal) for information regarding portal configuration.
 
 ### Loading test data
-Normally the portal can be used for all VinylDNS requests. Test users are locked down to only have access to test zones, 
-which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need to use an alternative 
+Normally the portal can be used for all VinylDNS requests. Test users are locked down to only have access to test zones,
+which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need to use an alternative
 client and set `isTest=true` on the zone being connected to.
 
 Use the vinyldns-js client (Note, you need Node installed):
 
-``` 
+```
 git clone https://github.com/vinyldns/vinyldns-js.git
 cd vinyldns-js
 npm install
@@ -189,7 +189,7 @@ API.  We have over 350 (and growing) automated regression tests.  The API functi
 and live under `modules/api/functional_test`.
 
 #### Running functional tests
-To run functional tests, make sure that you have started the API server (directions above).  
+To run functional tests, make sure that you have started the API server (directions above).
 Then in another terminal session:
 
 1. `cd modules/api/functional_test`
@@ -257,7 +257,7 @@ server.  If you need to add or modify the test DNS zone files, you can find them
 `docker/bind9/zones`
 
 ## Validating VinylDNS
-VinylDNS comes with a build script `./build.sh` that validates VinylDNS compiles, verifies that unit tests pass, and then runs functional tests.  
+VinylDNS comes with a build script `./build.sh` that validates VinylDNS compiles, verifies that unit tests pass, and then runs functional tests.
 Note: This takes a while to run, and typically is only necessary if you want to simulate the same process that runs on the build servers.
 
 When functional tests run, you will see a lot of output intermingled together across the various containers.  You can view only the output
