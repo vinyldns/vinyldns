@@ -22,11 +22,6 @@ angular.module('directives.notices.module', [])
         scope: {
           ngModel: '='
         },
-        templateUrl: "/public/templates/notice.html",
-//        link: function(scope, element, attrs) {
-//          $timeout(function() {
-//            element.fadeOut(50);
-//          }, 6000)
-//        }
+        templateUrl: "/public/templates/notice.html"
       }
     });

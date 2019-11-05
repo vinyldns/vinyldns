@@ -16,11 +16,13 @@
 
 package models
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigException}
 import models.DnsChangeNoticeType.DnsChangeNoticeType
 import models.DnsChangeStatus.DnsChangeStatus
 import play.api.libs.json.{JsValue, Json}
-import play.api.{ConfigLoader}
+import play.api.ConfigLoader
+import net.ceedubs.ficus.Ficus._
+import net.ceedubs.ficus.readers.EnumerationReader._
 
 import scala.collection.JavaConverters._
 
@@ -51,8 +53,16 @@ object DnsChangeNotices {
     )
 
   def formatDnsChangeNotice(config: Config): DnsChangeNotice = {
-    val status = DnsChangeStatus.find(config.getString("status"))
-    val alertType = DnsChangeNoticeType.find(config.getString("alertType"))
+    val status = try {
+      config.as[DnsChangeStatus]("status")
+    } catch {
+      case _: ConfigException.BadValue => DnsChangeStatus.Unknown
+    }
+    val alertType = try {
+      config.as[DnsChangeNoticeType]("alertType")
+    } catch {
+      case _: ConfigException.BadValue => DnsChangeNoticeType.info
+    }
     val text = config.getString("text")
     if (config.hasPath("hrefText") && config.hasPath("href")) {
       DnsChangeNotice(
@@ -77,17 +87,9 @@ object DnsChangeStatus extends Enumeration {
   type DnsChangeStatus = Value
   val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
   Scheduled, Unknown = Value
-
-  private val valueMap = DnsChangeStatus.values.map(v => v.toString -> v).toMap
-
-  def find(status: String): DnsChangeStatus = valueMap.getOrElse(status, Unknown)
 }
 
 object DnsChangeNoticeType extends Enumeration {
   type DnsChangeNoticeType = Value
   val info, success, warning, danger = Value
-
-  private val valueMap = DnsChangeNoticeType.values.map(v => v.toString -> v).toMap
-
-  def find(status: String): DnsChangeNoticeType = valueMap.getOrElse(status, info)
 }

@@ -17,6 +17,7 @@ object Dependencies {
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
   lazy val fs2V = "2.0.1"
+  lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -50,7 +51,7 @@ object Dependencies {
     "com.47deg"                 %% "github4s"                       % "0.18.6",
     "com.comcast"               %% "ip4s-core"                      % ip4sV,
     "com.comcast"               %% "ip4s-cats"                      % ip4sV,
-    "com.iheart"                %% "ficus"                          % "1.4.3",
+    "com.iheart"                %% "ficus"                          % ficusV,
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
     "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources()
@@ -118,6 +119,7 @@ object Dependencies {
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
-    "de.leanovate.play-mockws"  %% "play-mockws" % "2.7.1"          % "test"
+    "de.leanovate.play-mockws"  %% "play-mockws" % "2.7.1"          % "test",
+    "com.iheart"                %% "ficus"                          % ficusV
   )
 }

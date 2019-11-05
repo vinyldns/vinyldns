@@ -95,14 +95,47 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
       Configuration
         .from(Map("dnsChangeNotices" -> "invalid"))
         .get[DnsChangeNotices]("dnsChangeNotices") must
-        throwA[ConfigException]("dnsChangeNotices has type STRING rather than LIST")
+        throwA[ConfigException.WrongType]("dnsChangeNotices has type STRING rather than LIST")
     }
 
-    "error if no dnsChangeNotices is in the config" in {
+    "error if no dnsChangeNotices key is in the config" in {
       Configuration
         .from(Map())
         .get[DnsChangeNotices]("dnsChangeNotices") must
-        throwA[ConfigException]("No configuration setting found for key 'dnsChangeNotices'")
+        throwA[ConfigException.Missing]("No configuration setting found for key 'dnsChangeNotices'")
+    }
+
+    "error if no text value is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "status" -> "Cancelled",
+            "alertType" -> "info"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.Missing]("No configuration setting found for key 'text'")
+    }
+
+    "error if incorrect text type is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "text" -> List("all done."),
+            "status" -> "Cancelled",
+            "alertType" -> "info"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.WrongType]("text has type LIST rather than STRING")
     }
   }
 }
