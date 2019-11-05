@@ -17,7 +17,7 @@
 describe('BatchChange', function(){
 
     beforeEach(function () {
-        module('batch-change'),
+        module('dns-change'),
         module('service.utility'),
         module('service.paging'),
         module('service.groups')
@@ -25,30 +25,30 @@ describe('BatchChange', function(){
 
     var deferred;
 
-    describe('Controller: BatchChangeDetailController', function(){
+    describe('Controller: DnsChangeDetailController', function(){
         beforeEach(function () {
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, pagingService, utilityService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, dnsChangeService, pagingService, utilityService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
-            this.controller = $controller('BatchChangeDetailController', {'$scope': this.scope});
+            this.controller = $controller('DnsChangeDetailController', {'$scope': this.scope});
 
             deferred = $q.defer();
 
-            spyOn(batchChangeService, 'getBatchChange').and.returnValue(deferred.promise);
-            spyOn(batchChangeService, 'approveBatchChange').and.returnValue(deferred.promise);
-            spyOn(batchChangeService, 'rejectBatchChange').and.returnValue(deferred.promise);
+            spyOn(dnsChangeService, 'getBatchChange').and.returnValue(deferred.promise);
+            spyOn(dnsChangeService, 'approveBatchChange').and.returnValue(deferred.promise);
+            spyOn(dnsChangeService, 'rejectBatchChange').and.returnValue(deferred.promise);
         }));
 
         describe('$scope.getBatchChange', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
+            it('should resolve the promise', inject(function(dnsChangeService) {
 
                 this.scope.getBatchChange("17350028-b2b8-428d-9f10-dbb518a0364d");
 
-                expect(batchChangeService.getBatchChange).toHaveBeenCalled();
-                expect(batchChangeService.getBatchChange).toHaveBeenCalledWith("17350028-b2b8-428d-9f10-dbb518a0364d");
+                expect(dnsChangeService.getBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.getBatchChange).toHaveBeenCalledWith("17350028-b2b8-428d-9f10-dbb518a0364d");
 
                 var mockBatchChange = {
                     userId: "17350028-b2b8-428d-9f10-dbb518a0364d",
@@ -66,11 +66,11 @@ describe('BatchChange', function(){
                 expect(this.scope.batch).toEqual(mockBatchChange);
             }));
 
-            it('should reject the promise', inject(function(batchChangeService) {
+            it('should reject the promise', inject(function(dnsChangeService) {
                 this.scope.getBatchChange("nonExistentBatchChange");
 
-                expect(batchChangeService.getBatchChange).toHaveBeenCalled();
-                expect(batchChangeService.getBatchChange).toHaveBeenCalledWith("nonExistentBatchChange");
+                expect(dnsChangeService.getBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.getBatchChange).toHaveBeenCalledWith("nonExistentBatchChange");
 
                 deferred.reject({data: "Batch change with id wow cannot be found", status: 404});
                 this.rootScope.$apply();
@@ -81,11 +81,11 @@ describe('BatchChange', function(){
         });
 
         describe('$scope.confirmApprove', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
+            it('should resolve the promise', inject(function(dnsChangeService) {
 
                 this.scope.confirmApprove("17350028-b2b8-428d-9f10-dbb518a0364d", "great");
 
-                expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.approveBatchChange).toHaveBeenCalled();
 
                 deferred.resolve({data: {reviewComment: "great"}});
                 this.rootScope.$apply();
@@ -94,10 +94,10 @@ describe('BatchChange', function(){
                 expect(this.scope.reviewType).toEqual(null);
             }));
 
-            it('should reject the promise', inject(function(batchChangeService) {
+            it('should reject the promise', inject(function(dnsChangeService) {
                 this.scope.confirmApprove("notPendingBatchChange", "great");
 
-                expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.approveBatchChange).toHaveBeenCalled();
 
                 var errorData = {data: [{changeType: "Add", inputName: "onofe.ok.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}},
                 {changeType: "Add", inputName: "wfonef.wfoefn.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, errors: ['Zone Discovery Failed: zone for "wfonef.wfoefn." doesn\'t exists']}]}
@@ -110,11 +110,11 @@ describe('BatchChange', function(){
         });
 
         describe('$scope.confirmReject', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
+            it('should resolve the promise', inject(function(dnsChangeService) {
 
                 this.scope.confirmReject("17350028-b2b8-428d-9f10-dbb518a0364d", "great");
 
-                expect(batchChangeService.rejectBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.rejectBatchChange).toHaveBeenCalled();
 
                 deferred.resolve({data: {reviewComment: "no bueno"}});
                 this.rootScope.$apply();
@@ -123,10 +123,10 @@ describe('BatchChange', function(){
                 expect(this.scope.reviewType).toEqual(null);
             }));
 
-            it('should reject the promise', inject(function(batchChangeService) {
+            it('should reject the promise', inject(function(dnsChangeService) {
                 this.scope.confirmReject("notPendingBatchChange", "no bueno");
 
-                expect(batchChangeService.rejectBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.rejectBatchChange).toHaveBeenCalled();
 
                 deferred.reject({data: "Batch change with id notPendingBatchChange is not pending review.", status: 400});
                 this.rootScope.$apply();
@@ -136,14 +136,14 @@ describe('BatchChange', function(){
         });
     });
 
-    describe('Controller: BatchChangeNewController', function(){
+    describe('Controller: DnsChangeNewController', function(){
         var tomorrow = moment().startOf('hour').add(1, 'day').format('LL hh:mm A');
 
         beforeEach(function () {
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, utilityService, groupsService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, dnsChangeService, utilityService, groupsService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
             this.groupsService = groupsService;
@@ -152,7 +152,7 @@ describe('BatchChange', function(){
 
             deferred = $q.defer();
 
-            spyOn(batchChangeService, 'createBatchChange').and.returnValue(deferred.promise);
+            spyOn(dnsChangeService, 'createBatchChange').and.returnValue(deferred.promise);
             groupsService.getGroups = function() {
                 return $q.when({
                     data: {
@@ -161,15 +161,15 @@ describe('BatchChange', function(){
                 });
             };
 
-            this.controller = $controller('BatchChangeNewController', {'$scope': this.scope});
+            this.controller = $controller('DnsChangeNewController', {'$scope': this.scope});
         }));
 
-        it("test that we properly get user's groups when loading BatchChangeNewController", function(){
+        it("test that we properly get user's groups when loading DnsChangeNewController", function(){
             this.scope.$digest();
             expect(this.scope.myGroups).toBe("all my groups");
         });
 
-        it("test that we set a default scheduledTime when loading BatchChangeNewController", function(){
+        it("test that we set a default scheduledTime when loading DnsChangeNewController", function(){
             this.scope.$digest();
             expect(this.scope.newBatch.scheduledTime).toBe(tomorrow);
         });
@@ -282,7 +282,7 @@ describe('BatchChange', function(){
         });
 
         describe('$scope.createBatchChange', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
+            it('should resolve the promise', inject(function(dnsChangeService) {
 
                 this.scope.newBatch = {
                     comments: "this is a comment.",
@@ -291,7 +291,7 @@ describe('BatchChange', function(){
 
                 this.scope.createBatchChange();
 
-                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.createBatchChange).toHaveBeenCalled();
 
                 var mockBatchChange = {
                     userId: "17350028-b2b8-428d-9f10-dbb518a0364d",
@@ -318,7 +318,7 @@ describe('BatchChange', function(){
 
                 this.scope.createBatchChange();
 
-                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.createBatchChange).toHaveBeenCalled();
 
                 deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone for "blah.dummy." does not exist in Vinyl.']}], status: 400});
                 this.rootScope.$apply();
@@ -332,7 +332,7 @@ describe('BatchChange', function(){
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
             }));
 
-            it('should format the batch change data', inject(function(batchChangeService) {
+            it('should format the batch change data', inject(function(dnsChangeService) {
 
                 this.scope.newBatch = {
                     comments: "this is a comment.",
@@ -342,7 +342,7 @@ describe('BatchChange', function(){
 
                 this.scope.createBatchChange();
 
-                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+                expect(dnsChangeService.createBatchChange).toHaveBeenCalled();
 
                 deferred.resolve({data: {}});
                 this.rootScope.$apply();
@@ -357,29 +357,29 @@ describe('BatchChange', function(){
         });
     });
 
-    describe('Controller: BatchChangesController', function(){
+    describe('Controller: DnsChangesController', function(){
         beforeEach(function () {
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, utilityService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, dnsChangeService, utilityService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
-            this.controller = $controller('BatchChangesController', {'$scope': this.scope});
+            this.controller = $controller('DnsChangesController', {'$scope': this.scope});
 
             deferred = $q.defer();
 
-            spyOn(batchChangeService, 'getBatchChanges').and.returnValue(deferred.promise);
+            spyOn(dnsChangeService, 'getBatchChanges').and.returnValue(deferred.promise);
         }));
 
         describe('$scope.getBatchChanges', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
+            it('should resolve the promise', inject(function(dnsChangeService) {
                 this.scope.getBatchChanges()
                     .then(function(response) {
                         expect(response.data.batchChanges).toBe(mockBatchChanges)
                     });
 
-                expect(batchChangeService.getBatchChanges).toHaveBeenCalled();
+                expect(dnsChangeService.getBatchChanges).toHaveBeenCalled();
 
                 var mockBatchChanges = {
                     comments: "this is hopefully a full failure",
@@ -399,13 +399,13 @@ describe('BatchChange', function(){
 
     describe('Service: batchChange', function() {
         beforeEach(inject(function ($httpBackend, batchChangeService) {
-            this.batchChangeService = batchChangeService;
+            this.dnsChangeService = batchChangeService;
             this.$httpBackend = $httpBackend;
         }));
 
         it('http backend gets called properly when getting a batch changes', function () {
             this.$httpBackend.expectGET('/api/dnschanges/123').respond('batch change returned');
-            this.batchChangeService.getBatchChange('123')
+            this.dnsChangeService.getBatchChange('123')
                 .then(function(response) {
                     expect(response.data).toBe('batch change returned');
                 });
@@ -414,7 +414,7 @@ describe('BatchChange', function(){
 
         it('http backend gets called properly when creating a batch change', function () {
             this.$httpBackend.expectPOST('/api/dnschanges').respond('batch change created');
-            this.batchChangeService.createBatchChange({comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]})
+            this.dnsChangeService.createBatchChange({comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]})
                 .then(function(response) {
                     expect(response.data).toBe('batch change created');
                 });
@@ -423,7 +423,7 @@ describe('BatchChange', function(){
 
         it('http backend gets called properly when approving a batch change', function () {
             this.$httpBackend.expectPOST('/api/dnschanges/123/approve').respond('batch change created');
-            this.batchChangeService.approveBatchChange("123", "good")
+            this.dnsChangeService.approveBatchChange("123", "good")
                 .then(function(response) {
                     expect(response.data).toBe('batch change created');
                 });
@@ -432,7 +432,7 @@ describe('BatchChange', function(){
 
         it('http backend gets called properly when rejecting a batch change', function () {
             this.$httpBackend.expectPOST('/api/dnschanges/123/reject').respond('batch change created');
-            this.batchChangeService.rejectBatchChange("123", "bad")
+            this.dnsChangeService.rejectBatchChange("123", "bad")
                 .then(function(response) {
                     expect(response.data).toBe('batch change created');
                 });
