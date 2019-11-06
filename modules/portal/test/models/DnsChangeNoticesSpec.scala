@@ -95,7 +95,7 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
         "dnsChangeNotices" -> List()
       )
 
-      val configFormatted = Json.toJson(List())
+      val configFormatted = Json.arr()
       val dnsChangeNotices = Configuration.from(config).get[DnsChangeNotices]("dnsChangeNotices")
       dnsChangeNotices.notices must beEqualTo(configFormatted)
     }
