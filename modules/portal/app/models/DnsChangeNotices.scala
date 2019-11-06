@@ -16,10 +16,10 @@
 
 package models
 
-import com.typesafe.config.{Config, ConfigException}
+import com.typesafe.config.Config
 import models.DnsChangeNoticeType.DnsChangeNoticeType
 import models.DnsChangeStatus.DnsChangeStatus
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.ConfigLoader
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
@@ -29,64 +29,38 @@ import scala.collection.JavaConverters._
 case class DnsChangeNotices(notices: JsValue)
 
 object DnsChangeNotices {
+  implicit val dnsChangeNoticeWrites: Writes[DnsChangeNotice] = Json.writes[DnsChangeNotice]
   implicit val configLoader: ConfigLoader[DnsChangeNotices] =
     new ConfigLoader[DnsChangeNotices] {
       def load(config: Config, path: String): DnsChangeNotices = {
-        val notices = config.getConfigList(path).asScala.map { noticeConfig =>
-          formatDnsChangeNotice(noticeConfig)
-        }
-        DnsChangeNotices(noticesToJson(notices.toList))
+        val notices = config
+          .getConfigList(path)
+          .asScala
+          .map(formatDnsChangeNotice)
+        DnsChangeNotices(Json.toJson(notices))
       }
     }
-
-  def noticesToJson(notices: List[DnsChangeNotice]): JsValue =
-    Json.toJson(
-      notices.map { n =>
-        Map(
-          "status" -> n.status.toString,
-          "alertType" -> n.alertType.toString,
-          "text" -> n.text,
-          "href" -> n.href.getOrElse(""),
-          "hrefText" -> n.hrefText.getOrElse("")
-        )
-      }
-    )
 
   def formatDnsChangeNotice(config: Config): DnsChangeNotice = {
-    val status = try {
-      config.as[DnsChangeStatus]("status")
-    } catch {
-      case _: ConfigException.BadValue => DnsChangeStatus.Unknown
-    }
-    val alertType = try {
-      config.as[DnsChangeNoticeType]("alertType")
-    } catch {
-      case _: ConfigException.BadValue => DnsChangeNoticeType.info
-    }
+    val status = config.as[DnsChangeStatus]("status")
+    val alertType = config.as[DnsChangeNoticeType]("alertType")
     val text = config.getString("text")
-    if (config.hasPath("hrefText") && config.hasPath("href")) {
-      DnsChangeNotice(
-        status,
-        alertType,
-        text,
-        Some(config.getString("hrefText")),
-        Some(config.getString("href")))
-    } else {
-      DnsChangeNotice(status, alertType, text, None, None)
-    }
+    val hrefText = config.getOrElse[String]("hrefText", "")
+    val href = config.getOrElse[String]("href", "")
+    DnsChangeNotice(status, alertType, text, hrefText, href)
   }
 }
 case class DnsChangeNotice(
     status: DnsChangeStatus,
     alertType: DnsChangeNoticeType,
     text: String,
-    hrefText: Option[String],
-    href: Option[String])
+    hrefText: String,
+    href: String)
 
 object DnsChangeStatus extends Enumeration {
   type DnsChangeStatus = Value
   val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
-  Scheduled, Unknown = Value
+  Scheduled = Value
 }
 
 object DnsChangeNoticeType extends Enumeration {

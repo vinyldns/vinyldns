@@ -20,36 +20,35 @@ import com.typesafe.config.ConfigException
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import play.api.Configuration
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 
 class DnsChangeNoticesSpec extends Specification with Mockito {
   "DnsChangeNotices" should {
-    "load notices from config" in {
+    "load valid notices from config" in {
       val config = Map(
         "dnsChangeNotices" -> List(
           Map(
             "status" -> "Cancelled",
             "alertType" -> "info",
-            "text" -> "All done"
+            "text" -> "No href or hrefText provided."
           ),
           Map(
-            "status" -> "Invalid",
-            "alertType" -> "info",
-            "text" -> "All done",
+            "status" -> "Complete",
+            "alertType" -> "success",
+            "text" -> "href and hrefText provided.",
             "href" -> "http://example.com",
             "hrefText" -> "See more."
           ),
           Map(
-            "status" -> "Cancelled",
-            "alertType" -> "info",
-            "text" -> "All done",
+            "status" -> "PendingReview",
+            "alertType" -> "warning",
+            "text" -> "No hrefText provided.",
             "href" -> "http://example.com"
           ),
           Map(
-            "status" -> "Cancelled",
-            "alertType" -> "bad",
-            "text" -> "All done",
-            "href" -> "http://example.com",
+            "status" -> "Failed",
+            "alertType" -> "danger",
+            "text" -> "No href provided.",
             "hrefText" -> "See more."
           )
         )
@@ -60,29 +59,29 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
           Map(
             "status" -> "Cancelled",
             "alertType" -> "info",
-            "text" -> "All done",
+            "text" -> "No href or hrefText provided.",
             "href" -> "",
             "hrefText" -> ""
           ),
           Map(
-            "status" -> "Unknown",
-            "alertType" -> "info",
-            "text" -> "All done",
+            "status" -> "Complete",
+            "alertType" -> "success",
+            "text" -> "href and hrefText provided.",
             "href" -> "http://example.com",
             "hrefText" -> "See more."
           ),
           Map(
-            "status" -> "Cancelled",
-            "alertType" -> "info",
-            "text" -> "All done",
-            "href" -> "",
+            "status" -> "PendingReview",
+            "alertType" -> "warning",
+            "text" -> "No hrefText provided.",
+            "href" -> "http://example.com",
             "hrefText" -> ""
           ),
           Map(
-            "status" -> "Cancelled",
-            "alertType" -> "info",
-            "text" -> "All done",
-            "href" -> "http://example.com",
+            "status" -> "Failed",
+            "alertType" -> "danger",
+            "text" -> "No href provided.",
+            "href" -> "",
             "hrefText" -> "See more."
           )
         ))
@@ -91,11 +90,14 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
       dnsChangeNotices.notices must beEqualTo(configFormatted)
     }
 
-    "error if an invalid dnsChangeNotices value is in the config" in {
-      Configuration
-        .from(Map("dnsChangeNotices" -> "invalid"))
-        .get[DnsChangeNotices]("dnsChangeNotices") must
-        throwA[ConfigException.WrongType]("dnsChangeNotices has type STRING rather than LIST")
+    "load valid notices from config" in {
+      val config = Map(
+        "dnsChangeNotices" -> List()
+      )
+
+      val configFormatted = Json.toJson(List())
+      val dnsChangeNotices = Configuration.from(config).get[DnsChangeNotices]("dnsChangeNotices")
+      dnsChangeNotices.notices must beEqualTo(configFormatted)
     }
 
     "error if no dnsChangeNotices key is in the config" in {
@@ -103,6 +105,13 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
         .from(Map())
         .get[DnsChangeNotices]("dnsChangeNotices") must
         throwA[ConfigException.Missing]("No configuration setting found for key 'dnsChangeNotices'")
+    }
+
+    "error if the dnsChangeNotices value is not a list" in {
+      Configuration
+        .from(Map("dnsChangeNotices" -> "invalid"))
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.WrongType]("dnsChangeNotices has type STRING rather than LIST")
     }
 
     "error if no text value is given" in {
@@ -121,7 +130,7 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
         throwA[ConfigException.Missing]("No configuration setting found for key 'text'")
     }
 
-    "error if incorrect text type is given" in {
+    "error if the given text value is not a string" in {
       val config = Map(
         "dnsChangeNotices" -> List(
           Map(
@@ -136,6 +145,72 @@ class DnsChangeNoticesSpec extends Specification with Mockito {
         .from(config)
         .get[DnsChangeNotices]("dnsChangeNotices") must
         throwA[ConfigException.WrongType]("text has type LIST rather than STRING")
+    }
+
+    "error if no status is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "alertType" -> "info",
+            "text" -> "Invalid status value"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.Missing]("No configuration setting found for key 'status'")
+    }
+
+    "error if an invalid status is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "status" -> "Invalid",
+            "alertType" -> "info",
+            "text" -> "Invalid status value"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.BadValue]
+    }
+
+    "error if no alertType is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "status" -> "Complete",
+            "text" -> "Invalid alertType value"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.Missing]("No configuration setting found for key 'alertType'")
+    }
+
+    "error if an invalid status is given" in {
+      val config = Map(
+        "dnsChangeNotices" -> List(
+          Map(
+            "status" -> "Invalid",
+            "alertType" -> "veryBad",
+            "text" -> "Invalid status value"
+          )
+        )
+      )
+
+      Configuration
+        .from(config)
+        .get[DnsChangeNotices]("dnsChangeNotices") must
+        throwA[ConfigException.BadValue]
     }
   }
 }
