@@ -21,8 +21,13 @@ import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData.pendingCreateAAAA
 import vinyldns.core.TestZoneData.zoneChangePending
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
+import vinyldns.sqs.queue.SqsMessageType.{
+  SqsBatchChangeMessage,
+  SqsRecordSetChangeMessage,
+  SqsZoneChangeMessage
+}
 
 import scala.collection.JavaConverters._
 
@@ -58,6 +63,23 @@ class SqsMessageSpec extends WordSpec with Matchers with EitherValues with Proto
           ).asJava)
 
       parseSqsMessage(msg).right.value.command shouldBe pendingCreateAAAA
+    }
+
+    "build the command for batch change command correctly" in {
+      val batchChangeCommand = BatchChangeCommand("some-id")
+      val bytes = batchChangeCommand.id.getBytes
+      val messageBody = Base64.getEncoder.encodeToString(bytes)
+      val msg = new Message()
+        .withBody(messageBody)
+        .withMessageAttributes(
+          Map(
+            "message-type" -> new MessageAttributeValue()
+              .withStringValue(SqsBatchChangeMessage.name)
+              .withDataType("String")
+          ).asJava
+        )
+
+      parseSqsMessage(msg).right.value.command shouldBe batchChangeCommand
     }
 
     "return EmptySqsMessageContents when processing an empty message" in {

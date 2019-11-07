@@ -27,9 +27,6 @@ import vinyldns.core.domain.record._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import vinyldns.core.notifier.AllNotifiers
-import vinyldns.core.notifier.Notification
-import vinyldns.core.domain.batch.BatchChangeStatus
 
 object RecordSetChangeHandler {
 
@@ -41,15 +38,13 @@ object RecordSetChangeHandler {
   def apply(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
-      batchChangeRepository: BatchChangeRepository,
-      notifiers: AllNotifiers)(
+      batchChangeRepository: BatchChangeRepository)(
       implicit timer: Timer[IO]): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
         recordChangeRepository,
         batchChangeRepository,
-        notifiers,
         conn,
         recordSetChange)
     }
@@ -58,7 +53,6 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
-      notifiers: AllNotifiers,
       conn: DnsConnection,
       recordSetChange: RecordSetChange)(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
@@ -70,15 +64,7 @@ object RecordSetChangeHandler {
       singleBatchChanges <- batchChangeRepository.getSingleChanges(
         recordSetChange.singleBatchChangeIds)
       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
-      batchChangeOption <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
-      _ <- batchChangeOption.map { bc =>
-        bc.status match {
-          case BatchChangeStatus.PendingProcessing | BatchChangeStatus.PendingReview =>
-            IO.unit
-          case _ =>
-            notifiers.notify(Notification(bc))
-        }
-      }.sequence
+      _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
     } yield completedState.change
 
   def updateBatchStatuses(

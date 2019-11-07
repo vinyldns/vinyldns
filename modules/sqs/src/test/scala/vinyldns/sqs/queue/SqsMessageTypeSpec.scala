@@ -30,6 +30,10 @@ class SqsMessageTypeSpec extends WordSpec with Matchers {
       fromString(SqsZoneChangeMessage.name) shouldBe Right(SqsZoneChangeMessage)
     }
 
+    "parse a SqsBatchChangeMessage" in {
+      fromString(SqsBatchChangeMessage.name) shouldBe Right(SqsBatchChangeMessage)
+    }
+
     "return InvalidMessageTypeValue for invalid string" in {
       val invalidString = "invalid-message-type-string"
       fromString(invalidString) shouldBe Left(InvalidMessageTypeValue(invalidString))

@@ -22,13 +22,18 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.health.HealthCheck._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
-import vinyldns.mysql.queue.MessageType.{RecordChangeMessageType, ZoneChangeMessageType}
+import vinyldns.mysql.queue.MessageType.{
+  BatchChangeMessageType,
+  RecordChangeMessageType,
+  ZoneChangeMessageType
+}
 import vinyldns.proto.VinylDNSProto
 
 import scala.concurrent.duration._
@@ -109,6 +114,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
         messageType match {
           case ZoneChangeMessageType => fromPB(VinylDNSProto.ZoneChange.parseFrom(data))
           case RecordChangeMessageType => fromPB(VinylDNSProto.RecordSetChange.parseFrom(data))
+          case BatchChangeMessageType => BatchChangeCommand(new String(data))
         }
       }
       _ <- Either.cond(attempts < 100, (), MessageAttemptsExceeded(id.value)) // mark as error if too many attempts
@@ -149,6 +155,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def getBytes(cmd: ZoneCommand): Array[Byte] = cmd match {
     case zc: ZoneChange => toPB(zc).toByteArray
     case rc: RecordSetChange => toPB(rc).toByteArray
+    case bcc: BatchChangeCommand => bcc.id.getBytes
   }
 
   /* Generate params for insertion of messages */

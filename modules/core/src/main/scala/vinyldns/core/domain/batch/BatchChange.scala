@@ -21,6 +21,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
 
 case class BatchChange(
     userId: String,
@@ -52,6 +53,8 @@ case class BatchChange(
       isScheduled)
   }
 }
+
+case class BatchChangeCommand(id: String) extends ZoneCommand with ZoneCommandResult
 
 /*
  - Complete means all changes are in complete state

@@ -24,6 +24,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
@@ -143,6 +144,13 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
 
       val r = underTest.receive(MessageCount(2).right.value).unsafeRunSync()
       r.map(_.command) should contain theSameElementsAs List(first, second)
+    }
+    "handle a batch command" in {
+      val batchChangeCommand = BatchChangeCommand("some-id")
+      underTest.send(batchChangeCommand).unsafeRunSync()
+      val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+
+      r.headOption.map(_.command) shouldBe Some(batchChangeCommand)
     }
     "be idempotent" in {
       // Put the same change in twice, get one out

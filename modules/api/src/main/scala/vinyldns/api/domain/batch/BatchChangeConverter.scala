@@ -54,7 +54,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       _ <- batchChangeRepo
         .save(batchChange)
         .toBatchResult // need to save the change before queueing, backend processing expects the changes to exist
-      queued <- putChangesOnQueue(recordSetChanges)
+      queued <- putChangesOnQueue(recordSetChanges, batchChange.id)
       changeToStore = updateWithQueueingFailures(batchChange, queued)
       _ <- storeQueuingFailures(changeToStore)
     } yield BatchConversionOutput(changeToStore, recordSetChanges)
@@ -75,15 +75,21 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   }
 
   def putChangesOnQueue(
-      recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] =
+      recordSetChanges: List[RecordSetChange],
+      batchChangeId: String): BatchResult[List[RecordSetChange]] =
     recordSetChanges.toNel match {
       case None =>
         recordSetChanges.toRightBatchResult // If list is empty, return normally without queueing
       case Some(rsc) =>
-        messageQueue
-          .sendBatch(rsc)
-          .map(_.successes)
-          .toBatchResult
+        for {
+          rscResult <- messageQueue
+            .sendBatch(rsc) // Queue changes
+            .map(_.successes)
+            .toBatchResult
+          _ <- messageQueue
+            .send(BatchChangeCommand(batchChangeId)) // Queue notification
+            .toBatchResult
+        } yield rscResult
     }
 
   def updateWithQueueingFailures(

@@ -27,13 +27,18 @@ import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.health.HealthCheck._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
-import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
+import vinyldns.sqs.queue.SqsMessageType.{
+  SqsBatchChangeMessage,
+  SqsRecordSetChangeMessage,
+  SqsZoneChangeMessage
+}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -203,12 +208,14 @@ object SqsMessageQueue extends ProtobufConversions {
   def messageData[A <: ZoneCommand](cmd: A): String = cmd match {
     case rsc: RecordSetChange => Base64.getEncoder.encodeToString(toPB(rsc).toByteArray)
     case zc: ZoneChange => Base64.getEncoder.encodeToString(toPB(zc).toByteArray)
+    case bc: BatchChangeCommand => Base64.getEncoder.encodeToString(bc.id.getBytes)
   }
 
   def toSendMessageRequest(zoneCommand: ZoneCommand): SendMessageRequest = {
     val messageTypeBytesTuple = zoneCommand match {
       case rsc: RecordSetChange => (SqsRecordSetChangeMessage, toPB(rsc).toByteArray)
       case zc: ZoneChange => (SqsZoneChangeMessage, toPB(zc).toByteArray)
+      case bc: BatchChangeCommand => (SqsBatchChangeMessage, bc.id.getBytes)
     }
 
     messageTypeBytesTuple match {
