@@ -22,8 +22,13 @@ import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.zone.ZoneConnectionValidator
-import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
-import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.api.engine.{
+  BatchChangeHandler,
+  RecordSetChangeHandler,
+  ZoneChangeHandler,
+  ZoneSyncHandler
+}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
@@ -48,6 +53,7 @@ object CommandHandler {
       zoneChangeHandler: ZoneChange => IO[ZoneChange],
       recordChangeHandler: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncHandler: ZoneChange => IO[ZoneChange],
+      batchChangeHandler: BatchChangeCommand => IO[Option[BatchChange]],
       mq: MessageQueue,
       count: MessageCount,
       pollingInterval: FiniteDuration,
@@ -62,7 +68,12 @@ object CommandHandler {
     val increaseTimeoutWhenSyncing = changeVisibilityTimeoutWhenSyncing(mq)
 
     val changeRequestProcessor =
-      processChangeRequests(zoneChangeHandler, recordChangeHandler, zoneSyncHandler, connections)
+      processChangeRequests(
+        zoneChangeHandler,
+        recordChangeHandler,
+        zoneSyncHandler,
+        batchChangeHandler,
+        connections)
 
     // Delete messages from message queue when complete
     val updateQueue = messageSink(mq)
@@ -133,6 +144,7 @@ object CommandHandler {
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
+      batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
       connections: ConfiguredDnsConnections): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
@@ -147,6 +159,9 @@ object CommandHandler {
           val dnsConn =
             DnsConnection(ZoneConnectionValidator.getZoneConnection(rcr.zone, connections))
           outcomeOf(message)(recordChangeProcessor(dnsConn, rcr))
+
+        case bcc: BatchChangeCommand =>
+          outcomeOf(message)(batchChangeProcessor(bcc))
       }
     }
 
@@ -192,15 +207,18 @@ object CommandHandler {
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo, notifiers)
+      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =
       ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo)
+    val batchChangeHandler =
+      BatchChangeHandler(batchChangeRepo, notifiers)
 
     CommandHandler
       .mainFlow(
         zoneChangeHandler,
         recordChangeHandler,
         zoneSyncHandler,
+        batchChangeHandler,
         mq,
         msgsPerPoll,
         pollingInterval,
