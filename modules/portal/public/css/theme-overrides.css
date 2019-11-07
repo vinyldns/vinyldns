@@ -167,8 +167,15 @@ ul.bar_tabs>li a {
   border: 1px solid #adadad!important;
 }
 
-.alert-info {
-    color: #31708f!important;
-    background-color: #d9edf7!important;
-    border-color: #bce8f1!important;
+.alert-danger a, .alert-warning a, .alert-info a, .alert-success a {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.alert-danger a, .alert-warning a, .alert-info a {
+    color: #E9EDEF!important;
+}
+
+.alert-success a {
+    color: #fff!important;
 }
