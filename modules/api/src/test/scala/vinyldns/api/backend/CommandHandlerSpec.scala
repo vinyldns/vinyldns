@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
@@ -64,6 +64,7 @@ class CommandHandlerSpec
   private val mockRecordChangeProcessor =
     mock[(DnsConnection, RecordSetChange) => IO[RecordSetChange]]
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
+  private val mockBatchChangeProcessor = mock[BatchChangeCommand => IO[Option[BatchChange]]]
   private val defaultConn =
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
   private val connections = ConfiguredDnsConnections(defaultConn, defaultConn, List())
@@ -72,6 +73,7 @@ class CommandHandlerSpec
       mockZoneChangeProcessor,
       mockRecordChangeProcessor,
       mockZoneSyncProcessor,
+      mockBatchChangeProcessor,
       connections
     )
 
@@ -216,6 +218,7 @@ class CommandHandlerSpec
           mockZoneChangeProcessor,
           mockRecordChangeProcessor,
           mockZoneSyncProcessor,
+          mockBatchChangeProcessor,
           ConfiguredDnsConnections(default, default, List())
         )
       val change = TestCommandMessage(noConnChange, "foo")
@@ -282,6 +285,7 @@ class CommandHandlerSpec
             mockZoneChangeProcessor,
             mockRecordChangeProcessor,
             mockZoneSyncProcessor,
+            mockBatchChangeProcessor,
             mq,
             count,
             100.millis,
@@ -324,6 +328,7 @@ class CommandHandlerSpec
             mockZoneChangeProcessor,
             mockRecordChangeProcessor,
             mockZoneSyncProcessor,
+            mockBatchChangeProcessor,
             mq,
             count,
             100.millis,

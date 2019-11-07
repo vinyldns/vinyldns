@@ -25,6 +25,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
@@ -51,6 +52,7 @@ class SqsMessageQueueSpec
     "return the appropriate message type" in {
       fromString("SqsRecordSetChangeMessage") shouldBe Right(SqsRecordSetChangeMessage)
       fromString("SqsZoneChangeMessage") shouldBe Right(SqsZoneChangeMessage)
+      fromString("SqsBatchChangeMessage") shouldBe Right(SqsBatchChangeMessage)
     }
   }
 
@@ -143,6 +145,20 @@ class SqsMessageQueueSpec
       val decoded = fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
 
       decoded shouldBe zoneChangePending
+    }
+
+    "build the message correctly for batch changes" in {
+      val batchChangeCommand = BatchChangeCommand("some-id")
+      val result = toSendMessageRequest(batchChangeCommand)
+
+      result.getMessageAttributes
+        .get("message-type")
+        .getStringValue shouldBe SqsBatchChangeMessage.name
+
+      val messageBytes = Base64.getDecoder.decode(result.getMessageBody)
+      val decoded = BatchChangeCommand(new String(messageBytes))
+
+      decoded shouldBe batchChangeCommand
     }
   }
 

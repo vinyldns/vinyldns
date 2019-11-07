@@ -40,9 +40,7 @@ import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSet
 import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
-import vinyldns.core.notifier.{AllNotifiers, Notifier}
 import cats.effect.ContextShift
-import vinyldns.core.notifier.Notification
 
 class RecordSetChangeHandlerSpec
     extends WordSpec
@@ -58,7 +56,6 @@ class RecordSetChangeHandlerSpec
   private val mockDnsMessage = mock[DNS.Message]
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
-  private val mockNotifier = mock[Notifier]
 
   private val batchRepo = new InMemoryBatchChangeRepository
 
@@ -107,10 +104,10 @@ class RecordSetChangeHandlerSpec
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
   private val underTest =
-    RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo, AllNotifiers(List(mockNotifier)))
+    RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo)
 
   override protected def beforeEach(): Unit = {
-    reset(mockConn, mockRsRepo, mockChangeRepo, mockNotifier)
+    reset(mockConn, mockRsRepo, mockChangeRepo)
     batchRepo.clear()
 
     // seed the linked batch change in the DB
@@ -154,84 +151,6 @@ class RecordSetChangeHandlerSpec
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
-    }
-
-    "notify on batchChange complete" in {
-      doReturn(Interfaces.result(List(rs)))
-        .when(mockConn)
-        .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
-      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
-
-      val completedNotUpdatedChange = notUpdatedChange.copy(status = SingleChangeStatus.Complete)
-      await(batchRepo.updateSingleChanges(List(completedNotUpdatedChange)))
-
-      val test = underTest.apply(mockConn, rsChange)
-      test.unsafeRunSync()
-
-      verify(mockRsRepo).apply(rsRepoCaptor.capture())
-      verify(mockChangeRepo).save(changeRepoCaptor.capture())
-
-      val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-      appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
-
-      val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
-      val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
-        ch.copy(
-          status = SingleChangeStatus.Complete,
-          recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
-      }
-      verify(mockNotifier).notify(Notification(batchChangeUpdates.get))
-      val scExpected = completedNotUpdatedChange :: updatedSingleChanges
-      batchChangeUpdates.get.changes shouldBe scExpected
-
-    }
-
-    "notify on batchChange partially complete" in {
-      doReturn(Interfaces.result(List(rs)))
-        .when(mockConn)
-        .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
-      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
-
-      val failedNotUpdatedChange = notUpdatedChange.copy(status = SingleChangeStatus.Failed)
-      await(batchRepo.updateSingleChanges(List(failedNotUpdatedChange)))
-
-      val test = underTest.apply(mockConn, rsChange)
-      test.unsafeRunSync()
-
-      verify(mockRsRepo).apply(rsRepoCaptor.capture())
-      verify(mockChangeRepo).save(changeRepoCaptor.capture())
-
-      val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-      appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
-
-      val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
-      val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
-        ch.copy(
-          status = SingleChangeStatus.Complete,
-          recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
-      }
-      verify(mockNotifier).notify(Notification(batchChangeUpdates.get))
-      val scExpected = failedNotUpdatedChange :: updatedSingleChanges
-      batchChangeUpdates.get.changes shouldBe scExpected
-
     }
 
     "apply the change if not yet applied" in {
