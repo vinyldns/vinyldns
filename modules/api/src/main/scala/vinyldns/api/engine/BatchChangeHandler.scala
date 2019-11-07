@@ -17,7 +17,6 @@
 package vinyldns.api.engine
 
 import cats.effect._
-import cats.implicits._
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.batch.{
   BatchChange,
@@ -47,8 +46,8 @@ object BatchChangeHandler {
       batchChangeCommand: BatchChangeCommand): IO[Option[BatchChange]] =
     for {
       batchChange <- batchChangeRepository.getBatchChange(batchChangeCommand.id)
-      completedState <- fsm(notifiers, Pending(batchChange, batchChangeCommand))
-    } yield completedState.change
+      _ <- notify(notifiers, batchChange, batchChangeCommand)
+    } yield batchChange
 
   private sealed trait BatchChangeProcessorState {
     def change: Option[BatchChange]
@@ -60,17 +59,6 @@ object BatchChangeHandler {
       extends BatchChangeProcessorState
 
   private final case class PendingBatchNotificationError(change: BatchChange) extends Throwable
-
-  private final case class Completed(change: Option[BatchChange]) extends BatchChangeProcessorState
-
-  private def fsm(
-      notifiers: AllNotifiers,
-      state: BatchChangeProcessorState): IO[BatchChangeProcessorState] =
-    state match {
-      case Pending(batchChange, batchChangeCommand) =>
-        notify(notifiers, batchChange, batchChangeCommand).as(Completed(batchChange))
-      case completed => IO.pure(completed)
-    }
 
   private def notify(
       notifiers: AllNotifiers,

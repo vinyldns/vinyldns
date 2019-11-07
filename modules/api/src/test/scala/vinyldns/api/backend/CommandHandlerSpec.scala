@@ -154,6 +154,19 @@ class CommandHandlerSpec
 
       verifyZeroInteractions(mq)
     }
+
+    "not update the timeout for batch changes" in {
+      val msg = TestCommandMessage(BatchChangeCommand("someId"), "foo")
+      Stream
+        .emit(msg)
+        .covary[IO]
+        .through(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
+        .compile
+        .drain
+        .unsafeRunSync()
+
+      verifyZeroInteractions(mq)
+    }
   }
 
   "determining outcome" should {
@@ -258,6 +271,19 @@ class CommandHandlerSpec
       doReturn(IO.pure(del)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(del)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
       verify(mockZoneChangeProcessor).apply(del)
+      verifyZeroInteractions(mockZoneSyncProcessor)
+      verifyZeroInteractions(mockRecordChangeProcessor)
+    }
+    "handle batch changes" in {
+      val batchChange = BatchChangeCommand("someId")
+      val change = TestCommandMessage(batchChange, "foo")
+      doReturn(IO.pure(batchChange))
+        .doReturn(IO.pure(change))
+        .when(mockBatchChangeProcessor)
+        .apply(batchChange)
+      Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
+      verify(mockBatchChangeProcessor).apply(batchChange)
+      verifyZeroInteractions(mockZoneChangeProcessor)
       verifyZeroInteractions(mockZoneSyncProcessor)
       verifyZeroInteractions(mockRecordChangeProcessor)
     }
