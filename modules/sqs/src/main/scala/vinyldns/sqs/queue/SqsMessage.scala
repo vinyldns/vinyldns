@@ -19,11 +19,16 @@ import java.util.Base64
 
 import cats.implicits._
 import com.amazonaws.services.sqs.model.Message
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageId}
 import vinyldns.proto.VinylDNSProto
-import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
+import vinyldns.sqs.queue.SqsMessageType.{
+  SqsBatchChangeMessage,
+  SqsRecordSetChangeMessage,
+  SqsZoneChangeMessage
+}
 
 final case class SqsMessage(id: MessageId, command: ZoneCommand) extends CommandMessage
 object SqsMessage extends ProtobufConversions {
@@ -49,6 +54,8 @@ object SqsMessage extends ProtobufConversions {
             case SqsRecordSetChangeMessage =>
               fromPB(VinylDNSProto.RecordSetChange.parseFrom(contents))
             case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(contents))
+            case SqsBatchChangeMessage =>
+              BatchChangeCommand(new String(contents))
           }
         }
     } yield SqsMessage(MessageId(message.getReceiptHandle), cmd)

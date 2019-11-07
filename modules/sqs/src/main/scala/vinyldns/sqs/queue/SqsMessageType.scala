@@ -17,6 +17,7 @@
 package vinyldns.sqs.queue
 import cats.implicits._
 import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
+import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 
@@ -30,6 +31,7 @@ sealed abstract class SqsMessageType(val name: String) {
 object SqsMessageType {
   case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
   case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
+  case object SqsBatchChangeMessage extends SqsMessageType("SqsBatchChangeMessage")
   sealed abstract class SqsMessageTypeError(message: String) extends Throwable(message)
 
   final case class InvalidMessageTypeValue(value: String)
@@ -40,12 +42,14 @@ object SqsMessageType {
   def fromCommand[A <: ZoneCommand](cmd: A): SqsMessageType = cmd match {
     case _: RecordSetChange => SqsRecordSetChangeMessage
     case _: ZoneChange => SqsZoneChangeMessage
+    case _: BatchChangeCommand => SqsBatchChangeMessage
   }
 
   def fromString(messageType: String): Either[InvalidMessageTypeValue, SqsMessageType] =
     messageType match {
       case SqsRecordSetChangeMessage.name => Right(SqsRecordSetChangeMessage)
       case SqsZoneChangeMessage.name => Right(SqsZoneChangeMessage)
+      case SqsBatchChangeMessage.name => Right(SqsBatchChangeMessage)
       case invalid => Left(InvalidMessageTypeValue(invalid))
     }
 
