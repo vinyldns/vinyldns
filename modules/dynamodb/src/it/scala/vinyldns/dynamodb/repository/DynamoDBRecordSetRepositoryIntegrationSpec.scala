@@ -43,19 +43,20 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
   private var repo: DynamoDBRecordSetRepository = _
 
-  private val users = for (i <- 1 to 3)
-    yield User(s"live-test-acct$i", "key", "secret")
+  private val users =
+    for (i <- 1 to 3)
+      yield User(s"live-test-acct$i", "key", "secret")
 
   private val zones =
     for {
       acct <- users
       i <- 1 to 3
-    } yield
-      Zone(
-        s"live-test-${acct.userName}.zone$i.",
-        "test@test.com",
-        status = ZoneStatus.Active,
-        connection = testConnection)
+    } yield Zone(
+      s"live-test-${acct.userName}.zone$i.",
+      "test@test.com",
+      status = ZoneStatus.Active,
+      connection = testConnection
+    )
 
   private val rsTemplates = Seq(rsOk, aaaa, cname)
 
@@ -66,14 +67,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       zone <- zones
       rsTemplate <- rsTemplates
       rsQualifiedStatus <- rsQualifiedStatus
-    } yield
-      rsTemplate.copy(
-        zoneId = zone.id,
-        name = s"${rsTemplate.typ.toString}-${zone.account}$rsQualifiedStatus",
-        ttl = 100,
-        created = DateTime.now(),
-        id = UUID.randomUUID().toString
-      )
+    } yield rsTemplate.copy(
+      zoneId = zone.id,
+      name = s"${rsTemplate.typ.toString}-${zone.account}$rsQualifiedStatus",
+      ttl = 100,
+      created = DateTime.now(),
+      id = UUID.randomUUID().toString
+    )
 
   def setup(): Unit = {
     repo = DynamoDBRecordSetRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
@@ -90,7 +90,6 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
 
-
   "DynamoDBRecordSetRepository" should {
     "get a record set by id" in {
       val testRecordSet = recordSets.head
@@ -98,7 +97,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       testFuture.unsafeRunSync().recordSets should contain(testRecordSet)
     }
@@ -128,7 +128,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testFuture = repo.getRecordSets(
         testRecordSet.zoneId,
         testRecordSet.name.toUpperCase(),
-        testRecordSet.typ)
+        testRecordSet.typ
+      )
       testFuture.unsafeRunSync() shouldBe List(testRecordSet)
     }
 
@@ -179,7 +180,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSet = testFuture.unsafeRunSync()
 
@@ -194,7 +196,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
 
@@ -205,7 +208,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(1),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
 
@@ -221,7 +225,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
       foundRecordSet.recordSets should contain(recordSets(0))
@@ -231,7 +236,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(2),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
       foundRecordSetTwo.recordSets shouldNot contain(recordSets(0))
@@ -246,7 +252,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(6),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
 
@@ -262,7 +269,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(6),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
       foundRecordSetTwo.recordSets shouldBe List()
@@ -275,7 +283,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(7),
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
 
       val foundRecordSet = testFuture.unsafeRunSync()
       foundRecordSet.recordSets should contain(recordSets(0))
@@ -293,7 +302,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("AAAA"))
+        recordNameFilter = Some("AAAA")
+      )
 
       val foundRecordSet = testFuture.unsafeRunSync()
       foundRecordSet.recordSets shouldNot contain(recordSets(0))
@@ -308,7 +318,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("A"))
+        recordNameFilter = Some("A")
+      )
 
       val foundRecordSet = testFuture.unsafeRunSync()
       foundRecordSet.recordSets should contain(recordSets(0))
@@ -325,7 +336,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("Dummy"))
+        recordNameFilter = Some("Dummy")
+      )
 
       testFuture.unsafeRunSync().recordSets shouldBe List()
     }
@@ -334,11 +346,11 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val newRecordSets =
         for {
           i <- 1 to 1000
-        } yield
-          aaaa.copy(
-            zoneId = "big-apply-zone",
-            name = s"$i.apply.test.",
-            id = UUID.randomUUID().toString)
+        } yield aaaa.copy(
+          zoneId = "big-apply-zone",
+          name = s"$i.apply.test.",
+          id = UUID.randomUUID().toString
+        )
 
       val pendingChanges = newRecordSets.map(makeTestAddChange(_, zones.head))
 
@@ -375,7 +387,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             zoneId = "big-apply-zone",
             startFrom = None,
             maxItems = None,
-            recordNameFilter = None)
+            recordNameFilter = None
+          )
 
           recordSetsResult = rsQuery.unsafeRunTimed(30.seconds) match {
             case Some(result) => result.recordSets
@@ -401,12 +414,30 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "apply successful and pending creates, and delete failed creates" in {
       val zone = okZone
-      val recordForSuccess = RecordSet("test-create-converter", "createSuccess", RecordType.A, 123,
-        RecordSetStatus.Active, DateTime.now)
-      val recordForPending = RecordSet("test-create-converter", "createPending", RecordType.A, 123,
-        RecordSetStatus.Pending, DateTime.now)
-      val recordForFailed = RecordSet("test-create-converter", "failed", RecordType.A, 123,
-        RecordSetStatus.Inactive, DateTime.now)
+      val recordForSuccess = RecordSet(
+        "test-create-converter",
+        "createSuccess",
+        RecordType.A,
+        123,
+        RecordSetStatus.Active,
+        DateTime.now
+      )
+      val recordForPending = RecordSet(
+        "test-create-converter",
+        "createPending",
+        RecordType.A,
+        123,
+        RecordSetStatus.Pending,
+        DateTime.now
+      )
+      val recordForFailed = RecordSet(
+        "test-create-converter",
+        "failed",
+        RecordType.A,
+        123,
+        RecordSetStatus.Inactive,
+        DateTime.now
+      )
 
       val successfulChange =
         RecordSetChange(
@@ -414,14 +445,19 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
           recordForSuccess,
           "abc",
           RecordSetChangeType.Create,
-          RecordSetChangeStatus.Complete)
+          RecordSetChangeStatus.Complete
+        )
 
-      val pendingChange = successfulChange.copy(recordSet = recordForPending, status = RecordSetChangeStatus.Pending)
-      val failedChange = successfulChange.copy(recordSet = recordForFailed, status = RecordSetChangeStatus.Failed)
+      val pendingChange =
+        successfulChange.copy(recordSet = recordForPending, status = RecordSetChangeStatus.Pending)
+      val failedChange =
+        successfulChange.copy(recordSet = recordForFailed, status = RecordSetChangeStatus.Failed)
 
       // to be deleted - assume this was already saved as pending
-      val existingPending = failedChange.copy(recordSet = recordForFailed.copy(status = RecordSetStatus.Pending),
-        status = RecordSetChangeStatus.Pending)
+      val existingPending = failedChange.copy(
+        recordSet = recordForFailed.copy(status = RecordSetStatus.Pending),
+        status = RecordSetChangeStatus.Pending
+      )
       repo.apply(ChangeSet(existingPending)).unsafeRunSync()
       repo.getRecordSet(recordForFailed.zoneId, failedChange.recordSet.id).unsafeRunSync() shouldBe
         Some(existingPending.recordSet)
@@ -429,13 +465,19 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       repo.apply(ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
 
       // success and pending changes have records saved
-      repo.getRecordSet(successfulChange.recordSet.zoneId, successfulChange.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(successfulChange.recordSet.zoneId, successfulChange.recordSet.id)
+        .unsafeRunSync() shouldBe
         Some(successfulChange.recordSet)
-      repo.getRecordSet(pendingChange.recordSet.zoneId, pendingChange.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(pendingChange.recordSet.zoneId, pendingChange.recordSet.id)
+        .unsafeRunSync() shouldBe
         Some(pendingChange.recordSet)
 
       // check that the pending record was deleted because of failed record change
-      repo.getRecordSet(failedChange.recordSet.zoneId, failedChange.recordSet.id).unsafeRunSync() shouldBe None
+      repo
+        .getRecordSet(failedChange.recordSet.zoneId, failedChange.recordSet.id)
+        .unsafeRunSync() shouldBe None
     }
 
     "apply successful updates and revert records for failed updates" in {
@@ -453,13 +495,16 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val failedUpdate = pendingUpdate.copy(
         recordSet = updateFailure,
         updates = Some(oldFailure),
-        status = RecordSetChangeStatus.Failed)
+        status = RecordSetChangeStatus.Failed
+      )
       val updateChanges = Seq(successfulUpdate, pendingUpdate, failedUpdate)
       val updateChangeSet = ChangeSet(updateChanges)
 
       // save old recordsets
       val oldAddChanges = updateChanges
-        .map(_.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete))
+        .map(
+          _.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete)
+        )
       val oldChangeSet = ChangeSet(oldAddChanges)
       repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
 
@@ -467,16 +512,24 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       repo.apply(updateChangeSet).unsafeRunSync() shouldBe updateChangeSet
 
       // ensure that success and pending updates store the new recordsets
-      repo.getRecordSet(successfulUpdate.recordSet.zoneId, successfulUpdate.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(successfulUpdate.recordSet.zoneId, successfulUpdate.recordSet.id)
+        .unsafeRunSync() shouldBe
         Some(successfulUpdate.recordSet)
 
-      repo.getRecordSet(pendingUpdate.recordSet.zoneId, pendingUpdate.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(pendingUpdate.recordSet.zoneId, pendingUpdate.recordSet.id)
+        .unsafeRunSync() shouldBe
         Some(pendingUpdate.recordSet)
 
       // ensure that failure update store the old recordset
-      repo.getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id)
+        .unsafeRunSync() shouldBe
         failedUpdate.updates
-      repo.getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id).unsafeRunSync() shouldNot
+      repo
+        .getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id)
+        .unsafeRunSync() shouldNot
         be(Some(failedUpdate.recordSet))
     }
 
@@ -485,16 +538,21 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
       val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
 
-      val successfulDelete = makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
-      val pendingDelete = makePendingTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
-      val failedDelete = makePendingTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
+      val successfulDelete =
+        makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
+      val pendingDelete =
+        makePendingTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
+      val failedDelete =
+        makePendingTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
 
       val deleteChanges = Seq(successfulDelete, pendingDelete, failedDelete)
       val deleteChangeSet = ChangeSet(deleteChanges)
 
       // save old recordsets
       val oldAddChanges = deleteChanges
-        .map(_.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete))
+        .map(
+          _.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete)
+        )
       val oldChangeSet = ChangeSet(oldAddChanges)
       repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
 
@@ -502,14 +560,20 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       repo.apply(deleteChangeSet).unsafeRunSync() shouldBe deleteChangeSet
 
       // ensure that successful change deletes the recordset
-      repo.getRecordSet(successfulDelete.recordSet.zoneId, successfulDelete.recordSet.id).unsafeRunSync() shouldBe None
+      repo
+        .getRecordSet(successfulDelete.recordSet.zoneId, successfulDelete.recordSet.id)
+        .unsafeRunSync() shouldBe None
 
       // ensure that pending change saves the recordset
-      repo.getRecordSet(pendingDelete.recordSet.zoneId, pendingDelete.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(pendingDelete.recordSet.zoneId, pendingDelete.recordSet.id)
+        .unsafeRunSync() shouldBe
         Some(pendingDelete.recordSet)
 
       // ensure that failed delete keeps the recordset
-      repo.getRecordSet(failedDelete.recordSet.zoneId, failedDelete.recordSet.id).unsafeRunSync() shouldBe
+      repo
+        .getRecordSet(failedDelete.recordSet.zoneId, failedDelete.recordSet.id)
+        .unsafeRunSync() shouldBe
         failedDelete.updates
     }
   }

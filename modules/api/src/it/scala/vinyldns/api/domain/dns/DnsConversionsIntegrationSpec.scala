@@ -83,7 +83,8 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       // deleting the record just added
       val deleteResult: DnsResponse =
         rightResultOf(
-          conn.deleteRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
+          conn.deleteRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value
+        )
 
       deleteResult shouldBe a[NoError]
 

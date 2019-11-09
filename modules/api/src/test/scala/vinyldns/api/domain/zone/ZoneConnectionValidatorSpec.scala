@@ -103,7 +103,8 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("something", "other", 1, 2, 3, 5, 6)))
+    List(SOAData("something", "other", 1, 2, 3, 5, 6))
+  )
 
   private val successNS = RecordSet(
     testZone.id,
@@ -113,7 +114,8 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("some.test.ns.")))
+    List(NSData("some.test.ns."))
+  )
 
   private val failureNs = RecordSet(
     testZone.id,
@@ -123,7 +125,8 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("some.test.ns."), NSData("not.approved.")))
+    List(NSData("some.test.ns."), NSData("not.approved."))
+  )
 
   private val delegatedNS = RecordSet(
     testZone.id,
@@ -133,7 +136,8 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("sub.some.test.ns.")))
+    List(NSData("sub.some.test.ns."))
+  )
 
   private val mockRecordSet = mock[RecordSet]
 
@@ -142,7 +146,8 @@ class ZoneConnectionValidatorSpec
   val backend = DnsBackend(
     "some-backend-id",
     zc.copy(name = "backend-conn"),
-    transfer.copy(name = "backend-transfer"))
+    transfer.copy(name = "backend-transfer")
+  )
   val connections = ConfiguredDnsConnections(zc, transfer, List(backend))
 
   "ConnectionValidator" should {
@@ -172,7 +177,8 @@ class ZoneConnectionValidatorSpec
       result shouldBe ZoneValidationFailed(
         testZone,
         List(s"Name Server not.approved. is not an approved name server."),
-        "Zone could not be loaded due to validation errors.")
+        "Zone could not be loaded due to validation errors."
+      )
     }
 
     "respond with a failure if no records are returned from the backend" in {
@@ -187,7 +193,8 @@ class ZoneConnectionValidatorSpec
       result shouldBe ZoneValidationFailed(
         testZone,
         List("Missing apex NS record"),
-        "Zone could not be loaded due to validation errors.")
+        "Zone could not be loaded due to validation errors."
+      )
     }
 
     "respond with a failure if any failure is returned from the backend" in {
@@ -256,7 +263,8 @@ class ZoneConnectionValidatorSpec
       val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
       val underTest =
         new ZoneConnectionValidator(
-          ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List(backend)))
+          ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List(backend))
+        )
 
       "return success if the backendId exists" in {
         underTest.isValidBackendId(Some("some-test-backend")) shouldBe right

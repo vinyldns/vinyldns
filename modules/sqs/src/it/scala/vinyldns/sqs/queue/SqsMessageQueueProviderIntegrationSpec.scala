@@ -41,7 +41,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
 
       val badSettings = pureconfig.loadConfigOrThrow[MessageQueueConfig](badConfig)
 
-      a[pureconfig.error.ConfigReaderException[MessageQueueConfig]] should be thrownBy undertest.load(badSettings)
+      a[pureconfig.error.ConfigReaderException[MessageQueueConfig]] should be thrownBy undertest
+        .load(badSettings)
         .unsafeRunSync()
     }
 

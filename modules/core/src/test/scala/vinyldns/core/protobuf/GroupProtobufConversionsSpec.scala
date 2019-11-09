@@ -29,7 +29,8 @@ class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProt
           "test@test.com",
           Some("a test group"),
           memberIds = Set("foo", "bar"),
-          adminUserIds = Set("foo", "bar"))
+          adminUserIds = Set("foo", "bar")
+        )
 
       val roundTrip = fromPB(toPB(group))
 
@@ -43,7 +44,8 @@ class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProt
           "test@test.com",
           description = None,
           memberIds = Set("foo", "bar"),
-          adminUserIds = Set("foo", "bar"))
+          adminUserIds = Set("foo", "bar")
+        )
 
       val roundTrip = fromPB(toPB(group))
 
@@ -58,13 +60,15 @@ class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProt
         "test@test.com",
         Some("a test group"),
         memberIds = Set("foo", "bar"),
-        adminUserIds = Set("foo", "bar"))
+        adminUserIds = Set("foo", "bar")
+      )
       val oldGroup = Group(
         "ok",
         "changed@test.com",
         Some("a changed group"),
         memberIds = Set("foo"),
-        adminUserIds = Set("foo"))
+        adminUserIds = Set("foo")
+      )
 
       val groupChange =
         GroupChange(
@@ -85,7 +89,8 @@ class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProt
         "test@test.com",
         Some("a test group"),
         memberIds = Set("foo", "bar"),
-        adminUserIds = Set("foo", "bar"))
+        adminUserIds = Set("foo", "bar")
+      )
 
       val groupChange =
         GroupChange(

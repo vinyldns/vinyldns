@@ -36,7 +36,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   val abcRecord: RecordSet = RecordSet(
     abcZone.id,
@@ -46,7 +47,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+    List(AAAAData("1:2:3:4:5:6:7:8"))
+  )
 
   val aaaa: RecordSet = RecordSet(
     okZone.id,
@@ -56,7 +58,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+    List(AAAAData("1:2:3:4:5:6:7:8"))
+  )
 
   val aaaaOrigin: RecordSet = RecordSet(
     okZone.id,
@@ -66,7 +69,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+    List(AAAAData("1:2:3:4:5:6:7:8"))
+  )
 
   val cname: RecordSet = RecordSet(
     okZone.id,
@@ -76,7 +80,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(CNAMEData("cname")))
+    List(CNAMEData("cname"))
+  )
 
   val ptrIp4: RecordSet = RecordSet(
     zoneIp4.id,
@@ -86,7 +91,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr")))
+    List(PTRData("ptr"))
+  )
 
   val ptrIp6: RecordSet = RecordSet(
     zoneIp6.id,
@@ -96,7 +102,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr")))
+    List(PTRData("ptr"))
+  )
 
   val srv: RecordSet = RecordSet(
     okZone.id,
@@ -106,7 +113,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target")))
+    List(SRVData(1, 2, 3, "target"))
+  )
 
   val naptr: RecordSet = RecordSet(
     okZone.id,
@@ -116,7 +124,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "S", "E2U+sip", "", "target")))
+    List(NAPTRData(1, 2, "S", "E2U+sip", "", "target"))
+  )
 
   val mx: RecordSet = RecordSet(
     okZone.id,
@@ -126,7 +135,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(MXData(3, "mx")))
+    List(MXData(3, "mx"))
+  )
 
   val ns: RecordSet = RecordSet(
     okZone.id,
@@ -136,7 +146,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    records = List(NSData("ns1.test.com"), NSData("ns2.test.com")))
+    records = List(NSData("ns1.test.com"), NSData("ns2.test.com"))
+  )
 
   val txt: RecordSet = RecordSet(
     okZone.id,
@@ -146,7 +157,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(TXTData("txt")))
+    List(TXTData("txt"))
+  )
 
   // example at https://tools.ietf.org/html/rfc4034#page-18
   val dSDataSha1 =
@@ -154,7 +166,8 @@ object TestRecordSetData {
       60485,
       DnsSecAlgorithm.RSASHA1,
       DigestType.SHA1,
-      ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
+      ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118")
+    )
 
   // example at https://tools.ietf.org/html/rfc4509#page-3
   val dSDataSha256 =
@@ -162,7 +175,8 @@ object TestRecordSetData {
       60485,
       DnsSecAlgorithm.RSASHA1,
       DigestType.SHA256,
-      ByteVector.fromValidHex("D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"))
+      ByteVector.fromValidHex("D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A")
+    )
 
   val ds: RecordSet = RecordSet(
     okZone.id,
@@ -171,7 +185,8 @@ object TestRecordSetData {
     200,
     RecordSetStatus.Pending,
     DateTime.now(),
-    records = List(dSDataSha1, dSDataSha256))
+    records = List(dSDataSha1, dSDataSha256)
+  )
 
   val sharedZoneRecord: RecordSet = RecordSet(
     sharedZone.id,
@@ -182,7 +197,8 @@ object TestRecordSetData {
     DateTime.now,
     None,
     List(AAAAData("1:2:3:4:5:6:7:8")),
-    ownerGroupId = Some(okGroup.id))
+    ownerGroupId = Some(okGroup.id)
+  )
 
   val sharedZoneRecordNoOwnerGroup: RecordSet =
     sharedZoneRecord.copy(name = "records", ownerGroupId = None)
@@ -202,14 +218,16 @@ object TestRecordSetData {
       RecordSetStatus.Pending,
       DateTime.now,
       None,
-      List(MXData(3, "mx")))
+      List(MXData(3, "mx"))
+    )
 
   /* RECORDSET CHANGES */
 
   def makeTestAddChange(
       recordSet: RecordSet,
       zone: Zone = okZone,
-      userId: String = okUser.id): RecordSetChange =
+      userId: String = okUser.id
+  ): RecordSetChange =
     RecordSetChange(
       zone,
       recordSet.copy(
@@ -226,13 +244,15 @@ object TestRecordSetData {
       oldRecordSet: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone = okZone,
-      userId: String = okUser.id): RecordSetChange =
+      userId: String = okUser.id
+  ): RecordSetChange =
     RecordSetChange(
       zone,
       newRecordSet.copy(
         id = oldRecordSet.id,
         status = RecordSetStatus.PendingUpdate,
-        updated = Some(DateTime.now)),
+        updated = Some(DateTime.now)
+      ),
       userId,
       RecordSetChangeType.Update,
       RecordSetChangeStatus.Pending,
@@ -243,7 +263,8 @@ object TestRecordSetData {
       oldRecordSet: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone = okZone,
-      userId: String = okUser.id): RecordSetChange =
+      userId: String = okUser.id
+  ): RecordSetChange =
     RecordSetChange(
       zone,
       newRecordSet
@@ -257,7 +278,8 @@ object TestRecordSetData {
   def makePendingTestDeleteChange(
       recordSet: RecordSet,
       zone: Zone = okZone,
-      userId: String = okUser.id): RecordSetChange =
+      userId: String = okUser.id
+  ): RecordSetChange =
     RecordSetChange(
       zone,
       recordSet.copy(

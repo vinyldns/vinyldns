@@ -30,7 +30,8 @@ class SqsMessageQueueProviderSpec extends WordSpec with Matchers {
     "fail if queue name does not match regex" in {
       val invalidQueueName = "a" * 81
       undertest.validateQueueName(invalidQueueName) shouldBe Left(
-        InvalidQueueName(invalidQueueName))
+        InvalidQueueName(invalidQueueName)
+      )
     }
 
     "fail if user species a fifo queue" in {

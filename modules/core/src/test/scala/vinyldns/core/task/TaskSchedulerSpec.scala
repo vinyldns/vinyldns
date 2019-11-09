@@ -36,8 +36,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
       val timeout: FiniteDuration,
       val runEvery: FiniteDuration,
       val checkInterval: FiniteDuration,
-      testResult: IO[Unit] = IO.unit)
-      extends Task {
+      testResult: IO[Unit] = IO.unit
+  ) extends Task {
     def run(): IO[Unit] = testResult
   }
 
@@ -66,7 +66,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
           5.seconds,
           500.millis,
           500.millis,
-          IO.raiseError(new RuntimeException("fail")))
+          IO.raiseError(new RuntimeException("fail"))
+        )
       doReturn(IO.unit).when(mockRepo).saveTask(task.name)
       doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout, task.runEvery)
       doReturn(IO.unit).when(mockRepo).releaseTask(task.name)

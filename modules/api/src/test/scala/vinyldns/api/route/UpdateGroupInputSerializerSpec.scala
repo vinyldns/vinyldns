@@ -37,7 +37,8 @@ class UpdateGroupInputSerializerSpec
       email: String,
       description: Option[String],
       members: Set[UserInfo] = Set.empty,
-      admins: Set[UserInfo] = Set.empty): JValue =
+      admins: Set[UserInfo] = Set.empty
+  ): JValue =
     ("id" -> id) ~~
       ("name" -> name) ~~
       ("email" -> email) ~~

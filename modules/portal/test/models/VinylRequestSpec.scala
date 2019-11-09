@@ -180,7 +180,8 @@ class VinylDNSRequestSpec extends Specification with Mockito {
   private def createMockVinylDNSRequest(
       url: String = "",
       method: String = "GET",
-      payload: Option[String] = None) = {
+      payload: Option[String] = None
+  ) = {
     val req = mock[VinylDNSRequest]
     val uri = new URI(url)
     req.url.returns(s"${uri.getScheme}://${uri.getHost}")

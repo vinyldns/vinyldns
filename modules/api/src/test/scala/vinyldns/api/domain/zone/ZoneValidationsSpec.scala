@@ -62,7 +62,8 @@ class ZoneValidationsSpec
     "fail if given an invalid CIDR rule" in {
       val invalidPtrAclRuleInfo = baseAclRuleInfo.copy(
         recordMask = Some("not a cidr rule"),
-        recordTypes = Set(RecordType.PTR))
+        recordTypes = Set(RecordType.PTR)
+      )
       val error = leftValue(isValidAclRule(ACLRule(invalidPtrAclRuleInfo)))
       error shouldBe a[InvalidRequest]
       error.getMessage shouldBe "PTR types must have no mask or a valid CIDR mask: Invalid CIDR block"
@@ -71,7 +72,8 @@ class ZoneValidationsSpec
     "fail if there are multiple record types including PTR and mask is regex" in {
       val invalidMultipleTypeInfo = baseAclRuleInfo.copy(
         recordMask = Some("regex"),
-        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR))
+        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR)
+      )
       val error = leftValue(isValidAclRule(ACLRule(invalidMultipleTypeInfo)))
       error shouldBe a[InvalidRequest]
     }
@@ -79,14 +81,16 @@ class ZoneValidationsSpec
     "fail if there are multiple record types including PTR and mask is cidr" in {
       val invalidMultipleTypeInfo = baseAclRuleInfo.copy(
         recordMask = Some("10.10.10.10/5"),
-        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR))
+        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR)
+      )
       val error = leftValue(isValidAclRule(ACLRule(invalidMultipleTypeInfo)))
       error shouldBe a[InvalidRequest]
     }
 
     "pass if there are multiple record types including PTR and mask is None" in {
       val validMultipleTypeNoneAclRuleInfo = baseAclRuleInfo.copy(
-        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR))
+        recordTypes = Set(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR)
+      )
       isValidAclRule(ACLRule(validMultipleTypeNoneAclRuleInfo)) should be(right)
     }
 

@@ -56,7 +56,8 @@ class SnsNotifierSpec
 
   def batchChange(
       description: Option[String] = None,
-      changes: List[SingleChange] = List.empty): BatchChange =
+      changes: List[SingleChange] = List.empty
+  ): BatchChange =
     BatchChange(
       "test",
       "testUser",
@@ -68,7 +69,8 @@ class SnsNotifierSpec
       None,
       None,
       None,
-      "testBatch")
+      "testBatch"
+    )
 
   "Sns Notifier" should {
     "do nothing for unsupported Notifications" in {
@@ -79,7 +81,8 @@ class SnsNotifierSpec
           "signing-region" -> "us-east-1",
           "access-key" -> "access",
           "secret-key" -> "secret"
-        ).asJava)
+        ).asJava
+      )
       val notifier = new SnsNotifierProvider()
         .load(NotifierConfig("", snsConfig), mockUserRepository)
         .unsafeRunSync()
@@ -111,7 +114,8 @@ class SnsNotifierSpec
           None,
           None,
           None,
-          List.empty),
+          List.empty
+        ),
         SingleDeleteRRSetChange(
           Some(""),
           Some(""),
@@ -123,7 +127,8 @@ class SnsNotifierSpec
           Some("message for you"),
           None,
           None,
-          List.empty)
+          List.empty
+        )
       )
       val change = batchChange(Some(description), singleChanges)
 
@@ -139,7 +144,8 @@ class SnsNotifierSpec
       request.getMessage should be(
         """{"userId":"test","userName":"testUser","comments":"notes",""" +
           """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","approvalStatus":"AutoApproved",""" +
-          """"id":"testBatch"}""")
+          """"id":"testBatch"}"""
+      )
 
       verify(mockSns).publish(any[PublishRequest])
 

@@ -43,7 +43,8 @@ class ProtobufConversionsSpec
     Some("johnny"),
     None,
     Some("www-*"),
-    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
+    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME)
+  )
 
   private val groupAclRule = ACLRule(
     AccessLevel.Read,
@@ -51,7 +52,8 @@ class ProtobufConversionsSpec
     None,
     Some("group"),
     Some("www-*"),
-    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
+    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME)
+  )
 
   private val zoneAcl = ZoneACL(Set(userAclRule, groupAclRule))
 
@@ -71,7 +73,8 @@ class ProtobufConversionsSpec
     ZoneChangeType.Update,
     ZoneChangeStatus.Complete,
     DateTime.now,
-    Some("hello"))
+    Some("hello")
+  )
   private val aRs = RecordSet(
     "id",
     "test.rs",
@@ -80,7 +83,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     Some(DateTime.now),
-    List(AData("10.1.1.1"), AData("10.2.2.2")))
+    List(AData("10.1.1.1"), AData("10.2.2.2"))
+  )
   private val aaaa = RecordSet(
     zone.id,
     "aaaa",
@@ -89,7 +93,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AAAAData("10.1.1.1")))
+    List(AAAAData("10.1.1.1"))
+  )
   private val cname = RecordSet(
     zone.id,
     "cname",
@@ -98,7 +103,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname")))
+    List(CNAMEData("cname"))
+  )
   private val mx = RecordSet(
     zone.id,
     "mx",
@@ -107,7 +113,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange")))
+    List(MXData(100, "exchange"))
+  )
   private val ns = RecordSet(
     zone.id,
     "ns",
@@ -116,7 +123,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsrecordname")))
+    List(NSData("nsrecordname"))
+  )
   private val ptr = RecordSet(
     zone.id,
     "ptr",
@@ -125,7 +133,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr")))
+    List(PTRData("ptr"))
+  )
   private val soa = RecordSet(
     zone.id,
     "soa",
@@ -134,7 +143,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("name", "name", 1, 2, 3, 4, 5)))
+    List(SOAData("name", "name", 1, 2, 3, 4, 5))
+  )
   private val spf = RecordSet(
     zone.id,
     "soa",
@@ -143,7 +153,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SPFData("spf")))
+    List(SPFData("spf"))
+  )
   private val srv = RecordSet(
     zone.id,
     "srv",
@@ -152,7 +163,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target")))
+    List(SRVData(1, 2, 3, "target"))
+  )
   private val naptr = RecordSet(
     zone.id,
     "naptr",
@@ -161,7 +173,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")))
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target"))
+  )
   private val sshfp = RecordSet(
     zone.id,
     "sshfp",
@@ -170,7 +183,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SSHFPData(1, 2, "fingerprint")))
+    List(SSHFPData(1, 2, "fingerprint"))
+  )
   private val txt = RecordSet(
     zone.id,
     "txt",
@@ -179,7 +193,8 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(TXTData("text")))
+    List(TXTData("text"))
+  )
 
   private val singleBatchChangeIds = List("batch1", "batch2")
 
@@ -926,7 +941,8 @@ class ProtobufConversionsSpec
         pb.getNewUser.getAccessKey,
         pb.getNewUser.getSecretKey,
         created = user.created,
-        id = user.id) shouldBe user
+        id = user.id
+      ) shouldBe user
 
       pb.getMadeByUserId shouldBe createChange.madeByUserId
       pb.getCreated shouldBe createChange.created.getMillis
@@ -948,7 +964,8 @@ class ProtobufConversionsSpec
         pb.getNewUser.getAccessKey,
         pb.getNewUser.getSecretKey,
         created = newUser.created,
-        id = newUser.id) shouldBe newUser
+        id = newUser.id
+      ) shouldBe newUser
 
       pb.getMadeByUserId shouldBe updateChange.madeByUserId
       pb.getCreated shouldBe updateChange.created.getMillis
@@ -958,7 +975,8 @@ class ProtobufConversionsSpec
         pb.getOldUser.getAccessKey,
         pb.getOldUser.getSecretKey,
         created = oldUser.created,
-        id = oldUser.id) shouldBe oldUser
+        id = oldUser.id
+      ) shouldBe oldUser
 
       pb.getId shouldBe updateChange.id
 

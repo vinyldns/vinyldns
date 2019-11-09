@@ -105,7 +105,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             underTest.index()(
-              FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
+              FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken
+            )
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Are you sure you want to log out")
@@ -114,7 +115,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "redirect to the no access page when a user is locked out" in new WithApplication(app) {
           val result =
             lockedUserUnderTest.index()(
-              FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken)
+              FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken
+            )
           headers(result) must contain("Location" -> "/noaccess")
         }
       }
@@ -127,7 +129,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             oidcUnderTest.index()(
-              FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
+              FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken
+            )
 
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
@@ -146,7 +149,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the groups view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewAllGroups()(
-            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Groups | VinylDNS")
@@ -154,7 +158,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewAllGroups()(
-            FakeRequest(GET, "/groups").withSession("username" -> "lockedFbaggins").withCSRFToken)
+            FakeRequest(GET, "/groups").withSession("username" -> "lockedFbaggins").withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -168,7 +173,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the groups view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewGroup("some-id")(
-            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Group | VinylDNS")
@@ -176,7 +182,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewGroup("some-id")(
-            FakeRequest(GET, "/groups").withSession("username" -> "lockedFbaggins").withCSRFToken)
+            FakeRequest(GET, "/groups").withSession("username" -> "lockedFbaggins").withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -190,7 +197,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the zone view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewAllZones()(
-            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zones | VinylDNS")
@@ -198,7 +206,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewAllZones()(
-            FakeRequest(GET, "/zones").withSession("username" -> "lockedFbaggins").withCSRFToken)
+            FakeRequest(GET, "/zones").withSession("username" -> "lockedFbaggins").withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -212,7 +221,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the zones view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewZone("some-id")(
-            FakeRequest(GET, "/zones/some-id").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/zones/some-id").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zone | VinylDNS")
@@ -222,7 +232,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           lockedUserUnderTest.viewZone("some-id")(
             FakeRequest(GET, "/zones/some-id")
               .withSession("username" -> "lockedFbaggins")
-              .withCSRFToken)
+              .withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -237,8 +248,10 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         }
         "redirect to the index page when the user is logged in" in new WithApplication(app) {
           val username = "LoggedInUser"
-          val result = underTest.loginPage()(FakeRequest(GET, "/login")
-            .withSession(("username", username)))
+          val result = underTest.loginPage()(
+            FakeRequest(GET, "/login")
+              .withSession(("username", username))
+          )
           status(result) must beEqualTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/index")
         }
@@ -246,7 +259,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           // redirects to the index page because the user is logged in, then locked status is checked there
           val result =
             lockedUserUnderTest.loginPage()(
-              FakeRequest(GET, "/login").withSession("username" -> "lockedFbaggins").withCSRFToken)
+              FakeRequest(GET, "/login").withSession("username" -> "lockedFbaggins").withCSRFToken
+            )
           headers(result) must contain("Location" -> "/index")
         }
       }
@@ -263,7 +277,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
             oidcUnderTest.loginPage()(
               FakeRequest(GET, "/login")
                 .withSession(VinylDNS.ID_TOKEN -> "test")
-                .withCSRFToken)
+                .withCSRFToken
+            )
 
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/index")
@@ -282,8 +297,10 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "clear the session cookie" in new WithApplication(app) {
           // TODO: cookie behavior is radically different in play 2.6, so we cannot look for a Set-Cookie header
           val username = "LoggedInUser"
-          val result = underTest.logout()(FakeRequest(GET, "/logout")
-            .withSession(("username", username)))
+          val result = underTest.logout()(
+            FakeRequest(GET, "/logout")
+              .withSession(("username", username))
+          )
           headers(result) must contain("Location" -> "/login")
         }
       }
@@ -293,7 +310,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
             oidcUnderTest.logout()(
               FakeRequest(GET, "/logout")
                 .withSession(VinylDNS.ID_TOKEN -> "test")
-                .withCSRFToken)
+                .withCSRFToken
+            )
 
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "http://logout-test.com")
@@ -305,7 +323,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.noAccess()(
-            FakeRequest(GET, "/noaccess").withSession("username" -> "lockedFbaggins").withCSRFToken)
+            FakeRequest(GET, "/noaccess").withSession("username" -> "lockedFbaggins").withCSRFToken
+          )
         status(result) must beEqualTo(UNAUTHORIZED)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Account locked.")
@@ -322,7 +341,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the batch changes view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewAllBatchChanges()(
-            FakeRequest(GET, "/dnschanges").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/dnschanges").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("DNS Changes | VinylDNS")
@@ -332,7 +352,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           lockedUserUnderTest.viewAllBatchChanges()(
             FakeRequest(GET, "/dnschanges")
               .withSession("username" -> "lockedFbaggins")
-              .withCSRFToken)
+              .withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -348,7 +369,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           underTest.viewBatchChange("some-id")(
             FakeRequest(GET, "/dnschanges/some-id")
               .withSession("username" -> "frodo")
-              .withCSRFToken)
+              .withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("DNS Change | VinylDNS")
@@ -358,7 +380,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           lockedUserUnderTest.viewBatchChange("some-id")(
             FakeRequest(GET, "/dnschanges/some-id")
               .withSession("username" -> "lockedFbaggins")
-              .withCSRFToken)
+              .withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -372,7 +395,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the new batch change view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewNewBatchChange()(
-            FakeRequest(GET, "/dnschanges/new").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/dnschanges/new").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("New DNS Change | VinylDNS")
@@ -382,7 +406,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           lockedUserUnderTest.viewNewBatchChange()(
             FakeRequest(GET, "/dnschanges/new")
               .withSession("username" -> "lockedFbaggins")
-              .withCSRFToken)
+              .withCSRFToken
+          )
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
@@ -399,7 +424,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "be displayed on the logged-in view if sidebar flag is true" in new WithApplication(app) {
         val result =
           underTest.viewAllZones()(
-            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken
+          )
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("test link sidebar")

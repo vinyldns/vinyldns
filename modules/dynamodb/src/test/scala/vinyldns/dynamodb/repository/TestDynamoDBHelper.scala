@@ -27,6 +27,7 @@ class TestDynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger)
 
   override private[repository] def send[In <: AmazonWebServiceRequest, Out](
       aws: In,
-      func: (In) => Out)(implicit d: Describe[_ >: In]): IO[Out] =
+      func: (In) => Out
+  )(implicit d: Describe[_ >: In]): IO[Out] =
     IO(func(aws))
 }

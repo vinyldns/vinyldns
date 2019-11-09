@@ -32,17 +32,16 @@ trait DynamoDBIntegrationSpec
   val logger: Logger = LoggerFactory.getLogger("DynamoDBIntegrationSpec")
 
   // only used for teardown
-  lazy val testDynamoDBHelper: DynamoDBHelper = new DynamoDBHelper(
-    DynamoDBClient(dynamoIntegrationConfig),
-    logger)
+  lazy val testDynamoDBHelper: DynamoDBHelper =
+    new DynamoDBHelper(DynamoDBClient(dynamoIntegrationConfig), logger)
 
-
-  def getDynamoConfig(port: Int): DynamoDBDataStoreSettings = {
-    DynamoDBDataStoreSettings("vinyldnsTest",
+  def getDynamoConfig(port: Int): DynamoDBDataStoreSettings =
+    DynamoDBDataStoreSettings(
+      "vinyldnsTest",
       "notNeededForDynamoDbLocal",
       s"http://localhost:$port",
-      "us-east-1")
-  }
+      "us-east-1"
+    )
 
   override protected def beforeAll(): Unit =
     setup()

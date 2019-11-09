@@ -29,26 +29,40 @@ import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
-import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded, QUEUE_CONNECTION_NAME}
+import vinyldns.mysql.queue.MessageType.{
+  InvalidMessageType,
+  RecordChangeMessageType,
+  ZoneChangeMessageType
+}
+import vinyldns.mysql.queue.MySqlMessageQueue.{
+  InvalidMessageTimeout,
+  MessageAttemptsExceeded,
+  QUEUE_CONNECTION_NAME
+}
 
 import scala.concurrent.duration._
 
 final case class RowData(
-  id: String,
-  messageType: Int,
-  inFlight: Boolean,
-  createdTime: DateTime,
-  updatedTime: DateTime,
-  timeoutSecs: Int,
-  attempts: Int)
+    id: String,
+    messageType: Int,
+    inFlight: Boolean,
+    createdTime: DateTime,
+    updatedTime: DateTime,
+    timeoutSecs: Int,
+    attempts: Int
+)
 
 final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
   def id: MessageId = MessageId(command.id)
 }
 
-class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
-  with BeforeAndAfterEach with EitherMatchers with EitherValues with ProtobufConversions {
+class MySqlMessageQueueIntegrationSpec
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterEach
+    with EitherMatchers
+    with EitherValues
+    with ProtobufConversions {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 
@@ -66,7 +80,8 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
 
   private val rsChangeBytes = toPB(rsChange).toByteArray
 
-  private val testMessage: MySqlMessage = MySqlMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
+  private val testMessage: MySqlMessage =
+    MySqlMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
 
   private val zoneChange: ZoneChange = zoneChangePending
 
@@ -77,24 +92,24 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
 
   override protected def beforeEach(): Unit = clear()
 
-  private def insert(id: String, messageType: Int, inFlight: Boolean,
-                     data: Array[Byte], created: DateTime, updated: DateTime,
-                     timeoutSeconds: Int, attempts: Int): Unit = {
+  private def insert(
+      id: String,
+      messageType: Int,
+      inFlight: Boolean,
+      data: Array[Byte],
+      created: DateTime,
+      updated: DateTime,
+      timeoutSeconds: Int,
+      attempts: Int
+  ): Unit = {
     NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
       val inF = if (inFlight) 1 else 0
       val insertSql = sql"""
          |INSERT INTO message_queue(id, message_type, in_flight, created, updated, timeout_seconds, attempts, data)
          |     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """.stripMargin
-      insertSql.bind(
-          id,
-          messageType,
-          inF,
-          created,
-          updated,
-          timeoutSeconds,
-          attempts,
-          data)
+      insertSql
+        .bind(id, messageType, inF, created, updated, timeoutSeconds, attempts, data)
         .update()
         .apply()
     }
@@ -110,18 +125,22 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
           | WhERE id = ?
         """.stripMargin
 
-      findSql.bind(id).map { rs =>
-        RowData(
-          rs.string(1),
-          rs.int(2),
-          rs.boolean(3),
-          new DateTime(rs.timestamp(4).getTime),
-          new DateTime(rs.timestamp(5).getTime),
-          rs.int(6),
-          rs.int(7)
-        )
-      }.toOption().apply()
-  }
+      findSql
+        .bind(id)
+        .map { rs =>
+          RowData(
+            rs.string(1),
+            rs.int(2),
+            rs.boolean(3),
+            new DateTime(rs.timestamp(4).getTime),
+            new DateTime(rs.timestamp(5).getTime),
+            rs.int(6),
+            rs.int(7)
+          )
+        }
+        .toOption()
+        .apply()
+    }
 
   "send receive" should {
     "handle a record change" in {
@@ -157,7 +176,7 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       underTest.sendBatch(NonEmptyList.of(rsChange)).unsafeRunSync()
       underTest.sendBatch(NonEmptyList.of(rsChange)).unsafeRunSync()
       val r = underTest.receive(MessageCount(8).right.value).unsafeRunSync()
-      r should have length 1
+      (r should have).length(1)
       r.headOption.map(_.command) shouldBe Some(rsChange)
     }
     "be idempotent for a batch" in {
@@ -174,7 +193,7 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
 
       // Receive a batch, make sure we only get 4 out, no duplicates
       val batch = underTest.receive(MessageCount(10).right.value).unsafeRunSync()
-      batch should have length 4
+      (batch should have).length(4)
       batch.map(_.command) should contain theSameElementsAs List(first, second, third, fourth)
     }
     "work in parallel" in {
@@ -186,7 +205,8 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       val gets = for { _ <- 0 to 8 } yield underTest.receive(MessageCount(1).right.value)
 
       // let's fire them both off, doesn't matter who finishes, as long as the IO does not fail
-      val result = IO.race(sends.toList.parSequence, gets.toList.parSequence).attempt.unsafeRunSync()
+      val result =
+        IO.race(sends.toList.parSequence, gets.toList.parSequence).attempt.unsafeRunSync()
       result shouldBe right
     }
   }
@@ -197,17 +217,30 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       result.left.value shouldBe (InvalidMessageType(-2), MessageId("foo"))
     }
     "fail on invalid bytes" in {
-      val result = underTest.parseMessage(MessageId("foo"), ZoneChangeMessageType.value, "bar".getBytes, 1, 10)
+      val result =
+        underTest.parseMessage(MessageId("foo"), ZoneChangeMessageType.value, "bar".getBytes, 1, 10)
       val (err, id) = result.left.value
       id shouldBe MessageId("foo")
       err shouldBe an[Exception]
     }
     "fail if attempts exceeds 100" in {
-      val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 200, 10)
+      val result = underTest.parseMessage(
+        MessageId("foo"),
+        RecordChangeMessageType.value,
+        rsChangeBytes,
+        200,
+        10
+      )
       result.left.value shouldBe (MessageAttemptsExceeded("foo"), MessageId("foo"))
     }
     "fail on invalid timeout" in {
-      val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 1, -1)
+      val result = underTest.parseMessage(
+        MessageId("foo"),
+        RecordChangeMessageType.value,
+        rsChangeBytes,
+        1,
+        -1
+      )
       result.left.value shouldBe (InvalidMessageTimeout(-1), MessageId("foo"))
     }
   }
@@ -220,13 +253,31 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       findMessage("foo") should not be defined
     }
     "drop messages that have invalid message data" in {
-      insert(rsChange.id, RecordChangeMessageType.value, false, "blah".getBytes, DateTime.now, DateTime.now, 100, 0)
+      insert(
+        rsChange.id,
+        RecordChangeMessageType.value,
+        false,
+        "blah".getBytes,
+        DateTime.now,
+        DateTime.now,
+        100,
+        0
+      )
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       findMessage(rsChange.id) should not be defined
     }
     "drop messages that have expired" in {
-      insert(rsChange.id, RecordChangeMessageType.value, false, "blah".getBytes, DateTime.now, DateTime.now, 100, 101)
+      insert(
+        rsChange.id,
+        RecordChangeMessageType.value,
+        false,
+        "blah".getBytes,
+        DateTime.now,
+        DateTime.now,
+        100,
+        101
+      )
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       findMessage(rsChange.id) should not be defined
@@ -234,8 +285,16 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
       val initialTs = DateTime.now.minusSeconds(20)
-      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100,
-        initialAttempts)
+      insert(
+        rsChange.id,
+        RecordChangeMessageType.value,
+        false,
+        rsChangeBytes,
+        initialTs,
+        initialTs,
+        100,
+        initialAttempts
+      )
 
       val oldMsg = findMessage(rsChange.id).getOrElse(fail)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
@@ -248,9 +307,18 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     "grab messages that are in flight but expired" in {
       // put a message in whose updated timestamp was 100 seconds ago, set the timeout to 30 seconds
       val initialTs = DateTime.now.minusSeconds(100)
-      insert(rsChange.id, RecordChangeMessageType.value, true, rsChangeBytes, initialTs, initialTs, 30, 1)
+      insert(
+        rsChange.id,
+        RecordChangeMessageType.value,
+        true,
+        rsChangeBytes,
+        initialTs,
+        initialTs,
+        30,
+        1
+      )
       val msgs = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
-      msgs should have length 1
+      (msgs should have).length(1)
     }
   }
 
@@ -272,7 +340,7 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       underTest.changeMessageTimeout(testMessage, 1.seconds).unsafeRunSync()
       Thread.sleep(2000)
       val r2 = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
-      r2 should have length 1
+      (r2 should have).length(1)
       r.headOption.map(_.id) shouldBe r2.headOption.map(_.id)
     }
     "do nothing if the message does not exist" in {
@@ -297,7 +365,16 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
   "requeue" should {
     "reset the message in the database" in {
       val initialTs = DateTime.now.minusSeconds(20)
-      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, 0)
+      insert(
+        rsChange.id,
+        RecordChangeMessageType.value,
+        false,
+        rsChangeBytes,
+        initialTs,
+        initialTs,
+        100,
+        0
+      )
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
       val msg = r.headOption.getOrElse(fail)
       underTest.requeue(msg).unsafeRunSync()

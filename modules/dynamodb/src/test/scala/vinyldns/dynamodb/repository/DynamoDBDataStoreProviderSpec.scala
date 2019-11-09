@@ -51,7 +51,8 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           |        provisioned-writes = 30
           |      }
           |    }
-          |    """.stripMargin)
+          |    """.stripMargin
+      )
 
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 
@@ -99,7 +100,8 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           None,
           None,
           None,
-          None)
+          None
+        )
       val response = underTest
         .loadRepoConfigs(repoSettings)
         .unsafeRunSync()
@@ -126,7 +128,8 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           None,
           None,
           None,
-          None)
+          None
+        )
 
       a[pureconfig.error.ConfigReaderException[DynamoDBRepositorySettings]] should be thrownBy underTest
         .loadRepoConfigs(repoSettings)

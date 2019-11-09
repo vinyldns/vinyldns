@@ -25,7 +25,11 @@ import vinyldns.mysql.TestMySqlInstance
 
 import scala.concurrent.duration._
 
-class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEach with Matchers {
+class MySqlTaskRepositoryIntegrationSpec
+    extends WordSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with Matchers {
   private val repo = TestMySqlInstance.taskRepository.asInstanceOf[MySqlTaskRepository]
   private val TASK_NAME = "task_name"
 
@@ -56,7 +60,8 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
         .bindByName('taskName -> name)
         .map(rs => TaskInfo(rs.boolean(1), rs.timestampOpt(2).map(_.toInstant)))
         .first()
-        .apply().getOrElse(throw new RuntimeException(s"TASK $name NOT FOUND"))
+        .apply()
+        .getOrElse(throw new RuntimeException(s"TASK $name NOT FOUND"))
     }
   }
 
@@ -162,7 +167,7 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
       newTaskInfo.updated shouldBe defined
       oldTaskInfo.updated.zip(newTaskInfo.updated).foreach {
         case (claimTime, releaseTime) =>
-        releaseTime should be > claimTime
+          releaseTime should be > claimTime
       }
     }
   }

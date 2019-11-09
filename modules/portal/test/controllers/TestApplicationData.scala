@@ -35,7 +35,8 @@ trait TestApplicationData { this: Mockito =>
     "frodo",
     Some("fbaggins@hobbitmail.me"),
     Some("Frodo"),
-    Some("Baggins"))
+    Some("Baggins")
+  )
 
   val frodoUser = User(
     "fbaggins",
@@ -45,7 +46,8 @@ trait TestApplicationData { this: Mockito =>
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
     DateTime.now,
-    "frodo-uuid")
+    "frodo-uuid"
+  )
 
   val lockedFrodoUser = User(
     "lockedFbaggins",
@@ -106,13 +108,15 @@ trait TestApplicationData { this: Mockito =>
     Some("Gamgee"),
     Some("sgamgee@hobbitmail.me"),
     DateTime.now,
-    "sam-uuid")
+    "sam-uuid"
+  )
   val samDetails = LdapUserDetails(
     "CN=sam,OU=hobbits,DC=middle,DC=earth",
     "sam",
     Some("sgamgee@hobbitmail.me"),
     Some("Sam"),
-    Some("Gamgee"))
+    Some("Gamgee")
+  )
 
   val frodoJson: String =
     s"""{
@@ -239,7 +243,8 @@ trait TestApplicationData { this: Mockito =>
     Configuration.load(Environment.simple()) ++ Configuration.from(
       Map(
         "portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort",
-        "oidc.enabled" -> false)
+        "oidc.enabled" -> false
+      )
     )
 
   val mockAuth: Authenticator = mock[Authenticator]

@@ -36,7 +36,8 @@ class CreateGroupInputSerializerSpec
       email: String,
       description: Option[String],
       members: Set[UserInfo] = Set.empty,
-      admins: Set[UserInfo] = Set.empty): JValue =
+      admins: Set[UserInfo] = Set.empty
+  ): JValue =
     ("name" -> name) ~~
       ("email" -> email) ~~
       ("description" -> Extraction.decompose(description)) ~~

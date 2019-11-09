@@ -56,8 +56,10 @@ class CommandHandlerSpec
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
-  private val messages = for { i <- 0 to 10 } yield
-    TestCommandMessage(pendingCreateAAAA, i.toString)
+  private val messages = for { i <- 0 to 10 } yield TestCommandMessage(
+    pendingCreateAAAA,
+    i.toString
+  )
   private val count = MessageCount(10).right.value
 
   private val mockZoneChangeProcessor = mock[ZoneChange => IO[ZoneChange]]
@@ -224,7 +226,8 @@ class CommandHandlerSpec
     "use the default zone connection when the change zone connection is not defined" in {
       val noConnChange =
         pendingCreateAAAA.copy(
-          zone = pendingCreateAAAA.zone.copy(connection = None, transferConnection = None))
+          zone = pendingCreateAAAA.zone.copy(connection = None, transferConnection = None)
+        )
       val default = defaultConn.copy(primaryServer = "default.conn.test.com")
       val defaultConnProcessor =
         CommandHandler.processChangeRequests(

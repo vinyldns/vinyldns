@@ -54,21 +54,24 @@ class ZoneRoutingSpec
     Some("johnny"),
     None,
     Some("www-*"),
-    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
+    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME)
+  )
   private val userAclRuleInfo = ACLRuleInfo(
     AccessLevel.Read,
     Some("desc"),
     Some("johnny"),
     None,
     Some("www-*"),
-    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
+    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME)
+  )
   private val groupAclRule = ACLRule(
     AccessLevel.Read,
     Some("desc"),
     None,
     Some("group"),
     Some("www-*"),
-    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
+    Set(RecordType.A, RecordType.AAAA, RecordType.CNAME)
+  )
   private val zoneAcl = ZoneACL(Set(userAclRule, groupAclRule))
 
   private val ok = Zone("ok.", "ok@test.com", acl = zoneAcl, adminGroupId = "test")
@@ -85,11 +88,13 @@ class ZoneRoutingSpec
   private val connectionFailed = Zone(
     "connection.fail",
     "connection-failed@test.com",
-    connection = Some(ZoneConnection("connection.fail", "keyName", "key", "10.1.1.1")))
+    connection = Some(ZoneConnection("connection.fail", "keyName", "key", "10.1.1.1"))
+  )
   private val zoneValidationFailed = Zone(
     "validation.fail",
     "zone-validation-failed@test.com",
-    connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1")))
+    connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1"))
+  )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
   private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
@@ -121,7 +126,8 @@ class ZoneRoutingSpec
     List(zoneCreate, zoneUpdate),
     nextId = None,
     startFrom = None,
-    maxItems = 100)
+    maxItems = 100
+  )
 
   val zoneRoute: Route =
     new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
@@ -129,7 +135,8 @@ class ZoneRoutingSpec
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
         createZoneInput: CreateZoneInput,
-        auth: AuthPrincipal): Result[ZoneCommandResult] = {
+        auth: AuthPrincipal
+    ): Result[ZoneCommandResult] = {
       val outcome = createZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
@@ -139,7 +146,9 @@ class ZoneRoutingSpec
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Complete,
-              zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)))
+              zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)
+            )
+          )
         case error.email => Left(new RuntimeException("fail"))
         case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput, false), "fail"))
         case zoneValidationFailed.email =>
@@ -152,7 +161,8 @@ class ZoneRoutingSpec
 
     def updateZone(
         updateZoneInput: UpdateZoneInput,
-        auth: AuthPrincipal): Result[ZoneCommandResult] = {
+        auth: AuthPrincipal
+    ): Result[ZoneCommandResult] = {
       val outcome = updateZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
@@ -162,7 +172,9 @@ class ZoneRoutingSpec
           Right(
             zoneUpdate.copy(
               status = ZoneChangeStatus.Complete,
-              zone = Zone(updateZoneInput, zoneUpdate.zone).copy(status = ZoneStatus.Active)))
+              zone = Zone(updateZoneInput, zoneUpdate.zone).copy(status = ZoneStatus.Active)
+            )
+          )
         case error.email => Left(new RuntimeException("fail"))
         case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
         case connectionFailed.email =>
@@ -172,7 +184,9 @@ class ZoneRoutingSpec
             ZoneValidationFailed(
               Zone(updateZoneInput, zoneUpdate.zone),
               List("fail"),
-              "failure message"))
+              "failure message"
+            )
+          )
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
@@ -226,7 +240,8 @@ class ZoneRoutingSpec
         nameFilter: Option[String],
         startFrom: Option[String],
         maxItems: Int,
-        ignoreAccess: Boolean = false): Result[ListZonesResponse] = {
+        ignoreAccess: Boolean = false
+    ): Result[ListZonesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
         case (_, None, Some("zone3."), 3, false) =>
@@ -248,7 +263,8 @@ class ZoneRoutingSpec
               startFrom = Some("zone4."),
               nextId = None,
               maxItems = 4,
-              ignoreAccess = false)
+              ignoreAccess = false
+            )
           )
 
         case (_, None, None, 3, false) =>
@@ -259,7 +275,8 @@ class ZoneRoutingSpec
               startFrom = None,
               nextId = Some("zone3."),
               maxItems = 3,
-              ignoreAccess = false)
+              ignoreAccess = false
+            )
           )
 
         case (_, None, None, 5, true) =>
@@ -270,7 +287,8 @@ class ZoneRoutingSpec
                 zoneSummaryInfo2,
                 zoneSummaryInfo3,
                 zoneSummaryInfo4,
-                zoneSummaryInfo5),
+                zoneSummaryInfo5
+              ),
               nameFilter = None,
               startFrom = None,
               nextId = None,
@@ -298,7 +316,8 @@ class ZoneRoutingSpec
               nameFilter = None,
               startFrom = None,
               nextId = None,
-              ignoreAccess = false)
+              ignoreAccess = false
+            )
           )
 
         case _ => Left(InvalidRequest("shouldnt get here"))
@@ -311,7 +330,8 @@ class ZoneRoutingSpec
         zoneId: String,
         authPrincipal: AuthPrincipal,
         startFrom: Option[String],
-        maxItems: Int): Result[ListZoneChangesResponse] = {
+        maxItems: Int
+    ): Result[ListZoneChangesResponse] = {
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError("no way"))
@@ -323,7 +343,8 @@ class ZoneRoutingSpec
     def addACLRule(
         zoneId: String,
         aclRuleInfo: ACLRuleInfo,
-        authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
+        authPrincipal: AuthPrincipal
+    ): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
         case badRegex.id =>
           Left(InvalidRequest("record mask x{5,-3} is an invalid regex"))
@@ -348,7 +369,8 @@ class ZoneRoutingSpec
     def deleteACLRule(
         zoneId: String,
         aclRuleInfo: ACLRuleInfo,
-        authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
+        authPrincipal: AuthPrincipal
+    ): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
@@ -404,7 +426,8 @@ class ZoneRoutingSpec
       Some("user"),
       None,
       Some("www-*"),
-      Set(RecordType.AAAA, RecordType.CNAME))
+      Set(RecordType.AAAA, RecordType.CNAME)
+    )
     "return a 202 Accepted when the acl rule is good" in {
       Put(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute ~> check {
@@ -431,7 +454,8 @@ class ZoneRoutingSpec
         userId = None,
         groupId = None,
         recordMask = None,
-        recordTypes = Set())
+        recordTypes = Set()
+      )
 
       Put(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(requestAllUsers))) ~> zoneRoute ~> check {
@@ -475,9 +499,9 @@ class ZoneRoutingSpec
           ("userId" -> Extraction.decompose(Some("johnny")))
 
       Put(s"/zones/${ok.id}/acl/rules")
-        .withEntity(HttpEntity(
-          ContentTypes.`application/json`,
-          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute) ~> check {
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, compact(render(missingACLAccessLevel)))
+        ) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -516,7 +540,8 @@ class ZoneRoutingSpec
         Some("user"),
         None,
         Some("x{5,-3}"),
-        Set(RecordType.AAAA, RecordType.CNAME))
+        Set(RecordType.AAAA, RecordType.CNAME)
+      )
       Put(s"/zones/${badRegex.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> zoneRoute ~> check {
 
@@ -534,7 +559,8 @@ class ZoneRoutingSpec
       Some("user"),
       None,
       Some("www-*"),
-      Set(RecordType.AAAA, RecordType.CNAME))
+      Set(RecordType.AAAA, RecordType.CNAME)
+    )
     "return a 202 Accepted when the acl rule is good" in {
       Delete(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute ~> check {
@@ -574,9 +600,9 @@ class ZoneRoutingSpec
           ("userId" -> Extraction.decompose(Some("johnny")))
 
       Delete(s"/zones/${ok.id}/acl/rules")
-        .withEntity(HttpEntity(
-          ContentTypes.`application/json`,
-          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute) ~> check {
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, compact(render(missingACLAccessLevel)))
+        ) ~> Route.seal(zoneRoute) ~> check {
 
         status shouldBe BadRequest
         val result = responseAs[JValue]
@@ -898,7 +924,8 @@ class ZoneRoutingSpec
       Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
         status shouldBe BadRequest
         responseEntity.toString should include(
-          "maxItems was 700, maxItems must be between 0 and 100")
+          "maxItems was 700, maxItems must be between 0 and 100"
+        )
       }
     }
   }
@@ -968,9 +995,9 @@ class ZoneRoutingSpec
     }
 
     "return 403 if the user is not authorized" in {
-      Put(s"/zones/${notAuthorized.id}").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        zoneJson(notAuthorized))) ~> zoneRoute ~> check {
+      Put(s"/zones/${notAuthorized.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(notAuthorized))
+      ) ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
@@ -991,31 +1018,32 @@ class ZoneRoutingSpec
 
     "validate the connection when the update is posted" in {
       Put(s"/zones/${connectionOk.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, zoneJson(connectionOk))) ~> zoneRoute ~> check {
+        HttpEntity(ContentTypes.`application/json`, zoneJson(connectionOk))
+      ) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
     }
 
     "fail the update if the connection validation fails" in {
-      Put(s"/zones/${connectionFailed.id}").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        zoneJson(connectionFailed))) ~> zoneRoute ~> check {
+      Put(s"/zones/${connectionFailed.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(connectionFailed))
+      ) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "fail the update if the zone validation fails" in {
-      Put(s"/zones/${zoneValidationFailed.id}").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        zoneJson(zoneValidationFailed))) ~> zoneRoute ~> check {
+      Put(s"/zones/${zoneValidationFailed.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(zoneValidationFailed))
+      ) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "report missing data" in {
       Put(s"/zones/${ok.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render(missingFields)))) ~> Route.seal(
-        zoneRoute) ~> check {
+        HttpEntity(ContentTypes.`application/json`, compact(render(missingFields)))
+      ) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -1035,7 +1063,8 @@ class ZoneRoutingSpec
 
     "report type mismatch" in {
       Put(s"/zones/${ok.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render(zoneWithInvalidId)))) ~> Route
+        HttpEntity(ContentTypes.`application/json`, compact(render(zoneWithInvalidId)))
+      ) ~> Route
         .seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]

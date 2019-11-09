@@ -51,7 +51,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo).saveTx(zoneInput)
 
       result shouldEqual Right(zoneInput)
@@ -73,7 +74,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo, times(repo.MAX_RETRIES + 1)).saveTx(zoneInput)
     }
 
@@ -93,7 +95,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo, times(3)).saveTx(zoneInput)
 
       result shouldEqual Right(zoneInput)
@@ -113,7 +116,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo).deleteTx(zoneInput)
 
       result shouldEqual Right(zoneInput)
@@ -135,7 +139,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo, times(repo.MAX_RETRIES + 1)).deleteTx(zoneInput)
     }
 
@@ -155,7 +160,8 @@ class MySqlZoneRepositorySpec
           any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
           any[Zone],
           any[FiniteDuration],
-          any[Int])
+          any[Int]
+        )
       verify(repo, times(3)).deleteTx(zoneInput)
 
       result shouldEqual Right(zoneInput)

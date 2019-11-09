@@ -35,13 +35,17 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private var repo: DynamoDBUserRepository = _
 
-  private val testUserIds = (for {i <- 0 to 100} yield s"test-user-$i").toList.sorted
+  private val testUserIds = (for { i <- 0 to 100 } yield s"test-user-$i").toList.sorted
   private val users = testUserIds.map { id =>
     User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
   }
 
   def setup(): Unit = {
-    repo = DynamoDBUserRepository(tableConfig, dynamoIntegrationConfig, new NoOpCrypto(ConfigFactory.load())).unsafeRunSync()
+    repo = DynamoDBUserRepository(
+      tableConfig,
+      dynamoIntegrationConfig,
+      new NoOpCrypto(ConfigFactory.load())
+    ).unsafeRunSync()
 
     // Create all the items
     val results = users.map(repo.save(_)).parSequence
@@ -123,7 +127,8 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
         userName = "testSuper",
         accessKey = "testSuper",
         secretKey = "testUser",
-        isSuper = true)
+        isSuper = true
+      )
 
       val saved = repo.save(testUser).unsafeRunSync()
       val result = repo.getUser(saved.id).unsafeRunSync()
@@ -143,7 +148,8 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
         userName = "testSuper",
         accessKey = "testSuper",
         secretKey = "testUser",
-        lockStatus = LockStatus.Locked)
+        lockStatus = LockStatus.Locked
+      )
 
       val saved = repo.save(testUser).unsafeRunSync()
       val result = repo.getUser(saved.id).unsafeRunSync()
@@ -162,7 +168,8 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
         userName = "testSuper",
         accessKey = "testSuper",
         secretKey = "testUser",
-        isSupport = true)
+        isSupport = true
+      )
 
       val saved = repo.save(testUser).unsafeRunSync()
       val result = repo.getUser(saved.id).unsafeRunSync()
@@ -177,11 +184,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       f.get.isSupport shouldBe false
     }
     "returns the test flag when true" in {
-      val testUser = User(
-        userName = "test",
-        accessKey = "test",
-        secretKey = "test",
-        isTest = true)
+      val testUser = User(userName = "test", accessKey = "test", secretKey = "test", isTest = true)
 
       val saved = repo.save(testUser).unsafeRunSync()
       val result = repo.getUser(saved.id).unsafeRunSync()

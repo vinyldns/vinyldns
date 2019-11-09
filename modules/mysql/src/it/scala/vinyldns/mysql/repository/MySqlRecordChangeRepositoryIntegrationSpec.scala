@@ -21,20 +21,28 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
 import scalikejdbc._
-import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.record.{
+  ChangeSet,
+  RecordChangeRepository,
+  RecordSetChange,
+  RecordSetChangeType
+}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlRecordChangeRepositoryIntegrationSpec
-  extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with EitherMatchers {
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with EitherMatchers {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 
   private var repo: RecordChangeRepository = _
 
-  override protected def beforeAll(): Unit = {
+  override protected def beforeAll(): Unit =
     repo = TestMySqlInstance.recordChangeRepository
-  }
 
   override protected def beforeEach(): Unit = clear()
 
@@ -50,11 +58,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
     val newRecordSets =
       for {
         i <- 1 to count
-      } yield
-        aaaa.copy(
-          zoneId = zone.id,
-          name = s"$i-apply-test",
-          id = UUID.randomUUID().toString)
+      } yield aaaa.copy(zoneId = zone.id, name = s"$i-apply-test", id = UUID.randomUUID().toString)
 
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
@@ -84,12 +88,14 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       val result = repo.listRecordSetChanges(okZone.id, None, 5).unsafeRunSync()
       result.nextId shouldBe defined
       result.maxItems shouldBe 5
-      result.items should have length 5
+      (result.items should have).length(5)
     }
     "page through record changes" in {
       // sort by created desc, so adding additional seconds makes it more current, the last
       val timeSpaced =
-        generateInserts(okZone, 5).zipWithIndex.map { case (c, i) => c.copy(created = c.created.plusSeconds(i)) }
+        generateInserts(okZone, 5).zipWithIndex.map {
+          case (c, i) => c.copy(created = c.created.plusSeconds(i))
+        }
 
       // expect to be sorted by created descending so reverse that
       val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
@@ -99,12 +105,12 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       val page1 = repo.listRecordSetChanges(okZone.id, None, 2).unsafeRunSync()
       page1.nextId shouldBe Some(expectedOrder(1).created.getMillis.toString)
       page1.maxItems shouldBe 2
-      page1.items should contain theSameElementsInOrderAs expectedOrder.take(2)
+      (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
 
       val page2 = repo.listRecordSetChanges(okZone.id, page1.nextId, 2).unsafeRunSync()
       page2.nextId shouldBe Some(expectedOrder(3).created.getMillis.toString)
       page2.maxItems shouldBe 2
-      page2.items should contain theSameElementsInOrderAs expectedOrder.slice(2, 4)
+      (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(2, 4))
 
       val page3 = repo.listRecordSetChanges(okZone.id, page2.nextId, 2).unsafeRunSync()
       page3.nextId shouldBe None

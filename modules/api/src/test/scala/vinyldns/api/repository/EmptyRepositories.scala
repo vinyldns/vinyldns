@@ -43,7 +43,8 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): IO[ListRecordSetResults] =
+      recordNameFilter: Option[String]
+  ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults())
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
@@ -74,7 +75,8 @@ trait EmptyZoneRepo extends ZoneRepository {
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false): IO[ListZonesResults] = IO.pure(ListZonesResults())
+      ignoreAccess: Boolean = false
+  ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())
 
@@ -106,7 +108,8 @@ trait EmptyUserRepo extends UserRepository {
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
-      maxItems: Option[Int]): IO[ListUsersResults] = IO.pure(ListUsersResults(List(), None))
+      maxItems: Option[Int]
+  ): IO[ListUsersResults] = IO.pure(ListUsersResults(List(), None))
 
   def getAllUsers: IO[List[User]] = IO.pure(List())
 

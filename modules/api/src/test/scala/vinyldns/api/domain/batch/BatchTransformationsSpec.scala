@@ -49,13 +49,16 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
         ipv6nonMatch1,
         ipv6nonMatch2,
         ipv6nonMatch3,
-        forwardMatch1))
+        forwardMatch1
+      )
+    )
 
     "getipv4PTRMatches" should {
       "return all possible matches including proper delegations" in {
         existingZones.getipv4PTRMatches("3.2.1.2") should contain theSameElementsAs List(
           ip4base1,
-          ip4del1)
+          ip4del1
+        )
       }
       "return all possible matches excluding similar delegations" in {
         existingZones.getipv4PTRMatches("3.2.1.55") should contain theSameElementsAs List(ip4base1)
@@ -75,7 +78,8 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
 
         // only matches 1st option
         existingZones.getipv6PTRMatches("2001:0db0:0000:0000:0000:0000:0000:0000") shouldBe List(
-          ipv6match1)
+          ipv6match1
+        )
         existingZones.getipv6PTRMatches("2001:db0::ff00:42:8329") shouldBe List(ipv6match1)
       }
       "return empty if there are no matches" in {

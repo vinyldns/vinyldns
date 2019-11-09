@@ -75,7 +75,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       wsClient: WSClient = ws,
       components: ControllerComponents = components,
       crypto: CryptoAlgebra = crypto,
-      oidcAuthenticator: OidcAuthenticator = mockOidcAuth): VinylDNS =
+      oidcAuthenticator: OidcAuthenticator = mockOidcAuth
+  ): VinylDNS =
     new VinylDNS(
       configuration,
       authenticator,
@@ -96,7 +97,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       mockUserAccessor,
       client,
       components,
-      crypto)
+      crypto
+    )
 
   private def withLockedClient(client: WSClient) =
     TestVinylDNS(
@@ -106,15 +108,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       client,
       components,
       crypto,
-      mockOidcAuth)
+      mockOidcAuth
+    )
 
   "VinylDNS.Alerts" should {
     "return alertType and alertMessage are given" in {
       VinylDNS.Alerts.fromFlash(
         Flash(
-          Map(
-            "alertType" -> "danger",
-            "alertMessage" -> "Authentication failed, please try again"))) must
+          Map("alertType" -> "danger", "alertMessage" -> "Authentication failed, please try again")
+        )
+      ) must
         beEqualTo(Some(Alert("danger", "Authentication failed, please try again")))
     }
 
@@ -158,7 +161,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             ws,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(
@@ -204,8 +208,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         val result = vinyldnsPortal
           .regenerateCreds()
-          .apply(FakeRequest(POST, "/regenerate-creds")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+          .apply(
+            FakeRequest(POST, "/regenerate-creds")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(200)
         header("Pragma", result) must beSome("no-cache")
@@ -225,8 +231,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         val result = vinyldnsPortal
           .regenerateCreds()
-          .apply(FakeRequest(POST, "/regenerate-creds")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+          .apply(
+            FakeRequest(POST, "/regenerate-creds")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(404)
         hasCacheHeaders(result)
@@ -243,11 +251,14 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             FakeRequest(POST, "/regenerate-creds")
               .withSession(
                 "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
 
         status(result) must beEqualTo(403)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
         hasCacheHeaders(result)
       }
       "return unauthorized (401) if user account is locked" in new WithApplication(app) {
@@ -280,7 +291,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).get("frodo"))
         }
         "call the new user account accessor and return the new style account" in new WithApplication(
-          app) {
+          app
+        ) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Right(frodoDetails))
@@ -291,13 +303,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .apply(
               FakeRequest().withFormUrlEncodedBody(
                 "username" -> frodoDetails.username,
-                "password" -> "secondbreakfast")
+                "password" -> "secondbreakfast"
+              )
             )
           there.was(one(authenticator).authenticate("frodo", "secondbreakfast"))
           there.was(one(userAccessor).get("frodo"))
         }
         "call the user accessor to create the new user account if it is not found" in new WithApplication(
-          app) {
+          app
+        ) {
           authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
@@ -312,7 +326,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).create(_: User))
         }
         "call the user accessor to create the new style user account if it is not found" in new WithApplication(
-          app) {
+          app
+        ) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Right(frodoDetails))
@@ -324,14 +339,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .apply(
               FakeRequest().withFormUrlEncodedBody(
                 "username" -> frodoDetails.username,
-                "password" -> "secondbreakfast")
+                "password" -> "secondbreakfast"
+              )
             )
           there.was(one(userAccessor).get(frodoDetails.username))
           there.was(one(userAccessor).create(_: User))
         }
 
         "do not call the user accessor to create the new user account if it is found" in new WithApplication(
-          app) {
+          app
+        ) {
           authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(any[String]).returns(IO.pure(Some(frodoUser)))
 
@@ -356,7 +373,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .apply(
               FakeRequest().withFormUrlEncodedBody(
                 "username" -> frodoDetails.username,
-                "password" -> "secondbreakfast")
+                "password" -> "secondbreakfast"
+              )
             )
           session(response).get("username") must beSome(frodoUser.userName)
           session(response).get("accessKey") must beSome(frodoUser.accessKey)
@@ -374,7 +392,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .apply(
               FakeRequest().withFormUrlEncodedBody(
                 "username" -> frodoDetails.username,
-                "password" -> "secondbreakfast")
+                "password" -> "secondbreakfast"
+              )
             )
           status(response) mustEqual 303
           redirectLocation(response) must beSome("/index")
@@ -548,7 +567,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           flash(response).get("alertType") must beSome("danger")
           flash(response).get("alertMessage") must beSome(
             "Authentication failed, please contact your VinylDNS " +
-              "administrators")
+              "administrators"
+          )
         }
       }
     }
@@ -579,7 +599,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.newGroup()(
           FakeRequest(POST, "/groups")
             .withJsonBody(hobbitGroupRequest)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
@@ -597,13 +618,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.newGroup()(
           FakeRequest(POST, "/groups")
             .withJsonBody(invalidHobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(BAD_REQUEST)
         hasCacheHeaders(result)
       }
       "return authentication failed (401) when auth fails in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (POST, "http://localhost:9001/groups") =>
             defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
@@ -616,7 +639,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.newGroup()(
           FakeRequest(POST, s"/groups")
             .withJsonBody(hobbitGroupRequest)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
@@ -633,7 +657,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.newGroup()(
           FakeRequest(POST, "/groups")
             .withJsonBody(hobbitGroupRequest)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(CONFLICT)
         hasCacheHeaders(result)
@@ -648,17 +673,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.newGroup()(
           FakeRequest(POST, "/groups")
             .withJsonBody(hobbitGroupRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
         hasCacheHeaders(result)
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
@@ -671,10 +700,12 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.newGroup()(
           FakeRequest(POST, "/groups")
-            .withJsonBody(hobbitGroupRequest))
+            .withJsonBody(hobbitGroupRequest)
+        )
 
         status(result) must beEqualTo(401)
         contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
@@ -697,14 +728,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.getGroup(hobbitGroupId)(
             FakeRequest(GET, s"/groups/$hobbitGroupId")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(hobbitGroup)
       }
       "return authentication failed (401) when auth fails in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (GET, u) if u == s"http://localhost:9001/groups/${hobbitGroupId}" =>
             defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
@@ -716,7 +749,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.getGroup(hobbitGroupId)(
             FakeRequest(GET, s"/groups/$hobbitGroupId")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
@@ -732,7 +766,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getGroup("not-hobbits")(
           FakeRequest(GET, "/groups/not-hobbits")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(NOT_FOUND)
         hasCacheHeaders(result)
@@ -747,18 +782,22 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result =
           underTest.getGroup(hobbitGroupId)(
             FakeRequest(GET, s"/groups/$hobbitGroupId")
               .withSession(
                 "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
@@ -785,7 +824,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.deleteGroup(hobbitGroupId)(
             FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(NO_CONTENT)
         hasCacheHeaders(result)
@@ -810,21 +850,26 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result =
           underTest.deleteGroup(hobbitGroupId)(
             FakeRequest(DELETE, s"/groups/$hobbitGroupId")
               .withSession(
                 "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
       "return authentication failed (401) when authentication fails in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (DELETE, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
@@ -836,7 +881,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.deleteGroup(hobbitGroupId)(
             FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
@@ -856,7 +902,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.deleteGroup(hobbitGroupId)(
             FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(FORBIDDEN)
         hasCacheHeaders(result)
@@ -873,7 +920,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.deleteGroup("not-hobbits")(
             FakeRequest(DELETE, "/groups/not-hobbits")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(NOT_FOUND)
         hasCacheHeaders(result)
@@ -882,7 +930,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
     ".updateGroup" should {
       "return the new group description if it is saved successfully - Ok (200)" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder { Results.Ok(hobbitGroup) }
@@ -894,7 +943,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.updateGroup(hobbitGroupId)(
           FakeRequest(PUT, s"/groups/$hobbitGroupId")
             .withJsonBody(hobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(OK)
         contentAsJson(result) must beEqualTo(hobbitGroup)
@@ -906,7 +956,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.updateGroup(hobbitGroupId)(
             FakeRequest(PUT, s"/groups/$hobbitGroupId")
-              .withJsonBody(hobbitGroup))
+              .withJsonBody(hobbitGroup)
+          )
 
         status(result) mustEqual 401
         contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
@@ -922,21 +973,26 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.updateGroup(hobbitGroupId)(
           FakeRequest(PUT, s"/groups/$hobbitGroupId")
             .withJsonBody(hobbitGroup)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
         hasCacheHeaders(result)
       }
       "return bad request (400) when the request is rejected by the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder { Results.BadRequest("Unknown user") }
@@ -948,7 +1004,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.updateGroup(hobbitGroupId)(
           FakeRequest(PUT, s"/groups/$hobbitGroupId")
             .withJsonBody(invalidHobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(BAD_REQUEST)
         hasCacheHeaders(result)
@@ -965,13 +1022,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.updateGroup(hobbitGroupId)(
           FakeRequest(PUT, s"/groups/$hobbitGroupId")
             .withJsonBody(hobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
       }
       "return forbidden (403) when request fails permissions in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder { Results.Forbidden("Authentication failed, bad signature") }
@@ -983,13 +1042,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.updateGroup(hobbitGroupId)(
           FakeRequest(PUT, s"/groups/$hobbitGroupId")
             .withJsonBody(hobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(FORBIDDEN)
         hasCacheHeaders(result)
       }
       "return not found (404) when the group is not found in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (PUT, u) if u == s"http://localhost:9001/groups/$hobbitGroupId" =>
             defaultActionBuilder { Results.NotFound }
@@ -1001,7 +1062,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.updateGroup("not-hobbits")(
           FakeRequest(PUT, "/groups/not-hobbits")
             .withJsonBody(hobbitGroup)
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(NOT_FOUND)
         hasCacheHeaders(result)
@@ -1020,7 +1082,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getMemberList(hobbitGroupId)(
           FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
@@ -1036,9 +1099,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.getMemberList(hobbitGroupId)(
-          FakeRequest(GET, s"/data/groups/$hobbitGroupId/members"))
+          FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
+        )
 
         status(result) mustEqual 401
         contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
@@ -1054,20 +1119,25 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.getMemberList(hobbitGroupId)(
           FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) must beEqualTo(FORBIDDEN)
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
       "return bad request (400) when the request is rejected by the back end" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
             defaultActionBuilder { Results.BadRequest("Invalid maxItems") }
@@ -1078,7 +1148,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getMemberList(hobbitGroupId)(
           FakeRequest(GET, s"/groups/$hobbitGroupId/members?maxItems=0")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(BAD_REQUEST)
         hasCacheHeaders(result)
@@ -1094,13 +1165,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getMemberList(hobbitGroupId)(
           FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
       }
       "return not found (404) when the group is not found in the backend" in new WithApplication(
-        app) {
+        app
+      ) {
         val client = MockWS {
           case (GET, u) if u == s"http://localhost:9001/groups/$hobbitGroupId/members" =>
             defaultActionBuilder { Results.NotFound }
@@ -1111,7 +1184,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getMemberList(hobbitGroupId)(
           FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(NOT_FOUND)
         hasCacheHeaders(result)
@@ -1130,7 +1204,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result = underTest.getGroups()(
           FakeRequest(GET, s"/api/groups")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
@@ -1155,17 +1230,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.getGroups()(
           FakeRequest(GET, s"/api/groups")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
         val client = MockWS {
@@ -1182,10 +1261,12 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor,
             client,
             components,
-            crypto)
+            crypto
+          )
         val result = underTest.getGroups()(
           FakeRequest(GET, s"/api/groups")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) must beEqualTo(UNAUTHORIZED)
         hasCacheHeaders(result)
@@ -1201,7 +1282,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
         val content: String = contentAsString(result)
         content must contain("NT ID")
         content must contain(frodoUser.userName)
@@ -1216,13 +1298,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, components, crypto)
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv"))
+          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
+        )
 
         status(result) mustEqual 303
         redirectLocation(result) must beSome("/login")
         flash(result).get("alertType") must beSome("danger")
         flash(result).get("alertMessage") must beSome(
-          "You are not logged in. Please login to continue.")
+          "You are not logged in. Please login to continue."
+        )
       }
       "redirect to login if user account is locked" in new WithApplication(app) {
         import play.api.mvc.Result
@@ -1235,13 +1319,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             ws,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 303
         redirectLocation(result) must beSome("/noaccess")
@@ -1257,17 +1344,20 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             ws,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
 
         status(result) mustEqual 303
         redirectLocation(result) must beSome("/login")
         flash(result).get("alertType") must beSome("danger")
         flash(result).get("alertMessage") must beSome(
-          s"Unable to find user account for user name '${frodoUser.userName}'")
+          s"Unable to find user account for user name '${frodoUser.userName}'"
+        )
       }
     }
 
@@ -1305,7 +1395,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             ws,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(FakeRequest(GET, s"/api/users/lookupuser/$lookupValue"))
@@ -1327,19 +1418,23 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             ws,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(
             FakeRequest(GET, s"/api/users/lookupuser/$lookupValue")
               .withSession(
                 "username" -> lockedFrodoUser.userName,
-                "accessKey" -> lockedFrodoUser.accessKey))
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
 
         status(result) must beEqualTo(403)
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
       "return a 404 if the account is not found" in new WithApplication(app) {
         userAccessor.get(any[String]).returns(IO.pure(None))
@@ -1377,12 +1472,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.getZones()(
           FakeRequest(GET, s"/api/zones").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1403,12 +1501,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.getZone(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1425,7 +1526,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.getZoneByName(hobbitZoneName)(
             FakeRequest(GET, s"/zones/name/$hobbitZoneName")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
@@ -1443,7 +1545,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.getZoneByName("not-hobbits")(
             FakeRequest(GET, "/zones/name/not-hobbits")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(NOT_FOUND)
         hasCacheHeaders(result)
@@ -1453,7 +1556,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.getZoneByName(hobbitZoneName)(
-            FakeRequest(GET, s"/api/zones/name/$hobbitZoneName"))
+            FakeRequest(GET, s"/api/zones/name/$hobbitZoneName")
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1465,12 +1569,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.getZoneByName(hobbitZoneName)(
           FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1491,12 +1598,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.syncZone(hobbitZoneId)(
           FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1507,7 +1617,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.getRecordSets(hobbitZoneId)(
-            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets")
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1519,12 +1630,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.getRecordSets(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1534,7 +1648,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.listRecordSetChanges(hobbitZoneId)(
-            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+            FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets")
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1546,12 +1661,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result = underTest.listRecordSetChanges(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
             "username" -> lockedFrodoUser.userName,
-            "accessKey" -> lockedFrodoUser.accessKey))
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1574,12 +1692,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1589,7 +1710,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.updateZone(hobbitZoneId)(
-            FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+            FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1603,12 +1725,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1619,7 +1744,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.addRecordSet(hobbitRecordSetId)(
             FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
-              .withJsonBody(hobbitZoneRequest))
+              .withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1633,12 +1759,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1648,7 +1777,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.deleteZone(hobbitZoneId)(
-            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1662,12 +1792,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1678,7 +1811,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
             FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
-              .withJsonBody(hobbitZoneRequest))
+              .withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1692,12 +1826,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1707,7 +1844,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
-            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+            FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1721,12 +1859,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1737,7 +1878,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.getBatchChange(hobbitZoneId)(
             FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
-              .withJsonBody(hobbitZoneRequest))
+              .withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1751,12 +1893,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1766,7 +1911,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.newBatchChange()(
-            FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
+            FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1780,12 +1926,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1807,12 +1956,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           FakeRequest(POST, s"/api/dnschanges/123/cancel")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1834,12 +1986,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           FakeRequest(POST, s"/api/dnschanges/123/approve")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1861,12 +2016,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           FakeRequest(POST, s"/api/dnschanges/123/reject")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1876,7 +2034,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withClient(client)
         val result =
           underTest.listBatchChanges()(
-            FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
+            FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest)
+          )
 
         status(result) mustEqual 401
         hasCacheHeaders(result)
@@ -1890,12 +2049,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withJsonBody(hobbitZoneRequest)
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
 
@@ -1913,12 +2075,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.lockUser(frodoUser.id)(
           FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
             .withSession(
               "username" -> superFrodoUser.userName,
-              "accessKey" -> superFrodoUser.accessKey))
+              "accessKey" -> superFrodoUser.accessKey
+            )
+        )
 
         status(result) must beEqualTo(OK)
         contentAsJson(result) must beEqualTo(userJson)
@@ -1934,7 +2099,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result =
           underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock"))
 
@@ -1948,7 +2114,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.lockUser(frodoUser.id)(
             FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) must beEqualTo(403)
         contentAsString(result) must beEqualTo("Request restricted to super users only.")
@@ -1970,12 +2137,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             client,
             components,
             crypto,
-            mockOidcAuth)
+            mockOidcAuth
+          )
         val result = underTest.unlockUser(lockedFrodoUser.id)(
           FakeRequest(PUT, s"/users/${lockedFrodoUser.id}/unlock")
             .withSession(
               "username" -> superFrodoUser.userName,
-              "accessKey" -> superFrodoUser.accessKey))
+              "accessKey" -> superFrodoUser.accessKey
+            )
+        )
 
         status(result) must beEqualTo(OK)
         contentAsJson(result) must beEqualTo(userJson)
@@ -1998,7 +2168,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val result =
           underTest.unlockUser(frodoUser.id)(
             FakeRequest(PUT, s"/users/${frodoUser.id}/unlock")
-              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
 
         status(result) mustEqual 403
         contentAsString(result) must beEqualTo("Request restricted to super users only.")
@@ -2025,12 +2196,15 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           FakeRequest(GET, "/zones/backendids")
             .withSession(
               "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
 
         status(result) mustEqual 403
         hasCacheHeaders(result)
         contentAsString(result) must beEqualTo(
-          s"User account for `${lockedFrodoUser.userName}` is locked.")
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
       }
     }
   }

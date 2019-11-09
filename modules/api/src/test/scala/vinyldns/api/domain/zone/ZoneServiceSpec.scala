@@ -74,20 +74,23 @@ class ZoneServiceSpec
     TestConnectionValidator,
     mockMessageQueue,
     new ZoneValidations(1000),
-    new AccessValidations())
+    new AccessValidations()
+  )
 
   private val createZoneAuthorized = CreateZoneInput(
     "ok.zone.recordsets.",
     "test@test.com",
     connection = testConnection,
-    adminGroupId = okGroup.id)
+    adminGroupId = okGroup.id
+  )
 
   private val updateZoneAuthorized = UpdateZoneInput(
     okZone.id,
     "ok.zone.recordsets.",
     "updated-test@test.com",
     connection = testConnection,
-    adminGroupId = okGroup.id)
+    adminGroupId = okGroup.id
+  )
 
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
@@ -100,7 +103,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value
+      )
 
       resultChange.changeType shouldBe ZoneChangeType.Create
       Option(resultChange.created) shouldBe defined
@@ -124,7 +128,8 @@ class ZoneServiceSpec
         underTest
           .connectToZone(createZoneAuthorized, nonTestUser)
           .map(_.asInstanceOf[ZoneChange])
-          .value)
+          .value
+      )
 
       resultChange.zone.isTest shouldBe false
     }
@@ -138,7 +143,8 @@ class ZoneServiceSpec
         underTest
           .connectToZone(createZoneAuthorized, testUser)
           .map(_.asInstanceOf[ZoneChange])
-          .value)
+          .value
+      )
 
       resultChange.zone.isTest shouldBe true
     }
@@ -164,7 +170,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value
+      )
       resultChange.changeType shouldBe ZoneChangeType.Create
     }
 
@@ -181,7 +188,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultZone = rightResultOf(
-        underTest.connectToZone(newZone, superUserAuth).map(_.asInstanceOf[ZoneChange]).value).zone
+        underTest.connectToZone(newZone, superUserAuth).map(_.asInstanceOf[ZoneChange]).value
+      ).zone
 
       Option(resultZone.id) should not be None
       resultZone.email shouldBe okZone.email
@@ -199,7 +207,8 @@ class ZoneServiceSpec
         underTest
           .connectToZone(newZone, supportUserAuth)
           .map(_.asInstanceOf[ZoneChange])
-          .value).zone
+          .value
+      ).zone
 
       Option(resultZone.id) should not be None
       resultZone.email shouldBe okZone.email
@@ -237,7 +246,8 @@ class ZoneServiceSpec
           .updateZone(updateZoneInput, doubleAuth)
           .map(_.asInstanceOf[ZoneChange])
           .value,
-        duration = 2.seconds)
+        duration = 2.seconds
+      )
 
       resultChange.zone.id shouldBe okZone.id
       resultChange.changeType shouldBe ZoneChangeType.Update
@@ -259,7 +269,8 @@ class ZoneServiceSpec
           underTest
             .updateZone(newZone, doubleAuth)
             .map(_.asInstanceOf[ZoneChange])
-            .value)
+            .value
+        )
       resultChange.zone.id shouldBe oldZone.id
       resultChange.zone.connection shouldBe oldZone.connection
     }
@@ -302,7 +313,8 @@ class ZoneServiceSpec
       val result = rightResultOf(
         underTest
           .updateZone(newZone, AuthPrincipal(superUser, List.empty))
-          .value)
+          .value
+      )
       result shouldBe a[ZoneChange]
     }
 
@@ -315,7 +327,8 @@ class ZoneServiceSpec
       val result = rightResultOf(
         underTest
           .updateZone(newZone, supportUserAuth)
-          .value)
+          .value
+      )
       result shouldBe a[ZoneChange]
     }
 
@@ -449,7 +462,8 @@ class ZoneServiceSpec
         zoneWithRules,
         ZoneACLInfo(Set(goodUserRuleInfo, goodGroupRuleInfo, goodAllRuleInfo)),
         goodGroup.name,
-        AccessLevel.Delete)
+        AccessLevel.Delete
+      )
       val result: ZoneInfo = rightResultOf(underTest.getZone(zoneWithRules.id, abcAuth).value)
       result shouldBe expectedZoneInfo
     }
@@ -564,8 +578,10 @@ class ZoneServiceSpec
             List(abcZone, xyzZone),
             maxItems = 2,
             nextId = Some("zone2."),
-            ignoreAccess = false)))
-        .when(mockZoneRepo)
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneRepo)
         .listZones(abcAuth, None, None, 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
@@ -588,8 +604,10 @@ class ZoneServiceSpec
             zonesFilter = Some("foo"),
             maxItems = 2,
             nextId = Some("zone2."),
-            ignoreAccess = false)))
-        .when(mockZoneRepo)
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneRepo)
         .listZones(abcAuth, Some("foo"), None, 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
@@ -610,8 +628,10 @@ class ZoneServiceSpec
             List(abcZone, xyzZone),
             startFrom = Some("zone4."),
             maxItems = 2,
-            ignoreAccess = false)))
-        .when(mockZoneRepo)
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneRepo)
         .listZones(abcAuth, None, Some("zone4."), 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
@@ -631,8 +651,10 @@ class ZoneServiceSpec
             startFrom = Some("zone4."),
             maxItems = 2,
             nextId = Some("zone6."),
-            ignoreAccess = false)))
-        .when(mockZoneRepo)
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneRepo)
         .listZones(abcAuth, None, Some("zone4."), 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
@@ -719,7 +741,8 @@ class ZoneServiceSpec
         underTest
           .addACLRule(okZone.id, userAclRuleInfo, okAuth)
           .map(_.asInstanceOf[ZoneChange])
-          .value)
+          .value
+      )
 
       result.changeType shouldBe ZoneChangeType.Update
       result.zone.acl.rules.size shouldBe 1
@@ -754,7 +777,8 @@ class ZoneServiceSpec
         underTest
           .deleteACLRule(zone.id, userAclRuleInfo, okAuth)
           .map(_.asInstanceOf[ZoneChange])
-          .value)
+          .value
+      )
 
       result.changeType shouldBe ZoneChangeType.Update
       result.zone.acl.rules.size shouldBe 0

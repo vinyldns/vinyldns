@@ -58,7 +58,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsPendingUpdate = RecordSet(
     okZone.id,
@@ -68,7 +69,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsNotFound = RecordSet(
     okZone.id,
@@ -78,7 +80,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsOk = RecordSet(
     okZone.id,
@@ -88,7 +91,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsError = RecordSet(
     okZone.id,
@@ -98,7 +102,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsInvalidRequest = RecordSet(
     okZone.id,
@@ -108,7 +113,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsZoneNotFound = RecordSet(
     zoneNotFound.id,
@@ -118,7 +124,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsZoneDeleted = RecordSet(
     zoneDeleted.id,
@@ -128,7 +135,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsZoneSyncing = RecordSet(
     syncingZone.id,
@@ -138,7 +146,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rsNotAuthorized = RecordSet(
     notAuthorizedZone.id,
@@ -148,7 +157,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rs1 = RecordSet(
     okZone.id,
@@ -158,7 +168,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rs2 = RecordSet(
     okZone.id,
@@ -168,7 +179,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val rs3 = RecordSet(
     okZone.id,
@@ -178,7 +190,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val aaaa = RecordSet(
     okZone.id,
@@ -188,7 +201,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+    List(AAAAData("1:2:3:4:5:6:7:8"))
+  )
 
   private val cname = RecordSet(
     okZone.id,
@@ -198,7 +212,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname.")))
+    List(CNAMEData("cname."))
+  )
 
   private val mx = RecordSet(
     okZone.id,
@@ -208,7 +223,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange.")))
+    List(MXData(100, "exchange."))
+  )
 
   private val ns = RecordSet(
     okZone.id,
@@ -218,7 +234,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsrecordname")))
+    List(NSData("nsrecordname"))
+  )
 
   private val ptr = RecordSet(
     okZone.id,
@@ -228,7 +245,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr.")))
+    List(PTRData("ptr."))
+  )
 
   private val soa = RecordSet(
     okZone.id,
@@ -238,7 +256,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("name", "name", 1, 2, 3, 4, 5)))
+    List(SOAData("name", "name", 1, 2, 3, 4, 5))
+  )
 
   private val spf = RecordSet(
     okZone.id,
@@ -248,7 +267,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SPFData("spf")))
+    List(SPFData("spf"))
+  )
 
   private val srv = RecordSet(
     okZone.id,
@@ -258,7 +278,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target.")))
+    List(SRVData(1, 2, 3, "target."))
+  )
 
   private val naptr = RecordSet(
     okZone.id,
@@ -268,7 +289,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target.")))
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target."))
+  )
 
   private val sshfp = RecordSet(
     okZone.id,
@@ -278,7 +300,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SSHFPData(1, 2, "fingerprint")))
+    List(SSHFPData(1, 2, "fingerprint"))
+  )
 
   private val txt = RecordSet(
     okZone.id,
@@ -288,7 +311,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(TXTData("text")))
+    List(TXTData("text"))
+  )
 
   private val invalidCname = RecordSet(
     okZone.id,
@@ -298,7 +322,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname"), CNAMEData("cname2")))
+    List(CNAMEData("cname"), CNAMEData("cname2"))
+  )
 
   private val rsMissingData: JValue =
     ("key" -> "value") ~~ ("other" -> "val")
@@ -346,13 +371,15 @@ class RecordSetRoutingSpec
     rs1,
     "system",
     RecordSetChangeType.Create,
-    RecordSetChangeStatus.Complete)
+    RecordSetChangeStatus.Complete
+  )
   private val rsChange2 = RecordSetChange(
     okZone,
     rs2,
     "system",
     RecordSetChangeType.Create,
-    RecordSetChangeStatus.Complete)
+    RecordSetChangeStatus.Complete
+  )
   private val changesWithUserName =
     List(RecordSetChangeInfo(rsChange1, Some("ok")), RecordSetChangeInfo(rsChange2, Some("ok")))
   private val listRecordSetChangesResponse = ListRecordSetChangesResponse(
@@ -360,7 +387,8 @@ class RecordSetRoutingSpec
     changesWithUserName,
     nextId = None,
     startFrom = None,
-    maxItems = 100)
+    maxItems = 100
+  )
 
   class TestService extends RecordSetServiceAlgebra {
 
@@ -368,7 +396,8 @@ class RecordSetRoutingSpec
         rsId: String,
         zoneId: String,
         authPrincipal: AuthPrincipal,
-        chgType: RecordSetChangeType): Either[Throwable, RecordSetChange] = zoneId match {
+        chgType: RecordSetChangeType
+    ): Either[Throwable, RecordSetChange] = zoneId match {
       case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
       case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
@@ -381,11 +410,13 @@ class RecordSetRoutingSpec
               .copy(
                 status = RecordSetStatus.Active,
                 created = DateTime.now,
-                updated = Some(DateTime.now)),
+                updated = Some(DateTime.now)
+              ),
             status = RecordSetChangeStatus.Complete,
             changeType = chgType,
             userId = authPrincipal.userId
-          ))
+          )
+        )
       case okZone.id =>
         rsId match {
           case rsError.id => Left(new RuntimeException("fail"))
@@ -406,7 +437,8 @@ class RecordSetRoutingSpec
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
                   userId = authPrincipal.userId
-                ))
+                )
+              )
             else
               Right(
                 RecordSetChange(
@@ -417,11 +449,13 @@ class RecordSetRoutingSpec
                     .copy(
                       status = RecordSetStatus.Active,
                       created = DateTime.now,
-                      updated = Some(DateTime.now)),
+                      updated = Some(DateTime.now)
+                    ),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
                   userId = authPrincipal.userId
-                ))
+                )
+              )
         }
     }
 
@@ -436,14 +470,16 @@ class RecordSetRoutingSpec
     def deleteRecordSet(
         recordSetId: String,
         zoneId: String,
-        auth: AuthPrincipal): Result[ZoneCommandResult] = {
+        auth: AuthPrincipal
+    ): Result[ZoneCommandResult] = {
       evaluate(recordSetId, zoneId, auth, RecordSetChangeType.Delete)
     }.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
 
     def getRecordSet(
         recordSetId: String,
         zoneId: String,
-        authPrincipal: AuthPrincipal): Result[RecordSetInfo] = {
+        authPrincipal: AuthPrincipal
+    ): Result[RecordSetInfo] = {
       if (zoneId == zoneNotFound.id) {
         Left(ZoneNotFoundError(s"$zoneId"))
       } else {
@@ -460,7 +496,8 @@ class RecordSetRoutingSpec
         startFrom: Option[String],
         maxItems: Option[Int],
         recordNameFilter: Option[String],
-        authPrincipal: AuthPrincipal): Result[ListRecordSetsResponse] = {
+        authPrincipal: AuthPrincipal
+    ): Result[ListRecordSetsResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case okZone.id =>
@@ -472,14 +509,16 @@ class RecordSetRoutingSpec
                 RecordSetListInfo(RecordSetInfo(rs3, None), AccessLevel.Read)
               ),
               None
-            ))
+            )
+          )
       }
     }.toResult
 
     def getRecordSetChange(
         zoneId: String,
         changeId: String,
-        authPrincipal: AuthPrincipal): Result[RecordSetChange] = {
+        authPrincipal: AuthPrincipal
+    ): Result[RecordSetChange] = {
       changeId match {
         case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
@@ -492,7 +531,8 @@ class RecordSetRoutingSpec
         zoneId: String,
         startFrom: Option[String],
         maxItems: Int,
-        authPrincipal: AuthPrincipal): Result[ListRecordSetChangesResponse] = {
+        authPrincipal: AuthPrincipal
+    ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
@@ -750,7 +790,9 @@ class RecordSetRoutingSpec
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            rsJson(rsOk.copy(zoneId = invalidChangeZone.id)))) ~>
+            rsJson(rsOk.copy(zoneId = invalidChangeZone.id))
+          )
+        ) ~>
         recordSetRoute ~> check {
         status shouldBe StatusCodes.UnprocessableEntity
         val error = responseAs[String]
@@ -904,7 +946,8 @@ class RecordSetRoutingSpec
     "return an error if the ttl is too small" in {
       validateErrors(
         rsInvalidTTL,
-        "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30")
+        "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30"
+      )
     }
 
     "return appropriate errors for missing information" in {
@@ -913,7 +956,8 @@ class RecordSetRoutingSpec
         "Missing RecordSet.zoneId",
         "Missing RecordSet.name",
         "Missing RecordSet.type",
-        "Missing RecordSet.ttl")
+        "Missing RecordSet.ttl"
+      )
     }
 
     "return appropriate errors for invalid information" in {
@@ -942,7 +986,8 @@ class RecordSetRoutingSpec
     "returns an error for multiple records in a CNAME record set" in {
       validateErrors(
         render(Extraction.decompose(invalidCname)),
-        "CNAME record sets cannot contain multiple records")
+        "CNAME record sets cannot contain multiple records"
+      )
     }
 
     "supports A" in {
@@ -956,7 +1001,8 @@ class RecordSetRoutingSpec
     "return errors for invalid A record data" in {
       validateErrors(
         testRecordType(RecordType.A, "address" -> "invalid"),
-        "A must be a valid IPv4 Address")
+        "A must be a valid IPv4 Address"
+      )
     }
 
     "supports AAAA" in {
@@ -970,7 +1016,8 @@ class RecordSetRoutingSpec
     "return errors for invalid AAAA record data" in {
       validateErrors(
         testRecordType(RecordType.AAAA, "address" -> "invalid"),
-        "AAAA must be a valid IPv6 Address")
+        "AAAA must be a valid IPv6 Address"
+      )
     }
 
     "supports CNAME" in {
@@ -985,7 +1032,8 @@ class RecordSetRoutingSpec
       val data = "a." + Random.alphanumeric.take(260).mkString
       validateErrors(
         testRecordType(RecordType.CNAME, "cname" -> data),
-        "CNAME domain name must not exceed 255 characters")
+        "CNAME domain name must not exceed 255 characters"
+      )
     }
 
     "supports MX" in {
@@ -996,22 +1044,26 @@ class RecordSetRoutingSpec
       validateErrors(
         testRecordType(RecordType.MX, "key" -> "val"),
         "Missing MX.preference",
-        "Missing MX.exchange")
+        "Missing MX.exchange"
+      )
     }
 
     "return errors for invalid MX record data" in {
       validateErrors(
         testRecordType(
           RecordType.MX,
-          ("exchange" -> Random.alphanumeric.take(260).mkString) ~~ ("preference" -> -1)),
+          ("exchange" -> Random.alphanumeric.take(260).mkString) ~~ ("preference" -> -1)
+        ),
         "MX.preference must be a 16 bit integer",
         "MX.exchange must be less than 255 characters"
       )
       validateErrors(
         testRecordType(
           RecordType.MX,
-          ("exchange" -> Random.alphanumeric.take(10).mkString) ~~ ("preference" -> 700000)),
-        "MX.preference must be a 16 bit integer")
+          ("exchange" -> Random.alphanumeric.take(10).mkString) ~~ ("preference" -> 700000)
+        ),
+        "MX.preference must be a 16 bit integer"
+      )
     }
 
     "supports NS" in {
@@ -1026,7 +1078,8 @@ class RecordSetRoutingSpec
       val data = "a." + Random.alphanumeric.take(260).mkString
       validateErrors(
         testRecordType(RecordType.NS, "nsdname" -> data),
-        "NS must be less than 255 characters")
+        "NS must be less than 255 characters"
+      )
     }
 
     "supports PTR" in {
@@ -1040,7 +1093,8 @@ class RecordSetRoutingSpec
     "return errors for invalid PTR record data" in {
       validateErrors(
         testRecordType(RecordType.PTR, "ptrdname" -> Random.alphanumeric.take(260).mkString),
-        "PTR must be less than 255 characters")
+        "PTR must be less than 255 characters"
+      )
     }
 
     "supports SOA" in {
@@ -1089,7 +1143,8 @@ class RecordSetRoutingSpec
             ("refresh" -> -1) ~~
             ("retry" -> -1) ~~
             ("expire" -> -1) ~~
-            ("minimum" -> -1)),
+            ("minimum" -> -1)
+        ),
         "SOA.serial must be an unsigned 32 bit number",
         "SOA.refresh must be an unsigned 32 bit number",
         "SOA.retry must be an unsigned 32 bit number",
@@ -1109,7 +1164,8 @@ class RecordSetRoutingSpec
     "return errors for invalid SPF record data" in {
       validateErrors(
         testRecordType(RecordType.SPF, "text" -> Random.alphanumeric.take(70000).mkString),
-        "SPF record must be less than 64764 characters")
+        "SPF record must be less than 64764 characters"
+      )
     }
 
     "supports SRV" in {
@@ -1122,7 +1178,8 @@ class RecordSetRoutingSpec
         "Missing SRV.priority",
         "Missing SRV.weight",
         "Missing SRV.port",
-        "Missing SRV.target")
+        "Missing SRV.target"
+      )
     }
 
     "return errors for invalid SRV record data" in {
@@ -1132,7 +1189,8 @@ class RecordSetRoutingSpec
           ("target" -> Random.alphanumeric.take(260).mkString) ~~
             ("priority" -> 50000000) ~~
             ("weight" -> 50000000) ~~
-            ("port" -> 50000000)),
+            ("port" -> 50000000)
+        ),
         "SRV.priority must be an unsigned 16 bit number",
         "SRV.weight must be an unsigned 16 bit number",
         "SRV.port must be an unsigned 16 bit number",
@@ -1144,7 +1202,8 @@ class RecordSetRoutingSpec
           ("target" -> Random.alphanumeric.take(10).mkString) ~~
             ("priority" -> -1) ~~
             ("weight" -> -1) ~~
-            ("port" -> -1)),
+            ("port" -> -1)
+        ),
         "SRV.priority must be an unsigned 16 bit number",
         "SRV.weight must be an unsigned 16 bit number",
         "SRV.port must be an unsigned 16 bit number"
@@ -1210,7 +1269,8 @@ class RecordSetRoutingSpec
         testRecordType(RecordType.SSHFP, "key" -> "val"),
         "Missing SSHFP.algorithm",
         "Missing SSHFP.type",
-        "Missing SSHFP.fingerprint")
+        "Missing SSHFP.fingerprint"
+      )
     }
 
     "return errors for invalid SSHFP record data" in {
@@ -1219,7 +1279,8 @@ class RecordSetRoutingSpec
           RecordType.SSHFP,
           ("fingerprint" -> Random.alphanumeric.take(10).mkString) ~~
             ("algorithm" -> 50000000) ~~
-            ("type" -> 50000000)),
+            ("type" -> 50000000)
+        ),
         "SSHFP.algorithm must be an unsigned 8 bit number",
         "SSHFP.type must be an unsigned 8 bit number"
       )
@@ -1228,7 +1289,8 @@ class RecordSetRoutingSpec
           RecordType.SSHFP,
           ("fingerprint" -> Random.alphanumeric.take(10).mkString) ~~
             ("algorithm" -> -1) ~~
-            ("type" -> -1)),
+            ("type" -> -1)
+        ),
         "SSHFP.algorithm must be an unsigned 8 bit number",
         "SSHFP.type must be an unsigned 8 bit number"
       )
@@ -1245,7 +1307,8 @@ class RecordSetRoutingSpec
     "return errors for invalid TXT record data" in {
       validateErrors(
         testRecordType(RecordType.TXT, "text" -> Random.alphanumeric.take(70000).mkString),
-        "TXT record must be less than 64764 characters")
+        "TXT record must be less than 64764 characters"
+      )
     }
   }
 }

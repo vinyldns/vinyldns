@@ -56,7 +56,8 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
           "vinyldns.core.queue.MockMessageQueueProvider",
           pollingInterval,
           messagesPerPoll,
-          placeholderConfig)
+          placeholderConfig
+        )
 
       val loadCall = MessageQueueLoader.load(config)
       loadCall.unsafeRunSync() shouldBe MockMessageQueueProvider.mockMessageQueue
@@ -75,7 +76,8 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
           "vinyldns.core.queue.FailMessageQueueProvider",
           pollingInterval,
           messagesPerPoll,
-          placeholderConfig)
+          placeholderConfig
+        )
 
       val loadCall = MessageQueueLoader.load(config)
 

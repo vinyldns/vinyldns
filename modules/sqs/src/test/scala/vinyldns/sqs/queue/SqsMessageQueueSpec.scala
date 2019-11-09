@@ -60,10 +60,11 @@ class SqsMessageQueueSpec
     "create a single batch request if total message payload is under 256KB" in {
       val messageSize = messageData(largeRsChange).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
-      val recordSetChanges = for (_ <- 1 until requestMaxChanges)
-        yield
-          makeTestAddChange(rsOk, okZone).copy(
-            singleBatchChangeIds = largeRsChange.singleBatchChangeIds)
+      val recordSetChanges =
+        for (_ <- 1 until requestMaxChanges)
+          yield makeTestAddChange(rsOk, okZone).copy(
+            singleBatchChangeIds = largeRsChange.singleBatchChangeIds
+          )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
       toSendMessageBatchRequest(commands).length shouldBe 1
@@ -73,18 +74,20 @@ class SqsMessageQueueSpec
       val messageSize = messageData(largeRsChange).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 4 // Create four batches
-      val recordSetChanges = for (_ <- 1 until requestTotalChanges)
-        yield
-          makeTestAddChange(rsOk, okZone).copy(
-            singleBatchChangeIds = largeRsChange.singleBatchChangeIds)
+      val recordSetChanges =
+        for (_ <- 1 until requestTotalChanges)
+          yield makeTestAddChange(rsOk, okZone).copy(
+            singleBatchChangeIds = largeRsChange.singleBatchChangeIds
+          )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
       toSendMessageBatchRequest(commands).length shouldBe 4
     }
 
     "send a single batch if batch contains fewer than ten items and total payload size is less than 256KB" in {
       val requestTotalChanges = 7
-      val recordSetChanges = for (_ <- 1 to requestTotalChanges)
-        yield makeTestAddChange(rsOk, okZone)
+      val recordSetChanges =
+        for (_ <- 1 to requestTotalChanges)
+          yield makeTestAddChange(rsOk, okZone)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
       val result = toSendMessageBatchRequest(commands)
@@ -94,8 +97,9 @@ class SqsMessageQueueSpec
     }
 
     "partition batches with more than ten items into groups of ten" in {
-      val recordSetChanges = for (_ <- 1 to 100)
-        yield makeTestAddChange(rsOk, okZone)
+      val recordSetChanges =
+        for (_ <- 1 to 100)
+          yield makeTestAddChange(rsOk, okZone)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
       val result = toSendMessageBatchRequest(commands)
@@ -109,9 +113,11 @@ class SqsMessageQueueSpec
 
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 2
-      val recordSetChanges = for (_ <- 1 until requestTotalChanges)
-        yield
-          makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = rsChange.singleBatchChangeIds)
+      val recordSetChanges =
+        for (_ <- 1 until requestTotalChanges)
+          yield makeTestAddChange(rsOk, okZone).copy(
+            singleBatchChangeIds = rsChange.singleBatchChangeIds
+          )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
       val result = toSendMessageBatchRequest(commands)

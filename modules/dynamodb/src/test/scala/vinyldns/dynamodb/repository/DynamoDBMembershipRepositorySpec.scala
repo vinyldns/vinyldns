@@ -68,7 +68,8 @@ class DynamoDBMembershipRepositorySpec
         any[String],
         batchCaptor.capture(),
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
 
       // we should have 3 batches
       val batchWrites = batchCaptor.getAllValues
@@ -99,7 +100,8 @@ class DynamoDBMembershipRepositorySpec
         any[String],
         batchCaptor.capture(),
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
 
       val batchWrites = batchCaptor.getAllValues
       batchWrites.get(0).getRequestItems.get(membershipTable).size() shouldBe 20
@@ -144,7 +146,8 @@ class DynamoDBMembershipRepositorySpec
         any[String],
         batchCaptor.capture(),
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
 
       // we should have 3 batches
       val batchWrites = batchCaptor.getAllValues
@@ -175,7 +178,8 @@ class DynamoDBMembershipRepositorySpec
         any[String],
         batchCaptor.capture(),
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
 
       val batchWrites = batchCaptor.getAllValues
       batchWrites.get(0).getRequestItems.get(membershipTable).size() shouldBe 20

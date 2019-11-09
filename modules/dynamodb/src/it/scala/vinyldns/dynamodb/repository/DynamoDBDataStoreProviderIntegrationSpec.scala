@@ -28,7 +28,6 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore}
 import vinyldns.core.repository.RepositoryName._
 
-
 class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private implicit val cs: ContextShift[IO] =

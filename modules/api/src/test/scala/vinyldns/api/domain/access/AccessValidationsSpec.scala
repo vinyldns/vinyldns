@@ -91,7 +91,8 @@ class AccessValidationsSpec
     "return true if the user is an admin or super user" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
+        memberGroupIds = Seq.empty
+      )
       accessValidationTest.canSeeZone(auth, okZone) should be(right)
     }
 
@@ -105,7 +106,8 @@ class AccessValidationsSpec
     "return true if the user is a support admin" in {
       val supportAuth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
-        memberGroupIds = Seq.empty)
+        memberGroupIds = Seq.empty
+      )
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
 
@@ -119,7 +121,8 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user is not admin or super user" in {
       val error = leftValue(
         accessValidationTest
-          .canChangeZone(okAuth, zoneNotAuthorized.name, zoneNotAuthorized.adminGroupId))
+          .canChangeZone(okAuth, zoneNotAuthorized.name, zoneNotAuthorized.adminGroupId)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -130,17 +133,20 @@ class AccessValidationsSpec
     "return true if the user is an admin and a support user" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
-        memberGroupIds = Seq(okGroup.id))
+        memberGroupIds = Seq(okGroup.id)
+      )
       accessValidationTest.canChangeZone(auth, okZone.name, okZone.adminGroupId) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a support user only" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
-        memberGroupIds = Seq.empty)
+        memberGroupIds = Seq.empty
+      )
       val error = leftValue(
         accessValidationTest
-          .canChangeZone(auth, okZone.name, okZone.adminGroupId))
+          .canChangeZone(auth, okZone.name, okZone.adminGroupId)
+      )
       error shouldBe a[NotAuthorizedError]
     }
   }
@@ -149,25 +155,29 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthNone, "test", RecordType.A, zoneInNone))
+          .canAddRecordSet(userAuthNone, "test", RecordType.A, zoneInNone)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthRead, "test", RecordType.A, zoneInRead))
+          .canAddRecordSet(userAuthRead, "test", RecordType.A, zoneInRead)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Write" in {
       accessValidationTest.canAddRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite) should be(
-        right)
+        right
+      )
     }
 
     "return true if the user has AccessLevel.Delete" in {
       accessValidationTest.canAddRecordSet(userAuthDelete, "test", RecordType.A, zoneInDelete) should be(
-        right)
+        right
+      )
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
@@ -175,7 +185,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(auth, "test", RecordType.A, okZone))
+          .canAddRecordSet(auth, "test", RecordType.A, okZone)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -197,7 +208,8 @@ class AccessValidationsSpec
         userAuthWrite,
         "someRecordName",
         RecordType.NS,
-        zoneInWrite) should be(right)
+        zoneInWrite
+      ) should be(right)
     }
 
     "return true if recordset matches the global ACL" in {
@@ -205,7 +217,8 @@ class AccessValidationsSpec
         userAuthGlobalAcl,
         "someRecordName",
         RecordType.A,
-        okZone.copy(name = "foo.comcast.com")) should be(right)
+        okZone.copy(name = "foo.comcast.com")
+      ) should be(right)
     }
 
     "return false if the record set does not match the global ACL" in {
@@ -213,7 +226,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         globalAclTest
-          .canAddRecordSet(auth, "test-foo", RecordType.A, okZone))
+          .canAddRecordSet(auth, "test-foo", RecordType.A, okZone)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -231,14 +245,16 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
+          .canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None))
+          .canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -248,7 +264,8 @@ class AccessValidationsSpec
         "test",
         RecordType.A,
         zoneInWrite,
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -257,7 +274,8 @@ class AccessValidationsSpec
       val userAcl = ACLRule(AccessLevel.Delete, userId = Some(userAuth.userId), groupId = None)
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
       accessValidationTest.canUpdateRecordSet(userAuth, "test", RecordType.A, zoneIn, None) should be(
-        right)
+        right
+      )
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
@@ -293,7 +311,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(auth, "test", RecordType.A, okZone, None))
+          .canUpdateRecordSet(auth, "test", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -311,7 +330,8 @@ class AccessValidationsSpec
         "someRecordName",
         RecordType.A,
         okZone.copy(name = "foo.comcast.com"),
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return false if the record set does not match the global ACL" in {
@@ -319,7 +339,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         globalAclTest
-          .canUpdateRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+          .canUpdateRecordSet(auth, "test-foo", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -339,21 +360,24 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
+          .canDeleteRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None))
+          .canDeleteRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Write" in {
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite, None))
+          .canDeleteRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -363,7 +387,8 @@ class AccessValidationsSpec
         "test",
         RecordType.A,
         zoneInDelete,
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
@@ -371,7 +396,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(auth, "test", RecordType.A, okZone, None))
+          .canDeleteRecordSet(auth, "test", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -389,7 +415,8 @@ class AccessValidationsSpec
         "someRecordName",
         RecordType.A,
         okZone.copy(name = "foo.comcast.com"),
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return false if the record set does not match the global ACL" in {
@@ -397,7 +424,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         globalAclTest
-          .canDeleteRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+          .canDeleteRecordSet(auth, "test-foo", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -417,18 +445,21 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
+          .canViewRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Read" in {
       accessValidationTest.canViewRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None) should be(
-        right)
+        right
+      )
     }
 
     "return true if the user has AccessLevel.Write" in {
       accessValidationTest.canViewRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite, None) should be(
-        right)
+        right
+      )
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -437,7 +468,8 @@ class AccessValidationsSpec
         "test",
         RecordType.A,
         zoneInDelete,
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return true if the user is in the recordSet owner group and the recordSet is in a shared zone" in {
@@ -447,7 +479,8 @@ class AccessValidationsSpec
         recordSet.name,
         recordSet.typ,
         sharedZone,
-        recordSet.ownerGroupId) should be(right)
+        recordSet.ownerGroupId
+      ) should be(right)
     }
 
     "return a NotAuthorizedError if the user is in the recordSet owner group but it is not in a shared zone" in {
@@ -458,7 +491,9 @@ class AccessValidationsSpec
           recordSet.name,
           recordSet.typ,
           zoneNotAuthorized,
-          recordSet.ownerGroupId))
+          recordSet.ownerGroupId
+        )
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -467,7 +502,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(auth, "test", RecordType.A, okZone, None))
+          .canViewRecordSet(auth, "test", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -485,7 +521,8 @@ class AccessValidationsSpec
         "someRecordName",
         RecordType.A,
         okZone.copy(name = "foo.comcast.com"),
-        None) should be(right)
+        None
+      ) should be(right)
     }
 
     "return false if the record set does not match the global ACL" in {
@@ -493,7 +530,8 @@ class AccessValidationsSpec
 
       val error = leftValue(
         globalAclTest
-          .canViewRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+          .canViewRecordSet(auth, "test-foo", RecordType.A, okZone, None)
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -518,7 +556,8 @@ class AccessValidationsSpec
           mockRecordSet.name,
           mockRecordSet.typ,
           okZone,
-          None)
+          None
+        )
       result shouldBe AccessLevel.Delete
     }
 
@@ -530,7 +569,8 @@ class AccessValidationsSpec
           sharedZoneRecord.name,
           sharedZoneRecord.typ,
           sharedZone,
-          sharedZoneRecord.ownerGroupId)
+          sharedZoneRecord.ownerGroupId
+        )
       result shouldBe AccessLevel.Delete
     }
 
@@ -541,7 +581,8 @@ class AccessValidationsSpec
           sharedZoneRecordNoOwnerGroup.name,
           RecordType.AAAA,
           sharedZone,
-          None)
+          None
+        )
       result shouldBe AccessLevel.Delete
     }
 
@@ -552,7 +593,8 @@ class AccessValidationsSpec
           sharedZoneRecordNotApprovedRecordType.name,
           RecordType.MX,
           sharedZone,
-          None)
+          None
+        )
       result shouldBe AccessLevel.NoAccess
     }
 
@@ -563,7 +605,8 @@ class AccessValidationsSpec
           notSharedZoneRecordWithOwnerGroup.name,
           notSharedZoneRecordWithOwnerGroup.typ,
           zoneNotAuthorized,
-          notSharedZoneRecordWithOwnerGroup.ownerGroupId)
+          notSharedZoneRecordWithOwnerGroup.ownerGroupId
+        )
       result shouldBe AccessLevel.NoAccess
     }
 
@@ -573,7 +616,8 @@ class AccessValidationsSpec
         "test",
         RecordType.A,
         okZone.copy(adminGroupId = "not-a-real-group"),
-        None)
+        None
+      )
       result shouldBe AccessLevel.Read
     }
 
@@ -583,7 +627,8 @@ class AccessValidationsSpec
         "test",
         RecordType.A,
         okZone.copy(adminGroupId = "not-a-real-group"),
-        None)
+        None
+      )
       result shouldBe AccessLevel.Read
     }
 
@@ -608,7 +653,8 @@ class AccessValidationsSpec
           mockRecordSet.name,
           mockRecordSet.typ,
           zoneIn,
-          None)
+          None
+        )
       result shouldBe AccessLevel.Write
     }
 
@@ -713,7 +759,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRuleA =
         ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
 
@@ -731,7 +778,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRuleA =
         ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.AAAA))
 
@@ -749,13 +797,15 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRuleA =
         ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
       val aclRuleMany = ACLRule(
         AccessLevel.Read,
         userId = Some(okAuth.userId),
-        recordTypes = Set(RecordType.A, RecordType.AAAA))
+        recordTypes = Set(RecordType.A, RecordType.AAAA)
+      )
 
       val zoneAcl = ZoneACL(Set(aclRuleA, aclRuleMany))
       val zone = Zone("name", "email", acl = zoneAcl)
@@ -771,7 +821,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRuleA =
         ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
       val aclRuleAll =
@@ -791,7 +842,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRule = userReadAcl.copy(recordMask = Some("rs.*"))
 
       val zoneAcl = ZoneACL(Set(aclRule))
@@ -808,7 +860,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRule = userReadAcl.copy(recordMask = Some("bad.*"))
 
       val zoneAcl = ZoneACL(Set(aclRule))
@@ -825,7 +878,8 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRuleRM = userReadAcl.copy(recordMask = Some("rs.*"))
       val aclRuleAll = userWriteAcl.copy(recordMask = None)
 
@@ -891,7 +945,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val aclRule = userReadAcl.copy(recordMask = Some(".*0.*"))
 
       val zoneAcl = ZoneACL(Set(aclRule))
@@ -913,7 +968,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
         "id",
@@ -921,7 +977,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -937,7 +994,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
         "id",
@@ -945,7 +1003,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -961,7 +1020,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
         "id",
@@ -969,7 +1029,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -984,7 +1045,8 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now)
+        DateTime.now
+      )
 
       accessValidationTest.ruleAppliesToRecordName(rs.name, rs.typ, zn, aclRule) shouldBe true
     }
@@ -994,7 +1056,8 @@ class AccessValidationsSpec
     val multiRecordList = List("rs1", "rs2", "rs3").map { name =>
       RecordSetInfo(
         RecordSet("zoneId", name, RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
-        None)
+        None
+      )
     }
 
     "return access level DELETE if the user is admin/super of the zone" in {
@@ -1020,7 +1083,8 @@ class AccessValidationsSpec
     "return access level Read if there is no ACL rule for the user and user is a support admin" in {
       val supportAuth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
-        memberGroupIds = Seq.empty)
+        memberGroupIds = Seq.empty
+      )
 
       val zone = Zone("test", "test")
 
@@ -1034,7 +1098,8 @@ class AccessValidationsSpec
       val rs1 =
         RecordSetInfo(
           RecordSet("zoneId", "rs1", RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
-          None)
+          None
+        )
       val rs2 = rs1.copy(name = "rs2")
       val rs3 = rs1.copy(name = "rs3")
       val recordList = List(rs1, rs2, rs3)
@@ -1051,7 +1116,8 @@ class AccessValidationsSpec
       val expected = List(
         RecordSetListInfo(rs1, AccessLevel.Write),
         RecordSetListInfo(rs2, AccessLevel.NoAccess),
-        RecordSetListInfo(rs3, AccessLevel.Read))
+        RecordSetListInfo(rs3, AccessLevel.Read)
+      )
       result shouldBe expected
     }
 

@@ -140,7 +140,8 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
 
         val jwt = JWTClaimsSet.parse(tokenInfo)
         testOidcAuthenticator.getUserFromClaims(jwt) must beLeft(
-          ErrorResponse(500, "Username field not included in token from from OIDC provider"))
+          ErrorResponse(500, "Username field not included in token from from OIDC provider")
+        )
       }
     }
     "getValidUsernameFromToken" should {
@@ -222,7 +223,8 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
         testResponse.setContent(body)
 
         testOidcAuthenticator.handleCallbackResponse(testResponse) must beLeft(
-          ErrorResponse(400, "Sign in token error: some error description"))
+          ErrorResponse(400, "Sign in token error: some error description")
+        )
       }
     }
   }

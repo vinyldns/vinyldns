@@ -35,7 +35,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("1.1.1.1"))),
+      records = List(AData("1.1.1.1"))
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "abc",
@@ -43,7 +44,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("2.2.2.2"))),
+      records = List(AData("2.2.2.2"))
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "abc",
@@ -71,7 +73,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("1.1.1.1"))),
+      records = List(AData("1.1.1.1"))
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "vinyldns.",
@@ -93,7 +96,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
           case Some(records) =>
             records.records should contain theSameElementsAs List(
               AData("1.1.1.1"),
-              AData("2.2.2.2"))
+              AData("2.2.2.2")
+            )
           case None => fail()
         }
 
@@ -193,7 +197,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
             ttl = 100,
             status = RecordSetStatus.Active,
             created = DateTime.now,
-            records = List(AData("4.4.4.4"))) //updated
+            records = List(AData("4.4.4.4"))
+          ) //updated
         )
         val dnsView = ZoneView(testZone, dnsRecords)
 
@@ -268,7 +273,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
             ttl = 100,
             status = RecordSetStatus.Active,
             created = DateTime.now,
-            records = List(AData("4.4.4.4"))) //updated
+            records = List(AData("4.4.4.4"))
+          ) //updated
         )
         val dnsView = ZoneView(testZone, dnsRecords)
 

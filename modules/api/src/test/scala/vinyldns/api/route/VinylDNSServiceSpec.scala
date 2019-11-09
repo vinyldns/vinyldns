@@ -33,7 +33,8 @@ class VinylDNSServiceSpec
     with VinylDNSDirectives[Throwable] {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
-    mock[AuthPrincipal])
+    mock[AuthPrincipal]
+  )
 
   def getRoutes: Route = mock[Route]
 
@@ -43,14 +44,16 @@ class VinylDNSServiceSpec
 
   private def buildMockRequest(
       path: String = "/path/to/resource",
-      body: String = "request body") = {
+      body: String = "request body"
+  ) = {
     val requestHeaders = List[HttpHeader](RawHeader("Authorization", "fake_auth"))
     HttpRequest(uri = Uri(path), entity = HttpEntity(body), headers = requestHeaders)
   }
 
   private def buildUnloggedRequest(
       path: String = "/path/to/unlogged/resource",
-      body: String = "request body") =
+      body: String = "request body"
+  ) =
     HttpRequest(uri = Uri(path), entity = HttpEntity(body))
 
   private def buildMockResponse(body: String = "results") =

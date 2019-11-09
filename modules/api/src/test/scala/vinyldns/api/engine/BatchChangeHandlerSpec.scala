@@ -66,7 +66,8 @@ class BatchChangeHandlerSpec
     DateTime.now,
     List(addChange),
     Some("ownerGroupId"),
-    BatchChangeApprovalStatus.AutoApproved)
+    BatchChangeApprovalStatus.AutoApproved
+  )
 
   override protected def beforeEach(): Unit =
     batchRepo.clear()

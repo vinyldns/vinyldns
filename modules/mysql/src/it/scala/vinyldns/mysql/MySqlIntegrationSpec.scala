@@ -29,11 +29,13 @@ import vinyldns.mysql.repository.MySqlDataStoreProvider
 trait MySqlIntegrationSpec {
   def mysqlConfig: Config
 
-  lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
+  lazy val dataStoreConfig: DataStoreConfig =
+    pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
   lazy val provider = new MySqlDataStoreProvider()
 
-  lazy val providerLoad: LoadedDataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val providerLoad: LoadedDataStore =
+    provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
   lazy val instance: DataStore = providerLoad.dataStore
 
   lazy val batchChangeRepository: BatchChangeRepository =

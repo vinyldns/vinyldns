@@ -68,7 +68,8 @@ class RecordSetServiceSpec
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
-    new AccessValidations())
+    new AccessValidations()
+  )
 
   "addRecordSet" should {
     "return the recordSet change as the result" in {
@@ -83,7 +84,8 @@ class RecordSetServiceSpec
 
       val result: RecordSetChange =
         rightResultOf(
-          underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+          underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+        )
 
       matches(result.recordSet, record, okZone.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Create
@@ -148,7 +150,8 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"high-value-domain.${okZone.name}").message)
+        HighValueDomainError(s"high-value-domain.${okZone.name}").message
+      )
     }
     "succeed if record is apex with dot" in {
       val name = okZone.name
@@ -163,7 +166,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -180,7 +184,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -197,7 +202,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -215,7 +221,8 @@ class RecordSetServiceSpec
         .getGroup(okGroup.id)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.ownerGroupId shouldBe Some(okGroup.id)
     }
@@ -268,7 +275,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       matches(result.recordSet, newRecord, okZone.name) shouldBe true
       matches(result.updates.get, oldRecord, okZone.name) shouldBe true
@@ -280,7 +288,8 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(
-        underTest.updateRecordSet(aaaa.copy(zoneId = zoneNotAuthorized.id), okAuth).value)
+        underTest.updateRecordSet(aaaa.copy(zoneId = zoneNotAuthorized.id), okAuth).value
+      )
       result shouldBe a[NotAuthorizedError]
     }
     "fail if the new record name is dotted" in {
@@ -324,7 +333,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -341,7 +351,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -358,7 +369,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.name shouldBe okZone.name
     }
@@ -370,7 +382,8 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"high-value-domain.${okZone.name}").message)
+        HighValueDomainError(s"high-value-domain.${okZone.name}").message
+      )
     }
     "fail if user is in owner group but zone is not shared" in {
       val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
@@ -378,7 +391,8 @@ class RecordSetServiceSpec
         name = "test-owner-group-failure",
         zoneId = okZone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id))
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
@@ -393,7 +407,8 @@ class RecordSetServiceSpec
         name = "test-owner-group-failure",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id))
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
 
       val newRecord = oldRecord.copy(ownerGroupId = Some("doesnt-exist"))
 
@@ -421,7 +436,8 @@ class RecordSetServiceSpec
         name = "test-owner-group-failure",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id))
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
 
       val newRecord = oldRecord.copy(ownerGroupId = Some(okGroup.id))
 
@@ -448,7 +464,8 @@ class RecordSetServiceSpec
         name = "test-owner-group-success",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id))
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
@@ -466,7 +483,8 @@ class RecordSetServiceSpec
         .getGroup(oneUserDummyGroup.id)
 
       val result = rightResultOf(
-        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.ttl shouldBe newRecord.ttl
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
@@ -478,7 +496,8 @@ class RecordSetServiceSpec
         name = "test-owner-group-success",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id))
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
 
       val newRecord = oldRecord.copy(ownerGroupId = None)
 
@@ -493,7 +512,8 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zone.id, newRecord.name)
 
       val result = rightResultOf(
-        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value)
+        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
       result.recordSet.ttl shouldBe newRecord.ttl
       result.recordSet.ownerGroupId shouldBe None
@@ -527,7 +547,8 @@ class RecordSetServiceSpec
         underTest
           .deleteRecordSet(record.id, okZone.id, okAuth)
           .map(_.asInstanceOf[RecordSetChange])
-          .value)
+          .value
+      )
 
       matches(result.recordSet, record, okZone.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Delete
@@ -552,12 +573,14 @@ class RecordSetServiceSpec
       val result =
         leftResultOf(underTest.deleteRecordSet(record.id, okZone.id, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"high-value-domain.${okZone.name}").message)
+        HighValueDomainError(s"high-value-domain.${okZone.name}").message
+      )
     }
     "fail for user who is not in record owner group in shared zone" in {
       val result =
         leftResultOf(
-          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, dummyAuth).value)
+          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, dummyAuth).value
+        )
 
       result shouldBe a[NotAuthorizedError]
     }
@@ -568,7 +591,8 @@ class RecordSetServiceSpec
 
       val result =
         leftResultOf(
-          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, okAuth).value)
+          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, okAuth).value
+        )
 
       result shouldBe a[NotAuthorizedError]
     }
@@ -682,7 +706,8 @@ class RecordSetServiceSpec
 
       val result: RecordSetInfo =
         rightResultOf(
-          underTest.getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, sharedAuth).value)
+          underTest.getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, sharedAuth).value
+        )
       result shouldBe expectedRecordSetInfo
     }
 
@@ -697,7 +722,8 @@ class RecordSetServiceSpec
         leftResultOf(
           underTest
             .getRecordSet(sharedZoneRecordNotApprovedRecordType.id, sharedZone.id, okAuth)
-            .value)
+            .value
+        )
       result shouldBe a[NotAuthorizedError]
     }
 
@@ -726,7 +752,8 @@ class RecordSetServiceSpec
       val result = leftResultOf(
         underTest
           .getRecordSet(notSharedZoneRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
-          .value)
+          .value
+      )
       result shouldBe a[NotAuthorizedError]
     }
   }
@@ -752,13 +779,14 @@ class RecordSetServiceSpec
         .getGroups(Set(okGroup.id, "not-in-backend"))
 
       doReturn(
-        IO.pure(ListRecordSetResults(List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup))))
-        .when(mockRecordRepo)
+        IO.pure(ListRecordSetResults(List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup)))
+      ).when(mockRecordRepo)
         .listRecordSets(
           zoneId = sharedZone.id,
           startFrom = None,
           maxItems = None,
-          recordNameFilter = None)
+          recordNameFilter = None
+        )
 
       val result: ListRecordSetsResponse = rightResultOf(
         underTest
@@ -767,16 +795,20 @@ class RecordSetServiceSpec
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
-            authPrincipal = sharedAuth)
-          .value)
+            authPrincipal = sharedAuth
+          )
+          .value
+      )
       result.recordSets shouldBe
         List(
           RecordSetListInfo(
             RecordSetInfo(sharedZoneRecord, Some(okGroup.name)),
-            AccessLevel.Delete),
+            AccessLevel.Delete
+          ),
           RecordSetListInfo(
             RecordSetInfo(sharedZoneRecordNotFoundOwnerGroup, None),
-            AccessLevel.Delete)
+            AccessLevel.Delete
+          )
         )
     }
     "return the recordSet for support admin" in {
@@ -790,7 +822,8 @@ class RecordSetServiceSpec
           zoneId = okZone.id,
           startFrom = None,
           maxItems = None,
-          recordNameFilter = None)
+          recordNameFilter = None
+        )
 
       val result: ListRecordSetsResponse = rightResultOf(
         underTest
@@ -801,9 +834,11 @@ class RecordSetServiceSpec
             recordNameFilter = None,
             authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
           )
-          .value)
+          .value
+      )
       result.recordSets shouldBe List(
-        RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read))
+        RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
+      )
     }
     "fails when the account is not authorized" in {
       val result = leftResultOf(
@@ -813,8 +848,10 @@ class RecordSetServiceSpec
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
-            authPrincipal = okAuth)
-          .value)
+            authPrincipal = okAuth
+          )
+          .value
+      )
       result shouldBe a[NotAuthorizedError]
     }
   }
@@ -840,7 +877,8 @@ class RecordSetServiceSpec
         recordSetChanges = changesWithName,
         nextId = None,
         startFrom = None,
-        maxItems = 100)
+        maxItems = 100
+      )
       result shouldBe expectedResults
     }
 
@@ -856,13 +894,15 @@ class RecordSetServiceSpec
         recordSetChanges = List(),
         nextId = None,
         startFrom = None,
-        maxItems = 100)
+        maxItems = 100
+      )
       result shouldBe expectedResults
     }
 
     "return a NotAuthorizedError" in {
       val error = leftResultOf(
-        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value)
+        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value
+      )
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -883,7 +923,8 @@ class RecordSetServiceSpec
         recordSetChanges = changesWithName,
         nextId = None,
         startFrom = None,
-        maxItems = 100)
+        maxItems = 100
+      )
       result shouldBe expectedResults
     }
   }
@@ -906,7 +947,8 @@ class RecordSetServiceSpec
 
       val actual: RecordSetChange =
         rightResultOf(
-          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value)
+          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value
+        )
       actual shouldBe pendingCreateSharedRecord
     }
 
@@ -926,7 +968,8 @@ class RecordSetServiceSpec
         .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
 
       val error = leftResultOf(
-        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value)
+        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value
+      )
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -937,9 +980,15 @@ class RecordSetServiceSpec
         .when(mockRecordChangeRepo)
         .getRecordSetChange(zoneNotAuthorized.id, pendingCreateSharedRecordNotSharedZone.id)
 
-      val error = leftResultOf(underTest
-        .getRecordSetChange(zoneNotAuthorized.id, pendingCreateSharedRecordNotSharedZone.id, okAuth)
-        .value)
+      val error = leftResultOf(
+        underTest
+          .getRecordSetChange(
+            zoneNotAuthorized.id,
+            pendingCreateSharedRecordNotSharedZone.id,
+            okAuth
+          )
+          .value
+      )
 
       error shouldBe a[NotAuthorizedError]
     }

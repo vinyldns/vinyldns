@@ -112,8 +112,8 @@ class DynamoDBRecordChangeRepositorySpec
 
       when(
         dynamoDBHelper
-          .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration]))
-        .thenReturn(IO.pure(dynamoResponse))
+          .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
+      ).thenReturn(IO.pure(dynamoResponse))
         .thenThrow(new RuntimeException("failed")) //fail on the second batch
 
       val result = store.save(changeSet)
@@ -144,7 +144,8 @@ class DynamoDBRecordChangeRepositorySpec
 
       a[ResourceNotFoundException] should be thrownBy store.getRecordSetChange(
         zoneActive.id,
-        pendingCreateAAAA.id)
+        pendingCreateAAAA.id
+      )
     }
     "return None if not found" in {
       val dynamoResponse = mock[QueryResult]

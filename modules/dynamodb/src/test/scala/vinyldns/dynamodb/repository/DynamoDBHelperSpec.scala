@@ -47,7 +47,8 @@ class DynamoDBHelperSpec
   private val mockDynamoUtils = mock[DynamoUtils]
 
   private val ptee: Throwable = new ProvisionedThroughputExceededException(
-    "provisioned throughput exceeded test")
+    "provisioned throughput exceeded test"
+  )
   private val testTableName = "test-table"
   private def excessivelyFail =
     doThrow(ptee)
@@ -88,7 +89,8 @@ class DynamoDBHelperSpec
       mockRetriesExceededMeter,
       mockDynamoUnexpectedFailuresMeter,
       mockCallRateMeter,
-      mockDynamoUtils)
+      mockDynamoUtils
+    )
 
   "DynamoDBHelper" should {
     "Using Monitoring" should {

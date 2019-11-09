@@ -41,13 +41,17 @@ class VinylDNSJsonProtocolSpec
         "primaryConnection",
         "primaryConnectionKeyName",
         "primaryConnectionKey",
-        "10.1.1.1")),
+        "10.1.1.1"
+      )
+    ),
     transferConnection = Some(
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
         "transferConnectionKey",
-        "10.1.1.2")),
+        "10.1.1.2"
+      )
+    ),
     adminGroupId = "admin-group-id"
   )
 
@@ -60,13 +64,17 @@ class VinylDNSJsonProtocolSpec
         "primaryConnection",
         "primaryConnectionKeyName",
         "primaryConnectionKey",
-        "10.1.1.1")),
+        "10.1.1.1"
+      )
+    ),
     transferConnection = Some(
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
         "transferConnectionKey",
-        "10.1.1.2")),
+        "10.1.1.2"
+      )
+    ),
     adminGroupId = "updated-admin-group-id"
   )
 
@@ -143,7 +151,8 @@ class VinylDNSJsonProtocolSpec
       val expected = completeCreateZoneInput.copy(
         connection = None,
         transferConnection = None,
-        backendId = Some("test-backend-id"))
+        backendId = Some("test-backend-id")
+      )
       val actual = createZoneInput.extract[CreateZoneInput]
       actual shouldBe expected
     }
@@ -247,7 +256,8 @@ class VinylDNSJsonProtocolSpec
       val expected = completeUpdateZoneInput.copy(
         connection = None,
         transferConnection = None,
-        backendId = Some("test-backend-id"))
+        backendId = Some("test-backend-id")
+      )
       val actual = updateZoneInput.extract[UpdateZoneInput]
       actual shouldBe expected
     }
@@ -316,7 +326,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(CNAMEData("cname.")))
+        records = List(CNAMEData("cname."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -337,7 +348,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(CNAMEData("cname.data.")))
+        records = List(CNAMEData("cname.data."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -372,7 +384,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(MXData(1, "mx.")))
+        records = List(MXData(1, "mx."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -393,7 +406,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(MXData(1, "mx.")))
+        records = List(MXData(1, "mx."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -416,7 +430,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(SRVData(1, 20, 5000, "srv.")))
+        records = List(SRVData(1, 20, 5000, "srv."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -437,7 +452,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(SRVData(1, 20, 5000, "srv.")))
+        records = List(SRVData(1, 20, 5000, "srv."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -452,7 +468,8 @@ class VinylDNSJsonProtocolSpec
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> Extraction.decompose(
-            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))))
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+          ))
 
       val expected = RecordSet(
         "1",
@@ -475,7 +492,8 @@ class VinylDNSJsonProtocolSpec
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> Extraction.decompose(
-            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr"))))
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr"))
+          ))
 
       val expected = RecordSet(
         "1",
@@ -490,7 +508,8 @@ class VinylDNSJsonProtocolSpec
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
       anonymize(actual).records shouldBe List(
-        NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+        NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr.")
+      )
     }
 
     "parse a record set with an absolute PTR domain name" in {
@@ -509,7 +528,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(PTRData("ptr.")))
+        records = List(PTRData("ptr."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -530,7 +550,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(PTRData("ptr.")))
+        records = List(PTRData("ptr."))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -552,7 +573,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(NSData("abs.data")))
+        records = List(NSData("abs.data"))
+      )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
@@ -580,7 +602,8 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(dSDataSha1))
+        records = List(dSDataSha1)
+      )
 
       RecordSetSerializer.fromJson(RecordSetSerializer.toJson(rs)).value shouldBe rs
     }

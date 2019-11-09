@@ -72,14 +72,17 @@ class EmailNotifierSpec
       "smtp",
       "vinyldns.api.notifier.email.MockTransport",
       "vinyl",
-      "1.0"))
+      "1.0"
+    )
+  )
 
   override protected def beforeEach(): Unit =
     reset(mockUserRepository, mockTransport)
 
   def batchChange(
       description: Option[String] = None,
-      changes: List[SingleChange] = List.empty): BatchChange =
+      changes: List[SingleChange] = List.empty
+  ): BatchChange =
     BatchChange(
       "test",
       "testUser",
@@ -91,7 +94,8 @@ class EmailNotifierSpec
       None,
       None,
       None,
-      "testBatch")
+      "testBatch"
+    )
 
   "Email Notifier" should {
     "do nothing for unsupported Notifications" in {
@@ -100,7 +104,8 @@ class EmailNotifierSpec
           "from" -> "Testing <test@test.com>",
           "smtp.host" -> "wouldfail.mail.com",
           "smtp.auth.mechanisms" -> "PLAIN"
-        ).asJava)
+        ).asJava
+      )
       val notifier = new EmailNotifierProvider()
         .load(NotifierConfig("", emailConfig), mockUserRepository)
         .unsafeRunSync()
@@ -149,8 +154,8 @@ class EmailNotifierSpec
       )
 
       doReturn(
-        IO.pure(Some(User("testUser", "access", "secret", None, None, Some("testuser@test.com")))))
-        .when(mockUserRepository)
+        IO.pure(Some(User("testUser", "access", "secret", None, None, Some("testuser@test.com"))))
+      ).when(mockUserRepository)
         .getUser("test")
 
       val expectedAddresses = Array[Address](new InternetAddress("testuser@test.com"))
@@ -176,7 +181,8 @@ class EmailNotifierSpec
           None,
           None,
           None,
-          List.empty),
+          List.empty
+        ),
         SingleDeleteRRSetChange(
           Some(""),
           Some(""),
@@ -188,7 +194,8 @@ class EmailNotifierSpec
           Some("message for you"),
           None,
           None,
-          List.empty)
+          List.empty
+        )
       )
       val change = batchChange(Some(description), singleChanges)
 

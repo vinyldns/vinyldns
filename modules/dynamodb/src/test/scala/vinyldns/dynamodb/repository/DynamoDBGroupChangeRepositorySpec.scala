@@ -130,7 +130,8 @@ class DynamoDBGroupChangeRepositorySpec
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.take(100)
       response.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(99).created.getMillis.toString)
+        listOfDummyGroupChanges(99).created.getMillis.toString
+      )
     }
     "returns an empty list when no matching changes are found" in {
       val dynamoResponse = mock[QueryResult]
@@ -167,12 +168,14 @@ class DynamoDBGroupChangeRepositorySpec
         .getGroupChanges(
           oneUserDummyGroup.id,
           Some(listOfDummyGroupChanges(50).created.getMillis.toString),
-          100)
+          100
+        )
         .unsafeRunSync()
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(51, 151)
       response.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(150).created.getMillis.toString)
+        listOfDummyGroupChanges(150).created.getMillis.toString
+      )
     }
     "returns `maxItems` items" in {
       val dynamoResponse = mock[QueryResult]
@@ -189,7 +192,8 @@ class DynamoDBGroupChangeRepositorySpec
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.take(50)
       response.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(49).created.getMillis.toString)
+        listOfDummyGroupChanges(49).created.getMillis.toString
+      )
     }
 
     "returns entire page and nextId = None if there are less than maxItems left" in {

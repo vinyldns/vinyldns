@@ -29,8 +29,7 @@ import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.duration._
 
-class DynamoDBRecordChangeRepositoryIntegrationSpec
-    extends DynamoDBIntegrationSpec {
+class DynamoDBRecordChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private val recordChangeTable = "record-change-live"
 
@@ -45,48 +44,47 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     s"live-test-$user.zone-small.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testConnection
+  )
   private val zoneB = Zone(
     s"live-test-$user.zone-large.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testConnection
+  )
 
   private val recordSetA =
     for {
       rsTemplate <- Seq(rsOk, aaaa, cname)
-    } yield
-      rsTemplate.copy(
-        zoneId = zoneA.id,
-        name = s"${rsTemplate.typ.toString}-${zoneA.account}.",
-        ttl = 100,
-        created = DateTime.now(),
-        id = UUID.randomUUID().toString
-      )
+    } yield rsTemplate.copy(
+      zoneId = zoneA.id,
+      name = s"${rsTemplate.typ.toString}-${zoneA.account}.",
+      ttl = 100,
+      created = DateTime.now(),
+      id = UUID.randomUUID().toString
+    )
 
   private val recordSetB =
     for {
       i <- 1 to 3
-    } yield
-      rsOk.copy(
-        zoneId = zoneB.id,
-        name = s"${rsOk.typ.toString}-${zoneB.account}-$i.",
-        ttl = 100,
-        created = DateTime.now(),
-        id = UUID.randomUUID().toString
-      )
+    } yield rsOk.copy(
+      zoneId = zoneB.id,
+      name = s"${rsOk.typ.toString}-${zoneB.account}-$i.",
+      ttl = 100,
+      created = DateTime.now(),
+      id = UUID.randomUUID().toString
+    )
 
   private val updateRecordSetA =
     for {
       rsTemplate <- Seq(rsOk, aaaa, cname)
-    } yield
-      rsTemplate.copy(
-        zoneId = zoneA.id,
-        name = s"${rsTemplate.typ.toString}-${zoneA.account}.",
-        ttl = 1000,
-        created = DateTime.now(),
-        id = UUID.randomUUID().toString
-      )
+    } yield rsTemplate.copy(
+      zoneId = zoneA.id,
+      name = s"${rsTemplate.typ.toString}-${zoneA.account}.",
+      ttl = 1000,
+      created = DateTime.now(),
+      id = UUID.randomUUID().toString
+    )
 
   private val recordSetChangesA = {
     for {
@@ -126,7 +124,8 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     s"live-test-$user.record-changes.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testConnection
+  )
   private val baseTime = DateTime.now()
   private val timeOrder = List(
     baseTime.minusSeconds(8000),
@@ -143,24 +142,22 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetsC =
     for {
       rsTemplate <- Seq(rsOk, aaaa, cname)
-    } yield
-      rsTemplate.copy(
-        zoneId = zoneC.id,
-        name = s"${rsTemplate.typ.toString}-${zoneC.account}.",
-        ttl = 100,
-        id = UUID.randomUUID().toString
-      )
+    } yield rsTemplate.copy(
+      zoneId = zoneC.id,
+      name = s"${rsTemplate.typ.toString}-${zoneC.account}.",
+      ttl = 100,
+      id = UUID.randomUUID().toString
+    )
 
   private val updateRecordSetsC =
     for {
       rsTemplate <- Seq(rsOk, aaaa, cname)
-    } yield
-      rsTemplate.copy(
-        zoneId = zoneC.id,
-        name = s"${rsTemplate.typ.toString}-${zoneC.account}.",
-        ttl = 1000,
-        id = UUID.randomUUID().toString
-      )
+    } yield rsTemplate.copy(
+      zoneId = zoneC.id,
+      name = s"${rsTemplate.typ.toString}-${zoneC.account}.",
+      ttl = 1000,
+      id = UUID.randomUUID().toString
+    )
 
   private val recordSetChangesCreateC = {
     for {
@@ -171,9 +168,8 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesUpdateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield
-      makePendingTestUpdateChange(rs, updateRecordSetsC(index), zoneC, auth.userId)
-        .copy(created = timeOrder(index + 3))
+    } yield makePendingTestUpdateChange(rs, updateRecordSetsC(index), zoneC, auth.userId)
+      .copy(created = timeOrder(index + 3))
   }
 
   private val recordSetChangesDeleteC = {

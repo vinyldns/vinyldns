@@ -68,7 +68,8 @@ class SnsNotifierIntegrationSpec
             None,
             None,
             None
-          )),
+          )
+        ),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved,
         id = "a615e2bb-8b35-4a39-8947-1edd0e653afa"
       )
@@ -76,12 +77,16 @@ class SnsNotifierIntegrationSpec
       val credentialsProvider = new AWSStaticCredentialsProvider(
         new BasicAWSCredentials(
           snsConfig.getString("access-key"),
-          snsConfig.getString("secret-key")))
+          snsConfig.getString("secret-key")
+        )
+      )
       val sns = AmazonSNSClientBuilder.standard
         .withEndpointConfiguration(
           new EndpointConfiguration(
             snsConfig.getString("service-endpoint"),
-            snsConfig.getString("signing-region")))
+            snsConfig.getString("signing-region")
+          )
+        )
         .withCredentials(credentialsProvider)
         .build()
       val sqs = AmazonSQSClientBuilder
@@ -113,7 +118,8 @@ class SnsNotifierIntegrationSpec
       val notification = parse(messages.get(0).getBody)
       (notification \ "Message").extract[String] should be(
         """{"userId":"ok","userName":"ok","createdTimestamp":"2019-07-22T19:38:23Z",""" +
-          """"status":"Complete","approvalStatus":"AutoApproved","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa"}""")
+          """"status":"Complete","approvalStatus":"AutoApproved","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa"}"""
+      )
     }
 
   }

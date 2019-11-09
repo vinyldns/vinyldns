@@ -24,6 +24,7 @@ class TestVinylDNSAuthenticator(authPrincipal: AuthPrincipal) extends VinylDNSAu
 
   def authenticate(
       ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
+      content: String
+  ): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     IO.pure(Right(authPrincipal))
 }
