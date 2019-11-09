@@ -45,8 +45,8 @@ case class RecordSetChange(
     systemMessage: Option[String] = None,
     updates: Option[RecordSet] = None,
     id: String = UUID.randomUUID().toString,
-    singleBatchChangeIds: List[String] = List())
-    extends ZoneCommand
+    singleBatchChangeIds: List[String] = List()
+) extends ZoneCommand
     with ZoneCommandResult {
 
   val zoneId: String = zone.id
@@ -56,7 +56,8 @@ case class RecordSetChange(
       status = RecordSetChangeStatus.Complete,
       systemMessage = None,
       recordSet = recordSet
-        .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now)))
+        .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
+    )
 
   def failed(message: String): RecordSetChange = failed(Some(message))
 
@@ -65,7 +66,8 @@ case class RecordSetChange(
       status = RecordSetChangeStatus.Failed,
       systemMessage = message,
       recordSet = recordSet
-        .copy(status = RecordSetStatus.Inactive, updated = Some(DateTime.now)))
+        .copy(status = RecordSetStatus.Inactive, updated = Some(DateTime.now))
+    )
 
   def isDone: Boolean = RecordSetChangeStatus.isDone(status)
 

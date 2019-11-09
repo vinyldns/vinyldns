@@ -30,5 +30,6 @@ trait BatchChangeConverterAlgebra {
       batchChange: BatchChange,
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap,
-      ownerGroupId: Option[String]): BatchResult[BatchConversionOutput]
+      ownerGroupId: Option[String]
+  ): BatchResult[BatchConversionOutput]
 }

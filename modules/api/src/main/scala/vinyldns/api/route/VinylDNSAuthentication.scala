@@ -36,18 +36,20 @@ final case class AccountLocked(reason: String) extends VinylDNSAuthenticationErr
 trait VinylDNSAuthenticator {
   def authenticate(
       ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]]
+      content: String
+  ): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]]
 }
 
 class ProductionVinylDNSAuthenticator(
     val authenticator: Aws4Authenticator,
-    val authPrincipalProvider: AuthPrincipalProvider)
-    extends VinylDNSAuthenticator
+    val authPrincipalProvider: AuthPrincipalProvider
+) extends VinylDNSAuthenticator
     with Monitored {
 
   def authenticate(
       ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
+      content: String
+  ): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     // Need to refactor getAuthPrincipal to be an IO[Either[E, A]] instead of how it is implemented.
     getAuthPrincipal(ctx, content).attempt.flatMap {
       case Left(e: VinylDNSAuthenticationError) => IO.pure(Left(e))
@@ -104,7 +106,8 @@ class ProductionVinylDNSAuthenticator(
       req: HttpRequest,
       secretKey: String,
       authHeaderRegex: Regex.Match,
-      content: String): IO[Unit] =
+      content: String
+  ): IO[Unit] =
     authHeaderRegex match {
       case auth if authenticator.authenticateReq(req, auth.subgroups, secretKey, content) =>
         IO.unit
@@ -138,7 +141,8 @@ class ProductionVinylDNSAuthenticator(
         ctx.request,
         decryptSecret(authPrincipal.secretKey),
         regexMatch,
-        content)
+        content
+      )
     } yield authPrincipal
 
   def decryptSecret(str: String, crypto: CryptoAlgebra = Crypto.instance): String =
@@ -149,7 +153,8 @@ class ProductionVinylDNSAuthenticator(
       case Some(ok) =>
         if (ok.signedInUser.lockStatus == LockStatus.Locked) {
           IO.raiseError(
-            AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked"))
+            AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked")
+          )
         } else IO.pure(ok)
       case None =>
         IO.raiseError(AuthRejected(s"Account with accessKey $accessKey specified was not found"))

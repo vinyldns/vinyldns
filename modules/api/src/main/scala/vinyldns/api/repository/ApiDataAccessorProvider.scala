@@ -37,10 +37,12 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       recordChange,
       zoneChange,
       zone,
-      batchChange)
+      batchChange
+    )
 
   def create(
-      dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, ApiDataAccessor] =
+      dataStores: List[(DataStoreConfig, DataStore)]
+  ): ValidatedNel[String, ApiDataAccessor] =
     (
       getRepoOf[UserRepository](dataStores, user),
       getRepoOf[GroupRepository](dataStores, group),

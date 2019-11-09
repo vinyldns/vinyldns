@@ -48,7 +48,8 @@ class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
       val request = new PublishRequest(config.topicArn, message)
       request.addMessageAttributesEntry(
         "userName",
-        new MessageAttributeValue().withDataType("String").withStringValue(bc.userName))
+        new MessageAttributeValue().withDataType("String").withStringValue(bc.userName)
+      )
       sns.publish(request)
       logger.info(s"Sending batch change success; batchChange='${bc.id}'")
     }.handleErrorWith { e =>

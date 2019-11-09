@@ -59,7 +59,8 @@ object BatchChangeService {
       authProvider: AuthPrincipalProvider,
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
-      v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries): BatchChangeService =
+      v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries
+  ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -88,8 +89,8 @@ class BatchChangeService(
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
-    v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries)
-    extends BatchChangeServiceAlgebra {
+    v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries
+) extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
 
@@ -97,7 +98,8 @@ class BatchChangeService(
   def applyBatchChange(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal,
-      allowManualReview: Boolean): BatchResult[BatchChange] =
+      allowManualReview: Boolean
+  ): BatchResult[BatchChange] =
     for {
       validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth, isApproved = false)
       changeForConversion <- buildResponse(
@@ -110,13 +112,15 @@ class BatchChangeService(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges,
-        batchChangeInput.ownerGroupId)
+        batchChangeInput.ownerGroupId
+      )
     } yield serviceCompleteBatch
 
   def applyBatchChangeValidationFlow(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal,
-      isApproved: Boolean): BatchResult[BatchValidationFlowOutput] =
+      isApproved: Boolean
+  ): BatchResult[BatchValidationFlowOutput] =
     for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
@@ -130,13 +134,15 @@ class BatchChangeService(
         groupedChanges,
         auth,
         isApproved,
-        batchChangeInput.ownerGroupId)
+        batchChangeInput.ownerGroupId
+      )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
     } yield BatchValidationFlowOutput(validatedSingleChangesWithGroups, zoneMap, groupedChanges)
 
   def getGroupIdsFromUnauthorizedErrors(
-      changes: ValidatedBatch[ChangeForValidation]): BatchResult[Set[Group]] = {
+      changes: ValidatedBatch[ChangeForValidation]
+  ): BatchResult[Set[Group]] = {
     val list = changes.getInvalid.collect {
       case d: UserIsNotAuthorizedError => d.ownerGroupId
     }.toSet
@@ -145,7 +151,8 @@ class BatchChangeService(
 
   def errorGroupMapping(
       groups: Set[Group],
-      validations: ValidatedBatch[ChangeForValidation]): ValidatedBatch[ChangeForValidation] =
+      validations: ValidatedBatch[ChangeForValidation]
+  ): ValidatedBatch[ChangeForValidation] =
     validations.map {
       case Invalid(err) =>
         err.map {
@@ -156,7 +163,8 @@ class BatchChangeService(
               e.ownerGroupId,
               e.ownerType,
               group.map(_.email),
-              group.map(_.name))
+              group.map(_.name)
+            )
             logger.error(updatedError.message)
             updatedError
           case e =>
@@ -169,7 +177,8 @@ class BatchChangeService(
   def rejectBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      rejectBatchChangeInput: RejectBatchChangeInput): BatchResult[BatchChange] =
+      rejectBatchChangeInput: RejectBatchChangeInput
+  ): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       bypassTestCheck <- getBypassTestCheckForReject(authPrincipal, batchChange)
@@ -177,14 +186,16 @@ class BatchChangeService(
       rejectedBatchChange <- rejectBatchChange(
         batchChange,
         rejectBatchChangeInput.reviewComment,
-        authPrincipal.signedInUser.id)
+        authPrincipal.signedInUser.id
+      )
       _ <- notifiers.notify(Notification(rejectedBatchChange)).toBatchResult
     } yield rejectedBatchChange
 
   def approveBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      approveBatchChangeInput: ApproveBatchChangeInput): BatchResult[BatchChange] =
+      approveBatchChangeInput: ApproveBatchChangeInput
+  ): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       requesterAuth <- EitherT.fromOptionF(
@@ -195,23 +206,27 @@ class BatchChangeService(
       asInput = BatchChangeInput(batchChange)
       reviewInfo = BatchChangeReviewInfo(
         authPrincipal.userId,
-        approveBatchChangeInput.reviewComment)
+        approveBatchChangeInput.reviewComment
+      )
       validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
       changeForConversion = rebuildBatchChangeForUpdate(
         batchChange,
         validationOutput.validatedChanges,
-        reviewInfo)
+        reviewInfo
+      )
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges,
-        batchChange.ownerGroupId)
+        batchChange.ownerGroupId
+      )
       response <- buildResponseForApprover(serviceCompleteBatch).toBatchResult
     } yield response
 
   def cancelBatchChange(
       batchChangeId: String,
-      authPrincipal: AuthPrincipal): BatchResult[BatchChange] =
+      authPrincipal: AuthPrincipal
+  ): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeCancellation(batchChange, authPrincipal).toBatchResult
@@ -279,7 +294,8 @@ class BatchChangeService(
 
   def getExistingRecordSets(
       changes: ValidatedBatch[ChangeForValidation],
-      zoneMap: ExistingZones): IO[ExistingRecordSets] = {
+      zoneMap: ExistingZones
+  ): IO[ExistingRecordSets] = {
     val uniqueGets = changes.getValid.map { change =>
       change.inputChange.typ match {
         case PTR => s"${change.recordName}.${change.zone.name}"
@@ -295,7 +311,8 @@ class BatchChangeService(
 
   def doTtlMapping(
       changes: ValidatedBatch[ChangeForValidation],
-      existingRecordSets: ExistingRecordSets): ValidatedBatch[ChangeForValidation] =
+      existingRecordSets: ExistingRecordSets
+  ): ValidatedBatch[ChangeForValidation] =
     changes.mapValid {
       case add: AddChangeForValidation =>
         existingRecordSets
@@ -326,7 +343,8 @@ class BatchChangeService(
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],
-      zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
+      zoneMap: ExistingZones
+  ): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
         case A | AAAA | CNAME | MX | TXT => forwardZoneDiscovery(change, zoneMap)
@@ -340,7 +358,8 @@ class BatchChangeService(
 
   def forwardZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
+      zoneMap: ExistingZones
+  ): SingleValidation[ChangeForValidation] = {
 
     // getAllPossibleZones is ordered most to least specific, so 1st match is right
     val zone = getAllPossibleZones(change.inputName).map(zoneMap.getByName).collectFirst {
@@ -358,7 +377,8 @@ class BatchChangeService(
 
   def ptrIpv4ZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
+      zoneMap: ExistingZones
+  ): SingleValidation[ChangeForValidation] = {
     val recordName = change.inputName.split('.').takeRight(1).mkString
     val validZones = zoneMap.getipv4PTRMatches(change.inputName)
 
@@ -374,7 +394,8 @@ class BatchChangeService(
 
   def ptrIpv6ZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
+      zoneMap: ExistingZones
+  ): SingleValidation[ChangeForValidation] = {
     val zones = zoneMap.getipv6PTRMatches(change.inputName)
 
     if (zones.isEmpty)
@@ -403,7 +424,8 @@ class BatchChangeService(
       batchChangeInput: BatchChangeInput,
       transformed: ValidatedBatch[ChangeForValidation],
       auth: AuthPrincipal,
-      allowManualReview: Boolean): Either[BatchChangeErrorResponse, BatchChange] = {
+      allowManualReview: Boolean
+  ): Either[BatchChangeErrorResponse, BatchChange] = {
 
     // Respond with a fatal error that kicks the change out to the user
     def errorResponse =
@@ -480,7 +502,8 @@ class BatchChangeService(
   def rebuildBatchChangeForUpdate(
       existingBatchChange: BatchChange,
       transformed: ValidatedBatch[ChangeForValidation],
-      reviewInfo: BatchChangeReviewInfo): BatchChange = {
+      reviewInfo: BatchChangeReviewInfo
+  ): BatchChange = {
     val changes = transformed.zip(existingBatchChange.changes).map {
       case (validated, existing) =>
         validated match {
@@ -508,7 +531,8 @@ class BatchChangeService(
       batchChange: BatchChange,
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap,
-      ownerGroupId: Option[String]): BatchResult[BatchChange] = batchChange.approvalStatus match {
+      ownerGroupId: Option[String]
+  ): BatchResult[BatchChange] = batchChange.approvalStatus match {
     case AutoApproved =>
       // send on to the converter, it will be saved there
       batchChangeConverter
@@ -527,12 +551,14 @@ class BatchChangeService(
       // this should not be called with a rejected change (or if manual review is off)!
       logger.error(
         s"convertOrSave called with a rejected batch change; " +
-          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled")
+          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled"
+      )
       UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }
 
   def buildResponseForApprover(
-      batchChange: BatchChange): Either[BatchChangeErrorResponse, BatchChange] =
+      batchChange: BatchChange
+  ): Either[BatchChangeErrorResponse, BatchChange] =
     batchChange.approvalStatus match {
       case ManuallyApproved => batchChange.asRight
       case _ => BatchChangeFailedApproval(batchChange).asLeft
@@ -540,7 +566,8 @@ class BatchChangeService(
 
   def addOwnerGroupNamesToSummaries(
       summaries: List[BatchChangeSummary],
-      groups: Set[Group]): List[BatchChangeSummary] =
+      groups: Set[Group]
+  ): List[BatchChangeSummary] =
     summaries.map { summary =>
       val groupName =
         summary.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
@@ -549,7 +576,8 @@ class BatchChangeService(
 
   def addReviewerUserNamesToSummaries(
       summaries: List[BatchChangeSummary],
-      reviewers: ListUsersResults): List[BatchChangeSummary] =
+      reviewers: ListUsersResults
+  ): List[BatchChangeSummary] =
     summaries.map { summary =>
       val userName =
         summary.reviewerId.flatMap(userId => reviewers.users.find(_.id == userId).map(_.userName))
@@ -561,8 +589,8 @@ class BatchChangeService(
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
-      approvalStatus: Option[BatchChangeApprovalStatus] = None)
-    : BatchResult[BatchChangeSummaryList] = {
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     for {
       listResults <- batchChangeRepo
@@ -572,23 +600,27 @@ class BatchChangeService(
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
       summariesWithGroupNames = addOwnerGroupNamesToSummaries(
         listResults.batchChanges,
-        rsOwnerGroups)
+        rsOwnerGroups
+      )
       reviewerIds = listResults.batchChanges.flatMap(_.reviewerId).toSet
       reviewerUserNames <- userRepository.getUsers(reviewerIds, None, Some(maxItems)).toBatchResult
       summariesWithReviewerUserNames = addReviewerUserNamesToSummaries(
         summariesWithGroupNames,
-        reviewerUserNames)
+        reviewerUserNames
+      )
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
-        approvalStatus = approvalStatus)
+        approvalStatus = approvalStatus
+      )
     } yield listWithGroupNames
   }
 
   def rejectBatchChange(
       batchChange: BatchChange,
       reviewComment: Option[String],
-      reviewerId: String): BatchResult[BatchChange] = {
+      reviewerId: String
+  ): BatchResult[BatchChange] = {
     val rejectedSingleChanges = batchChange.changes.map(_.reject)
 
     // Update rejection attributes and single changes for batch change
@@ -618,7 +650,8 @@ class BatchChangeService(
 
   def getBypassTestCheckForReject(
       rejecterAuth: AuthPrincipal,
-      batchChange: BatchChange): BatchResult[Boolean] =
+      batchChange: BatchChange
+  ): BatchResult[Boolean] =
     if (!rejecterAuth.isTestUser) {
       // if the rejecting user isnt a test user, we dont need to get the batch creator's info, can just pass along
       // true to bypass the test check

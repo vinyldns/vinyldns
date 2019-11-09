@@ -25,6 +25,7 @@ object SingleChangeError {
     new SingleChangeError(DomainValidationErrorType.from(error), error.message)
 }
 
+// format: off
 object DomainValidationErrorType extends Enumeration {
   type DomainValidationErrorType = Value
   // NOTE: once defined, an error code type cannot be changed!
@@ -74,3 +75,4 @@ object DomainValidationErrorType extends Enumeration {
     }
   // $COVERAGE-ON$
 }
+// format: on

@@ -33,12 +33,13 @@ case class ListRecordSetsResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None)
+    recordNameFilter: Option[String] = None
+)
 
 class RecordSetRoute(
     recordSetService: RecordSetServiceAlgebra,
-    val vinylDNSAuthenticator: VinylDNSAuthenticator)
-    extends VinylDNSJsonProtocol
+    val vinylDNSAuthenticator: VinylDNSAuthenticator
+) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = recordSetRoute
@@ -63,8 +64,9 @@ class RecordSetRoute(
 
   val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
     (post & monitor("Endpoint.addRecordSet")) {
-      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet]((authPrincipal, recordSet) =>
-        recordSetService.addRecordSet(recordSet, authPrincipal)) { rc =>
+      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet](
+        (authPrincipal, recordSet) => recordSetService.addRecordSet(recordSet, authPrincipal)
+      ) { rc =>
         complete(StatusCodes.Accepted, rc)
       }
     } ~
@@ -74,11 +76,13 @@ class RecordSetRoute(
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
-                s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS") {
-                authenticateAndExecute(recordSetService
-                  .listRecordSets(zoneId, startFrom, Some(maxItems), recordNameFilter, _)) {
-                  rsResponse =>
-                    complete(StatusCodes.OK, rsResponse)
+                s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
+              ) {
+                authenticateAndExecute(
+                  recordSetService
+                    .listRecordSets(zoneId, startFrom, Some(maxItems), recordNameFilter, _)
+                ) { rsResponse =>
+                  complete(StatusCodes.OK, rsResponse)
                 }
               }
             }
@@ -129,8 +133,10 @@ class RecordSetRoute(
                 errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
                   s"and $DEFAULT_MAX_ITEMS inclusive"
               ) {
-                authenticateAndExecute(recordSetService
-                  .listRecordSetChanges(zoneId, startFrom, maxItems, _)) { changes =>
+                authenticateAndExecute(
+                  recordSetService
+                    .listRecordSetChanges(zoneId, startFrom, maxItems, _)
+                ) { changes =>
                   complete(StatusCodes.OK, changes)
                 }
               }

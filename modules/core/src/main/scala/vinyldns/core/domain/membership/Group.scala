@@ -69,11 +69,13 @@ case class Group(
       emailUpdate: String,
       descriptionUpdate: Option[String],
       memberIdsUpdate: Set[String],
-      adminUserIdsUpdate: Set[String]): Group =
+      adminUserIdsUpdate: Set[String]
+  ): Group =
     this.copy(
       name = nameUpdate,
       email = emailUpdate,
       description = descriptionUpdate,
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
-      adminUserIds = adminUserIdsUpdate)
+      adminUserIds = adminUserIdsUpdate
+    )
 }

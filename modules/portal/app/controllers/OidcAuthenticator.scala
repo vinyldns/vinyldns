@@ -59,19 +59,20 @@ object OidcAuthenticator {
       jwtFirstnameField: String,
       jwtLastnameField: String,
       jwtEmailField: String = "email",
-      scope: String = "openid profile email")
+      scope: String = "openid profile email"
+  )
 
   final case class OidcUserDetails(
       username: String,
       email: Option[String],
       firstName: Option[String],
-      lastName: Option[String])
-      extends UserDetails
+      lastName: Option[String]
+  ) extends UserDetails
 
   final case class ErrorResponse(code: Int, message: String)
 }
 @Singleton
-class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configuration) {
+class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configuration) {
 
   import OidcAuthenticator._
 
@@ -203,7 +204,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     for {
       username <- getStringFieldOption(claimsSet, oidcInfo.jwtUsernameField)
         .toRight[ErrorResponse](
-          ErrorResponse(500, "Username field not included in token from from OIDC provider"))
+          ErrorResponse(500, "Username field not included in token from from OIDC provider")
+        )
       email = getStringFieldOption(claimsSet, oidcInfo.jwtEmailField)
       firstname = getStringFieldOption(claimsSet, oidcInfo.jwtFirstnameField)
       lastname = getStringFieldOption(claimsSet, oidcInfo.jwtLastnameField)
@@ -238,7 +240,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   }
 
   def oidcCallback(code: AuthorizationCode, loginId: String)(
-      implicit executionContext: ExecutionContext): EitherT[IO, ErrorResponse, JWTClaimsSet] =
+      implicit executionContext: ExecutionContext
+  ): EitherT[IO, ErrorResponse, JWTClaimsSet] =
     EitherT {
       val redirectUriString = s"${oidcInfo.redirectUri}/callback/$loginId"
       val redirectUri = new URI(redirectUriString)

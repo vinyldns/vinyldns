@@ -32,7 +32,8 @@ object ZoneService {
       connectionValidator: ZoneConnectionValidatorAlgebra,
       messageQueue: MessageQueue,
       zoneValidations: ZoneValidations,
-      accessValidation: AccessValidationsAlgebra): ZoneService =
+      accessValidation: AccessValidationsAlgebra
+  ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -53,8 +54,8 @@ class ZoneService(
     connectionValidator: ZoneConnectionValidatorAlgebra,
     messageQueue: MessageQueue,
     zoneValidations: ZoneValidations,
-    accessValidation: AccessValidationsAlgebra)
-    extends ZoneServiceAlgebra {
+    accessValidation: AccessValidationsAlgebra
+) extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
@@ -62,7 +63,8 @@ class ZoneService(
 
   def connectToZone(
       createZoneInput: CreateZoneInput,
-      auth: AuthPrincipal): Result[ZoneCommandResult] =
+      auth: AuthPrincipal
+  ): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
       _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
@@ -84,7 +86,8 @@ class ZoneService(
       _ <- validateSharedZoneAuthorized(
         existingZone.shared,
         updateZoneInput.shared,
-        auth.signedInUser).toResult
+        auth.signedInUser
+      ).toResult
       _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
@@ -136,32 +139,35 @@ class ZoneService(
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false): Result[ListZonesResponse] = {
+      ignoreAccess: Boolean = false
+  ): Result[ListZonesResponse] = {
     for {
       listZonesResult <- zoneRepository.listZones(
         authPrincipal,
         nameFilter,
         startFrom,
         maxItems,
-        ignoreAccess)
+        ignoreAccess
+      )
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
       zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
-    } yield
-      ListZonesResponse(
-        zoneSummaryInfos,
-        listZonesResult.zonesFilter,
-        listZonesResult.startFrom,
-        listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess)
+    } yield ListZonesResponse(
+      zoneSummaryInfos,
+      listZonesResult.zonesFilter,
+      listZonesResult.startFrom,
+      listZonesResult.nextId,
+      listZonesResult.maxItems,
+      listZonesResult.ignoreAccess
+    )
   }.toResult
 
   def zoneSummaryInfoMapping(
       zones: List[Zone],
       auth: AuthPrincipal,
-      groups: Set[Group]): List[ZoneSummaryInfo] =
+      groups: Set[Group]
+  ): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
@@ -175,7 +181,8 @@ class ZoneService(
       zoneId: String,
       authPrincipal: AuthPrincipal,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Result[ListZoneChangesResponse] =
+      maxItems: Int = 100
+  ): Result[ListZoneChangesResponse] =
     for {
       zone <- getZoneOrFail(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -187,7 +194,8 @@ class ZoneService(
   def addACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,
-      authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
+      authPrincipal: AuthPrincipal
+  ): Result[ZoneCommandResult] = {
     val newRule = ACLRule(aclRuleInfo)
     for {
       zone <- getZoneOrFail(zoneId)
@@ -207,7 +215,8 @@ class ZoneService(
   def deleteACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,
-      authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
+      authPrincipal: AuthPrincipal
+  ): Result[ZoneCommandResult] = {
     val newRule = ACLRule(aclRuleInfo)
     for {
       zone <- getZoneOrFail(zoneId)
@@ -233,7 +242,8 @@ class ZoneService(
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
           ZoneAlreadyExistsError(
             s"Zone with name $zoneName already exists. " +
-              s"Please contact ${existingZone.email} to request access to the zone.").asLeft
+              s"Please contact ${existingZone.email} to request access to the zone."
+          ).asLeft
         case _ => ().asRight
       }
       .toResult

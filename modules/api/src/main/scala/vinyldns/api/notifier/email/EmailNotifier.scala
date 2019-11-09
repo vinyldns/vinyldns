@@ -77,7 +77,8 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case Some(user: User) if user.email.isDefined =>
         IO {
           logger.warn(
-            s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}")
+            s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
+          )
         }
       case None => IO { logger.warn(s"Unable to find user: ${bc.userId}") }
       case _ => IO.unit
@@ -95,16 +96,23 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
 
     // For manually reviewed e-mails, add additional info; e-mails are not sent for pending batch changes
     if (bc.approvalStatus != AutoApproved) {
-      bc.reviewComment.foreach(reviewComment =>
-        sb.append(s"<b>Review comment:</b> $reviewComment <br/>"))
-      bc.reviewTimestamp.foreach(reviewTimestamp =>
-        sb.append(
-          s"<b>Time reviewed:</b> ${reviewTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"))
+      bc.reviewComment.foreach(
+        reviewComment => sb.append(s"<b>Review comment:</b> $reviewComment <br/>")
+      )
+      bc.reviewTimestamp.foreach(
+        reviewTimestamp =>
+          sb.append(
+            s"<b>Time reviewed:</b> ${reviewTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"
+          )
+      )
     }
 
-    bc.cancelledTimestamp.foreach(cancelledTimestamp =>
-      sb.append(
-        s"<b>Time cancelled:</b> ${cancelledTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"))
+    bc.cancelledTimestamp.foreach(
+      cancelledTimestamp =>
+        sb.append(
+          s"<b>Time cancelled:</b> ${cancelledTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"
+        )
+    )
 
     // Single change data table
     sb.append(s"""<br/><table border = "1">
@@ -138,7 +146,8 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         _,
         _,
         _,
-        _) =>
+        _
+        ) =>
       s"""<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td>
         |     <td>$ttl</td><td>${formatRecordData(recordData)}</td><td>$status</td>
         |     <td>${systemMessage.getOrElse("")}</td></tr>"""
@@ -154,7 +163,8 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         _,
         _,
         _,
-        _) =>
+        _
+        ) =>
       val recordDataValue = recordData.map(_.toString).getOrElse("")
       s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
         |     <td></td><td>$recordDataValue</td><td>$status</td><td>${systemMessage

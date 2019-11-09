@@ -29,7 +29,8 @@ final case class BatchChangeInput(
     comments: Option[String],
     changes: List[ChangeInput],
     ownerGroupId: Option[String] = None,
-    scheduledTime: Option[DateTime] = None)
+    scheduledTime: Option[DateTime] = None
+)
 
 object BatchChangeInput {
   def apply(batchChange: BatchChange): BatchChangeInput = {
@@ -51,8 +52,8 @@ final case class AddChangeInput(
     inputName: String,
     typ: RecordType,
     ttl: Option[Long],
-    record: RecordData)
-    extends ChangeInput {
+    record: RecordData
+) extends ChangeInput {
 
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange = {
     val knownTtl = ttl.getOrElse(VinylDNSConfig.defaultTtl)
@@ -76,8 +77,8 @@ final case class AddChangeInput(
 final case class DeleteRRSetChangeInput(
     inputName: String,
     typ: RecordType,
-    record: Option[RecordData])
-    extends ChangeInput {
+    record: Option[RecordData]
+) extends ChangeInput {
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
     SingleDeleteRRSetChange(
       None,
@@ -99,7 +100,8 @@ object AddChangeInput {
       inputName: String,
       typ: RecordType,
       ttl: Option[Long],
-      record: RecordData): AddChangeInput = {
+      record: RecordData
+  ): AddChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
@@ -115,7 +117,8 @@ object DeleteRRSetChangeInput {
   def apply(
       inputName: String,
       typ: RecordType,
-      record: Option[RecordData] = None): DeleteRRSetChangeInput = {
+      record: Option[RecordData] = None
+  ): DeleteRRSetChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)

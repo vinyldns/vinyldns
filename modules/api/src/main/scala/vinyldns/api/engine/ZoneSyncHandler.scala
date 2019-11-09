@@ -45,7 +45,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       zoneRepository: ZoneRepository,
       dnsLoader: Zone => DnsZoneViewLoader = DnsZoneViewLoader.apply,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
-        VinylDNSZoneViewLoader.apply): ZoneChange => IO[ZoneChange] =
+        VinylDNSZoneViewLoader.apply
+  ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       for {
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, zoneChange) // initial save to store zone status
@@ -55,7 +56,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
           recordChangeRepository,
           zoneChange,
           dnsLoader,
-          vinyldnsLoader)
+          vinyldnsLoader
+        )
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // final save to store zone status
         // as Active
       } yield syncChange
@@ -63,13 +65,15 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
   def saveZoneAndChange(
       zoneRepository: ZoneRepository,
       zoneChangeRepository: ZoneChangeRepository,
-      zoneChange: ZoneChange): IO[ZoneChange] =
+      zoneChange: ZoneChange
+  ): IO[ZoneChange] =
     zoneRepository.save(zoneChange.zone).flatMap {
       case Left(duplicateZoneError) =>
         zoneChangeRepository.save(
           zoneChange.copy(
             status = ZoneChangeStatus.Failed,
-            systemMessage = Some(duplicateZoneError.message))
+            systemMessage = Some(duplicateZoneError.message)
+          )
         )
       case Right(_) =>
         zoneChangeRepository.save(zoneChange)
@@ -81,7 +85,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       zoneChange: ZoneChange,
       dnsLoader: Zone => DnsZoneViewLoader = DnsZoneViewLoader.apply,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
-        VinylDNSZoneViewLoader.apply): IO[ZoneChange] =
+        VinylDNSZoneViewLoader.apply
+  ): IO[ZoneChange] =
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
@@ -91,7 +96,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
           )(dnsLoader(zone).load())
         val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
-          vinyldnsLoader(zone, recordSetRepository).load())
+          vinyldnsLoader(zone, recordSetRepository).load()
+        )
         val recordSetChanges = (dnsView, vinyldnsView).parTupled.map {
           case (dnsZoneView, vinylDnsZoneView) => vinylDnsZoneView.diff(dnsZoneView)
         }
@@ -101,11 +107,14 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
 
           if (changesWithUserIds.isEmpty) {
             logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; changeCount=0; zoneChange='${zoneChange.id}'")
+              s"zone.sync.changes; zoneName='${zone.name}'; changeCount=0; zoneChange='${zoneChange.id}'"
+            )
             IO.pure(
               zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                status = ZoneChangeStatus.Synced))
+                status = ZoneChangeStatus.Synced
+              )
+            )
           } else {
             changesWithUserIds
               .filter { chg =>
@@ -120,29 +129,33 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 logger.info(
                   s"Zone sync for zoneName='${zone.name}'; zoneId='${zone.id}'; " +
                     s"zoneChange='${zoneChange.id}' includes the following ${dottedGroup.length} " +
-                    s"dotted host records: [$dottedGroupString]")
+                    s"dotted host records: [$dottedGroupString]"
+                )
               }
 
             logger.info(
               s"zone.sync.changes; zoneName='${zone.name}'; " +
-                s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'")
+                s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
+            )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
             // we want to make sure we write to both the change repo and record set repo
             // at the same time as this can take a while
             val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-              recordChangeRepository.save(changeSet))
+              recordChangeRepository.save(changeSet)
+            )
             val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-              recordSetRepository.apply(changeSet))
+              recordSetRepository.apply(changeSet)
+            )
 
             // join together the results of saving both the record changes as well as the record sets
             for {
               _ <- saveRecordChanges
               _ <- saveRecordSets
-            } yield
-              zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                status = ZoneChangeStatus.Synced)
+            } yield zoneChange.copy(
+              zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+              status = ZoneChangeStatus.Synced
+            )
           }
         }
       }
@@ -151,11 +164,13 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
         case Left(e: Throwable) =>
           logger.error(
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e)
+            e
+          )
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
-            status = ZoneChangeStatus.Failed)
+            status = ZoneChangeStatus.Failed
+          )
         case Right(ok) => ok
       }
 }

@@ -35,8 +35,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class LegacyFrontendAction(
     val userLookup: String => IO[Option[User]],
     val oidcAuthenticator: OidcAuthenticator,
-    val parser: BodyParser[AnyContent])
-    extends VinylDnsAction
+    val parser: BodyParser[AnyContent]
+) extends VinylDnsAction
     with FrontendActionBuilder
     with CacheHeader {
 
@@ -48,17 +48,20 @@ class LegacyFrontendAction(
       Redirect("/login")
         .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
         .withNewSession
-        .withHeaders(cacheHeaders: _*))
+        .withHeaders(cacheHeaders: _*)
+    )
 
   def cantFindAccountResult(un: String): Future[Result] =
     Future.successful(
       Redirect("/login")
         .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
         .withNewSession
-        .withHeaders(cacheHeaders: _*))
+        .withHeaders(cacheHeaders: _*)
+    )
 
   def lockedUserResult(un: String): Future[Result] =
     Future.successful(
       Redirect("/noaccess").withNewSession
-        .withHeaders(cacheHeaders: _*))
+        .withHeaders(cacheHeaders: _*)
+    )
 }

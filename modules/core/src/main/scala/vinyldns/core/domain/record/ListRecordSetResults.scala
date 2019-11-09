@@ -21,4 +21,5 @@ case class ListRecordSetResults(
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
     maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None)
+    recordNameFilter: Option[String] = None
+)

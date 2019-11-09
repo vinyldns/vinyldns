@@ -119,13 +119,15 @@ final case class ListMembersResponse(
     members: Seq[MemberInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int)
+    maxItems: Int
+)
 
 final case class ListUsersResponse(
     members: Seq[UserInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int)
+    maxItems: Int
+)
 
 final case class ListAdminsResponse(admins: Seq[UserInfo])
 
@@ -133,7 +135,8 @@ final case class ListGroupChangesResponse(
     changes: Seq[GroupChangeInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int)
+    maxItems: Int
+)
 
 final case class ListMyGroupsResponse(
     groups: Seq[GroupInfo],
@@ -141,7 +144,8 @@ final case class ListMyGroupsResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Int,
-    ignoreAccess: Boolean)
+    ignoreAccess: Boolean
+)
 
 final case class GroupNotFoundError(msg: String) extends Throwable(msg)
 

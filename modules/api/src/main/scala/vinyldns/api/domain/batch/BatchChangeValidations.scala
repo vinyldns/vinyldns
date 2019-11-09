@@ -35,42 +35,49 @@ trait BatchChangeValidationsAlgebra {
   def validateBatchChangeInput(
       input: BatchChangeInput,
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): BatchResult[Unit]
+      authPrincipal: AuthPrincipal
+  ): BatchResult[Unit]
 
   def validateInputChanges(
       input: List[ChangeInput],
-      isApproved: Boolean): ValidatedBatch[ChangeInput]
+      isApproved: Boolean
+  ): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation]
+      batchOwnerGroupId: Option[String]
+  ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
       batchChange: BatchChange,
-      auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+      auth: AuthPrincipal
+  ): Either[BatchChangeErrorResponse, Unit]
 
   def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
-      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit]
+      bypassTestValidation: Boolean
+  ): Either[BatchChangeErrorResponse, Unit]
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
-      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit]
+      isTestChange: Boolean
+  ): Either[BatchChangeErrorResponse, Unit]
 
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+      authPrincipal: AuthPrincipal
+  ): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
     changeLimit: Int,
     accessValidation: AccessValidationsAlgebra,
-    scheduledChangesEnabled: Boolean = false)
-    extends BatchChangeValidationsAlgebra {
+    scheduledChangesEnabled: Boolean = false
+) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
   import accessValidation._
@@ -78,11 +85,13 @@ class BatchChangeValidations(
   def validateBatchChangeInput(
       input: BatchChangeInput,
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
+      authPrincipal: AuthPrincipal
+  ): BatchResult[Unit] = {
     val validations = validateBatchChangeInputSize(input) |+| validateOwnerGroupId(
       input.ownerGroupId,
       existingGroup,
-      authPrincipal)
+      authPrincipal
+    )
 
     for {
       _ <- validations
@@ -105,7 +114,8 @@ class BatchChangeValidations(
   def validateOwnerGroupId(
       ownerGroupId: Option[String],
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] =
+      authPrincipal: AuthPrincipal
+  ): SingleValidation[Unit] =
     (ownerGroupId, existingGroup) match {
       case (None, _) => ().validNel
       case (Some(groupId), None) => GroupDoesNotExist(groupId).invalidNel
@@ -117,26 +127,33 @@ class BatchChangeValidations(
   def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
-      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
+      bypassTestValidation: Boolean
+  ): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange, bypassTestValidation) |+| validateBatchChangePendingReview(
-      batchChange)
+      batchChange
+    )
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal,
-      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
+      isTestChange: Boolean
+  ): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange, isTestChange) |+| validateBatchChangePendingReview(
-      batchChange) |+| validateScheduledApproval(batchChange)
+      batchChange
+    ) |+| validateScheduledApproval(batchChange)
 
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+      authPrincipal: AuthPrincipal
+  ): Either[BatchChangeErrorResponse, Unit] =
     validateBatchChangePendingReview(batchChange) |+| validateCreatorCancellation(
       batchChange,
-      authPrincipal)
+      authPrincipal
+    )
 
   def validateBatchChangePendingReview(
-      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
+      batchChange: BatchChange
+  ): Either[BatchChangeErrorResponse, Unit] =
     batchChange.approvalStatus match {
       case BatchChangeApprovalStatus.PendingReview => ().asRight
       case _ => BatchChangeNotPendingReview(batchChange.id).asLeft
@@ -145,7 +162,8 @@ class BatchChangeValidations(
   def validateAuthorizedReviewer(
       auth: AuthPrincipal,
       batchChange: BatchChange,
-      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
+      bypassTestValidation: Boolean
+  ): Either[BatchChangeErrorResponse, Unit] =
     if (auth.isSystemAdmin && (bypassTestValidation || !auth.isTestUser)) {
       // bypassTestValidation = true for a test change
       ().asRight
@@ -161,7 +179,8 @@ class BatchChangeValidations(
 
   def validateCreatorCancellation(
       batchChange: BatchChange,
-      auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+      auth: AuthPrincipal
+  ): Either[BatchChangeErrorResponse, Unit] =
     if (batchChange.userId == auth.userId) {
       ().asRight
     } else {
@@ -171,7 +190,8 @@ class BatchChangeValidations(
 
   def validateInputChanges(
       input: List[ChangeInput],
-      isApproved: Boolean): ValidatedBatch[ChangeInput] =
+      isApproved: Boolean
+  ): ValidatedBatch[ChangeInput] =
     input.map {
       case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
       case d: DeleteRRSetChangeInput => validateDeleteRRSetChangeInput(d, isApproved).map(_ => d)
@@ -179,7 +199,8 @@ class BatchChangeValidations(
 
   def validateAddChangeInput(
       addChangeInput: AddChangeInput,
-      isApproved: Boolean): SingleValidation[Unit] = {
+      isApproved: Boolean
+  ): SingleValidation[Unit] = {
     val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
     val validRecord = validateRecordData(addChangeInput.record)
     val validInput = validateInputName(addChangeInput, isApproved)
@@ -189,7 +210,8 @@ class BatchChangeValidations(
 
   def validateDeleteRRSetChangeInput(
       deleteRRSetChangeInput: DeleteRRSetChangeInput,
-      isApproved: Boolean): SingleValidation[Unit] = {
+      isApproved: Boolean
+  ): SingleValidation[Unit] = {
     val validRecord = deleteRRSetChangeInput.record match {
       case Some(recordData) => validateRecordData(recordData)
       case None => ().validNel
@@ -244,7 +266,8 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] =
+      batchOwnerGroupId: Option[String]
+  ): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
@@ -274,13 +297,15 @@ class BatchChangeValidations(
 
   def ensureRecordExists(
       change: ChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
+      groupedChanges: ChangeForValidationMap
+  ): SingleValidation[Unit] =
     change match {
       // For DeleteRecord inputs, need to verify that the record data actually exists
       case DeleteRRSetChangeForValidation(
           _,
           _,
-          DeleteRRSetChangeInput(inputName, _, Some(recordData)))
+          DeleteRRSetChangeInput(inputName, _, Some(recordData))
+          )
           if !groupedChanges
             .getExistingRecordSet(change.recordKey)
             .exists(_.records.contains(recordData)) =>
@@ -293,7 +318,8 @@ class BatchChangeValidations(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
-      isApproved: Boolean): SingleValidation[ChangeForValidation] = {
+      isApproved: Boolean
+  ): SingleValidation[ChangeForValidation] = {
 
     val validations =
       groupedChanges.getExistingRecordSet(change.recordKey) match {
@@ -311,7 +337,8 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
+      batchOwnerGroupId: Option[String]
+  ): SingleValidation[ChangeForValidation] = {
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
@@ -327,7 +354,8 @@ class BatchChangeValidations(
               change,
               groupedChanges.existingRecordSets
                 .get(change.zone.id, change.recordName, change.inputChange.typ),
-              batchOwnerGroupId) |+|
+              batchOwnerGroupId
+            ) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -343,7 +371,8 @@ class BatchChangeValidations(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
-      isApproved: Boolean): SingleValidation[ChangeForValidation] = {
+      isApproved: Boolean
+  ): SingleValidation[ChangeForValidation] = {
     val validations =
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
@@ -363,7 +392,8 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
+      ownerGroupId: Option[String]
+  ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
         newRecordSetIsNotDotted(change)
@@ -385,7 +415,8 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          groupedChanges) |+|
+          groupedChanges
+        ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
 
@@ -394,7 +425,8 @@ class BatchChangeValidations(
 
   def cnameHasUniqueNameInBatch(
       cnameChange: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
+      groupedChanges: ChangeForValidationMap
+  ): SingleValidation[Unit] = {
 
     val duplicateNameChangeInBatch = RecordType.values.toList.exists { recordType =>
       val recordKey = RecordKey(cnameChange.zone.id, cnameChange.recordName, recordType)
@@ -410,7 +442,8 @@ class BatchChangeValidations(
 
   def recordIsUniqueInBatch(
       change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
+      groupedChanges: ChangeForValidationMap
+  ): SingleValidation[Unit] = {
     // Ignore true duplicates, but identify multi-records
     val proposedAdds = groupedChanges.getProposedAdds(change.recordKey)
 
@@ -424,7 +457,8 @@ class BatchChangeValidations(
       recordName: String,
       inputName: String,
       typ: RecordType,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] =
+      groupedChanges: ChangeForValidationMap
+  ): SingleValidation[Unit] =
     groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, typ)) match {
       case Some(_) => RecordAlreadyExists(inputName).invalidNel
       case None => ().validNel
@@ -432,7 +466,8 @@ class BatchChangeValidations(
 
   def noIncompatibleRecordExists(
       change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
+      groupedChanges: ChangeForValidationMap
+  ): SingleValidation[Unit] = {
     // find conflicting types in existing records
     val conflictingExistingTypes = change.inputChange.typ match {
       case CNAME =>
@@ -462,13 +497,15 @@ class BatchChangeValidations(
 
   def userCanAddRecordSet(
       input: AddChangeForValidation,
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
+      authPrincipal: AuthPrincipal
+  ): SingleValidation[Unit] = {
     val result = canAddRecordSet(
       authPrincipal,
       input.recordName,
       input.inputChange.typ,
       input.zone,
-      List(input.inputChange.record))
+      List(input.inputChange.record)
+    )
     result
       .leftMap(
         _ =>
@@ -476,7 +513,9 @@ class BatchChangeValidations(
             authPrincipal.signedInUser.userName,
             input.zone.adminGroupId,
             OwnerType.Zone,
-            Some(input.zone.email)))
+            Some(input.zone.email)
+          )
+      )
       .toValidatedNel
   }
 
@@ -484,7 +523,8 @@ class BatchChangeValidations(
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal,
       ownerGroupId: Option[String],
-      addRecords: List[RecordData]): SingleValidation[Unit] = {
+      addRecords: List[RecordData]
+  ): SingleValidation[Unit] = {
     val result =
       canUpdateRecordSet(
         authPrincipal,
@@ -495,17 +535,20 @@ class BatchChangeValidations(
         addRecords
       )
     result
-      .leftMap(_ =>
-        ownerGroupId match {
-          case Some(id) if input.zone.shared =>
-            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
-          case _ =>
-            UserIsNotAuthorizedError(
-              authPrincipal.signedInUser.userName,
-              input.zone.adminGroupId,
-              OwnerType.Zone,
-              Some(input.zone.email))
-      })
+      .leftMap(
+        _ =>
+          ownerGroupId match {
+            case Some(id) if input.zone.shared =>
+              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+            case _ =>
+              UserIsNotAuthorizedError(
+                authPrincipal.signedInUser.userName,
+                input.zone.adminGroupId,
+                OwnerType.Zone,
+                Some(input.zone.email)
+              )
+          }
+      )
       .toValidatedNel
   }
 
@@ -513,7 +556,8 @@ class BatchChangeValidations(
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal,
       ownerGroupId: Option[String],
-      existingRecords: List[RecordData]): SingleValidation[Unit] = {
+      existingRecords: List[RecordData]
+  ): SingleValidation[Unit] = {
     val result =
       canDeleteRecordSet(
         authPrincipal,
@@ -524,23 +568,27 @@ class BatchChangeValidations(
         existingRecords
       )
     result
-      .leftMap(_ =>
-        ownerGroupId match {
-          case Some(id) if input.zone.shared =>
-            UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
-          case _ =>
-            UserIsNotAuthorizedError(
-              authPrincipal.signedInUser.userName,
-              input.zone.adminGroupId,
-              OwnerType.Zone,
-              Some(input.zone.email))
-      })
+      .leftMap(
+        _ =>
+          ownerGroupId match {
+            case Some(id) if input.zone.shared =>
+              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+            case _ =>
+              UserIsNotAuthorizedError(
+                authPrincipal.signedInUser.userName,
+                input.zone.adminGroupId,
+                OwnerType.Zone,
+                Some(input.zone.email)
+              )
+          }
+      )
       .toValidatedNel
   }
 
   def canGetBatchChange(
       batchChange: BatchChange,
-      auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+      auth: AuthPrincipal
+  ): Either[BatchChangeErrorResponse, Unit] =
     if (auth.isSystemAdmin || auth.userId == batchChange.userId) {
       ().asRight
     } else {
@@ -554,7 +602,8 @@ class BatchChangeValidations(
       case _ =>
         ZoneRecordValidations.isNotHighValueFqdn(
           VinylDNSConfig.highValueRegexList,
-          change.inputName)
+          change.inputName
+        )
     }
 
   def doesNotRequireManualReview(change: ChangeInput, isApproved: Boolean): SingleValidation[Unit] =
@@ -566,18 +615,21 @@ class BatchChangeValidations(
         case RecordType.PTR =>
           ZoneRecordValidations.ipDoesNotRequireManualReview(
             VinylDNSConfig.ipListRequiringManualReview,
-            change.inputName)
+            change.inputName
+          )
         case _ =>
           ZoneRecordValidations.domainDoesNotRequireManualReview(
             VinylDNSConfig.domainListRequiringManualReview,
-            change.inputName)
+            change.inputName
+          )
       }
     }
 
   def ownerGroupProvidedIfNeeded(
       change: AddChangeForValidation,
       existingRecord: Option[RecordSet],
-      ownerGroupId: Option[String]): SingleValidation[Unit] =
+      ownerGroupId: Option[String]
+  ): SingleValidation[Unit] =
     if (!change.zone.shared || ownerGroupId.isDefined) {
       ().validNel
     } else {
@@ -591,7 +643,8 @@ class BatchChangeValidations(
 
   def validateScheduledChange(
       input: BatchChangeInput,
-      scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
+      scheduledChangesEnabled: Boolean
+  ): Either[BatchChangeErrorResponse, Unit] =
     (scheduledChangesEnabled, input.scheduledTime) match {
       case (_, None) => Right(())
       case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
@@ -601,7 +654,8 @@ class BatchChangeValidations(
 
   def zoneDoesNotRequireManualReview(
       change: ChangeForValidation,
-      isApproved: Boolean): SingleValidation[Unit] =
+      isApproved: Boolean
+  ): SingleValidation[Unit] =
     if (isApproved) {
       ().validNel
     } else {

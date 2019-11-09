@@ -30,7 +30,8 @@ object ZoneChangeGenerator {
   def forAdd(
       zone: Zone,
       authPrincipal: AuthPrincipal,
-      status: ZoneChangeStatus = Pending): ZoneChange =
+      status: ZoneChangeStatus = Pending
+  ): ZoneChange =
     ZoneChange(
       zone
         .copy(id = UUID.randomUUID().toString, created = DateTime.now, status = ZoneStatus.Syncing),
@@ -68,6 +69,7 @@ object ZoneChangeGenerator {
       val oldConn = oldZ.connection.getOrElse(newConn)
       newConn.copy(
         key =
-          if (oldConn.key == newConn.decrypted(Crypto.instance).key) oldConn.key else newConn.key)
+          if (oldConn.key == newConn.decrypted(Crypto.instance).key) oldConn.key else newConn.key
+      )
     })
 }

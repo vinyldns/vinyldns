@@ -48,11 +48,13 @@ object DynamoDBRecordChangeRepository {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBRecordChangeRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBRecordChangeRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBRecordChangeRepository"))
+      LoggerFactory.getLogger("DynamoDBRecordChangeRepository")
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -72,14 +74,16 @@ object DynamoDBRecordChangeRepository {
           .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
           .withKeySchema(
             new KeySchemaElement(ZONE_ID, KeyType.HASH),
-            new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE))
+            new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE)
+          )
           .withProjection(new Projection().withProjectionType("ALL")),
         new GlobalSecondaryIndex()
           .withIndexName(ZONE_ID_CREATED_INDEX)
           .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
           .withKeySchema(
             new KeySchemaElement(ZONE_ID, KeyType.HASH),
-            new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE))
+            new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE)
+          )
           .withProjection(new Projection().withProjectionType("ALL"))
       )
 
@@ -98,8 +102,8 @@ object DynamoDBRecordChangeRepository {
 
 class DynamoDBRecordChangeRepository private[repository] (
     recordChangeTable: String,
-    val dynamoDBHelper: DynamoDBHelper)
-    extends RecordChangeRepository
+    val dynamoDBHelper: DynamoDBHelper
+) extends RecordChangeRepository
     with ProtobufConversions
     with Monitored {
 
@@ -137,7 +141,8 @@ class DynamoDBRecordChangeRepository private[repository] (
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): IO[ListRecordSetChangesResults] =
+      maxItems: Int = 100
+  ): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.getRecordSetChanges") {
       log.info(s"Getting record set changes for zone $zoneId")
 
@@ -171,7 +176,8 @@ class DynamoDBRecordChangeRepository private[repository] (
         val nextId = Try(
           resultList.last.getLastEvaluatedKey
             .get("record_set_change_created_timestamp")
-            .getN).toOption
+            .getN
+        ).toOption
         ListRecordSetChangesResults(items, nextId, startFrom, maxItems)
       }
     }
@@ -214,7 +220,8 @@ class DynamoDBRecordChangeRepository private[repository] (
 
   def toItem(
       changeSet: ChangeSet,
-      change: RecordSetChange): java.util.HashMap[String, AttributeValue] = {
+      change: RecordSetChange
+  ): java.util.HashMap[String, AttributeValue] = {
     val item = new java.util.HashMap[String, AttributeValue]()
     item.put(CHANGE_SET_ID, new AttributeValue(changeSet.id))
     item.put(ZONE_ID, new AttributeValue(changeSet.zoneId))
@@ -222,7 +229,8 @@ class DynamoDBRecordChangeRepository private[repository] (
     item.put(CREATED_TIMESTAMP, new AttributeValue(changeSet.createdTimestamp.toString))
     item.put(
       RECORD_SET_CHANGE_CREATED_TIMESTAMP,
-      new AttributeValue().withN(change.created.getMillis.toString))
+      new AttributeValue().withN(change.created.getMillis.toString)
+    )
     item.put(PROCESSING_TIMESTAMP, new AttributeValue(changeSet.processingTimestamp.toString))
 
     val recordSetChangeBlob = toPB(change).toByteArray

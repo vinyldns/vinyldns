@@ -79,7 +79,8 @@ object Boot extends App {
           repositories.userRepository,
           repositories.groupRepository,
           repositories.zoneRepository,
-          repositories.membershipRepository)
+          repositories.membershipRepository
+        )
       queueConfig <- VinylDNSConfig.messageQueueConfig
       messageQueue <- MessageQueueLoader.load(queueConfig)
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
@@ -128,16 +129,19 @@ object Boot extends App {
         connectionValidator,
         messageQueue,
         zoneValidations,
-        recordAccessValidations)
+        recordAccessValidations
+      )
       val healthService = new HealthService(
         messageQueue.healthCheck :: connectionValidator.healthCheck(healthCheckTimeout) ::
-          loaderResponse.healthChecks)
+          loaderResponse.healthChecks
+      )
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
       val authPrincipalProvider =
         new MembershipAuthPrincipalProvider(
           repositories.userRepository,
-          repositories.membershipRepository)
+          repositories.membershipRepository
+        )
       val batchChangeService = BatchChangeService(
         repositories,
         batchChangeValidations,

@@ -64,14 +64,16 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
     def createTableIfNotExists(
         dynamoDB: AmazonDynamoDBClient,
-        req: CreateTableRequest): IO[Boolean] =
+        req: CreateTableRequest
+    ): IO[Boolean] =
       IO(TableUtils.createTableIfNotExists(dynamoDB, req))
   }
 
   def shutdown(): Unit = dynamoDB.shutdown()
 
   private[repository] def send[In <: AmazonWebServiceRequest, Out](aws: In, func: In => Out)(
-      implicit d: Describe[_ >: In]): IO[Out] = {
+      implicit d: Describe[_ >: In]
+  ): IO[Out] = {
 
     def name = d.desc(aws)
 
@@ -198,7 +200,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
   private def continueScanning(
       request: ScanRequest,
       result: ScanResult,
-      acc: (List[ScanResult], Int)): IO[(List[ScanResult], Int)] =
+      acc: (List[ScanResult], Int)
+  ): IO[(List[ScanResult], Int)] =
     result.getLastEvaluatedKey match {
 
       case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty =>
@@ -227,7 +230,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
   private def continueQuerying(
       request: QueryRequest,
       result: QueryResult,
-      acc: List[QueryResult]): IO[List[QueryResult]] = {
+      acc: List[QueryResult]
+  ): IO[List[QueryResult]] = {
 
     val lastCount = result.getCount
     val limit =
@@ -253,8 +257,10 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
         // re-run the query, continue querying if need be, be sure to accumulate the result
         query(continuedQuery)
-          .flatMap(continuedResult =>
-            continueQuerying(continuedQuery, continuedResult, acc :+ continuedResult))
+          .flatMap(
+            continuedResult =>
+              continueQuerying(continuedQuery, continuedResult, acc :+ continuedResult)
+          )
     }
   }
 
@@ -265,7 +271,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       table: String,
       aws: BatchWriteItemRequest,
       retries: Int = 10,
-      backoff: FiniteDuration = 1.millis): IO[BatchWriteItemResult] =
+      backoff: FiniteDuration = 1.millis
+  ): IO[BatchWriteItemResult] =
     send[BatchWriteItemRequest, BatchWriteItemResult](aws, dynamoDB.batchWriteItem)
       .flatMap(r => sendUnprocessedBatchWriteItems(table, r, retries, backoff))
 
@@ -273,7 +280,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     toBatchWriteItemRequest(Collections.singletonMap(tableName, writes.asJava))
 
   def toBatchWriteItemRequest(
-      writes: java.util.Map[String, java.util.List[WriteRequest]]): BatchWriteItemRequest =
+      writes: java.util.Map[String, java.util.List[WriteRequest]]
+  ): BatchWriteItemRequest =
     new BatchWriteItemRequest()
       .withRequestItems(writes)
       .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
@@ -302,12 +310,14 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       // there are unprocessed items still remaining, but we have exhausted our retries, consider this FAILED
       log.error("Exhausted retries while sending batch write")
       throw DynamoDBRetriesExhaustedException(
-        s"Unable to batch write for table $tableName after retries")
+        s"Unable to batch write for table $tableName after retries"
+      )
     } else {
       // there are unprocessed items and we have retries left, let's retry those items we haven't yet processed
       log.warn(
         s"Unable to process all items in batch for table $tableName, resubmitting new batch with $unprocessed " +
-          s"items remaining")
+          s"items remaining"
+      )
       val nextBatch = toBatchWriteItemRequest(result.getUnprocessedItems)
       IO.sleep(backoff) *> batchWriteItem(tableName, nextBatch, retriesRemaining - 1, backoff * 2)
     }

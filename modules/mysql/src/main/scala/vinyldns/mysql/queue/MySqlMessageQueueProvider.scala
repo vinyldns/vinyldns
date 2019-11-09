@@ -53,7 +53,8 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
       // Configure the connection pool
       ConnectionPool.add(
         MySqlMessageQueue.QUEUE_CONNECTION_NAME,
-        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
+        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
+      )
 
       logger.error("queue connection pool init complete")
     }

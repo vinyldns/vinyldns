@@ -38,15 +38,16 @@ object RecordSetChangeHandler {
   def apply(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
-      batchChangeRepository: BatchChangeRepository)(
-      implicit timer: Timer[IO]): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
+      batchChangeRepository: BatchChangeRepository
+  )(implicit timer: Timer[IO]): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
         recordChangeRepository,
         batchChangeRepository,
         conn,
-        recordSetChange)
+        recordSetChange
+      )
     }
 
   def process(
@@ -54,7 +55,8 @@ object RecordSetChangeHandler {
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
       conn: DnsConnection,
-      recordSetChange: RecordSetChange)(implicit timer: Timer[IO]): IO[RecordSetChange] =
+      recordSetChange: RecordSetChange
+  )(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
       completedState <- fsm(Pending(recordSetChange), conn, wildCardExists)
@@ -62,14 +64,16 @@ object RecordSetChangeHandler {
       _ <- recordSetRepository.apply(changeSet)
       _ <- recordChangeRepository.save(changeSet)
       singleBatchChanges <- batchChangeRepository.getSingleChanges(
-        recordSetChange.singleBatchChangeIds)
+        recordSetChange.singleBatchChangeIds
+      )
       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
       _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
     } yield completedState.change
 
   def updateBatchStatuses(
       singleChanges: List[SingleChange],
-      recordSetChange: RecordSetChange): List[SingleChange] =
+      recordSetChange: RecordSetChange
+  ): List[SingleChange] =
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
         singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
@@ -146,7 +150,8 @@ object RecordSetChangeHandler {
   }
 
   private def fsm(state: ProcessorState, conn: DnsConnection, wildcardExists: Boolean)(
-      implicit timer: Timer[IO]): IO[ProcessorState] = {
+      implicit timer: Timer[IO]
+  ): IO[ProcessorState] = {
 
     /**
       * If there is a wildcard record with the same type, then we skip validation and verification steps.
@@ -161,8 +166,9 @@ object RecordSetChangeHandler {
       * We also skip verification for NS records.  We cannot create delegations for zones hosted on the
       * same ANS if we attempt to validate NS records
       */
-    def bypassValidation(skip: => ProcessorState)(
-        orElse: => IO[ProcessorState]): IO[ProcessorState] = {
+    def bypassValidation(
+        skip: => ProcessorState
+    )(orElse: => IO[ProcessorState]): IO[ProcessorState] = {
       val toRun =
         if (wildcardExists || state.change.recordSet.typ == RecordType.NS) IO.pure(skip) else orElse
 
@@ -199,8 +205,11 @@ object RecordSetChangeHandler {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
-        Completed(change.failed(
-          s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message))
+        Completed(
+          change.failed(
+            s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message
+          )
+        )
     }
 
   /* Step 2: Apply the change to the dns backend */
@@ -209,8 +218,11 @@ object RecordSetChangeHandler {
       case Right(_: NoError) =>
         Applied(change)
       case Left(error) =>
-        Completed(change.failed(
-          s"Failed applying update to DNS for change ${change.id}:${change.recordSet.name}: ${error.getMessage}"))
+        Completed(
+          change.failed(
+            s"Failed applying update to DNS for change ${change.id}:${change.recordSet.name}: ${error.getMessage}"
+          )
+        )
     }
 
   /* Step 3: Verify the record was created.  We attempt 12 times over 6 seconds */
@@ -219,13 +231,22 @@ object RecordSetChangeHandler {
       getProcessingStatus(change, dnsConn).flatMap {
         case AlreadyApplied(_) => IO.pure(Completed(change.successful))
         case ReadyToApply(_) if retries <= 0 =>
-          IO.pure(Completed(change.failed(s"""Failed verifying update to DNS for
-               |change ${change.id}:${change.recordSet.name}: Verify out of retries.""".stripMargin)))
+          IO.pure(
+            Completed(
+              change.failed(s"""Failed verifying update to DNS for
+               |change ${change.id}:${change.recordSet.name}: Verify out of retries.""".stripMargin)
+            )
+          )
         case ReadyToApply(_) =>
           IO.sleep(500.milliseconds) *> loop(retries - 1)
         case Failure(_, message) =>
-          IO.pure(Completed(change.failed(
-            s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message")))
+          IO.pure(
+            Completed(
+              change.failed(
+                s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
+              )
+            )
+          )
       }
 
     loop()
@@ -245,10 +266,11 @@ object RecordSetChangeHandler {
 
   private def wildCardExistsForRecord(
       recordSet: RecordSet,
-      recordSetRepository: RecordSetRepository): IO[Boolean] =
+      recordSetRepository: RecordSetRepository
+  ): IO[Boolean] =
     (
       recordSetRepository.getRecordSets(recordSet.zoneId, "*", recordSet.typ),
-      recordSetRepository.getRecordSets(recordSet.zoneId, "*", RecordType.CNAME))
-      .parMapN(_ ++ _)
+      recordSetRepository.getRecordSets(recordSet.zoneId, "*", RecordType.CNAME)
+    ).parMapN(_ ++ _)
       .map(_.nonEmpty)
 }

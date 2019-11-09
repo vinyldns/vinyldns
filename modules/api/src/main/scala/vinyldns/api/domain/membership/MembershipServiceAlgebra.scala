@@ -32,7 +32,8 @@ trait MembershipServiceAlgebra {
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
-      authPrincipal: AuthPrincipal): Result[Group]
+      authPrincipal: AuthPrincipal
+  ): Result[Group]
 
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group]
 
@@ -43,13 +44,15 @@ trait MembershipServiceAlgebra {
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean): Result[ListMyGroupsResponse]
+      ignoreAccess: Boolean
+  ): Result[ListMyGroupsResponse]
 
   def listMembers(
       groupId: String,
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListMembersResponse]
+      authPrincipal: AuthPrincipal
+  ): Result[ListMembersResponse]
 
   def listAdmins(groupId: String, authPrincipal: AuthPrincipal): Result[ListAdminsResponse]
 
@@ -57,10 +60,12 @@ trait MembershipServiceAlgebra {
       groupId: String,
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListGroupChangesResponse]
+      authPrincipal: AuthPrincipal
+  ): Result[ListGroupChangesResponse]
 
   def updateUserLockStatus(
       userId: String,
       lockStatus: LockStatus,
-      authPrincipal: AuthPrincipal): Result[User]
+      authPrincipal: AuthPrincipal
+  ): Result[User]
 }

@@ -42,12 +42,17 @@ class SnsNotifierProvider extends NotifierProvider {
       "Setting up sns notifier client with settings: " +
         s"service endpoint: ${config.serviceEndpoint}; " +
         s"signing region: ${config.signingRegion}; " +
-        s"topic name: ${config.topicArn}")
+        s"topic name: ${config.topicArn}"
+    )
     AmazonSNSClientBuilder.standard
       .withEndpointConfiguration(
-        new EndpointConfiguration(config.serviceEndpoint, config.signingRegion))
-      .withCredentials(new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(config.accessKey, config.secretKey)))
+        new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
+      )
+      .withCredentials(
+        new AWSStaticCredentialsProvider(
+          new BasicAWSCredentials(config.accessKey, config.secretKey)
+        )
+      )
       .build()
   }
 

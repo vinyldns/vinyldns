@@ -41,8 +41,11 @@ object VinylDateParser {
     format.dateFormat
       .parse(s)
       .map(_.getTime)
-      .getOrElse(throw new MappingException(
-        s"Invalid date format $s; provide the date format as YYYY-MM-DDTHH:MM:SSZ"))
+      .getOrElse(
+        throw new MappingException(
+          s"Invalid date format $s; provide the date format as YYYY-MM-DDTHH:MM:SSZ"
+        )
+      )
 }
 case object VinylDateTimeSerializer
     extends CustomSerializer[DateTime](
@@ -54,7 +57,8 @@ case object VinylDateTimeSerializer
           }, {
             case d: DateTime => JString(format.dateFormat.format(d.toDate))
           }
-      ))
+        )
+    )
 
 trait JsonValidationSupport extends Json4sSupport {
 
@@ -72,7 +76,8 @@ trait JsonValidationSupport extends Json4sSupport {
     IntervalSerializer(),
     LocalDateSerializer(),
     LocalTimeSerializer(),
-    PeriodSerializer)
+    PeriodSerializer
+  )
 
   /**
     * Returns an adjusted set of serializers excluding the serializer passed in.  This is needed otherwise
@@ -101,7 +106,8 @@ trait JsonValidation extends JsonValidationSupport {
 
   def JsonV[A: Manifest](
       validator: JValue => ValidatedNel[String, A],
-      serializer: A => JValue): ValidationSerializer[A] =
+      serializer: A => JValue
+  ): ValidationSerializer[A] =
     new ValidationSerializer[A] {
       override def fromJson(jv: JValue) = validator(jv)
       override def toJson(a: A) = serializer(a)
@@ -215,8 +221,9 @@ trait JsonValidation extends JsonValidationSupport {
           }
       }
 
-    def extractEnum[E <: Enumeration](enum: E)(
-        default: => ValidatedNel[String, E#Value]): ValidatedNel[String, E#Value] = {
+    def extractEnum[E <: Enumeration](
+        enum: E
+    )(default: => ValidatedNel[String, E#Value]): ValidatedNel[String, E#Value] = {
       lazy val invalidMsg =
         s"Invalid ${enum.getClass.getSimpleName.replace("$", "")}".invalidNel[E#Value]
 

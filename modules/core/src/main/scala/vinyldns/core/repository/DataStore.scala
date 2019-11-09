@@ -30,7 +30,8 @@ import scala.reflect.ClassTag
 class LoadedDataStore(
     val dataStore: DataStore,
     val shutdownHook: IO[Unit],
-    val healthCheck: HealthCheck)
+    val healthCheck: HealthCheck
+)
 
 object DataStore {
   def apply(

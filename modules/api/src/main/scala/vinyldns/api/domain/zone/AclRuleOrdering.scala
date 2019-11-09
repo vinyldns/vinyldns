@@ -40,11 +40,13 @@ trait ACLRuleOrdering extends Ordering[ACLRule] {
       sortableUserValue(rule1),
       sortableRecordMaskValue(rule1),
       sortableRecordTypeValue(rule1),
-      rule1.accessLevel).compare(
+      rule1.accessLevel
+    ).compare(
       sortableUserValue(rule2),
       sortableRecordMaskValue(rule2),
       sortableRecordTypeValue(rule2),
-      rule2.accessLevel)
+      rule2.accessLevel
+    )
 }
 
 object ACLRuleOrdering extends ACLRuleOrdering {

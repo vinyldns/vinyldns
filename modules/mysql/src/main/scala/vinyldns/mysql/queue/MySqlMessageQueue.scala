@@ -106,7 +106,8 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       typ: Int,
       data: Array[Byte],
       attempts: Int,
-      timeoutSeconds: Int): Either[(Throwable, MessageId), MySqlMessage] = {
+      timeoutSeconds: Int
+  ): Either[(Throwable, MessageId), MySqlMessage] = {
     // parse the type, if it cannot parse we fail with the message id, same with the data
     for {
       messageType <- MessageType.fromInt(typ)
@@ -121,14 +122,16 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       _ <- Either.cond(
         timeoutSeconds > 0,
         (),
-        MySqlMessageQueue.InvalidMessageTimeout(timeoutSeconds))
+        MySqlMessageQueue.InvalidMessageTimeout(timeoutSeconds)
+      )
     } yield MySqlMessage(id, attempts, timeoutSeconds.seconds, cmd)
   }.leftMap { e =>
     (e, id)
   }
 
-  def fetchUnclaimed(numMessages: Int)(
-      implicit s: DBSession): List[Either[(Throwable, MessageId), MySqlMessage]] =
+  def fetchUnclaimed(
+      numMessages: Int
+  )(implicit s: DBSession): List[Either[(Throwable, MessageId), MySqlMessage]] =
     FETCH_UNCLAIMED
       .bind(numMessages)
       .map { rs =>

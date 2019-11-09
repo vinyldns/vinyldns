@@ -21,4 +21,5 @@ import org.joda.time.DateTime
 final case class BatchChangeReviewInfo(
     reviewerId: String,
     reviewComment: Option[String],
-    reviewTimestamp: DateTime = DateTime.now())
+    reviewTimestamp: DateTime = DateTime.now()
+)

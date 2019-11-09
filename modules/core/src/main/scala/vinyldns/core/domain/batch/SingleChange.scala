@@ -53,12 +53,14 @@ sealed trait SingleChange {
         add.copy(
           status = SingleChangeStatus.Failed,
           systemMessage = message,
-          recordChangeId = Some(failedRecordChangeId))
+          recordChangeId = Some(failedRecordChangeId)
+        )
       case delete: SingleDeleteRRSetChange =>
         delete.copy(
           status = SingleChangeStatus.Failed,
           systemMessage = message,
-          recordChangeId = Some(failedRecordChangeId))
+          recordChangeId = Some(failedRecordChangeId)
+        )
     }
 
   def complete(completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
@@ -66,12 +68,14 @@ sealed trait SingleChange {
       add.copy(
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
-        recordSetId = Some(recordSetId))
+        recordSetId = Some(recordSetId)
+      )
     case delete: SingleDeleteRRSetChange =>
       delete.copy(
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
-        recordSetId = Some(recordSetId))
+        recordSetId = Some(recordSetId)
+      )
   }
 
   def reject: SingleChange = this match {
@@ -104,8 +108,8 @@ final case class SingleAddChange(
     recordChangeId: Option[String],
     recordSetId: Option[String],
     validationErrors: List[SingleChangeError] = List.empty,
-    id: String = UUID.randomUUID().toString)
-    extends SingleChange
+    id: String = UUID.randomUUID().toString
+) extends SingleChange
 
 final case class SingleDeleteRRSetChange(
     zoneId: Option[String],
@@ -119,8 +123,8 @@ final case class SingleDeleteRRSetChange(
     recordChangeId: Option[String],
     recordSetId: Option[String],
     validationErrors: List[SingleChangeError] = List.empty,
-    id: String = UUID.randomUUID().toString)
-    extends SingleChange
+    id: String = UUID.randomUUID().toString
+) extends SingleChange
 
 /*
  - Pending has not yet been processed

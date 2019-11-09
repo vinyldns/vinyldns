@@ -31,7 +31,8 @@ object MessageQueueLoader {
           .forName(config.className)
           .getDeclaredConstructor()
           .newInstance()
-          .asInstanceOf[MessageQueueProvider])
+          .asInstanceOf[MessageQueueProvider]
+      )
       queue <- provider.load(config)
     } yield queue
 }

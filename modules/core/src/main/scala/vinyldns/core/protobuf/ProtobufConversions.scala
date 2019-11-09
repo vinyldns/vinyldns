@@ -56,7 +56,8 @@ trait ProtobufConversions {
     val status = Try(RecordSetChangeStatus.withName(chg.getStatus))
       .getOrElse {
         protoLogger.error(
-          s"Encountered unexpected status in RecordSetChange.fromPB: ${chg.getStatus}")
+          s"Encountered unexpected status in RecordSetChange.fromPB: ${chg.getStatus}"
+        )
         // deprecated Submitted, Validated, Applied, Verified -- setting all to "Pending"
         RecordSetChangeStatus.Pending
       }
@@ -181,7 +182,8 @@ trait ProtobufConversions {
       data.getKeyTag,
       DnsSecAlgorithm(data.getAlgorithm),
       DigestType(data.getDigestType),
-      ByteVector.apply(data.getDigest.asReadOnlyByteBuffer()))
+      ByteVector.apply(data.getDigest.asReadOnlyByteBuffer())
+    )
 
   def fromPB(data: VinylDNSProto.MXData): MXData = MXData(data.getPreference, data.getExchange)
 
@@ -197,7 +199,8 @@ trait ProtobufConversions {
       data.getRefresh,
       data.getRetry,
       data.getExpire,
-      data.getMinimum)
+      data.getMinimum
+    )
 
   def fromPB(data: VinylDNSProto.SPFData): SPFData = SPFData(data.getText)
 
@@ -211,7 +214,8 @@ trait ProtobufConversions {
       data.getFlags,
       data.getService,
       data.getRegexp,
-      data.getReplacement)
+      data.getReplacement
+    )
 
   def fromPB(data: VinylDNSProto.SSHFPData): SSHFPData =
     SSHFPData(data.getAlgorithm, data.getTyp, data.getFingerPrint)

@@ -29,7 +29,8 @@ case class CurrentStatus(
     processingDisabled: Boolean,
     color: String,
     keyName: String,
-    version: String)
+    version: String
+)
 
 object CurrentStatus {
   val color = VinylDNSConfig.vinyldnsConfig.getString("color")
@@ -50,7 +51,8 @@ trait StatusRoute extends Directives {
       onSuccess(processingDisabled.get.unsafeToFuture()) { isProcessingDisabled =>
         complete(
           StatusCodes.OK,
-          CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version))
+          CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version)
+        )
       }
     } ~
       (post & path("status")) {
@@ -58,7 +60,8 @@ trait StatusRoute extends Directives {
           onSuccess(processingDisabled.set(isProcessingDisabled).unsafeToFuture()) {
             complete(
               StatusCodes.OK,
-              CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version))
+              CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version)
+            )
           }
         }
       }

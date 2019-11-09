@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
+import vinyldns.core.domain
 
 case class BatchChange(
     userId: String,
@@ -50,7 +51,8 @@ case class BatchChange(
       hasPending,
       hasFailed,
       hasComplete,
-      isScheduled)
+      isScheduled
+    )
   }
 }
 
@@ -68,7 +70,7 @@ case class BatchChangeCommand(id: String) extends ZoneCommand with ZoneCommandRe
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
   val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
-  Scheduled =
+      Scheduled =
     Value
 
   def calculateBatchStatus(
@@ -76,7 +78,8 @@ object BatchChangeStatus extends Enumeration {
       hasPending: Boolean,
       hasFailed: Boolean,
       hasComplete: Boolean,
-      isScheduled: Boolean): BatchChangeStatus =
+      isScheduled: Boolean
+  ): BatchChangeStatus =
     approvalStatus match {
       case BatchChangeApprovalStatus.PendingReview if isScheduled => BatchChangeStatus.Scheduled
       case BatchChangeApprovalStatus.PendingReview => BatchChangeStatus.PendingReview
@@ -126,7 +129,8 @@ object BatchChangeInfo {
   def apply(
       batchChange: BatchChange,
       ownerGroupName: Option[String] = None,
-      reviewerUserName: Option[String] = None): BatchChangeInfo = {
+      reviewerUserName: Option[String] = None
+  ): BatchChangeInfo = {
     import batchChange._
     BatchChangeInfo(
       userId,

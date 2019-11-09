@@ -42,11 +42,13 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBZoneChangeRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBZoneChangeRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBZoneChangeRepository"))
+      LoggerFactory.getLogger("DynamoDBZoneChangeRepository")
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -64,7 +66,8 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
         .withKeySchema(
           new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(CREATED, KeyType.RANGE))
+          new KeySchemaElement(CREATED, KeyType.RANGE)
+        )
         .withProjection(new Projection().withProjectionType("ALL"))
     )
 
@@ -74,7 +77,8 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
         .withAttributeDefinitions(tableAttributes: _*)
         .withKeySchema(
           new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(CHANGE_ID, KeyType.RANGE))
+          new KeySchemaElement(CHANGE_ID, KeyType.RANGE)
+        )
         .withGlobalSecondaryIndexes(secondaryIndexes: _*)
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
@@ -85,8 +89,8 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
 class DynamoDBZoneChangeRepository private[repository] (
     zoneChangeTable: String,
-    val dynamoDBHelper: DynamoDBHelper)
-    extends ZoneChangeRepository
+    val dynamoDBHelper: DynamoDBHelper
+) extends ZoneChangeRepository
     with ProtobufConversions
     with Monitored {
 
@@ -109,7 +113,8 @@ class DynamoDBZoneChangeRepository private[repository] (
   def listZoneChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): IO[ListZoneChangesResults] =
+      maxItems: Int = 100
+  ): IO[ListZoneChangesResults] =
     monitor("repo.ZoneChange.getChanges") {
       log.info(s"Getting zone changes for zone $zoneId")
 

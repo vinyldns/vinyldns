@@ -33,6 +33,7 @@ object CryptoAlgebra {
           .forName(className)
           .getDeclaredConstructor(classOf[Config])
           .newInstance(cryptoConfig)
-          .asInstanceOf[CryptoAlgebra])
+          .asInstanceOf[CryptoAlgebra]
+      )
     } yield classInstance
 }

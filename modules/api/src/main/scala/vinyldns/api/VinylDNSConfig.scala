@@ -76,7 +76,8 @@ object VinylDNSConfig {
 
   lazy val highValueRegexList: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(
-      getOptionalStringList("high-value-domains.regex-list"))
+      getOptionalStringList("high-value-domains.regex-list")
+    )
 
   lazy val highValueIpList: List[IpAddress] =
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
@@ -148,13 +149,15 @@ object VinylDNSConfig {
 
   lazy val domainListRequiringManualReview: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(
-      getOptionalStringList("manual-review-domains.domain-list"))
+      getOptionalStringList("manual-review-domains.domain-list")
+    )
 
   lazy val ipListRequiringManualReview: List[IpAddress] =
     getOptionalStringList("manual-review-domains.ip-list").flatMap(ip => IpAddress(ip))
 
   lazy val zoneNameListRequiringManualReview: Set[String] = {
-    Set() ++ getOptionalStringList("manual-review-domains.zone-name-list").map(zn =>
-      DomainHelpers.ensureTrailingDot(zn.toLowerCase))
+    Set() ++ getOptionalStringList("manual-review-domains.zone-name-list").map(
+      zn => DomainHelpers.ensureTrailingDot(zn.toLowerCase)
+    )
   }
 }

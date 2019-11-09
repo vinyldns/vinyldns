@@ -27,7 +27,8 @@ trait UserRepository extends Repository {
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
-      maxItems: Option[Int]): IO[ListUsersResults]
+      maxItems: Option[Int]
+  ): IO[ListUsersResults]
 
   def getAllUsers: IO[List[User]]
 

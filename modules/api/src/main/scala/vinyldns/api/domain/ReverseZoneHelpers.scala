@@ -57,7 +57,8 @@ object ReverseZoneHelpers {
       handleIpv6RecordValidation(zone: Zone, recordName)
     } else {
       InvalidRequest(
-        s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
+        s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}"
+      ).asLeft
     }
 
   def convertPTRtoIPv4(zone: Zone, recordName: String): String = {
@@ -83,7 +84,8 @@ object ReverseZoneHelpers {
   private def recordsetIsWithinCidrMaskIpv4(
       mask: String,
       zone: Zone,
-      recordName: String): Boolean = {
+      recordName: String
+  ): Boolean = {
     val recordIpAddr = convertPTRtoIPv4(zone, recordName)
 
     Try {
@@ -125,14 +127,16 @@ object ReverseZoneHelpers {
 
   private def handleIpv4RecordValidation(
       zone: Zone,
-      recordName: String): Either[Throwable, Unit] = {
+      recordName: String
+  ): Either[Throwable, Unit] = {
     val isValid = for {
       cidrMask <- getZoneAsCIDRString(zone)
       validated <- if (recordsetIsWithinCidrMask(cidrMask, zone, recordName)) {
         true.asRight
       } else {
         InvalidRequest(
-          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
+          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}"
+        ).asLeft
       }
     } yield validated
 
@@ -141,14 +145,16 @@ object ReverseZoneHelpers {
 
   private def handleIpv6RecordValidation(
       zone: Zone,
-      recordName: String): Either[Throwable, Unit] = {
+      recordName: String
+  ): Either[Throwable, Unit] = {
     val v6Regex = "([0-9a-f][.]){32}ip6.arpa.".r
 
     s"$recordName.${zone.name}" match {
       case v6Regex(_*) => ().asRight
       case _ =>
         InvalidRequest(
-          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
+          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}"
+        ).asLeft
     }
   }
 

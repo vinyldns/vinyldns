@@ -56,11 +56,13 @@ object DynamoDBUserRepository {
   def apply(
       config: DynamoDBRepositorySettings,
       dynamoConfig: DynamoDBDataStoreSettings,
-      crypto: CryptoAlgebra): IO[DynamoDBUserRepository] = {
+      crypto: CryptoAlgebra
+  ): IO[DynamoDBUserRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBUserRepository"))
+      LoggerFactory.getLogger("DynamoDBUserRepository")
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -149,8 +151,8 @@ class DynamoDBUserRepository private[repository] (
     userTableName: String,
     val dynamoDBHelper: DynamoDBHelper,
     serialize: User => java.util.Map[String, AttributeValue],
-    deserialize: java.util.Map[String, AttributeValue] => IO[User])
-    extends UserRepository
+    deserialize: java.util.Map[String, AttributeValue] => IO[User]
+) extends UserRepository
     with Monitored {
 
   import DynamoDBUserRepository._
@@ -198,7 +200,8 @@ class DynamoDBUserRepository private[repository] (
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
-      maxItems: Option[Int]): IO[ListUsersResults] = {
+      maxItems: Option[Int]
+  ): IO[ListUsersResults] = {
 
     def toBatchGetItemRequest(userIds: List[String]): BatchGetItemRequest = {
       val allKeys = new util.ArrayList[util.Map[String, AttributeValue]]()
@@ -274,7 +277,8 @@ class DynamoDBUserRepository private[repository] (
     monitor("repo.User.getAllUsers") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
-          "getAllUsers is not supported by VinylDNS DynamoDB UserRepository")
+          "getAllUsers is not supported by VinylDNS DynamoDB UserRepository"
+        )
       )
     }
 
@@ -312,7 +316,8 @@ class DynamoDBUserRepository private[repository] (
     monitor("repo.User.save") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
-          "batch save is not supported by VinylDNS DynamoDb UserRepository")
+          "batch save is not supported by VinylDNS DynamoDb UserRepository"
+        )
       )
     }
 }

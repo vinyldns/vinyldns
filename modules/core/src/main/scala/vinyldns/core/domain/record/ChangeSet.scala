@@ -46,7 +46,8 @@ case class ChangeSet(
     createdTimestamp: Long,
     processingTimestamp: Long,
     changes: Seq[RecordSetChange],
-    status: ChangeSetStatus) {
+    status: ChangeSetStatus
+) {
 
   def complete(change: RecordSetChange): ChangeSet = {
     val updatedChanges = this.changes.filterNot(_.id == change.id) :+ change

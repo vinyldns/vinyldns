@@ -43,5 +43,6 @@ object ACLRule {
       aclRuleInfo.userId,
       aclRuleInfo.groupId,
       aclRuleInfo.recordMask,
-      aclRuleInfo.recordTypes)
+      aclRuleInfo.recordTypes
+    )
 }

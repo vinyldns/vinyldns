@@ -45,7 +45,8 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
   def fromPB(
       changeType: SingleChangeType,
       errors: List[SingleChangeError],
-      change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
+      change: VinylDNSProto.SingleChange
+  ): Either[Throwable, SingleChange] =
     Either.catchNonFatal {
       changeType match {
         case SingleAddType =>
@@ -94,7 +95,8 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     }
 
   def fromPB(
-      errors: List[VinylDNSProto.SingleChangeError]): Either[Throwable, List[SingleChangeError]] =
+      errors: List[VinylDNSProto.SingleChangeError]
+  ): Either[Throwable, List[SingleChangeError]] =
     Either.catchNonFatal {
       errors.map { e =>
         val errorType = DomainValidationErrorType.withName(e.getErrorType)
@@ -148,7 +150,8 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
 
   def addCommonSingleChangeFields(
       sc: VinylDNSProto.SingleChange.Builder,
-      change: SingleChange): Unit = {
+      change: SingleChange
+  ): Unit = {
     sc.setId(change.id)
       .setInputName(change.inputName)
       .setRecordType(change.typ.toString)

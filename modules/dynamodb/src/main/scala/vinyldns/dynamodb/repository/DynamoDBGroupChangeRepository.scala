@@ -41,11 +41,13 @@ object DynamoDBGroupChangeRepository {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBGroupChangeRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBGroupChangeRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository]))
+      LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository])
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -63,7 +65,8 @@ object DynamoDBGroupChangeRepository {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
         .withKeySchema(
           new KeySchemaElement(GROUP_ID, KeyType.HASH),
-          new KeySchemaElement(CREATED, KeyType.RANGE))
+          new KeySchemaElement(CREATED, KeyType.RANGE)
+        )
         .withProjection(new Projection().withProjectionType("ALL"))
     )
 
@@ -82,8 +85,8 @@ object DynamoDBGroupChangeRepository {
 
 class DynamoDBGroupChangeRepository private[repository] (
     groupChangeTableName: String,
-    val dynamoDBHelper: DynamoDBHelper)
-    extends GroupChangeRepository
+    val dynamoDBHelper: DynamoDBHelper
+) extends GroupChangeRepository
     with Monitored
     with GroupProtobufConversions {
 
@@ -114,7 +117,8 @@ class DynamoDBGroupChangeRepository private[repository] (
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
-      maxItems: Int): IO[ListGroupChangesResults] =
+      maxItems: Int
+  ): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
       log.info("Getting groupChanges")
 
@@ -143,8 +147,8 @@ class DynamoDBGroupChangeRepository private[repository] (
 
       dynamoDBHelper.query(queryRequest).map { queryResult =>
         val items = queryResult.getItems().asScala.map(fromItem).toList
-        val lastEvaluatedId = Option(queryResult.getLastEvaluatedKey).flatMap(key =>
-          key.asScala.get(CREATED).map(_.getN))
+        val lastEvaluatedId = Option(queryResult.getLastEvaluatedKey)
+          .flatMap(key => key.asScala.get(CREATED).map(_.getN))
         ListGroupChangesResults(items, lastEvaluatedId)
       }
     }

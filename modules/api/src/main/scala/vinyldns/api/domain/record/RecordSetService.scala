@@ -33,7 +33,8 @@ object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
-      accessValidation: AccessValidationsAlgebra): RecordSetService =
+      accessValidation: AccessValidationsAlgebra
+  ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -52,8 +53,8 @@ class RecordSetService(
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
     messageQueue: MessageQueue,
-    accessValidation: AccessValidationsAlgebra)
-    extends RecordSetServiceAlgebra {
+    accessValidation: AccessValidationsAlgebra
+) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
   import accessValidation._
@@ -106,7 +107,8 @@ class RecordSetService(
   def deleteRecordSet(
       recordSetId: String,
       zoneId: String,
-      auth: AuthPrincipal): Result[ZoneCommandResult] =
+      auth: AuthPrincipal
+  ): Result[ZoneCommandResult] =
     for {
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId, zone)
@@ -121,7 +123,8 @@ class RecordSetService(
   def getRecordSet(
       recordSetId: String,
       zoneId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSetInfo] =
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId, zone)
@@ -130,7 +133,8 @@ class RecordSetService(
         recordSet.name,
         recordSet.typ,
         zone,
-        recordSet.ownerGroupId).toResult
+        recordSet.ownerGroupId
+      ).toResult
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
@@ -139,7 +143,8 @@ class RecordSetService(
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
-      authPrincipal: AuthPrincipal): Result[ListRecordSetsResponse] =
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetsResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -150,39 +155,44 @@ class RecordSetService(
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
       setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
       setsWithAccess <- getListAccessLevels(authPrincipal, setsWithGroupName, zone).toResult
-    } yield
-      ListRecordSetsResponse(
-        setsWithAccess,
-        recordSetResults.startFrom,
-        recordSetResults.nextId,
-        recordSetResults.maxItems,
-        recordSetResults.recordNameFilter)
+    } yield ListRecordSetsResponse(
+      setsWithAccess,
+      recordSetResults.startFrom,
+      recordSetResults.nextId,
+      recordSetResults.maxItems,
+      recordSetResults.recordNameFilter
+    )
 
   def getRecordSetChange(
       zoneId: String,
       changeId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSetChange] =
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetChange] =
     for {
       zone <- getZone(zoneId)
       change <- recordChangeRepository
         .getRecordSetChange(zone.id, changeId)
         .orFail(
           RecordSetChangeNotFoundError(
-            s"Unable to find record set change with id $changeId in zone ${zone.name}"))
+            s"Unable to find record set change with id $changeId in zone ${zone.name}"
+          )
+        )
         .toResult[RecordSetChange]
       _ <- canViewRecordSet(
         authPrincipal,
         change.recordSet.name,
         change.recordSet.typ,
         zone,
-        change.recordSet.ownerGroupId).toResult
+        change.recordSet.ownerGroupId
+      ).toResult
     } yield change
 
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      authPrincipal: AuthPrincipal): Result[ListRecordSetChangesResponse] =
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetChangesResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -203,7 +213,9 @@ class RecordSetService(
       .getRecordSet(zone.id, recordsetId)
       .orFail(
         RecordSetNotFoundError(
-          s"RecordSet with id $recordsetId does not exist in zone ${zone.name}"))
+          s"RecordSet with id $recordsetId does not exist in zone ${zone.name}"
+        )
+      )
       .toResult[RecordSet]
 
   def recordSetDoesNotExist(recordSet: RecordSet, zone: Zone): Result[Unit] =
@@ -215,18 +227,22 @@ class RecordSetService(
           Left(
             RecordSetAlreadyExists(
               s"RecordSet with name ${recordSet.name} and type ${recordSet.typ} already " +
-                s"exists in zone ${zone.name}"))
+                s"exists in zone ${zone.name}"
+            )
+          )
       }
       .toResult
 
   def buildRecordSetChangeInfo(
-      changes: List[RecordSetChange]): Result[List[RecordSetChangeInfo]] = {
+      changes: List[RecordSetChange]
+  ): Result[List[RecordSetChangeInfo]] = {
     val userIds = changes.map(_.userId).toSet
     for {
       users <- userRepository.getUsers(userIds, None, None).map(_.users).toResult[Seq[User]]
       userMap = users.map(u => (u.id, u.userName)).toMap
-      recordSetChangesInfo = changes.map(change =>
-        RecordSetChangeInfo(change, userMap.get(change.userId)))
+      recordSetChangesInfo = changes.map(
+        change => RecordSetChangeInfo(change, userMap.get(change.userId))
+      )
     } yield recordSetChangesInfo
   }
 

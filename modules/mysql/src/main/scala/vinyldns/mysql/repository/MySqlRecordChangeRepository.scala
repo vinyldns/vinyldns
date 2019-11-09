@@ -91,7 +91,8 @@ class MySqlRecordChangeRepository
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String],
-      maxItems: Int): IO[ListRecordSetChangesResults] =
+      maxItems: Int
+  ): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.listRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>

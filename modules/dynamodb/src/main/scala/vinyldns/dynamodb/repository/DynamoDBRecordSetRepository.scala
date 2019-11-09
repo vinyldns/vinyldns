@@ -41,11 +41,13 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBRecordSetRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBRecordSetRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBRecordSetRepository"))
+      LoggerFactory.getLogger("DynamoDBRecordSetRepository")
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -64,14 +66,16 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
         .withKeySchema(
           new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(RECORD_SET_NAME, KeyType.RANGE))
+          new KeySchemaElement(RECORD_SET_NAME, KeyType.RANGE)
+        )
         .withProjection(new Projection().withProjectionType("ALL")),
       new GlobalSecondaryIndex()
         .withIndexName(ZONE_ID_RECORD_SET_SORT_INDEX)
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
         .withKeySchema(
           new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(RECORD_SET_SORT, KeyType.RANGE))
+          new KeySchemaElement(RECORD_SET_SORT, KeyType.RANGE)
+        )
         .withProjection(new Projection().withProjectionType("ALL"))
     )
 
@@ -90,8 +94,8 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
 
 class DynamoDBRecordSetRepository private[repository] (
     val recordSetTableName: String,
-    val dynamoDBHelper: DynamoDBHelper)
-    extends RecordSetRepository
+    val dynamoDBHelper: DynamoDBHelper
+) extends RecordSetRepository
     with DynamoDBRecordSetConversions
     with Monitored
     with QueryHelper {
@@ -103,7 +107,8 @@ class DynamoDBRecordSetRepository private[repository] (
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
       log.info(
-        s"Applying change set for zone ${changeSet.zoneId} with size ${changeSet.changes.size}")
+        s"Applying change set for zone ${changeSet.zoneId} with size ${changeSet.changes.size}"
+      )
 
       // The BatchWriteItem max size is 25, so we need to group by that number
       val MaxBatchWriteGroup = 25
@@ -134,20 +139,23 @@ class DynamoDBRecordSetRepository private[repository] (
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): IO[ListRecordSetResults] =
+      recordNameFilter: Option[String]
+  ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
 
       val keyConditions = Map[String, String](ZONE_ID -> zoneId)
-      val filterExpression = recordNameFilter.map(filter =>
-        ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase)))
+      val filterExpression = recordNameFilter.map(
+        filter => ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase))
+      )
 
       val startKey = startFrom.map { inputString =>
         val attributes = inputString.split('~')
         Map(
           ZONE_ID -> attributes(0),
           RECORD_SET_NAME -> attributes(1),
-          RECORD_SET_ID -> attributes(2))
+          RECORD_SET_ID -> attributes(2)
+        )
       }
       val responseFuture = doQuery(
         recordSetTableName,
@@ -155,7 +163,8 @@ class DynamoDBRecordSetRepository private[repository] (
         keyConditions,
         filterExpression,
         startKey,
-        maxItems)(dynamoDBHelper)
+        maxItems
+      )(dynamoDBHelper)
 
       for {
         resp <- responseFuture
@@ -165,7 +174,8 @@ class DynamoDBRecordSetRepository private[repository] (
           List(
             keyMap.get(ZONE_ID).getS,
             keyMap.get(RECORD_SET_NAME).getS,
-            keyMap.get(RECORD_SET_ID).getS).mkString("~")
+            keyMap.get(RECORD_SET_ID).getS
+          ).mkString("~")
         }
       } yield ListRecordSetResults(rs, nextId, startFrom, maxItems, recordNameFilter)
     }
@@ -176,7 +186,8 @@ class DynamoDBRecordSetRepository private[repository] (
 
       val keyConditions = Map[String, String](
         ZONE_ID -> zoneId,
-        RECORD_SET_SORT -> omitTrailingDot(name.toLowerCase()))
+        RECORD_SET_SORT -> omitTrailingDot(name.toLowerCase())
+      )
       val responseFuture =
         doQuery(recordSetTableName, ZONE_ID_RECORD_SET_SORT_INDEX, keyConditions)(dynamoDBHelper)
 
@@ -192,11 +203,13 @@ class DynamoDBRecordSetRepository private[repository] (
 
       val keyConditions = Map[String, String](
         ZONE_ID -> zoneId,
-        RECORD_SET_SORT -> omitTrailingDot(name.toLowerCase()))
+        RECORD_SET_SORT -> omitTrailingDot(name.toLowerCase())
+      )
       val filterExpression = Some(EqualsFilter(RECORD_SET_TYPE, typ.toString))
       val responseFuture =
         doQuery(recordSetTableName, ZONE_ID_RECORD_SET_SORT_INDEX, keyConditions, filterExpression)(
-          dynamoDBHelper)
+          dynamoDBHelper
+        )
 
       for {
         resp <- responseFuture
@@ -230,7 +243,8 @@ class DynamoDBRecordSetRepository private[repository] (
         recordSetTableName,
         ZONE_ID_RECORD_SET_NAME_INDEX,
         keyConditions,
-        isCountQuery = true)(dynamoDBHelper)
+        isCountQuery = true
+      )(dynamoDBHelper)
 
       responseFuture.map(resp => resp.asInstanceOf[QueryResponseCount].count)
     }

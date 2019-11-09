@@ -32,8 +32,8 @@ trait ResponseItems {
 
 case class QueryResponseItems(
     items: List[java.util.Map[String, AttributeValue]] = List(),
-    lastEvaluatedKey: Option[java.util.Map[String, AttributeValue]] = None)
-    extends ResponseItems {
+    lastEvaluatedKey: Option[java.util.Map[String, AttributeValue]] = None
+) extends ResponseItems {
 
   override def addResult(newResult: QueryResult): QueryResponseItems =
     QueryResponseItems(items ++ newResult.getItems.asScala, Option(newResult.getLastEvaluatedKey))
@@ -58,8 +58,8 @@ case class QueryResponseItems(
 
 case class QueryResponseCount(
     count: Int = 0,
-    lastEvaluatedKey: Option[java.util.Map[String, AttributeValue]] = None)
-    extends ResponseItems {
+    lastEvaluatedKey: Option[java.util.Map[String, AttributeValue]] = None
+) extends ResponseItems {
 
   override def addResult(newResult: QueryResult): QueryResponseCount =
     QueryResponseCount(count + newResult.getCount, Option(newResult.getLastEvaluatedKey))
@@ -93,7 +93,8 @@ object QueryManager {
       filter: Option[FilterType],
       initialStartKey: Option[Map[String, String]],
       maxItems: Option[Int],
-      isCountQuery: Boolean): QueryManager = {
+      isCountQuery: Boolean
+  ): QueryManager = {
     val expressionAttributeValues = new HashMap[String, AttributeValue]
     val expressionAttributeNames = new HashMap[String, String]
 
@@ -129,7 +130,8 @@ object QueryManager {
       start,
       filterExpression,
       maxItems,
-      isCountQuery)
+      isCountQuery
+    )
   }
 }
 
@@ -142,7 +144,8 @@ case class QueryManager(
     startKey: Option[util.Map[String, AttributeValue]],
     filterExpression: Option[String],
     maxItems: Option[Int],
-    isCountQuery: Boolean) {
+    isCountQuery: Boolean
+) {
 
   def build(): QueryRequest = {
     val request = new QueryRequest()
@@ -170,7 +173,8 @@ trait QueryHelper {
       filter: Option[FilterType] = None,
       startKey: Option[Map[String, String]] = None,
       maxItems: Option[Int] = None,
-      isCountQuery: Boolean = false): DynamoDBHelper => IO[ResponseItems] = dynamoDbHelper => {
+      isCountQuery: Boolean = false
+  ): DynamoDBHelper => IO[ResponseItems] = dynamoDbHelper => {
     // do not limit items when there is a filter - filters are applied after limits
     val itemsToRetrieve = filter match {
       case Some(_) => None
@@ -190,7 +194,8 @@ trait QueryHelper {
       dynamoDbHelper: DynamoDBHelper,
       dynamoQuery: QueryManager,
       acc: ResponseItems,
-      limit: Option[Int]): IO[ResponseItems] =
+      limit: Option[Int]
+  ): IO[ResponseItems] =
     dynamoDbHelper.query(dynamoQuery.build()).flatMap { queryResult =>
       val accumulatedResults = acc.addResult(queryResult)
       if (accumulatedResults.isComplete(limit))
@@ -200,6 +205,7 @@ trait QueryHelper {
           dynamoDbHelper,
           dynamoQuery.copy(startKey = Some(queryResult.getLastEvaluatedKey)),
           accumulatedResults,
-          limit)
+          limit
+        )
     }
 }

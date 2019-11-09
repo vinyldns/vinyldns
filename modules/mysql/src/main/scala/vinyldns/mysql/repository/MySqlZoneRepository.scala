@@ -164,9 +164,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       IO {
         DB.readOnly { implicit s =>
           val questionMarks = List.fill(zoneNames.size)("?").mkString(",")
-          SQL(BASE_GET_ZONES_SQL +
-            s"""WHERE name in ($questionMarks)""".stripMargin)
-            .bind(zoneNames: _*)
+          SQL(
+            BASE_GET_ZONES_SQL +
+              s"""WHERE name in ($questionMarks)""".stripMargin
+          ).bind(zoneNames: _*)
             .map(extractZone(1))
             .list()
             .apply()
@@ -199,8 +200,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             val whereClause = clause.mkString(" OR ")
             val zn = zoneNameList.map(name => s"%$name%")
 
-            SQL(BASE_GET_ZONES_SQL +
-              " WHERE " + whereClause).bind(zn: _*).map(extractZone(1)).list().apply()
+            SQL(
+              BASE_GET_ZONES_SQL +
+                " WHERE " + whereClause
+            ).bind(zn: _*).map(extractZone(1)).list().apply()
           }.toSet
         }
       }
@@ -220,7 +223,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false): IO[ListZonesResults] =
+      ignoreAccess: Boolean = false
+  ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
         DB.readOnly { implicit s =>
@@ -292,7 +296,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   private def withAccessors(
       user: User,
       groupIds: Seq[String],
-      ignoreAccessZones: Boolean): (String, Seq[Any]) =
+      ignoreAccessZones: Boolean
+  ): (String, Seq[Any]) =
     // Super users do not need to join across to check zone access as they have access to all of the zones
     if (ignoreAccessZones || user.isSuper || user.isSupport) {
       (BASE_ZONE_SEARCH_SQL, Seq.empty)
@@ -315,7 +320,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
     if (allAccessors.length > MAX_ACCESSORS) {
       logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!")
+        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
+      )
     }
 
     // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
@@ -407,7 +413,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       f: A => IO[Either[E, A]],
       a: A,
       delay: FiniteDuration,
-      maxRetries: Int): IO[Either[E, A]] =
+      maxRetries: Int
+  ): IO[Either[E, A]] =
     f(a).handleErrorWith { error =>
       if (maxRetries > 0)
         IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)

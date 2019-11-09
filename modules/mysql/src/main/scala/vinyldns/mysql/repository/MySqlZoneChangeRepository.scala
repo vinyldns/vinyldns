@@ -69,7 +69,8 @@ class MySqlZoneChangeRepository
   override def listZoneChanges(
       zoneId: String,
       startFrom: Option[String],
-      maxItems: Int): IO[ListZoneChangesResults] =
+      maxItems: Int
+  ): IO[ListZoneChangesResults] =
     // sorted from most recent, startFrom is an offset from the most recent change
     monitor("repo.ZoneChange.listZoneChanges") {
       IO {

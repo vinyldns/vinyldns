@@ -84,32 +84,34 @@ object VinylDNSService {
     req: HttpRequest =>
       {
         val startTime = System.currentTimeMillis()
-        r: Any =>
-          {
-            val endTime = System.currentTimeMillis()
-            val duration = endTime - startTime
-            doNotLog.contains(req.uri.path) match {
-              case false => {
-                r match {
-                  case res: HttpResponse =>
-                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), InfoLevel))
-                  case res: Complete =>
-                    Some(
-                      LogEntry(
-                        VinylDNSService.logMessage(req, Some(res.response), duration),
-                        InfoLevel))
-                  case _: Rejected =>
-                    Some(LogEntry(VinylDNSService.logMessage(req, None, duration), ErrorLevel))
-                  case x => // this can happen if sealRoute below cannot convert into a response.
-                    val res = HttpResponse(
-                      status = StatusCodes.InternalServerError,
-                      entity = HttpEntity(x.toString))
-                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), ErrorLevel))
-                }
+        r: Any => {
+          val endTime = System.currentTimeMillis()
+          val duration = endTime - startTime
+          doNotLog.contains(req.uri.path) match {
+            case false => {
+              r match {
+                case res: HttpResponse =>
+                  Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), InfoLevel))
+                case res: Complete =>
+                  Some(
+                    LogEntry(
+                      VinylDNSService.logMessage(req, Some(res.response), duration),
+                      InfoLevel
+                    )
+                  )
+                case _: Rejected =>
+                  Some(LogEntry(VinylDNSService.logMessage(req, None, duration), ErrorLevel))
+                case x => // this can happen if sealRoute below cannot convert into a response.
+                  val res = HttpResponse(
+                    status = StatusCodes.InternalServerError,
+                    entity = HttpEntity(x.toString)
+                  )
+                  Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), ErrorLevel))
               }
-              case true => None
             }
+            case true => None
           }
+        }
       }
   }
 
@@ -122,7 +124,8 @@ object VinylDNSService {
             HttpResponse(
               status = StatusCodes.BadRequest,
               entity = HttpEntity(ContentTypes.`application/json`, msg)
-            ))
+            )
+          )
       }
       .handleNotFound {
         extractUnmatchedPath { p =>
@@ -141,8 +144,8 @@ class VinylDNSService(
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
-    authPrincipalProvider: AuthPrincipalProvider)
-    extends PingRoute
+    authPrincipalProvider: AuthPrincipalProvider
+) extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
     with StatusRoute
@@ -167,9 +170,10 @@ class VinylDNSService(
     Uri.Path("/color"),
     Uri.Path("/ping"),
     Uri.Path("/status"),
-    Uri.Path("/metrics/prometheus"))
+    Uri.Path("/metrics/prometheus")
+  )
   val unloggedRoutes
-    : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
+      : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~
     batchChangeRoute ~

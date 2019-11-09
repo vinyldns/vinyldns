@@ -59,9 +59,10 @@ object SqsMessageType {
     // the message-type could have a string value, but not a valid value
     for {
       messageTypeAttr <- Either.fromOption(
-        Option(sqsMessage.getMessageAttributes.get("message-type")).flatMap(mt =>
-          Option(mt.getStringValue)),
-        MessageTypeNotFound)
+        Option(sqsMessage.getMessageAttributes.get("message-type"))
+          .flatMap(mt => Option(mt.getStringValue)),
+        MessageTypeNotFound
+      )
       messageType <- fromString(messageTypeAttr)
     } yield messageType
 }

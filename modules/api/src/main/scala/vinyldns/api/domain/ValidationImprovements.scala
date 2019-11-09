@@ -26,8 +26,9 @@ object ValidationImprovements {
     * If the value is not present, will return None as success
     *
     */
-  def validateIfDefined[E, A](value: => Option[A])(
-      validator: A => ValidatedNel[E, A]): ValidatedNel[E, Option[A]] =
+  def validateIfDefined[E, A](
+      value: => Option[A]
+  )(validator: A => ValidatedNel[E, A]): ValidatedNel[E, Option[A]] =
     value match {
       case None => Option.empty[A].validNel[E]
       case Some(a) => validator(a).map(Some(_))

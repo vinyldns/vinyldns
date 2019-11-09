@@ -177,7 +177,8 @@ trait DnsConversions {
   def toFlattenedRecordSets(
       records: List[DNS.Record],
       zoneName: DNS.Name,
-      zoneId: String = "unknown"): List[RecordSet] = {
+      zoneId: String = "unknown"
+  ): List[RecordSet] = {
 
     /* Combines record sets into a list of one or Nil in case there are no record sets in the list provided */
     def combineRecordSets(lst: List[RecordSet]): RecordSet =
@@ -194,7 +195,8 @@ trait DnsConversions {
   // Do a "relativize" using the zoneName, this removes the zone name from the record itself
   // For example "test-01.vinyldns." becomes "test-01"...this is necessary as we want to run comparisons upstream
   def fromDnsRecord[A <: DNS.Record](r: A, zoneName: DNS.Name, zoneId: String)(
-      f: A => List[RecordData]): RecordSet =
+      f: A => List[RecordData]
+  ): RecordSet =
     record.RecordSet(
       zoneId = zoneId,
       name = relativize(r.getName, zoneName),
@@ -240,7 +242,8 @@ trait DnsConversions {
           DnsSecAlgorithm(data.getAlgorithm),
           DigestType(data.getDigestID),
           ByteVector(data.getDigest)
-        ))
+        )
+      )
     }
 
   def fromMXRecord(r: DNS.MXRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -268,7 +271,9 @@ trait DnsConversions {
           data.getRefresh,
           data.getRetry,
           data.getExpire,
-          data.getMinimum))
+          data.getMinimum
+        )
+      )
     }
 
   def fromSPFRecord(r: DNS.SPFRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -290,7 +295,9 @@ trait DnsConversions {
           data.getFlags,
           data.getService,
           data.getRegexp,
-          data.getReplacement.toString))
+          data.getReplacement.toString
+        )
+      )
     }
 
   def fromSSHFPRecord(r: DNS.SSHFPRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -326,7 +333,8 @@ trait DnsConversions {
             keyTag,
             algorithm.value,
             digestType.value,
-            digest.toArray)
+            digest.toArray
+          )
 
         case NSData(nsdname) =>
           new DNS.NSRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(nsdname))
@@ -337,7 +345,8 @@ trait DnsConversions {
             DNS.DClass.IN,
             ttl,
             preference,
-            DNS.Name.fromString(exchange))
+            DNS.Name.fromString(exchange)
+          )
 
         case PTRData(ptrdname) =>
           new DNS.PTRRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(ptrdname))
@@ -353,7 +362,8 @@ trait DnsConversions {
             refresh,
             retry,
             expire,
-            minimum)
+            minimum
+          )
 
         case SRVData(priority, weight, port, target) =>
           new DNS.SRVRecord(
@@ -363,7 +373,8 @@ trait DnsConversions {
             priority,
             weight,
             port,
-            DNS.Name.fromString(target))
+            DNS.Name.fromString(target)
+          )
 
         case NAPTRData(order, preference, flags, service, regexp, replacement) =>
           new DNS.NAPTRRecord(
@@ -375,7 +386,8 @@ trait DnsConversions {
             flags,
             service,
             regexp,
-            DNS.Name.fromString(replacement))
+            DNS.Name.fromString(replacement)
+          )
 
         case SSHFPData(algorithm, typ, fingerprint) =>
           new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, fingerprint.getBytes)
@@ -422,7 +434,8 @@ trait DnsConversions {
   def toUpdateRecordMessage(
       r: DNS.RRset,
       old: DNS.RRset,
-      zoneName: String): Either[Throwable, DNS.Update] = {
+      zoneName: String
+  ): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
 
     if (!r.getName.equals(old.getName) || r.getTTL != old.getTTL) { // Name or TTL has changed

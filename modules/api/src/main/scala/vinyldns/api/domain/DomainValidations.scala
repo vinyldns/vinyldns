@@ -95,7 +95,8 @@ object DomainValidations {
   def validateStringLength(
       value: Option[String],
       minInclusive: Option[Int],
-      maxInclusive: Int): ValidatedNel[DomainValidationError, Option[String]] =
+      maxInclusive: Int
+  ): ValidatedNel[DomainValidationError, Option[String]] =
     validateIfDefined(value) { d =>
       validateStringLength(d, minInclusive, maxInclusive)
     }
@@ -103,7 +104,8 @@ object DomainValidations {
   def validateStringLength(
       value: String,
       minInclusive: Option[Int],
-      maxInclusive: Int): ValidatedNel[DomainValidationError, String] =
+      maxInclusive: Int
+  ): ValidatedNel[DomainValidationError, String] =
     if (minInclusive.forall(m => value.length >= m) && value.length <= maxInclusive)
       value.validNel
     else InvalidLength(value, minInclusive.getOrElse(0), maxInclusive).invalidNel

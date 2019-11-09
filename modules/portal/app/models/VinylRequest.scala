@@ -32,7 +32,8 @@ case class VinylDNSRequest(
     path: String = "",
     payload: Option[String] = None,
     parameters: util.HashMap[String, java.util.List[String]] =
-      new util.HashMap[String, java.util.List[String]]())
+      new util.HashMap[String, java.util.List[String]]()
+)
 
 class SignableVinylDNSRequest(origReq: VinylDNSRequest) extends SignableRequest[VinylDNSRequest] {
 
@@ -46,7 +47,8 @@ class SignableVinylDNSRequest(origReq: VinylDNSRequest) extends SignableRequest[
   // I hate to do this, but need to be able to set the content after creation to
   // implement the interface properly
   private var contentStream: InputStream = new ByteArrayInputStream(
-    origReq.payload.getOrElse("").getBytes("UTF-8"))
+    origReq.payload.getOrElse("").getBytes("UTF-8")
+  )
 
   override def addHeader(name: String, value: String): Unit = headers.put(name, value)
   override def getHeaders: java.util.Map[String, String] = headers

@@ -31,31 +31,39 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
+      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'")
+    )(
       auth.isSystemAdmin || auth
-        .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
+        .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
+    )
 
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,
-      zoneAdminGroupId: String): Either[Throwable, Unit] =
+      zoneAdminGroupId: String
+  ): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(
         s"""User '${auth.signedInUser.userName}' cannot create or modify zone '$zoneName' because
            |they are not in the Zone Admin Group '$zoneAdminGroupId'""".stripMargin
-          .replace("\n", " ")))(auth.isSuper || auth.isGroupMember(zoneAdminGroupId))
+          .replace("\n", " ")
+      )
+    )(auth.isSuper || auth.isGroupMember(zoneAdminGroupId))
 
   def canAddRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordData: List[RecordData] = List.empty): Either[Throwable, Unit] = {
+      recordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit] = {
     val accessLevel = getAccessLevel(auth, recordName, recordType, zone, None, recordData)
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to create " +
-        s"$recordName.${zone.name}"))(
-      accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
+      NotAuthorizedError(
+        s"User ${auth.signedInUser.userName} does not have access to create " +
+          s"$recordName.${zone.name}"
+      )
+    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
   }
 
   def canUpdateRecordSet(
@@ -64,13 +72,16 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      newRecordData: List[RecordData] = List.empty): Either[Throwable, Unit] = {
+      newRecordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit] = {
     val accessLevel =
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to update " +
-        s"$recordName.${zone.name}"))(
-      accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
+      NotAuthorizedError(
+        s"User ${auth.signedInUser.userName} does not have access to update " +
+          s"$recordName.${zone.name}"
+      )
+    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
   }
 
   def canDeleteRecordSet(
@@ -79,16 +90,16 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      existingRecordData: List[RecordData] = List.empty): Either[Throwable, Unit] =
+      existingRecordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to delete " +
-        s"$recordName.${zone.name}"))(getAccessLevel(
-      auth,
-      recordName,
-      recordType,
-      zone,
-      recordOwnerGroupId,
-      existingRecordData) == AccessLevel.Delete)
+      NotAuthorizedError(
+        s"User ${auth.signedInUser.userName} does not have access to delete " +
+          s"$recordName.${zone.name}"
+      )
+    )(
+      getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, existingRecordData) == AccessLevel.Delete
+    )
 
   def canViewRecordSet(
       auth: AuthPrincipal,
@@ -96,17 +107,22 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      recordData: List[RecordData] = List.empty): Either[Throwable, Unit] =
+      recordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
-        s"$recordName.${zone.name}"))(
+      NotAuthorizedError(
+        s"User ${auth.signedInUser.userName} does not have access to view " +
+          s"$recordName.${zone.name}"
+      )
+    )(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, recordData) != AccessLevel.NoAccess
     )
 
   def getListAccessLevels(
       auth: AuthPrincipal,
       recordSets: List[RecordSetInfo],
-      zone: Zone): List[RecordSetListInfo] =
+      zone: Zone
+  ): List[RecordSetListInfo] =
     if (auth.isSuper || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
@@ -136,13 +152,15 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel = {
+      zone: Zone
+  ): AccessLevel = {
     val validRules = zone.acl.rules.filter { rule =>
       ruleAppliesToUser(auth, rule) && ruleAppliesToRecordType(recordType, rule) && ruleAppliesToRecordName(
         recordName,
         recordType,
         zone,
-        rule)
+        rule
+      )
     }
     getPrioritizedAccessLevel(recordType, validRules)
   }
@@ -164,7 +182,8 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      rule: ACLRule): Boolean =
+      rule: ACLRule
+  ): Boolean =
     rule.recordMask match {
       case Some(mask) if recordType == RecordType.PTR =>
         ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordName)
@@ -192,7 +211,8 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String] = None,
-      recordData: List[RecordData] = List.empty): AccessLevel = auth match {
+      recordData: List[RecordData] = List.empty
+  ): AccessLevel = auth match {
     case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
     case admin if admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
@@ -211,7 +231,8 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
   def sharedRecordAccess(
       auth: AuthPrincipal,
       recordType: RecordType,
-      recordOwnerGroupId: Option[String]): Boolean =
+      recordOwnerGroupId: Option[String]
+  ): Boolean =
     recordOwnerGroupId.exists(auth.isGroupMember) ||
       (recordOwnerGroupId.isEmpty && VinylDNSConfig.sharedApprovedTypes.contains(recordType))
 }

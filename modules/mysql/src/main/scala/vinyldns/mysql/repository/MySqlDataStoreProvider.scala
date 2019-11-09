@@ -82,7 +82,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
       // Configure the connection pool
       ConnectionPool.singleton(
-        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
+        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
+      )
 
       logger.error("database init complete")
     }

@@ -55,7 +55,8 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   // Helper for handling SQS requests and responses
   def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
       request: A,
-      f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]): IO[B] =
+      f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]
+  ): IO[B] =
     IO.async[B] { complete: (Either[Throwable, B] => Unit) =>
       val asyncHandler = new AsyncHandler[A, B] {
         def onError(exception: Exception): Unit = complete(Left(exception))
@@ -114,7 +115,8 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       logger.info(s"Deleting message with receipt handle: $receiptHandle.\n")
       sqsAsync[DeleteMessageRequest, DeleteMessageResult](
         new DeleteMessageRequest(queueUrl, receiptHandle),
-        client.deleteMessageAsync).as(())
+        client.deleteMessageAsync
+      ).as(())
     }
 
   def remove(message: CommandMessage): IO[Unit] =
@@ -132,7 +134,8 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
-        client.sendMessageAsync)
+        client.sendMessageAsync
+      )
     }.as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult[A]] =
@@ -142,7 +145,8 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
           sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
             sendRequest
               .withQueueUrl(queueUrl),
-            client.sendMessageBatchAsync)
+            client.sendMessageBatchAsync
+          )
         }
         .parSequence
         .map { sendResult =>
@@ -181,7 +185,8 @@ object SqsMessageQueue extends ProtobufConversions {
   final case class InvalidMessageTimeout(duration: Long)
       extends SqsMessageQueueError(
         s"Invalid duration: $duration seconds. Duration must be between " +
-          s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds.")
+          s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds."
+      )
 
   // AWS limits as specified at:
   // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-limits.html
@@ -197,7 +202,8 @@ object SqsMessageQueue extends ProtobufConversions {
   // $COVERAGE-ON$
 
   def validateMessageTimeout(
-      duration: FiniteDuration): Either[InvalidMessageTimeout, FiniteDuration] =
+      duration: FiniteDuration
+  ): Either[InvalidMessageTimeout, FiniteDuration] =
     duration.toSeconds match {
       case valid if valid >= MINIMUM_VISIBILITY_TIMEOUT && valid <= MAXIMUM_VISIBILITY_TIMEOUT =>
         Right(duration)
@@ -227,7 +233,8 @@ object SqsMessageQueue extends ProtobufConversions {
   }
 
   def toSendMessageBatchRequest[A <: ZoneCommand](
-      commands: NonEmptyList[A]): List[SendMessageBatchRequest] = {
+      commands: NonEmptyList[A]
+  ): List[SendMessageBatchRequest] = {
     // convert each message into an entry
     val entries = commands.map { cmd =>
       new SendMessageBatchRequestEntry()
@@ -253,7 +260,8 @@ object SqsMessageQueue extends ProtobufConversions {
 
   def toSendBatchResult[A <: ZoneCommand](
       sendResultList: List[SendMessageBatchResult],
-      cmds: NonEmptyList[A]): SendBatchResult[A] = {
+      cmds: NonEmptyList[A]
+  ): SendBatchResult[A] = {
     val successfulIds = sendResultList.flatMap(_.getSuccessful.asScala.map(_.getId))
     val successes = cmds.filter(cmd => successfulIds.contains(cmd.id))
 

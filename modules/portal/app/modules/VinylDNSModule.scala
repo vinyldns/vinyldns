@@ -66,7 +66,8 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       repositories = loaderResponse.accessor
       userAccessor = new UserAccountAccessor(
         repositories.userRepository,
-        repositories.userChangeRepository)
+        repositories.userChangeRepository
+      )
       _ <- if (settings.ldapSyncEnabled) {
         TaskScheduler
           .schedule(

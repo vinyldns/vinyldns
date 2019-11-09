@@ -22,12 +22,12 @@ import org.slf4j.LoggerFactory
 import play.api.Configuration
 import play.api.mvc._
 
-class LegacySecuritySupport @Inject()(
+class LegacySecuritySupport @Inject() (
     components: ControllerComponents,
     userAccountAccessor: UserAccountAccessor,
     configuration: Configuration,
-    oidcAuthenticator: OidcAuthenticator)
-    extends AbstractController(components)
+    oidcAuthenticator: OidcAuthenticator
+) extends AbstractController(components)
     with SecuritySupport {
   private val logger = LoggerFactory.getLogger(classOf[LegacySecuritySupport])
 
@@ -35,7 +35,8 @@ class LegacySecuritySupport @Inject()(
     new LegacyFrontendAction(
       userAccountAccessor.get,
       oidcAuthenticator,
-      components.parsers.anyContent)
+      components.parsers.anyContent
+    )
 
   def apiAction: ApiActionBuilder =
     new LegacyApiAction(userAccountAccessor.get, oidcAuthenticator, components.parsers.anyContent)
@@ -92,6 +93,8 @@ class LegacySecuritySupport @Inject()(
         views.html.systemMessage(
           """
           |Account locked. Please contact your VinylDNS administrators for more information.
-      """.stripMargin))
+      """.stripMargin
+        )
+      )
   }
 }
