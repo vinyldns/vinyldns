@@ -22,7 +22,6 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
-import vinyldns.core.domain
 
 case class BatchChange(
     userId: String,
