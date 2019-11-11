@@ -55,12 +55,12 @@ case class DnsChangeNotice(
     alertType: DnsChangeNoticeType,
     text: String,
     hrefText: String,
-    href: String)
+    href: String
+)
 
 object DnsChangeStatus extends Enumeration {
   type DnsChangeStatus = Value
-  val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
-  Scheduled = Value
+  val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled = Value
 }
 
 object DnsChangeNoticeType extends Enumeration {

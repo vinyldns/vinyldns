@@ -87,7 +87,7 @@ class FrontendController @Inject() (
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
     val canReview = request.user.isSuper || request.user.isSupport
-    val dnsChangeNotices = configuration.get[DnsChangeNotices]("dnsChangeNotices")
+    val dnsChangeNotices = configuration.get[DnsChangeNotices]("dns-change-notices")
     Future(
       Ok(
         views.html.dnsChanges
