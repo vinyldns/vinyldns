@@ -166,3 +166,16 @@ ul.bar_tabs>li a {
   background-color: #e6e6e6!important;
   border: 1px solid #adadad!important;
 }
+
+.alert-danger a, .alert-warning a, .alert-info a, .alert-success a {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.alert-danger a, .alert-warning a, .alert-info a {
+    color: #E9EDEF!important;
+}
+
+.alert-success a {
+    color: #fff!important;
+}

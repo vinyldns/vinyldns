@@ -1,8 +1,8 @@
-@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountCanReview: Boolean, dnsChangeNotices: DnsChangeNotices)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
-<div class="right_col" role="main">
+<div class="right_col" role="main" ng-init="notices = @dnsChangeNotices.notices;">
 
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
@@ -36,6 +36,9 @@
                 <notification ng-model="alert"></notification>
             </div>
         </div>
+
+        <notice ng-model="notice" ng-if="notice"></notice>
+
         <div class="row">
             <div class="col-md-12">
                 <p><strong>ID:</strong> {{batch.id}}</p>
