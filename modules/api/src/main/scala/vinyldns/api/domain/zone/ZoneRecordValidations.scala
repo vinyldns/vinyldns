@@ -46,7 +46,8 @@ object ZoneRecordValidations {
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
       approvedServerList: List[Regex],
-      nsData: NSData): ValidatedNel[String, NSData] =
+      nsData: NSData
+  ): ValidatedNel[String, NSData] =
     if (isStringInRegexList(approvedServerList, nsData.nsdname)) {
       nsData.validNel[String]
     } else {
@@ -56,7 +57,8 @@ object ZoneRecordValidations {
   /* Inspects each record in the rdata, returning back the record set itself or all ns records that are not approved */
   def containsApprovedNameServers(
       approvedServerList: List[Regex],
-      nsRecordSet: RecordSet): ValidatedNel[String, RecordSet] = {
+      nsRecordSet: RecordSet
+  ): ValidatedNel[String, RecordSet] = {
     val validations: List[ValidatedNel[String, NSData]] = nsRecordSet.records
       .collect { case ns: NSData => ns }
       .map(isApprovedNameServer(approvedServerList, _))
@@ -66,7 +68,8 @@ object ZoneRecordValidations {
 
   def isNotHighValueFqdn(
       highValueRegexList: List[Regex],
-      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+      fqdn: String
+  ): ValidatedNel[DomainValidationError, Unit] =
     if (!isStringInRegexList(highValueRegexList, fqdn)) {
       ().validNel
     } else {
@@ -75,7 +78,8 @@ object ZoneRecordValidations {
 
   def isNotHighValueIp(
       highValueIpList: List[IpAddress],
-      ip: String): ValidatedNel[DomainValidationError, Unit] =
+      ip: String
+  ): ValidatedNel[DomainValidationError, Unit] =
     if (!isIpInIpList(highValueIpList, ip)) {
       ().validNel
     } else {
@@ -84,7 +88,8 @@ object ZoneRecordValidations {
 
   def domainDoesNotRequireManualReview(
       regexList: List[Regex],
-      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+      fqdn: String
+  ): ValidatedNel[DomainValidationError, Unit] =
     if (!isStringInRegexList(regexList, fqdn)) {
       ().validNel
     } else {
@@ -93,7 +98,8 @@ object ZoneRecordValidations {
 
   def ipDoesNotRequireManualReview(
       regexList: List[IpAddress],
-      ip: String): ValidatedNel[DomainValidationError, Unit] =
+      ip: String
+  ): ValidatedNel[DomainValidationError, Unit] =
     if (!isIpInIpList(regexList, ip)) {
       ().validNel
     } else {
@@ -103,7 +109,8 @@ object ZoneRecordValidations {
   def zoneDoesNotRequireManualReview(
       zonesRequiringReview: Set[String],
       zoneName: String,
-      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+      fqdn: String
+  ): ValidatedNel[DomainValidationError, Unit] =
     if (!zonesRequiringReview.contains(DomainHelpers.ensureTrailingDot(zoneName.toLowerCase))) {
       ().validNel
     } else {

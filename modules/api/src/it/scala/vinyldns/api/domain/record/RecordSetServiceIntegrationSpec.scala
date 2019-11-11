@@ -75,7 +75,8 @@ class RecordSetServiceIntegrationSpec
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection,
-    adminGroupId = group.id)
+    adminGroupId = group.id
+  )
 
   private val apexTestRecordA = RecordSet(
     zone.id,
@@ -85,7 +86,8 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
   private val apexTestRecordAAAA = RecordSet(
     zone.id,
     "live-zone-test",
@@ -94,7 +96,8 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AAAAData("fd69:27cc:fe91::60")))
+    List(AAAAData("fd69:27cc:fe91::60"))
+  )
   private val subTestRecordA = RecordSet(
     zone.id,
     "a-record",
@@ -103,7 +106,8 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
   private val subTestRecordAAAA = RecordSet(
     zone.id,
     "aaaa-record",
@@ -112,7 +116,8 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AAAAData("fd69:27cc:fe91::60")))
+    List(AAAAData("fd69:27cc:fe91::60"))
+  )
   private val subTestRecordNS = RecordSet(
     zone.id,
     "ns-record",
@@ -121,14 +126,16 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("172.17.42.1.")))
+    List(NSData("172.17.42.1."))
+  )
 
   private val zoneTestNameConflicts = Zone(
     s"zone-test-name-conflicts.",
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection,
-    adminGroupId = group.id)
+    adminGroupId = group.id
+  )
   private val apexTestRecordNameConflict = RecordSet(
     zoneTestNameConflicts.id,
     "zone-test-name-conflicts.",
@@ -137,7 +144,8 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
   private val subTestRecordNameConflict = RecordSet(
     zoneTestNameConflicts.id,
     "relative-name-conflict",
@@ -146,14 +154,16 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val zoneTestAddRecords = Zone(
     s"zone-test-add-records.",
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection,
-    adminGroupId = group.id)
+    adminGroupId = group.id
+  )
 
   private val highValueDomainRecord = RecordSet(
     zone.id,
@@ -172,7 +182,8 @@ class RecordSetServiceIntegrationSpec
     status = ZoneStatus.Active,
     connection = testConnection,
     adminGroupId = group.id,
-    shared = true)
+    shared = true
+  )
 
   private val sharedTestRecord = RecordSet(
     sharedZone.id,
@@ -216,8 +227,9 @@ class RecordSetServiceIntegrationSpec
     zoneRepo = zoneRepository
     groupRepo = groupRepository
     List(group, group2, sharedGroup).map(g => waitForSuccess(groupRepo.save(g)))
-    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone).map(z =>
-      waitForSuccess(zoneRepo.save(z)))
+    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone).map(
+      z => waitForSuccess(zoneRepo.save(z))
+    )
 
     // Seeding records in DB
     val records = List(
@@ -242,7 +254,8 @@ class RecordSetServiceIntegrationSpec
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestMessageQueue,
-      new AccessValidations())
+      new AccessValidations()
+    )
   }
 
   def tearDown(): Unit = ()
@@ -270,7 +283,8 @@ class RecordSetServiceIntegrationSpec
         RecordSetStatus.Active,
         DateTime.now,
         None,
-        List(AData("10.1.1.1")))
+        List(AData("10.1.1.1"))
+      )
       val result =
         testRecordSetService
           .addRecordSet(newRecord, auth)
@@ -387,7 +401,8 @@ class RecordSetServiceIntegrationSpec
           .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("high-value-domain-new.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-new.live-zone-test.").message
+      )
     }
 
     "fail to update a record whose name is a high value domain" in {
@@ -399,7 +414,8 @@ class RecordSetServiceIntegrationSpec
         .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message
+      )
     }
 
     "fail to delete a record whose name is a high value domain" in {
@@ -409,7 +425,8 @@ class RecordSetServiceIntegrationSpec
         .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message
+      )
     }
 
     "get a shared record when user is in assigned ownerGroup" in {
@@ -518,7 +535,8 @@ class RecordSetServiceIntegrationSpec
           .deleteRecordSet(
             testOwnerGroupRecordInNormalZone.id,
             testOwnerGroupRecordInNormalZone.zoneId,
-            auth2)
+            auth2
+          )
           .value
       )
 

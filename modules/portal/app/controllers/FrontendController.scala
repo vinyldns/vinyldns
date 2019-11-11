@@ -30,7 +30,7 @@ import scala.concurrent.Future
  * Controller for specific pages - sends requests along to views
  */
 @Singleton
-class FrontendController @Inject()(
+class FrontendController @Inject() (
     components: ControllerComponents,
     configuration: Configuration,
     securitySupport: SecuritySupport
@@ -50,8 +50,11 @@ class FrontendController @Inject()(
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.dnsChanges
-        .dnsChanges(request.user.userName, canReview)))
+      Ok(
+        views.html.dnsChanges
+          .dnsChanges(request.user.userName, canReview)
+      )
+    )
   }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
@@ -74,16 +77,22 @@ class FrontendController @Inject()(
   def viewAllBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.dnsChanges
-        .dnsChanges(request.user.userName, canReview)))
+      Ok(
+        views.html.dnsChanges
+          .dnsChanges(request.user.userName, canReview)
+      )
+    )
   }
 
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
     val canReview = request.user.isSuper || request.user.isSupport
     Future(
-      Ok(views.html.dnsChanges
-        .dnsChangeDetail(request.user.userName, canReview)))
+      Ok(
+        views.html.dnsChanges
+          .dnsChangeDetail(request.user.userName, canReview)
+      )
+    )
   }
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>

@@ -58,23 +58,24 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
     val goodUser: User = User(s"live-test-acct", "key", "secret")
 
-    val zones: IndexedSeq[Zone] = for { i <- 1 to 3 } yield
-      Zone(
-        s"${goodUser.userName}.zone$i.",
-        "test@test.com",
-        status = ZoneStatus.Active,
-        connection = testConnection)
+    val zones: IndexedSeq[Zone] = for { i <- 1 to 3 } yield Zone(
+      s"${goodUser.userName}.zone$i.",
+      "test@test.com",
+      status = ZoneStatus.Active,
+      connection = testConnection
+    )
 
     val statuses: List[ZoneChangeStatus] = ZoneChangeStatus.Pending :: ZoneChangeStatus.Failed ::
       ZoneChangeStatus.Synced :: Nil
 
-    val changes: IndexedSeq[ZoneChange] = for { zone <- zones; status <- statuses } yield
-      ZoneChange(
-        zone,
-        zone.account,
-        ZoneChangeType.Update,
-        status,
-        created = DateTime.now().minusSeconds(Random.nextInt(1000)))
+    val changes
+        : IndexedSeq[ZoneChange] = for { zone <- zones; status <- statuses } yield ZoneChange(
+      zone,
+      zone.account,
+      ZoneChangeType.Update,
+      status,
+      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+    )
   }
 
   import TestData._
@@ -127,7 +128,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       changeSetupResults
         .unsafeRunTimed(5.minutes)
         .getOrElse(
-          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
 
       val expectedChanges =
         changes
@@ -147,7 +149,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       changeSetupResults
         .unsafeRunTimed(5.minutes)
         .getOrElse(
-          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)
@@ -169,7 +172,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       changeSetupResults
         .unsafeRunTimed(5.minutes)
         .getOrElse(
-          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)

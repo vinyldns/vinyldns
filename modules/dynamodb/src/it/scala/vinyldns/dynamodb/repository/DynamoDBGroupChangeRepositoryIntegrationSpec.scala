@@ -42,7 +42,8 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
     "randomTime",
     "test@test.com",
     Some("changes have random time stamp"),
-    memberIds = Set(listOfDummyUsers(0).id))
+    memberIds = Set(listOfDummyUsers(0).id)
+  )
   // making distinct, multiple changes with the same time throws this test
   private val randomTimes: List[Int] = List.range(0, 200).map(_ => Random.nextInt(1000)).distinct
 
@@ -53,7 +54,8 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
         GroupChangeType.Update,
         dummyUser.id,
         created = now.minusSeconds(randomTime),
-        id = s"random-time-$i")
+        id = s"random-time-$i"
+      )
   }
 
   private val groupChanges = Seq(okGroupChange, okGroupChangeUpdate, okGroupChangeDelete) ++
@@ -112,7 +114,8 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
       val retrieved = repo.getGroupChanges(oneUserDummyGroup.id, None, 100).unsafeRunSync()
       retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 100)
       retrieved.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(99).created.getMillis.toString)
+        listOfDummyGroupChanges(99).created.getMillis.toString
+      )
     }
 
     "getGroupChanges should start using the time startFrom" in {
@@ -120,11 +123,13 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
         .getGroupChanges(
           oneUserDummyGroup.id,
           Some(listOfDummyGroupChanges(50).created.getMillis.toString),
-          100)
+          100
+        )
         .unsafeRunSync()
       retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(51, 151)
       retrieved.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(150).created.getMillis.toString)
+        listOfDummyGroupChanges(150).created.getMillis.toString
+      )
     }
 
     "getGroupChanges returns entire page and nextId = None if there are less than maxItems left" in {
@@ -132,7 +137,8 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
         .getGroupChanges(
           oneUserDummyGroup.id,
           Some(listOfDummyGroupChanges(200).created.getMillis.toString),
-          100)
+          100
+        )
         .unsafeRunSync()
       retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(201, 300)
       retrieved.lastEvaluatedTimeStamp shouldBe None
@@ -140,23 +146,28 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
 
     "getGroupChanges returns 3 pages of items" in {
       val page1 = repo.getGroupChanges(oneUserDummyGroup.id, None, 100).unsafeRunSync()
-      val page2 = repo.getGroupChanges(oneUserDummyGroup.id, page1.lastEvaluatedTimeStamp, 100).unsafeRunSync()
-      val page3 = repo.getGroupChanges(oneUserDummyGroup.id, page2.lastEvaluatedTimeStamp, 100).unsafeRunSync()
-      val page4 = repo.getGroupChanges(oneUserDummyGroup.id, page3.lastEvaluatedTimeStamp, 100).unsafeRunSync()
+      val page2 = repo
+        .getGroupChanges(oneUserDummyGroup.id, page1.lastEvaluatedTimeStamp, 100)
+        .unsafeRunSync()
+      val page3 = repo
+        .getGroupChanges(oneUserDummyGroup.id, page2.lastEvaluatedTimeStamp, 100)
+        .unsafeRunSync()
+      val page4 = repo
+        .getGroupChanges(oneUserDummyGroup.id, page3.lastEvaluatedTimeStamp, 100)
+        .unsafeRunSync()
 
       page1.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 100)
       page1.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(99).created.getMillis.toString)
-      page2.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(
-        100,
-        200)
+        listOfDummyGroupChanges(99).created.getMillis.toString
+      )
+      page2.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(100, 200)
       page2.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(199).created.getMillis.toString)
-      page3.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(
-        200,
-        300)
+        listOfDummyGroupChanges(199).created.getMillis.toString
+      )
+      page3.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(200, 300)
       page3.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(299).created.getMillis.toString) // the limit was reached before the end of list
+        listOfDummyGroupChanges(299).created.getMillis.toString
+      ) // the limit was reached before the end of list
       page4.changes should contain theSameElementsAs List() // no matches found in the rest of the list
       page4.lastEvaluatedTimeStamp shouldBe None
     }
@@ -165,7 +176,8 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
       val retrieved = repo.getGroupChanges(oneUserDummyGroup.id, None, 5).unsafeRunSync()
       retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 5)
       retrieved.lastEvaluatedTimeStamp shouldBe Some(
-        listOfDummyGroupChanges(4).created.getMillis.toString)
+        listOfDummyGroupChanges(4).created.getMillis.toString
+      )
     }
 
     "getGroupChanges should handle changes inserted in random order" in {

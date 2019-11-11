@@ -69,7 +69,8 @@ object VinylDNS {
       isSuper: Boolean,
       isSupport: Boolean,
       id: String,
-      lockStatus: LockStatus)
+      lockStatus: LockStatus
+  )
   object UserInfo {
     def fromUser(user: User): UserInfo =
       UserInfo(
@@ -93,7 +94,7 @@ object VinylDNS {
 }
 
 @Singleton
-class VinylDNS @Inject()(
+class VinylDNS @Inject() (
     configuration: Configuration,
     authenticator: Authenticator,
     userAccountAccessor: UserAccountAccessor,
@@ -101,8 +102,8 @@ class VinylDNS @Inject()(
     components: ControllerComponents,
     crypto: CryptoAlgebra,
     oidcAuthenticator: OidcAuthenticator,
-    securitySupport: SecuritySupport)
-    extends AbstractController(components)
+    securitySupport: SecuritySupport
+) extends AbstractController(components)
     with CacheHeader {
 
   import VinylDNS._
@@ -152,7 +153,8 @@ class VinylDNS @Inject()(
       .map {
         case Right((user, token)) =>
           logger.info(
-            s"LoginId [$loginId] complete: --LOGIN-- user [${user.userName}] logged in with id ${user.id}")
+            s"LoginId [$loginId] complete: --LOGIN-- user [${user.userName}] logged in with id ${user.id}"
+          )
           Redirect("/index").withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
           logger.error(s"LoginId [$loginId] failed with error: $err")
@@ -161,7 +163,8 @@ class VinylDNS @Inject()(
               |There was an issue when logging in.
               |<a href="/index">Please try again by clicking this link.</a>
               |If the issue persists, contact your VinylDNS Administrators
-            """.stripMargin)).withNewSession
+            """.stripMargin)
+          ).withNewSession
       }
       .unsafeToFuture()
   }
@@ -250,15 +253,17 @@ class VinylDNS @Inject()(
 
   private def processCsv(user: User): Result = {
     logger.info(
-      s"Sending credentials for user=${user.userName} with key accessKey=${user.accessKey}")
+      s"Sending credentials for user=${user.userName} with key accessKey=${user.accessKey}"
+    )
     Ok(
       s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
         .format(
           user.userName,
           user.accessKey,
           crypto.decrypt(user.secretKey),
-          vinyldnsServiceBackend))
-      .as("text/csv")
+          vinyldnsServiceBackend
+        )
+    ).as("text/csv")
   }
 
   def serveCredsFile(fileName: String): Action[AnyContent] = frontendAction.async {
@@ -300,7 +305,8 @@ class VinylDNS @Inject()(
         User.generateKey,
         details.firstName,
         details.lastName,
-        details.email)
+        details.email
+      )
 
     userAccountAccessor.create(newUser).map { u =>
       logger.info(s"User account for ${u.userName} created with id ${u.id}")
@@ -336,18 +342,22 @@ class VinylDNS @Inject()(
       case Left(error: UserDoesNotExistException) =>
         logger.error(s"Authentication failed for [$username]", error)
         Redirect("/login").flashing(
-          VinylDNS.Alerts.error("Authentication failed, please try again"))
+          VinylDNS.Alerts.error("Authentication failed, please try again")
+        )
       case Left(error: LdapException) =>
         logger.error(
           "An unexpected error occurred when authenticating, please contact your VinylDNS " +
             "administrators",
-          error)
+          error
+        )
         Redirect("/login").flashing(
-          VinylDNS.Alerts.error(
-            "Authentication failed, please contact your VinylDNS administrators"))
+          VinylDNS.Alerts
+            .error("Authentication failed, please contact your VinylDNS administrators")
+        )
       case Right(userDetails: LdapUserDetails) =>
         logger.info(
-          s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
+          s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]"
+        )
         val user = processLoginWithDetails(userDetails).unsafeRunSync()
         logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
         Redirect("/index")
@@ -420,7 +430,8 @@ class VinylDNS @Inject()(
       "GET",
       s"$vinyldnsServiceBackend",
       s"zones/$id/recordsets",
-      parameters = queryParameters)
+      parameters = queryParameters
+    )
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
@@ -438,7 +449,8 @@ class VinylDNS @Inject()(
       "GET",
       s"$vinyldnsServiceBackend",
       s"zones/$id/recordsetchanges",
-      parameters = queryParameters)
+      parameters = queryParameters
+    )
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
@@ -505,7 +517,8 @@ class VinylDNS @Inject()(
           "PUT",
           s"$vinyldnsServiceBackend",
           s"zones/$zid/recordsets/$rid",
-          payload)
+          payload
+        )
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
@@ -526,7 +539,8 @@ class VinylDNS @Inject()(
   }
 
   private def extractParameters(
-      params: util.Map[String, util.List[String]]): Seq[(String, String)] =
+      params: util.Map[String, util.List[String]]
+  ): Seq[(String, String)] =
     params.asScala.foldLeft(Seq[(String, String)]()) {
       case (acc, (key, values)) =>
         acc ++ values.asScala.map(v => key -> v)
@@ -544,7 +558,8 @@ class VinylDNS @Inject()(
         signableRequest.getOriginalRequestObject
           .asInstanceOf[VinylDNSRequest]
           .payload
-          .getOrElse(""))
+          .getOrElse("")
+      )
       .withHttpHeaders(signableRequest.getHeaders.asScala.toSeq: _*)
       .withMethod(signableRequest.getHttpMethod.name())
       .withQueryStringParameters(extractParameters(signableRequest.getParameters): _*)
@@ -561,7 +576,8 @@ class VinylDNS @Inject()(
       "GET",
       s"$vinyldnsServiceBackend",
       s"groups/$groupId/members",
-      parameters = queryParameters)
+      parameters = queryParameters
+    )
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
@@ -575,7 +591,8 @@ class VinylDNS @Inject()(
         new VinylDNSRequest(
           "GET",
           s"$vinyldnsServiceBackend",
-          s"zones/batchrecordchanges/$batchChangeId")
+          s"zones/batchrecordchanges/$batchChangeId"
+        )
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
@@ -597,7 +614,8 @@ class VinylDNS @Inject()(
         s"$vinyldnsServiceBackend",
         "zones/batchrecordchanges",
         payload,
-        parameters = queryParameters)
+        parameters = queryParameters
+      )
     executeRequest(vinyldnsRequest, request.user).map(response => {
       logger.info(response.body)
       Status(response.status)(response.body)
@@ -616,7 +634,8 @@ class VinylDNS @Inject()(
       "GET",
       s"$vinyldnsServiceBackend",
       "zones/batchrecordchanges",
-      parameters = queryParameters)
+      parameters = queryParameters
+    )
     executeRequest(vinyldnsRequest, request.user).map(response => {
       logger.info(response.body)
       Status(response.status)(response.body)
@@ -632,7 +651,8 @@ class VinylDNS @Inject()(
         new VinylDNSRequest(
           "POST",
           s"$vinyldnsServiceBackend",
-          s"zones/batchrecordchanges/$batchChangeId/cancel")
+          s"zones/batchrecordchanges/$batchChangeId/cancel"
+        )
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
@@ -650,7 +670,8 @@ class VinylDNS @Inject()(
           "POST",
           s"$vinyldnsServiceBackend",
           s"zones/batchrecordchanges/$batchChangeId/approve",
-          payload)
+          payload
+        )
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
@@ -668,7 +689,8 @@ class VinylDNS @Inject()(
           "POST",
           s"$vinyldnsServiceBackend",
           s"zones/batchrecordchanges/$batchChangeId/reject",
-          payload)
+          payload
+        )
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
@@ -686,7 +708,8 @@ class VinylDNS @Inject()(
       })
     } else {
       Future.successful(
-        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*))
+        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*)
+      )
     }
   }
 
@@ -700,7 +723,8 @@ class VinylDNS @Inject()(
       })
     } else {
       Future.successful(
-        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*))
+        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*)
+      )
     }
   }
 }

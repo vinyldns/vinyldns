@@ -23,5 +23,5 @@ import vinyldns.core.task.TaskRepository
 final case class PortalDataAccessor(
     userRepository: UserRepository,
     userChangeRepository: UserChangeRepository,
-    taskRepository: TaskRepository)
-    extends DataAccessor
+    taskRepository: TaskRepository
+) extends DataAccessor

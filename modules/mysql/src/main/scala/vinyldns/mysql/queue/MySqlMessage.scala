@@ -25,5 +25,5 @@ final case class MySqlMessage(
     id: MessageId,
     attempts: Int,
     timeout: FiniteDuration,
-    command: ZoneCommand)
-    extends CommandMessage
+    command: ZoneCommand
+) extends CommandMessage

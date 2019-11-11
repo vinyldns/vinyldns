@@ -24,7 +24,8 @@ trait ZoneServiceAlgebra {
 
   def connectToZone(
       createZoneInput: CreateZoneInput,
-      auth: AuthPrincipal): Result[ZoneCommandResult]
+      auth: AuthPrincipal
+  ): Result[ZoneCommandResult]
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
@@ -41,23 +42,27 @@ trait ZoneServiceAlgebra {
       nameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      ignoreAccess: Boolean): Result[ListZonesResponse]
+      ignoreAccess: Boolean
+  ): Result[ListZonesResponse]
 
   def listZoneChanges(
       zoneId: String,
       authPrincipal: AuthPrincipal,
       startFrom: Option[String],
-      maxItems: Int): Result[ListZoneChangesResponse]
+      maxItems: Int
+  ): Result[ListZoneChangesResponse]
 
   def addACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,
-      authPrincipal: AuthPrincipal): Result[ZoneCommandResult]
+      authPrincipal: AuthPrincipal
+  ): Result[ZoneCommandResult]
 
   def deleteACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,
-      authPrincipal: AuthPrincipal): Result[ZoneCommandResult]
+      authPrincipal: AuthPrincipal
+  ): Result[ZoneCommandResult]
 
   def getBackendIds(): Result[List[String]]
 

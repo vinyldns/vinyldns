@@ -209,7 +209,8 @@ class RecordSetValidationsSpec
             dottedARecord,
             List(),
             okZone,
-            Some(dottedARecord.copy(ttl = 300))) should be(right)
+            Some(dottedARecord.copy(ttl = 300))
+          ) should be(right)
         }
 
         "return a success for any existing record with dotted hosts in forward zones (CNAME)" in {
@@ -218,7 +219,8 @@ class RecordSetValidationsSpec
             dottedCNAMERecord,
             List(),
             okZone,
-            Some(dottedCNAMERecord.copy(ttl = 300))) should be(right)
+            Some(dottedCNAMERecord.copy(ttl = 300))
+          ) should be(right)
         }
 
         "return a failure for any existing record with dotted hosts in forward zones (NS)" in {
@@ -228,7 +230,8 @@ class RecordSetValidationsSpec
               dottedNSRecord,
               List(),
               okZone,
-              Some(dottedNSRecord.copy(ttl = 300)))
+              Some(dottedNSRecord.copy(ttl = 300))
+            )
           ) shouldBe an[InvalidRequest]
         }
       }
@@ -311,7 +314,8 @@ class RecordSetValidationsSpec
             RecordSetStatus.Active,
             DateTime.now,
             None,
-            List(SOAData("something", "other", 1, 2, 3, 5, 6)))
+            List(SOAData("something", "other", 1, 2, 3, 5, 6))
+          )
 
           typeSpecificValidations(test, List(), zoneIp4) should be(right)
         }
@@ -323,7 +327,8 @@ class RecordSetValidationsSpec
       "return ok if the record is an NS record but not origin" in {
         val valid = invalidNsApexRs.copy(
           name = "this-is-not-origin-mate",
-          records = List(NSData("some.test.ns.")))
+          records = List(NSData("some.test.ns."))
+        )
 
         nsValidations(valid, okZone) should be(right)
       }
@@ -406,12 +411,14 @@ class RecordSetValidationsSpec
       }
       "return ok if new recordset name does not contain dot" in {
         cnameValidations(cname, List(), okZone, Some(cname.copy(name = "not-dotted"))) should be(
-          right)
+          right
+        )
       }
       "return ok if dotted host name doesn't change" in {
         val newRecord = cname.copy(name = "dot.ted", ttl = 500)
         cnameValidations(newRecord, List(), okZone, Some(newRecord.copy(ttl = 300))) should be(
-          right)
+          right
+        )
       }
       "return an InvalidRequest if a cname record set name is updated to '@'" in {
         val error = leftValue(cnameValidations(cname.copy(name = "@"), List(), okZone, Some(cname)))
@@ -485,7 +492,8 @@ class RecordSetValidationsSpec
         val ownerGroupIdBad = "bar"
         val auth = okAuth.copy(
           memberGroupIds = Seq("foo"),
-          signedInUser = okAuth.signedInUser.copy(isSuper = true))
+          signedInUser = okAuth.signedInUser.copy(isSuper = true)
+        )
         val ownerGroup = Group(id = ownerGroupIdGood, name = "test", email = "test@test.com")
 
         canUseOwnerGroup(Some(ownerGroupIdGood), Some(ownerGroup), auth) should be(right)

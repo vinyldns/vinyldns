@@ -54,7 +54,8 @@ class MembershipServiceSpec
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
-    mockRecordSetRepo)
+    mockRecordSetRepo
+  )
   private val underTest = spy(backingService)
 
   private val okUserInfo: UserInfo = UserInfo(okUser)
@@ -74,7 +75,8 @@ class MembershipServiceSpec
   private val existingGroup = okGroup.copy(
     id = "id",
     memberIds = Set("user1", "user2", "user3", "user4"),
-    adminUserIds = Set("user1", "user2", "ok"))
+    adminUserIds = Set("user1", "user2", "ok")
+  )
 
   // the update will remove users 3 and 4, add users 5 and 6, as well as a new admin user 7 and remove user2 as admin
   private val updatedInfo = Group(
@@ -101,7 +103,8 @@ class MembershipServiceSpec
       mockMembershipRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      underTest)
+      underTest
+    )
 
   "MembershipService" should {
     "create a new group" should {
@@ -157,7 +160,8 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         val info = groupInfo.copy(
           memberIds = Set(okUserInfo.id, dummyUserInfo.id),
-          adminUserIds = Set(okUserInfo.id, dummyUserInfo.id))
+          adminUserIds = Set(okUserInfo.id, dummyUserInfo.id)
+        )
         val expectedMembersAdded = Set(okUserInfo.id, dummyUserInfo.id)
 
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
@@ -275,8 +279,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              okAuth)
-            .value)
+              okAuth
+            )
+            .value
+        )
 
         val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
         val addedMemberCaptor = ArgumentCaptor.forClass(classOf[Set[String]])
@@ -326,8 +332,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              dummyAuth)
-            .value)
+              dummyAuth
+            )
+            .value
+        )
 
         error shouldBe a[NotAuthorizedError]
       }
@@ -350,8 +358,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              okAuth)
-            .value)
+              okAuth
+            )
+            .value
+        )
         error shouldBe a[GroupAlreadyExistsError]
       }
 
@@ -367,8 +377,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              okAuth)
-            .value)
+              okAuth
+            )
+            .value
+        )
         error shouldBe a[GroupNotFoundError]
       }
 
@@ -392,8 +404,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              okAuth)
-            .value)
+              okAuth
+            )
+            .value
+        )
         error shouldBe a[UserNotFoundError]
       }
 
@@ -411,8 +425,10 @@ class MembershipServiceSpec
               updatedInfo.description,
               Set(),
               Set(),
-              okAuth)
-            .value)
+              okAuth
+            )
+            .value
+        )
         error shouldBe an[InvalidGroupError]
       }
     }
@@ -537,7 +553,8 @@ class MembershipServiceSpec
           None,
           nextId = Some(listOfDummyGroups(99).id),
           maxItems = 100,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
       }
       "return only return groups whose name matches the filter" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -550,15 +567,18 @@ class MembershipServiceSpec
               startFrom = None,
               maxItems = 100,
               listOfDummyGroupsAuth,
-              false)
-            .value)
+              false
+            )
+            .value
+        )
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(10, 20),
           groupNameFilter = Some("name-dummy01"),
           startFrom = None,
           nextId = None,
           maxItems = 100,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
       }
       "return only return groups after startFrom" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -571,15 +591,18 @@ class MembershipServiceSpec
               startFrom = Some(listOfDummyGroups(99).id),
               maxItems = 100,
               listOfDummyGroupsAuth,
-              ignoreAccess = false)
-            .value)
+              ignoreAccess = false
+            )
+            .value
+        )
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(100, 200),
           groupNameFilter = None,
           startFrom = Some(listOfDummyGroups(99).id),
           nextId = None,
           maxItems = 100,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
       }
       "return only return maxItems groups" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -592,15 +615,18 @@ class MembershipServiceSpec
               startFrom = None,
               maxItems = 10,
               listOfDummyGroupsAuth,
-              ignoreAccess = false)
-            .value)
+              ignoreAccess = false
+            )
+            .value
+        )
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(0, 10),
           groupNameFilter = None,
           startFrom = None,
           nextId = Some(listOfDummyGroups(9).id),
           maxItems = 10,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
       }
       "return an empty set if the user is not a member of any groups" in {
         doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
@@ -615,7 +641,8 @@ class MembershipServiceSpec
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
-          GroupInfo(okGroup))
+          GroupInfo(okGroup)
+        )
       }
       "return all groups from the database for super users even if ignoreAccess is false" in {
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
@@ -624,7 +651,8 @@ class MembershipServiceSpec
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
-          GroupInfo(okGroup))
+          GroupInfo(okGroup)
+        )
       }
       "return all groups from the database for super users if ignoreAccess is true" in {
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
@@ -633,7 +661,8 @@ class MembershipServiceSpec
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
-          GroupInfo(okGroup))
+          GroupInfo(okGroup)
+        )
       }
       "return all groups from the database for support users even if ignoreAccess is false" in {
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
@@ -643,7 +672,8 @@ class MembershipServiceSpec
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
-          GroupInfo(okGroup))
+          GroupInfo(okGroup)
+        )
       }
       "return all groups from the database for support users if ignoreAccess is true" in {
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
@@ -653,7 +683,8 @@ class MembershipServiceSpec
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
-          GroupInfo(okGroup))
+          GroupInfo(okGroup)
+        )
       }
       "do not return deleted groups" in {
         val deletedGroupAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(deletedGroup.id))
@@ -670,7 +701,8 @@ class MembershipServiceSpec
       "return the group activity" in {
         val groupChangeRepoResponse = ListGroupChangesResults(
           listOfDummyGroupChanges.take(100),
-          Some(listOfDummyGroupChanges(100).id))
+          Some(listOfDummyGroupChanges(100).id)
+        )
         doReturn(IO.pure(groupChangeRepoResponse))
           .when(mockGroupChangeRepo)
           .getGroupChanges(anyString, any[Option[String]], anyInt)
@@ -748,7 +780,8 @@ class MembershipServiceSpec
         val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
         val supportAuth = okAuth.copy(
           signedInUser = dummyAuth.signedInUser.copy(isSupport = true),
-          memberGroupIds = Seq.empty)
+          memberGroupIds = Seq.empty
+        )
 
         doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
         doReturn(IO.pure(testListUsersResult))
@@ -830,7 +863,8 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroupByName(okGroup.name)
 
         val result = awaitResultOf(
-          underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value)
+          underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value
+        )
         result should be(right)
       }
 
@@ -842,7 +876,8 @@ class MembershipServiceSpec
           .getGroupByName(okGroup.name)
 
         val result = awaitResultOf(
-          underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value)
+          underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value
+        )
         result should be(right)
       }
     }
@@ -942,7 +977,8 @@ class MembershipServiceSpec
         val error = leftResultOf(
           underTest
             .updateUserLockStatus(okUser.id, LockStatus.Locked, dummyAuth)
-            .value)
+            .value
+        )
 
         error shouldBe a[NotAuthorizedError]
       }
@@ -950,11 +986,13 @@ class MembershipServiceSpec
       "return an error if the signed in user is only a support admin" in {
         val supportAuth = okAuth.copy(
           signedInUser = dummyAuth.signedInUser.copy(isSupport = true),
-          memberGroupIds = Seq.empty)
+          memberGroupIds = Seq.empty
+        )
         val error = leftResultOf(
           underTest
             .updateUserLockStatus(okUser.id, LockStatus.Locked, supportAuth)
-            .value)
+            .value
+        )
 
         error shouldBe a[NotAuthorizedError]
       }
@@ -965,7 +1003,8 @@ class MembershipServiceSpec
         val error = leftResultOf(
           underTest
             .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
-            .value)
+            .value
+        )
 
         error shouldBe a[UserNotFoundError]
       }

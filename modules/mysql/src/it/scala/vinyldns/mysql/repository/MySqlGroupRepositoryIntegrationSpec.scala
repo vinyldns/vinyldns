@@ -22,7 +22,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlGroupRepositoryIntegrationSpec
-  extends WordSpec
+    extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
@@ -31,7 +31,7 @@ class MySqlGroupRepositoryIntegrationSpec
 
   private val repo: GroupRepository = TestMySqlInstance.groupRepository
 
-  private val testGroupNames = (for {i <- 0 to 100} yield s"test-group-$i").toList.sorted
+  private val testGroupNames = (for { i <- 0 to 100 } yield s"test-group-$i").toList.sorted
   private val groups = testGroupNames.map { testName =>
     Group(name = testName, email = "test@email.com")
   }

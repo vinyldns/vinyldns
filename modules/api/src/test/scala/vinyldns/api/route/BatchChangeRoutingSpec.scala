@@ -70,7 +70,8 @@ class BatchChangeRoutingSpec()
         ownerGroupId: Option[String] = None,
         auth: AuthPrincipal = okAuth,
         approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved,
-        scheduledTime: Option[DateTime] = None): BatchChange =
+        scheduledTime: Option[DateTime] = None
+    ): BatchChange =
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -89,7 +90,8 @@ class BatchChangeRoutingSpec()
             Some("systemMessage"),
             None,
             None,
-            id = "singleAddChangeId"),
+            id = "singleAddChangeId"
+          ),
           SingleDeleteRRSetChange(
             Some("zoneId"),
             Some("zoneName"),
@@ -101,7 +103,8 @@ class BatchChangeRoutingSpec()
             Some("systemMessage"),
             None,
             None,
-            id = "singleDeleteChangeId")
+            id = "singleDeleteChangeId"
+          )
         ),
         ownerGroupId,
         approvalStatus,
@@ -115,27 +118,32 @@ class BatchChangeRoutingSpec()
     /* Builds BatchChange response */
     def createBatchChangeInfoResponse(
         batchChange: BatchChange,
-        ownerGroupName: Option[String] = None): BatchChangeInfo =
+        ownerGroupName: Option[String] = None
+    ): BatchChangeInfo =
       BatchChangeInfo(batchChange, ownerGroupName)
 
     def buildAddChangeInput(
         inputName: Option[String] = None,
         typ: Option[RecordType] = None,
         ttl: Option[Int] = None,
-        record: Option[RecordData] = None): JObject =
+        record: Option[RecordData] = None
+    ): JObject =
       JObject(
         List(
           inputName.map("inputName" -> JString(_)),
           typ.map("type" -> Extraction.decompose(_)),
           ttl.map("ttl" -> JInt(_)),
-          record.map("record" -> Extraction.decompose(_))).flatten)
+          record.map("record" -> Extraction.decompose(_))
+        ).flatten
+      )
 
     def buildDeleteChangeInput(
         inputName: Option[String] = None,
-        typ: Option[RecordType] = None): JObject =
-      JObject(List(
-        inputName.map("inputName" -> JString(_)),
-        typ.map("type" -> Extraction.decompose(_))).flatten)
+        typ: Option[RecordType] = None
+    ): JObject =
+      JObject(
+        List(inputName.map("inputName" -> JString(_)), typ.map("type" -> Extraction.decompose(_))).flatten
+      )
 
     val addAChangeInput: JObject =
       buildAddChangeInput(Some("bar."), Some(A), Some(3600), Some(AData("127.0.0.1")))
@@ -155,16 +163,21 @@ class BatchChangeRoutingSpec()
     val batchChangeSummaryInfo2 = BatchChangeSummary(
       createBatchChangeResponse(
         Some("second"),
-        approvalStatus = BatchChangeApprovalStatus.PendingReview))
+        approvalStatus = BatchChangeApprovalStatus.PendingReview
+      )
+    )
     val batchChangeSummaryInfo3 = BatchChangeSummary(createBatchChangeResponse(Some("third")))
     val batchChangeSummaryInfo4 = BatchChangeSummary(
       createBatchChangeResponse(
         Some("fourth"),
         auth = dummyAuth,
-        approvalStatus = BatchChangeApprovalStatus.PendingReview))
+        approvalStatus = BatchChangeApprovalStatus.PendingReview
+      )
+    )
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
-      Some("validChangeWithComments"))
+      Some("validChangeWithComments")
+    )
     val validResponseWithoutComments: BatchChange = createBatchChangeResponse()
     val validResponseWithOwnerGroupId: BatchChange =
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
@@ -175,7 +188,8 @@ class BatchChangeRoutingSpec()
       scheduledTime = Some(testScheduledTime)
     )
     val genericValidResponse: BatchChange = createBatchChangeResponse(
-      Some("generic valid response"))
+      Some("generic valid response")
+    )
 
     val backwardsCompatibleDel = SingleDeleteRRSetChange(
       None,
@@ -188,7 +202,8 @@ class BatchChangeRoutingSpec()
       Some("systemMessage"),
       None,
       None,
-      id = "singleDeleteChangeId")
+      id = "singleDeleteChangeId"
+    )
     val backwardsCompatibleAdd = SingleDeleteRRSetChange(
       None,
       None,
@@ -200,14 +215,17 @@ class BatchChangeRoutingSpec()
       Some("systemMessage"),
       None,
       None,
-      id = "singleDeleteChangeId")
+      id = "singleDeleteChangeId"
+    )
 
     val backwardsCompatable: BatchChange = genericValidResponse.copy(
       id = "testBwComp",
-      changes = List(backwardsCompatibleAdd, backwardsCompatibleDel))
+      changes = List(backwardsCompatibleAdd, backwardsCompatibleDel)
+    )
 
     val validListBatchChangeSummariesResponse: BatchChangeSummaryList = BatchChangeSummaryList(
-      List(BatchChangeSummary(createBatchChangeResponse(None))))
+      List(BatchChangeSummary(createBatchChangeResponse(None)))
+    )
   }
 
   import TestData._
@@ -216,14 +234,17 @@ class BatchChangeRoutingSpec()
     def applyBatchChange(
         batchChangeInput: BatchChangeInput,
         auth: AuthPrincipal,
-        allowManualReview: Boolean): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        allowManualReview: Boolean
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       batchChangeInput.comments match {
         case Some("validChangeWithComments") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Right(validResponseWithComments)))
+            IO.pure(Right(validResponseWithComments))
+          )
         case None =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Right(validResponseWithoutComments)))
+            IO.pure(Right(validResponseWithoutComments))
+          )
         case Some("runtimeException") =>
           throw new RuntimeException("Unexpected run-time exception has occurred!")
         case Some("emptyBatch") =>
@@ -232,10 +253,12 @@ class BatchChangeRoutingSpec()
           )
         case Some("validChangeWithOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Right(validResponseWithOwnerGroupId)))
+            IO.pure(Right(validResponseWithOwnerGroupId))
+          )
         case Some("validChangeWithCommentsAndScheduled") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Right(validResponseWithCommentsAndScheduled)))
+            IO.pure(Right(validResponseWithCommentsAndScheduled))
+          )
         case Some("scheduledDisabledRequest") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Left(ScheduledChangesDisabled))
@@ -246,7 +269,8 @@ class BatchChangeRoutingSpec()
 
     def getBatchChange(
         id: String,
-        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChangeInfo] =
+        auth: AuthPrincipal
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChangeInfo] =
       id match {
         case "batchId" =>
           EitherT(
@@ -265,8 +289,8 @@ class BatchChangeRoutingSpec()
         startFrom: Option[Int],
         maxItems: Int,
         ignoreAccess: Boolean = false,
-        approvalStatus: Option[BatchChangeApprovalStatus] = None)
-      : EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
+        approvalStatus: Option[BatchChangeApprovalStatus] = None
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
         (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
           case (_, None, 100, _, None) =>
@@ -319,7 +343,8 @@ class BatchChangeRoutingSpec()
             )
 
           case _ => EitherT.rightT(BatchChangeSummaryList(List()))
-        } else if (auth.userId == superUserAuth.userId)
+        }
+      else if (auth.userId == superUserAuth.userId)
         (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
           case (_, None, 100, true, None) =>
             EitherT.rightT(
@@ -328,7 +353,8 @@ class BatchChangeRoutingSpec()
                   batchChangeSummaryInfo1,
                   batchChangeSummaryInfo2,
                   batchChangeSummaryInfo3,
-                  batchChangeSummaryInfo4),
+                  batchChangeSummaryInfo4
+                ),
                 startFrom = None,
                 nextId = None,
                 ignoreAccess = true
@@ -367,14 +393,15 @@ class BatchChangeRoutingSpec()
             )
 
           case _ => EitherT.rightT(BatchChangeSummaryList(List()))
-        } else
+        }
+      else
         EitherT.rightT(BatchChangeSummaryList(List()))
 
     def rejectBatchChange(
         batchChangeId: String,
         authPrincipal: AuthPrincipal,
-        rejectionComment: RejectBatchChangeInput)
-      : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        rejectionComment: RejectBatchChangeInput
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       (batchChangeId, authPrincipal.isSystemAdmin) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
@@ -385,8 +412,8 @@ class BatchChangeRoutingSpec()
     def approveBatchChange(
         batchChangeId: String,
         authPrincipal: AuthPrincipal,
-        rejectionComment: ApproveBatchChangeInput)
-      : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        rejectionComment: ApproveBatchChangeInput
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       (batchChangeId, authPrincipal.isSystemAdmin) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
@@ -400,7 +427,8 @@ class BatchChangeRoutingSpec()
 
     def cancelBatchChange(
         batchChangeId: String,
-        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        authPrincipal: AuthPrincipal
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       (batchChangeId, authPrincipal.userId.equals("ok")) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) => EitherT(IO.pure(UserNotAuthorizedError("support").asLeft))
@@ -415,7 +443,8 @@ class BatchChangeRoutingSpec()
         buildValidBatchChangeInputJson("validChangeWithComments")
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, validRequestWithComments)) ~>
+        HttpEntity(ContentTypes.`application/json`, validRequestWithComments)
+      ) ~>
         batchChangeRoute ~> check {
 
         status shouldBe Accepted
@@ -429,7 +458,8 @@ class BatchChangeRoutingSpec()
       val validRequestWithoutComments: String = compact(render(changeList))
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
+        HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)
+      ) ~>
         batchChangeRoute ~> check {
 
         status shouldBe Accepted
@@ -442,11 +472,15 @@ class BatchChangeRoutingSpec()
     "return a 202 Accepted for valid add and delete request with owner group ID" in {
       val validRequestWithOwnerGroupId: String =
         compact(
-          render(("comments" -> "validChangeWithOwnerGroup") ~~ changeList ~~
-            ("ownerGroupId" -> "some-group-id")))
+          render(
+            ("comments" -> "validChangeWithOwnerGroup") ~~ changeList ~~
+              ("ownerGroupId" -> "some-group-id")
+          )
+        )
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, validRequestWithOwnerGroupId)) ~>
+        HttpEntity(ContentTypes.`application/json`, validRequestWithOwnerGroupId)
+      ) ~>
         batchChangeRoute ~> check {
         status shouldBe Accepted
 
@@ -458,7 +492,8 @@ class BatchChangeRoutingSpec()
     "return a 202 Accepted for valid add and delete request with allowManualReview parameter" in {
       val validRequestWithoutComments: String = compact(render(changeList))
       Post("/zones/batchrecordchanges?allowManualReview=false").withEntity(
-        HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
+        HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)
+      ) ~>
         batchChangeRoute ~> check {
 
         status shouldBe Accepted
@@ -478,14 +513,16 @@ class BatchChangeRoutingSpec()
         )
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
+        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)
+      ) ~>
         batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
         val change = responseAs[JValue]
         compact(change) shouldBe compact(
-          Extraction.decompose(validResponseWithCommentsAndScheduled))
+          Extraction.decompose(validResponseWithCommentsAndScheduled)
+        )
       }
     }
 
@@ -495,7 +532,8 @@ class BatchChangeRoutingSpec()
           |}""".stripMargin
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)) ~>
+        HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)
+      ) ~>
         Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe BadRequest
@@ -506,7 +544,8 @@ class BatchChangeRoutingSpec()
       val scheduledDisabledRequest = buildValidBatchChangeInputJson("scheduledDisabledRequest")
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, scheduledDisabledRequest)) ~>
+        HttpEntity(ContentTypes.`application/json`, scheduledDisabledRequest)
+      ) ~>
         Route.seal(batchChangeRoute) ~> check {
 
         response.entity.toString should include(ScheduledChangesDisabled.message)
@@ -523,7 +562,8 @@ class BatchChangeRoutingSpec()
           |}""".stripMargin
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, invalidRequestChangeType)) ~>
+        HttpEntity(ContentTypes.`application/json`, invalidRequestChangeType)
+      ) ~>
         Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe BadRequest
@@ -534,7 +574,8 @@ class BatchChangeRoutingSpec()
       val runtimeError: String = buildValidBatchChangeInputJson("runtimeException")
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, runtimeError)) ~>
+        HttpEntity(ContentTypes.`application/json`, runtimeError)
+      ) ~>
         Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe InternalServerError
@@ -550,7 +591,8 @@ class BatchChangeRoutingSpec()
 
         val resp = responseAs[JValue]
         compact(resp) shouldBe compact(
-          Extraction.decompose(createBatchChangeInfoResponse(genericValidResponse)))
+          Extraction.decompose(createBatchChangeInfoResponse(genericValidResponse))
+        )
       }
     }
 
@@ -657,7 +699,8 @@ class BatchChangeRoutingSpec()
         status shouldBe BadRequest
 
         responseEntity.toString should include(
-          "maxItems was 101, maxItems must be between 1 and 100, inclusive.")
+          "maxItems was 101, maxItems must be between 1 and 100, inclusive."
+        )
       }
     }
 
@@ -667,7 +710,8 @@ class BatchChangeRoutingSpec()
 
         val resp = responseAs[JValue]
         compact(resp) shouldBe compact(
-          Extraction.decompose(BatchChangeSummaryList(List(), maxItems = 100)))
+          Extraction.decompose(BatchChangeSummaryList(List(), maxItems = 100))
+        )
       }
     }
 
@@ -704,9 +748,9 @@ class BatchChangeRoutingSpec()
 
   "POST reject batch change" should {
     "return OK if review comment is provided, batch change is PendingReview, and reviewer is authorized" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("comments" -> "some comments")))) ~>
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("comments" -> "some comments")))
+      ) ~>
         superUserRoute ~> check {
         status shouldBe OK
       }
@@ -714,7 +758,8 @@ class BatchChangeRoutingSpec()
 
     "return OK if comments are not provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe OK
       }
@@ -722,16 +767,17 @@ class BatchChangeRoutingSpec()
 
     "return Forbidden if user is not a super or support admin" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         batchChangeRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "return BadRequest if comments exceed 1024 characters" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute) ~> check {
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("reviewComment" -> "a" * 1025)))
+      ) ~> Route.seal(batchChangeRoute) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include("Comment length must not exceed 1024 characters.")
@@ -746,7 +792,8 @@ class BatchChangeRoutingSpec()
 
     "return BadRequest if batch change is not pending review" in {
       Post("/zones/batchrecordchanges/batchId/reject").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe BadRequest
       }
@@ -755,9 +802,9 @@ class BatchChangeRoutingSpec()
 
   "POST approve batch change" should {
     "return Accepted if review comment is provided, batch change is PendingReview, and reviewer is authorized" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("comments" -> "some comments")))) ~>
+      Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("comments" -> "some comments")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe Accepted
       }
@@ -765,7 +812,8 @@ class BatchChangeRoutingSpec()
 
     "return Accepted if comments are not provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe Accepted
       }
@@ -773,7 +821,8 @@ class BatchChangeRoutingSpec()
 
     "return Forbidden if user is not a super or support admin" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         batchChangeRoute ~> check {
         status shouldBe Forbidden
       }
@@ -781,7 +830,8 @@ class BatchChangeRoutingSpec()
 
     "return Forbidden if scheduled change is not past due" in {
       Post("/zones/batchrecordchanges/schedNotPastDue/approve").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         batchChangeRoute ~> check {
         status shouldBe Forbidden
         response.entity.toString should include("scheduled date")
@@ -789,9 +839,9 @@ class BatchChangeRoutingSpec()
     }
 
     "return BadRequest if comments exceed 1024 characters" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(supportUserRoute) ~> check {
+      Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("reviewComment" -> "a" * 1025)))
+      ) ~> Route.seal(supportUserRoute) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include("Comment length must not exceed 1024 characters.")
@@ -806,16 +856,17 @@ class BatchChangeRoutingSpec()
 
     "return BadRequest if batch change is not pending review" in {
       Post("/zones/batchrecordchanges/batchId/approve").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "return NotFound if the requesting user cant be found" in {
-      Post("/zones/batchrecordchanges/notFoundUser/approve").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("comments" -> "some comments")))) ~>
+      Post("/zones/batchrecordchanges/notFoundUser/approve").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("comments" -> "some comments")))
+      ) ~>
         supportUserRoute ~> check {
         status shouldBe NotFound
       }

@@ -55,7 +55,8 @@ class DnsConnectionSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
 
   private val testAMultiple = RecordSet(
     testZone.id,
@@ -65,13 +66,15 @@ class DnsConnectionSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("1.1.1.1"), AData("2.2.2.2")))
+    List(AData("1.1.1.1"), AData("2.2.2.2"))
+  )
 
   private val testDnsA = new DNS.ARecord(
     DNS.Name.fromString("a-record."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("10.1.1.1"))
+    InetAddress.getByName("10.1.1.1")
+  )
 
   private val mockResolver = mock[DNS.SimpleResolver]
   private val mockMessage = mock[DNS.Message]
@@ -81,7 +84,8 @@ class DnsConnectionSpec
     override def toQuery(
         name: String,
         zoneName: String,
-        typ: RecordType): Either[Throwable, DnsQuery] =
+        typ: RecordType
+    ): Either[Throwable, DnsQuery] =
       name match {
         case "try-again" =>
           Right(new DnsQuery(new Lookup("try-again.vinyldns.", 0, 0), new Name(testZone.name)))
@@ -165,12 +169,14 @@ class DnsConnectionSpec
         DNS.Name.fromString("a-record."),
         DNS.DClass.IN,
         200L,
-        InetAddress.getByName("1.1.1.1"))
+        InetAddress.getByName("1.1.1.1")
+      )
       val a2 = new DNS.ARecord(
         DNS.Name.fromString("a-record."),
         DNS.DClass.IN,
         200L,
-        InetAddress.getByName("2.2.2.2"))
+        InetAddress.getByName("2.2.2.2")
+      )
       doReturn(List(a1, a2)).when(mockDnsQuery).run()
 
       val records: List[RecordSet] =
@@ -342,7 +348,8 @@ class DnsConnectionSpec
     }
     "send an appropriate replace message to the resolver for multiple records" in {
       val change = updateRsChange(testZone, testAMultiple).copy(
-        updates = Some(testAMultiple.copy(name = "updated-a-record")))
+        updates = Some(testAMultiple.copy(name = "updated-a-record"))
+      )
 
       val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
@@ -439,7 +446,8 @@ class DnsConnectionSpec
     }
     "send an appropriate replace message to the resolver for multiple records" in {
       val change = updateRsChange(testZone, testAMultiple).copy(
-        updates = Some(testAMultiple.copy(records = List(AData("4.4.4.4"), AData("3.3.3.3")))))
+        updates = Some(testAMultiple.copy(records = List(AData("4.4.4.4"), AData("3.3.3.3"))))
+      )
 
       val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
@@ -535,17 +543,20 @@ class DnsConnectionSpec
   "applyChange" should {
     "yield a successful DNS response for a create if there are no errors" in {
       underTest.applyChange(addRsChange()).value.unsafeRunSync() shouldBe Right(
-        NoError(mockMessage))
+        NoError(mockMessage)
+      )
     }
 
     "yield a successful DNS response for an update if there are no errors" in {
       underTest.applyChange(updateRsChange()).value.unsafeRunSync() shouldBe Right(
-        NoError(mockMessage))
+        NoError(mockMessage)
+      )
     }
 
     "yield a successful DNS response for a delete if there are no errors" in {
       underTest.applyChange(deleteRsChange()).value.unsafeRunSync() shouldBe Right(
-        NoError(mockMessage))
+        NoError(mockMessage)
+      )
     }
   }
 

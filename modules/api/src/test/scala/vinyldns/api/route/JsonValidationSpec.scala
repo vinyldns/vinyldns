@@ -133,7 +133,9 @@ class JsonValidationSpec
 
     "throw errors for requried values" in {
       val pet: JValue = ("key" -> "val") ~ ("other" -> "whatever")
-      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+      val extracted = try {
+        pet.extract[Pet].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[Pet]
       }
       extracted.isInvalid shouldBe true
@@ -145,7 +147,9 @@ class JsonValidationSpec
 
     "throw errors for checked conditions" in {
       val pet: JValue = ("name" -> "fido") ~ ("other" -> "whatever")
-      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+      val extracted = try {
+        pet.extract[Pet].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[Pet]
       }
       extracted.isInvalid shouldBe true
@@ -155,12 +159,15 @@ class JsonValidationSpec
       err.toSet shouldBe Set(
         "Missing Pet.type",
         "Pet.name must end with y",
-        "Pet.name is too short")
+        "Pet.name is too short"
+      )
     }
 
     "throw errors for invalid Enumerations" in {
       val pet: JValue = ("name" -> "Scruffy") ~ ("typ" -> "Fish")
-      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+      val extracted = try {
+        pet.extract[Pet].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[Pet]
       }
       extracted.isInvalid shouldBe true
@@ -181,7 +188,9 @@ class JsonValidationSpec
             ("typ" -> HomeType.Apartment.toString) ~
               ("random" -> "other")
           ))
-      val extracted = try { user.extract[User].valid[Throwable] } catch {
+      val extracted = try {
+        user.extract[User].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[User]
       }
       extracted.isInvalid shouldBe true
@@ -198,7 +207,9 @@ class JsonValidationSpec
 
     "throw reasonable errors using default deserialization" in {
       val addr: JValue = ("key" -> "val") ~ ("other" -> "whatever")
-      val extracted = try { addr.extract[Address].valid[Throwable] } catch {
+      val extracted = try {
+        addr.extract[Address].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[Address]
       }
       extracted.isInvalid shouldBe true
@@ -210,7 +221,9 @@ class JsonValidationSpec
 
     "catch errors from the default parsers" in {
       val pet: JValue = ("name" -> ("unnecessary" -> "json")) ~ ("typ" -> "Dog")
-      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+      val extracted = try {
+        pet.extract[Pet].valid[Throwable]
+      } catch {
         case e: Throwable => e.invalid[Pet]
       }
       extracted.isInvalid shouldBe true

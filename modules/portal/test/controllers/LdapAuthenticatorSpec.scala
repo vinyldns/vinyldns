@@ -36,7 +36,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       searchResults: NamingEnumeration[SearchResult],
       searchNext: SearchResult,
       byDomainAuthenticator: LdapByDomainAuthenticator,
-      attributes: Attributes)
+      attributes: Attributes
+  )
 
   /**
     * creates a container holding all mocks necessary to create
@@ -70,14 +71,16 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     "apply method must create an LDAP Authenticator" in {
       val testConfig: Configuration =
         Configuration.load(Environment.simple()) ++ Configuration.from(
-          Map("portal.test_login" -> false))
+          Map("portal.test_login" -> false)
+        )
       val underTest = LdapAuthenticator.apply(new Settings(testConfig))
       underTest must beAnInstanceOf[LdapAuthenticator]
     }
     "apply method must create a Test Authenticator if selected" in {
       val testConfig: Configuration =
         Configuration.load(Environment.simple()) ++ Configuration.from(
-          Map("portal.test_login" -> true))
+          Map("portal.test_login" -> true)
+        )
       val underTest = LdapAuthenticator.apply(new Settings(testConfig))
       underTest must beAnInstanceOf[TestAuthenticator]
     }
@@ -110,7 +113,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val authenticator = new LdapAuthenticator(
           List(testDomain1, testDomain2),
           byDomainAuthenticator,
-          mock[ServiceAccount])
+          mock[ServiceAccount]
+        )
 
         val response = authenticator.authenticate("foo", "bar")
 
@@ -133,7 +137,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val authenticator = new LdapAuthenticator(
           List(testDomain1, testDomain2),
           byDomainAuthenticator,
-          mock[ServiceAccount])
+          mock[ServiceAccount]
+        )
 
         val response = authenticator.authenticate("foo", "bar")
 
@@ -156,7 +161,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val authenticator = new LdapAuthenticator(
           List(testDomain1, testDomain2),
           byDomainAuthenticator,
-          mock[ServiceAccount])
+          mock[ServiceAccount]
+        )
 
         val response = authenticator.authenticate("foo", "bar")
 
@@ -186,7 +192,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         val response = authenticator.lookup("foo")
 
@@ -218,7 +225,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         val response = authenticator.lookup("foo")
 
@@ -243,7 +251,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         val response = authenticator.lookup("foo")
 
@@ -268,7 +277,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         val response = authenticator.lookup("foo")
 
@@ -291,7 +301,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         authenticator.healthCheck()
         val response = authenticator.healthCheck().unsafeRunSync()
@@ -308,7 +319,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         authenticator.healthCheck()
         val response = authenticator.healthCheck().unsafeRunSync()
@@ -325,7 +337,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
             byDomainAuthenticator,
-            serviceAccount)
+            serviceAccount
+          )
 
         authenticator.healthCheck()
         val response = authenticator.healthCheck().unsafeRunSync()
@@ -367,7 +380,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
             List(
               nonexistentUser,
               nonexistentUser.copy(userName = "existing-user"),
-              nonexistentUser.copy(userName = "another-existing-user")))
+              nonexistentUser.copy(userName = "another-existing-user")
+            )
+          )
           .unsafeRunSync() must
           beEqualTo(List(nonexistentUser))
       }
@@ -396,7 +411,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           // We first authenticate to the service account, and then to the user
           there.was(
             one(mocks.contextCreator).apply("test\\test", "test"),
-            one(mocks.contextCreator).apply("", "bar"))
+            one(mocks.contextCreator).apply("", "bar")
+          )
         }
 
         "call the correct search on context" in {
@@ -408,7 +424,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           val searchControlCapture = new ArgumentCapture[SearchControls]
 
           there.was(
-            one(mocks.context).search(baseNameCapture, usernameFilterCapture, searchControlCapture))
+            one(mocks.context).search(baseNameCapture, usernameFilterCapture, searchControlCapture)
+          )
 
           searchControlCapture.value.getSearchScope mustEqual 2
           baseNameCapture.value mustEqual "DC=test,DC=test,DC=com"
@@ -481,7 +498,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           val searchControlCapture = new ArgumentCapture[SearchControls]
 
           there.was(
-            one(mocks.context).search(baseNameCapture, usernameFilterCapture, searchControlCapture))
+            one(mocks.context).search(baseNameCapture, usernameFilterCapture, searchControlCapture)
+          )
 
           searchControlCapture.value.getSearchScope mustEqual 2
           baseNameCapture.value mustEqual "DC=test,DC=test,DC=com"
@@ -548,7 +566,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "testuser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
 
       val recordPagingUserLookup = underTest.lookup("recordPagingTestUser")
 
@@ -558,7 +578,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "recordPagingTestUser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
       there.were(noCallsTo(mockLdapAuth))
     }
     "authenticate the record paging test user" in {
@@ -576,7 +598,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "recordPagingTestUser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
       there.were(noCallsTo(mockLdapAuth))
     }
     "authenticate a user that is not the test user" in {
@@ -606,7 +630,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "testuser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
 
       val recordPagingUserLookup = underTest.lookup("recordPagingTestUser")
 
@@ -616,7 +642,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "recordPagingTestUser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
 
       there.were(noCallsTo(mockLdapAuth))
     }
@@ -635,7 +663,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           "recordPagingTestUser",
           Some("test@test.test"),
           Some("Test"),
-          Some("User")))
+          Some("User")
+        )
+      )
       there.were(noCallsTo(mockLdapAuth))
     }
     "lookup a user that is not the test user" in {
@@ -658,7 +688,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
 
       val underTest = new TestAuthenticator(mockLdapAuth)
       underTest.getUsersNotInLdap(List(nonexistentUser)).unsafeRunSync() must beEqualTo(
-        List(nonexistentUser))
+        List(nonexistentUser)
+      )
     }
     "perform a health check" in {
       val mockLdapAuth = mock[LdapAuthenticator]

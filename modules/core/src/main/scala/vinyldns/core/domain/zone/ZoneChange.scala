@@ -40,8 +40,8 @@ case class ZoneChange(
     status: ZoneChangeStatus = ZoneChangeStatus.Pending,
     created: DateTime = DateTime.now,
     systemMessage: Option[String] = None,
-    id: String = UUID.randomUUID().toString)
-    extends ZoneCommand
+    id: String = UUID.randomUUID().toString
+) extends ZoneCommand
     with ZoneCommandResult {
 
   val zoneId: String = zone.id

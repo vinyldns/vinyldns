@@ -62,8 +62,8 @@ object DnsZoneViewLoader extends DnsConversions {
 case class DnsZoneViewLoader(
     zone: Zone,
     zoneTransfer: Zone => ZoneTransferIn,
-    maxZoneSize: Int = VinylDNSConfig.maxZoneSize)
-    extends ZoneViewLoader
+    maxZoneSize: Int = VinylDNSConfig.maxZoneSize
+) extends ZoneViewLoader
     with DnsConversions
     with Monitored {
 
@@ -76,17 +76,21 @@ case class DnsZoneViewLoader(
             xfr.run()
             xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
           }
-          rawDnsRecords = zoneXfr.filter(record =>
-            fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+          rawDnsRecords = zoneXfr.filter(
+            record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN
+          )
           _ <- if (rawDnsRecords.length > maxZoneSize)
             IO.raiseError(ZoneTooLargeError(zone, rawDnsRecords.length, maxZoneSize))
           else IO.pure(Unit)
           dnsZoneName <- IO(zoneDnsName(zone.name))
           recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
-          _ <- IO(DnsZoneViewLoader.logger.info(
-            s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
+          _ <- IO(
+            DnsZoneViewLoader.logger.info(
+              s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"
+            )
+          )
         } yield ZoneView(zone, recordSets)
-    }
+      }
 }
 
 object VinylDNSZoneViewLoader {
@@ -103,11 +107,13 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
             zoneId = zone.id,
             startFrom = None,
             maxItems = None,
-            recordNameFilter = None)
+            recordNameFilter = None
+          )
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(
-              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}")
+              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}"
+            )
             ZoneView(zone, result.recordSets)
           }
-    }
+      }
 }

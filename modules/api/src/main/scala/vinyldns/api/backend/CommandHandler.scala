@@ -59,7 +59,8 @@ object CommandHandler {
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
       connections: ConfiguredDnsConnections,
-      maxOpen: Int = 4)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
+      maxOpen: Int = 4
+  )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
@@ -73,7 +74,8 @@ object CommandHandler {
         recordChangeHandler,
         zoneSyncHandler,
         batchChangeHandler,
-        connections)
+        connections
+      )
 
     // Delete messages from message queue when complete
     val updateQueue = messageSink(mq)
@@ -84,7 +86,8 @@ object CommandHandler {
         .map(
           _.observe(increaseTimeoutWhenSyncing)
             .through(changeRequestProcessor)
-            .through(updateQueue))
+            .through(updateQueue)
+        )
         .parJoin(maxOpen)
         .handleErrorWith { error =>
           logger.error("Encountered unexpected error in main flow", error)
@@ -98,7 +101,8 @@ object CommandHandler {
 
   /* Polls Message Queue for messages */
   def startPolling(mq: MessageQueue, count: MessageCount, pollingInterval: FiniteDuration)(
-      implicit timer: Timer[IO]): Stream[IO, Stream[IO, CommandMessage]] = {
+      implicit timer: Timer[IO]
+  ): Stream[IO, Stream[IO, CommandMessage]] = {
 
     def pollingStream(): Stream[IO, Stream[IO, CommandMessage]] =
       // every delay duration, we poll
@@ -145,7 +149,8 @@ object CommandHandler {
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
       batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
-      connections: ConfiguredDnsConnections): Pipe[IO, CommandMessage, MessageOutcome] =
+      connections: ConfiguredDnsConnections
+  ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
@@ -202,7 +207,8 @@ object CommandHandler {
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
       notifiers: AllNotifiers,
-      connections: ConfiguredDnsConnections)(implicit timer: Timer[IO]): IO[Unit] = {
+      connections: ConfiguredDnsConnections
+  )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)

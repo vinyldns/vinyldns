@@ -31,7 +31,8 @@ object BatchChangeHandler {
 
   def apply(
       batchChangeRepository: BatchChangeRepository,
-      notifiers: AllNotifiers): BatchChangeCommand => IO[Option[BatchChange]] =
+      notifiers: AllNotifiers
+  ): BatchChangeCommand => IO[Option[BatchChange]] =
     batchChangeId => {
       process(
         batchChangeRepository: BatchChangeRepository,
@@ -43,7 +44,8 @@ object BatchChangeHandler {
   def process(
       batchChangeRepository: BatchChangeRepository,
       notifiers: AllNotifiers,
-      batchChangeCommand: BatchChangeCommand): IO[Option[BatchChange]] =
+      batchChangeCommand: BatchChangeCommand
+  ): IO[Option[BatchChange]] =
     for {
       batchChange <- batchChangeRepository.getBatchChange(batchChangeCommand.id)
       _ <- notify(notifiers, batchChange, batchChangeCommand)
@@ -55,15 +57,16 @@ object BatchChangeHandler {
 
   private final case class Pending(
       change: Option[BatchChange],
-      batchChangeCommand: BatchChangeCommand)
-      extends BatchChangeProcessorState
+      batchChangeCommand: BatchChangeCommand
+  ) extends BatchChangeProcessorState
 
   private final case class PendingBatchNotificationError(change: BatchChange) extends Throwable
 
   private def notify(
       notifiers: AllNotifiers,
       change: Option[BatchChange],
-      batchChangeCommand: BatchChangeCommand): IO[Unit] =
+      batchChangeCommand: BatchChangeCommand
+  ): IO[Unit] =
     change match {
       case Some(pendingBatch)
           if pendingBatch.status == BatchChangeStatus.PendingProcessing ||
@@ -75,7 +78,8 @@ object BatchChangeHandler {
         notifiers.notify(Notification(completedBatch))
       case None =>
         logger.error(
-          s"Notification not sent since batch change with ID ${batchChangeCommand.id} not found.")
+          s"Notification not sent since batch change with ID ${batchChangeCommand.id} not found."
+        )
         IO.unit
     }
 

@@ -80,7 +80,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
       val expected = GroupInfo(okGroup)
 
       doReturn(result(okGroup)).when(membershipService).createGroup(any[Group], any[AuthPrincipal])
@@ -105,7 +106,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
         .createGroup(any[Group], any[AuthPrincipal])
@@ -155,7 +157,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
       doReturn(result(UserNotFoundError("not found")))
         .when(membershipService)
         .createGroup(any[Group], any[AuthPrincipal])
@@ -172,7 +175,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
         .createGroup(any[Group], any[AuthPrincipal])
@@ -189,8 +193,9 @@ class MembershipRoutingSpec
       val twoUserGroupInfo = GroupInfo(twoUserGroup)
       doReturn(
         result(
-          ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)))
-        .when(membershipService)
+          ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)
+        )
+      ).when(membershipService)
         .listMyGroups(None, None, 100, okAuth, false)
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
@@ -211,16 +216,20 @@ class MembershipRoutingSpec
             startFrom = Some("anyString"),
             nextId = None,
             maxItems = 100,
-            ignoreAccess = false)))
-        .when(membershipService)
+            ignoreAccess = false
+          )
+        )
+      ).when(membershipService)
         .listMyGroups(
           groupNameFilter = Some("ok"),
           startFrom = Some("anyString"),
           maxItems = 100,
           okAuth,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
       Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok") ~> Route.seal(
-        membershipRoute) ~> check {
+        membershipRoute
+      ) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[ListMyGroupsResponse]
@@ -230,7 +239,8 @@ class MembershipRoutingSpec
           startFrom = Some("anyString"),
           maxItems = 100,
           nextId = None,
-          ignoreAccess = false)
+          ignoreAccess = false
+        )
 
         result shouldBe expected
       }
@@ -336,7 +346,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
 
       doReturn(result(okGroup))
         .when(membershipService)
@@ -347,7 +358,8 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
       Put("/groups/good").withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> Route
         .seal(membershipRoute) ~> check {
@@ -370,7 +382,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
         .updateGroup(
@@ -380,11 +393,12 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
       Put("/groups/duplicate").withEntity(
-        HttpEntity(ContentTypes.`application/json`, js(duplicateRequest))) ~> Route.seal(
-        membershipRoute) ~> check {
+        HttpEntity(ContentTypes.`application/json`, js(duplicateRequest))
+      ) ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
@@ -396,7 +410,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set.empty,
-        Set.empty)
+        Set.empty
+      )
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
         .updateGroup(
@@ -406,10 +421,11 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
       Put("/groups/notFound").withEntity(
-        HttpEntity(ContentTypes.`application/json`, js(notFoundRequest))) ~> Route.seal(
-        membershipRoute) ~> check {
+        HttpEntity(ContentTypes.`application/json`, js(notFoundRequest))
+      ) ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -421,7 +437,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserInfo),
-        Set(okUserInfo))
+        Set(okUserInfo)
+      )
 
       doReturn(result(NotAuthorizedError("fail")))
         .when(membershipService)
@@ -432,10 +449,11 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
       Put("/groups/forbidden").withEntity(
-        HttpEntity(ContentTypes.`application/json`, js(forbiddenRequest))) ~> Route.seal(
-        membershipRoute) ~> check {
+        HttpEntity(ContentTypes.`application/json`, js(forbiddenRequest))
+      ) ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -452,7 +470,8 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
       Put("/groups/bad").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
         .seal(Route.seal(membershipRoute)) ~> check {
@@ -472,7 +491,8 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
       Put("/groups/bad").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
         .seal(membershipRoute) ~> check {
@@ -543,8 +563,10 @@ class MembershipRoutingSpec
             Seq(dummyMemberInfo, okMemberInfo),
             Some("dummy"),
             Some("ok"),
-            maxItems = 50)))
-        .when(membershipService)
+            maxItems = 50
+          )
+        )
+      ).when(membershipService)
         .listMembers("goodQuery", Some("dummy"), 50, okAuth)
 
       Get(s"/groups/goodQuery/members?startFrom=dummy&maxItems=50") ~> Route.seal(membershipRoute) ~> check {
@@ -574,7 +596,8 @@ class MembershipRoutingSpec
           anyString,
           any[Option[String]],
           maxItemsCaptor.capture(),
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
         maxItemsCaptor.getValue shouldBe 100
       }
@@ -626,7 +649,8 @@ class MembershipRoutingSpec
         Seq(okGroupChangeInfo, okGroupChangeUpdateInfo, okGroupChangeDeleteInfo),
         None,
         None,
-        100)
+        100
+      )
       doReturn(result(expected))
         .when(membershipService)
         .getGroupActivity("ok", None, 100, okAuth)
@@ -638,7 +662,8 @@ class MembershipRoutingSpec
         result.changes should contain theSameElementsAs Seq(
           okGroupChangeInfo,
           okGroupChangeUpdateInfo,
-          okGroupChangeDeleteInfo)
+          okGroupChangeDeleteInfo
+        )
         result.maxItems shouldBe 100
         result.nextId shouldBe None
         result.startFrom shouldBe None
@@ -667,7 +692,8 @@ class MembershipRoutingSpec
         Seq(okGroupChangeInfo, okGroupChangeUpdateInfo, okGroupChangeDeleteInfo),
         None,
         None,
-        100)
+        100
+      )
       doReturn(result(expected))
         .when(membershipService)
         .getGroupActivity(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
@@ -679,7 +705,8 @@ class MembershipRoutingSpec
           anyString,
           any[Option[String]],
           maxItemsCaptor.capture(),
-          any[AuthPrincipal])
+          any[AuthPrincipal]
+        )
 
         maxItemsCaptor.getValue shouldBe 100
       }

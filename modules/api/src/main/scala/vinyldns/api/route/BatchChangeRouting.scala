@@ -24,8 +24,8 @@ import vinyldns.api.domain.batch._
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
-    val vinylDNSAuthenticator: VinylDNSAuthenticator)
-    extends VinylDNSJsonProtocol
+    val vinylDNSAuthenticator: VinylDNSAuthenticator
+) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[BatchChangeErrorResponse] {
 
   def getRoutes: Route = batchChangeRoute
@@ -59,7 +59,8 @@ class BatchChangeRoute(
           authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
             (authPrincipal, batchChangeInput) =>
               batchChangeService
-                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
+                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)
+          ) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
         }
@@ -69,26 +70,31 @@ class BatchChangeRoute(
             "startFrom".as[Int].?,
             "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
             "ignoreAccess".as[Boolean].?(false),
-            "approvalStatus".as[String].?) {
+            "approvalStatus".as[String].?
+          ) {
             (
                 startFrom: Option[Int],
                 maxItems: Int,
                 ignoreAccess: Boolean,
-                approvalStatus: Option[String]) =>
+                approvalStatus: Option[String]
+            ) =>
               {
                 val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
 
                 handleRejections(invalidQueryHandler) {
                   validate(
                     0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
+                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
+                  ) {
                     authenticateAndExecute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
                         startFrom,
                         maxItems,
                         ignoreAccess,
-                        convertApprovalStatus)) { summaries =>
+                        convertApprovalStatus
+                      )
+                    ) { summaries =>
                       complete(StatusCodes.OK, summaries)
                     }
                   }
@@ -111,9 +117,9 @@ class BatchChangeRoute(
           authenticateAndExecuteWithEntity[BatchChange, Option[RejectBatchChangeInput]](
             (authPrincipal, input) =>
               batchChangeService
-                .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
-            chg =>
-              complete(StatusCodes.OK, chg)
+                .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))
+          ) { chg =>
+            complete(StatusCodes.OK, chg)
           }
           // TODO: Update response entity to return modified batch change
         }
@@ -123,10 +129,8 @@ class BatchChangeRoute(
             authenticateAndExecuteWithEntity[BatchChange, Option[ApproveBatchChangeInput]](
               (authPrincipal, input) =>
                 batchChangeService
-                  .approveBatchChange(
-                    id,
-                    authPrincipal,
-                    input.getOrElse(ApproveBatchChangeInput()))) { chg =>
+                  .approveBatchChange(id, authPrincipal, input.getOrElse(ApproveBatchChangeInput()))
+            ) { chg =>
               complete(StatusCodes.Accepted, chg)
             // TODO: Update response entity to return modified batch change
             }

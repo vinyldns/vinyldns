@@ -41,7 +41,11 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   )
 
   private val repo: DynamoDBUserChangeRepository =
-    DynamoDBUserChangeRepository(tableConfig, dynamoIntegrationConfig, new NoOpCrypto(ConfigFactory.load())).unsafeRunSync()
+    DynamoDBUserChangeRepository(
+      tableConfig,
+      dynamoIntegrationConfig,
+      new NoOpCrypto(ConfigFactory.load())
+    ).unsafeRunSync()
 
   def setup(): Unit = ()
 

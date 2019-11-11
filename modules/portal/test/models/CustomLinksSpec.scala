@@ -57,7 +57,7 @@ class CustomLinksSpec extends Specification with Mockito {
             "title" -> linkTwo.title,
             "href" -> linkTwo.href,
             "icon" -> linkTwo.icon
-          ),
+          )
         )
       )
       val customLinks = CustomLinks(Configuration.from(config))

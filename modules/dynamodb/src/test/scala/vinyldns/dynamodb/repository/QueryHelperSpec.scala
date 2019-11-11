@@ -66,7 +66,9 @@ class QueryHelperSpec
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, None, None, Some(3))(
-          dynamoDBHelper))
+          dynamoDBHelper
+        )
+      )
 
       result.lastEvaluatedKey shouldBe None
       result.items shouldBe expectedItems.asScala
@@ -88,7 +90,9 @@ class QueryHelperSpec
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, None, None, Some(3))(
-          dynamoDBHelper))
+          dynamoDBHelper
+        )
+      )
 
       result.lastEvaluatedKey shouldBe Some(key)
       result.items shouldBe expectedItems.asScala
@@ -108,7 +112,8 @@ class QueryHelperSpec
         filterExpression,
         Some(Map("key" -> "item3")),
         None,
-        false).build()
+        false
+      ).build()
 
       val firstResponse = mock[QueryResult]
       val items1 = new util.ArrayList[util.HashMap[String, AttributeValue]]()
@@ -130,7 +135,9 @@ class QueryHelperSpec
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, filterExpression, None, Some(4))(
-          dynamoDBHelper))
+          dynamoDBHelper
+        )
+      )
 
       result.lastEvaluatedKey shouldBe Some(makeJavaItem("item4"))
       result.items shouldBe (items1.asScala ++ items2.asScala).take(4)
@@ -150,7 +157,8 @@ class QueryHelperSpec
         filterExpression,
         Some(Map("key" -> "item3")),
         None,
-        false).build()
+        false
+      ).build()
 
       val firstResponse = mock[QueryResult]
       val items1 = new util.ArrayList[util.HashMap[String, AttributeValue]]()
@@ -173,7 +181,9 @@ class QueryHelperSpec
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, filterExpression, None, Some(6))(
-          dynamoDBHelper))
+          dynamoDBHelper
+        )
+      )
 
       result.lastEvaluatedKey shouldBe None
       result.items shouldBe items1.asScala ++ items2.asScala
@@ -190,7 +200,9 @@ class QueryHelperSpec
       val result = await[QueryResponseCount](
         underTest
           .doQuery("testName", "testIndex", keyConditions, None, None, None, isCountQuery = true)(
-            dynamoDBHelper))
+            dynamoDBHelper
+          )
+      )
 
       result.count shouldBe 5
     }
@@ -214,7 +226,9 @@ class QueryHelperSpec
       val result = await[QueryResponseCount](
         underTest
           .doQuery("testName", "testIndex", keyConditions, None, None, None, isCountQuery = true)(
-            dynamoDBHelper))
+            dynamoDBHelper
+          )
+      )
 
       result.count shouldBe 7
     }

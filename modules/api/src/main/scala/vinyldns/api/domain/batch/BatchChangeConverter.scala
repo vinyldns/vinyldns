@@ -40,16 +40,19 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       batchChange: BatchChange,
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap,
-      ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] = {
+      ownerGroupId: Option[String]
+  ): BatchResult[BatchConversionOutput] = {
     logger.info(
-      s"Converting BatchChange [${batchChange.id}] with SingleChanges [${batchChange.changes.map(_.id)}]")
+      s"Converting BatchChange [${batchChange.id}] with SingleChanges [${batchChange.changes.map(_.id)}]"
+    )
     for {
       recordSetChanges <- createRecordSetChangesForBatch(
         batchChange.changes,
         existingZones,
         groupedChanges,
         batchChange.userId,
-        ownerGroupId).toRightBatchResult
+        ownerGroupId
+      ).toRightBatchResult
       _ <- allChangesWereConverted(batchChange.changes, recordSetChanges)
       _ <- batchChangeRepo
         .save(batchChange)
@@ -62,7 +65,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
 
   def allChangesWereConverted(
       singleChanges: List[SingleChange],
-      recordSetChanges: List[RecordSetChange]): BatchResult[Unit] = {
+      recordSetChanges: List[RecordSetChange]
+  ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
 
     singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
@@ -76,7 +80,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange],
-      batchChangeId: String): BatchResult[List[RecordSetChange]] =
+      batchChangeId: String
+  ): BatchResult[List[RecordSetChange]] =
     recordSetChanges.toNel match {
       case None =>
         recordSetChanges.toRightBatchResult // If list is empty, return normally without queueing
@@ -94,7 +99,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
 
   def updateWithQueueingFailures(
       batchChange: BatchChange,
-      recordSetChanges: List[RecordSetChange]): BatchChange = {
+      recordSetChanges: List[RecordSetChange]
+  ): BatchChange = {
     // idsMap maps batchId to recordSetId
     val idsMap = recordSetChanges.flatMap { rsChange =>
       rsChange.singleBatchChangeIds.map(batchId => (batchId, rsChange.id))
@@ -128,7 +134,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap,
       userId: String,
-      ownerGroupId: Option[String]): List[RecordSetChange] = {
+      ownerGroupId: Option[String]
+  ): List[RecordSetChange] = {
     // NOTE: this also assumes we are past approval and know the zone/record split at this point
     val supportedChangesByKey = changes
       .filter(sc => SupportedBatchChangeRecordTypes.get.contains(sc.typ))
@@ -155,7 +162,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
               proposedRecordData,
               userId,
               existingRecordSet,
-              ownerGroupId)
+              ownerGroupId
+            )
           } yield recordSetChange
       }
       .toList
@@ -170,7 +178,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       proposedRecordData: Set[RecordData],
       userId: String,
       existingRecordSet: Option[RecordSet],
-      ownerGroupId: Option[String]): Option[RecordSetChange] = {
+      ownerGroupId: Option[String]
+  ): Option[RecordSetChange] = {
 
     val singleChangeIds = singleChangeNel.map(_.id).toList
 

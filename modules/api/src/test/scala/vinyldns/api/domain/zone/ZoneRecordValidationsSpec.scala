@@ -77,7 +77,8 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
     "return an error if fqdn is in high value list" in {
       val result = isNotHighValueFqdn(highValueRegexList, "high-value-domain.foo.")
       result should haveInvalid[DomainValidationError](
-        HighValueDomainError("high-value-domain.foo."))
+        HighValueDomainError("high-value-domain.foo.")
+      )
     }
   }
 
@@ -134,14 +135,15 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
     "return failure if none of the name servers are in the list of approved name servers" in {
       val test = ns.copy(records = List(NSData("blah1."), NSData("blah2.")))
       containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
-        "Name Server blah1. is not an approved name server.").and(
-        haveInvalid("Name Server blah2. is not an approved name server."))
+        "Name Server blah1. is not an approved name server."
+      ).and(haveInvalid("Name Server blah2. is not an approved name server."))
     }
 
     "return a failure if any of the name servers are not in the list of approved name servers" in {
       val test = ns.copy(records = List(NSData("blah1."), NSData("ns1.test.com")))
       containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
-        "Name Server blah1. is not an approved name server.")
+        "Name Server blah1. is not an approved name server."
+      )
     }
 
     "return success if the name server matches a regular expression" in {
@@ -160,7 +162,8 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
       val test = ns.copy(records = List(NSData("test-foo-ns.")))
       val approved = List(".*bar.*".r, "www.*".r)
       containsApprovedNameServers(approved, test) should haveInvalid(
-        "Name Server test-foo-ns. is not an approved name server.")
+        "Name Server test-foo-ns. is not an approved name server."
+      )
     }
   }
 

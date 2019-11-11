@@ -26,7 +26,8 @@ trait BatchChangeServiceAlgebra {
   def applyBatchChange(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal,
-      allowManualReview: Boolean): BatchResult[BatchChange]
+      allowManualReview: Boolean
+  ): BatchResult[BatchChange]
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo]
 
@@ -35,17 +36,20 @@ trait BatchChangeServiceAlgebra {
       startFrom: Option[Int],
       maxItems: Int,
       ignoreAccess: Boolean,
-      approvalStatus: Option[BatchChangeApprovalStatus]): BatchResult[BatchChangeSummaryList]
+      approvalStatus: Option[BatchChangeApprovalStatus]
+  ): BatchResult[BatchChangeSummaryList]
 
   def rejectBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      rejectBatchChangeInput: RejectBatchChangeInput): BatchResult[BatchChange]
+      rejectBatchChangeInput: RejectBatchChangeInput
+  ): BatchResult[BatchChange]
 
   def approveBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      approveBatchChangeInput: ApproveBatchChangeInput): BatchResult[BatchChange]
+      approveBatchChangeInput: ApproveBatchChangeInput
+  ): BatchResult[BatchChange]
 
   def cancelBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange]
 }

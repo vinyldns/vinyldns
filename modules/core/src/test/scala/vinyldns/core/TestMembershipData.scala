@@ -57,14 +57,16 @@ object TestMembershipData {
     Some("a test group"),
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id),
-    created = DateTime.now.secondOfDay().roundFloorCopy())
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
 
   val dummyGroup: Group = Group(
     "dummy",
     "test@test.com",
     Some("has the dummy users"),
     adminUserIds = listOfDummyUsers.map(_.id).toSet,
-    memberIds = listOfDummyUsers.map(_.id).toSet)
+    memberIds = listOfDummyUsers.map(_.id).toSet
+  )
 
   val twoUserGroup: Group = Group(
     "twoUsers",
@@ -86,14 +88,16 @@ object TestMembershipData {
     "dummy",
     "test@test.com",
     Some("has a dummy user"),
-    memberIds = Set(listOfDummyUsers(0).id))
+    memberIds = Set(listOfDummyUsers(0).id)
+  )
 
   val listOfDummyGroups: List[Group] = List.range(0, 200).map { i =>
     Group(
       name = "name-dummy%03d".format(i),
       id = "dummy%03d".format(i),
       email = "test@test.com",
-      created = DateTime.now.secondOfDay().roundFloorCopy())
+      created = DateTime.now.secondOfDay().roundFloorCopy()
+    )
   }
 
   val xyzGroup: Group = Group("xyz", "xyz", id = "xyz", memberIds = Set("xyz"))
@@ -126,18 +130,21 @@ object TestMembershipData {
     okGroup,
     GroupChangeType.Create,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy())
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
   val okGroupChangeUpdate: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Update,
     okUser.id,
     Some(okGroup),
-    created = DateTime.now.secondOfDay().roundFloorCopy())
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
   val okGroupChangeDelete: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Delete,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy())
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
 
   // changes added in reverse order
   val now: DateTime = DateTime.now().secondOfDay().roundFloorCopy()
@@ -147,6 +154,7 @@ object TestMembershipData {
       GroupChangeType.Update,
       dummyUser.id,
       created = now.minusSeconds(i),
-      id = s"$i")
+      id = s"$i"
+    )
   }
 }

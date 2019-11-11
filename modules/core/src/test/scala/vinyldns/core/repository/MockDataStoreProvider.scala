@@ -56,7 +56,8 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
           recordChange,
           zoneChange,
           zone,
-          batchChange),
+          batchChange
+        ),
         IO.unit,
         checkHealth()
       )

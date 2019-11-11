@@ -42,8 +42,8 @@ trait VinylDNSDirectives[E] extends Directives {
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
       onSuccess(
-        vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture())
-        .flatMap {
+        vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture()
+      ).flatMap {
           case Right(authPrincipal) ⇒
             provide(authPrincipal)
           case Left(e) ⇒
@@ -159,8 +159,9 @@ trait VinylDNSDirectives[E] extends Directives {
     * return error to user.
     * - Invoke service call, f, and return the response to the user.
     */
-  def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => EitherT[IO, E, A])(
-      g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
+  def authenticateAndExecuteWithEntity[A, B](
+      f: (AuthPrincipal, B) => EitherT[IO, E, A]
+  )(g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
     authenticate { authPrincipal =>
       entity(as[B]) { deserializedEntity =>
         onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) {

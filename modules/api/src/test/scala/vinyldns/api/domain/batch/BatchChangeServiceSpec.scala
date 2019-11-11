@@ -87,7 +87,8 @@ class BatchChangeServiceSpec
     "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
     ttl,
-    CNAMEData("testing.cname.com."))
+    CNAMEData("testing.cname.com.")
+  )
   private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, ttl, PTRData("ptr"))
   private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, ttl, PTRData("ptr"))
   private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("ptr"))
@@ -121,7 +122,8 @@ class BatchChangeServiceSpec
   private val ptrV6AddForVal = AddChangeForValidation(
     ipv6PTRZone,
     "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-    ptrV6Add)
+    ptrV6Add
+  )
 
   private val defaultv6Discovery = new V6DiscoveryNibbleBoundaries(5, 16)
 
@@ -136,7 +138,8 @@ class BatchChangeServiceSpec
     SingleChangeStatus.Pending,
     None,
     None,
-    None)
+    None
+  )
 
   private val singleChangeGood = SingleAddChange(
     Some(baseZone.id),
@@ -184,14 +187,16 @@ class BatchChangeServiceSpec
         batchChange: BatchChange,
         existingZones: ExistingZones,
         groupedChanges: ChangeForValidationMap,
-        ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
+        ownerGroupId: Option[String]
+    ): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
         case Some("checkConverter") =>
           // hacking reviewComment to determine if things were sent to the converter
           BatchConversionOutput(
             batchChange.copy(reviewComment = Some("batchSentToConverter")),
-            List()).toRightBatchResult
+            List()
+          ).toRightBatchResult
         case _ => BatchConversionOutput(batchChange, List()).toRightBatchResult
       }
   }
@@ -202,7 +207,8 @@ class BatchChangeServiceSpec
       zoneId: String,
       name: String,
       typ: RecordType,
-      recordData: Option[List[RecordData]] = None): RecordSet = {
+      recordData: Option[List[RecordData]] = None
+  ): RecordSet = {
     val records = recordData.getOrElse(List())
     RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, DateTime.now(), records = records)
   }
@@ -214,7 +220,8 @@ class BatchChangeServiceSpec
       nonApexAddForVal.zone.id,
       nonApexAddForVal.recordName,
       TXT,
-      recordData = Some(List(TXTData("some data"))))
+      recordData = Some(List(TXTData("some data")))
+    )
   private val existingPtr: RecordSet =
     makeRS(ptrAddForVal.zone.id, ptrAddForVal.recordName, PTR)
   private val existingPtrDelegated: RecordSet =
@@ -233,7 +240,8 @@ class BatchChangeServiceSpec
         (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa."),
         (
           existingPtrV6,
-          "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa."),
+          "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa."
+        ),
         (deletedZoneApex, "apex.test.com.")
       )
 
@@ -304,7 +312,8 @@ class BatchChangeServiceSpec
         otherPTRZone,
         ipv6PTR16Zone,
         ipv6PTR17Zone,
-        ipv6PTR18Zone)
+        ipv6PTR18Zone
+      )
 
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))
@@ -338,7 +347,8 @@ class BatchChangeServiceSpec
     override def getUsers(
         userIds: Set[String],
         startFrom: Option[String],
-        maxItems: Option[Int]): IO[ListUsersResults] =
+        maxItems: Option[Int]
+    ): IO[ListUsersResults] =
       IO.pure(ListUsersResults(Seq(superUser), None))
   }
 
@@ -415,7 +425,8 @@ class BatchChangeServiceSpec
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr"))
+        PTRData("ptr")
+      )
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
 
@@ -444,7 +455,8 @@ class BatchChangeServiceSpec
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr"))
+        PTRData("ptr")
+      )
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
 
@@ -476,7 +488,8 @@ class BatchChangeServiceSpec
 
       result shouldBe
         InvalidBatchChangeInput(
-          List(NotAMemberOfOwnerGroup(ownerGroupId, notAuth.signedInUser.userName)))
+          List(NotAMemberOfOwnerGroup(ownerGroupId, notAuth.signedInUser.userName))
+        )
     }
 
     "succeed if owner group ID is provided and user is a member of the group" in {
@@ -493,7 +506,8 @@ class BatchChangeServiceSpec
         rightResultOf(
           underTest
             .applyBatchChange(input, AuthPrincipal(superUser, Seq(baseZone.adminGroupId)), true)
-            .value)
+            .value
+        )
 
       result.changes.length shouldBe 1
     }
@@ -525,7 +539,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
 
       doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
@@ -536,8 +551,10 @@ class BatchChangeServiceSpec
             .rejectBatchChange(
               batchChange.id,
               supportUserAuth,
-              RejectBatchChangeInput(Some("review comment")))
-            .value)
+              RejectBatchChangeInput(Some("review comment"))
+            )
+            .value
+        )
 
       result.status shouldBe BatchChangeStatus.Rejected
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
@@ -557,7 +574,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
       val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
@@ -565,7 +583,8 @@ class BatchChangeServiceSpec
         rightResultOf(
           underTestManualEnabled
             .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
-            .value)
+            .value
+        )
 
       result.status shouldBe BatchChangeStatus.Rejected
     }
@@ -577,7 +596,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
       val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
@@ -585,7 +605,8 @@ class BatchChangeServiceSpec
         leftResultOf(
           underTestManualEnabled
             .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
-            .value)
+            .value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -597,14 +618,16 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
           underTest
             .rejectBatchChange(batchChange.id, supportUserAuth, RejectBatchChangeInput())
-            .value)
+            .value
+        )
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -617,12 +640,14 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
-          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value)
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -635,12 +660,14 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
-          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value)
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -665,8 +692,10 @@ class BatchChangeServiceSpec
             .approveBatchChange(
               batchChangeNeedsApproval.id,
               supportUserAuth,
-              ApproveBatchChangeInput(Some("reviewed!")))
-            .value)
+              ApproveBatchChangeInput(Some("reviewed!"))
+            )
+            .value
+        )
 
       result.userId shouldBe batchChangeNeedsApproval.userId
       result.userName shouldBe batchChangeNeedsApproval.userName
@@ -691,8 +720,10 @@ class BatchChangeServiceSpec
             .approveBatchChange(
               batchChangeNeedsApproval.id,
               auth,
-              ApproveBatchChangeInput(Some("reviewed!")))
-            .value)
+              ApproveBatchChangeInput(Some("reviewed!"))
+            )
+            .value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
@@ -705,7 +736,8 @@ class BatchChangeServiceSpec
         leftResultOf(
           underTest
             .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
-            .value)
+            .value
+        )
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -717,7 +749,8 @@ class BatchChangeServiceSpec
         leftResultOf(
           underTest
             .approveBatchChange(batchChangeNeedsApproval.id, auth, ApproveBatchChangeInput())
-            .value)
+            .value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
@@ -729,7 +762,8 @@ class BatchChangeServiceSpec
 
       val result =
         leftResultOf(
-          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value)
+          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value
+        )
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -742,14 +776,16 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
           underTest
             .approveBatchChange(batchChange.id, superUserAuth, ApproveBatchChangeInput())
-            .value)
+            .value
+        )
 
       result shouldBe BatchRequesterNotFound("someOtherUserId", "someUn")
     }
@@ -764,14 +800,16 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         rightResultOf(
           underTest
             .cancelBatchChange(batchChange.id, auth)
-            .value)
+            .value
+        )
 
       result.status shouldBe BatchChangeStatus.Cancelled
       result.approvalStatus shouldBe BatchChangeApprovalStatus.Cancelled
@@ -787,7 +825,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
@@ -804,14 +843,16 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
           underTest
             .cancelBatchChange(batchChange.id, auth)
-            .value)
+            .value
+        )
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -824,14 +865,16 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result =
         leftResultOf(
           underTest
             .cancelBatchChange(batchChange.id, supportUserAuth)
-            .value)
+            .value
+        )
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -846,7 +889,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
@@ -867,7 +911,8 @@ class BatchChangeServiceSpec
         None,
         DateTime.now,
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChange)
 
       val result = leftResultOf(underTest.getBatchChange(batchChange.id, notAuth).value)
@@ -882,7 +927,8 @@ class BatchChangeServiceSpec
         None,
         DateTime.now,
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChange)
 
       val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSuper = true))
@@ -899,7 +945,8 @@ class BatchChangeServiceSpec
         None,
         DateTime.now,
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChange)
 
       val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSupport = true))
@@ -918,7 +965,8 @@ class BatchChangeServiceSpec
           DateTime.now,
           List(),
           ownerGroupId = Some(okGroup.id),
-          BatchChangeApprovalStatus.AutoApproved)
+          BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
@@ -934,7 +982,8 @@ class BatchChangeServiceSpec
           DateTime.now,
           List(),
           ownerGroupId = Some("no-existo"),
-          BatchChangeApprovalStatus.AutoApproved)
+          BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
@@ -973,7 +1022,8 @@ class BatchChangeServiceSpec
         ptrAddForVal.validNel,
         ptrDelegatedAddForVal.validNel,
         ptrV6AddForVal.validNel,
-        error)
+        error
+      )
       val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, delegatedPTRZone, ipv6PTRZone))
       val result = await(underTest.getExistingRecordSets(in, zoneMap))
 
@@ -989,7 +1039,8 @@ class BatchChangeServiceSpec
         ptrAddForVal.validNel,
         ptrDelegatedAddForVal.validNel,
         ptrV6AddForVal.validNel,
-        error)
+        error
+      )
       val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, ipv6PTRZone))
       val result = await(underTest.getExistingRecordSets(in, zoneMap))
 
@@ -1184,7 +1235,8 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(onlyApexAddA.validNel), ExistingZones(Set(onlyApexZone)))
 
       result should containChangeForValidation(
-        AddChangeForValidation(onlyApexZone, "only.apex.exists.", onlyApexAddA))
+        AddChangeForValidation(onlyApexZone, "only.apex.exists.", onlyApexAddA)
+      )
     }
 
     "map the batch change input to the base zone if only the base zone exists for A records" in {
@@ -1192,7 +1244,8 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(onlyBaseAddAAAA.validNel), ExistingZones(Set(onlyBaseZone)))
 
       result should containChangeForValidation(
-        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA))
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA)
+      )
     }
 
     "map the batch change input to the base zone only for CNAME records" in {
@@ -1218,7 +1271,8 @@ class BatchChangeServiceSpec
 
       val discovered = underTest.zoneDiscovery(
         List(aApex.validNel, aNormal.validNel, aDotted.validNel),
-        ExistingZones(Set(apexZone, baseZone)))
+        ExistingZones(Set(apexZone, baseZone))
+      )
 
       discovered.getValid shouldBe expected
     }
@@ -1239,7 +1293,8 @@ class BatchChangeServiceSpec
 
       val discovered = underTest.zoneDiscovery(
         List(txtApex.validNel, txtNormal.validNel, txtDotted.validNel),
-        ExistingZones(Set(apexZone, baseZone)))
+        ExistingZones(Set(apexZone, baseZone))
+      )
 
       discovered.getValid shouldBe expected
     }
@@ -1266,29 +1321,35 @@ class BatchChangeServiceSpec
     "handle mapping a combination of zone discovery successes and failures" in {
       val result = underTest.zoneDiscovery(
         List(apexAddA.validNel, onlyApexAddA.validNel, onlyBaseAddAAAA.validNel, cnameAdd.validNel),
-        ExistingZones(Set(apexZone, baseZone, onlyBaseZone)))
+        ExistingZones(Set(apexZone, baseZone, onlyBaseZone))
+      )
 
       result.head should beValid[ChangeForValidation](apexAddForVal)
       result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("only.apex.exists."))
       result(2) should beValid[ChangeForValidation](
-        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA))
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA)
+      )
       result(3) should beValid[ChangeForValidation](
-        AddChangeForValidation(baseZone, "cname", cnameAdd))
+        AddChangeForValidation(baseZone, "cname", cnameAdd)
+      )
     }
 
     "map the batch change input to the delegated PTR zone for PTR records (ipv4)" in {
       val result = underTest.zoneDiscovery(
         List(ptrAdd.validNel),
-        ExistingZones(Set(delegatedPTRZone, ptrZone)))
+        ExistingZones(Set(delegatedPTRZone, ptrZone))
+      )
 
       result should containChangeForValidation(
-        AddChangeForValidation(delegatedPTRZone, "11", ptrAdd))
+        AddChangeForValidation(delegatedPTRZone, "11", ptrAdd)
+      )
     }
 
     "map the batch change input to the non delegated PTR zone for PTR records (ipv4)" in {
       val result = underTest.zoneDiscovery(
         List(ptrAdd2.validNel),
-        ExistingZones(Set(delegatedPTRZone, ptrZone)))
+        ExistingZones(Set(delegatedPTRZone, ptrZone))
+      )
 
       result should containChangeForValidation(AddChangeForValidation(ptrZone, "255", ptrAdd2))
     }
@@ -1302,7 +1363,8 @@ class BatchChangeServiceSpec
     "return an error for PTR if there are zone matches for the IP but no match on the record name" in {
       val result = underTest.zoneDiscovery(
         List(ptrAdd.validNel),
-        ExistingZones(Set(delegatedPTRZone.copy(name = "192/30.55.144.10.in-addr.arpa."))))
+        ExistingZones(Set(delegatedPTRZone.copy(name = "192/30.55.144.10.in-addr.arpa.")))
+      )
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError(ptrAdd.inputName))
     }
@@ -1318,41 +1380,52 @@ class BatchChangeServiceSpec
         "2001:0db8:0111:0000:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr"))
+        PTRData("ptr")
+      )
       val bigZoneAdd = AddChangeInput(
         "2001:0000:0000:0000:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr"))
+        PTRData("ptr")
+      )
       val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, ttl, PTRData("ptr"))
 
       val ptripv6Adds = List(
         smallZoneAdd.validNel,
         medZoneAdd.validNel,
         bigZoneAdd.validNel,
-        notFoundZoneAdd.validNel)
+        notFoundZoneAdd.validNel
+      )
 
       val result = underTest.zoneDiscovery(
         ptripv6Adds,
-        ExistingZones(Set(ptrv6ZoneSmall, ptrv6ZoneMed, ptrv6ZoneBig)))
+        ExistingZones(Set(ptrv6ZoneSmall, ptrv6ZoneMed, ptrv6ZoneBig))
+      )
 
       result should containChangeForValidation(
         AddChangeForValidation(
           ptrv6ZoneSmall,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0",
-          smallZoneAdd))
+          smallZoneAdd
+        )
+      )
       result should containChangeForValidation(
         AddChangeForValidation(
           ptrv6ZoneMed,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.1.1.1",
-          medZoneAdd))
+          medZoneAdd
+        )
+      )
       result should containChangeForValidation(
         AddChangeForValidation(
           ptrv6ZoneBig,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-          bigZoneAdd))
+          bigZoneAdd
+        )
+      )
       result(3) should haveInvalid[DomainValidationError](
-        ZoneDiscoveryError(notFoundZoneAdd.inputName))
+        ZoneDiscoveryError(notFoundZoneAdd.inputName)
+      )
     }
   }
 
@@ -1490,7 +1563,8 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            scheduledTime = Some(DateTime.now.plusMinutes(1))),
+            scheduledTime = Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
           ),
@@ -1526,7 +1600,8 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             None,
-            scheduledTime = Some(DateTime.now.plusMinutes(1))),
+            scheduledTime = Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
           ),
@@ -1625,7 +1700,8 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            Some(DateTime.now.plusMinutes(1))),
+            Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
@@ -1662,7 +1738,8 @@ class BatchChangeServiceSpec
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
-            nonFatalError.invalidNel),
+            nonFatalError.invalidNel
+          ),
           okAuth,
           true
         )
@@ -1672,9 +1749,11 @@ class BatchChangeServiceSpec
       result shouldBe an[InvalidBatchChangeResponses]
       val ibcr = result.asInstanceOf[InvalidBatchChangeResponses]
       ibcr.changeRequestResponses.head should haveInvalid[DomainValidationError](
-        ZoneDiscoveryError("no.zone.match."))
+        ZoneDiscoveryError("no.zone.match.")
+      )
       ibcr.changeRequestResponses(1) shouldBe Valid(
-        AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
+        AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
+      )
       ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
 
@@ -1706,7 +1785,8 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA, onlyBaseAddAAAA, delete),
             None,
-            Some(DateTime.now.plusMinutes(1))),
+            Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
@@ -1728,7 +1808,8 @@ class BatchChangeServiceSpec
             None,
             List(noZoneAddA, nonApexAddA),
             None,
-            Some(DateTime.now.plusMinutes(1))),
+            Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel
@@ -1770,7 +1851,8 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            Some(DateTime.now.plusMinutes(1))),
+            Some(DateTime.now.plusMinutes(1))
+          ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
@@ -1825,7 +1907,8 @@ class BatchChangeServiceSpec
             AddChangeForValidation(
               baseZone,
               singleChangeGood.inputName.split('.').head,
-              asAdds.head).validNel,
+              asAdds.head
+            ).validNel,
             AddChangeForValidation(baseZone, singleChangeNR.inputName.split('.').head, asAdds(1)).validNel
           ),
           reviewInfo
@@ -1844,7 +1927,8 @@ class BatchChangeServiceSpec
             AddChangeForValidation(
               baseZone,
               singleChangeGood.inputName.split('.').head,
-              asAdds.head).validNel,
+              asAdds.head
+            ).validNel,
             fatalError.invalidNel
           ),
           reviewInfo
@@ -1894,7 +1978,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeOne)
 
       val batchChangeTwo = BatchChange(
@@ -1903,7 +1988,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeTwo)
 
       val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
@@ -1926,7 +2012,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeOne)
 
       val batchChangeTwo = BatchChange(
@@ -1935,7 +2022,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeTwo)
 
       val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 1).value)
@@ -1957,7 +2045,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
       batchChangeRepo.save(batchChangeOne)
 
       val batchChangeTwo = BatchChange(
@@ -1966,15 +2055,18 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeTwo)
 
       val result = rightResultOf(
         underTest
           .listBatchChangeSummaries(
             auth,
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview))
-          .value)
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+          )
+          .value
+      )
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -1994,7 +2086,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeOne)
 
       val batchChangeTwo = BatchChange(
@@ -2003,7 +2096,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeTwo)
 
       val result =
@@ -2026,7 +2120,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeUserOne)
 
       val batchChangeUserTwo = BatchChange(
@@ -2035,7 +2130,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
@@ -2053,7 +2149,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeUserOne)
 
       val batchChangeUserTwo = BatchChange(
@@ -2062,7 +2159,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
@@ -2080,7 +2178,8 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChangeUserOne)
 
       val batchChangeUserTwo = BatchChange(
@@ -2089,7 +2188,8 @@ class BatchChangeServiceSpec
         None,
         new DateTime(DateTime.now.getMillis + 1000),
         List(),
-        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
@@ -2121,7 +2221,8 @@ class BatchChangeServiceSpec
           DateTime.now,
           List(),
           ownerGroupId = Some(okGroup.id),
-          BatchChangeApprovalStatus.AutoApproved)
+          BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
@@ -2145,7 +2246,8 @@ class BatchChangeServiceSpec
           DateTime.now,
           List(),
           ownerGroupId = Some("no-existo"),
-          BatchChangeApprovalStatus.AutoApproved)
+          BatchChangeApprovalStatus.AutoApproved
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
@@ -2198,7 +2300,8 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
 
       val result = rightResultOf(
         underTestManualEnabled
@@ -2206,8 +2309,10 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None)
-          .value)
+            None
+          )
+          .value
+      )
       result.reviewComment shouldBe Some("batchSentToConverter")
     }
     "not send to the converter, save the change if PendingReview and MA enabled" in {
@@ -2218,7 +2323,8 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
 
       val result = rightResultOf(
         underTestManualEnabled
@@ -2226,8 +2332,10 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None)
-          .value)
+            None
+          )
+          .value
+      )
 
       // not sent to converter
       result.reviewComment shouldBe None
@@ -2242,7 +2350,8 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
 
       val result = leftResultOf(
         underTest
@@ -2250,8 +2359,10 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None)
-          .value)
+            None
+          )
+          .value
+      )
 
       result shouldBe an[UnknownConversionError]
     }
@@ -2263,7 +2374,8 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved
+        )
 
       val result = leftResultOf(
         underTest
@@ -2271,8 +2383,10 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None)
-          .value)
+            None
+          )
+          .value
+      )
       result shouldBe an[UnknownConversionError]
     }
   }
@@ -2357,10 +2471,13 @@ class BatchChangeServiceSpec
           okGroup.id,
           OwnerType.Zone,
           Some(okGroup.email),
-          Some(okGroup.name)))
+          Some(okGroup.name)
+        )
+      )
 
       result(1) should beValid[ChangeForValidation](
-        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA))
+        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
+      )
     }
   }
 }

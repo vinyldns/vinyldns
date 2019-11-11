@@ -31,14 +31,16 @@ object MembershipJsonProtocol {
       email: String,
       description: Option[String],
       members: Set[UserInfo],
-      admins: Set[UserInfo])
+      admins: Set[UserInfo]
+  )
   final case class UpdateGroupInput(
       id: String,
       name: String,
       email: String,
       description: Option[String],
       members: Set[UserInfo],
-      admins: Set[UserInfo])
+      admins: Set[UserInfo]
+  )
 }
 
 /* Defines the JSON serialization to support the Membership Routes */

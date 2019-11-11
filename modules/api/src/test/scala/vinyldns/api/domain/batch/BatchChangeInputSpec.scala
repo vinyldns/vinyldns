@@ -42,7 +42,8 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       val input = BatchChangeInput(
         None,
         List(changeA, changeAAAA, changeCname, changeADotted, changeAAAADotted, changeCnameDotted),
-        None)
+        None
+      )
 
       input.changes(0).inputName shouldBe "apex.test.com."
       input.changes(1).inputName shouldBe "aaaa.test.com."
@@ -141,7 +142,8 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         BatchChangeInput(
           Some("comments"),
           List(expectedAddChange, expectedDelChange),
-          Some("owner"))
+          Some("owner")
+        )
 
       BatchChangeInput(change) shouldBe expectedInput
     }

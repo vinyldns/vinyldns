@@ -109,7 +109,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
-            oldRs.id)
+            oldRs.id
+          )
         }
       }
 
@@ -181,7 +182,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): IO[ListRecordSetResults] =
+      recordNameFilter: Option[String]
+  ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
@@ -190,7 +192,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // make sure we sort ascending, so we can do the correct comparison later
           val opts =
             (pagingKey.as(
-              "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})") ++
+              "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+            ) ++
               recordNameFilter.as("AND name LIKE {nameFilter}") ++
               Some("ORDER BY name ASC, type ASC") ++
               maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")

@@ -28,4 +28,4 @@ package-lock.json
 .bloop
 .metals
 tmp.out
-
+.vscode

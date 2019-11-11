@@ -34,11 +34,13 @@ object DynamoDBMembershipRepository {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBMembershipRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBMembershipRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBMembershipRepository"))
+      LoggerFactory.getLogger("DynamoDBMembershipRepository")
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -55,7 +57,8 @@ object DynamoDBMembershipRepository {
         .withAttributeDefinitions(tableAttributes: _*)
         .withKeySchema(
           new KeySchemaElement(USER_ID, KeyType.HASH),
-          new KeySchemaElement(GROUP_ID, KeyType.RANGE))
+          new KeySchemaElement(GROUP_ID, KeyType.RANGE)
+        )
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
 
@@ -65,8 +68,8 @@ object DynamoDBMembershipRepository {
 
 class DynamoDBMembershipRepository private[repository] (
     membershipTable: String,
-    dynamoDBHelper: DynamoDBHelper)
-    extends MembershipRepository
+    dynamoDBHelper: DynamoDBHelper
+) extends MembershipRepository
     with Monitored {
 
   import DynamoDBMembershipRepository._
@@ -123,8 +126,9 @@ class DynamoDBMembershipRepository private[repository] (
       result.map(_ => memberUserIds)
     }
 
-  private def executeBatch(items: Iterable[java.util.Map[String, AttributeValue]])(
-      f: java.util.Map[String, AttributeValue] => WriteRequest): IO[List[BatchWriteItemResult]] = {
+  private def executeBatch(
+      items: Iterable[java.util.Map[String, AttributeValue]]
+  )(f: java.util.Map[String, AttributeValue] => WriteRequest): IO[List[BatchWriteItemResult]] = {
     val MaxDynamoBatchWriteSize = 25
     val batchWrites =
       items.toList
@@ -134,7 +138,8 @@ class DynamoDBMembershipRepository private[repository] (
           itemGroup =>
             new BatchWriteItemRequest()
               .withRequestItems(Collections.singletonMap(membershipTable, itemGroup.asJava))
-              .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL))
+              .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+        )
 
     // Fold left will attempt each batch sequentially, and fail fast on error
     batchWrites.foldLeft(IO.pure(List.empty[BatchWriteItemResult])) {
@@ -147,7 +152,8 @@ class DynamoDBMembershipRepository private[repository] (
 
   private[repository] def toItem(
       userId: String,
-      groupId: String): java.util.Map[String, AttributeValue] = {
+      groupId: String
+  ): java.util.Map[String, AttributeValue] = {
     val item = new java.util.HashMap[String, AttributeValue]()
     item.put(USER_ID, new AttributeValue(userId))
     item.put(GROUP_ID, new AttributeValue(groupId))

@@ -20,9 +20,11 @@ final case class DynamoDBDataStoreSettings(
     key: String,
     secret: String,
     endpoint: String,
-    region: String)
+    region: String
+)
 
 final case class DynamoDBRepositorySettings(
     tableName: String,
     provisionedReads: Long,
-    provisionedWrites: Long)
+    provisionedWrites: Long
+)

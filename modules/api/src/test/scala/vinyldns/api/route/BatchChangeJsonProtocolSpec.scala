@@ -54,7 +54,8 @@ class BatchChangeJsonProtocolSpec
       inputName: Option[String] = None,
       typ: Option[RecordType] = None,
       ttl: Option[Int] = None,
-      record: Option[RecordData] = None): JObject =
+      record: Option[RecordData] = None
+  ): JObject =
     JObject(
       List(
         Some("changeType" -> decompose(Add)),
@@ -62,19 +63,22 @@ class BatchChangeJsonProtocolSpec
         typ.map("type" -> decompose(_)),
         ttl.map("ttl" -> JInt(_)),
         record.map("record" -> decompose(_))
-      ).flatten)
+      ).flatten
+    )
 
   def buildDeleteRRSetInputJson(
       inputName: Option[String] = None,
       typ: Option[RecordType] = None,
-      record: Option[RecordData] = None): JObject =
+      record: Option[RecordData] = None
+  ): JObject =
     JObject(
       List(
         Some("changeType" -> decompose(DeleteRecordSet)),
         inputName.map("inputName" -> JString(_)),
         typ.map("type" -> decompose(_)),
         record.map("record" -> decompose(_))
-      ).flatten)
+      ).flatten
+    )
 
   val addAChangeInputJson: JObject =
     buildAddChangeInputJson(Some("foo."), Some(A), Some(3600), Some(AData("1.1.1.1")))
@@ -94,12 +98,14 @@ class BatchChangeJsonProtocolSpec
     addAChangeInputJson,
     addAAAAChangeInputJson,
     addCNAMEChangeInputJson,
-    addPTRChangeInputJson)
+    addPTRChangeInputJson
+  )
 
   val addDeleteChangeList: JObject = "changes" -> List(
     deleteAChangeInputJson,
     addAAAAChangeInputJson,
-    addCNAMEChangeInputJson)
+    addCNAMEChangeInputJson
+  )
 
   val addBatchChangeInputWithComment: JObject = ("comments" -> Some("some comment")) ~~
     addChangeList
@@ -110,7 +116,8 @@ class BatchChangeJsonProtocolSpec
   val changeInputWithManualReviewDisabled: JObject = "changes" -> List(
     deleteAChangeInputJson,
     addAAAAChangeInputJson,
-    addCNAMEChangeInputJson)
+    addCNAMEChangeInputJson
+  )
 
   val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
@@ -165,7 +172,8 @@ class BatchChangeJsonProtocolSpec
       val result = ChangeInputSerializer.fromJson(json)
 
       result should haveInvalid(
-        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX")
+        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"
+      )
     }
 
     "return an error if the FQDN is not specified" in {
@@ -180,7 +188,8 @@ class BatchChangeJsonProtocolSpec
       val json = buildAddChangeInputJson(
         inputName = Some("foo."),
         ttl = Some(3600),
-        record = Some(AData("1.1.1.1")))
+        record = Some(AData("1.1.1.1"))
+      )
       val result = ChangeInputSerializer.fromJson(json)
 
       result should haveInvalid("Missing BatchChangeInput.changes.type")
@@ -190,7 +199,8 @@ class BatchChangeJsonProtocolSpec
       val json = buildAddChangeInputJson(
         inputName = Some("foo."),
         typ = Some(A),
-        record = Some(AData("1.1.1.1")))
+        record = Some(AData("1.1.1.1"))
+      )
       val result = ChangeInputSerializer.fromJson(json).value
 
       result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
@@ -226,7 +236,8 @@ class BatchChangeJsonProtocolSpec
       result shouldBe BatchChangeInput(
         Some("some comment"),
         List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
-        None)
+        None
+      )
     }
 
     "successfully serialize valid add change data without comment and owner group ID" in {
@@ -234,7 +245,8 @@ class BatchChangeJsonProtocolSpec
 
       result shouldBe BatchChangeInput(
         None,
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
+        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput)
+      )
     }
 
     "successfully serialize valid add and delete change data without comment and owner group ID" in {
@@ -242,7 +254,8 @@ class BatchChangeJsonProtocolSpec
 
       result shouldBe BatchChangeInput(
         None,
-        List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
+        List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput)
+      )
     }
 
     "successfully serialize valid add and delete change with comment and owner group ID" in {
@@ -253,7 +266,8 @@ class BatchChangeJsonProtocolSpec
           addAChangeInput,
           addAAAAChangeInput,
           addCNAMEChangeInput,
-          addPTRChangeInput),
+          addPTRChangeInput
+        ),
         Some("owner-group-id")
       )
 
@@ -270,7 +284,8 @@ class BatchChangeJsonProtocolSpec
           addAChangeInput,
           addAAAAChangeInput,
           addCNAMEChangeInput,
-          addPTRChangeInput),
+          addPTRChangeInput
+        ),
         Some("owner-group-id")
       )
 
@@ -412,7 +427,8 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        id = "id")
+        id = "id"
+      )
       val add = SingleAddChange(
         Some("zoneId"),
         Some("zoneName"),
@@ -425,7 +441,8 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        id = "id")
+        id = "id"
+      )
 
       val time = DateTime.now
       val batchChange = BatchChange(
@@ -439,7 +456,8 @@ class BatchChangeJsonProtocolSpec
         None,
         None,
         None,
-        "someId")
+        "someId"
+      )
       val result = BatchChangeSerializer.toJson(batchChange)
 
       result shouldBe ("userId" -> "someUserId") ~
@@ -463,9 +481,11 @@ class BatchChangeJsonProtocolSpec
     "serialize changes for valid inputs" in {
       val onlyValid = List(
         AddChangeForValidation(okZone, "foo", addAChangeInput).validNel,
-        AddChangeForValidation(okZone, "bar", addAAAAChangeInput).validNel)
+        AddChangeForValidation(okZone, "bar", addAAAAChangeInput).validNel
+      )
       val result = BatchChangeErrorListSerializer.toJson(
-        InvalidBatchChangeResponses(List(addAChangeInput, addAAAAChangeInput), onlyValid))
+        InvalidBatchChangeResponses(List(addAChangeInput, addAAAAChangeInput), onlyValid)
+      )
 
       result shouldBe decompose(List(addAChangeInput, addAAAAChangeInput))
     }
@@ -473,7 +493,8 @@ class BatchChangeJsonProtocolSpec
     "serialize BatchChangeErrors to their corresponding messages" in {
       val onlyErrors = List(fooDiscoveryError.invalidNel, barDiscoveryError.invalidNel)
       val result = BatchChangeErrorListSerializer.toJson(
-        InvalidBatchChangeResponses(List(addAChangeInput, addAAAAChangeInput), onlyErrors))
+        InvalidBatchChangeResponses(List(addAChangeInput, addAAAAChangeInput), onlyErrors)
+      )
 
       result shouldBe decompose(
         List(
@@ -481,7 +502,8 @@ class BatchChangeJsonProtocolSpec
             .asInstanceOf[JObject] ~ ("errors" -> List(fooDiscoveryError.message)),
           decompose(addAAAAChangeInput)
             .asInstanceOf[JObject] ~ ("errors" -> List(barDiscoveryError.message))
-        ))
+        )
+      )
     }
 
     "serializing a mix of valid inputs and BatchChangeErrors should return the appropriate success or error" in {
@@ -489,7 +511,9 @@ class BatchChangeJsonProtocolSpec
         NonEmptyList.fromListUnsafe(
           List(
             InvalidIpv4Address("bad address"),
-            InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH)))
+            InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH)
+          )
+        )
 
       val validAddA = AddChangeForValidation(okZone, "foo", addAChangeInput).validNel
       val invalidAddA = errorList.invalid[ChangeForValidation]
@@ -507,7 +531,8 @@ class BatchChangeJsonProtocolSpec
           decompose(addAChangeInput).asInstanceOf[JObject] ~
             ("errors" -> List(
               InvalidIpv4Address("bad address").message,
-              InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH).message)),
+              InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH).message
+            )),
           decompose(addAAAAChangeInput).asInstanceOf[JObject] ~
             ("errors" -> List(barDiscoveryError.message)),
           addAAAAChangeInput
@@ -535,7 +560,8 @@ class BatchChangeJsonProtocolSpec
         None,
         None,
         None,
-        id = "id")
+        id = "id"
+      )
       val add = SingleAddChange(
         Some("zoneId"),
         Some("zoneName"),
@@ -564,7 +590,8 @@ class BatchChangeJsonProtocolSpec
         None,
         None,
         None,
-        "someId")
+        "someId"
+      )
       val result =
         BatchChangeRevalidationErrorListSerializer.toJson(BatchChangeFailedApproval(batchChange))
 
@@ -593,7 +620,8 @@ class BatchChangeJsonProtocolSpec
       RejectBatchChangeInputSerializer
         .fromJson(
           RejectBatchChangeInputSerializer
-            .toJson(rejectBatchChangeInput)) shouldBe rejectBatchChangeInput.validNel
+            .toJson(rejectBatchChangeInput)
+        ) shouldBe rejectBatchChangeInput.validNel
     }
 
     "succeed if comments are provided" in {
@@ -601,7 +629,8 @@ class BatchChangeJsonProtocolSpec
       RejectBatchChangeInputSerializer
         .fromJson(
           RejectBatchChangeInputSerializer
-            .toJson(rejectBatchChangeInput)) shouldBe rejectBatchChangeInput.validNel
+            .toJson(rejectBatchChangeInput)
+        ) shouldBe rejectBatchChangeInput.validNel
     }
 
     "fail if comments exceed MAX_COMMENT_LENGTH characters" in {
@@ -609,7 +638,8 @@ class BatchChangeJsonProtocolSpec
       RejectBatchChangeInputSerializer
         .fromJson(
           RejectBatchChangeInputSerializer
-            .toJson(rejectBatchChangeInput)) shouldBe
+            .toJson(rejectBatchChangeInput)
+        ) shouldBe
         s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
     }
   }
@@ -620,7 +650,8 @@ class BatchChangeJsonProtocolSpec
       ApproveBatchChangeInputSerializer
         .fromJson(
           ApproveBatchChangeInputSerializer
-            .toJson(approveBatchChangeInput)) shouldBe approveBatchChangeInput.validNel
+            .toJson(approveBatchChangeInput)
+        ) shouldBe approveBatchChangeInput.validNel
     }
 
     "succeed if comments are provided" in {
@@ -628,7 +659,8 @@ class BatchChangeJsonProtocolSpec
       ApproveBatchChangeInputSerializer
         .fromJson(
           ApproveBatchChangeInputSerializer
-            .toJson(approveBatchChangeInput)) shouldBe approveBatchChangeInput.validNel
+            .toJson(approveBatchChangeInput)
+        ) shouldBe approveBatchChangeInput.validNel
     }
 
     "fail if comments exceed MAX_COMMENT_LENGTH characters" in {
@@ -636,7 +668,8 @@ class BatchChangeJsonProtocolSpec
       ApproveBatchChangeInputSerializer
         .fromJson(
           ApproveBatchChangeInputSerializer
-            .toJson(approveBatchChangeInput)) shouldBe
+            .toJson(approveBatchChangeInput)
+        ) shouldBe
         s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
     }
   }

@@ -43,27 +43,31 @@ object ZoneConnectionValidator {
 
   def getZoneConnection(
       zone: Zone,
-      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
+      configuredDnsConnections: ConfiguredDnsConnections
+  ): ZoneConnection =
     zone.connection
       .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.zoneConnection))
       .getOrElse(configuredDnsConnections.defaultZoneConnection)
 
   def getTransferConnection(
       zone: Zone,
-      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
+      configuredDnsConnections: ConfiguredDnsConnections
+  ): ZoneConnection =
     zone.transferConnection
       .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.transferConnection))
       .getOrElse(configuredDnsConnections.defaultTransferConnection)
 
   def getDnsBackend(
       zone: Zone,
-      configuredDnsConnections: ConfiguredDnsConnections): Option[DnsBackend] =
+      configuredDnsConnections: ConfiguredDnsConnections
+  ): Option[DnsBackend] =
     zone.backendId
       .flatMap { bid =>
         val backend = configuredDnsConnections.dnsBackends.find(_.id == bid)
         if (backend.isEmpty) {
           logger.error(
-            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
+            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config"
+          )
         }
         backend
       }
@@ -96,7 +100,9 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
           ZoneValidationFailed(
             zoneView.zone,
             nel.toList,
-            "Zone could not be loaded due to validation errors."))
+            "Zone could not be loaded due to validation errors."
+          )
+      )
       .toEither
       .toResult
   }
@@ -108,7 +114,8 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
     withTimeout(
       loadDns(zone),
       opTimeout,
-      ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid"))
+      ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid")
+    )
 
   def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
     if (records.isEmpty) {
@@ -138,8 +145,10 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
   def healthCheck(timeout: Int): HealthCheck =
     Resource
       .fromAutoCloseable(IO(new Socket()))
-      .use(socket =>
-        IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout)))
+      .use(
+        socket =>
+          IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout))
+      )
       .attempt
       .asHealthCheck
 

@@ -22,7 +22,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserRepository}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlUserRepositoryIntegrationSpec
-  extends WordSpec
+    extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
@@ -31,7 +31,7 @@ class MySqlUserRepositoryIntegrationSpec
 
   private var repo: UserRepository = _
 
-  private val testUserIds = (for {i <- 0 to 100} yield s"test-user-$i").toList.sorted
+  private val testUserIds = (for { i <- 0 to 100 } yield s"test-user-$i").toList.sorted
   private val users = testUserIds.map { id =>
     User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
   }
@@ -95,7 +95,8 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save locked user with locked status" in {
-      val lockedUser = User("lockedName", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
+      val lockedUser =
+        User("lockedName", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
       repo.save(lockedUser).unsafeRunSync() shouldBe lockedUser
       val result = repo.getUser(lockedUser.id).unsafeRunSync()
       result shouldBe Some(lockedUser)

@@ -46,4 +46,5 @@ case class CustomLink(
     displayOnLoginScreen: Boolean,
     title: String,
     href: String,
-    icon: String)
+    icon: String
+)

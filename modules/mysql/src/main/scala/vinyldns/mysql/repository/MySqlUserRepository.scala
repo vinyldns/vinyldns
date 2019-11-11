@@ -83,7 +83,8 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
-      maxItems: Option[Int]): IO[ListUsersResults] =
+      maxItems: Option[Int]
+  ): IO[ListUsersResults] =
     monitor("repo.User.getUsers") {
       logger.info(s"Getting users with ids: $userIds")
       IO {

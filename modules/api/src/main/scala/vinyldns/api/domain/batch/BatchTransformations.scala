@@ -94,8 +94,8 @@ object BatchTransformations {
       zone: Zone,
       recordName: String,
       inputChange: AddChangeInput,
-      existingRecordTtl: Option[Long] = None)
-      extends ChangeForValidation {
+      existingRecordTtl: Option[Long] = None
+  ) extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange = {
 
       val ttl = inputChange.ttl.orElse(existingRecordTtl).getOrElse(VinylDNSConfig.defaultTtl)
@@ -123,8 +123,8 @@ object BatchTransformations {
   final case class DeleteRRSetChangeForValidation(
       zone: Zone,
       recordName: String,
-      inputChange: DeleteRRSetChangeInput)
-      extends ChangeForValidation {
+      inputChange: DeleteRRSetChangeInput
+  ) extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange =
       SingleDeleteRRSetChange(
         Some(zone.id),
@@ -146,11 +146,13 @@ object BatchTransformations {
 
   final case class BatchConversionOutput(
       batchChange: BatchChange,
-      recordSetChanges: List[RecordSetChange])
+      recordSetChanges: List[RecordSetChange]
+  )
 
   final case class ChangeForValidationMap(
       changes: ValidatedBatch[ChangeForValidation],
-      existingRecordSets: ExistingRecordSets) {
+      existingRecordSets: ExistingRecordSets
+  ) {
     import BatchChangeInterfaces._
 
     val innerMap: Map[RecordKey, ValidationChanges] = {
@@ -182,7 +184,8 @@ object BatchTransformations {
   object ValidationChanges {
     def apply(
         changes: List[ChangeForValidation],
-        existingRecordSet: Option[RecordSet]): ValidationChanges = {
+        existingRecordSet: Option[RecordSet]
+    ): ValidationChanges = {
       // Collect add DNS entries
       val addChangeRecordDataSet = changes.collect {
         case add: AddChangeForValidation => add.inputChange.record
@@ -197,7 +200,8 @@ object BatchTransformations {
           case DeleteRRSetChangeForValidation(
               _,
               _,
-              DeleteRRSetChangeInput(_, _, Some(recordData))) =>
+              DeleteRRSetChangeInput(_, _, Some(recordData))
+              ) =>
             Set(recordData)
           case _: DeleteRRSetChangeForValidation => existingRecords
         }
@@ -228,7 +232,8 @@ object BatchTransformations {
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
       proposedRecordData: Set[RecordData],
-      logicalChangeType: LogicalChangeType)
+      logicalChangeType: LogicalChangeType
+  )
 
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],

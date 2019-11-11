@@ -80,7 +80,8 @@ class ApiDataAccessorProviderSpec
         Some(zoneChange),
         Some(zone),
         Some(batchChange),
-        None) // API doesn't use Task repository
+        None
+      ) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))) should be(valid)
     }
@@ -89,7 +90,8 @@ class ApiDataAccessorProviderSpec
         DataStoreConfig(
           "some.datastore",
           placeholderConfig,
-          allEnabledReposConfig.copy(user = None))
+          allEnabledReposConfig.copy(user = None)
+        )
 
       val store = DataStore(
         Some(user),
@@ -100,7 +102,8 @@ class ApiDataAccessorProviderSpec
         Some(recordChange),
         Some(zoneChange),
         Some(zone),
-        Some(batchChange))
+        Some(batchChange)
+      )
 
       ApiDataAccessorProvider.create(List((enabledConfig, store))) should be(invalid)
     }
@@ -117,7 +120,8 @@ class ApiDataAccessorProviderSpec
         Some(recordChange),
         Some(zoneChange),
         None,
-        None) // API doesn't use Task repository
+        None
+      ) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, store))) should be(invalid)
     }

@@ -21,7 +21,7 @@ import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponent
 import vinyldns.core.health.HealthService
 
 @Singleton
-class HealthController @Inject()(components: ControllerComponents, healthService: HealthService)
+class HealthController @Inject() (components: ControllerComponents, healthService: HealthService)
     extends AbstractController(components)
     with CacheHeader {
 

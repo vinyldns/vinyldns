@@ -29,8 +29,8 @@ class UserSyncTask(
     authenticator: Authenticator,
     val runEvery: FiniteDuration = 24.hours,
     val timeout: FiniteDuration = 24.hours,
-    val checkInterval: FiniteDuration = 1.minute)
-    extends Task {
+    val checkInterval: FiniteDuration = 1.minute
+) extends Task {
   val name: String = "user_sync"
   private val logger: Logger = LoggerFactory.getLogger("UserSyncTask")
 

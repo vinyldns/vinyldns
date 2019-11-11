@@ -31,7 +31,8 @@ class MySqlUserChangeRepositoryIntegrationSpec
   private val repo: UserChangeRepository = TestMySqlInstance.userChangeRepository
   private val user: User = User("user-id", "access-key", "secret-key")
   private val createUser = CreateUser(user, "creator-id", user.created)
-  private val updateUser = UpdateUser(user.copy(userName = "new-username"), "creator-id", user.created, user)
+  private val updateUser =
+    UpdateUser(user.copy(userName = "new-username"), "creator-id", user.created, user)
 
   def clear(): Unit =
     DB.localTx { implicit s =>

@@ -66,7 +66,8 @@ class DynamoDBRecordSetRepositorySpec
         any[String],
         any[BatchWriteItemRequest],
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
 
       response shouldBe pendingChangeSet
     }
@@ -93,7 +94,8 @@ class DynamoDBRecordSetRepositorySpec
         any[String],
         any[BatchWriteItemRequest],
         any[Int],
-        any[FiniteDuration])
+        any[FiniteDuration]
+      )
       verify(dynamoDBHelper, times(3)).toBatchWriteItemRequest(batchCaptor.capture(), anyString)
 
       // we should have 3 batches
@@ -181,7 +183,8 @@ class DynamoDBRecordSetRepositorySpec
           zoneId = rsOk.zoneId,
           startFrom = None,
           maxItems = None,
-          recordNameFilter = None)
+          recordNameFilter = None
+        )
         .unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
@@ -217,7 +220,8 @@ class DynamoDBRecordSetRepositorySpec
         zoneId = rsOk.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = None)
+        recordNameFilter = None
+      )
     }
   }
 
@@ -300,7 +304,8 @@ class DynamoDBRecordSetRepositorySpec
       a[ResourceNotFoundException] should be thrownBy store.getRecordSets(
         rsOk.zoneId,
         rsOk.name,
-        rsOk.typ)
+        rsOk.typ
+      )
     }
   }
 

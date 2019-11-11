@@ -25,8 +25,8 @@ import vinyldns.core.domain.membership.{Group, LockStatus}
 
 class MembershipRoute(
     membershipService: MembershipServiceAlgebra,
-    val vinylDNSAuthenticator: VinylDNSAuthenticator)
-    extends VinylDNSJsonProtocol
+    val vinylDNSAuthenticator: VinylDNSAuthenticator
+) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[Throwable] {
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 1000
@@ -62,7 +62,8 @@ class MembershipRoute(
             input.email,
             input.description,
             memberIds = (input.members ++ input.admins).map(_.id),
-            adminUserIds = input.admins.map(_.id))
+            adminUserIds = input.admins.map(_.id)
+          )
           membershipService.createGroup(group, authPrincipal)
         } { group =>
           complete(StatusCodes.OK, GroupInfo(group))
@@ -73,12 +74,14 @@ class MembershipRoute(
             "startFrom".?,
             "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
             "groupNameFilter".?,
-            "ignoreAccess".as[Boolean].?(false)) {
+            "ignoreAccess".as[Boolean].?(false)
+          ) {
             (
                 startFrom: Option[String],
                 maxItems: Int,
                 groupNameFilter: Option[String],
-                ignoreAccess: Boolean) =>
+                ignoreAccess: Boolean
+            ) =>
               {
                 handleRejections(invalidQueryHandler) {
                   validate(
@@ -88,10 +91,11 @@ class MembershipRoute(
                            | and $MAX_ITEMS_LIMIT inclusive"
                          """.stripMargin
                   ) {
-                    authenticateAndExecute(membershipService
-                      .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess)) {
-                      groups =>
-                        complete(StatusCodes.OK, groups)
+                    authenticateAndExecute(
+                      membershipService
+                        .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess)
+                    ) { groups =>
+                      complete(StatusCodes.OK, groups)
                     }
                   }
                 }
@@ -110,7 +114,9 @@ class MembershipRoute(
               input.description,
               (input.members ++ input.admins).map(_.id),
               input.admins.map(_.id),
-              authPrincipal)) { group =>
+              authPrincipal
+            )
+        ) { group =>
           complete(StatusCodes.OK, GroupInfo(group))
         }
       }
@@ -122,9 +128,12 @@ class MembershipRoute(
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $MAX_ITEMS_LIMIT inclusive") {
-                authenticateAndExecute(membershipService
-                  .listMembers(groupId, startFrom, maxItems, _)) { members =>
+                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $MAX_ITEMS_LIMIT inclusive"
+              ) {
+                authenticateAndExecute(
+                  membershipService
+                    .listMembers(groupId, startFrom, maxItems, _)
+                ) { members =>
                   complete(StatusCodes.OK, members)
                 }
               }
@@ -146,9 +155,12 @@ class MembershipRoute(
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
-                authenticateAndExecute(membershipService
-                  .getGroupActivity(groupId, startFrom, maxItems, _)) { activity =>
+                s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+              ) {
+                authenticateAndExecute(
+                  membershipService
+                    .getGroupActivity(groupId, startFrom, maxItems, _)
+                ) { activity =>
                   complete(StatusCodes.OK, activity)
                 }
               }

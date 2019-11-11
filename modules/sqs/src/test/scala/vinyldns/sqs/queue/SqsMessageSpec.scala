@@ -45,7 +45,8 @@ class SqsMessageSpec extends WordSpec with Matchers with EitherValues with Proto
             "message-type" -> new MessageAttributeValue()
               .withStringValue(SqsZoneChangeMessage.name)
               .withDataType("String")
-          ).asJava)
+          ).asJava
+        )
 
       parseSqsMessage(msg).right.value.command shouldBe zoneChangePending
     }
@@ -60,7 +61,8 @@ class SqsMessageSpec extends WordSpec with Matchers with EitherValues with Proto
             "message-type" -> new MessageAttributeValue()
               .withStringValue(SqsRecordSetChangeMessage.name)
               .withDataType("String")
-          ).asJava)
+          ).asJava
+        )
 
       parseSqsMessage(msg).right.value.command shouldBe pendingCreateAAAA
     }
@@ -90,7 +92,8 @@ class SqsMessageSpec extends WordSpec with Matchers with EitherValues with Proto
             "message-type" -> new MessageAttributeValue()
               .withStringValue(SqsZoneChangeMessage.name)
               .withDataType("String")
-          ).asJava)
+          ).asJava
+        )
 
       parseSqsMessage(message) shouldBe Left(EmptySqsMessageContents(message.getMessageId))
     }

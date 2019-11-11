@@ -75,7 +75,8 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(AData("1.1.1.1")))
+    records = List(AData("1.1.1.1"))
+  )
   private val testRecord2 = RecordSet(
     zoneId = testZone.id,
     name = "def",
@@ -83,7 +84,8 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(AData("2.2.2.2")))
+    records = List(AData("2.2.2.2"))
+  )
   private val testRecordDotted = RecordSet(
     zoneId = testZone.id,
     name = "gh.i.",
@@ -91,7 +93,8 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(AData("3.3.3.3")))
+    records = List(AData("3.3.3.3"))
+  )
   private val testRecordDottedOk = RecordSet(
     zoneId = testZone.id,
     name = s"ok-dotted.${testZone.name}",
@@ -144,14 +147,16 @@ class ZoneSyncHandlerSpec
     zoneChangeRepo,
     zoneRepo,
     _ => mockDNSLoader,
-    (_, _) => mockVinylDNSLoader)
+    (_, _) => mockVinylDNSLoader
+  )
 
   private val runSync = ZoneSyncHandler.runSync(
     recordSetRepo,
     recordChangeRepo,
     testZoneChange,
     _ => mockDNSLoader,
-    (_, _) => mockVinylDNSLoader)
+    (_, _) => mockVinylDNSLoader
+  )
 
   override def beforeEach(): Unit = {
     reset(recordSetRepo)
@@ -309,7 +314,8 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           dnsLoader,
-          (_, _) => mockVinylDNSLoader)
+          (_, _) => mockVinylDNSLoader
+        )
         .unsafeRunSync()
 
       verify(dnsLoader).apply(captor.capture())
@@ -325,7 +331,8 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           _ => mockDNSLoader,
-          (_, _) => mockVinylDNSLoader)
+          (_, _) => mockVinylDNSLoader
+        )
         .unsafeRunSync()
 
       verify(mockDNSLoader, times(1)).load
@@ -344,7 +351,8 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           _ => mockDNSLoader,
-          vinyldnsLoader)
+          vinyldnsLoader
+        )
         .unsafeRunSync()
 
       verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture())
@@ -444,7 +452,8 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           zoneChange,
           _ => mockDNSLoader,
-          (_, _) => mockVinylDNSLoader)
+          (_, _) => mockVinylDNSLoader
+        )
         .unsafeRunSync()
 
       captor.getValue.changes should contain theSameElementsAs expectedChanges

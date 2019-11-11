@@ -50,7 +50,8 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
   def invokeBlock[A](
       request: Request[A],
-      block: UserRequest[A] => Future[Result]): Future[Result] = {
+      block: UserRequest[A] => Future[Result]
+  ): Future[Result] = {
     // if the user name is not in session, or token is invalid reject
     val userName = if (oidcEnabled) {
       getValidUsernameOidc(request.session)

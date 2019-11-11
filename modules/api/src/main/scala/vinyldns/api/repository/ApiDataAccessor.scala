@@ -36,5 +36,5 @@ final case class ApiDataAccessor(
     recordChangeRepository: RecordChangeRepository,
     zoneChangeRepository: ZoneChangeRepository,
     zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository)
-    extends DataAccessor
+    batchChangeRepository: BatchChangeRepository
+) extends DataAccessor

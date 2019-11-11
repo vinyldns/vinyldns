@@ -38,7 +38,8 @@ object RecordSetValidations {
         ensuring(InvalidRequest("PTR is not valid in forward lookup zone"))(zone.isReverse)
       case _ =>
         ensuring(InvalidRequest(s"${recordSet.typ} is not valid in reverse lookup zone."))(
-          !zone.isReverse)
+          !zone.isReverse
+        )
     }
 
   def validRecordNameLength(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
@@ -52,38 +53,51 @@ object RecordSetValidations {
     ensuring(
       PendingUpdateError(
         s"RecordSet with id ${recordSet.id}, name ${recordSet.name} and type ${recordSet.typ} " +
-          s"currently has a pending change"))(
+          s"currently has a pending change"
+      )
+    )(
       !recordSet.isPending
     )
 
   def noCnameWithNewName(
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone
+  ): Either[Throwable, Unit] =
     ensuring(
-      RecordSetAlreadyExists(s"RecordSet with name ${newRecordSet.name} and type CNAME already " +
-        s"exists in zone ${zone.name}"))(
+      RecordSetAlreadyExists(
+        s"RecordSet with name ${newRecordSet.name} and type CNAME already " +
+          s"exists in zone ${zone.name}"
+      )
+    )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
     )
 
   def isUniqueUpdate(
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone
+  ): Either[Throwable, Unit] =
     ensuring(
       RecordSetAlreadyExists(
         s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} already " +
-          s"exists in zone ${zone.name}"))(
+          s"exists in zone ${zone.name}"
+      )
+    )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
     )
 
   def isNotDotted(
       newRecordSet: RecordSet,
       zone: Zone,
-      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
-    ensuring(InvalidRequest(
-      s"Record with name ${newRecordSet.name} and type ${newRecordSet.typ} is a dotted host which" +
-        s" is not allowed in zone ${zone.name}"))(
+      existingRecordSet: Option[RecordSet] = None
+  ): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest(
+        s"Record with name ${newRecordSet.name} and type ${newRecordSet.typ} is a dotted host which" +
+          s" is not allowed in zone ${zone.name}"
+      )
+    )(
       newRecordSet.name == zone.name || !newRecordSet.name.contains(".") ||
         existingRecordSet.exists(_.name == newRecordSet.name)
     )
@@ -92,7 +106,8 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
-      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
+      existingRecordSet: Option[RecordSet] = None
+  ): Either[Throwable, Unit] =
     newRecordSet.typ match {
       case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet)
       case NS => nsValidations(newRecordSet, zone, existingRecordSet)
@@ -110,7 +125,8 @@ object RecordSetValidations {
         isNotOrigin(
           recordSet,
           zone,
-          s"Record with name ${recordSet.name} is an NS record at apex and cannot be edited")
+          s"Record with name ${recordSet.name} is an NS record at apex and cannot be edited"
+        )
       case SOA => InvalidRequest("SOA records cannot be deleted").asLeft
       case _ => ().asRight
     }
@@ -120,12 +136,16 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
-      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] = {
+      existingRecordSet: Option[RecordSet] = None
+  ): Either[Throwable, Unit] = {
     // cannot create a cname record if a record with the same exists
     val noRecordWithName = {
       ensuring(
-        RecordSetAlreadyExists(s"RecordSet with name ${newRecordSet.name} already " +
-          s"exists in zone ${zone.name}, CNAME record cannot use duplicate name"))(
+        RecordSetAlreadyExists(
+          s"RecordSet with name ${newRecordSet.name} already " +
+            s"exists in zone ${zone.name}, CNAME record cannot use duplicate name"
+        )
+      )(
         existingRecordsWithName.forall(_.id == newRecordSet.id)
       )
     }
@@ -134,7 +154,8 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        "CNAME RecordSet cannot have name '@' because it points to zone origin")
+        "CNAME RecordSet cannot have name '@' because it points to zone origin"
+      )
       _ <- noRecordWithName
       _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
     } yield ()
@@ -144,17 +165,20 @@ object RecordSetValidations {
   def dsValidations(
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] = {
+      zone: Zone
+  ): Either[Throwable, Unit] = {
     // see https://tools.ietf.org/html/rfc4035#section-2.4
     val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
       case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
       case Some(ns) =>
         InvalidRequest(
-          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})").asLeft
+          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})"
+        ).asLeft
       case None =>
         InvalidRequest(
           s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
-            s"name in the zone [${zone.name}]").asLeft
+            s"name in the zone [${zone.name}]"
+        ).asLeft
     }
 
     for {
@@ -162,7 +186,8 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        s"Record with name [${newRecordSet.name}] is an DS record at apex and cannot be added")
+        s"Record with name [${newRecordSet.name}] is an DS record at apex and cannot be added"
+      )
       _ <- nsChecks
     } yield ()
   }
@@ -170,7 +195,8 @@ object RecordSetValidations {
   def nsValidations(
       newRecordSet: RecordSet,
       zone: Zone,
-      oldRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] = {
+      oldRecordSet: Option[RecordSet] = None
+  ): Either[Throwable, Unit] = {
     // TODO kept consistency with old validation. Not sure why NS could be dotted in reverse specifically
     val isNotDottedHost = if (!zone.isReverse) isNotDotted(newRecordSet, zone) else ().asRight
 
@@ -179,14 +205,16 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be added")
+        s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be added"
+      )
       _ <- containsApprovedNameServers(newRecordSet)
       _ <- oldRecordSet
         .map { rs =>
           isNotOrigin(
             rs,
             zone,
-            s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be edited")
+            s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be edited"
+          )
         }
         .getOrElse(().asRight)
     } yield ()
@@ -233,7 +261,8 @@ object RecordSetValidations {
   def canUseOwnerGroup(
       ownerGroupId: Option[String],
       group: Option[Group],
-      authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+      authPrincipal: AuthPrincipal
+  ): Either[Throwable, Unit] =
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>

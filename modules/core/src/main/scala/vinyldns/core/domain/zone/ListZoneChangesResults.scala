@@ -20,4 +20,5 @@ case class ListZoneChangesResults(
     items: List[ZoneChange] = List[ZoneChange](),
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
-    maxItems: Int = 100)
+    maxItems: Int = 100
+)

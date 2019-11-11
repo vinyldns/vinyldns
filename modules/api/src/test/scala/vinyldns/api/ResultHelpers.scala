@@ -40,10 +40,12 @@ trait ResultHelpers {
   // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[T](
       f: => IO[Either[Throwable, T]],
-      duration: FiniteDuration = 1.second): Either[Throwable, T] = {
+      duration: FiniteDuration = 1.second
+  ): Either[Throwable, T] = {
 
     val timeOut = IO.sleep(duration) *> IO(
-      TimeoutException("Timed out waiting for result").asInstanceOf[Throwable])
+      TimeoutException("Timed out waiting for result").asInstanceOf[Throwable]
+    )
 
     IO.race(timeOut, f.handleError(e => Left(e))).unsafeRunSync() match {
       case Left(e) => Left(e)
@@ -61,7 +63,8 @@ trait ResultHelpers {
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
   def leftResultOf[T](
       f: => IO[Either[Throwable, T]],
-      duration: FiniteDuration = 1.second): Throwable = awaitResultOf(f, duration).swap.toOption.get
+      duration: FiniteDuration = 1.second
+  ): Throwable = awaitResultOf(f, duration).swap.toOption.get
 
   def leftValue[T](t: Either[Throwable, T]): Throwable = t.swap.toOption.get
 
@@ -71,7 +74,8 @@ trait ResultHelpers {
 object ValidationTestImprovements extends PropSpec with Matchers with ValidatedMatchers {
 
   implicit class ValidatedNelTestImprovements[DomainValidationError, A](
-      value: ValidatedNel[DomainValidationError, A]) {
+      value: ValidatedNel[DomainValidationError, A]
+  ) {
 
     def failures: List[DomainValidationError] = value match {
       case Invalid(e) => e.toList

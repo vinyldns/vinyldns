@@ -20,4 +20,5 @@ case class ListRecordSetChangesResults(
     items: List[RecordSetChange] = List[RecordSetChange](),
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
-    maxItems: Int = 100)
+    maxItems: Int = 100
+)

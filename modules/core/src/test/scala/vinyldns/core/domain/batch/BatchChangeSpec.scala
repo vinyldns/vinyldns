@@ -32,7 +32,8 @@ class BatchChangeSpec extends WordSpec with Matchers {
     SingleChangeStatus.Pending,
     None,
     None,
-    None)
+    None
+  )
   private val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
   private val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
 
@@ -42,7 +43,8 @@ class BatchChangeSpec extends WordSpec with Matchers {
     None,
     DateTime.now,
     List(pendingChange, failedChange, completeChange),
-    approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+    approvalStatus = BatchChangeApprovalStatus.AutoApproved
+  )
 
   "BatchChange" should {
     "calculate Pending status based on SingleChanges" in {
@@ -80,7 +82,8 @@ class BatchChangeSpec extends WordSpec with Matchers {
       batchChangeBase
         .copy(
           approvalStatus = BatchChangeApprovalStatus.PendingReview,
-          scheduledTime = Some(DateTime.now))
+          scheduledTime = Some(DateTime.now)
+        )
         .status shouldBe BatchChangeStatus.Scheduled
     }
   }

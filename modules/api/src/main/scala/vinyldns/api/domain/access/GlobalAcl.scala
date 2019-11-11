@@ -47,7 +47,8 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordData: List[RecordData] = List.empty): Boolean = {
+      recordData: List[RecordData] = List.empty
+  ): Boolean = {
 
     def isAuthorized(authPrincipal: AuthPrincipal, fqdn: String): Boolean = {
       val regexList = authPrincipal.memberGroupIds.flatMap(aclMap.getOrElse(_, List.empty)).toList

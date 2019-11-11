@@ -30,7 +30,8 @@ object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccesso
     List(user, userChange)
 
   def create(
-      dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, PortalDataAccessor] =
+      dataStores: List[(DataStoreConfig, DataStore)]
+  ): ValidatedNel[String, PortalDataAccessor] =
     (
       getRepoOf[UserRepository](dataStores, user),
       getRepoOf[UserChangeRepository](dataStores, userChange),

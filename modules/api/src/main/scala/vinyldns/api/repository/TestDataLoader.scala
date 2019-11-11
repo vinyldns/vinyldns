@@ -192,7 +192,8 @@ object TestDataLoader {
     id = "shared-zone-group",
     email = "email",
     memberIds = Set(sharedZoneUser.id),
-    adminUserIds = Set(sharedZoneUser.id))
+    adminUserIds = Set(sharedZoneUser.id)
+  )
 
   final val sharedZone = Zone(
     name = "shared.",
@@ -207,14 +208,16 @@ object TestDataLoader {
     id = "global-acl-group-id",
     email = "email",
     memberIds = Set(okUser.id, dummyUser.id),
-    adminUserIds = Set(okUser.id, dummyUser.id))
+    adminUserIds = Set(okUser.id, dummyUser.id)
+  )
 
   final val anotherGlobalACLGroup = Group(
     name = "globalACLGroup",
     id = "another-global-acl-group",
     email = "email",
     memberIds = Set(testUser.id),
-    adminUserIds = Set(testUser.id))
+    adminUserIds = Set(testUser.id)
+  )
 
   final val duGroup = Group(
     name = "duGroup",
@@ -237,7 +240,8 @@ object TestDataLoader {
       userRepo: UserRepository,
       groupRepo: GroupRepository,
       zoneRepo: ZoneRepository,
-      membershipRepo: MembershipRepository): IO[Unit] =
+      membershipRepo: MembershipRepository
+  ): IO[Unit] =
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
@@ -258,7 +262,8 @@ object TestDataLoader {
         IO.raiseError(new RuntimeException(msg))
       } else {
         logger.info(
-          s"Deleting existing shared zones on startup: ${toDelete.map(z => (z.name, z.id))}")
+          s"Deleting existing shared zones on startup: ${toDelete.map(z => (z.name, z.id))}"
+        )
         IO.unit
       }
       _ <- toDelete.map(zoneRepo.save).parSequence
@@ -269,17 +274,21 @@ object TestDataLoader {
       _ <- groupRepo.save(listBatchChangeSummariesGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
-        memberUserIds = Set(sharedZoneUser.id))
+        memberUserIds = Set(sharedZoneUser.id)
+      )
       _ <- membershipRepo.addMembers(
         groupId = "global-acl-group-id",
-        memberUserIds = Set(okUser.id, dummyUser.id))
+        memberUserIds = Set(okUser.id, dummyUser.id)
+      )
       _ <- membershipRepo.addMembers(
         groupId = "another-global-acl-group",
-        memberUserIds = Set(testUser.id))
+        memberUserIds = Set(testUser.id)
+      )
       _ <- membershipRepo.addMembers(groupId = duGroup.id, memberUserIds = duGroup.memberIds)
       _ <- membershipRepo.addMembers(
         groupId = listBatchChangeSummariesGroup.id,
-        memberUserIds = listBatchChangeSummariesGroup.memberIds)
+        memberUserIds = listBatchChangeSummariesGroup.memberIds
+      )
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()

@@ -24,7 +24,7 @@ import vinyldns.mysql.TestMySqlInstance
 import org.joda.time.DateTime
 
 class MySqlGroupChangeRepositoryIntegrationSpec
-  extends WordSpec
+    extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {
@@ -46,8 +46,12 @@ class MySqlGroupChangeRepositoryIntegrationSpec
     val group = Group(name = "test", id = groupId, email = "test@test.com")
     for {
       i <- 1 to numChanges
-    } yield GroupChange(group, GroupChangeType.Create, s"user-$i",
-      created = DateTime.now().plusSeconds(i))
+    } yield GroupChange(
+      group,
+      GroupChangeType.Create,
+      s"user-$i",
+      created = DateTime.now().plusSeconds(i)
+    )
   }
 
   "MySqlGroupChangeRepository.save" should {
@@ -62,7 +66,8 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       repo.save(groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
 
-      val groupChangeUpdate = groupChange.copy(created = DateTime.now().plusSeconds(10000), userId = "updated")
+      val groupChangeUpdate =
+        groupChange.copy(created = DateTime.now().plusSeconds(10000), userId = "updated")
       repo.save(groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
       repo.getGroupChange(groupChangeUpdate.id).unsafeRunSync() shouldBe Some(groupChangeUpdate)
     }
@@ -110,9 +115,12 @@ class MySqlGroupChangeRepositoryIntegrationSpec
 
       val expectedChanges = Seq(changesSorted(0))
 
-      val listResponse = repo.getGroupChanges(groupId, startFrom = None, maxItems = 1).unsafeRunSync()
+      val listResponse =
+        repo.getGroupChanges(groupId, startFrom = None, maxItems = 1).unsafeRunSync()
       listResponse.changes shouldBe expectedChanges
-      listResponse.lastEvaluatedTimeStamp shouldBe Some(expectedChanges.head.created.getMillis.toString)
+      listResponse.lastEvaluatedTimeStamp shouldBe Some(
+        expectedChanges.head.created.getMillis.toString
+      )
     }
 
     "page group changes using a startFrom and maxItems" in {
@@ -139,13 +147,17 @@ class MySqlGroupChangeRepositoryIntegrationSpec
 
       // get second page
       val pageTwo =
-        repo.getGroupChanges(groupId, startFrom = pageOne.lastEvaluatedTimeStamp, maxItems = 1).unsafeRunSync()
+        repo
+          .getGroupChanges(groupId, startFrom = pageOne.lastEvaluatedTimeStamp, maxItems = 1)
+          .unsafeRunSync()
       pageTwo.changes shouldBe expectedPageTwo
       pageTwo.lastEvaluatedTimeStamp shouldBe expectedPageTwoNext
 
       // get final page
       val pageThree =
-        repo.getGroupChanges(groupId, startFrom = pageTwo.lastEvaluatedTimeStamp, maxItems = 1).unsafeRunSync()
+        repo
+          .getGroupChanges(groupId, startFrom = pageTwo.lastEvaluatedTimeStamp, maxItems = 1)
+          .unsafeRunSync()
       pageThree.changes shouldBe expectedPageThree
       pageThree.lastEvaluatedTimeStamp shouldBe expectedPageThreeNext
     }

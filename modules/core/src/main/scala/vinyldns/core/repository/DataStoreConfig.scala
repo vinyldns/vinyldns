@@ -22,7 +22,8 @@ import vinyldns.core.repository.RepositoryName.RepositoryName
 final case class DataStoreConfig(
     className: String,
     settings: Config,
-    repositories: RepositoriesConfig)
+    repositories: RepositoriesConfig
+)
 
 final case class RepositoriesConfig(
     user: Option[Config],
@@ -35,7 +36,8 @@ final case class RepositoriesConfig(
     zone: Option[Config],
     batchChange: Option[Config],
     userChange: Option[Config],
-    task: Option[Config]) {
+    task: Option[Config]
+) {
 
   lazy val configMap: Map[RepositoryName, Config] = List(
     user.map(RepositoryName.user -> _),

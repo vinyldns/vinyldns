@@ -27,7 +27,8 @@ trait GroupChangeRepository extends Repository {
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
-      maxItems: Int): IO[ListGroupChangesResults]
+      maxItems: Int
+  ): IO[ListGroupChangesResults]
 
   implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
 }

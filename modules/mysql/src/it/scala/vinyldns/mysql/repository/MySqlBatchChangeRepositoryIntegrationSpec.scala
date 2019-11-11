@@ -47,7 +47,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         recordType: RecordType,
         recordData: RecordData,
         status: SingleChangeStatus = Pending,
-        errors: List[SingleChangeError] = List.empty): SingleAddChange =
+        errors: List[SingleChangeError] = List.empty
+    ): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
         Some(okZone.name),
@@ -60,7 +61,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         None,
         None,
         None,
-        errors)
+        errors
+      )
 
     val deleteChange: SingleDeleteRRSetChange =
       SingleDeleteRRSetChange(
@@ -73,7 +75,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         Pending,
         None,
         None,
-        None)
+        None
+      )
 
     def randomChangeList: List[SingleChange] =
       List(
@@ -81,7 +84,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           A,
           AData("1.2.3.4"),
           NeedsReview,
-          List(SingleChangeError(ZoneDiscoveryError("test err")))),
+          List(SingleChangeError(ZoneDiscoveryError("test err")))
+        ),
         generateSingleAddChange(A, AData("1.2.3.40"), Complete),
         generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"), Pending),
         deleteChange.copy(id = UUID.randomUUID().toString)
@@ -109,8 +113,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val pendingBatchChange: BatchChange = randomBatchChange().copy(createdTimestamp = DateTime.now)
 
     val completeBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId")))
-      .copy(createdTimestamp = DateTime.now.plusMillis(1000))
+      randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+    ).copy(createdTimestamp = DateTime.now.plusMillis(1000))
 
     val failedBatchChange: BatchChange =
       randomBatchChangeWithList(randomBatchChange().changes.map(_.withFailureMessage("failed")))
@@ -121,15 +125,16 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         ++ randomBatchChange().changes.drop(2).map(_.withFailureMessage("failed"))
     ).copy(createdTimestamp = DateTime.now.plusMillis(1000000))
 
-    val rejectedBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange().changes.map(_.reject))
-      .copy(createdTimestamp = DateTime.now.plusMillis(10000000))
+    val rejectedBatchChange: BatchChange =
+      randomBatchChangeWithList(randomBatchChange().changes.map(_.reject))
+        .copy(createdTimestamp = DateTime.now.plusMillis(10000000))
 
     // listing/ordering changes
     val timeBase: DateTime = DateTime.now
     val change_one: BatchChange = pendingBatchChange.copy(
       createdTimestamp = timeBase,
-      approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      approvalStatus = BatchChangeApprovalStatus.PendingReview
+    )
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
     val otherUserBatchChange: BatchChange =
@@ -138,8 +143,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val change_four: BatchChange =
       partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
     val change_five: BatchChange =
-      rejectedBatchChange.copy(createdTimestamp = timeBase.plus(10000000),
-        approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+      rejectedBatchChange.copy(
+        createdTimestamp = timeBase.plus(10000000),
+        approvalStatus = BatchChangeApprovalStatus.ManuallyRejected
+      )
   }
 
   import TestData._
@@ -195,7 +202,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
   private def areSame(
       actual: BatchChangeSummaryList,
-      expected: BatchChangeSummaryList): Assertion = {
+      expected: BatchChangeSummaryList
+  ): Assertion = {
     forAll(actual.batchChanges.zip(expected.batchChanges)) { case (a, e) => areSame(a, e) }
     actual.batchChanges.length shouldBe expected.batchChanges.length
     actual.startFrom shouldBe expected.startFrom
@@ -251,7 +259,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         ownerGroupId = None,
         reviewerId = None,
         reviewComment = None,
-        reviewTimestamp = None)
+        reviewTimestamp = None
+      )
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -313,7 +322,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       val savedTs = DateTime.now.secondOfDay().roundFloorCopy()
       val chg = randomBatchChange().copy(
         scheduledTime = Some(savedTs),
-        approvalStatus = BatchChangeApprovalStatus.PendingReview)
+        approvalStatus = BatchChangeApprovalStatus.PendingReview
+      )
 
       val saved =
         for {
@@ -487,7 +497,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             None,
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview))
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+          )
         } yield retrieved
 
       // from most recent descending
@@ -516,7 +527,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           BatchChangeSummary(change_four),
           BatchChangeSummary(change_three),
           BatchChangeSummary(change_two),
-          BatchChangeSummary(change_one))
+          BatchChangeSummary(change_one)
+        )
       )
 
       areSame(f.unsafeRunSync(), expectedChanges)
@@ -539,7 +551,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         List(
           BatchChangeSummary(change_four),
           BatchChangeSummary(change_three),
-          BatchChangeSummary(change_two)),
+          BatchChangeSummary(change_two)
+        ),
         None,
         Some(3),
         3
@@ -560,7 +573,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
             startFrom = Some(1),
-            maxItems = 3)
+            maxItems = 3
+          )
         } yield retrieved
 
       // sorted from most recent descending. startFrom uses zero-based indexing.
@@ -570,7 +584,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         List(
           BatchChangeSummary(change_three),
           BatchChangeSummary(change_two),
-          BatchChangeSummary(change_one)),
+          BatchChangeSummary(change_one)
+        ),
         Some(1),
         None,
         3
@@ -591,7 +606,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
             startFrom = Some(1),
-            maxItems = 1)
+            maxItems = 1
+          )
         } yield retrieved
 
       // sorted from most recent descending. startFrom uses zero-based indexing.
@@ -615,7 +631,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved1 <- repo.getBatchChangeSummaries(Some(pendingBatchChange.userId), maxItems = 1)
           retrieved2 <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            startFrom = retrieved1.nextId)
+            startFrom = retrieved1.nextId
+          )
         } yield (retrieved1, retrieved2)
 
       val expectedChanges =
@@ -625,7 +642,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         List(
           BatchChangeSummary(change_three),
           BatchChangeSummary(change_two),
-          BatchChangeSummary(change_one)),
+          BatchChangeSummary(change_one)
+        ),
         Some(1),
         None
       )
@@ -645,7 +663,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved))
+            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
+          )
         } yield retrieved
 
       // from most recent descending
@@ -653,7 +672,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         List(
           BatchChangeSummary(change_four),
           BatchChangeSummary(change_three),
-          BatchChangeSummary(change_two))
+          BatchChangeSummary(change_two)
+        )
       )
 
       areSame(f.unsafeRunSync(), expectedChanges)

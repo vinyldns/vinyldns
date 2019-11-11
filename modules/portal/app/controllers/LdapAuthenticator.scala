@@ -36,8 +36,8 @@ case class LdapUserDetails(
     username: String,
     email: Option[String],
     firstName: Option[String],
-    lastName: Option[String])
-    extends UserDetails
+    lastName: Option[String]
+) extends UserDetails
 
 object LdapUserDetails {
   private def getValue(attributes: Attributes, attributeName: String): Option[String] =
@@ -88,7 +88,7 @@ object LdapAuthenticator {
         case Failure(e) =>
           Left(LdapServiceException(e.toString))
       }
-  }
+    }
   // $COVERAGE-ON$
 
   private[controllers] object LdapByDomainAuthenticator {
@@ -104,7 +104,8 @@ object LdapAuthenticator {
     */
   private[controllers] class LdapByDomainAuthenticator(
       settings: Settings,
-      createContext: ContextCreator) {
+      createContext: ContextCreator
+  ) {
 
     private val SEARCH_BASE = settings.ldapSearchBase
       .map(searchDomain ⇒ searchDomain.organization → searchDomain.domainName)
@@ -113,13 +114,15 @@ object LdapAuthenticator {
     def searchContext(
         dirContext: DirContext,
         organization: String,
-        lookupUserName: String): Either[LdapException, LdapUserDetails] =
+        lookupUserName: String
+    ): Either[LdapException, LdapUserDetails] =
       try {
         val searchControls = new SearchControls()
         searchControls.setSearchScope(2)
 
         logger.info(
-          s"LDAP Search: org='${SEARCH_BASE(organization)}'; userName='$lookupUserName'; field='${settings.ldapUserNameAttribute}'")
+          s"LDAP Search: org='${SEARCH_BASE(organization)}'; userName='$lookupUserName'; field='${settings.ldapUserNameAttribute}'"
+        )
 
         val result = dirContext.search(
           SEARCH_BASE(organization),
@@ -133,7 +136,8 @@ object LdapAuthenticator {
         case unexpectedError: Throwable =>
           logger.error(
             s"LDAP Unexpected Error searching for user; userName='$lookupUserName'",
-            unexpectedError)
+            unexpectedError
+          )
           Left(LdapServiceException(unexpectedError.getMessage))
       } finally {
         Try(dirContext.close())
@@ -142,7 +146,8 @@ object LdapAuthenticator {
     private[controllers] def authenticate(
         searchDomain: LdapSearchDomain,
         username: String,
-        password: String): Either[LdapException, LdapUserDetails] = {
+        password: String
+    ): Either[LdapException, LdapUserDetails] = {
 
       // Login as the service account
       val qualifiedName =
@@ -164,7 +169,8 @@ object LdapAuthenticator {
     private[controllers] def lookup(
         searchDomain: LdapSearchDomain,
         user: String,
-        serviceAccount: ServiceAccount): Either[LdapException, LdapUserDetails] = {
+        serviceAccount: ServiceAccount
+    ): Either[LdapException, LdapUserDetails] = {
 
       // User lookup is done using the service account
       val qualifiedName =
@@ -189,12 +195,15 @@ object LdapAuthenticator {
         new LdapAuthenticator(
           settings.ldapSearchBase,
           LdapByDomainAuthenticator(settings),
-          serviceAccount))
+          serviceAccount
+        )
+      )
     else
       new LdapAuthenticator(
         settings.ldapSearchBase,
         LdapByDomainAuthenticator(settings),
-        serviceAccount)
+        serviceAccount
+      )
   }
 }
 
@@ -217,8 +226,8 @@ final case class NoLdapSearchDomainsConfigured()
 class LdapAuthenticator(
     searchBase: List[LdapSearchDomain],
     authenticator: LdapByDomainAuthenticator,
-    serviceAccount: ServiceAccount)
-    extends Authenticator {
+    serviceAccount: ServiceAccount
+) extends Authenticator {
 
   private val logger = LoggerFactory.getLogger(classOf[LdapAuthenticator])
   private implicit val cs: ContextShift[IO] =
@@ -241,7 +250,8 @@ class LdapAuthenticator(
       domains: List[LdapSearchDomain],
       userName: String,
       f: LdapSearchDomain => Either[LdapException, LdapUserDetails],
-      allDomainConnectionsUp: Boolean): Either[LdapException, LdapUserDetails] =
+      allDomainConnectionsUp: Boolean
+  ): Either[LdapException, LdapUserDetails] =
     domains match {
       case Nil =>
         if (allDomainConnectionsUp)
@@ -249,7 +259,9 @@ class LdapAuthenticator(
         else
           Left(
             LdapServiceException(
-              "Unable to successfully perform search in at least one LDAP domain"))
+              "Unable to successfully perform search in at least one LDAP domain"
+            )
+          )
       case h :: t =>
         f(h).recoverWith {
           case _: UserDoesNotExistException =>
@@ -314,19 +326,22 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
     "testuser",
     Some("test@test.test"),
     Some("Test"),
-    Some("User"))
+    Some("User")
+  )
   private val recordPagingTestUserDetails = LdapUserDetails(
     "O=test,OU=testdata,CN=recordPagingTestUser",
     "recordPagingTestUser",
     Some("test@test.test"),
     Some("Test"),
-    Some("User"))
+    Some("User")
+  )
   private val supportTestUserDetails = LdapUserDetails(
     "O=test,OU=testdata,CN=supportTestUser",
     "support-user",
     Some("test@test.test"),
     Some("Support"),
-    Some("User"))
+    Some("User")
+  )
 
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails] =
     (username, password) match {

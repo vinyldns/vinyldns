@@ -33,9 +33,15 @@ import vinyldns.sqs.queue.SqsMessageQueue.InvalidMessageTimeout
 
 import scala.concurrent.duration.FiniteDuration
 
-class SqsMessageQueueIntegrationSpec extends WordSpec
-  with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues
-  with ProtobufConversions {
+class SqsMessageQueueIntegrationSpec
+    extends WordSpec
+    with MockitoSugar
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with Matchers
+    with EitherMatchers
+    with EitherValues
+    with ProtobufConversions {
 
   private val sqsMessageQueueSettings: MessageQueueConfig =
     pureconfig.loadConfigOrThrow[MessageQueueConfig](ConfigFactory.load().getConfig("sqs"))
@@ -51,9 +57,8 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
   }
 
   // Delete queue after tests since stuff can potentially linger
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     queue.client.deleteQueue(queue.queueUrl)
-  }
 
   val rsAddChange: RecordSetChange = makeTestAddChange(rsOk)
 
@@ -65,8 +70,10 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       result.map(_.command) should contain theSameElementsAs List(recordSetChange)
 
-      queue.requeue(SqsMessage(MessageId(result(0).id.value), recordSetChange))
-        .attempt.unsafeRunSync() should beRight(())
+      queue
+        .requeue(SqsMessage(MessageId(result(0).id.value), recordSetChange))
+        .attempt
+        .unsafeRunSync() should beRight(())
 
       val immediateReceive = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       immediateReceive shouldBe Nil
@@ -84,8 +91,13 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       result.map(_.command) shouldBe List(rsAddChange)
 
       // Set next visibility of timeout for message
-      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), rsAddChange),
-        FiniteDuration(0, SECONDS)).attempt.unsafeRunSync() should beRight(())
+      queue
+        .changeMessageTimeout(
+          SqsMessage(MessageId(result(0).id.value), rsAddChange),
+          FiniteDuration(0, SECONDS)
+        )
+        .attempt
+        .unsafeRunSync() should beRight(())
 
       // Test that we can immediately receive message after timeout adjustment
       val adjustedTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
@@ -112,8 +124,12 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       }
 
       val result = queue.receive(MessageCount(4).right.value).unsafeRunSync()
-      result.map(_.command) should contain theSameElementsAs List(rsAddChange, rsAddChange, zoneChangePending,
-        zoneChangePending)
+      result.map(_.command) should contain theSameElementsAs List(
+        rsAddChange,
+        rsAddChange,
+        zoneChangePending,
+        zoneChangePending
+      )
     }
 
     "drop malformed message from the queue" in {
@@ -121,15 +137,18 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
         new SendMessageRequest()
           .withMessageBody("malformed data")
           .withQueueUrl(queue.queueUrl),
-        queue.client.sendMessageAsync)
+        queue.client.sendMessageAsync
+      )
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result shouldBe empty
     }
 
     "succeed when attempting to remove item from empty queue" in {
-      queue.remove(SqsMessage(MessageId("does-not-exist"), rsAddChange))
-        .attempt.unsafeRunSync() should beRight(())
+      queue
+        .remove(SqsMessage(MessageId("does-not-exist"), rsAddChange))
+        .attempt
+        .unsafeRunSync() should beRight(())
     }
 
     "succeed when attempting to remove item from queue" in {
@@ -137,15 +156,17 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
 
-      queue.remove(SqsMessage(MessageId(result(0).id.value), rsAddChange))
-        .attempt.unsafeRunSync() should beRight(())
+      queue
+        .remove(SqsMessage(MessageId(result(0).id.value), rsAddChange))
+        .attempt
+        .unsafeRunSync() should beRight(())
     }
 
     "send a single message request" in {
       queue.send(rsAddChange).attempt.unsafeRunSync() should beRight(())
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
-      result should have length 1
+      (result should have).length(1)
       result(0).command shouldBe a[RecordSetChange]
     }
 
@@ -177,8 +198,11 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
     "throw an InvalidMessageTimeout when attempting to set invalid visibility timeout" in {
       assertThrows[InvalidMessageTimeout] {
-        queue.changeMessageTimeout(
-          SqsMessage(MessageId("does-not-matter"), pendingCreateAAAA), new FiniteDuration(43201, SECONDS))
+        queue
+          .changeMessageTimeout(
+            SqsMessage(MessageId("does-not-matter"), pendingCreateAAAA),
+            new FiniteDuration(43201, SECONDS)
+          )
           .unsafeRunSync()
       }
     }

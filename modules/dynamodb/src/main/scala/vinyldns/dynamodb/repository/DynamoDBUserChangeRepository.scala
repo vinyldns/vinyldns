@@ -69,13 +69,15 @@ object DynamoDBUserChangeRepository {
     item.put(CREATED, new AttributeValue().withN(change.created.getMillis.toString))
     item.put(
       NEW_USER,
-      new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, change.newUser)))
+      new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, change.newUser))
+    )
 
     change match {
       case UserChange.UpdateUser(_, _, _, oldUser, _) =>
         item.put(
           OLD_USER,
-          new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser)))
+          new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser))
+        )
       case _ => ()
     }
     item
@@ -84,11 +86,13 @@ object DynamoDBUserChangeRepository {
   def apply(
       config: DynamoDBRepositorySettings,
       dynamoConfig: DynamoDBDataStoreSettings,
-      crypto: CryptoAlgebra): IO[DynamoDBUserChangeRepository] = {
+      crypto: CryptoAlgebra
+  ): IO[DynamoDBUserChangeRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger("DynamoDBUserChangeRepository"))
+      LoggerFactory.getLogger("DynamoDBUserChangeRepository")
+    )
 
     val setup =
       dynamoDBHelper.setupTable(
@@ -97,13 +101,15 @@ object DynamoDBUserChangeRepository {
           .withAttributeDefinitions(TABLE_ATTRIBUTES: _*)
           .withKeySchema(new KeySchemaElement(USER_CHANGE_ID, KeyType.HASH))
           .withProvisionedThroughput(
-            new ProvisionedThroughput(config.provisionedReads, config.provisionedWrites))
+            new ProvisionedThroughput(config.provisionedReads, config.provisionedWrites)
+          )
       )
 
     val serialize: UserChange => java.util.Map[String, AttributeValue] = toItem(crypto, _)
     val deserialize: java.util.Map[String, AttributeValue] => IO[UserChange] = fromItem
     setup.as(
-      new DynamoDBUserChangeRepository(config.tableName, dynamoDBHelper, serialize, deserialize))
+      new DynamoDBUserChangeRepository(config.tableName, dynamoDBHelper, serialize, deserialize)
+    )
   }
 }
 
@@ -111,8 +117,8 @@ class DynamoDBUserChangeRepository private[repository] (
     tableName: String,
     val dynamoDBHelper: DynamoDBHelper,
     serialize: UserChange => java.util.Map[String, AttributeValue],
-    deserialize: java.util.Map[String, AttributeValue] => IO[UserChange])
-    extends UserChangeRepository
+    deserialize: java.util.Map[String, AttributeValue] => IO[UserChange]
+) extends UserChangeRepository
     with Monitored {
   import DynamoDBUserChangeRepository._
 

@@ -40,7 +40,8 @@ class APIMetricsSpec extends WordSpec with Matchers with MockitoSugar with Eithe
         """.stripMargin
       )
       APIMetrics.loadSettings(config).attempt.unsafeRunSync() shouldBe Right(
-        APIMetricsSettings(MemoryMetricsSettings(logEnabled = true, logSeconds = 5)))
+        APIMetricsSettings(MemoryMetricsSettings(logEnabled = true, logSeconds = 5))
+      )
     }
     "fail with invalid config" in {
       val config = ConfigFactory.parseString(
@@ -70,7 +71,8 @@ class APIMetricsSpec extends WordSpec with Matchers with MockitoSugar with Eithe
       APIMetrics
         .initialize(
           APIMetricsSettings(MemoryMetricsSettings(logEnabled = true, logSeconds = 5)),
-          reporter)
+          reporter
+        )
         .unsafeRunSync()
       verify(reporter).start(5, TimeUnit.SECONDS)
     }
@@ -79,7 +81,8 @@ class APIMetricsSpec extends WordSpec with Matchers with MockitoSugar with Eithe
       APIMetrics
         .initialize(
           APIMetricsSettings(MemoryMetricsSettings(logEnabled = false, logSeconds = 5)),
-          reporter)
+          reporter
+        )
         .unsafeRunSync()
       verifyZeroInteractions(reporter)
     }

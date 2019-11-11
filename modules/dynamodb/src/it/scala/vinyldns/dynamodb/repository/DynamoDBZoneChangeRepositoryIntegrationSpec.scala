@@ -32,7 +32,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
-  
+
   private val zoneChangeTable = "zone-changes-live"
 
   private val tableConfig = DynamoDBRepositorySettings(s"$zoneChangeTable", 30, 30)
@@ -41,12 +41,12 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   private val goodUser = User(s"live-test-acct", "key", "secret")
 
-  private val okZones = for {i <- 1 to 3} yield
-    Zone(
-      s"${goodUser.userName}.zone$i.",
-      "test@test.com",
-      status = ZoneStatus.Active,
-      connection = testConnection)
+  private val okZones = for { i <- 1 to 3 } yield Zone(
+    s"${goodUser.userName}.zone$i.",
+    "test@test.com",
+    status = ZoneStatus.Active,
+    connection = testConnection
+  )
 
   private val zones = okZones
 
@@ -54,13 +54,13 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     import vinyldns.core.domain.zone.ZoneChangeStatus._
     Pending :: Complete :: Failed :: Synced :: Nil
   }
-  private val changes = for {zone <- zones; status <- statuses} yield
-    ZoneChange(
-      zone,
-      zone.account,
-      ZoneChangeType.Update,
-      status,
-      created = now.minusSeconds(Random.nextInt(1000)))
+  private val changes = for { zone <- zones; status <- statuses } yield ZoneChange(
+    zone,
+    zone.account,
+    ZoneChangeType.Update,
+    status,
+    created = now.minusSeconds(Random.nextInt(1000))
+  )
 
   def setup(): Unit = {
     repo = DynamoDBZoneChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
@@ -75,7 +75,6 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     val request = new DeleteTableRequest().withTableName(zoneChangeTable)
     repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
-
 
   "DynamoDBRepository" should {
 

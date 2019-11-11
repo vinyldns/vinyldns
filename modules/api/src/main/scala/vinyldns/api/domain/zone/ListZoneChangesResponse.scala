@@ -24,7 +24,8 @@ case class ListZoneChangesResponse(
     zoneChanges: List[ZoneChange] = Nil,
     nextId: Option[String],
     startFrom: Option[String],
-    maxItems: Int)
+    maxItems: Int
+)
 
 object ListZoneChangesResponse {
   def apply(zoneId: String, listResults: ListZoneChangesResults): ListZoneChangesResponse =
@@ -33,5 +34,6 @@ object ListZoneChangesResponse {
       listResults.items,
       listResults.nextId,
       listResults.startFrom,
-      listResults.maxItems)
+      listResults.maxItems
+    )
 }

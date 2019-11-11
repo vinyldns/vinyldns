@@ -66,7 +66,8 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
       IO {
         logger.info(
           s"Saving group change with (group_change_id, group_id): " +
-            s"(${groupChange.id}, ${groupChange.newGroup.id})")
+            s"(${groupChange.id}, ${groupChange.newGroup.id})"
+        )
         DB.localTx { implicit s =>
           PUT_GROUP_CHANGE
             .bindByName(
@@ -100,11 +101,13 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
-      maxItems: Int): IO[ListGroupChangesResults] =
+      maxItems: Int
+  ): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
       IO {
         logger.info(
-          s"Getting group changes with (groupId, startFrom, maxItems): ($groupId, $startFrom, $maxItems)")
+          s"Getting group changes with (groupId, startFrom, maxItems): ($groupId, $startFrom, $maxItems)"
+        )
         DB.readOnly { implicit s =>
           val query = startFrom match {
             case Some(start) =>

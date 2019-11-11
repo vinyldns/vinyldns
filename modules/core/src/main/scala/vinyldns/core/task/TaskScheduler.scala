@@ -58,9 +58,10 @@ object TaskScheduler extends Monitored {
     * @return a Stream that when run will awake on the interval defined on the Task provided, and
     *         run the task.run()
     */
-  def schedule(task: Task, taskRepository: TaskRepository)(
-      implicit t: Timer[IO],
-      cs: ContextShift[IO]): Stream[IO, Unit] = {
+  def schedule(
+      task: Task,
+      taskRepository: TaskRepository
+  )(implicit t: Timer[IO], cs: ContextShift[IO]): Stream[IO, Unit] = {
 
     def claimTask(): IO[Option[Task]] =
       taskRepository.claimTask(task.name, task.timeout, task.runEvery).map {
@@ -79,7 +80,8 @@ object TaskScheduler extends Monitored {
           t =>
             taskRepository
               .releaseTask(t.name)
-              .as(logger.info(s"""Released task; taskName="${task.name}" """)))
+              .as(logger.info(s"""Released task; taskName="${task.name}" """))
+        )
         .getOrElse(IO.unit)
     }
 

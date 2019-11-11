@@ -30,14 +30,16 @@ trait AccessValidationsAlgebra {
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,
-      zoneAdminGroupId: String): Either[Throwable, Unit]
+      zoneAdminGroupId: String
+  ): Either[Throwable, Unit]
 
   def canAddRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordData: List[RecordData] = List.empty): Either[Throwable, Unit]
+      recordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit]
 
   def canUpdateRecordSet(
       auth: AuthPrincipal,
@@ -45,7 +47,8 @@ trait AccessValidationsAlgebra {
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      newRecordData: List[RecordData] = List.empty): Either[Throwable, Unit]
+      newRecordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
@@ -53,7 +56,8 @@ trait AccessValidationsAlgebra {
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      existingRecordData: List[RecordData] = List.empty): Either[Throwable, Unit]
+      existingRecordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit]
 
   def canViewRecordSet(
       auth: AuthPrincipal,
@@ -61,12 +65,14 @@ trait AccessValidationsAlgebra {
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      recordData: List[RecordData] = List.empty): Either[Throwable, Unit]
+      recordData: List[RecordData] = List.empty
+  ): Either[Throwable, Unit]
 
   def getListAccessLevels(
       auth: AuthPrincipal,
       recordSets: List[RecordSetInfo],
-      zone: Zone): List[RecordSetListInfo]
+      zone: Zone
+  ): List[RecordSetListInfo]
 
   def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel
 }

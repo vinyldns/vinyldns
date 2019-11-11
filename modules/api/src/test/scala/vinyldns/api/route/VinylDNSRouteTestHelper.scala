@@ -30,7 +30,8 @@ trait VinylDNSRouteTestHelper {
             HttpResponse(
               status = StatusCodes.BadRequest,
               entity = HttpEntity(ContentTypes.`application/json`, msg)
-            ))
+            )
+          )
       }
       .handleNotFound {
         extractUnmatchedPath { p =>

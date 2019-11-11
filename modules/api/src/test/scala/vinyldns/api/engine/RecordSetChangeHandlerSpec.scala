@@ -73,7 +73,8 @@ class RecordSetChangeHandlerSpec
       SingleChangeStatus.Pending,
       None,
       None,
-      None)
+      None
+    )
   }
   private val notUpdatedChange = SingleAddChange(
     Some("someId"),
@@ -86,7 +87,8 @@ class RecordSetChangeHandlerSpec
     SingleChangeStatus.Pending,
     None,
     None,
-    None)
+    None
+  )
   private val singleChanges = notUpdatedChange :: completeCreateAAAASingleChanges
   private val batchChange = BatchChange(
     "userId",
@@ -94,7 +96,8 @@ class RecordSetChangeHandlerSpec
     None,
     DateTime.now,
     singleChanges,
-    approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+    approvalStatus = BatchChangeApprovalStatus.AutoApproved
+  )
 
   private val rsChange =
     completeCreateAAAA.copy(singleBatchChangeIds = completeCreateAAAASingleChanges.map(_.id))
@@ -147,7 +150,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -188,7 +192,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -232,7 +237,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Failed,
           recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage)
+          systemMessage = savedCs.changes.head.systemMessage
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -277,7 +283,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -318,7 +325,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Failed,
           recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage)
+          systemMessage = savedCs.changes.head.systemMessage
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -361,7 +369,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Failed,
           recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage)
+          systemMessage = savedCs.changes.head.systemMessage
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -400,7 +409,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Failed,
           recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage)
+          systemMessage = savedCs.changes.head.systemMessage
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -438,7 +448,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Failed,
           recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage)
+          systemMessage = savedCs.changes.head.systemMessage
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -491,7 +502,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -549,7 +561,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -605,7 +618,8 @@ class RecordSetChangeHandlerSpec
     "complete an update successfully if the requested record set change matches the DNS backend" in {
       val updateChange = rsChange.copy(
         changeType = RecordSetChangeType.Update,
-        updates = Some(rsChange.recordSet.copy(ttl = 87)))
+        updates = Some(rsChange.recordSet.copy(ttl = 87))
+      )
       doReturn(Interfaces.result(Right(List(updateChange.recordSet))))
         .when(mockConn)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
@@ -635,7 +649,8 @@ class RecordSetChangeHandlerSpec
         ch.copy(
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id))
+          recordSetId = Some(rsChange.recordSet.id)
+        )
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
@@ -644,7 +659,8 @@ class RecordSetChangeHandlerSpec
     "fail an update if current record does not match the DNS backend and the change has not already been applied" in {
       val updateChange = rsChange.copy(
         changeType = RecordSetChangeType.Update,
-        updates = Some(rsChange.recordSet.copy(ttl = 87)))
+        updates = Some(rsChange.recordSet.copy(ttl = 87))
+      )
       doReturn(Interfaces.result(Right(List(updateChange.recordSet.copy(ttl = 30)))))
         .when(mockConn)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
@@ -669,7 +685,8 @@ class RecordSetChangeHandlerSpec
       changeSet.systemMessage shouldBe Some(
         s"Failed validating update to DNS for change ${changeSet.id}:${changeSet.recordSet.name}: " +
           s"This record set is out of sync with the DNS backend; sync this zone before attempting to " +
-          "update this record set.")
+          "update this record set."
+      )
 
       val savedCs = changeRepoCaptor.getValue
       savedCs.status shouldBe ChangeSetStatus.Complete
@@ -731,7 +748,8 @@ class RecordSetChangeHandlerSpec
         .getProcessingStatus(
           rsChange
             .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 300))),
-          mockConn)
+          mockConn
+        )
         .unsafeRunSync()
       processorStatus shouldBe a[ReadyToApply]
     }
@@ -755,7 +773,8 @@ class RecordSetChangeHandlerSpec
       val processorStatus = RecordSetChangeHandler
         .getProcessingStatus(
           rsChange.copy(changeType = RecordSetChangeType.Update, updates = None),
-          mockConn)
+          mockConn
+        )
         .unsafeRunSync()
       processorStatus shouldBe a[Failure]
     }

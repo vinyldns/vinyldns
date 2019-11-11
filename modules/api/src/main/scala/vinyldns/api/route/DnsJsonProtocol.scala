@@ -208,8 +208,8 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetListInfo] =
       (
         RecordSetInfoSerializer.fromJson(js),
-        (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId"))
-        .mapN(RecordSetListInfo.apply)
+        (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId")
+      ).mapN(RecordSetListInfo.apply)
 
     override def toJson(rs: RecordSetListInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~

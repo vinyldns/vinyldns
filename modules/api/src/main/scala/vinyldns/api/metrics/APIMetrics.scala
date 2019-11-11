@@ -45,7 +45,8 @@ object APIMetrics {
 
   def initialize(
       settings: APIMetricsSettings,
-      reporter: ScheduledReporter = logReporter): IO[Unit] = IO {
+      reporter: ScheduledReporter = logReporter
+  ): IO[Unit] = IO {
     if (settings.memory.logEnabled) {
       reporter.start(settings.memory.logSeconds, TimeUnit.SECONDS)
     }

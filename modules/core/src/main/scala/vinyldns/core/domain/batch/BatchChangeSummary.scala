@@ -38,7 +38,8 @@ case class BatchChangeSummary(
     reviewComment: Option[String],
     reviewTimestamp: Option[DateTime],
     scheduledTime: Option[DateTime] = None,
-    cancelledTimestamp: Option[DateTime] = None)
+    cancelledTimestamp: Option[DateTime] = None
+)
 
 object BatchChangeSummary {
   def apply(batchChange: BatchChange): BatchChangeSummary =
@@ -90,4 +91,5 @@ case class BatchChangeSummaryList(
     nextId: Option[Int] = None,
     maxItems: Int = 100,
     ignoreAccess: Boolean = false,
-    approvalStatus: Option[BatchChangeApprovalStatus] = None)
+    approvalStatus: Option[BatchChangeApprovalStatus] = None
+)

@@ -83,7 +83,8 @@ class ZoneServiceIntegrationSpec
     ttl = 38400,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(AData("10.1.1.1")))
+    records = List(AData("10.1.1.1"))
+  )
 
   private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, okZone))
   private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, okZone))
@@ -159,7 +160,8 @@ class ZoneServiceIntegrationSpec
   "getBackendIds" should {
     "return backend ids in config" in {
       testZoneService.getBackendIds().value.unsafeRunSync() shouldBe Right(
-        List("func-test-backend"))
+        List("func-test-backend")
+      )
     }
   }
 

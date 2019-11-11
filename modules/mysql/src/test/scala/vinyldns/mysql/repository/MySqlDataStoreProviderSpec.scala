@@ -53,7 +53,8 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |      zone {},
           |      batch-change {}
           |    }
-          |    """.stripMargin)
+          |    """.stripMargin
+      )
 
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 

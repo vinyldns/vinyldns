@@ -39,7 +39,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       approvalStatus: BatchChangeApprovalStatus,
       reviewerId: Option[String],
       reviewComment: Option[String],
-      reviewTimestamp: Option[DateTime])
+      reviewTimestamp: Option[DateTime]
+  )
   object StoredBatchChange {
     def apply(batchChange: BatchChange): StoredBatchChange =
       new StoredBatchChange(
@@ -113,7 +114,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
-      approvalStatus: Option[BatchChangeApprovalStatus] = None): IO[BatchChangeSummaryList] = {
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): IO[BatchChangeSummaryList] = {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
@@ -148,7 +150,9 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         nextId = nextId,
         maxItems = maxItems,
         ignoreAccess = ignoreAccess,
-        approvalStatus = approvalStatus))
+        approvalStatus = approvalStatus
+      )
+    )
   }
 
   def clear(): Unit = {

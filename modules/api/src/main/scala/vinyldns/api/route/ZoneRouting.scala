@@ -60,7 +60,8 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
     (post & monitor("Endpoint.createZone")) {
       authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput](
         (authPrincipal, createZoneInput) =>
-          zoneService.connectToZone(encrypt(createZoneInput), authPrincipal)) { chg =>
+          zoneService.connectToZone(encrypt(createZoneInput), authPrincipal)
+      ) { chg =>
         complete(StatusCodes.Accepted, chg)
       }
     } ~
@@ -69,19 +70,24 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
           "nameFilter".?,
           "startFrom".as[String].?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
-          "ignoreAccess".as[Boolean].?(false)) {
+          "ignoreAccess".as[Boolean].?(false)
+        ) {
           (
               nameFilter: Option[String],
               startFrom: Option[String],
               maxItems: Int,
-              ignoreAccess: Boolean) =>
+              ignoreAccess: Boolean
+          ) =>
             {
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                  s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
-                  authenticateAndExecute(zoneService
-                    .listZones(_, nameFilter, startFrom, maxItems, ignoreAccess)) { result =>
+                  s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+                ) {
+                  authenticateAndExecute(
+                    zoneService
+                      .listZones(_, nameFilter, startFrom, maxItems, ignoreAccess)
+                  ) { result =>
                     complete(StatusCodes.OK, result)
                   }
                 }
@@ -111,7 +117,8 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
         (put & monitor("Endpoint.updateZone")) {
           authenticateAndExecuteWithEntity[ZoneCommandResult, UpdateZoneInput](
             (authPrincipal, updateZoneInput) =>
-              zoneService.updateZone(encrypt(updateZoneInput), authPrincipal)) { chg =>
+              zoneService.updateZone(encrypt(updateZoneInput), authPrincipal)
+          ) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
         } ~
@@ -135,7 +142,8 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
-                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $DEFAULT_MAX_ITEMS inclusive") {
+                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $DEFAULT_MAX_ITEMS inclusive"
+              ) {
                 authenticateAndExecute(zoneService.listZoneChanges(id, _, startFrom, maxItems)) {
                   changes =>
                     complete(StatusCodes.OK, changes)
@@ -147,14 +155,16 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
     } ~
     path("zones" / Segment / "acl" / "rules") { id =>
       (put & monitor("Endpoint.addZoneACLRule")) {
-        authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo]((authPrincipal, rule) =>
-          zoneService.addACLRule(id, rule, authPrincipal)) { chg =>
+        authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo](
+          (authPrincipal, rule) => zoneService.addACLRule(id, rule, authPrincipal)
+        ) { chg =>
           complete(StatusCodes.Accepted, chg)
         }
       } ~
         (delete & monitor("Endpoint.deleteZoneACLRule")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo]((authPrincipal, rule) =>
-            zoneService.deleteACLRule(id, rule, authPrincipal)) { chg =>
+          authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo](
+            (authPrincipal, rule) => zoneService.deleteACLRule(id, rule, authPrincipal)
+          ) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
         }

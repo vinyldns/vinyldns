@@ -58,10 +58,12 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
   }
 
   def loadRepoConfigs(
-      config: RepositoriesConfig): IO[Map[RepositoryName, DynamoDBRepositorySettings]] = {
+      config: RepositoriesConfig
+  ): IO[Map[RepositoryName, DynamoDBRepositorySettings]] = {
 
     def loadConfigIfDefined(
-        repositoryName: RepositoryName): Option[IO[(RepositoryName, DynamoDBRepositorySettings)]] =
+        repositoryName: RepositoryName
+    ): Option[IO[(RepositoryName, DynamoDBRepositorySettings)]] =
       config.get(repositoryName).map { repoConf =>
         loadConfigF[IO, DynamoDBRepositorySettings](repoConf).map(repositoryName -> _)
       }
@@ -74,11 +76,13 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
   def initializeRepos(
       dynamoConfig: DynamoDBDataStoreSettings,
       repoSettings: Map[RepositoryName, DynamoDBRepositorySettings],
-      crypto: CryptoAlgebra): IO[DataStore] = {
+      crypto: CryptoAlgebra
+  ): IO[DataStore] = {
 
     def initializeSingleRepo[T <: Repository](
         repoName: RepositoryName,
-        fn: DynamoDBRepositorySettings => IO[T]): IO[Option[T]] =
+        fn: DynamoDBRepositorySettings => IO[T]
+    ): IO[Option[T]] =
       repoSettings
         .get(repoName)
         .map { configuredOn =>
@@ -93,28 +97,35 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     (
       initializeSingleRepo[UserRepository](
         user,
-        DynamoDBUserRepository.apply(_, dynamoConfig, crypto)),
+        DynamoDBUserRepository.apply(_, dynamoConfig, crypto)
+      ),
       initializeSingleRepo[GroupRepository](group, DynamoDBGroupRepository.apply(_, dynamoConfig)),
       initializeSingleRepo[MembershipRepository](
         membership,
-        DynamoDBMembershipRepository.apply(_, dynamoConfig)),
+        DynamoDBMembershipRepository.apply(_, dynamoConfig)
+      ),
       initializeSingleRepo[GroupChangeRepository](
         groupChange,
-        DynamoDBGroupChangeRepository.apply(_, dynamoConfig)),
+        DynamoDBGroupChangeRepository.apply(_, dynamoConfig)
+      ),
       initializeSingleRepo[RecordSetRepository](
         recordSet,
-        DynamoDBRecordSetRepository.apply(_, dynamoConfig)),
+        DynamoDBRecordSetRepository.apply(_, dynamoConfig)
+      ),
       initializeSingleRepo[RecordChangeRepository](
         recordChange,
-        DynamoDBRecordChangeRepository.apply(_, dynamoConfig)),
+        DynamoDBRecordChangeRepository.apply(_, dynamoConfig)
+      ),
       initializeSingleRepo[ZoneChangeRepository](
         zoneChange,
-        DynamoDBZoneChangeRepository.apply(_, dynamoConfig)),
+        DynamoDBZoneChangeRepository.apply(_, dynamoConfig)
+      ),
       IO.pure[Option[ZoneRepository]](None),
       IO.pure[Option[BatchChangeRepository]](None),
       initializeSingleRepo[UserChangeRepository](
         userChange,
-        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto)),
+        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto)
+      ),
       IO.pure[Option[TaskRepository]](None)
     ).parMapN {
       DataStore.apply

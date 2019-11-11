@@ -23,7 +23,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.membership._
 
 @Singleton
-class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRepository) {
+class UserAccountAccessor @Inject() (users: UserRepository, changes: UserChangeRepository) {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 

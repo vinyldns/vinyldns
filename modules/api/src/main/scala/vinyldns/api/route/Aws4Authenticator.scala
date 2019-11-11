@@ -47,7 +47,8 @@ object Aws4Authenticator {
     "akid",
     "creds",
     "shs",
-    "sig")
+    "sig"
+  )
 
   def parseAuthHeader(auth: String): Option[Regex.Match] = aws4AuthRegex.findPrefixMatchOf(auth)
 }
@@ -99,12 +100,14 @@ class Aws4Authenticator {
       req: HttpRequest,
       authorization: List[String],
       secret: String,
-      content: String): Boolean = {
+      content: String
+  ): Boolean = {
     val List(
       _,
       signatureScope, // signature scope
       signatureHeaders, // signed headers
-      signatureReceived) = authorization
+      signatureReceived
+    ) = authorization
     val signedHeaders = Set() ++ signatureHeaders.split(';')
     // convert Date header to canonical form required by AWS
     val dateTime = iso8601Format.print(getDate(req).get)
@@ -133,7 +136,8 @@ class Aws4Authenticator {
   // XXX - need to canonicalize non-trimmed white space
   def canonicalHeaders(
       req: HttpRequest,
-      signedHeaderNames: Set[String]): TreeMap[String, Seq[String]] = {
+      signedHeaderNames: Set[String]
+  ): TreeMap[String, Seq[String]] = {
     def getHeaderValue(name: String): Option[String] = name match {
       case "content-type" => Some(req.entity.contentType.value)
       case "content-length" => req.entity.contentLengthOption.map(_.toString)
@@ -160,7 +164,8 @@ class Aws4Authenticator {
     val stringToSign = joinStrings('\n', aws4AuthScheme, dateTime, scope, hashString(creq))
 
     hexString(
-      runHmac(Mac.getInstance(hmacAlgorithm))(signingKey(secret, scope).getEncoded, stringToSign))
+      runHmac(Mac.getInstance(hmacAlgorithm))(signingKey(secret, scope).getEncoded, stringToSign)
+    )
   }
 
   /**
@@ -208,7 +213,8 @@ class Aws4Authenticator {
       req: HttpRequest,
       hdrs: CanonicalHeaders,
       signedHeaders: String,
-      content: String): String = {
+      content: String
+  ): String = {
     val lines = MutableList[String](req.method.value) ++ canonicalURI(req)
 
     // add canonical headers

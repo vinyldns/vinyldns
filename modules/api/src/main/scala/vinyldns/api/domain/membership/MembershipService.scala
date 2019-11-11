@@ -43,8 +43,8 @@ class MembershipService(
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
-    recordSetRepo: RecordSetRepository)
-    extends MembershipServiceAlgebra {
+    recordSetRepo: RecordSetRepository
+) extends MembershipServiceAlgebra {
 
   import MembershipValidations._
 
@@ -67,7 +67,8 @@ class MembershipService(
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
-      authPrincipal: AuthPrincipal): Result[Group] =
+      authPrincipal: AuthPrincipal
+  ): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
@@ -112,17 +113,18 @@ class MembershipService(
       groupId: String,
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListMembersResponse] =
+      authPrincipal: AuthPrincipal
+  ): Result[ListMembersResponse] =
     for {
       group <- getExistingGroup(groupId)
       _ <- canSeeGroup(groupId, authPrincipal).toResult
       result <- getUsers(group.memberIds, startFrom, Some(maxItems))
-    } yield
-      ListMembersResponse(
-        result.users.map(MemberInfo(_, group)),
-        startFrom,
-        result.lastEvaluatedId,
-        maxItems)
+    } yield ListMembersResponse(
+      result.users.map(MemberInfo(_, group)),
+      startFrom,
+      result.lastEvaluatedId,
+      maxItems
+    )
 
   def listAdmins(groupId: String, authPrincipal: AuthPrincipal): Result[ListAdminsResponse] =
     for {
@@ -136,7 +138,8 @@ class MembershipService(
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean): Result[ListMyGroupsResponse] = {
+      ignoreAccess: Boolean
+  ): Result[ListMyGroupsResponse] = {
     val groupsCall =
       if (authPrincipal.isSystemAdmin || ignoreAccess) {
         groupRepo.getAllGroups()
@@ -154,7 +157,8 @@ class MembershipService(
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      ignoreAccess: Boolean): ListMyGroupsResponse = {
+      ignoreAccess: Boolean
+  ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
       .sortBy(_.id)
@@ -174,23 +178,25 @@ class MembershipService(
       groupId: String,
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListGroupChangesResponse] =
+      authPrincipal: AuthPrincipal
+  ): Result[ListGroupChangesResponse] =
     for {
       _ <- canSeeGroup(groupId, authPrincipal).toResult
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
-    } yield
-      ListGroupChangesResponse(
-        result.changes.map(GroupChangeInfo.apply),
-        startFrom,
-        result.lastEvaluatedTimeStamp,
-        maxItems)
+    } yield ListGroupChangesResponse(
+      result.changes.map(GroupChangeInfo.apply),
+      startFrom,
+      result.lastEvaluatedTimeStamp,
+      maxItems
+    )
 
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String] = None,
-      pageSize: Option[Int] = None): Result[ListUsersResults] =
+      pageSize: Option[Int] = None
+  ): Result[ListUsersResults] =
     userRepo
       .getUsers(userIds, startFrom, pageSize)
       .toResult[ListUsersResults]
@@ -245,7 +251,8 @@ class MembershipService(
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
         ensuring(InvalidGroupRequestError(s"${group.name} is the admin of a zone. Cannot delete."))(
-          zones.isEmpty)
+          zones.isEmpty
+        )
       }
       .toResult
 
@@ -255,8 +262,9 @@ class MembershipService(
       .map { rsId =>
         ensuring(
           InvalidGroupRequestError(
-            s"${group.name} is the owner for a record set including $rsId. Cannot delete."))(
-          rsId.isEmpty)
+            s"${group.name} is the owner for a record set including $rsId. Cannot delete."
+          )
+        )(rsId.isEmpty)
       }
       .toResult
 
@@ -264,15 +272,19 @@ class MembershipService(
     zoneRepo
       .getFirstOwnedZoneAclGroupId(group.id)
       .map { zId =>
-        ensuring(InvalidGroupRequestError(
-          s"${group.name} has an ACL rule for a zone including $zId. Cannot delete."))(zId.isEmpty)
+        ensuring(
+          InvalidGroupRequestError(
+            s"${group.name} has an ACL rule for a zone including $zId. Cannot delete."
+          )
+        )(zId.isEmpty)
       }
       .toResult
 
   def updateUserLockStatus(
       userId: String,
       lockStatus: LockStatus,
-      authPrincipal: AuthPrincipal): Result[User] =
+      authPrincipal: AuthPrincipal
+  ): Result[User] =
     for {
       _ <- isSuperAdmin(authPrincipal).toResult
       existingUser <- getExistingUser(userId)

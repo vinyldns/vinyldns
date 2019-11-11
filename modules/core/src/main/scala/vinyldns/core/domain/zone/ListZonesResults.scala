@@ -22,4 +22,5 @@ case class ListZonesResults(
     startFrom: Option[String] = None,
     maxItems: Int = 100,
     ignoreAccess: Boolean = false,
-    zonesFilter: Option[String] = None)
+    zonesFilter: Option[String] = None
+)

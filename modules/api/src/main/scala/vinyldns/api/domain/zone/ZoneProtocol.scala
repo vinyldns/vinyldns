@@ -44,14 +44,16 @@ case class ZoneInfo(
     adminGroupName: String,
     latestSync: Option[DateTime],
     backendId: Option[String],
-    accessLevel: AccessLevel)
+    accessLevel: AccessLevel
+)
 
 object ZoneInfo {
   def apply(
       zone: Zone,
       aclInfo: ZoneACLInfo,
       groupName: String,
-      accessLevel: AccessLevel): ZoneInfo =
+      accessLevel: AccessLevel
+  ): ZoneInfo =
     ZoneInfo(
       name = zone.name,
       email = zone.email,
@@ -88,7 +90,8 @@ case class ZoneSummaryInfo(
     adminGroupName: String,
     latestSync: Option[DateTime],
     backendId: Option[String],
-    accessLevel: AccessLevel)
+    accessLevel: AccessLevel
+)
 
 object ZoneSummaryInfo {
   def apply(zone: Zone, groupName: String, accessLevel: AccessLevel): ZoneSummaryInfo =
@@ -125,7 +128,8 @@ case class RecordSetListInfo(
     account: String,
     accessLevel: AccessLevel,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String])
+    ownerGroupName: Option[String]
+)
 
 object RecordSetListInfo {
   def apply(recordSet: RecordSetInfo, accessLevel: AccessLevel): RecordSetListInfo =
@@ -158,7 +162,8 @@ case class RecordSetInfo(
     id: String,
     account: String,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String])
+    ownerGroupName: Option[String]
+)
 
 object RecordSetInfo {
   def apply(recordSet: RecordSet, groupName: Option[String]): RecordSetInfo =
@@ -188,7 +193,8 @@ case class RecordSetChangeInfo(
     systemMessage: Option[String],
     updates: Option[RecordSet],
     id: String,
-    userName: String)
+    userName: String
+)
 
 object RecordSetChangeInfo {
   def apply(recordSetChange: RecordSetChange, name: Option[String]): RecordSetChangeInfo =
@@ -212,7 +218,8 @@ case class ListZonesResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Int = 100,
-    ignoreAccess: Boolean = false)
+    ignoreAccess: Boolean = false
+)
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)

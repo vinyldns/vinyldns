@@ -23,7 +23,8 @@ import cats.effect.ContextShift
 object NotifierLoader {
 
   def loadAll(configs: List[NotifierConfig], userRepository: UserRepository)(
-      implicit cs: ContextShift[IO]): IO[AllNotifiers] =
+      implicit cs: ContextShift[IO]
+  ): IO[AllNotifiers] =
     for {
       notifiers <- configs.parTraverse(load(_, userRepository))
     } yield AllNotifiers(notifiers)
@@ -35,7 +36,8 @@ object NotifierLoader {
           .forName(config.className)
           .getDeclaredConstructor()
           .newInstance()
-          .asInstanceOf[NotifierProvider])
+          .asInstanceOf[NotifierProvider]
+      )
       notifier <- provider.load(config, userRepository)
     } yield notifier
 

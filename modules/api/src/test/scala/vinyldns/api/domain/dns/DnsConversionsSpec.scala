@@ -50,7 +50,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
   private val testAMultiple = RecordSet(
     testZone.id,
     "a-record",
@@ -59,7 +60,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("1.1.1.1"), AData("2.2.2.2")))
+    List(AData("1.1.1.1"), AData("2.2.2.2"))
+  )
   private val testAAAA = RecordSet(
     testZone.id,
     "aaaa-record",
@@ -68,7 +70,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AAAAData("2001:db8:0:0:0:0:0:3")))
+    List(AAAAData("2001:db8:0:0:0:0:0:3"))
+  )
   private val testCNAME = RecordSet(
     testZone.id,
     "cname-record",
@@ -77,7 +80,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname.foo.vinyldns.")))
+    List(CNAMEData("cname.foo.vinyldns."))
+  )
   private val testMX = RecordSet(
     testZone.id,
     "mx-record",
@@ -86,7 +90,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange.vinyldns.")))
+    List(MXData(100, "exchange.vinyldns."))
+  )
   private val testNS = RecordSet(
     testZone.id,
     "ns-record",
@@ -95,7 +100,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsdname.vinyldns.")))
+    List(NSData("nsdname.vinyldns."))
+  )
   private val testPTR = RecordSet(
     testZone.id,
     "ptr-record",
@@ -104,7 +110,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr.vinyldns.")))
+    List(PTRData("ptr.vinyldns."))
+  )
   private val testSOA = RecordSet(
     testZone.id,
     "soa-record",
@@ -123,7 +130,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SPFData("spf")))
+    List(SPFData("spf"))
+  )
   private val testLongSPF = RecordSet(
     testZone.id,
     "long-spf-record",
@@ -132,7 +140,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SPFData("s" * 256)))
+    List(SPFData("s" * 256))
+  )
   private val testSRV = RecordSet(
     testZone.id,
     "srv-record",
@@ -141,7 +150,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target.vinyldns.")))
+    List(SRVData(1, 2, 3, "target.vinyldns."))
+  )
   private val testNAPTR = RecordSet(
     testZone.id,
     "naptr-record",
@@ -160,7 +170,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SSHFPData(1, 2, "fingerprint")))
+    List(SSHFPData(1, 2, "fingerprint"))
+  )
   private val testTXT = RecordSet(
     testZone.id,
     "txt-record",
@@ -169,7 +180,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(TXTData("text")))
+    List(TXTData("text"))
+  )
   private val testLongTXT = RecordSet(
     testZone.id,
     "long-txt-record",
@@ -178,7 +190,8 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(TXTData("a" * 64763)))
+    List(TXTData("a" * 64763))
+  )
   private val testAt = RecordSet(
     testZone.id,
     "vinyldns.",
@@ -187,45 +200,53 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(AData("10.1.1.1"))
+  )
   private val testDS = ds.copy(zoneId = testZone.id)
 
   private val testDnsUnknown = DNS.Record.newRecord(
     DNS.Name.fromString("unknown-record."),
     DNS.Type.AFSDB,
     DNS.DClass.IN,
-    200L)
+    200L
+  )
   private val testDnsA = new DNS.ARecord(
     DNS.Name.fromString("a-record."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("10.1.1.1"))
+    InetAddress.getByName("10.1.1.1")
+  )
   private val testDnsA1 = new DNS.ARecord(
     DNS.Name.fromString("a-record."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("1.1.1.1"))
+    InetAddress.getByName("1.1.1.1")
+  )
   private val testDnsA2 = new DNS.ARecord(
     DNS.Name.fromString("a-record."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("2.2.2.2"))
+    InetAddress.getByName("2.2.2.2")
+  )
   private val testDnsAReplace = new DNS.ARecord(
     DNS.Name.fromString("a-record-2."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("2.2.2.2"))
+    InetAddress.getByName("2.2.2.2")
+  )
   private val testDnsAAAA = new DNS.AAAARecord(
     DNS.Name.fromString("aaaa-record."),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("2001:db8::3"))
+    InetAddress.getByName("2001:db8::3")
+  )
 
   private val testDnsAt = new DNS.ARecord(
     DNS.Name.fromString("@", DNS.Name.fromString("vinyldns.")),
     DNS.DClass.IN,
     200L,
-    InetAddress.getByName("10.1.1.1"))
+    InetAddress.getByName("10.1.1.1")
+  )
 
   private val testDnsARRset = new DNS.RRset()
   testDnsARRset.addRR(testDnsA1)

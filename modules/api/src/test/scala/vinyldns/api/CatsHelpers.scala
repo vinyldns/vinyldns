@@ -43,7 +43,8 @@ trait CatsHelpers {
   // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[E, T](
       f: => IO[Either[E, T]],
-      duration: FiniteDuration = 1.second): Either[E, T] = {
+      duration: FiniteDuration = 1.second
+  ): Either[E, T] = {
     val timeOut = IO.sleep(duration) *> IO(new RuntimeException("Timed out waiting for result"))
     IO.race(timeOut, f).unsafeRunSync().toOption.get
   }
@@ -76,10 +77,12 @@ trait ValidatedBatchMatcherImprovements {
       MatchResult(
         left.contains(expectedChange.validNel),
         s"ValidatedBatch $left does not contain $expectedChange",
-        s"ValidatedBatch $left contains $expectedChange")
+        s"ValidatedBatch $left contains $expectedChange"
+      )
   }
 
   def containChangeForValidation(
-      expectedChange: ChangeForValidation): ValidatedBatchContainsChangeForValidation =
+      expectedChange: ChangeForValidation
+  ): ValidatedBatchContainsChangeForValidation =
     new ValidatedBatchContainsChangeForValidation(expectedChange)
 }

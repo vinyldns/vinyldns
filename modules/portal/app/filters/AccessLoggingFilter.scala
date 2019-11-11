@@ -24,10 +24,10 @@ import play.mvc.Http
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AccessLoggingFilter @Inject()(
+class AccessLoggingFilter @Inject() (
     implicit val mat: Materializer,
-    executionContext: ExecutionContext)
-    extends Filter {
+    executionContext: ExecutionContext
+) extends Filter {
 
   private val logger = LoggerFactory.getLogger(classOf[AccessLoggingFilter])
 

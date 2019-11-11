@@ -24,14 +24,16 @@ object TestZoneData {
 
   /* ZONE CONNECTIONS */
   val testConnection: Option[ZoneConnection] = Some(
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+  )
 
   /* ZONES */
   val okZone: Zone = Zone(
     "ok.zone.recordsets.",
     "test@test.com",
     adminGroupId = okGroup.id,
-    connection = testConnection)
+    connection = testConnection
+  )
   val abcZone: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id)
   val xyzZone: Zone = Zone("xyz.", "abc@xyz.com", adminGroupId = xyzGroup.id)
   val zoneIp4: Zone = Zone("0.162.198.in-addr.arpa.", "test@test.com", adminGroupId = abcGroup.id)
@@ -43,13 +45,15 @@ object TestZoneData {
     "test@test.com",
     adminGroupId = okGroup.id,
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testConnection
+  )
 
   val zoneDeleted: Zone = Zone(
     "some.deleted.zone.",
     "test@test.com",
     status = ZoneStatus.Deleted,
-    connection = testConnection)
+    connection = testConnection
+  )
 
   val zoneNotAuthorized: Zone = Zone("not.auth.zone.", "test@test.com", adminGroupId = "no-id")
 
@@ -76,7 +80,8 @@ object TestZoneData {
     "ok",
     ZoneChangeType.Create,
     ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000))
+    created = DateTime.now.minus(1000)
+  )
 
   val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)
 

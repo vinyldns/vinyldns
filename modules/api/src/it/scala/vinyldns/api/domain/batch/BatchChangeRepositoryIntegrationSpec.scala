@@ -57,14 +57,16 @@ class BatchChangeRepositoryIntegrationSpec
             None,
             None,
             None
-          )),
+          )
+        ),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
 
       val f = for {
         saveBatchChangeResult <- batchChangeRepository.save(batchChange)
         getSingleChangesResult <- batchChangeRepository.getSingleChanges(
-          batchChange.changes.map(_.id))
+          batchChange.changes.map(_.id)
+        )
       } yield (saveBatchChangeResult, getSingleChangesResult)
       val (saveResponse, singleChanges) = f.unsafeRunSync()
 

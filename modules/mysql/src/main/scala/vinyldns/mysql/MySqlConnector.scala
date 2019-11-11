@@ -34,7 +34,8 @@ object MySqlConnector {
       config.migrationUrl,
       config.user,
       config.password,
-      minimumIdle = Some(3))
+      minimumIdle = Some(3)
+    )
 
     getDataSource(migrationConnectionSettings).map { migrationDataSource =>
       logger.info("Running migrations to ready the databases")

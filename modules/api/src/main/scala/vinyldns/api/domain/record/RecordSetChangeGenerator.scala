@@ -30,7 +30,8 @@ object RecordSetChangeGenerator extends DnsConversions {
       recordSet: RecordSet,
       zone: Zone,
       userId: String,
-      singleBatchChangeIds: List[String]): RecordSetChange =
+      singleBatchChangeIds: List[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = recordSet.copy(
@@ -48,7 +49,8 @@ object RecordSetChangeGenerator extends DnsConversions {
   def forAdd(
       recordSet: RecordSet,
       zone: Zone,
-      auth: Option[AuthPrincipal] = None): RecordSetChange =
+      auth: Option[AuthPrincipal] = None
+  ): RecordSetChange =
     forAdd(recordSet, zone, auth.map(_.userId).getOrElse("system"), List())
 
   def forAdd(recordSet: RecordSet, zone: Zone, auth: AuthPrincipal): RecordSetChange =
@@ -59,14 +61,16 @@ object RecordSetChangeGenerator extends DnsConversions {
       newRecordSet: RecordSet,
       zone: Zone,
       userId: String,
-      singleBatchChangeIds: List[String]): RecordSetChange =
+      singleBatchChangeIds: List[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = newRecordSet.copy(
         id = replacing.id,
         name = relativize(newRecordSet.name, zone.name),
         status = RecordSetStatus.PendingUpdate,
-        updated = Some(DateTime.now)),
+        updated = Some(DateTime.now)
+      ),
       userId = userId,
       changeType = RecordSetChangeType.Update,
       status = RecordSetChangeStatus.Pending,
@@ -78,21 +82,24 @@ object RecordSetChangeGenerator extends DnsConversions {
       replacing: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone,
-      auth: Option[AuthPrincipal] = None): RecordSetChange =
+      auth: Option[AuthPrincipal] = None
+  ): RecordSetChange =
     forUpdate(replacing, newRecordSet, zone, auth.map(_.userId).getOrElse("system"), List())
 
   def forUpdate(
       replacing: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone,
-      auth: AuthPrincipal): RecordSetChange =
+      auth: AuthPrincipal
+  ): RecordSetChange =
     forUpdate(replacing, newRecordSet, zone, auth.userId, List())
 
   def forDelete(
       recordSet: RecordSet,
       zone: Zone,
       userId: String,
-      singleBatchChangeIds: List[String]): RecordSetChange =
+      singleBatchChangeIds: List[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = recordSet.copy(
@@ -109,7 +116,8 @@ object RecordSetChangeGenerator extends DnsConversions {
   def forDelete(
       recordSet: RecordSet,
       zone: Zone,
-      auth: Option[AuthPrincipal] = None): RecordSetChange =
+      auth: Option[AuthPrincipal] = None
+  ): RecordSetChange =
     forDelete(recordSet, zone, auth.map(_.userId).getOrElse("system"), List())
 
   def forDelete(recordSet: RecordSet, zone: Zone, auth: AuthPrincipal): RecordSetChange =

@@ -138,7 +138,8 @@ class MySqlBatchChangeRepository
       val batchChangeFuture = for {
         batchChangeMeta <- OptionT[IO, BatchChange](getBatchChangeMetadata(batchChangeId))
         singleChanges <- OptionT.liftF[IO, List[SingleChange]](
-          getSingleChangesByBatchChangeId(batchChangeId))
+          getSingleChangesByBatchChangeId(batchChangeId)
+        )
       } yield {
         batchChangeMeta.copy(changes = singleChanges)
       }
@@ -163,8 +164,9 @@ class MySqlBatchChangeRepository
         case Left(e) => throw e
       }
 
-    def getBatchFromSingleChangeId(singleChangeId: String)(
-        implicit s: DBSession): Option[BatchChange] =
+    def getBatchFromSingleChangeId(
+        singleChangeId: String
+    )(implicit s: DBSession): Option[BatchChange] =
       GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
         .bind(singleChangeId)
         .map(extractBatchChange(None))
@@ -182,7 +184,8 @@ class MySqlBatchChangeRepository
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       IO {
         logger.info(
-          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
+          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}"
+        )
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -219,7 +222,8 @@ class MySqlBatchChangeRepository
             // log 1st 5; we shouldn't need all, and if there's a ton it could get long
             logger.error(
               s"!!! Could not find all SingleChangeIds in getSingleChanges call; missing IDs: ${notFound
-                .take(5)} !!!")
+                .take(5)} !!!"
+            )
           }
           inDbChanges
         }
@@ -230,7 +234,8 @@ class MySqlBatchChangeRepository
       userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
-      approvalStatus: Option[BatchChangeApprovalStatus]): IO[BatchChangeSummaryList] =
+      approvalStatus: Option[BatchChangeApprovalStatus]
+  ): IO[BatchChangeSummaryList] =
     monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
       IO {
         DB.readOnly { implicit s =>
@@ -272,7 +277,8 @@ class MySqlBatchChangeRepository
                       pending > 0,
                       failed > 0,
                       complete > 0,
-                      schedTime.isDefined),
+                      schedTime.isDefined
+                    ),
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,
@@ -296,7 +302,8 @@ class MySqlBatchChangeRepository
             nextId,
             maxItems,
             ignoreAccess,
-            approvalStatus)
+            approvalStatus
+          )
         }
       }
     }
@@ -334,8 +341,9 @@ class MySqlBatchChangeRepository
       )
   }
 
-  private def saveBatchChange(batchChange: BatchChange)(
-      implicit session: DBSession): BatchChange = {
+  private def saveBatchChange(
+      batchChange: BatchChange
+  )(implicit session: DBSession): BatchChange = {
     PUT_BATCH_CHANGE
       .bindByName(
         Seq(

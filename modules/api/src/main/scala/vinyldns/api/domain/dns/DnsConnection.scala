@@ -107,7 +107,8 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
   private[dns] def toQuery(
       name: String,
       zoneName: String,
-      typ: RecordType): Either[Throwable, DnsQuery] = {
+      typ: RecordType
+  ): Either[Throwable, DnsQuery] = {
     val dnsName = recordDnsName(name, zoneName)
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
@@ -160,7 +161,8 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
       } yield resp
 
     logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString}\n...received response $result")
+      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString}\n...received response $result"
+    )
 
     result
   }

@@ -191,7 +191,8 @@ class DynamoDBGroupRepositorySpec
         groupsTable -> listOfDummyGroups
           .slice(0, 100)
           .map(underTest.toItem)
-          .asJava).asJava
+          .asJava
+      ).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       val secondResponse = mock[BatchGetItemResult]
@@ -199,7 +200,8 @@ class DynamoDBGroupRepositorySpec
         groupsTable -> listOfDummyGroups
           .slice(100, 200)
           .map(underTest.toItem)
-          .asJava).asJava
+          .asJava
+      ).asJava
       doReturn(secondPage).when(secondResponse).getResponses
 
       doReturn(IO.pure(firstResponse))

@@ -72,21 +72,24 @@ class DataStoreLoaderSpec
   val goodConfig = DataStoreConfig(
     "vinyldns.core.repository.MockDataStoreProvider",
     placeholderConfig,
-    allEnabledReposConfig)
+    allEnabledReposConfig
+  )
 
   class TestDataAccessor extends DataAccessor
   object TestAccessorProvider extends DataAccessorProvider[TestDataAccessor] {
     override def repoNames: List[RepositoryName] = RepositoryName.values.toList
 
     override def create(
-        responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, TestDataAccessor] =
+        responses: List[(DataStoreConfig, DataStore)]
+    ): ValidatedNel[String, TestDataAccessor] =
       new TestDataAccessor().validNel
   }
   object FailAccessorProvider extends DataAccessorProvider[TestDataAccessor] {
     override def repoNames: List[RepositoryName] = RepositoryName.values.toList
 
     override def create(
-        responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, TestDataAccessor] =
+        responses: List[(DataStoreConfig, DataStore)]
+    ): ValidatedNel[String, TestDataAccessor] =
       "create failure".invalidNel[TestDataAccessor]
   }
 
@@ -107,12 +110,14 @@ class DataStoreLoaderSpec
       val config1 = DataStoreConfig(
         "vinyldns.core.repository.MockDataStoreProvider",
         placeholderConfig,
-        allEnabledReposConfig.copy(user = None))
+        allEnabledReposConfig.copy(user = None)
+      )
 
       val config2 = DataStoreConfig(
         "vinyldns.core.repository.AlternateMockDataStoreProvider",
         placeholderConfig,
-        allDisabledReposConfig.copy(user = enabled))
+        allDisabledReposConfig.copy(user = enabled)
+      )
 
       val loadCall = DataStoreLoader.loadAll(List(config1, config2), crypto, TestAccessorProvider)
       val loaderResponse = loadCall.unsafeRunSync()
@@ -125,7 +130,8 @@ class DataStoreLoaderSpec
         DataStoreLoader.loadAll(
           List(goodConfig.copy(repositories = allDisabledReposConfig)),
           crypto,
-          TestAccessorProvider)
+          TestAccessorProvider
+        )
       val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown.msg should include("Config validation error")
     }
@@ -134,7 +140,8 @@ class DataStoreLoaderSpec
       val loadCall = DataStoreLoader.loadAll(
         List(goodConfig.copy(className = "vinyldns.core.repository.FailDataStoreProvider")),
         crypto,
-        TestAccessorProvider)
+        TestAccessorProvider
+      )
       val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync()
       thrown.getMessage should include("ruh roh")
     }
@@ -149,7 +156,8 @@ class DataStoreLoaderSpec
       val config = DataStoreConfig(
         "vinyldns.core.repository.AlternateMockDataStoreProvider",
         placeholderConfig,
-        allEnabledReposConfig)
+        allEnabledReposConfig
+      )
 
       val loadCall = DataStoreLoader.loadAll(List(config), crypto, TestAccessorProvider)
       val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync().shutdown()
@@ -167,7 +175,8 @@ class DataStoreLoaderSpec
       val outcome =
         DataStoreLoader.getValidatedConfigs(
           List(config1, config2, emptyConfig),
-          TestAccessorProvider.repoNames)
+          TestAccessorProvider.repoNames
+        )
       outcome.value should contain(config1)
       outcome.value should contain(config2)
       outcome.value should not contain emptyConfig
@@ -176,7 +185,8 @@ class DataStoreLoaderSpec
       val config1 = goodConfig.copy(repositories = allEnabledReposConfig)
       val config2 = goodConfig.copy(
         repositories = allDisabledReposConfig
-          .copy(membership = enabled, group = enabled))
+          .copy(membership = enabled, group = enabled)
+      )
 
       val outcome =
         DataStoreLoader.getValidatedConfigs(List(config1, config2), List(user, membership, group))
@@ -225,7 +235,8 @@ class DataStoreLoaderSpec
       val config = DataStoreConfig(
         "some.class.name",
         placeholderConfig,
-        allDisabledReposConfig.copy(user = enabled))
+        allDisabledReposConfig.copy(user = enabled)
+      )
       val store = DataStore(Some(mockUserRepo))
 
       val outcome = DataStoreLoader.getRepoOf[UserRepository](List((config, store)), user)
@@ -239,13 +250,15 @@ class DataStoreLoaderSpec
         .getRepoOf[UserRepository](List((config, store)), user)
       outcome should
         haveInvalid(
-          "Repo user was not returned by configured database: Unknown Configured Database")
+          "Repo user was not returned by configured database: Unknown Configured Database"
+        )
     }
     "fail if not returned by datastore" in {
       val config = DataStoreConfig(
         "some.class.name",
         placeholderConfig,
-        allDisabledReposConfig.copy(user = enabled))
+        allDisabledReposConfig.copy(user = enabled)
+      )
       val store = DataStore()
 
       val outcome = DataStoreLoader

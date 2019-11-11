@@ -146,7 +146,8 @@ class VinylDNSDirectivesSpec
       }
       "increment the latency and the errors when recording an exception" in {
         an[IOException] should be thrownBy record(testMonitor, System.nanoTime())(
-          Failure(new IOException("fail")))
+          Failure(new IOException("fail"))
+        )
 
         verify(mockLatency).+=(anyLong())
         verify(mockErrors).mark()

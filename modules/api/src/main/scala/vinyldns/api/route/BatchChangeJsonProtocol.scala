@@ -88,7 +88,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
         (js \ "ttl").optional[Long],
-        recordType.andThen(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
+        recordType.andThen(extractRecord(_, js \ "record"))
+      ).mapN(AddChangeInput.apply)
     }
 
     override def toJson(aci: AddChangeInput): JValue =
@@ -112,7 +113,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
-        recordData).mapN(DeleteRRSetChangeInput.apply)
+        recordData
+      ).mapN(DeleteRRSetChangeInput.apply)
     }
 
     override def toJson(drsci: DeleteRRSetChangeInput): JValue =
@@ -218,7 +220,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (js \ "reviewComment")
         .optional[String]
         .check(
-          s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength)
+          s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength
+        )
         .map(RejectBatchChangeInput)
   }
 
@@ -228,7 +231,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (js \ "reviewComment")
         .optional[String]
         .check(
-          s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength)
+          s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength
+        )
         .map(ApproveBatchChangeInput)
   }
 
@@ -242,7 +246,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       case TXT => js.required[TXTData]("Missing BatchChangeInput.changes.record.text")
       case MX =>
         js.required[MXData](
-          "Missing BatchChangeInput.changes.record.preference and BatchChangeInput.changes.record.exchange")
+          "Missing BatchChangeInput.changes.record.preference and BatchChangeInput.changes.record.exchange"
+        )
       case _ =>
         s"Unsupported type $typ, valid types include: A, AAAA, CNAME, PTR, TXT, and MX".invalidNel
     }

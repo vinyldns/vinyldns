@@ -32,7 +32,8 @@ class BatchChangeSummarySpec extends WordSpec with Matchers {
     SingleChangeStatus.Pending,
     None,
     None,
-    None)
+    None
+  )
   private val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
   private val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
 

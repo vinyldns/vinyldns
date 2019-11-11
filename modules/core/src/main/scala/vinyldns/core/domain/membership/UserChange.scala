@@ -54,15 +54,15 @@ object UserChange {
       newUser: User,
       madeByUserId: String,
       created: DateTime,
-      id: String = UUID.randomUUID().toString)
-      extends UserChange
+      id: String = UUID.randomUUID().toString
+  ) extends UserChange
   final case class UpdateUser(
       newUser: User,
       madeByUserId: String,
       created: DateTime,
       oldUser: User,
-      id: String = UUID.randomUUID().toString)
-      extends UserChange
+      id: String = UUID.randomUUID().toString
+  ) extends UserChange
 
   def apply(
       id: String,
@@ -70,14 +70,20 @@ object UserChange {
       madeByUserId: String,
       created: DateTime,
       oldUser: Option[User],
-      changeType: UserChangeType): Either[IllegalArgumentException, UserChange] =
+      changeType: UserChangeType
+  ): Either[IllegalArgumentException, UserChange] =
     changeType match {
       case UserChangeType.Create =>
         Right(CreateUser(newUser, madeByUserId, created, id))
       case UserChangeType.Update =>
         oldUser
           .map(u => Right(UpdateUser(newUser, madeByUserId, created, u, id)))
-          .getOrElse(Left(new IllegalArgumentException(
-            s"Unable to create update user change, old user is not defined")))
+          .getOrElse(
+            Left(
+              new IllegalArgumentException(
+                s"Unable to create update user change, old user is not defined"
+              )
+            )
+          )
     }
 }

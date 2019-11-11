@@ -51,7 +51,8 @@ class DynamoDBUserRepositorySpec
     userTable,
     dynamoDBHelper,
     DynamoDBUserRepository.toItem(crypto, _),
-    DynamoDBUserRepository.fromItem)
+    DynamoDBUserRepository.fromItem
+  )
 
   override def beforeEach(): Unit =
     reset(dynamoDBHelper)
@@ -232,7 +233,8 @@ class DynamoDBUserRepositorySpec
         userTable -> listOfDummyUsers
           .slice(100, 200)
           .map(toItem(crypto, _))
-          .asJava).asJava
+          .asJava
+      ).asJava
       doReturn(secondPage).when(secondResponse).getResponses
 
       doReturn(IO.pure(firstResponse))
@@ -303,7 +305,8 @@ class DynamoDBUserRepositorySpec
         userTable -> listOfDummyUsers
           .slice(151, 200)
           .map(toItem(crypto, _))
-          .asJava).asJava
+          .asJava
+      ).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       doReturn(IO.pure(firstResponse))

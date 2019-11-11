@@ -33,7 +33,8 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
     DateTime.now,
-    "frodo-uuid")
+    "frodo-uuid"
+  )
 
   private val userLog = UserChange(
     "frodo-uuid",
@@ -102,7 +103,8 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
         user.copy(lockStatus = LockStatus.Locked),
         "system",
         DateTime.now,
-        user)
+        user
+      )
       mockRepo.save(List(lockedUser)).returns(IO(List(lockedUser)))
       mockChangeRepo.save(any[UserChange]).returns(IO(lockedUserChange))
       underTest.lockUsers(List(user)).unsafeRunSync() must beEqualTo(List(lockedUser))

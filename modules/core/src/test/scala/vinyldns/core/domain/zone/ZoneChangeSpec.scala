@@ -26,7 +26,8 @@ class ZoneChangeSpec extends WordSpec with Matchers {
     "ok",
     ZoneChangeType.Create,
     ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000))
+    created = DateTime.now.minus(1000)
+  )
 
   "ZoneChange" should {
     "toString" should {

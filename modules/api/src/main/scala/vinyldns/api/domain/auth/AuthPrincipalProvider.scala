@@ -28,8 +28,8 @@ trait AuthPrincipalProvider extends Monitored {
 
 class MembershipAuthPrincipalProvider(
     userRepo: UserRepository,
-    membershipRepo: MembershipRepository)
-    extends AuthPrincipalProvider {
+    membershipRepo: MembershipRepository
+) extends AuthPrincipalProvider {
 
   def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] =
     getUserByAccessKey(accessKey).flatMap {

@@ -32,14 +32,16 @@ object DataStoreLoader {
       val dataStoreConfig: DataStoreConfig,
       val dataStore: DataStore,
       val shutdownHook: IO[Unit],
-      val healthCheck: HealthCheck) {
+      val healthCheck: HealthCheck
+  ) {
     val accessorTuple: (DataStoreConfig, DataStore) = (dataStoreConfig, dataStore)
   }
 
   class DataLoaderResponse[A](
       val accessor: A,
       shutdownHook: List[IO[Unit]],
-      val healthChecks: List[HealthCheck]) {
+      val healthChecks: List[HealthCheck]
+  ) {
     def shutdown(): Unit = shutdownHook.parSequence.unsafeRunSync()
   }
 
@@ -49,36 +51,38 @@ object DataStoreLoader {
   def loadAll[A <: DataAccessor](
       configs: List[DataStoreConfig],
       crypto: CryptoAlgebra,
-      dataAccessorProvider: DataAccessorProvider[A]): IO[DataLoaderResponse[A]] =
+      dataAccessorProvider: DataAccessorProvider[A]
+  ): IO[DataLoaderResponse[A]] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs, dataAccessorProvider.repoNames))
       dataStores <- activeConfigs.map(load(_, crypto)).parSequence
       accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
-    } yield
-      new DataLoaderResponse[A](
-        accessor,
-        dataStores.map(_.shutdownHook),
-        dataStores.map(_.healthCheck)
-      )
+    } yield new DataLoaderResponse[A](
+      accessor,
+      dataStores.map(_.shutdownHook),
+      dataStores.map(_.healthCheck)
+    )
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStoreInfo] =
     for {
       _ <- IO(
-        logger.error(
-          s"Attempting to load repos ${config.repositories.keys} from ${config.className}"))
+        logger
+          .error(s"Attempting to load repos ${config.repositories.keys} from ${config.className}")
+      )
       provider <- IO(
         Class
           .forName(config.className)
           .getDeclaredConstructor()
           .newInstance()
-          .asInstanceOf[DataStoreProvider])
+          .asInstanceOf[DataStoreProvider]
+      )
       loadResponse <- provider.load(config, crypto)
-    } yield
-      new DataStoreInfo(
-        config,
-        loadResponse.dataStore,
-        loadResponse.shutdownHook,
-        loadResponse.healthCheck)
+    } yield new DataStoreInfo(
+      config,
+      loadResponse.dataStore,
+      loadResponse.shutdownHook,
+      loadResponse.healthCheck
+    )
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
@@ -86,7 +90,8 @@ object DataStoreLoader {
    */
   def getValidatedConfigs(
       configs: List[DataStoreConfig],
-      repoNames: List[RepositoryName]): Either[DataStoreStartupError, List[DataStoreConfig]] = {
+      repoNames: List[RepositoryName]
+  ): Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
     val repoConfigs = configs.map(_.repositories)
 
@@ -113,7 +118,8 @@ object DataStoreLoader {
 
   def getRepoOf[A <: Repository: ClassTag](
       responses: List[(DataStoreConfig, DataStore)],
-      repoName: RepositoryName): ValidatedNel[String, A] = {
+      repoName: RepositoryName
+  ): ValidatedNel[String, A] = {
 
     val matched = responses.find {
       case (c, _) => c.repositories.hasKey(repoName)
@@ -138,7 +144,8 @@ object DataStoreLoader {
 
   def generateAccessor[A <: DataAccessor](
       responses: List[DataStoreInfo],
-      dataAccessorProvider: DataAccessorProvider[A]): Either[DataStoreStartupError, A] = {
+      dataAccessorProvider: DataAccessorProvider[A]
+  ): Either[DataStoreStartupError, A] = {
     val accessor = dataAccessorProvider
       .create(responses.map(_.accessorTuple))
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))

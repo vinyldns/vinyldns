@@ -60,8 +60,8 @@ final case class SOAData(
     refresh: Long,
     retry: Long,
     expire: Long,
-    minimum: Long)
-    extends RecordData
+    minimum: Long
+) extends RecordData
 
 final case class SPFData(text: String) extends RecordData
 
@@ -79,8 +79,8 @@ final case class NAPTRData(
     flags: String,
     service: String,
     regexp: String,
-    replacement: String)
-    extends RecordData
+    replacement: String
+) extends RecordData
 
 object NAPTRData {
   def apply(
@@ -89,7 +89,8 @@ object NAPTRData {
       flags: String,
       service: String,
       regexp: String,
-      replacement: String): NAPTRData =
+      replacement: String
+  ): NAPTRData =
     new NAPTRData(order, preference, flags, service, regexp, ensureTrailingDot(replacement))
 }
 
@@ -157,5 +158,5 @@ final case class DSData(
     keyTag: Integer, // footprint in DNSJava
     algorithm: DnsSecAlgorithm,
     digestType: DigestType, //digestid in DNSJava
-    digest: ByteVector)
-    extends RecordData
+    digest: ByteVector
+) extends RecordData

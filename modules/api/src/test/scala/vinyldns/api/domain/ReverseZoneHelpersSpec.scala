@@ -79,7 +79,8 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now)
+          DateTime.now
+        )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
       }
@@ -92,7 +93,8 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now)
+          DateTime.now
+        )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
       }
@@ -105,7 +107,8 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now)
+          DateTime.now
+        )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
       }
@@ -179,7 +182,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
             "id",
@@ -187,7 +191,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
@@ -202,7 +207,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
             "id",
@@ -210,7 +216,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
@@ -225,7 +232,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
             "id",
@@ -233,7 +241,8 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now)
+            DateTime.now
+          )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false

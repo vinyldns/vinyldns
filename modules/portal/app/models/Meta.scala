@@ -23,7 +23,8 @@ case class Meta(
     batchChangeLimit: Int,
     defaultTtl: Long,
     manualBatchChangeReviewEnabled: Boolean,
-    scheduledBatchChangesEnabled: Boolean)
+    scheduledBatchChangesEnabled: Boolean
+)
 object Meta {
   def apply(config: Configuration): Meta =
     Meta(

@@ -30,8 +30,8 @@ final case class InvalidBatchChangeInput(errors: List[DomainValidationError])
 // This separates error by change requested
 final case class InvalidBatchChangeResponses(
     changeRequests: List[ChangeInput],
-    changeRequestResponses: ValidatedBatch[ChangeForValidation])
-    extends BatchChangeErrorResponse
+    changeRequestResponses: ValidatedBatch[ChangeForValidation]
+) extends BatchChangeErrorResponse
 
 final case class BatchChangeFailedApproval(batchChange: BatchChange)
     extends BatchChangeErrorResponse

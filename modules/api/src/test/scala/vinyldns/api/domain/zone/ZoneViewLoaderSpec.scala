@@ -38,7 +38,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
   val testZoneName = "vinyldns."
 
   val testZoneConnection: Option[ZoneConnection] = Some(
-    ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
+    ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
+  )
 
   private val testZone = Zone("vinyldns.", "test@test.com")
   private val records = List(
@@ -49,7 +50,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("1.1.1.1"))),
+      records = List(AData("1.1.1.1"))
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "abc",
@@ -57,7 +59,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("2.2.2.2"))),
+      records = List(AData("2.2.2.2"))
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "abc",
@@ -74,7 +77,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("3.3.3.3")))
+      records = List(AData("3.3.3.3"))
+    )
   )
 
   "VinylDNSZoneViewLoader" should {
@@ -115,7 +119,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           ttl = 38400,
           status = RecordSetStatus.Active,
           created = DateTime.now,
-          records = List(AData("1.1.1.1"))),
+          records = List(AData("1.1.1.1"))
+        ),
         RecordSet(
           zoneId = testZone.id,
           name = "abc",
@@ -123,7 +128,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           ttl = 38400,
           status = RecordSetStatus.Active,
           created = DateTime.now,
-          records = List(AData("2.2.2.2"))),
+          records = List(AData("2.2.2.2"))
+        ),
         RecordSet(
           zoneId = testZone.id,
           name = "abc",
@@ -140,7 +146,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           ttl = 38400,
           status = RecordSetStatus.Active,
           created = DateTime.now,
-          records = List(AData("3.3.3.3")))
+          records = List(AData("3.3.3.3"))
+        )
       )
 
       val dnsRecords = new mutable.ArrayBuffer[DNS.Record]()
@@ -149,25 +156,33 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("1.1.1.1")))
+          InetAddress.getByName("1.1.1.1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("2.2.2.2")))
+          InetAddress.getByName("2.2.2.2")
+        )
+      )
       dnsRecords.append(
         new DNS.AAAARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("2001:db8:a0b:12f0::1")))
+          InetAddress.getByName("2001:db8:a0b:12f0::1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("def.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("3.3.3.3")))
+          InetAddress.getByName("3.3.3.3")
+        )
+      )
 
       doReturn(dnsRecords.asJava).when(mockTransfer).getAXFR
 
@@ -228,7 +243,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           status = RecordSetStatus.Active,
           created = DateTime.now,
           records = List(
-            SOAData("172.17.42.1.", "admin.vinyldns.com.", 1439234395, 10800, 3600, 604800, 38400))
+            SOAData("172.17.42.1.", "admin.vinyldns.com.", 1439234395, 10800, 3600, 604800, 38400)
+          )
         )
       )
 
@@ -244,37 +260,49 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           10800,
           3600,
           604800,
-          38400))
+          38400
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("1.1.1.1")))
+          InetAddress.getByName("1.1.1.1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("1.1.1.1")))
+          InetAddress.getByName("1.1.1.1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("1.1.1.1")))
+          InetAddress.getByName("1.1.1.1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("1.1.1.1")))
+          InetAddress.getByName("1.1.1.1")
+        )
+      )
       dnsRecords.append(
         new DNS.ARecord(
           new Name("abc.vinyldns."),
           DNS.DClass.IN,
           38400,
-          InetAddress.getByName("2.2.2.2")))
+          InetAddress.getByName("2.2.2.2")
+        )
+      )
       dnsRecords.append(
         new DNS.SOARecord(
           new Name("vinyldns."),
@@ -286,7 +314,9 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           10800,
           3600,
           604800,
-          38400))
+          38400
+        )
+      )
       dnsRecords.append(
         new DNS.NULLRecord(
           new Name("some.unsupported.record.type."),

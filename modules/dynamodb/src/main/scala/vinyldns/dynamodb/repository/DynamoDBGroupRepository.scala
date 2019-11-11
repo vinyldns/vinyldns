@@ -44,11 +44,13 @@ object DynamoDBGroupRepository {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBGroupRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings
+  ): IO[DynamoDBGroupRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
-      LoggerFactory.getLogger(classOf[DynamoDBGroupRepository]))
+      LoggerFactory.getLogger(classOf[DynamoDBGroupRepository])
+    )
 
     val dynamoReads = config.provisionedReads
     val dynamoWrites = config.provisionedWrites
@@ -82,8 +84,8 @@ object DynamoDBGroupRepository {
 
 class DynamoDBGroupRepository private[repository] (
     groupTableName: String,
-    val dynamoDBHelper: DynamoDBHelper)
-    extends GroupRepository
+    val dynamoDBHelper: DynamoDBHelper
+) extends GroupRepository
     with Monitored {
 
   import DynamoDBGroupRepository._

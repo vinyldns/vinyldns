@@ -33,7 +33,8 @@ trait CommandMessage {
 // need to encode the possibility of one or more commands failing to send
 final case class SendBatchResult[A <: ZoneCommand](
     successes: List[A],
-    failures: List[(Exception, A)])
+    failures: List[(Exception, A)]
+)
 
 // Using types here to ensure we cannot pass in a negative or 0 count
 final case class MessageCount private (value: Int)

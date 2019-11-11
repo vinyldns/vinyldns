@@ -68,7 +68,8 @@ class MySqlTaskRepository extends TaskRepository {
   def claimTask(
       name: String,
       taskTimeout: FiniteDuration,
-      pollingInterval: FiniteDuration): IO[Boolean] =
+      pollingInterval: FiniteDuration
+  ): IO[Boolean] =
     IO {
       DB.localTx { implicit s =>
         val adjustedPollingInterval =
@@ -77,7 +78,8 @@ class MySqlTaskRepository extends TaskRepository {
           .bindByName(
             'timeoutSeconds -> taskTimeout.toSeconds,
             'pollingInterval -> adjustedPollingInterval.toSeconds,
-            'taskName -> name)
+            'taskName -> name
+          )
           .first()
           .update()
           .apply()

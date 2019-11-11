@@ -31,29 +31,34 @@ trait RecordSetServiceAlgebra {
   def deleteRecordSet(
       recordSetId: String,
       zoneId: String,
-      auth: AuthPrincipal): Result[ZoneCommandResult]
+      auth: AuthPrincipal
+  ): Result[ZoneCommandResult]
 
   def getRecordSet(
       recordSetId: String,
       zoneId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSetInfo]
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetInfo]
 
   def listRecordSets(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
-      authPrincipal: AuthPrincipal): Result[ListRecordSetsResponse]
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetsResponse]
 
   def getRecordSetChange(
       zoneId: String,
       changeId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSetChange]
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetChange]
 
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListRecordSetChangesResponse]
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetChangesResponse]
 
 }

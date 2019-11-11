@@ -37,15 +37,14 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private val activeGroups =
     for (i <- 1 to 10)
-      yield
-        Group(
-          s"live-test-group$i",
-          s"test$i@test.com",
-          Some(s"description$i"),
-          memberIds = Set(s"member$i", s"member2$i"),
-          adminUserIds = Set(s"member$i", s"member2$i"),
-          id = "id-%03d".format(i)
-        )
+      yield Group(
+        s"live-test-group$i",
+        s"test$i@test.com",
+        Some(s"description$i"),
+        memberIds = Set(s"member$i", s"member2$i"),
+        adminUserIds = Set(s"member$i", s"member2$i"),
+        id = "id-%03d".format(i)
+      )
 
   private val inDbDeletedGroup = Group(
     s"live-test-group-deleted",
@@ -134,7 +133,8 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       val deleted = deletedGroup.copy(
         id = "test-deleted-group-get-groups",
         memberIds = Set("foo"),
-        adminUserIds = Set("foo"))
+        adminUserIds = Set("foo")
+      )
       val f =
         for {
           _ <- repo.save(deleted)
@@ -155,7 +155,8 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
         "test@test.com",
         None,
         memberIds = Set("foo"),
-        adminUserIds = Set("bar"))
+        adminUserIds = Set("bar")
+      )
 
       val test =
         for {
@@ -170,7 +171,8 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       val deleted = deletedGroup.copy(
         id = "test-deleted-group-get-groups",
         memberIds = Set("foo"),
-        adminUserIds = Set("foo"))
+        adminUserIds = Set("foo")
+      )
       val f =
         for {
           _ <- repo.save(deleted)

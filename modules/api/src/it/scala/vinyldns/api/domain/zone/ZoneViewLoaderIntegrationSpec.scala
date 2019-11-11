@@ -32,17 +32,21 @@ class ZoneViewLoaderIntegrationSpec extends WordSpec with Matchers {
       assertThrows[IllegalArgumentException](
         DnsZoneViewLoader(
           Zone("vinyldns.", "bad@transfer.connection")
-            .copy(transferConnection =
-              Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))))
-          .load()
-          .unsafeRunSync())
+            .copy(
+              transferConnection =
+                Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))
+            )
+        ).load()
+          .unsafeRunSync()
+      )
     }
 
     "return a failure if the zone doesn't exist in the DNS backend" in {
       assertThrows[ZoneTransferException](
         DnsZoneViewLoader(Zone("non-existent-zone", "bad@zone.test"))
           .load()
-          .unsafeRunSync())
+          .unsafeRunSync()
+      )
     }
 
     "return a failure if the zone is larger than the max zone size" in {

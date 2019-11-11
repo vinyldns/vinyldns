@@ -131,8 +131,8 @@ final case class UserIsNotAuthorizedError(
     ownerGroupId: String,
     ownerType: OwnerType,
     contactEmail: Option[String] = None,
-    ownerGroupName: Option[String] = None)
-    extends DomainValidationError {
+    ownerGroupName: Option[String] = None
+) extends DomainValidationError {
   def message: String =
     s"""User "$userName" is not authorized. Contact ${ownerType.toString.toLowerCase} owner group:
        |${ownerGroupName.getOrElse(ownerGroupId)} at ${contactEmail.getOrElse("")}.""".stripMargin

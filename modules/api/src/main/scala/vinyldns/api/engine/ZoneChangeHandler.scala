@@ -24,14 +24,16 @@ object ZoneChangeHandler {
   def apply(
       zoneRepository: ZoneRepository,
       zoneChangeRepository: ZoneChangeRepository,
-      recordSetRepository: RecordSetRepository): ZoneChange => IO[ZoneChange] =
+      recordSetRepository: RecordSetRepository
+  ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       zoneRepository.save(zoneChange.zone).flatMap {
         case Left(duplicateZoneError) =>
           zoneChangeRepository.save(
             zoneChange.copy(
               status = ZoneChangeStatus.Failed,
-              systemMessage = Some(duplicateZoneError.message))
+              systemMessage = Some(duplicateZoneError.message)
+            )
           )
         case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
           recordSetRepository
@@ -42,5 +44,5 @@ object ZoneChangeHandler {
             }
         case Right(_) =>
           zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
-    }
+      }
 }

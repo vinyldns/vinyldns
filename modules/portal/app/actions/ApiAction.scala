@@ -33,11 +33,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, return Forbidden message
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class LegacyApiAction @Inject()(
+class LegacyApiAction @Inject() (
     val userLookup: String => IO[Option[User]],
     val oidcAuthenticator: OidcAuthenticator,
-    val parser: BodyParser[AnyContent])
-    extends VinylDnsAction
+    val parser: BodyParser[AnyContent]
+) extends VinylDnsAction
     with ApiActionBuilder
     with CacheHeader {
 
@@ -46,13 +46,14 @@ class LegacyApiAction @Inject()(
 
   def notLoggedInResult: Future[Result] =
     Future.successful(
-      Unauthorized("You are not logged in. Please login to continue.").withHeaders(
-        cacheHeaders: _*))
+      Unauthorized("You are not logged in. Please login to continue.").withHeaders(cacheHeaders: _*)
+    )
 
   def cantFindAccountResult(un: String): Future[Result] =
     Future.successful(
       NotFound(s"Unable to find user account for user name '$un'")
-        .withHeaders(cacheHeaders: _*))
+        .withHeaders(cacheHeaders: _*)
+    )
 
   def lockedUserResult(un: String): Future[Result] =
     Future.successful(Forbidden(s"User account for `$un` is locked.").withHeaders(cacheHeaders: _*))
