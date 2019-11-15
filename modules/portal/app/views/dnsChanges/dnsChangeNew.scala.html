@@ -168,8 +168,8 @@
                                         <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn invalidip>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
-                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be a full domain name!</span>
-                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.invalidip" class="batch-change-error-help">CNAME data must be a domain name, not an IP address!</span>
+                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be a fully qualified domain name!</span>
+                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.invalidip" class="batch-change-error-help">CNAME data must be a fully qualified domain name, not an IP address!<br>Or you mean to create an A record, not a CNAME.</span>
                                         </p>
                                     </td>
                                     <td ng-if="change.type=='PTR'">
