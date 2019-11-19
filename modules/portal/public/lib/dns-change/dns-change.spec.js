@@ -477,6 +477,80 @@ describe('BatchChange', function(){
         });
     });
 
+    describe('Directive: Invalid IPv4 validation for CNAME record data', function(){
+        var form;
+        beforeEach(inject(function($compile, $rootScope) {
+            this.rootScope = $rootScope;
+            this.scope = $rootScope.$new();
+            var element = angular.element(
+                '<form name="form">' +
+                    '<input ng-model="change.cname" name="cname" invalidip />' +
+                '</form>'
+            );
+            this.scope.change = { fqdn: null };
+            $compile(element)(this.scope);
+            form = this.scope.form;
+        }));
+
+        it('fails with an IPV4 address', function(){
+            form.cname.$setViewValue('1.1.1.1');
+            this.scope.$digest();
+            expect(this.scope.change.cname).toBeUndefined();
+            expect(form.cname.$valid).toBe(false);
+        });
+
+        it('fails with an IPV4 address and a trailing dot', function(){
+            form.cname.$setViewValue('test.');
+            this.scope.$digest();
+            expect(this.scope.change.cname).toBeUndefined();
+            expect(form.cname.$valid).toBe(false);
+        });
+
+        it('passes if not given an IPV4 address', function(){
+            form.cname.$setViewValue('notanIP');
+            this.scope.$digest();
+            expect(this.scope.change.cname).toEqual('notanIP');
+            expect(form.cname.$valid).toBe(true);
+        });
+    });
+
+        describe('Directive: combined CNAME record data validations', function(){
+            var form;
+            beforeEach(inject(function($compile, $rootScope) {
+                this.rootScope = $rootScope;
+                this.scope = $rootScope.$new();
+                var element = angular.element(
+                    '<form name="form">' +
+                        '<input ng-model="change.cname" name="cname" fqdn invalidip />' +
+                    '</form>'
+                );
+                this.scope.change = { fqdn: null };
+                $compile(element)(this.scope);
+                form = this.scope.form;
+            }));
+
+            it('passes with at least one dot and not an IP Address', function(){
+                form.cname.$setViewValue('test.com');
+                this.scope.$digest();
+                expect(this.scope.change.cname).toEqual('test.com');
+                expect(form.cname.$valid).toBe(false);
+            });
+
+            it('fails with an IP Address', function(){
+                form.cname.$setViewValue('1.1.1.1');
+                this.scope.$digest();
+                expect(this.scope.change.cname).toBeUndefined();
+                expect(form.cname.$valid).toBe(false);
+            });
+
+            it('fails without at least one dot', function(){
+                form.cname.$setViewValue('testcom');
+                this.scope.$digest();
+                expect(this.scope.change.cname).toBeUndefined();
+                expect(form.cname.$valid).toBe(false);
+            });
+        }
+
     describe('Directive: IPv4 validation', function(){
         var form;
         beforeEach(inject(function($compile, $rootScope) {
