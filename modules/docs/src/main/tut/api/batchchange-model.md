@@ -36,7 +36,7 @@ To update an existing record, you must delete the record first and add the recor
 Batch changes are also susceptible to the following restrictions:
 -   Current supported record types for batch change are: **A**, **AAAA**, **CNAME**, and **PTR**.
 -   Batch change requests must contain at least one change.
--   The maximum number of single changes within a batch change is currently set to 20.
+-   The maximum number of single changes within a batch change depends on the instance of VinylDNS. Contact your VinylDNS administrators to find the batch change limit for your instance.
 -   Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** access.
 
 
