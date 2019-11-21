@@ -25,7 +25,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused}
+import vinyldns.api.domain.dns.DnsProtocol.{NoError, NotAuthorized}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces}
@@ -206,7 +206,9 @@ class RecordSetChangeHandlerSpec
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(Left(Refused("dns failure")))).when(mockConn).applyChange(rsChange)
+      doReturn(Interfaces.result(Left(NotAuthorized("dns failure"))))
+        .when(mockConn)
+        .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
@@ -244,98 +246,10 @@ class RecordSetChangeHandlerSpec
       batchChangeUpdates.get.changes shouldBe scExpected
     }
 
-    "retry multiple times in verify if verify finds record does not exist" in {
-      // All returns after first are for verify.  Retry 2 times and succeed
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List(rs)))
-        .when(mockConn)
-        .resolve(rs.name, rsChange.zone.name, rs.typ)
-
-      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
-
-      val test = underTest.apply(mockConn, rsChange)
-      test.unsafeRunSync()
-
-      verify(mockRsRepo).apply(rsRepoCaptor.capture())
-      verify(mockChangeRepo).save(changeRepoCaptor.capture())
-
-      val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-      appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
-
-      val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
-
-      // make sure the record was applied and then verified
-      verify(mockConn).applyChange(rsChange)
-
-      // we will retry the verify 3 times based on the mock setup
-      verify(mockConn, times(4)).resolve(rs.name, rsChange.zone.name, rs.typ)
-
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
-      val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
-        ch.copy(
-          status = SingleChangeStatus.Complete,
-          recordChangeId = Some(rsChange.id),
-          recordSetId = Some(rsChange.recordSet.id)
-        )
-      }
-      val scExpected = notUpdatedChange :: updatedSingleChanges
-      batchChangeUpdates.get.changes shouldBe scExpected
-    }
-
-    "fail the change if retry expires" in {
-      doReturn(Interfaces.result(List()))
-        .when(mockConn)
-        .resolve(rs.name, rsChange.zone.name, rs.typ)
-
-      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
-
-      val test = underTest.apply(mockConn, rsChange)
-      test.unsafeRunSync()
-
-      verify(mockRsRepo).apply(rsRepoCaptor.capture())
-      verify(mockChangeRepo).save(changeRepoCaptor.capture())
-
-      val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
-      appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Inactive
-
-      val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
-
-      // make sure the record was applied and then verified
-      verify(mockConn).applyChange(rsChange)
-
-      // resolve called once when validating, 12x for retries
-      verify(mockConn, times(13)).resolve(rs.name, rsChange.zone.name, rs.typ)
-
-      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
-      val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
-        ch.copy(
-          status = SingleChangeStatus.Failed,
-          recordChangeId = Some(rsChange.id),
-          systemMessage = savedCs.changes.head.systemMessage
-        )
-      }
-      val scExpected = notUpdatedChange :: updatedSingleChanges
-      batchChangeUpdates.get.changes shouldBe scExpected
-    }
-
     "fail the change in verify if verify errors" in {
       // All returns after first are for verify.  Retry 2 times and succeed
       doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(Left(Refused("dns-fail"))))
+        .doReturn(Interfaces.result(Left(NotAuthorized("dns-fail"))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
@@ -378,7 +292,7 @@ class RecordSetChangeHandlerSpec
 
     "fail the change if validating fails with an error" in {
       // Stage an error on the first resolve, which will cause validate to fail
-      doReturn(Interfaces.result(Left(Refused("dns-failure"))))
+      doReturn(Interfaces.result(Left(NotAuthorized("dns-failure"))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
@@ -420,7 +334,9 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(Interfaces.result(Left(Refused("dns-fail")))).when(mockConn).applyChange(rsChange)
+      doReturn(Interfaces.result(Left(NotAuthorized("dns-fail"))))
+        .when(mockConn)
+        .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 

@@ -20,20 +20,18 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.NoError
+import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused, TryAgain}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-
 object RecordSetChangeHandler {
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.engine.RecordSetChangeHandler")
-  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  private final case class Requeue(change: RecordSetChange) extends Throwable
 
   def apply(
       recordSetRepository: RecordSetRepository,
@@ -96,6 +94,8 @@ object RecordSetChangeHandler {
 
   private final case class Completed(change: RecordSetChange) extends ProcessorState
 
+  private final case class Retrying(change: RecordSetChange) extends ProcessorState
+
   private case class ProcessingError(message: String)
 
   sealed trait ProcessingStatus
@@ -110,6 +110,9 @@ object RecordSetChangeHandler {
   // ReadyToApply will attempt to retry until max retries limit is reached,
   // at which point the response will be returned.
   final case class ReadyToApply(change: RecordSetChange) extends ProcessingStatus
+
+  // Failure to process change. Permitted to retry.
+  final case class Retry(change: RecordSetChange) extends ProcessingStatus
 
   def getProcessingStatus(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
@@ -145,6 +148,7 @@ object RecordSetChangeHandler {
             if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
             else AlreadyApplied(change) // we did not find the record set, so already applied
         }
+      case Left(_: TryAgain) => Retry(change)
       case Left(error) => Failure(change, error.getMessage)
     }
   }
@@ -196,6 +200,10 @@ object RecordSetChangeHandler {
       case done: Completed =>
         logger.info(s"CHANGE COMPLETED; ${getChangeLog(done.change)}")
         IO.pure(done)
+
+      case Retrying(change) =>
+        logger.info(s"CHANGE RETRYING; ${getChangeLog(change)}")
+        IO.raiseError(Requeue(change))
     }
   }
 
@@ -210,6 +218,7 @@ object RecordSetChangeHandler {
             s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message
           )
         )
+      case Retry(_) => Retrying(change)
     }
 
   /* Step 2: Apply the change to the dns backend */
@@ -217,6 +226,8 @@ object RecordSetChangeHandler {
     dnsConn.applyChange(change).value.map {
       case Right(_: NoError) =>
         Applied(change)
+      case Left(_: Refused) =>
+        Retrying(change)
       case Left(error) =>
         Completed(
           change.failed(
@@ -225,32 +236,27 @@ object RecordSetChangeHandler {
         )
     }
 
-  /* Step 3: Verify the record was created.  We attempt 12 times over 6 seconds */
-  private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] = {
-    def loop(retries: Int = 11): IO[ProcessorState] =
-      getProcessingStatus(change, dnsConn).flatMap {
-        case AlreadyApplied(_) => IO.pure(Completed(change.successful))
-        case ReadyToApply(_) if retries <= 0 =>
-          IO.pure(
-            Completed(
-              change.failed(s"""Failed verifying update to DNS for
-               |change ${change.id}:${change.recordSet.name}: Verify out of retries.""".stripMargin)
+  /* Step 3: Verify the record was created. */
+  private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
+    getProcessingStatus(change, dnsConn).flatMap {
+      case AlreadyApplied(_) => IO.pure(Completed(change.successful))
+      case ReadyToApply(_) =>
+        IO.pure(
+          Retrying(change)
+        )
+      case Failure(_, message) =>
+        IO.pure(
+          Completed(
+            change.failed(
+              s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
             )
           )
-        case ReadyToApply(_) =>
-          IO.sleep(500.milliseconds) *> loop(retries - 1)
-        case Failure(_, message) =>
-          IO.pure(
-            Completed(
-              change.failed(
-                s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
-              )
-            )
-          )
-      }
-
-    loop()
-  }
+        )
+      case Retry(_) =>
+        IO.pure(
+          Retrying(change)
+        )
+    }
 
   private def getChangeLog(change: RecordSetChange): String = {
     val sb = new StringBuilder
