@@ -31,7 +31,7 @@ object RecordSetChangeHandler {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  private final case class Requeue(change: RecordSetChange) extends Throwable
+  final case class Requeue(change: RecordSetChange) extends Throwable
 
   def apply(
       recordSetRepository: RecordSetRepository,

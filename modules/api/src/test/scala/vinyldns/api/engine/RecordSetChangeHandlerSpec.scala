@@ -25,8 +25,8 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.{NoError, NotAuthorized}
-import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
+import vinyldns.api.domain.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
+import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces}
 import vinyldns.core.domain.batch.{
@@ -290,6 +290,20 @@ class RecordSetChangeHandlerSpec
       batchChangeUpdates.get.changes shouldBe scExpected
     }
 
+    "requeue the change in verify if permissible errors" in {
+      doReturn(Interfaces.result(List()))
+        .doReturn(Interfaces.result(Left(TryAgain("dns-fail"))))
+        .when(mockConn)
+        .resolve(rs.name, rsChange.zone.name, rs.typ)
+
+      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+
+      val test = underTest.apply(mockConn, rsChange)
+      a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
+    }
+
     "fail the change if validating fails with an error" in {
       // Stage an error on the first resolve, which will cause validate to fail
       doReturn(Interfaces.result(Left(NotAuthorized("dns-failure"))))
@@ -369,6 +383,20 @@ class RecordSetChangeHandlerSpec
       }
       val scExpected = notUpdatedChange :: updatedSingleChanges
       batchChangeUpdates.get.changes shouldBe scExpected
+    }
+
+    "requeue the change in apply if permissible errors" in {
+      doReturn(Interfaces.result(List()))
+        .when(mockConn)
+        .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(Interfaces.result(Left(Refused("dns-fail"))))
+        .when(mockConn)
+        .applyChange(rsChange)
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+
+      val test = underTest.apply(mockConn, rsChange)
+      a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
     }
 
     "bypass the validate and verify steps if a wildcard record exists" in {
