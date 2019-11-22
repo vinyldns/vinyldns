@@ -4028,6 +4028,13 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
     txt_delete_record_and_record_set_fqdn = txt_delete_record_and_record_set_name + ".ok."
     txt_delete_record_and_record_set = get_recordset_json(ok_zone, txt_delete_record_and_record_set_name, "TXT", [{"text": "hello"}, {"text": "again"}], 200)
 
+    a_update_to_cname_and_record_set_name = generate_record_name()
+    a_update_to_cname_and_record_set_fqdn = a_update_to_cname_and_record_set_name + ".ok."
+    a_update_to_cname_and_record_set = get_recordset_json(ok_zone, a_update_to_cname_and_record_set_name, "A", [{"address": "1.1.1.1"}], 200)
+
+    cname_update_from_a_and_record_set_fqdn = a_update_to_cname_and_record_set_name + ".ok."
+    cname_update_from_a_and_record_set = get_recordset_json(ok_zone, a_update_to_cname_and_record_set_name, "CNAME", [{"cname": "example.com."}], 200)
+
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
@@ -4080,19 +4087,25 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
             get_change_A_AAAA_json(a_delete_record_and_record_set_fqdn, address="1.1.1.1", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(a_delete_record_and_record_set_fqdn, change_type="DeleteRecordSet"),
             get_change_TXT_json(txt_delete_record_and_record_set_fqdn, text="hello", change_type="DeleteRecordSet"),
-            get_change_TXT_json(txt_delete_record_and_record_set_fqdn, change_type="DeleteRecordSet")
+            get_change_TXT_json(txt_delete_record_and_record_set_fqdn, change_type="DeleteRecordSet"),
+
+            # Update A record to CNAME
+            get_change_A_AAAA_json(a_update_to_cname_and_record_set_fqdn, change_type="DeleteRecordSet"),
+            get_change_CNAME_json(cname_update_from_a_and_record_set_fqdn, cname="example.com.")
         ]
     }
 
     to_delete = []
     try:
         for rs in [a_update_record_set, txt_update_record_set, a_update_record_full, txt_update_record_full, a_update_record, txt_update_record, a_update_record_only, txt_update_record_only,
-                   a_delete_record_set, txt_delete_record_set, a_delete_record, txt_delete_record, a_delete_record_and_record_set, txt_delete_record_and_record_set]:
+                   a_delete_record_set, txt_delete_record_set, a_delete_record, txt_delete_record, a_delete_record_and_record_set, txt_delete_record_and_record_set, a_update_to_cname_and_record_set]:
             create_rs = client.create_recordset(rs, status=202)
             to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
 
-        result = client.create_batch_change(batch_change_input, status=202)
-        client.wait_until_batch_change_completed(result)
+        initial_result = client.create_batch_change(batch_change_input, status=202)
+        result = client.wait_until_batch_change_completed(initial_result)
+
+        assert_that(result['status'], is_('Complete'))
 
         # Check batch change response
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, input_name=a_update_record_set_fqdn, record_name=a_update_record_set_name, record_data=None, change_type="DeleteRecordSet")
@@ -4133,6 +4146,9 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=30, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data="hello", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=31, input_name=txt_delete_record_and_record_set_fqdn, record_name=txt_delete_record_and_record_set_name, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
 
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=32, input_name=a_update_to_cname_and_record_set_fqdn, record_name=a_update_to_cname_and_record_set_name, record_type="A", record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=33, input_name=cname_update_from_a_and_record_set_fqdn, record_name=a_update_to_cname_and_record_set_name, record_type="CNAME", record_data="example.com.")
+
         # Perform look up to verify record set data
         for rs in to_delete:
             rs_name = rs['recordSet']['name']
@@ -4141,7 +4157,8 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
 
             # deletes should not exist
             if rs_name in [a_delete_record_set_name, txt_delete_record_set_name, a_delete_record_name,
-                           txt_delete_record_name, a_delete_record_and_record_set_name, txt_delete_record_and_record_set_name]:
+                           txt_delete_record_name, a_delete_record_and_record_set_name, txt_delete_record_and_record_set_name,
+                           a_update_to_cname_and_record_set_name]:
                 client.get_recordset(zone_id, rs_id, status=404)
             else:
                 result_rs = client.get_recordset(zone_id, rs_id, status=200)
@@ -4167,6 +4184,12 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
                 elif rs_name == txt_update_record_only_name:
                     assert_that(records, contains({"text": "again"}))
                     assert_that(records, is_not(contains({"text": "hello"})))
+
+        new_cname_result_rs = result['changes'][33]
+        new_cname_rs = client.get_recordset(new_cname_result_rs['zoneId'], new_cname_result_rs['recordSetId'], status=200)['recordSet']
+        new_cname_rdata = new_cname_rs['records']
+        assert_that(new_cname_rdata, contains({"cname": "example.com."}))
+        client.delete_recordset(new_cname_rs['zoneId'], new_cname_rs['id'], status=202)
 
     finally:
         clear_recordset_list(to_delete, client)
