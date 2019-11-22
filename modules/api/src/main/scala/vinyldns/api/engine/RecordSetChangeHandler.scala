@@ -236,26 +236,16 @@ object RecordSetChangeHandler {
         )
     }
 
-  /* Step 3: Verify the record was created. */
+  /* Step 3: Verify the record was created. If the ProcessorState is applied or failed we requeue the record.*/
   private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
-    getProcessingStatus(change, dnsConn).flatMap {
-      case AlreadyApplied(_) => IO.pure(Completed(change.successful))
-      case ReadyToApply(_) =>
-        IO.pure(
-          Retrying(change)
-        )
-      case Failure(_, message) =>
-        IO.pure(
-          Completed(
+    getProcessingStatus(change, dnsConn).map {
+      case AlreadyApplied(_) => Completed(change.successful)
+      case Failure(_, message) => Completed(
             change.failed(
               s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
             )
           )
-        )
-      case Retry(_) =>
-        IO.pure(
-          Retrying(change)
-        )
+      case _ => Retrying(change)
     }
 
   private def getChangeLog(change: RecordSetChange): String = {
