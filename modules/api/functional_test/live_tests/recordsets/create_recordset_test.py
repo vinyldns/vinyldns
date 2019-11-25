@@ -1165,7 +1165,7 @@ def test_reverse_create_recordset_reverse_record_types(shared_zone_test_context,
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
-def test_create_invalid_recordset_name(shared_zone_test_context):
+def test_create_invalid_length_recordset_name(shared_zone_test_context):
     """
     Test creating a record set where the name is too long
     """
@@ -1174,6 +1174,26 @@ def test_create_invalid_recordset_name(shared_zone_test_context):
     new_rs = {
         'zoneId': shared_zone_test_context.system_test_zone['id'],
         'name': 'a' * 256,
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '10.1.1.1'
+            }
+        ]
+    }
+    client.create_recordset(new_rs, status=400)
+
+
+def test_create_invalid_characters_recordset_name(shared_zone_test_context):
+    """
+    Test creating a record set with any spaces fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    new_rs = {
+        'zoneId': shared_zone_test_context.system_test_zone['id'],
+        'name': 'a a',
         'type': 'A',
         'ttl': 100,
         'records': [
