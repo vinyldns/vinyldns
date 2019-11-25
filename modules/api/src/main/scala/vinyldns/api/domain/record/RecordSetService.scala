@@ -61,7 +61,6 @@ class RecordSetService(
 
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
-      _ <- validRecordName(recordSet).toResult
       zone <- getZone(recordSet.zoneId)
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
@@ -83,7 +82,6 @@ class RecordSetService(
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
-      _ <- validRecordName(recordSet).toResult
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
       _ <- recordSetIsInZone(existing, zone).toResult

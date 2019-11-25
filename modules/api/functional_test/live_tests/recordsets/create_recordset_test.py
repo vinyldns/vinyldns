@@ -1202,7 +1202,7 @@ def test_create_recordset_name_with_spaces(shared_zone_test_context):
             }
         ]
     }
-    client.create_recordset(new_rs, status=422)
+    client.create_recordset(new_rs, status=400)
 
 
 def test_user_cannot_create_record_in_unowned_zone(shared_zone_test_context):

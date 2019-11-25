@@ -83,18 +83,6 @@ class RecordSetValidationsSpec
       }
     }
 
-    "validRecordName" should {
-      "return ok when record name does not contain a space" in {
-        val rs = rsOk
-        validRecordName(rs) should be(right)
-      }
-      "return invalid request when record name contains a space" in {
-        val rs = rsOk.copy(name = "a a")
-        val error = leftValue(validRecordName(rs))
-        error shouldBe an[InvalidRequest]
-      }
-    }
-
     "validRecordNameLength" should {
       "return ok when zone name + record name < 256 characters" in {
         val rs = rsOk

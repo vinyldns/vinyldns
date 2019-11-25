@@ -124,6 +124,7 @@ trait DnsJsonProtocol extends JsonValidation {
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
   def nameContainsDots(s: String): Boolean = s.contains(".")
+  def nameDoesNotContainSpaces(s: String): Boolean = !s.contains(" ")
 
   val ipv4Re =
     """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
@@ -162,7 +163,10 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "zoneId").required[String]("Missing RecordSet.zoneId"),
         (js \ "name")
           .required[String]("Missing RecordSet.name")
-          .check("Record name must not exceed 255 characters" -> checkDomainNameLen),
+          .check(
+            "Record name must not exceed 255 characters" -> checkDomainNameLen,
+            "Record name cannot contain spaces" -> nameDoesNotContainSpaces
+          ),
         recordType,
         (js \ "ttl")
           .required[Long]("Missing RecordSet.ttl")

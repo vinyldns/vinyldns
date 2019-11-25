@@ -42,15 +42,6 @@ object RecordSetValidations {
         )
     }
 
-  def validRecordName(recordSet: RecordSet): Either[Throwable, Unit] =
-    ensuring(
-      InvalidRequest(
-        s"RecordSet name is not valid."
-      )
-    )(
-      !recordSet.name.contains(" ")
-    )
-
   def validRecordNameLength(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     val absoluteName = recordSet.name + "." + zone.name
     ensuring(InvalidRequest(s"record set name ${recordSet.name} is too long")) {
