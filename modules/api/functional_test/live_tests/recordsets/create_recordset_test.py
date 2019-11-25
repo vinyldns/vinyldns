@@ -1185,7 +1185,7 @@ def test_create_invalid_length_recordset_name(shared_zone_test_context):
     client.create_recordset(new_rs, status=400)
 
 
-def test_create_invalid_characters_recordset_name(shared_zone_test_context):
+def test_create_recordset_name_with_spaces(shared_zone_test_context):
     """
     Test creating a record set with any spaces fails
     """
@@ -1202,7 +1202,7 @@ def test_create_invalid_characters_recordset_name(shared_zone_test_context):
             }
         ]
     }
-    client.create_recordset(new_rs, status=400)
+    client.create_recordset(new_rs, status=422)
 
 
 def test_user_cannot_create_record_in_unowned_zone(shared_zone_test_context):

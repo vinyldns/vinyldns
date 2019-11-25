@@ -61,6 +61,7 @@ class RecordSetService(
 
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      _ <- validRecordName(recordSet).toResult
       zone <- getZone(recordSet.zoneId)
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
@@ -68,7 +69,6 @@ class RecordSetService(
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
-      _ <- validRecordName(rsForValidations).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
       _ <- canAddRecordSet(auth, rsForValidations.name, rsForValidations.typ, zone).toResult
       existingRecordsWithName <- recordSetRepository
@@ -83,6 +83,7 @@ class RecordSetService(
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      _ <- validRecordName(recordSet).toResult
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
       _ <- recordSetIsInZone(existing, zone).toResult
@@ -95,7 +96,6 @@ class RecordSetService(
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
-      _ <- validRecordName(rsForValidations).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)

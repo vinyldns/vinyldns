@@ -420,7 +420,7 @@ def test_update_recordset_with_spaces(shared_zone_test_context):
                 }
             ]
         }
-        client.update_recordset(update_rs, status=400)
+        client.update_recordset(update_rs, status=422)
     finally:
         if result_rs:
             result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
