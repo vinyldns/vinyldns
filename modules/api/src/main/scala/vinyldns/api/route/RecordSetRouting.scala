@@ -124,9 +124,37 @@ class RecordSetRoute(
         }
       }
   } ~
-    path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
+    path("recordsets" / Segment) { (rsId) =>
       (get & monitor("Endpoint.getRecordSet")) {
-        authenticateAndExecute(recordSetService.getRecordSet(rsId, zoneId, _)) { rs =>
+        authenticateAndExecute(recordSetService.getRecordSet(rsId, _)) { rs =>
+          complete(StatusCodes.OK, GetRecordSetResponse(rs))
+        }
+      }
+    } ~
+    path("recordsets" / Segment / "changes") { (rsId) =>
+      (get & monitor("Endpoint.listRecordSetRecordSetChanges")) {
+        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[String], maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
+                  s"and $DEFAULT_MAX_ITEMS inclusive"
+              ) {
+                authenticateAndExecute(
+                  recordSetService
+                    .getRecordSetChanges(rsId, startFrom, maxItems, _)
+                ) { changes =>
+                  complete(StatusCodes.OK, changes)
+                }
+              }
+            }
+        }
+      }
+    } ~
+    path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
+      (get & monitor("Endpoint.getRecordSetByZone")) {
+        authenticateAndExecute(recordSetService.getRecordSetByZone(rsId, zoneId, _)) { rs =>
           complete(StatusCodes.OK, GetRecordSetResponse(rs))
         }
       } ~

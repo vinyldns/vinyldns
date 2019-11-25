@@ -262,7 +262,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   // Note: In MySql we do not need the zone id, since can hit the key directly
-  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+  def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
+    monitor("repo.RecordSet.getRecordSet") {
+      IO {
+        DB.readOnly { implicit s =>
+          FIND_BY_ID.bindByName('id -> recordSetId).map(toRecordSet).single().apply()
+        }
+      }
+    }
+
+  def getRecordSetByZone(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSet") {
       IO {
         DB.readOnly { implicit s =>

@@ -38,6 +38,18 @@ trait RecordSetServiceAlgebra {
 
   def getRecordSet(
       recordSetId: String,
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetInfo]
+
+  def getRecordSetChanges(
+      recordSetId: String,
+      startFrom: Option[String],
+      maxItems: Int,
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetRecordSetChangesResponse]
+
+  def getRecordSetByZone(
+      recordSetId: String,
       zoneId: String,
       authPrincipal: AuthPrincipal
   ): Result[RecordSetInfo]

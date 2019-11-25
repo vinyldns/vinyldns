@@ -14,26 +14,8 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.record
+(function() {
+    'use strict';
 
-import cats.effect._
-import vinyldns.core.repository.Repository
-
-trait RecordChangeRepository extends Repository {
-
-  def save(changeSet: ChangeSet): IO[ChangeSet]
-
-  def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults]
-
-  def listRecordSetRecordSetChanges(
-      recordSetId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults]
-
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
-}
+    angular.module('dns-change', []);
+})();

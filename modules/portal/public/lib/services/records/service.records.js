@@ -40,6 +40,19 @@ angular.module('service.records', [])
             return $http.get(url);
         };
 
+        this.getRecordSet = function (rsid) {
+            return $http.get("/api/recordsets/"+rsid);
+        };
+
+        this.getRecordSetChanges = function (rsid, limit, startFrom) {
+            var params = {
+                "maxItems": limit,
+                "startFrom": startFrom
+            };
+            var url = utilityService.urlBuilder("/api/recordsets/"+rsid+"/changes", params);
+            return $http.get(url);
+        };
+
         this.createRecordSet = function(id, payload) {
             return $http.post("/api/zones/"+id+"/recordsets", payload, {headers: utilityService.getCsrfHeader()});
         };

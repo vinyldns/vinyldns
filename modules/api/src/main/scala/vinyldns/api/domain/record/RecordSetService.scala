@@ -101,7 +101,7 @@ class RecordSetService(
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
-      existing <- getRecordSet(recordSet.id, zone)
+      existing <- getRecordSet(recordSet.id)
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
@@ -136,7 +136,7 @@ class RecordSetService(
   ): Result[ZoneCommandResult] =
     for {
       zone <- getZone(zoneId)
-      existing <- getRecordSet(recordSetId, zone)
+      existing <- getRecordSetByZone(recordSetId, zone)
       _ <- isNotHighValueDomain(existing, zone).toResult
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
@@ -147,12 +147,38 @@ class RecordSetService(
 
   def getRecordSet(
       recordSetId: String,
+      authPrincipal: AuthPrincipal
+  ): Result[RecordSetInfo] =
+    for {
+      recordSet <- getRecordSet(recordSetId)
+      groupName <- getGroupName(recordSet.ownerGroupId)
+    } yield RecordSetInfo(recordSet, groupName)
+
+  def getRecordSetChanges(
+      recordSetId: String,
+      startFrom: Option[String] = None,
+      maxItems: Int = 100,
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetRecordSetChangesResponse] =
+    for {
+      recordSetChangesResults <- recordChangeRepository
+        .listRecordSetRecordSetChanges(recordSetId)
+        .toResult[ListRecordSetChangesResults]
+      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+    } yield ListRecordSetRecordSetChangesResponse(
+      recordSetId,
+      recordSetChangesResults,
+      recordSetChangesInfo
+    )
+
+  def getRecordSetByZone(
+      recordSetId: String,
       zoneId: String,
       authPrincipal: AuthPrincipal
   ): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
-      recordSet <- getRecordSet(recordSetId, zone)
+      recordSet <- getRecordSetByZone(recordSetId, zone)
       _ <- canViewRecordSet(
         authPrincipal,
         recordSet.name,
@@ -244,12 +270,22 @@ class RecordSetService(
       .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
       .toResult[Zone]
 
-  def getRecordSet(recordsetId: String, zone: Zone): Result[RecordSet] =
+  def getRecordSet(recordsetId: String): Result[RecordSet] =
     recordSetRepository
-      .getRecordSet(zone.id, recordsetId)
+      .getRecordSet(recordsetId)
       .orFail(
         RecordSetNotFoundError(
-          s"RecordSet with id $recordsetId does not exist in zone ${zone.name}"
+          s"RecordSet with id $recordsetId does not exist."
+        )
+      )
+      .toResult[RecordSet]
+
+  def getRecordSetByZone(recordsetId: String, zone: Zone): Result[RecordSet] =
+    recordSetRepository
+      .getRecordSetByZone(zone.id, recordsetId)
+      .orFail(
+        RecordSetNotFoundError(
+          s"RecordSet with id $recordsetId does not exist."
         )
       )
       .toResult[RecordSet]

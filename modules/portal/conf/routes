@@ -16,12 +16,16 @@ GET           /zones/:zid                        @controllers.FrontendController
 GET           /dnschanges                        @controllers.FrontendController.viewAllBatchChanges
 GET           /dnschanges/new                    @controllers.FrontendController.viewNewBatchChange
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
+GET           /recordsets/:rsid                  @controllers.FrontendController.viewRecordSet(rsid: String)
 
 ### Routes to process requests, get data ###
 GET           /health                            @controllers.HealthController.health
 POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
+
+GET           /api/recordsets/:id                @controllers.VinylDNS.getRecordSet(id: String)
+GET           /api/recordsets/:id/changes        @controllers.VinylDNS.getRecordSetChanges(id: String)
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds

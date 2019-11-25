@@ -420,6 +420,44 @@ class VinylDNS @Inject() (
     // $COVERAGE-ON$
   }
 
+  def getRecordSet(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"recordsets/$id",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
+  def getRecordSetChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"recordsets/$id/changes",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def getRecordSets(id: String): Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
