@@ -16,6 +16,8 @@
 
 package vinyldns.api.domain.batch
 
+import java.net.InetAddress
+
 import cats.data._
 import cats.implicits._
 import vinyldns.api.VinylDNSConfig
@@ -295,12 +297,33 @@ class BatchChangeValidations(
     else
       ().validNel
 
+  def compareIpv6Addresses(existingRecordSetData: List[AAAAData], recordData: AAAAData): Boolean =
+    existingRecordSetData.exists { rd =>
+      InetAddress.getByName(recordData.address).getHostName == InetAddress
+        .getByName(rd.address)
+        .getHostName
+    }
+
   def ensureRecordExists(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap
   ): SingleValidation[Unit] =
     change match {
       // For DeleteRecord inputs, need to verify that the record data actually exists
+      case DeleteRRSetChangeForValidation(
+          _,
+          _,
+          DeleteRRSetChangeInput(inputName, AAAA, Some(AAAAData(address)))
+          ) =>
+        val thing = groupedChanges.getExistingRecordSet(change.recordKey)
+        if (thing.exists(
+            recordSet =>
+              compareIpv6Addresses(
+                recordSet.records.asInstanceOf[List[AAAAData]],
+                AAAAData(address)
+              )
+          )) ().validNel
+        else DeleteRecordDataDoesNotExist(inputName, AAAAData(address)).invalidNel
       case DeleteRRSetChangeForValidation(
           _,
           _,
