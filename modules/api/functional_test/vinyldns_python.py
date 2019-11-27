@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [u'VinylDNSClient', u'MAX_RETRIES', u'RETRY_WAIT']
 
-MAX_RETRIES = 60
+MAX_RETRIES = 75
 RETRY_WAIT = 0.05
 
 class VinylDNSClient(object):
