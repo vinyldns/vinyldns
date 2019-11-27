@@ -382,6 +382,52 @@ def test_update_recordset_long_name(shared_zone_test_context):
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
+def test_update_recordset_with_spaces(shared_zone_test_context):
+    """
+    Test updating a record set where the name contains spaces
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_rs = None
+
+    try:
+        new_rs = {
+            'id': 'abc',
+            'zoneId': shared_zone_test_context.system_test_zone['id'],
+            'name': 'a',
+            'type': 'A',
+            'ttl': 100,
+            'records': [
+                {
+                    'address': '10.1.1.1'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+
+        result_rs = result['recordSet']
+        verify_recordset(result_rs, new_rs)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        update_rs = {
+            'id': 'abc',
+            'zoneId': shared_zone_test_context.system_test_zone['id'],
+            'name': 'a a',
+            'type': 'A',
+            'ttl': 100,
+            'records': [
+                {
+                    'address': '10.1.1.1'
+                }
+            ]
+        }
+        client.update_recordset(update_rs, status=400)
+    finally:
+        if result_rs:
+            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
+            if result:
+                client.wait_until_recordset_change_status(result, 'Complete')
+
+
 def test_user_can_update_record_in_zone_it_owns(shared_zone_test_context):
     """
     Test user can update a record that it owns
