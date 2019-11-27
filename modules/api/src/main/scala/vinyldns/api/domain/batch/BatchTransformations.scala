@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import java.net.InetAddress
 import java.util.UUID
 
 import vinyldns.api.VinylDNSConfig
@@ -24,7 +25,7 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
 import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{AAAAData, RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -195,7 +196,7 @@ object BatchTransformations {
 
       // Collect delete DNS entries. This formulates all of the proposed delete entries, including
       // existing DNS entries in the event of DeleteRecordSet
-      val deleteChangeSet = changes
+      var deleteChangeSet = changes
         .collect {
           case DeleteRRSetChangeForValidation(
               _,
@@ -207,6 +208,17 @@ object BatchTransformations {
         }
         .toSet
         .flatten
+
+      deleteChangeSet = deleteChangeSet.head match {
+        case AAAAData(_) =>
+          existingRecords.filter { er =>
+            deleteChangeSet.exists { dr =>
+              InetAddress.getByName(er.asInstanceOf[AAAAData].address).getHostName ==
+                InetAddress.getByName(dr.asInstanceOf[AAAAData].address).getHostName
+            }
+          }
+        case _ => deleteChangeSet
+      }
 
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
