@@ -297,11 +297,15 @@ class BatchChangeValidations(
     else
       ().validNel
 
-  def matchIpv6Address(existingRecordSetData: List[RecordData], address: String): Boolean =
-    existingRecordSetData.asInstanceOf[List[AAAAData]].exists { rd =>
-      InetAddress.getByName(address).getHostName == InetAddress
-        .getByName(rd.address)
-        .getHostName
+  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
+    existingRecordSetData.exists { rd =>
+      (rd, recordData) match {
+        case (AAAAData(rdAddress), AAAAData(proposedAddress)) =>
+          InetAddress.getByName(proposedAddress).getHostName == InetAddress
+            .getByName(rdAddress)
+            .getHostName
+        case _ => rd == recordData
+      }
     }
 
   def ensureRecordExists(
@@ -313,21 +317,11 @@ class BatchChangeValidations(
       case DeleteRRSetChangeForValidation(
           _,
           _,
-          DeleteRRSetChangeInput(inputName, AAAA, Some(AAAAData(address)))
-          ) =>
-        if (groupedChanges
-            .getExistingRecordSet(change.recordKey)
-            .exists(rs => matchIpv6Address(rs.records, address))) {
-          ().validNel
-        } else DeleteRecordDataDoesNotExist(inputName, AAAAData(address)).invalidNel
-      case DeleteRRSetChangeForValidation(
-          _,
-          _,
           DeleteRRSetChangeInput(inputName, _, Some(recordData))
           )
           if !groupedChanges
             .getExistingRecordSet(change.recordKey)
-            .exists(_.records.contains(recordData)) =>
+            .exists(rs => matchRecordData(rs.records, recordData)) =>
         DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
       case _ =>
         ().validNel

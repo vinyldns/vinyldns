@@ -183,6 +183,14 @@ object BatchTransformations {
   }
 
   object ValidationChanges {
+    def matchRecordData(existingRecord: RecordData, recordData: String): Boolean =
+      existingRecord match {
+        case AAAAData(address) =>
+          InetAddress.getByName(address).getHostName ==
+            InetAddress.getByName(recordData).getHostName
+        case _ => false
+      }
+
     def apply(
         changes: List[ChangeForValidation],
         existingRecordSet: Option[RecordSet]
@@ -203,11 +211,7 @@ object BatchTransformations {
               _,
               DeleteRRSetChangeInput(_, AAAA, Some(AAAAData(address)))
               ) =>
-            existingRecords.filter { r =>
-              InetAddress.getByName(address).getHostName ==
-                InetAddress.getByName(r.asInstanceOf[AAAAData].address).getHostName
-
-            }
+            existingRecords.filter(r => matchRecordData(r, address))
           case DeleteRRSetChangeForValidation(
               _,
               _,
