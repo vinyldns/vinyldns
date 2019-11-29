@@ -107,7 +107,9 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
             zoneId = zone.id,
             startFrom = None,
             maxItems = None,
-            recordNameFilter = None
+            recordNameFilter = None,
+            recordTypeFilter = None,
+            sort = "asc"
           )
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(

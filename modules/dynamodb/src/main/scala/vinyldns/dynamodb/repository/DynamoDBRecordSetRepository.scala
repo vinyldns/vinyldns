@@ -139,7 +139,9 @@ class DynamoDBRecordSetRepository private[repository] (
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[String],
+      sort: String
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
@@ -177,7 +179,15 @@ class DynamoDBRecordSetRepository private[repository] (
             keyMap.get(RECORD_SET_ID).getS
           ).mkString("~")
         }
-      } yield ListRecordSetResults(rs, nextId, startFrom, maxItems, recordNameFilter)
+      } yield ListRecordSetResults(
+        rs,
+        nextId,
+        startFrom,
+        maxItems,
+        recordNameFilter,
+        recordTypeFilter,
+        sort
+      )
     }
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =

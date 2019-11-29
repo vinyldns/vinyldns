@@ -33,7 +33,9 @@ case class ListRecordSetsResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None
+    recordNameFilter: Option[String] = None,
+    recordTypeFilter: Option[String] = None,
+    sort: String
 )
 
 class RecordSetRoute(
@@ -71,8 +73,20 @@ class RecordSetRoute(
       }
     } ~
       (get & monitor("Endpoint.getRecordSets")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "recordNameFilter".?) {
-          (startFrom: Option[String], maxItems: Int, recordNameFilter: Option[String]) =>
+        parameters(
+          "startFrom".?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "recordNameFilter".?,
+          "recordTypeFilter".?,
+          "sort".as[String].?("asc")
+        ) {
+          (
+              startFrom: Option[String],
+              maxItems: Int,
+              recordNameFilter: Option[String],
+              recordTypeFilter: Option[String],
+              sort: String
+          ) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -80,7 +94,15 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSets(zoneId, startFrom, Some(maxItems), recordNameFilter, _)
+                    .listRecordSets(
+                      zoneId,
+                      startFrom,
+                      Some(maxItems),
+                      recordNameFilter,
+                      recordTypeFilter,
+                      sort,
+                      _
+                    )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
                 }

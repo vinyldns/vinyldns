@@ -182,7 +182,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[String],
+      sort: String
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -195,14 +197,15 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
             ) ++
               recordNameFilter.as("AND name LIKE {nameFilter}") ++
-              Some("ORDER BY name ASC, type ASC") ++
+              Some(s"""ORDER BY name $sort, type ASC""") ++
               maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
             pagingKey.map(pk => 'startFromName -> pk.recordName) ++
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            maxItems.map(m => 'maxItems -> m) ++
+            recordTypeFilter.map(f => 'typeFilter -> f)).toSeq
 
           val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
 
@@ -224,7 +227,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            recordNameFilter = recordNameFilter
+            recordNameFilter = recordNameFilter,
+            recordTypeFilter = recordTypeFilter,
+            sort = sort
           )
         }
       }

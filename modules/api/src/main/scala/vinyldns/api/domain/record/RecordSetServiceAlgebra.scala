@@ -45,6 +45,8 @@ trait RecordSetServiceAlgebra {
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
+      recordTypeFilter: Option[String],
+      sort: String,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse]
 

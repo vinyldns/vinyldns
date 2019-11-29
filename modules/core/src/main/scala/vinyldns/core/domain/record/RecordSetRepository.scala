@@ -28,7 +28,9 @@ trait RecordSetRepository extends Repository {
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[String],
+      sort: String
   ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]
