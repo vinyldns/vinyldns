@@ -196,8 +196,18 @@ object BatchTransformations {
 
       // Collect delete DNS entries. This formulates all of the proposed delete entries, including
       // existing DNS entries in the event of DeleteRecordSet
-      var deleteChangeSet = changes
+      val deleteChangeSet = changes
         .collect {
+          case DeleteRRSetChangeForValidation(
+              _,
+              _,
+              DeleteRRSetChangeInput(_, AAAA, Some(AAAAData(address)))
+              ) =>
+            existingRecords.filter { r =>
+              InetAddress.getByName(address).getHostName ==
+                InetAddress.getByName(r.asInstanceOf[AAAAData].address).getHostName
+
+            }
           case DeleteRRSetChangeForValidation(
               _,
               _,
@@ -208,17 +218,6 @@ object BatchTransformations {
         }
         .toSet
         .flatten
-
-      deleteChangeSet = deleteChangeSet.head match {
-        case AAAAData(_) =>
-          existingRecords.filter { er =>
-            deleteChangeSet.exists { dr =>
-              InetAddress.getByName(er.asInstanceOf[AAAAData].address).getHostName ==
-                InetAddress.getByName(dr.asInstanceOf[AAAAData].address).getHostName
-            }
-          }
-        case _ => deleteChangeSet
-      }
 
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet

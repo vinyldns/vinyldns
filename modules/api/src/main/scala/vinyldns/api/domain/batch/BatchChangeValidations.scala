@@ -297,9 +297,9 @@ class BatchChangeValidations(
     else
       ().validNel
 
-  def compareIpv6Addresses(existingRecordSetData: List[AAAAData], recordData: AAAAData): Boolean =
-    existingRecordSetData.exists { rd =>
-      InetAddress.getByName(recordData.address).getHostName == InetAddress
+  def matchIpv6Address(existingRecordSetData: List[RecordData], address: String): Boolean =
+    existingRecordSetData.asInstanceOf[List[AAAAData]].exists { rd =>
+      InetAddress.getByName(address).getHostName == InetAddress
         .getByName(rd.address)
         .getHostName
     }
@@ -315,15 +315,11 @@ class BatchChangeValidations(
           _,
           DeleteRRSetChangeInput(inputName, AAAA, Some(AAAAData(address)))
           ) =>
-        val thing = groupedChanges.getExistingRecordSet(change.recordKey)
-        if (thing.exists(
-            recordSet =>
-              compareIpv6Addresses(
-                recordSet.records.asInstanceOf[List[AAAAData]],
-                AAAAData(address)
-              )
-          )) ().validNel
-        else DeleteRecordDataDoesNotExist(inputName, AAAAData(address)).invalidNel
+        if (groupedChanges
+            .getExistingRecordSet(change.recordKey)
+            .exists(rs => matchIpv6Address(rs.records, address))) {
+          ().validNel
+        } else DeleteRecordDataDoesNotExist(inputName, AAAAData(address)).invalidNel
       case DeleteRRSetChangeForValidation(
           _,
           _,
