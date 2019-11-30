@@ -23,6 +23,9 @@ import org.joda.time.DateTime
 object RecordType extends Enumeration {
   type RecordType = Value
   val A, AAAA, CNAME, DS, PTR, MX, NS, SOA, SRV, NAPTR, TXT, SSHFP, SPF, UNKNOWN = Value
+
+  def find(value: String): Option[Value] =
+    RecordType.values.find(v => v.toString == value.toUpperCase)
 }
 
 object RecordSetStatus extends Enumeration {

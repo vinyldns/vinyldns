@@ -28,6 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import vinyldns.api.domain.access.AccessValidationsAlgebra
+import vinyldns.core.domain.record.RecordType.RecordType
 
 object RecordSetService {
   def apply(
@@ -143,14 +144,13 @@ class RecordSetService(
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
-      recordTypeFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
       sort: String,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
-      recordTypeFilterList = ""
       recordSetResults <- recordSetRepository
         .listRecordSets(zoneId, startFrom, maxItems, recordNameFilter, recordTypeFilter, sort)
         .toResult[ListRecordSetResults]

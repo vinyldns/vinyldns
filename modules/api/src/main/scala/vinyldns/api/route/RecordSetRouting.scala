@@ -22,7 +22,8 @@ import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone._
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.ZoneCommandResult
 
 import scala.concurrent.duration._
@@ -34,7 +35,7 @@ case class ListRecordSetsResponse(
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
-    recordTypeFilter: Option[String] = None,
+    recordTypeFilter: Option[Set[RecordType]] = None,
     sort: String
 )
 
@@ -78,7 +79,7 @@ class RecordSetRoute(
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "recordNameFilter".?,
           "recordTypeFilter".?,
-          "sort".as[String].?("asc")
+          "sort".as[String].?("ASC")
         ) {
           (
               startFrom: Option[String],
@@ -87,10 +88,25 @@ class RecordSetRoute(
               recordTypeFilter: Option[String],
               sort: String
           ) =>
+            val convertedRecordTypeFilter = recordTypeFilter match {
+              case Some(rtflist) => {
+                val llist = rtflist.split(",").flatMap(RecordType.find).toSet
+                if (llist.nonEmpty) {
+                  Some(llist)
+                } else {
+                  None
+                }
+              }
+              case _ => None
+            }
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
                 s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
+              )
+              validate(
+                "asc" == sort.toLowerCase || "desc" == sort.toLowerCase,
+                s"""sort was $sort, sort must be "asc" or "desc"."""
               ) {
                 authenticateAndExecute(
                   recordSetService
@@ -99,8 +115,8 @@ class RecordSetRoute(
                       startFrom,
                       Some(maxItems),
                       recordNameFilter,
-                      recordTypeFilter,
-                      sort,
+                      convertedRecordTypeFilter,
+                      sort.toUpperCase,
                       _
                     )
                 ) { rsResponse =>

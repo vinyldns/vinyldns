@@ -140,7 +140,7 @@ class DynamoDBRecordSetRepository private[repository] (
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
-      recordTypeFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
       sort: String
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {

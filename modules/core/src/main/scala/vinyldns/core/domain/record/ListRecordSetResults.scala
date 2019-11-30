@@ -16,12 +16,14 @@
 
 package vinyldns.core.domain.record
 
+import vinyldns.core.domain.record.RecordType.RecordType
+
 case class ListRecordSetResults(
     recordSets: List[RecordSet] = List[RecordSet](),
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
-    recordTypeFilter: Option[String] = None,
+    recordTypeFilter: Option[Set[RecordType]] = None,
     sort: String
 )
