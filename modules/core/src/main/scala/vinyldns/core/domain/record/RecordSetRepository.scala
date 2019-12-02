@@ -17,6 +17,7 @@
 package vinyldns.core.domain.record
 
 import cats.effect._
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
@@ -30,7 +31,7 @@ trait RecordSetRepository extends Repository {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: String
+      sort: NameSort
   ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]

@@ -28,6 +28,7 @@ import vinyldns.core.domain.membership.{
   User,
   UserRepository
 }
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
 // Empty implementations let our other test classes just edit with the methods they need
@@ -43,9 +44,11 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      sort: NameSort
   ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults())
+    IO.pure(ListRecordSetResults(sort = sort))
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())

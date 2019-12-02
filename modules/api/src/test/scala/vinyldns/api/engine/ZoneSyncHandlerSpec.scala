@@ -26,6 +26,8 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
+import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
@@ -166,9 +168,17 @@ class ZoneSyncHandlerSpec
     reset(mockDNSLoader)
     reset(mockVinylDNSLoader)
 
-    doReturn(IO(ListRecordSetResults(List(testRecord1))))
-      .when(recordSetRepo)
-      .listRecordSets(anyString(), any[Option[String]], any[Option[Int]], any[Option[String]])
+    doReturn(
+      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, NameSort.ASC))
+    ).when(recordSetRepo)
+      .listRecordSets(
+        anyString(),
+        any[Option[String]],
+        any[Option[Int]],
+        any[Option[String]],
+        any[Option[Set[RecordType]]],
+        any[NameSort]
+      )
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[ChangeSet])
     doReturn(IO(testChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
     doReturn(IO(testZoneChange)).when(zoneChangeRepo).save(any[ZoneChange])

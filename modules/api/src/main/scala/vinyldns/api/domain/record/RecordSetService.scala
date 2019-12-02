@@ -28,6 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import vinyldns.api.domain.access.AccessValidationsAlgebra
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 
 object RecordSetService {
@@ -145,7 +146,7 @@ class RecordSetService(
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: String,
+      sort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse] =
     for {

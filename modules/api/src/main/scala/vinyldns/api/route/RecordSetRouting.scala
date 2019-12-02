@@ -22,8 +22,9 @@ import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType}
 import vinyldns.core.domain.zone.ZoneCommandResult
 
 import scala.concurrent.duration._
@@ -36,7 +37,7 @@ case class ListRecordSetsResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
     recordTypeFilter: Option[Set[RecordType]] = None,
-    sort: String
+    sort: NameSort
 )
 
 class RecordSetRoute(
@@ -105,8 +106,8 @@ class RecordSetRoute(
                 s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
               )
               validate(
-                "asc" == sort.toLowerCase || "desc" == sort.toLowerCase,
-                s"""sort was $sort, sort must be "asc" or "desc"."""
+                "ASC" == sort.toUpperCase || "DESC" == sort.toUpperCase,
+                s"""sort was $sort, sort must be "ASC" or "DESC"."""
               ) {
                 authenticateAndExecute(
                   recordSetService
@@ -116,7 +117,7 @@ class RecordSetRoute(
                       Some(maxItems),
                       recordNameFilter,
                       convertedRecordTypeFilter,
-                      sort.toUpperCase,
+                      NameSort.find(sort),
                       _
                     )
                 ) { rsResponse =>

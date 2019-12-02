@@ -20,6 +20,7 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -184,7 +185,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: String
+      sort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -193,28 +194,31 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           // sort by name only
           val sortBy = sort match {
-            case "ASC" =>
+            case NameSort.ASC =>
               pagingKey.as(
                 "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
               )
-            case "DESC" =>
+            case NameSort.DESC =>
               pagingKey.as(
                 "AND ((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
               )
           }
 
-          val opts = (sortBy ++
+          val typeFilter = recordTypeFilter.map { t =>
+            val list = t.map(fromRecordType).mkString(",")
+            s"""AND type IN ($list)"""
+          }
+
+          val opts = (sortBy ++ typeFilter ++
             recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            recordTypeFilter.as("AND type IN {typeFilter}") ++
-            Some(s"""ORDER BY name $sort, type ASC""") ++
+            Some(s"""ORDER BY name ${sort.toString}, type ASC""") ++
             maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
             pagingKey.map(pk => 'startFromName -> pk.recordName) ++
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
-            maxItems.map(m => 'maxItems -> m) ++
-            recordTypeFilter.map(t => 'typeFilter -> t.map(fromRecordType).mkString(","))).toSeq
+            maxItems.map(m => 'maxItems -> m)).toSeq
 
           val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
 

@@ -29,6 +29,7 @@ import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServic
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -496,6 +497,8 @@ class RecordSetRoutingSpec
         startFrom: Option[String],
         maxItems: Option[Int],
         recordNameFilter: Option[String],
+        recordTypeFilter: Option[Set[RecordType]],
+        sort: NameSort,
         authPrincipal: AuthPrincipal
     ): Result[ListRecordSetsResponse] = {
       zoneId match {
@@ -508,7 +511,12 @@ class RecordSetRoutingSpec
                 RecordSetListInfo(RecordSetInfo(rs2, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(rs3, None), AccessLevel.Read)
               ),
-              None
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              sort
             )
           )
       }

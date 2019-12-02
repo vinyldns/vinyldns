@@ -23,6 +23,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.protobuf.ProtobufConversions
@@ -141,7 +142,7 @@ class DynamoDBRecordSetRepository private[repository] (
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: String
+      sort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
