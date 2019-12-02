@@ -18,6 +18,7 @@
     var app = angular.module('dns-change');
     var FQDN_REGEX = /\./;
     var IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    var INVALID_FQDN_REGEX = new RegExp(IPV4_REGEX.source.replace("$", "\\.?$"))
     var IPV6_REGEX = new RegExp(['^(',
                                 '([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|',
                                 '([0-9a-fA-F]{1,4}:){1,7}:|',
@@ -44,7 +45,21 @@
             link: function (scope, elm, attrs, ctrl) {
                 ctrl.$validators.fqdn = function (modelValue, viewValue) {
                     if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
-                        return FQDN_REGEX.test(viewValue);
+                       return FQDN_REGEX.test(viewValue);
+                    }
+                    return true;
+                };
+            }
+        };
+    });
+
+    app.directive('invalidip', function () {
+        return {
+            require: 'ngModel',
+            link: function (scope, elm, attrs, ctrl) {
+                ctrl.$validators.invalidip = function (modelValue, viewValue) {
+                    if (attrs.required || (viewValue !== undefined && viewValue.length > 0)) {
+                       return !INVALID_FQDN_REGEX.test(viewValue)
                     }
                     return true;
                 };
