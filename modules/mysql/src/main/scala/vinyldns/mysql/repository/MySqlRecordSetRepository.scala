@@ -191,8 +191,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         DB.readOnly { implicit s =>
           val pagingKey = PagingKey(startFrom)
 
-          // make sure we sort ascending, so we can do the correct comparison later
-          val things = sort match {
+          // sort by name only
+          val sortBy = sort match {
             case "ASC" =>
               pagingKey.as(
                 "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
@@ -203,14 +203,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               )
           }
 
-          val typeFilter = recordTypeFilter match {
-            case Some(theList) => theList.map(fromRecordType).mkString(",")
-            case None => None
-          }
-
-          val opts = (things ++
+          val opts = (sortBy ++
             recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            recordTypeFilter.as(s"""AND type IN ($typeFilter)""") ++
+            recordTypeFilter.as("AND type IN {typeFilter}") ++
             Some(s"""ORDER BY name $sort, type ASC""") ++
             maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
@@ -218,7 +213,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             pagingKey.map(pk => 'startFromName -> pk.recordName) ++
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            maxItems.map(m => 'maxItems -> m) ++
+            recordTypeFilter.map(t => 'typeFilter -> t.map(fromRecordType).mkString(","))).toSeq
 
           val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
 

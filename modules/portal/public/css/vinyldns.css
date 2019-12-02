@@ -430,3 +430,10 @@ input[type="file"] {
 .help-block-inline {
     display: inline;
 }
+
+.open>.record-type-filters {
+    display: grid;
+    grid: auto-flow / 1fr 1fr;
+    grid-row-gap: 5px;
+    padding: 5px;
+}

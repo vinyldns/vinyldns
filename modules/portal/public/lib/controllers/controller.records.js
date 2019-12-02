@@ -22,9 +22,12 @@ angular.module('controller.records', [])
       */
 
     $scope.query = "";
+    $scope.sort = "asc";
+    $scope.sortSymbol = "fa-chevron-up";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.selectedRecordTypes = [];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
@@ -471,7 +474,7 @@ angular.module('controller.records', [])
             updateRecordDisplay(response.data.recordSets);
         }
         return recordsService
-            .getRecordSets($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query)
+            .getRecordSets($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::getRecordSets-failure');
@@ -512,7 +515,7 @@ angular.module('controller.records', [])
     $scope.prevPage = function() {
         var startFrom = pagingService.getPrevStartFrom(recordsPaging);
         return recordsService
-            .getRecordSets($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query)
+            .getRecordSets($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
             .then(function(response) {
                 recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                 updateRecordDisplay(response.data.recordSets);
@@ -524,7 +527,7 @@ angular.module('controller.records', [])
 
     $scope.nextPage = function() {
         return recordsService
-                .getRecordSets($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query)
+                .getRecordSets($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
                 .then(function(response) {
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
@@ -536,6 +539,26 @@ angular.module('controller.records', [])
             .catch(function (error){
                 handleError(error, 'recordsService::nextPage-failure');
             });
+    };
+
+    $scope.toggleSort = function() {
+        if ($scope.sort == "asc") {
+            $scope.sort = "desc";
+            $scope.sortSymbol = "fa-chevron-down";
+        } else {
+            $scope.sort = "asc";
+            $scope.sortSymbol = "fa-chevron-up";
+        }
+        return $scope.refreshRecords();
+    };
+
+    $scope.toggleCheckedRecordType = function(recordType) {
+        if($scope.selectedRecordTypes.includes(recordType)) {
+            $scope.selectedRecordTypes.splice($scope.selectedRecordTypes.indexOf(recordType),1)
+        } else {
+            $scope.selectedRecordTypes.push(recordType);
+        }
+        return $scope.refreshRecords();
     };
 
     /**

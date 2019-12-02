@@ -89,10 +89,10 @@ class RecordSetRoute(
               sort: String
           ) =>
             val convertedRecordTypeFilter = recordTypeFilter match {
-              case Some(rtflist) => {
-                val llist = rtflist.split(",").flatMap(RecordType.find).toSet
-                if (llist.nonEmpty) {
-                  Some(llist)
+              case Some(typeFilter) => {
+                val recordTypes = typeFilter.split(",").flatMap(RecordType.find).toSet
+                if (recordTypes.nonEmpty) {
+                  Some(recordTypes)
                 } else {
                   None
                 }

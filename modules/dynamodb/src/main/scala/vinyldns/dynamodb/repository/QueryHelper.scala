@@ -170,13 +170,13 @@ trait QueryHelper {
       tableName: String,
       index: String,
       keyConditions: Map[String, String],
-      filter: Option[FilterType] = None,
+      nameFilter: Option[FilterType] = None,
       startKey: Option[Map[String, String]] = None,
       maxItems: Option[Int] = None,
       isCountQuery: Boolean = false
   ): DynamoDBHelper => IO[ResponseItems] = dynamoDbHelper => {
     // do not limit items when there is a filter - filters are applied after limits
-    val itemsToRetrieve = filter match {
+    val itemsToRetrieve = nameFilter match {
       case Some(_) => None
       case None => maxItems
     }
@@ -186,7 +186,15 @@ trait QueryHelper {
       else QueryResponseItems()
 
     val queryManager =
-      QueryManager(tableName, index, keyConditions, filter, startKey, itemsToRetrieve, isCountQuery)
+      QueryManager(
+        tableName,
+        index,
+        keyConditions,
+        nameFilter,
+        startKey,
+        itemsToRetrieve,
+        isCountQuery
+      )
     completeQuery(dynamoDbHelper, queryManager, response, maxItems)
   }
 

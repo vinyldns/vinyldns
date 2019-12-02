@@ -275,12 +275,13 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSort = "asc";
 
         this.scope.refreshRecords();
 
         expect(getRecordSets.calls.count()).toBe(1);
         expect(getRecordSets.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedSort]);
     });
 
     it('next page should call getRecordSets with the correct parameters', function () {
@@ -301,12 +302,13 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSort = "asc";
 
         this.scope.nextPage();
 
         expect(getRecordSets.calls.count()).toBe(1);
         expect(getRecordSets.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedSort]);
     });
 
     it('prev page should call getRecordSets with the correct parameters', function () {
@@ -327,11 +329,69 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom =  undefined;
         var expectedQuery = this.scope.query;
+        var expectedSort = "asc";
 
         this.scope.prevPage();
 
         expect(getRecordSets.calls.count()).toBe(1);
         expect(getRecordSets.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+    });
+
+    it('toggle sort should call getRecordSets with the correct parameters', function () {
+        var mockRecords = {data: { recordSets: [
+            {   name: "dummy",
+                records: [{address: "1.1.1.1"}],
+                status: "Active",
+                ttl: 38400,
+                type: "A"}
+            ],
+            maxItems: 100,
+            sort: "desc"}};
+
+        var getRecordSets = spyOn(this.recordsService, 'getRecordSets')
+            .and.stub()
+            .and.returnValue(this.q.when(mockRecords));
+
+        var expectedZoneId = this.scope.zoneId;
+        var expectedMaxItems = 100;
+        var expectedStartFrom =  undefined;
+        var expectedQuery = this.scope.query;
+        var expectedSort = "desc";
+
+        this.scope.toggleSort();
+
+        expect(getRecordSets.calls.count()).toBe(1);
+        expect(getRecordSets.calls.mostRecent().args).toEqual(
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+    });
+
+    it('filter by record type should call getRecordSets with the correct parameters', function () {
+        var mockRecords = {data: { recordSets: [
+            {   name: "dummy",
+                records: [{address: "1.1.1.1"}],
+                status: "Active",
+                ttl: 38400,
+                type: "A"}
+            ],
+            maxItems: 100,
+            recordTypeFilter: "A"}};
+
+        var getRecordSets = spyOn(this.recordsService, 'getRecordSets')
+            .and.stub()
+            .and.returnValue(this.q.when(mockRecords));
+
+        var expectedZoneId = this.scope.zoneId;
+        var expectedMaxItems = 100;
+        var expectedStartFrom =  undefined;
+        var expectedQuery = this.scope.query;
+        var expectedRecordTypeFilter = "A";
+        var expectedSort = "asc";
+
+        this.scope.toggleCheckedRecordType("A");
+
+        expect(getRecordSets.calls.count()).toBe(1);
+        expect(getRecordSets.calls.mostRecent().args).toEqual(
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedSort]);
     });
 });

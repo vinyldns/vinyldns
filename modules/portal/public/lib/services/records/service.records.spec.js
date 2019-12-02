@@ -24,8 +24,8 @@ describe('Service: recordsService', function () {
     }));
 
     it('http backend gets called properly when getting record sets', function () {
-        this.$httpBackend.expectGET('/api/zones/id/recordsets?maxItems=100&startFrom=start&recordNameFilter=someQuery').respond('success');
-        this.recordsService.getRecordSets('id', '100', 'start', 'someQuery')
+        this.$httpBackend.expectGET('/api/zones/id/recordsets?maxItems=100&startFrom=start&recordNameFilter=someQuery&recordTypeFilter=A&sort=asc').respond('success');
+        this.recordsService.getRecordSets('id', '100', 'start', 'someQuery', 'A', 'asc')
             .then(function(response) {
                 expect(response.data).toBe('success');
             });
