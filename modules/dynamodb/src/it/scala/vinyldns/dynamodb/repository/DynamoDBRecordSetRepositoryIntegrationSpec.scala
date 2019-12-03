@@ -97,7 +97,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       testFuture.unsafeRunSync().recordSets should contain(testRecordSet)
@@ -180,7 +182,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -196,7 +200,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
@@ -208,7 +214,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(1),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -225,7 +233,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
@@ -236,7 +246,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(2),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -252,7 +264,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(6),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
@@ -269,7 +283,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(6),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -283,7 +299,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(7),
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -302,7 +320,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("AAAA")
+        recordNameFilter = Some("AAAA"),
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -318,7 +338,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("A")
+        recordNameFilter = Some("A"),
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -336,7 +358,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = Some("Dummy")
+        recordNameFilter = Some("Dummy"),
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
 
       testFuture.unsafeRunSync().recordSets shouldBe List()
@@ -387,7 +411,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             zoneId = "big-apply-zone",
             startFrom = None,
             maxItems = None,
-            recordNameFilter = None
+            recordNameFilter = None,
+            recordTypeFilter = None,
+            sort = NameSort.ASC
           )
 
           recordSetsResult = rsQuery.unsafeRunTimed(30.seconds) match {
