@@ -25,5 +25,5 @@ final case class MessageQueueConfig(
     pollingInterval: FiniteDuration,
     messagesPerPoll: Int,
     settings: Config,
-    maxRetries: Option[Int]
+    maxRetries: Int
 )

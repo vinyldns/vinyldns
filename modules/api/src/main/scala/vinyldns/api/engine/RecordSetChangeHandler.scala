@@ -240,11 +240,12 @@ object RecordSetChangeHandler {
   private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
     getProcessingStatus(change, dnsConn).map {
       case AlreadyApplied(_) => Completed(change.successful)
-      case Failure(_, message) => Completed(
-            change.failed(
-              s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
-            )
+      case Failure(_, message) =>
+        Completed(
+          change.failed(
+            s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
           )
+        )
       case _ => Retrying(change)
     }
 

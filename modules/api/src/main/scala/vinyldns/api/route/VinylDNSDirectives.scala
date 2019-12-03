@@ -44,11 +44,11 @@ trait VinylDNSDirectives[E] extends Directives {
       onSuccess(
         vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture()
       ).flatMap {
-          case Right(authPrincipal) ⇒
-            provide(authPrincipal)
-          case Left(e) ⇒
-            complete(handleAuthenticateError(e))
-        }
+        case Right(authPrincipal) ⇒
+          provide(authPrincipal)
+        case Left(e) ⇒
+          complete(handleAuthenticateError(e))
+      }
     }
   }
 

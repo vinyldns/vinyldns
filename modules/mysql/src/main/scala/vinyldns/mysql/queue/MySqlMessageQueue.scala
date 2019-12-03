@@ -44,18 +44,15 @@ object MySqlMessageQueue {
   final case class InvalidMessageTimeout(timeout: Int)
       extends Throwable(s"Invalid message timeout $timeout")
   final val QUEUE_CONNECTION_NAME = 'queue
-  final val DEFAULT_MAX_RETRIES = 100
 }
 
-class MySqlMessageQueue(maxRetries: Option[Int])
+class MySqlMessageQueue(maxRetries: Int)
     extends MessageQueue
     with Monitored
     with ProtobufConversions {
   import MySqlMessageQueue._
 
   private val logger = LoggerFactory.getLogger(classOf[MySqlMessageQueue])
-
-  private val MAX_RETRIES: Int = maxRetries.getOrElse(DEFAULT_MAX_RETRIES)
 
   private val INSERT_MESSAGE =
     sql"""
@@ -125,7 +122,7 @@ class MySqlMessageQueue(maxRetries: Option[Int])
         }
       }
       _ <- Either.cond(
-        attempts < MAX_RETRIES,
+        attempts < maxRetries,
         (),
         MessageAttemptsExceeded(id.value)
       ) // mark as error if too many attempts
