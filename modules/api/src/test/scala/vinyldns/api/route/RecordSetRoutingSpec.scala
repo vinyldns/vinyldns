@@ -855,6 +855,15 @@ class RecordSetRoutingSpec
       }
     }
 
+    "return all recordsets in descending order" in {
+      Get(s"/zones/${okZone.id}/recordsets?sort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+
     "return a 404 Not Found when the zone doesn't exist" in {
       Get(s"/zones/${zoneNotFound.id}/recordsets") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
