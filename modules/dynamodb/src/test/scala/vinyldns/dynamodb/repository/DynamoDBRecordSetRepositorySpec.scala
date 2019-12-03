@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.record.ChangeSet
+import vinyldns.core.domain.record.{ChangeSet, NameSort}
 import vinyldns.core.TestRecordSetData._
 import cats.effect._
 import vinyldns.dynamodb.DynamoTestConfig
@@ -183,7 +183,9 @@ class DynamoDBRecordSetRepositorySpec
           zoneId = rsOk.zoneId,
           startFrom = None,
           maxItems = None,
-          recordNameFilter = None
+          recordNameFilter = None,
+          recordTypeFilter = None,
+          sort = NameSort.ASC
         )
         .unsafeRunSync()
 
@@ -205,7 +207,8 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = store.listRecordSets(rsOk.zoneId, None, Some(3), None).unsafeRunSync()
+      val response =
+        store.listRecordSets(rsOk.zoneId, None, Some(3), None, None, NameSort.ASC).unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
 
       (response.recordSets should contain).allOf(rsOk, aaaa, cname)
@@ -220,7 +223,9 @@ class DynamoDBRecordSetRepositorySpec
         zoneId = rsOk.zoneId,
         startFrom = None,
         maxItems = None,
-        recordNameFilter = None
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        sort = NameSort.ASC
       )
     }
   }
