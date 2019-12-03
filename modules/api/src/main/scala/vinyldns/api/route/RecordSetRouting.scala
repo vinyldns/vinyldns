@@ -104,10 +104,6 @@ class RecordSetRoute(
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
                 s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
-              )
-              validate(
-                "ASC" == sort.toUpperCase || "DESC" == sort.toUpperCase,
-                s"""sort was $sort, sort must be "ASC" or "DESC"."""
               ) {
                 authenticateAndExecute(
                   recordSetService

@@ -212,7 +212,7 @@ def test_list_recordsets_with_record_name_filter_and_chaining_pages_with_nextId(
     list_results = client.list_recordsets(rs_zone['id'], start_from=start_key, max_items=2, record_name_filter="*CNAME*", status=200)
     assert_that(list_results['recordSets'], has_length(2))
 
-    list_results_records = list_results['recordSets'];
+    list_results_records = list_results['recordSets']
     assert_that(list_results_records[0]['name'], contains_string('2-CNAME'))
     assert_that(list_results_records[1]['name'], contains_string('3-CNAME'))
 
@@ -237,6 +237,100 @@ def test_list_recordsets_with_record_name_filter_none(rs_fixture):
 
     list_results = client.list_recordsets(rs_zone['id'], record_name_filter="*Dummy*", status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=0, offset=0)
+
+
+def test_list_recordsets_with_record_type_filter_single_type(rs_fixture):
+    """
+    Test listing only recordsets of a specific type
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], record_type_filter="NS", status=200)
+    rs_fixture.check_recordsets_parameters(list_results, recordTypeFilter="NS")
+
+    list_results_records = list_results['recordSets']
+    assert_that(list_results_records[0]['type'], contains_string('NS'))
+    assert_that(list_results_records[0]['name'], contains_string('list-records'))
+
+
+def test_list_recordsets_with_record_type_filter_multiple_types(rs_fixture):
+    """
+    Test listing only recordsets of select Types
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], record_type_filter="NS,CNAME", status=200)
+    rs_fixture.check_recordsets_parameters(list_results, recordTypeFilter="NS,CNAME")
+
+    list_results_records = list_results['recordSets']
+    assert_that(list_results_records[0]['type'], contains_string('CNAME'))
+    assert_that(list_results_records[0]['name'], contains_string('0-CNAME'))
+    assert_that(list_results_records[10]['type'], contains_string('NS'))
+    assert_that(list_results_records[10]['name'], contains_string('list-records'))
+
+
+def test_list_recordsets_with_record_type_filter_valid_and_invalid_type(rs_fixture):
+    """
+    Test an invalid record type is ignored and all records are returned
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], record_type_filter="FAKE,SOA", status=200)
+    rs_fixture.check_recordsets_parameters(list_results, recordTypeFilter="SOA")
+
+    list_results_records = list_results['recordSets']
+    assert_that(list_results_records, has_length(1))
+    assert_that(list_results_records[0]['type'], contains_string('SOA'))
+    assert_that(list_results_records[0]['name'], contains_string('list-records.'))
+
+def test_list_recordsets_with_record_type_filter_invalid_type(rs_fixture):
+    """
+    Test an invalid record type is ignored and all records are returned
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], record_type_filter="FAKE", status=200)
+    rs_fixture.check_recordsets_parameters(list_results)
+
+    assert_that(list_results['recordSets'], has_length(22))
+
+
+def test_list_recordsets_with_sort_descending(rs_fixture):
+    """
+    Test sorting recordsets in descending order by name
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], sort="DESC", status=200)
+    rs_fixture.check_recordsets_parameters(list_results, sort="DESC")
+
+    list_results_records = list_results['recordSets']
+    assert_that(list_results_records[0]['type'], contains_string('NS'))
+    assert_that(list_results_records[0]['name'], contains_string('list-records.'))
+    assert_that(list_results_records[21]['type'], contains_string('A'))
+    assert_that(list_results_records[21]['name'], contains_string('0-A'))
+
+
+def test_list_recordsets_with_invalid_sort(rs_fixture):
+    """
+    Test an invalid value for sort is ignored and defaults to ASC
+    """
+    client = rs_fixture.client
+    rs_zone = rs_fixture.zone
+
+    list_results = client.list_recordsets(rs_zone['id'], sort="Nothing", status=200)
+    rs_fixture.check_recordsets_parameters(list_results, sort="ASC")
+
+    list_results_records = list_results['recordSets']
+    assert_that(list_results_records[0]['type'], contains_string('A'))
+    assert_that(list_results_records[0]['name'], contains_string('0-A'))
+    assert_that(list_results_records[21]['type'], contains_string('SOA'))
+    assert_that(list_results_records[21]['name'], contains_string('list-records.'))
 
 
 def test_list_recordsets_no_authorization(rs_fixture):
