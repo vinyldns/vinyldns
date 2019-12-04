@@ -21,7 +21,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.membership.UserInfo
+import vinyldns.api.domain.membership.UserId
 
 class UpdateGroupInputSerializerSpec
     extends WordSpec
@@ -36,8 +36,8 @@ class UpdateGroupInputSerializerSpec
       name: String,
       email: String,
       description: Option[String],
-      members: Set[UserInfo] = Set.empty,
-      admins: Set[UserInfo] = Set.empty
+      members: Set[UserId] = Set.empty,
+      admins: Set[UserId] = Set.empty
   ): JValue =
     ("id" -> id) ~~
       ("name" -> name) ~~
@@ -52,8 +52,8 @@ class UpdateGroupInputSerializerSpec
       val expectedName = "foo"
       val expectedEmail = "test@test.com"
       val expectedDesc = Some("this is a test")
-      val members = Set(UserInfo("foo"))
-      val admins = Set(UserInfo("bar"))
+      val members = Set(UserId("foo"))
+      val admins = Set(UserId("bar"))
 
       val json = testJson(expectedId, expectedName, expectedEmail, expectedDesc, members, admins)
 

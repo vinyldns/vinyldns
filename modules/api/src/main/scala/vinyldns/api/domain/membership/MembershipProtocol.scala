@@ -32,8 +32,8 @@ final case class GroupInfo(
     description: Option[String] = None,
     created: DateTime = DateTime.now,
     status: GroupStatus = GroupStatus.Active,
-    members: Set[UserInfo] = Set.empty,
-    admins: Set[UserInfo] = Set.empty
+    members: Set[UserId] = Set.empty,
+    admins: Set[UserId] = Set.empty
 )
 object GroupInfo {
   def apply(group: Group): GroupInfo = GroupInfo(
@@ -43,8 +43,8 @@ object GroupInfo {
     description = group.description,
     created = group.created,
     status = group.status,
-    members = group.memberIds.map(UserInfo(_)),
-    admins = group.adminUserIds.map(UserInfo(_))
+    members = group.memberIds.map(UserId(_)),
+    admins = group.adminUserIds.map(UserId(_))
   )
 }
 
@@ -68,6 +68,16 @@ object GroupChangeInfo {
   )
 }
 
+case class UserId(
+    id: String
+)
+object UserId {
+  def apply(user: User): UserId =
+    UserId(
+      id = user.id
+    )
+}
+
 case class UserInfo(
     id: String,
     userName: Option[String] = None,
@@ -75,7 +85,7 @@ case class UserInfo(
     lastName: Option[String] = None,
     email: Option[String] = None,
     created: Option[DateTime] = None,
-    lockStatus: LockStatus = LockStatus.Unlocked
+    lockStatus: LockStatus
 )
 object UserInfo {
   def apply(user: User): UserInfo =

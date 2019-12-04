@@ -370,8 +370,8 @@ class MembershipRoutingSpec
         result.name shouldBe okGroup.name
         result.email shouldBe okGroup.email
         result.description shouldBe okGroup.description
-        result.members shouldBe okGroup.memberIds.map(UserInfo(_))
-        result.admins shouldBe okGroup.memberIds.map(UserInfo(_))
+        result.members shouldBe okGroup.memberIds.map(UserId(_))
+        result.admins shouldBe okGroup.memberIds.map(UserId(_))
       }
     }
 

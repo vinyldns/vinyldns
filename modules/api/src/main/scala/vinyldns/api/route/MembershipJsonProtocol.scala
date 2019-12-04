@@ -30,16 +30,16 @@ object MembershipJsonProtocol {
       name: String,
       email: String,
       description: Option[String],
-      members: Set[UserInfo],
-      admins: Set[UserInfo]
+      members: Set[UserId],
+      admins: Set[UserId]
   )
   final case class UpdateGroupInput(
       id: String,
       name: String,
       email: String,
       description: Option[String],
-      members: Set[UserInfo],
-      admins: Set[UserInfo]
+      members: Set[UserId],
+      admins: Set[UserId]
   )
 }
 
@@ -65,8 +65,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
-        (js \ "members").required[Set[UserInfo]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
+        (js \ "members").required[Set[UserId]]("Missing Group.members"),
+        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
       ).mapN(CreateGroupInput.apply)
   }
   case object UpdateGroupInputSerializer extends ValidationSerializer[UpdateGroupInput] {
@@ -76,8 +76,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
-        (js \ "members").required[Set[UserInfo]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
+        (js \ "members").required[Set[UserId]]("Missing Group.members"),
+        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
       ).mapN(UpdateGroupInput.apply)
   }
 
@@ -108,8 +108,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "description").optional[String],
         (js \ "created").default[DateTime](DateTime.now),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
-        (js \ "members").default[Set[UserInfo]](Set.empty),
-        (js \ "admins").default[Set[UserInfo]](Set.empty)
+        (js \ "members").default[Set[UserId]](Set.empty),
+        (js \ "admins").default[Set[UserId]](Set.empty)
       ).mapN(GroupInfo.apply)
   }
 
