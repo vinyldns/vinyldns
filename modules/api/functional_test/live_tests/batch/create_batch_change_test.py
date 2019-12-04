@@ -1773,7 +1773,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
 
     rs_delete_name = generate_record_name()
     rs_delete_fqdn = rs_delete_name + ".ok."
-    rs_delete_ok = get_recordset_json(ok_zone, rs_delete_name, "AAAA", [{"address": "1:2:3:4:5:6:7:8"}], 200)
+    rs_delete_ok = get_recordset_json(ok_zone, rs_delete_name, "AAAA", [{"address": "1::4:5:6:7:8"}], 200)
 
     rs_update_name = generate_record_name()
     rs_update_fqdn = rs_update_name + ".ok."
@@ -1792,7 +1792,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
         "comments": "this is optional",
         "changes": [
             # valid changes
-            get_change_A_AAAA_json(rs_delete_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_delete_fqdn, record_type="AAAA", change_type="DeleteRecordSet", address="1:0::4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", ttl=300, address="1:2:3:4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
 
@@ -4169,60 +4169,6 @@ def test_create_batch_multi_record_update_succeeds(shared_zone_test_context):
                 elif rs_name == txt_update_record_only_name:
                     assert_that(records, contains({"text": "again"}))
                     assert_that(records, is_not(contains({"text": "hello"})))
-
-    finally:
-        clear_recordset_list(to_delete, client)
-
-@pytest.mark.skip_production
-def test_create_batch_update_record_type_succeeds(shared_zone_test_context):
-    """
-    Test existing record sets can be updated to a different type in batch (relies on skip-prod)
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
-
-    # record sets to setup
-    a_update_to_cname_and_record_set_name = generate_record_name()
-    a_update_to_cname_and_record_set_fqdn = a_update_to_cname_and_record_set_name + ".ok."
-    a_update_to_cname_and_record_set = get_recordset_json(ok_zone, a_update_to_cname_and_record_set_name, "A", [{"address": "1.1.1.1"}], 200)
-
-    cname_update_from_a_and_record_set_fqdn = a_update_to_cname_and_record_set_name + ".ok."
-
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            # Update A record to CNAME
-            get_change_A_AAAA_json(a_update_to_cname_and_record_set_fqdn, change_type="DeleteRecordSet"),
-            get_change_CNAME_json(cname_update_from_a_and_record_set_fqdn, cname="example.com.")
-        ]
-    }
-
-    to_delete = []
-    try:
-        create_rs = client.create_recordset(a_update_to_cname_and_record_set, status=202)
-        to_delete.append(client.wait_until_recordset_change_status(create_rs, 'Complete'))
-
-        initial_result = client.create_batch_change(batch_change_input, status=202)
-        result = client.wait_until_batch_change_completed(initial_result)
-
-        assert_that(result['status'], is_('Complete'))
-
-        # Check batch change response
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, input_name=a_update_to_cname_and_record_set_fqdn, record_name=a_update_to_cname_and_record_set_name, record_type="A", record_data=None, change_type="DeleteRecordSet")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=1, input_name=cname_update_from_a_and_record_set_fqdn, record_name=a_update_to_cname_and_record_set_name, record_type="CNAME", record_data="example.com.")
-
-        # Perform look up to verify record set data
-        for rs in to_delete:
-            rs_id = rs['recordSet']['id']
-            zone_id = rs['zone']['id']
-
-            client.get_recordset(zone_id, rs_id, status=404)
-
-        new_cname_result_rs = result['changes'][1]
-        new_cname_rs = client.get_recordset(new_cname_result_rs['zoneId'], new_cname_result_rs['recordSetId'], status=200)['recordSet']
-        new_cname_rdata = new_cname_rs['records']
-        assert_that(new_cname_rdata, contains({"cname": "example.com."}))
-        client.delete_recordset(new_cname_rs['zoneId'], new_cname_rs['id'], status=202)
 
     finally:
         clear_recordset_list(to_delete, client)
