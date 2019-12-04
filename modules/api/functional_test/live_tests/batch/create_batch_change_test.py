@@ -1773,7 +1773,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
 
     rs_delete_name = generate_record_name()
     rs_delete_fqdn = rs_delete_name + ".ok."
-    rs_delete_ok = get_recordset_json(ok_zone, rs_delete_name, "AAAA", [{"address": "1:2:3:4:5:6:7:8"}], 200)
+    rs_delete_ok = get_recordset_json(ok_zone, rs_delete_name, "AAAA", [{"address": "1::4:5:6:7:8"}], 200)
 
     rs_update_name = generate_record_name()
     rs_update_fqdn = rs_update_name + ".ok."
@@ -1792,7 +1792,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
         "comments": "this is optional",
         "changes": [
             # valid changes
-            get_change_A_AAAA_json(rs_delete_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(rs_delete_fqdn, record_type="AAAA", change_type="DeleteRecordSet", address="1:0::4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", ttl=300, address="1:2:3:4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
 

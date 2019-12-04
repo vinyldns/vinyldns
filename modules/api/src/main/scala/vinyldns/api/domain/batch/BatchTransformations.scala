@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import java.net.InetAddress
 import java.util.UUID
 
 import vinyldns.api.VinylDNSConfig
@@ -24,7 +25,7 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
 import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{AAAAData, RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -182,6 +183,14 @@ object BatchTransformations {
   }
 
   object ValidationChanges {
+    def matchRecordData(existingRecord: RecordData, recordData: String): Boolean =
+      existingRecord match {
+        case AAAAData(address) =>
+          InetAddress.getByName(address).getHostName ==
+            InetAddress.getByName(recordData).getHostName
+        case _ => false
+      }
+
     def apply(
         changes: List[ChangeForValidation],
         existingRecordSet: Option[RecordSet]
@@ -197,6 +206,12 @@ object BatchTransformations {
       // existing DNS entries in the event of DeleteRecordSet
       val deleteChangeSet = changes
         .collect {
+          case DeleteRRSetChangeForValidation(
+              _,
+              _,
+              DeleteRRSetChangeInput(_, AAAA, Some(AAAAData(address)))
+              ) =>
+            existingRecords.filter(r => matchRecordData(r, address))
           case DeleteRRSetChangeForValidation(
               _,
               _,

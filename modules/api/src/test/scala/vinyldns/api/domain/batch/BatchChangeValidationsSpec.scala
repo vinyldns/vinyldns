@@ -138,6 +138,12 @@ class BatchChangeValidationsSpec
     DeleteRRSetChangeInput("shared-update", RecordType.AAAA)
   )
 
+  private val deleteSingleRecordChange = DeleteRRSetChangeForValidation(
+    sharedZone,
+    "shared-update",
+    DeleteRRSetChangeInput("shared-update", RecordType.AAAA, Some(AAAAData("1:0::1")))
+  )
+
   private val deletePrivateChange = DeleteRRSetChangeForValidation(
     okZone,
     "private-delete",
@@ -2279,7 +2285,7 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(
         List(
           updateSharedAddChange.validNel,
-          updateSharedDeleteChange.validNel,
+          deleteSingleRecordChange.validNel,
           deleteSharedChange.validNel,
           updatePrivateAddChange.validNel,
           updatePrivateDeleteChange.validNel,
