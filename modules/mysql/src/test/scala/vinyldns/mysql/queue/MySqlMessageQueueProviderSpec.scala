@@ -32,6 +32,7 @@ class MySqlMessageQueueProviderSpec extends WordSpec with Matchers {
             |  class-name = "vinyldns.mysql.queue.MySqlMessageQueueProvider"
             |    polling-interval = 250.millis
             |    messages-per-poll = 10
+            |    max-retries = 100
             |
             |  settings = {
             |    name = "vinyldns"

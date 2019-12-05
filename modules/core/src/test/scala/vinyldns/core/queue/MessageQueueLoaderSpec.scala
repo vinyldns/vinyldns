@@ -56,7 +56,8 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
           "vinyldns.core.queue.MockMessageQueueProvider",
           pollingInterval,
           messagesPerPoll,
-          placeholderConfig
+          placeholderConfig,
+          100
         )
 
       val loadCall = MessageQueueLoader.load(config)
@@ -64,7 +65,7 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
     }
     "Error if the configured provider cannot be found" in {
       val config =
-        MessageQueueConfig("bad.class", pollingInterval, messagesPerPoll, placeholderConfig)
+        MessageQueueConfig("bad.class", pollingInterval, messagesPerPoll, placeholderConfig, 100)
 
       val loadCall = MessageQueueLoader.load(config)
 
@@ -76,7 +77,8 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
           "vinyldns.core.queue.FailMessageQueueProvider",
           pollingInterval,
           messagesPerPoll,
-          placeholderConfig
+          placeholderConfig,
+          100
         )
 
       val loadCall = MessageQueueLoader.load(config)
