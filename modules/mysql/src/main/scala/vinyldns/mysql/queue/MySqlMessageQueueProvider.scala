@@ -38,7 +38,7 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
       connectionSettings <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
       _ <- runDBMigrations(connectionSettings)
       _ <- setupQueueConnection(connectionSettings)
-    } yield new MySqlMessageQueue()
+    } yield new MySqlMessageQueue(config.maxRetries)
 
   def setupQueueConnection(config: MySqlConnectionConfig): IO[Unit] = {
     val queueConnectionSettings = MySqlDataSourceSettings(config, "mysqlQueuePool")

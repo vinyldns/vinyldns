@@ -46,7 +46,10 @@ object MySqlMessageQueue {
   final val QUEUE_CONNECTION_NAME = 'queue
 }
 
-class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
+class MySqlMessageQueue(maxRetries: Int)
+    extends MessageQueue
+    with Monitored
+    with ProtobufConversions {
   import MySqlMessageQueue._
 
   private val logger = LoggerFactory.getLogger(classOf[MySqlMessageQueue])
@@ -118,7 +121,11 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
           case BatchChangeMessageType => BatchChangeCommand(new String(data))
         }
       }
-      _ <- Either.cond(attempts < 100, (), MessageAttemptsExceeded(id.value)) // mark as error if too many attempts
+      _ <- Either.cond(
+        attempts < maxRetries,
+        (),
+        MessageAttemptsExceeded(id.value)
+      ) // mark as error if too many attempts
       _ <- Either.cond(
         timeoutSeconds > 0,
         (),

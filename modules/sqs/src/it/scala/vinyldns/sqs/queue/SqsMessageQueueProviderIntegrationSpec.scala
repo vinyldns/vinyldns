@@ -30,6 +30,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
           |    polling-interval = 250.millis
           |    messages-per-poll = 10
+          |    max-retries = 100
           |
           |    settings {
           |      access-key = "x"
@@ -52,6 +53,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
           |    polling-interval = 250.millis
           |    messages-per-poll = 10
+          |    max-retries = 100
           |
           |    settings {
           |      access-key = "x"
@@ -77,6 +79,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
           |    polling-interval = 250.millis
           |    messages-per-poll = 10
+          |    max-retries = 100
           |
           |    settings {
           |      access-key = "x"
@@ -97,6 +100,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
           |    polling-interval = 250.millis
           |    messages-per-poll = 10
+          |    max-retries = 100
           |
           |    settings {
           |      access-key = "x"
@@ -119,6 +123,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
           |    polling-interval = 250.millis
           |    messages-per-poll = 10
+          |    max-retries = 100
           |
           |    settings {
           |      access-key = "x"

@@ -19,7 +19,7 @@ package vinyldns.mysql.repository
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
-import vinyldns.core.repository.{DataStoreConfig}
+import vinyldns.core.repository.DataStoreConfig
 import vinyldns.mysql.MySqlConnectionConfig
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {

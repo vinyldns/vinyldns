@@ -119,6 +119,7 @@ queue {
   
   polling-interval = 250.millis
   messages-per-poll = 10
+  max-retries = 50 # Override max retries; default = 100
 
   settings = {
     name = "vinyldns"
