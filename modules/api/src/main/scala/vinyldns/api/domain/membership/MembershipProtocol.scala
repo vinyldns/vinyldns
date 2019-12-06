@@ -43,8 +43,8 @@ object GroupInfo {
     description = group.description,
     created = group.created,
     status = group.status,
-    members = group.memberIds.map(UserId(_)),
-    admins = group.adminUserIds.map(UserId(_))
+    members = group.memberIds.map(UserId),
+    admins = group.adminUserIds.map(UserId)
   )
 }
 
@@ -68,15 +68,7 @@ object GroupChangeInfo {
   )
 }
 
-case class UserId(
-    id: String
-)
-object UserId {
-  def apply(user: User): UserId =
-    UserId(
-      id = user.id
-    )
-}
+case class UserId(id: String)
 
 case class UserInfo(
     id: String,

@@ -64,7 +64,7 @@ class MembershipRoutingSpec
   // this is avoided since were working with 0s there anyway
   val baseTime = new DateTime(0)
   val okUserInfo: UserInfo = UserInfo(okUser).copy(created = Some(baseTime))
-  val okUserId: UserId = UserId(okUser)
+  val okUserId: UserId = UserId(okUser.id)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser).copy(created = Some(baseTime))
   val okGroupInfo: GroupInfo = GroupInfo(okGroup).copy(created = baseTime)
   val okMemberInfo: MemberInfo = MemberInfo(okUser, okGroup).copy(created = Some(baseTime))
