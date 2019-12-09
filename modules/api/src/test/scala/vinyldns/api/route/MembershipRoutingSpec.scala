@@ -64,6 +64,7 @@ class MembershipRoutingSpec
   // this is avoided since were working with 0s there anyway
   val baseTime = new DateTime(0)
   val okUserInfo: UserInfo = UserInfo(okUser).copy(created = Some(baseTime))
+  val okUserId: UserId = UserId(okUser.id)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser).copy(created = Some(baseTime))
   val okGroupInfo: GroupInfo = GroupInfo(okGroup).copy(created = baseTime)
   val okMemberInfo: MemberInfo = MemberInfo(okUser, okGroup).copy(created = Some(baseTime))
@@ -79,8 +80,8 @@ class MembershipRoutingSpec
         "good",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
       val expected = GroupInfo(okGroup)
 
@@ -105,8 +106,8 @@ class MembershipRoutingSpec
         "duplicate",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
@@ -156,8 +157,8 @@ class MembershipRoutingSpec
         "not found",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
       doReturn(result(UserNotFoundError("not found")))
         .when(membershipService)
@@ -174,8 +175,8 @@ class MembershipRoutingSpec
         "bad",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
@@ -345,8 +346,8 @@ class MembershipRoutingSpec
         "good",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
 
       doReturn(result(okGroup))
@@ -370,8 +371,8 @@ class MembershipRoutingSpec
         result.name shouldBe okGroup.name
         result.email shouldBe okGroup.email
         result.description shouldBe okGroup.description
-        result.members shouldBe okGroup.memberIds.map(UserInfo(_))
-        result.admins shouldBe okGroup.memberIds.map(UserInfo(_))
+        result.members shouldBe okGroup.memberIds.map(UserId(_))
+        result.admins shouldBe okGroup.memberIds.map(UserId(_))
       }
     }
 
@@ -381,8 +382,8 @@ class MembershipRoutingSpec
         "duplicate",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
@@ -436,8 +437,8 @@ class MembershipRoutingSpec
         "forbidden",
         "test@test.com",
         Some("describe me"),
-        Set(okUserInfo),
-        Set(okUserInfo)
+        Set(okUserId),
+        Set(okUserId)
       )
 
       doReturn(result(NotAuthorizedError("fail")))
@@ -643,6 +644,7 @@ class MembershipRoutingSpec
       }
     }
   }
+
   "GET GroupActivity" should {
     "return a 200 response with the group changes" in {
       val expected = ListGroupChangesResponse(
@@ -720,6 +722,7 @@ class MembershipRoutingSpec
       }
     }
   }
+
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
       membershipRoute = superUserRoute
