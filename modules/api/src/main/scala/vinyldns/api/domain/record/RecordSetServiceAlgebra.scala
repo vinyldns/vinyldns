@@ -42,13 +42,13 @@ trait RecordSetServiceAlgebra {
       authPrincipal: AuthPrincipal
   ): Result[RecordSetInfo]
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: NameSort,
+      nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse]
 

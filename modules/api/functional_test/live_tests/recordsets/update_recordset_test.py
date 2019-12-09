@@ -1817,7 +1817,7 @@ def test_ns_update_existing_ns_origin_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
 
-    list_results_page = client.list_recordsets(zone['id'], status=200)['recordSets']
+    list_results_page = client.list_recordsets_by_zone(zone['id'], status=200)['recordSets']
 
     apex_ns = [item for item in list_results_page if item['type'] == 'NS' and item['name'] in zone['name']][0]
 
@@ -1928,7 +1928,7 @@ def test_update_existing_dotted_a_record_succeeds(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ok_zone
 
-    recordsets = client.list_recordsets(zone['id'], record_name_filter="dotted.a", status=200)['recordSets']
+    recordsets = client.list_recordsets_by_zone(zone['id'], record_name_filter="dotted.a", status=200)['recordSets']
 
     update_rs = recordsets[0]
 
@@ -2016,7 +2016,7 @@ def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ok_zone
 
-    recordsets = client.list_recordsets(zone['id'], record_name_filter="dottedc.name", status=200)['recordSets']
+    recordsets = client.list_recordsets_by_zone(zone['id'], record_name_filter="dottedc.name", status=200)['recordSets']
     update_rs = recordsets[0]
     update_rs['records'] = [{'cname': 'got.reference'}]
     try:
@@ -2116,7 +2116,7 @@ def test_update_high_value_domain_fails(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_system = shared_zone_test_context.system_test_zone
-    list_results_page_system = client.list_recordsets(zone_system['id'], status=200)['recordSets']
+    list_results_page_system = client.list_recordsets_by_zone(zone_system['id'], status=200)['recordSets']
     record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain'][0]
     record_system['ttl'] = record_system['ttl'] + 100
 
@@ -2132,7 +2132,7 @@ def test_update_high_value_domain_fails_case_insensitive(shared_zone_test_contex
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_system = shared_zone_test_context.system_test_zone
-    list_results_page_system = client.list_recordsets(zone_system['id'], status=200)['recordSets']
+    list_results_page_system = client.list_recordsets_by_zone(zone_system['id'], status=200)['recordSets']
     record_system = [item for item in list_results_page_system if item['name'] == 'high-VALUE-domain-UPPER-CASE'][0]
     record_system['ttl'] = record_system['ttl'] + 100
 
@@ -2147,7 +2147,7 @@ def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip4 = shared_zone_test_context.classless_base_zone
-    list_results_page_ip4 = client.list_recordsets(zone_ip4['id'], status=200)['recordSets']
+    list_results_page_ip4 = client.list_recordsets_by_zone(zone_ip4['id'], status=200)['recordSets']
     record_ip4 = [item for item in list_results_page_ip4 if item['name'] == '253'][0]
     record_ip4['ttl'] = record_ip4['ttl'] + 100
 
@@ -2163,7 +2163,7 @@ def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip6 = shared_zone_test_context.ip6_reverse_zone
-    list_results_page_ip6 = client.list_recordsets(zone_ip6['id'], status=200)['recordSets']
+    list_results_page_ip6 = client.list_recordsets_by_zone(zone_ip6['id'], status=200)['recordSets']
     record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][
         0]
     record_ip6['ttl'] = record_ip6['ttl'] + 100
@@ -2181,7 +2181,7 @@ def test_no_update_access_non_test_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     zone_id = shared_zone_test_context.non_test_shared_zone['id']
 
-    list_results = client.list_recordsets(zone_id, status=200)['recordSets']
+    list_results = client.list_recordsets_by_zone(zone_id, status=200)['recordSets']
     record_update = [item for item in list_results if item['name'] == 'update-test'][0]
     record_update['ttl'] = record_update['ttl'] + 100
 

@@ -37,7 +37,7 @@ case class ListRecordSetsResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
     recordTypeFilter: Option[Set[RecordType]] = None,
-    sort: NameSort
+    nameSort: NameSort
 )
 
 class RecordSetRoute(
@@ -74,20 +74,20 @@ class RecordSetRoute(
         complete(StatusCodes.Accepted, rc)
       }
     } ~
-      (get & monitor("Endpoint.getRecordSets")) {
+      (get & monitor("Endpoint.listRecordSetsByZone")) {
         parameters(
           "startFrom".?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "recordNameFilter".?,
           "recordTypeFilter".?,
-          "sort".as[String].?("ASC")
+          "nameSort".as[String].?("ASC")
         ) {
           (
               startFrom: Option[String],
               maxItems: Int,
               recordNameFilter: Option[String],
               recordTypeFilter: Option[String],
-              sort: String
+              nameSort: String
           ) =>
             val convertedRecordTypeFilter = recordTypeFilter match {
               case Some(typeFilter) => {
@@ -107,13 +107,13 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSets(
+                    .listRecordSetsByZone(
                       zoneId,
                       startFrom,
                       Some(maxItems),
                       recordNameFilter,
                       convertedRecordTypeFilter,
-                      NameSort.find(sort),
+                      NameSort.find(nameSort),
                       _
                     )
                 ) { rsResponse =>

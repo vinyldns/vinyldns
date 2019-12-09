@@ -22,8 +22,8 @@ angular.module('controller.records', [])
       */
 
     $scope.query = "";
-    $scope.sort = "asc";
-    $scope.sortSymbol = "fa-chevron-up";
+    $scope.nameSort = "asc";
+    $scope.nameSortSymbol = "fa-chevron-up";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
@@ -470,15 +470,15 @@ angular.module('controller.records', [])
     $scope.refreshRecords = function() {
         recordsPaging = pagingService.resetPaging(recordsPaging);
         function success(response) {
-            $log.log('recordsService::getRecordSets-success ('+ response.data.recordSets.length +' records)');
+            $log.log('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
             recordsPaging.next = response.data.nextId;
             updateRecordDisplay(response.data.recordSets);
         }
         return recordsService
-            .getRecordSets($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
             .then(success)
             .catch(function (error){
-                handleError(error, 'recordsService::getRecordSets-failure');
+                handleError(error, 'recordsService::listRecordSetsByZone-failure');
             });
     };
 
@@ -516,7 +516,7 @@ angular.module('controller.records', [])
     $scope.prevPage = function() {
         var startFrom = pagingService.getPrevStartFrom(recordsPaging);
         return recordsService
-            .getRecordSets($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
             .then(function(response) {
                 recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                 updateRecordDisplay(response.data.recordSets);
@@ -528,7 +528,7 @@ angular.module('controller.records', [])
 
     $scope.nextPage = function() {
         return recordsService
-                .getRecordSets($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.sort)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
                 .then(function(response) {
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
@@ -542,13 +542,13 @@ angular.module('controller.records', [])
             });
     };
 
-    $scope.toggleSort = function() {
-        if ($scope.sort == "asc") {
-            $scope.sort = "desc";
-            $scope.sortSymbol = "fa-chevron-down";
+    $scope.toggleNameSort = function() {
+        if ($scope.nameSort == "asc") {
+            $scope.nameSort = "desc";
+            $scope.nameSortSymbol = "fa-chevron-down";
         } else {
-            $scope.sort = "asc";
-            $scope.sortSymbol = "fa-chevron-up";
+            $scope.nameSort = "asc";
+            $scope.nameSortSymbol = "fa-chevron-up";
         }
         return $scope.refreshRecords();
     };

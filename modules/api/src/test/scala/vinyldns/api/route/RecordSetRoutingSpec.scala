@@ -492,13 +492,13 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-    def listRecordSets(
+    def listRecordSetsByZone(
         zoneId: String,
         startFrom: Option[String],
         maxItems: Option[Int],
         recordNameFilter: Option[String],
         recordTypeFilter: Option[Set[RecordType]],
-        sort: NameSort,
+        nameSort: NameSort,
         authPrincipal: AuthPrincipal
     ): Result[ListRecordSetsResponse] = {
       zoneId match {
@@ -516,7 +516,7 @@ class RecordSetRoutingSpec
               maxItems,
               recordNameFilter,
               recordTypeFilter,
-              sort
+              nameSort
             )
           )
       }

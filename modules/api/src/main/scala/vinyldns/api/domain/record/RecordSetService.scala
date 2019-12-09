@@ -140,20 +140,27 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: NameSort,
+      nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
       recordSetResults <- recordSetRepository
-        .listRecordSets(zoneId, startFrom, maxItems, recordNameFilter, recordTypeFilter, sort)
+        .listRecordSetsByZone(
+          zoneId,
+          startFrom,
+          maxItems,
+          recordNameFilter,
+          recordTypeFilter,
+          nameSort
+        )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
@@ -166,7 +173,7 @@ class RecordSetService(
       recordSetResults.maxItems,
       recordSetResults.recordNameFilter,
       recordSetResults.recordTypeFilter,
-      recordSetResults.sort
+      recordSetResults.nameSort
     )
 
   def getRecordSetChange(

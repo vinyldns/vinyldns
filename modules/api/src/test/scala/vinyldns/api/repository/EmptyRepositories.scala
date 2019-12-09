@@ -40,15 +40,15 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: NameSort
+      nameSort: NameSort
   ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults(sort = sort))
+    IO.pure(ListRecordSetResults(nameSort = nameSort))
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())

@@ -171,7 +171,7 @@ class ZoneSyncHandlerSpec
     doReturn(
       IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, NameSort.ASC))
     ).when(recordSetRepo)
-      .listRecordSets(
+      .listRecordSetsByZone(
         anyString(),
         any[Option[String]],
         any[Option[Int]],

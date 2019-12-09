@@ -102,13 +102,13 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
     () =>
       monitor("vinyldns.loadZoneView") {
         recordSetRepository
-          .listRecordSets(
+          .listRecordSetsByZone(
             zoneId = zone.id,
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
-            sort = NameSort.ASC
+            nameSort = NameSort.ASC
           )
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(

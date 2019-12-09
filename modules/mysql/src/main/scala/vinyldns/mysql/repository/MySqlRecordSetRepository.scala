@@ -179,13 +179,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     * we create a better sync and load process that is better for memory, this should
     * be the same as the other repo.
     */
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: NameSort
+      nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -193,7 +193,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val pagingKey = PagingKey(startFrom)
 
           // sort by name only
-          val sortBy = sort match {
+          val sortBy = nameSort match {
             case NameSort.ASC =>
               pagingKey.as(
                 "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
@@ -211,7 +211,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val opts = (sortBy ++ typeFilter ++
             recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            Some(s"""ORDER BY name ${sort.toString}, type ASC""") ++
+            Some(s"""ORDER BY name ${nameSort.toString}, type ASC""") ++
             maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
@@ -242,7 +242,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             maxItems = maxItems,
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
-            sort = sort
+            nameSort = nameSort
           )
         }
       }

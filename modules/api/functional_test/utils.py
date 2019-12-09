@@ -585,7 +585,7 @@ def generate_record_name(zone_name=None):
 
 
 def find_recordset_by_name(zone_id, rs_name, client):
-    r = client.list_recordsets(zone_id, record_name_filter=rs_name, status=200)
+    r = client.list_recordsets_by_zone(zone_id, record_name_filter=rs_name, status=200)
     if r and 'recordSets' in r and len(r['recordSets']) > 0:
         return r['recordSets'][0]
     else:

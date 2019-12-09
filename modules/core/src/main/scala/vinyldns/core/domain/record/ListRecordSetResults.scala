@@ -36,5 +36,5 @@ case class ListRecordSetResults(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
     recordTypeFilter: Option[Set[RecordType]] = None,
-    sort: NameSort
+    nameSort: NameSort
 )

@@ -93,13 +93,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
   "DynamoDBRecordSetRepository" should {
     "get a record set by id" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       testFuture.unsafeRunSync().recordSets should contain(testRecordSet)
@@ -178,13 +178,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets with page size of 1 returns recordSets[0] only" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -196,13 +196,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets with page size of 1 reusing key with page size of 1 returns recordSets[0] and recordSets[1]" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSets(
+      val testFutureOne = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
@@ -210,13 +210,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       foundRecordSet.recordSets should contain(recordSets(0))
       foundRecordSet.recordSets shouldNot contain(recordSets(1))
       val key = foundRecordSet.nextId
-      val testFutureTwo = repo.listRecordSets(
+      val testFutureTwo = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -229,26 +229,26 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets page size of 1 then reusing key with page size of 2 returns recordSets[0], recordSets[1,2]" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSets(
+      val testFutureOne = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
       foundRecordSet.recordSets should contain(recordSets(0))
       foundRecordSet.recordSets shouldNot contain(recordSets(1))
       val key = foundRecordSet.nextId
-      val testFutureTwo = repo.listRecordSets(
+      val testFutureTwo = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(2),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -260,13 +260,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "return an empty list and nextId of None when passing last record as start" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSets(
+      val testFutureOne = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(6),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFutureOne.unsafeRunSync()
@@ -279,13 +279,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       foundRecordSet.recordSets should contain(recordSets(5))
       val key = foundRecordSet.nextId
 
-      val testFutureTwo = repo.listRecordSets(
+      val testFutureTwo = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = key,
         maxItems = Some(6),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
@@ -295,13 +295,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "have nextId of None when exhausting recordSets" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = Some(7),
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -316,13 +316,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "only retrieve recordSet with name containing 'AAAA'" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("AAAA"),
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -334,13 +334,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "retrieve all recordSets with names containing 'A'" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("A"),
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       val foundRecordSet = testFuture.unsafeRunSync()
@@ -354,13 +354,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "return an empty list if recordName filter had no match" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSets(
+      val testFuture = repo.listRecordSetsByZone(
         zoneId = testRecordSet.zoneId,
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("Dummy"),
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
 
       testFuture.unsafeRunSync().recordSets shouldBe List()
@@ -407,13 +407,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         var recordSetsResult: List[RecordSet] = Nil
         while (!querySuccessful && retries <= 10) {
           // if we query now, we should get half that failed
-          val rsQuery = repo.listRecordSets(
+          val rsQuery = repo.listRecordSetsByZone(
             zoneId = "big-apply-zone",
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
-            sort = NameSort.ASC
+            nameSort = NameSort.ASC
           )
 
           recordSetsResult = rsQuery.unsafeRunTimed(30.seconds) match {

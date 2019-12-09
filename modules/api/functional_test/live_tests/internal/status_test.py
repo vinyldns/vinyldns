@@ -69,8 +69,8 @@ def test_toggle_processing(shared_zone_test_context):
     client.wait_until_zone_change_status_synced(zone_change_result)
     client.wait_until_recordset_change_status(record_change, 'Complete')
 
-    recordset_length = len(client.list_recordsets(ok_zone['id'])['recordSets'])
+    recordset_length = len(client.list_recordsets_by_zone(ok_zone['id'])['recordSets'])
 
     client.delete_recordset(ok_zone['id'], record_change['recordSet']['id'], status=202)
     client.wait_until_recordset_deleted(ok_zone['id'], record_change['recordSet']['id'])
-    assert_that(client.list_recordsets(ok_zone['id'])['recordSets'], has_length(recordset_length - 1))
+    assert_that(client.list_recordsets_by_zone(ok_zone['id'])['recordSets'], has_length(recordset_length - 1))

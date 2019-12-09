@@ -179,13 +179,13 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = store
-        .listRecordSets(
+        .listRecordSetsByZone(
           zoneId = rsOk.zoneId,
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
-          sort = NameSort.ASC
+          nameSort = NameSort.ASC
         )
         .unsafeRunSync()
 
@@ -208,7 +208,9 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response =
-        store.listRecordSets(rsOk.zoneId, None, Some(3), None, None, NameSort.ASC).unsafeRunSync()
+        store
+          .listRecordSetsByZone(rsOk.zoneId, None, Some(3), None, None, NameSort.ASC)
+          .unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
 
       (response.recordSets should contain).allOf(rsOk, aaaa, cname)
@@ -219,13 +221,13 @@ class DynamoDBRecordSetRepositorySpec
         .thenThrow(new ResourceNotFoundException("failed"))
       val store = new TestDynamoRecordSetRepo
 
-      a[ResourceNotFoundException] should be thrownBy store.listRecordSets(
+      a[ResourceNotFoundException] should be thrownBy store.listRecordSetsByZone(
         zoneId = rsOk.zoneId,
         startFrom = None,
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
-        sort = NameSort.ASC
+        nameSort = NameSort.ASC
       )
     }
   }

@@ -136,13 +136,13 @@ class DynamoDBRecordSetRepository private[repository] (
     dynamoDBHelper.putItem(request).map(_ => recordSet)
   }
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
-      sort: NameSort
+      nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
@@ -187,7 +187,7 @@ class DynamoDBRecordSetRepository private[repository] (
         maxItems,
         recordNameFilter,
         recordTypeFilter,
-        sort
+        nameSort
       )
     }
 

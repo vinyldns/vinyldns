@@ -19,22 +19,22 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.getRecordSets = function (id, limit, startFrom, nameFilter, typeFilter, sort) {
+        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort) {
             if (nameFilter == "") {
                 nameFilter = null;
             }
             if (typeFilter == "") {
                 typeFilter = null;
             }
-            if (sort == "") {
-                sort = null;
+            if (nameSort == "") {
+                nameSort = null;
             }
             var params = {
                 "maxItems": limit,
                 "startFrom": startFrom,
                 "recordNameFilter": nameFilter,
                 "recordTypeFilter": typeFilter,
-                "sort": sort
+                "nameSort": nameSort
             };
             var url = utilityService.urlBuilder("/api/zones/"+id+"/recordsets", params);
             return $http.get(url);

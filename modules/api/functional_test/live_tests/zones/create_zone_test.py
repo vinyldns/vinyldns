@@ -68,7 +68,7 @@ def test_create_zone_success(shared_zone_test_context):
         assert_that(get_zone['backendId'], is_('func-test-backend'))
 
         # confirm that the recordsets in DNS have been saved in vinyldns
-        recordsets = client.list_recordsets(result_zone['id'])['recordSets']
+        recordsets = client.list_recordsets_by_zone(result_zone['id'])['recordSets']
 
         assert_that(len(recordsets), is_(7))
         for rs in recordsets:

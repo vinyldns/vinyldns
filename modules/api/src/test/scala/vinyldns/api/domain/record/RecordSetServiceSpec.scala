@@ -772,7 +772,7 @@ class RecordSetServiceSpec
     }
   }
 
-  "listRecordSets" should {
+  "listRecordSetsByZone" should {
     "return the recordSets" in {
       doReturn(IO.pure(Set(okGroup)))
         .when(mockGroupRepo)
@@ -782,29 +782,29 @@ class RecordSetServiceSpec
         IO.pure(
           ListRecordSetResults(
             List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup),
-            sort = NameSort.ASC
+            nameSort = NameSort.ASC
           )
         )
       ).when(mockRecordRepo)
-        .listRecordSets(
+        .listRecordSetsByZone(
           zoneId = sharedZone.id,
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
-          sort = NameSort.ASC
+          nameSort = NameSort.ASC
         )
 
       val result: ListRecordSetsResponse = rightResultOf(
         underTest
-          .listRecordSets(
+          .listRecordSetsByZone(
             sharedZone.id,
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
             authPrincipal = sharedAuth,
             recordTypeFilter = None,
-            sort = NameSort.ASC
+            nameSort = NameSort.ASC
           )
           .value
       )
@@ -825,26 +825,26 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroups(Set())
 
-      doReturn(IO.pure(ListRecordSetResults(List(aaaa), sort = NameSort.ASC)))
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC)))
         .when(mockRecordRepo)
-        .listRecordSets(
+        .listRecordSetsByZone(
           zoneId = okZone.id,
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
-          sort = NameSort.ASC
+          nameSort = NameSort.ASC
         )
 
       val result: ListRecordSetsResponse = rightResultOf(
         underTest
-          .listRecordSets(
+          .listRecordSetsByZone(
             okZone.id,
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
-            sort = NameSort.ASC,
+            nameSort = NameSort.ASC,
             authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
           )
           .value
@@ -856,13 +856,13 @@ class RecordSetServiceSpec
     "fails when the account is not authorized" in {
       val result = leftResultOf(
         underTest
-          .listRecordSets(
+          .listRecordSetsByZone(
             zoneNotAuthorized.id,
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
-            sort = NameSort.ASC,
+            nameSort = NameSort.ASC,
             authPrincipal = okAuth
           )
           .value
