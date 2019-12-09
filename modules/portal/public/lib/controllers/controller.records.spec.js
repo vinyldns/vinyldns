@@ -347,7 +347,7 @@ describe('Controller: RecordsController', function () {
                 type: "A"}
             ],
             maxItems: 100,
-            sort: "desc"}};
+            nameSort: "desc"}};
 
         var listRecordSetsByZone = spyOn(this.recordsService, 'listRecordSetsByZone')
             .and.stub()
@@ -359,7 +359,7 @@ describe('Controller: RecordsController', function () {
         var expectedQuery = this.scope.query;
         var expectedSort = "desc";
 
-        this.scope.toggleSort();
+        this.scope.toggleNameSort();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
