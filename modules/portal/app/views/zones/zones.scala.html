@@ -100,7 +100,7 @@
                                         </thead>
                                         <tbody>
                                         <tr ng-repeat="zone in zones">
-                                            <td class="wrap-long-text" ng-bind="zone.name"></td>
+                                            <td class="wrap-long-text"><a ng-href="/zones/{{ zone.id }}" ng-bind="zone.name"></a></td>
                                             <td class="wrap-long-text" ng-bind="zone.email"></td>
                                             <td>
                                                 <a ng-if="canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
@@ -205,7 +205,10 @@
                                         </thead>
                                         <tbody>
                                         <tr ng-repeat="zone in allZones">
-                                            <td class="wrap-long-text" ng-bind="zone.name"></td>
+                                            <td class="wrap-long-text">
+                                                <a ng-if="canAccessZone(zone.accessLevel)" ng-bind="zone.name" href="/zones/{{zone.id}}"></a>
+                                                <span ng-if="!canAccessZone(zone.accessLevel)" ng-bind="zone.name"></span>
+                                            </td>
                                             <td class="wrap-long-text" ng-bind="zone.email"></td>
                                             <td>
                                                 <a ng-if="canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
