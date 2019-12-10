@@ -166,7 +166,7 @@
                                         <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
                                     </td>
                                     <td ng-if="change.type=='CNAME'">
-                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. answer.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn invalidip>
+                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. target.example.com" ng-disabled="change.changeType=='DeleteRecordSet'" fqdn invalidip>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be a fully qualified domain name!</span>
