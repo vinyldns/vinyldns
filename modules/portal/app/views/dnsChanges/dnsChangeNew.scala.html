@@ -116,7 +116,8 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input ng-if="change.type!=='PTR'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. test.example.com.">
+                                        <input ng-if="change.type!=='PTR' && change.type!=='CNAME'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. test.example.com.">
+                                        <input ng-if="change.type=='CNAME'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. alias.example.com.">
                                         <input ng-if="change.type=='PTR'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. 192.0.2.193">
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.inputName_{{$index}}.$error.required" class="batch-change-error-help">Input name is required!</span>
@@ -165,7 +166,7 @@
                                         <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
                                     </td>
                                     <td ng-if="change.type=='CNAME'">
-                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn invalidip>
+                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. answer.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn invalidip>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be a fully qualified domain name!</span>
