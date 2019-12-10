@@ -68,7 +68,10 @@
                             </thead>
                             <tbody>
                                 <tr ng-repeat="group in groups.items | orderBy:'+name'">
-                                    <td class="wrap-long-text">{{group.name}}</td>
+                                    <td class="wrap-long-text">
+                                        <a ng-if="canSeeGroup(group)" ng-href="/groups/{{group.id}}">{{group.name}}</a>
+                                        <span ng-if="!canSeeGroup(group)">{{group.name}}</span>
+                                    </td>
                                     <td class="wrap-long-text">{{group.email}}</td>
                                     <td class="wrap-long-text">{{group.description}}</td>
                                     <td>
