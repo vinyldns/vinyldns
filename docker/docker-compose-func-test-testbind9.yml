@@ -6,21 +6,16 @@ services:
       .env
     container_name: "vinyldns-mysql"
     ports:
-      - "19002:3306"
+    - "19002:3306"
     logging:
       driver: none
 
   bind9:
-    image: "vinyldns/bind9:0.0.4"
-    env_file:
-      .env
+    image: "vinyldns/test-bind9:0.9.4"
     container_name: "vinyldns-bind9"
-    volumes:
-      - ./bind9/etc:/var/cache/bind/config
-      - ./bind9/zones:/var/cache/bind/zones
     ports:
-      - "19001:53/tcp"
-      - "19001:53/udp"
+    - "19001:53/tcp"
+    - "19001:53/udp"
     logging:
       driver: none
 
@@ -32,19 +27,19 @@ services:
     logging:
       driver: none
     ports:
-      - "19000:8000"
+    - "19000:8000"
     command: "--sharedDb --inMemory"
 
   localstack:
     image: localstack/localstack:0.10.4
     container_name: "vinyldns-localstack"
     ports:
-      - "19006:19006"
-      - "19007:19007"
+    - "19006:19006"
+    - "19007:19007"
     environment:
-      - SERVICES=sns:19006,sqs:19007
-      - START_WEB=0
-      - HOSTNAME_EXTERNAL=vinyldns-localstack
+    - SERVICES=sns:19006,sqs:19007
+    - START_WEB=0
+    - HOSTNAME_EXTERNAL=vinyldns-localstack
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
@@ -54,11 +49,11 @@ services:
       .env
     container_name: "vinyldns-api"
     ports:
-      - "9000:9000"
+    - "9000:9000"
     depends_on:
-      - mysql
-      - bind9
-      - localstack
+    - mysql
+    - bind9
+    - localstack
     logging:
       driver: none
 
@@ -68,7 +63,7 @@ services:
     env_file:
       .env
     environment:
-      - PAR_CPU=${PAR_CPU}
+    - PAR_CPU=${PAR_CPU}
     container_name: "vinyldns-functest"
     depends_on:
-      - api
+    - api
