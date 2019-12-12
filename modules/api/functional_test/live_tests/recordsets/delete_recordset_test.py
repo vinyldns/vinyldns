@@ -584,7 +584,7 @@ def test_ns_delete_existing_ns_origin_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
 
-    list_results_page = client.list_recordsets(zone['id'],  status=200)['recordSets']
+    list_results_page = client.list_recordsets_by_zone(zone['id'], status=200)['recordSets']
 
     apex_ns = [item for item in list_results_page if item['type'] == 'NS' and item['name'] in zone['name']][0]
 
@@ -623,7 +623,7 @@ def test_delete_high_value_domain_fails(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_system = shared_zone_test_context.system_test_zone
-    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    list_results_page_system = client.list_recordsets_by_zone(zone_system['id'], status=200)['recordSets']
     record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain'][0]
 
     errors_system = client.delete_recordset(record_system['zoneId'], record_system['id'], status=422)
@@ -636,7 +636,7 @@ def test_delete_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip4 = shared_zone_test_context.classless_base_zone
-    list_results_page_ip4 = client.list_recordsets(zone_ip4['id'],  status=200)['recordSets']
+    list_results_page_ip4 = client.list_recordsets_by_zone(zone_ip4['id'], status=200)['recordSets']
     record_ip4 = [item for item in list_results_page_ip4 if item['name'] == '253'][0]
 
     errors_ip4 = client.delete_recordset(record_ip4['zoneId'], record_ip4['id'], status=422)
@@ -650,7 +650,7 @@ def test_delete_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone_ip6 = shared_zone_test_context.ip6_reverse_zone
-    list_results_page_ip6 = client.list_recordsets(zone_ip6['id'],  status=200)['recordSets']
+    list_results_page_ip6 = client.list_recordsets_by_zone(zone_ip6['id'], status=200)['recordSets']
     record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][0]
 
     errors_ip6 = client.delete_recordset(record_ip6['zoneId'], record_ip6['id'], status=422)
@@ -665,7 +665,7 @@ def test_no_delete_access_non_test_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     zone_id = shared_zone_test_context.non_test_shared_zone['id']
 
-    list_results = client.list_recordsets(zone_id,  status=200)['recordSets']
+    list_results = client.list_recordsets_by_zone(zone_id, status=200)['recordSets']
     record_delete = [item for item in list_results if item['name'] == 'delete-test'][0]
 
     client.delete_recordset(zone_id, record_delete['id'], status=403)

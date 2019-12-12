@@ -23,12 +23,11 @@ import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
-import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
-import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
+import vinyldns.core.domain.record.{NameSort, RecordSetRepository, RecordType}
+import vinyldns.core.domain.zone.Zone
 
 trait ZoneViewLoader {
   def load: () => IO[ZoneView]
@@ -103,11 +102,13 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
     () =>
       monitor("vinyldns.loadZoneView") {
         recordSetRepository
-          .listRecordSets(
+          .listRecordSetsByZone(
             zoneId = zone.id,
             startFrom = None,
             maxItems = None,
-            recordNameFilter = None
+            recordNameFilter = None,
+            recordTypeFilter = None,
+            nameSort = NameSort.ASC
           )
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(

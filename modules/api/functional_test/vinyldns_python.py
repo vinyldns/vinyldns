@@ -534,13 +534,15 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, None, not_found_ok=True, **kwargs)
         return data
 
-    def list_recordsets(self, zone_id, start_from=None, max_items=None, record_name_filter=None, **kwargs):
+    def list_recordsets_by_zone(self, zone_id, start_from=None, max_items=None, record_name_filter=None, record_type_filter=None, name_sort=None, **kwargs):
         """
         Retrieves all recordsets in a zone
         :param zone_id: the zone to retrieve
         :param start_from: the start key of the page
         :param max_items: the page limit
         :param record_name_filter: only returns recordsets whose names contain filter string
+        :param record_type_filter: only returns recordsets whose type is included in the filter string
+        :param name_sort: sort order by recordset name
         :return: the content of the response
         """
         args = []
@@ -550,6 +552,10 @@ class VinylDNSClient(object):
             args.append(u'maxItems={0}'.format(max_items))
         if record_name_filter:
             args.append(u'recordNameFilter={0}'.format(record_name_filter))
+        if record_type_filter:
+            args.append(u'recordTypeFilter={0}'.format(record_type_filter))
+        if name_sort:
+            args.append(u'nameSort={0}'.format(name_sort))
 
         url = urljoin(self.index_url, u'/zones/{0}/recordsets'.format(zone_id)) + u'?' + u'&'.join(args)
 

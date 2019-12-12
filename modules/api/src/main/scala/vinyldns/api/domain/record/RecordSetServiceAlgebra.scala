@@ -21,6 +21,8 @@ import vinyldns.api.domain.zone.RecordSetInfo
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneCommandResult
 import vinyldns.api.route.ListRecordSetsResponse
+import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
 
 trait RecordSetServiceAlgebra {
@@ -40,11 +42,13 @@ trait RecordSetServiceAlgebra {
       authPrincipal: AuthPrincipal
   ): Result[RecordSetInfo]
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse]
 

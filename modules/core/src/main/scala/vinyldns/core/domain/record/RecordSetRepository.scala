@@ -17,6 +17,7 @@
 package vinyldns.core.domain.record
 
 import cats.effect._
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
@@ -24,11 +25,13 @@ trait RecordSetRepository extends Repository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet]
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
   ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]

@@ -28,6 +28,8 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import vinyldns.api.domain.access.AccessValidationsAlgebra
+import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.RecordType.RecordType
 
 object RecordSetService {
   def apply(
@@ -138,18 +140,27 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
       recordSetResults <- recordSetRepository
-        .listRecordSets(zoneId, startFrom, maxItems, recordNameFilter)
+        .listRecordSetsByZone(
+          zoneId,
+          startFrom,
+          maxItems,
+          recordNameFilter,
+          recordTypeFilter,
+          nameSort
+        )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
@@ -160,7 +171,9 @@ class RecordSetService(
       recordSetResults.startFrom,
       recordSetResults.nextId,
       recordSetResults.maxItems,
-      recordSetResults.recordNameFilter
+      recordSetResults.recordNameFilter,
+      recordSetResults.recordTypeFilter,
+      recordSetResults.nameSort
     )
 
   def getRecordSetChange(

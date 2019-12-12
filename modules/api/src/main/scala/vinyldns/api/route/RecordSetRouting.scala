@@ -22,7 +22,9 @@ import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone._
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType}
 import vinyldns.core.domain.zone.ZoneCommandResult
 
 import scala.concurrent.duration._
@@ -33,7 +35,9 @@ case class ListRecordSetsResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None
+    recordNameFilter: Option[String] = None,
+    recordTypeFilter: Option[Set[RecordType]] = None,
+    nameSort: NameSort
 )
 
 class RecordSetRoute(
@@ -70,9 +74,32 @@ class RecordSetRoute(
         complete(StatusCodes.Accepted, rc)
       }
     } ~
-      (get & monitor("Endpoint.getRecordSets")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "recordNameFilter".?) {
-          (startFrom: Option[String], maxItems: Int, recordNameFilter: Option[String]) =>
+      (get & monitor("Endpoint.listRecordSetsByZone")) {
+        parameters(
+          "startFrom".?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "recordNameFilter".?,
+          "recordTypeFilter".?,
+          "nameSort".as[String].?("ASC")
+        ) {
+          (
+              startFrom: Option[String],
+              maxItems: Int,
+              recordNameFilter: Option[String],
+              recordTypeFilter: Option[String],
+              nameSort: String
+          ) =>
+            val convertedRecordTypeFilter = recordTypeFilter match {
+              case Some(typeFilter) => {
+                val recordTypes = typeFilter.split(",").flatMap(RecordType.find).toSet
+                if (recordTypes.nonEmpty) {
+                  Some(recordTypes)
+                } else {
+                  None
+                }
+              }
+              case _ => None
+            }
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -80,7 +107,15 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSets(zoneId, startFrom, Some(maxItems), recordNameFilter, _)
+                    .listRecordSetsByZone(
+                      zoneId,
+                      startFrom,
+                      Some(maxItems),
+                      recordNameFilter,
+                      convertedRecordTypeFilter,
+                      NameSort.find(nameSort),
+                      _
+                    )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
                 }

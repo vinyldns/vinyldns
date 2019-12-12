@@ -29,6 +29,7 @@ import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServic
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -191,6 +192,17 @@ class RecordSetRoutingSpec
     DateTime.now,
     None,
     List(AData("10.1.1.1"))
+  )
+
+  private val rs4 = RecordSet(
+    okZone.id,
+    "rs4",
+    RecordType.CNAME,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(CNAMEData("example.com"))
   )
 
   private val aaaa = RecordSet(
@@ -491,16 +503,32 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-    def listRecordSets(
+    def listRecordSetsByZone(
         zoneId: String,
         startFrom: Option[String],
         maxItems: Option[Int],
         recordNameFilter: Option[String],
+        recordTypeFilter: Option[Set[RecordType]],
+        nameSort: NameSort,
         authPrincipal: AuthPrincipal
     ): Result[ListRecordSetsResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
-        case okZone.id =>
+        case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
+          Right(
+            ListRecordSetsResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(rs4, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              nameSort
+            )
+          )
+        case okZone.id if recordTypeFilter.isEmpty =>
           Right(
             ListRecordSetsResponse(
               List(
@@ -508,7 +536,12 @@ class RecordSetRoutingSpec
                 RecordSetListInfo(RecordSetInfo(rs2, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(rs3, None), AccessLevel.Read)
               ),
-              None
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              nameSort
             )
           )
       }
@@ -840,6 +873,33 @@ class RecordSetRoutingSpec
   "GET recordsets" should {
     "return all recordsets" in {
       Get(s"/zones/${okZone.id}/recordsets") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+
+    "return all recordsets in descending order" in {
+      Get(s"/zones/${okZone.id}/recordsets?sort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+
+    "return recordsets of a specific type" in {
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=cname") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs4.id)
+      }
+    }
+
+    "return all recordsets if given an invalid record type" in {
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=FAKE") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)

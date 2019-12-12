@@ -132,7 +132,7 @@ def test_sync_zone_success(shared_zone_test_context):
         assert_that(latest_sync, is_not(none()))
 
         # confirm that the recordsets in DNS have been saved in vinyldns
-        recordsets = client.list_recordsets(zone['id'])['recordSets']
+        recordsets = client.list_recordsets_by_zone(zone['id'])['recordSets']
 
         assert_that(len(recordsets), is_(10))
         for rs in recordsets:
@@ -183,7 +183,7 @@ def test_sync_zone_success(shared_zone_test_context):
         assert_that(synced_zone['updated'], is_not(none()))
 
         # confirm that the updated recordsets in DNS have been saved in vinyldns
-        recordsets = client.list_recordsets(zone['id'])['recordSets']
+        recordsets = client.list_recordsets_by_zone(zone['id'])['recordSets']
         assert_that(len(recordsets), is_(12))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])

@@ -23,6 +23,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.protobuf.ProtobufConversions
@@ -135,11 +136,13 @@ class DynamoDBRecordSetRepository private[repository] (
     dynamoDBHelper.putItem(request).map(_ => recordSet)
   }
 
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
@@ -177,7 +180,15 @@ class DynamoDBRecordSetRepository private[repository] (
             keyMap.get(RECORD_SET_ID).getS
           ).mkString("~")
         }
-      } yield ListRecordSetResults(rs, nextId, startFrom, maxItems, recordNameFilter)
+      } yield ListRecordSetResults(
+        rs,
+        nextId,
+        startFrom,
+        maxItems,
+        recordNameFilter,
+        recordTypeFilter,
+        nameSort
+      )
     }
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =

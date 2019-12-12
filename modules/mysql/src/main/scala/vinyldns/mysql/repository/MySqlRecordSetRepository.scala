@@ -20,6 +20,7 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -178,25 +179,40 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     * we create a better sync and load process that is better for memory, this should
     * be the same as the other repo.
     */
-  def listRecordSets(
+  def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]
+      recordNameFilter: Option[String],
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
           val pagingKey = PagingKey(startFrom)
 
-          // make sure we sort ascending, so we can do the correct comparison later
-          val opts =
-            (pagingKey.as(
-              "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
-            ) ++
-              recordNameFilter.as("AND name LIKE {nameFilter}") ++
-              Some("ORDER BY name ASC, type ASC") ++
-              maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+          // sort by name only
+          val sortBy = nameSort match {
+            case NameSort.ASC =>
+              pagingKey.as(
+                "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+              )
+            case NameSort.DESC =>
+              pagingKey.as(
+                "AND ((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+              )
+          }
+
+          val typeFilter = recordTypeFilter.map { t =>
+            val list = t.map(fromRecordType).mkString(",")
+            s"""AND type IN ($list)"""
+          }
+
+          val opts = (sortBy ++ typeFilter ++
+            recordNameFilter.as("AND name LIKE {nameFilter}") ++
+            Some(s"""ORDER BY name ${nameSort.toString}, type ASC""") ++
+            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
             pagingKey.map(pk => 'startFromName -> pk.recordName) ++
@@ -224,7 +240,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            recordNameFilter = recordNameFilter
+            recordNameFilter = recordNameFilter,
+            recordTypeFilter = recordTypeFilter,
+            nameSort = nameSort
           )
         }
       }
