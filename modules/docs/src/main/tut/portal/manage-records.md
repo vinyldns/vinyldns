@@ -35,3 +35,10 @@ The *Additional Info* column will contain details of the change failure.
 If you make changes to the records in a zone outside of VinylDNS you must manually sync the zone so VinylDNS is aware of those records. Use the *Sync Zone* button in the *Records* pane.
 
 [![Sync zones screenshot](../img/portal/sync-zones-annotated.png){: .screenshot}](../img/portal/sync-zones-annotated.png)
+
+### Record sorting and filtering
+It is now possible to sort records in VinylDNS by record name ascending/descending order in addition to filtering the record types that will be displayed, providing more ease and control when navigating your DNS records.
+To use this functionality, make sure that you are on the *Manage Records* tab. To change the sort order for record name, click on the *Name* header in the *Records* table to toggle between ascending and descending order.
+To filter record types, click on the *Filter By Record Type* link to reveal the record type options and adjust your selection.
+  
+[![Sort records screenshot](../img/portal/manage-records-sort.png){: .screenshot}](../img/portal/manage-records-sort.png)
