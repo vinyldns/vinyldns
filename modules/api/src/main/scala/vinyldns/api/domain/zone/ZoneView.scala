@@ -48,13 +48,13 @@ case class ZoneView(zone: Zone, recordSetsMap: Map[(String, RecordType), RecordS
   def diff(otherView: ZoneView): Seq[RecordSetChange] = {
 
     def toAddRecordSetChange(recordSet: RecordSet): RecordSetChange =
-      RecordSetChangeGenerator.forSyncAdd(recordSet, zone)
+      RecordSetChangeGenerator.forZoneSyncAdd(recordSet, zone)
 
     def toDeleteRecordSetChange(recordSet: RecordSet): RecordSetChange =
-      RecordSetChangeGenerator.forSyncDelete(recordSet, zone)
+      RecordSetChangeGenerator.forZoneSyncDelete(recordSet, zone)
 
     def toUpdateRecordSetChange(newRecordSet: RecordSet, oldRecordSet: RecordSet): RecordSetChange =
-      RecordSetChangeGenerator.forSyncUpdate(oldRecordSet, newRecordSet, zone)
+      RecordSetChangeGenerator.forZoneSyncUpdate(oldRecordSet, newRecordSet, zone)
 
     def areDifferent(left: RecordSet, right: RecordSet): Boolean = !matches(left, right, zone.name)
 

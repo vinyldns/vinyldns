@@ -123,7 +123,11 @@ object RecordSetChangeGenerator extends DnsConversions {
   def forDelete(recordSet: RecordSet, zone: Zone, auth: AuthPrincipal): RecordSetChange =
     forDelete(recordSet, zone, auth.userId, List())
 
-  def forSyncAdd(recordSet: RecordSet, zone: Zone): RecordSetChange =
+  private def forSyncAdd(
+      recordSet: RecordSet,
+      zone: Zone,
+      systemMessage: Option[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = recordSet
@@ -131,10 +135,15 @@ object RecordSetChangeGenerator extends DnsConversions {
       userId = "system",
       changeType = RecordSetChangeType.Create,
       status = RecordSetChangeStatus.Complete,
-      systemMessage = Some("Change applied via zone sync")
+      systemMessage = systemMessage
     )
 
-  def forSyncUpdate(replacing: RecordSet, newRecordSet: RecordSet, zone: Zone): RecordSetChange =
+  private def forSyncUpdate(
+      replacing: RecordSet,
+      newRecordSet: RecordSet,
+      zone: Zone,
+      systemMessage: Option[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = newRecordSet.copy(
@@ -148,10 +157,14 @@ object RecordSetChangeGenerator extends DnsConversions {
       changeType = RecordSetChangeType.Update,
       status = RecordSetChangeStatus.Complete,
       updates = Some(replacing),
-      systemMessage = Some("Change applied via zone sync")
+      systemMessage = systemMessage
     )
 
-  def forSyncDelete(recordSet: RecordSet, zone: Zone): RecordSetChange =
+  private def forSyncDelete(
+      recordSet: RecordSet,
+      zone: Zone,
+      systemMessage: Option[String]
+  ): RecordSetChange =
     RecordSetChange(
       zone = zone,
       recordSet = recordSet.copy(name = relativize(recordSet.name, zone.name)),
@@ -159,6 +172,32 @@ object RecordSetChangeGenerator extends DnsConversions {
       changeType = RecordSetChangeType.Delete,
       status = RecordSetChangeStatus.Complete,
       updates = Some(recordSet),
-      systemMessage = Some("Change applied via zone sync")
+      systemMessage = systemMessage
     )
+
+  def forZoneSyncAdd(recordSet: RecordSet, zone: Zone): RecordSetChange =
+    forSyncAdd(recordSet, zone, Some("Change applied via zone sync"))
+
+  def forZoneSyncUpdate(
+      replacing: RecordSet,
+      newRecordSet: RecordSet,
+      zone: Zone
+  ): RecordSetChange =
+    forSyncUpdate(replacing, newRecordSet, zone, Some("Change applied via zone sync"))
+
+  def forZoneSyncDelete(recordSet: RecordSet, zone: Zone): RecordSetChange =
+    forSyncDelete(recordSet, zone, Some("Change applied via zone sync"))
+
+  def forRecordSyncAdd(recordSet: RecordSet, zone: Zone): RecordSetChange =
+    forSyncAdd(recordSet, zone, Some("Change applied via record sync"))
+
+  def forRecordSyncUpdate(
+      replacing: RecordSet,
+      newRecordSet: RecordSet,
+      zone: Zone
+  ): RecordSetChange =
+    forSyncUpdate(replacing, newRecordSet, zone, Some("Change applied via record sync"))
+
+  def forRecordSyncDelete(recordSet: RecordSet, zone: Zone): RecordSetChange =
+    forSyncAdd(recordSet, zone, Some("Change applied via record sync"))
 }
