@@ -298,7 +298,7 @@ object RecordSetChangeHandler {
       storedRRSet <- recordSetRepository
         .getRecordSetsByName(change.zoneId, change.recordSet.name)
       _ <- syncDnsBackendRRSet(
-        storedRRSet.headOption,
+        storedRRSet.find(_.typ == change.recordSet.typ),
         dnsBackendRRSet.headOption,
         change.zone,
         recordSetRepository,
