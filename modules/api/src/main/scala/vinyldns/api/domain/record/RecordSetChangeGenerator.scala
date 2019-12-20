@@ -189,15 +189,15 @@ object RecordSetChangeGenerator extends DnsConversions {
     forSyncDelete(recordSet, zone, Some("Change applied via zone sync"))
 
   def forRecordSyncAdd(recordSet: RecordSet, zone: Zone): RecordSetChange =
-    forSyncAdd(recordSet, zone, Some("Change applied via record sync"))
+    forSyncAdd(recordSet, zone, Some("Change applied via record set sync"))
 
   def forRecordSyncUpdate(
       replacing: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone
   ): RecordSetChange =
-    forSyncUpdate(replacing, newRecordSet, zone, Some("Change applied via record sync"))
+    forSyncUpdate(replacing, newRecordSet, zone, Some("Change applied via record set sync"))
 
   def forRecordSyncDelete(recordSet: RecordSet, zone: Zone): RecordSetChange =
-    forSyncAdd(recordSet, zone, Some("Change applied via record sync"))
+    forSyncAdd(recordSet, zone, Some("Change applied via record set sync"))
 }
