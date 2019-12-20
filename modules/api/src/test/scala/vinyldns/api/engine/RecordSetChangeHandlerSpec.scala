@@ -689,7 +689,7 @@ class RecordSetChangeHandlerSpec
       processorStatus shouldBe an[AlreadyApplied]
     }
 
-    "sync in the DNS backend if record does not exist" in {
+    "remove record from database for Add if record does not exist in DNS backend" in {
       doReturn(Interfaces.result(Right(List())))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
@@ -778,7 +778,7 @@ class RecordSetChangeHandlerSpec
       processorStatus shouldBe an[AlreadyApplied]
     }
 
-    "sync in the DNS backend if record does not exist in database" in {
+    "sync in the DNS backend for update if record does not exist in database" in {
       doReturn(Interfaces.result(Right(List(rs.copy(ttl = 100)))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
@@ -845,7 +845,7 @@ class RecordSetChangeHandlerSpec
       processorStatus shouldBe a[AlreadyApplied]
     }
 
-    "sync in the DNS backend if record exists" in {
+    "sync in the DNS backend for Delete change if record exists" in {
       doReturn(Interfaces.result(Right(List(rs))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
