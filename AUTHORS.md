@@ -35,6 +35,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - David Grizzanti
 - Alejandro Guirao
 - Daniel Jin
+- Harry Kauffman
 - Krista Khare
 - Patrick Lee
 - Sheree Liu
