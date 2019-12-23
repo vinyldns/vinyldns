@@ -18,7 +18,13 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  ChangeSet,
+  ListRecordSetByZoneResults,
+  ListRecordSetResults,
+  RecordSet,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
 import vinyldns.core.domain.membership.{
@@ -40,6 +46,15 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
+  def listRecordSets(
+      startFrom: Option[String],
+      maxItems: Option[Int],
+      recordNameFilter: String,
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
+  ): IO[ListRecordSetResults] =
+    IO.pure(ListRecordSetResults(recordNameFilter = recordNameFilter, nameSort = nameSort))
+
   def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
@@ -47,13 +62,16 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
-  ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults(nameSort = nameSort))
+  ): IO[ListRecordSetByZoneResults] =
+    IO.pure(ListRecordSetByZoneResults(nameSort = nameSort))
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())
 
-  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+  def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
+    IO.pure(None)
+
+  def getRecordSetByZone(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
     IO.pure(None)
 
   def getRecordSetCount(zoneId: String): IO[Int] = IO.pure(0)

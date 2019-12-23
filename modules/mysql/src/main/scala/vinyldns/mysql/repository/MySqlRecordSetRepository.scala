@@ -170,6 +170,74 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }.as(changeSet)
     }
 
+  def listRecordSets(
+      startFrom: Option[String],
+      maxItems: Option[Int],
+      recordNameFilter: String,
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
+  ): IO[ListRecordSetResults] =
+    monitor("repo.RecordSet.listRecordSets") {
+      IO {
+        DB.readOnly { implicit s =>
+          val pagingKey = PagingKey(startFrom)
+
+          // sort by name only
+          val sortBy = nameSort match {
+            case NameSort.ASC =>
+              pagingKey.as(
+                "AND ((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+              )
+            case NameSort.DESC =>
+              pagingKey.as(
+                "AND ((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+              )
+          }
+
+          val typeFilter = recordTypeFilter.map { t =>
+            val list = t.map(fromRecordType).mkString(",")
+            s"""AND type IN ($list)"""
+          }
+
+          val opts = (Some(s"""fqdn LIKE '${recordNameFilter.replace('*', '%')}'""") ++
+            sortBy ++ typeFilter ++
+            Some(s"""ORDER BY fqdn ${nameSort.toString}, type ASC""") ++
+            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+
+          val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
+            pagingKey.map(pk => 'startFromType -> pk.recordType) ++
+            maxItems.map(m => 'maxItems -> m)).toSeq
+
+          val query = "SELECT data FROM recordset WHERE " + opts
+
+          val results = SQL(query)
+            .bindByName(params: _*)
+            .map(toRecordSet)
+            .list()
+            .apply()
+
+          logger.error(s"""$query""")
+
+          // if size of results is less than the number returned, we don't have a next id
+          // if maxItems is None, we don't have a next id
+          val nextId =
+            maxItems
+              .filter(_ == results.size)
+              .flatMap(_ => results.lastOption.map(PagingKey.toNextId))
+
+          ListRecordSetResults(
+            recordSets = results,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            recordNameFilter = recordNameFilter,
+            recordTypeFilter = recordTypeFilter,
+            nameSort = nameSort
+          )
+        }
+      }
+    }
+
   /**
     * TODO: There is a potential issue with the way we do this today.  We load all record sets eagerly, potentially
     * causing memory pressure for the app depending on the number of records in the zone.
@@ -186,8 +254,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
-  ): IO[ListRecordSetResults] =
-    monitor("repo.RecordSet.listRecordSets") {
+  ): IO[ListRecordSetByZoneResults] =
+    monitor("repo.RecordSet.listRecordSetsByZone") {
       IO {
         DB.readOnly { implicit s =>
           val pagingKey = PagingKey(startFrom)
@@ -235,7 +303,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               .filter(_ == results.size)
               .flatMap(_ => results.lastOption.map(PagingKey.toNextId))
 
-          ListRecordSetResults(
+          ListRecordSetByZoneResults(
             recordSets = results,
             nextId = nextId,
             startFrom = startFrom,

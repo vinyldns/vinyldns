@@ -25,7 +25,13 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  ChangeSet,
+  ListRecordSetByZoneResults,
+  ListRecordSetResults,
+  RecordSet,
+  RecordSetRepository
+}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 
@@ -136,6 +142,21 @@ class DynamoDBRecordSetRepository private[repository] (
     dynamoDBHelper.putItem(request).map(_ => recordSet)
   }
 
+  def listRecordSets(
+      startFrom: Option[String],
+      maxItems: Option[Int],
+      recordNameFilter: String,
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort
+  ): IO[ListRecordSetResults] =
+    monitor("repo.RecordSet.listRecordSets") {
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
+          s"listRecordSets is not supported by VinylDNS DynamoDB RecordSetRepository"
+        )
+      )
+    }
+
   def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
@@ -143,8 +164,8 @@ class DynamoDBRecordSetRepository private[repository] (
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
-  ): IO[ListRecordSetResults] =
-    monitor("repo.RecordSet.listRecordSets") {
+  ): IO[ListRecordSetByZoneResults] =
+    monitor("repo.RecordSet.listRecordSetsByZone") {
       log.info(s"Getting recordSets for zone $zoneId")
 
       val keyConditions = Map[String, String](ZONE_ID -> zoneId)
@@ -180,7 +201,7 @@ class DynamoDBRecordSetRepository private[repository] (
             keyMap.get(RECORD_SET_ID).getS
           ).mkString("~")
         }
-      } yield ListRecordSetResults(
+      } yield ListRecordSetByZoneResults(
         rs,
         nextId,
         startFrom,

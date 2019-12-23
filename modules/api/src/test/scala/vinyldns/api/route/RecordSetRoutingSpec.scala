@@ -489,6 +489,17 @@ class RecordSetRoutingSpec
 
     def getRecordSet(
         recordSetId: String,
+        authPrincipal: AuthPrincipal
+    ): Result[RecordSetInfo] = {
+      recordSetId match {
+        case rsError.id => Left(new RuntimeException("fail"))
+        case rsNotFound.id => Left(RecordSetNotFoundError(s"$recordSetId"))
+        case rsOk.id => Right(rsOkSummary)
+      }
+    }.toResult
+
+    def getRecordSetByZone(
+        recordSetId: String,
         zoneId: String,
         authPrincipal: AuthPrincipal
     ): Result[RecordSetInfo] = {
@@ -503,6 +514,47 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
+    def listRecordSets(
+        startFrom: Option[String],
+        maxItems: Option[Int],
+        recordNameFilter: String,
+        recordTypeFilter: Option[Set[RecordType]],
+        nameSort: NameSort,
+        authPrincipal: AuthPrincipal
+    ): Result[ListRecordSetsResponse] = {
+      if (recordTypeFilter.contains(Set(CNAME))) {
+        Right(
+          ListRecordSetsResponse(
+            List(
+              RecordSetInfo(rs4, None)
+            ),
+            startFrom,
+            None,
+            maxItems,
+            "rs*",
+            recordTypeFilter,
+            nameSort
+          )
+        )
+      } else {
+        Right(
+          ListRecordSetsResponse(
+            List(
+              RecordSetInfo(rs1, None),
+              RecordSetInfo(rs2, None),
+              RecordSetInfo(rs3, None)
+            ),
+            startFrom,
+            None,
+            maxItems,
+            "rs*",
+            recordTypeFilter,
+            nameSort
+          )
+        )
+      }
+    }.toResult
+
     def listRecordSetsByZone(
         zoneId: String,
         startFrom: Option[String],
@@ -511,12 +563,12 @@ class RecordSetRoutingSpec
         recordTypeFilter: Option[Set[RecordType]],
         nameSort: NameSort,
         authPrincipal: AuthPrincipal
-    ): Result[ListRecordSetsResponse] = {
+    ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
           Right(
-            ListRecordSetsResponse(
+            ListRecordSetsByZoneResponse(
               List(
                 RecordSetListInfo(RecordSetInfo(rs4, None), AccessLevel.Read)
               ),
@@ -530,7 +582,7 @@ class RecordSetRoutingSpec
           )
         case okZone.id if recordTypeFilter.isEmpty =>
           Right(
-            ListRecordSetsResponse(
+            ListRecordSetsByZoneResponse(
               List(
                 RecordSetListInfo(RecordSetInfo(rs1, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(rs2, None), AccessLevel.Read),
@@ -872,7 +924,7 @@ class RecordSetRoutingSpec
 
   "GET recordsets" should {
     "return all recordsets" in {
-      Get(s"/zones/${okZone.id}/recordsets") ~> recordSetRoute ~> check {
+      Get(s"/recordsets?recordNameFilter=rs*") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
@@ -881,16 +933,16 @@ class RecordSetRoutingSpec
     }
 
     "return all recordsets in descending order" in {
-      Get(s"/zones/${okZone.id}/recordsets?sort=desc") ~> recordSetRoute ~> check {
+      Get(s"/recordsets?recordNameFilter=rs*&nameSort=desc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
-          .only(rs1.id, rs2.id, rs3.id)
+          .only(rs3.id, rs2.id, rs1.id)
       }
     }
 
     "return recordsets of a specific type" in {
-      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=cname") ~> recordSetRoute ~> check {
+      Get(s"/recordsets?recordNameFilter=rs*&recordTypeFilter=cname") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
@@ -899,9 +951,47 @@ class RecordSetRoutingSpec
     }
 
     "return all recordsets if given an invalid record type" in {
-      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=FAKE") ~> recordSetRoute ~> check {
+      Get(s"/recordsets?recordNameFilter=rs*&recordTypeFilter=FAKE") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+  }
+
+  "GET recordsets by zone" should {
+    "return all recordsets" in {
+      Get(s"/zones/${okZone.id}/recordsets") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+
+    "return all recordsets in descending order" in {
+      Get(s"/zones/${okZone.id}/recordsets?nameSort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs3.id, rs2.id, rs1.id)
+      }
+    }
+
+    "return recordsets of a specific type" in {
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=cname") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs4.id)
+      }
+    }
+
+    "return all recordsets if given an invalid record type" in {
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=FAKE") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs1.id, rs2.id, rs3.id)
       }

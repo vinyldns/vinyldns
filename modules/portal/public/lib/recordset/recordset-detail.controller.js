@@ -37,25 +37,11 @@
                     });
             };
 
-            $scope.getRecordSetChanges = function(recordSetId) {
-                function success(response) {
-                    $scope.recordSetChanges = response.data['recordSetChanges'];
-                }
-
-                recordsService
-                    .getRecordSetChanges(recordSetId)
-                    .then(success)
-                    .catch(function (error) {
-                        handleError(error, 'dnsChangesService::getRecordSetChanges-failure');
-                    });
-            }
-
             $scope.refresh = function() {
                 var id = $location.absUrl().toString();
                 id = id.substring(id.lastIndexOf('/') + 1);
 
                 $scope.getRecordSet(id);
-                $scope.getRecordSetChanges(id);
             };
 
             $timeout($scope.refresh, 0);

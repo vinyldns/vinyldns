@@ -34,6 +34,16 @@ case class ListRecordSetResults(
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
     maxItems: Option[Int] = None,
+    recordNameFilter: String,
+    recordTypeFilter: Option[Set[RecordType]] = None,
+    nameSort: NameSort
+)
+
+case class ListRecordSetByZoneResults(
+    recordSets: List[RecordSet] = List[RecordSet](),
+    nextId: Option[String] = None,
+    startFrom: Option[String] = None,
+    maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
     recordTypeFilter: Option[Set[RecordType]] = None,
     nameSort: NameSort

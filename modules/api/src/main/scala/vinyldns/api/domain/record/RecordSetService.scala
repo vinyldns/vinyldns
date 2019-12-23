@@ -21,16 +21,19 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.api.route.ListRecordSetsResponse
+import vinyldns.api.route.{ListRecordSetsByZoneResponse, ListRecordSetsResponse}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
+import org.xbill.DNS.ReverseMap
+import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 object RecordSetService {
   def apply(
@@ -154,23 +157,6 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
-  def getRecordSetChanges(
-      recordSetId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetRecordSetChangesResponse] =
-    for {
-      recordSetChangesResults <- recordChangeRepository
-        .listRecordSetRecordSetChanges(recordSetId)
-        .toResult[ListRecordSetChangesResults]
-      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-    } yield ListRecordSetRecordSetChangesResponse(
-      recordSetId,
-      recordSetChangesResults,
-      recordSetChangesInfo
-    )
-
   def getRecordSetByZone(
       recordSetId: String,
       zoneId: String,
@@ -189,6 +175,39 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
+  def listRecordSets(
+      startFrom: Option[String],
+      maxItems: Option[Int],
+      recordNameFilter: String,
+      recordTypeFilter: Option[Set[RecordType]],
+      nameSort: NameSort,
+      authPrincipal: AuthPrincipal
+  ): Result[ListRecordSetsResponse] =
+    for {
+      _ <- validRecordNameFilterLength(recordNameFilter).toResult
+      recordName <- formatRecordNameFilter(recordNameFilter)
+      recordSetResults <- recordSetRepository
+        .listRecordSets(
+          startFrom,
+          maxItems,
+          recordName,
+          recordTypeFilter,
+          nameSort
+        )
+        .toResult[ListRecordSetResults]
+      rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
+      rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
+      setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
+    } yield ListRecordSetsResponse(
+      setsWithGroupName,
+      recordSetResults.startFrom,
+      recordSetResults.nextId,
+      recordSetResults.maxItems,
+      recordNameFilter,
+      recordSetResults.recordTypeFilter,
+      recordSetResults.nameSort
+    )
+
   def listRecordSetsByZone(
       zoneId: String,
       startFrom: Option[String],
@@ -197,7 +216,7 @@ class RecordSetService(
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetsResponse] =
+  ): Result[ListRecordSetsByZoneResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -210,12 +229,12 @@ class RecordSetService(
           recordTypeFilter,
           nameSort
         )
-        .toResult[ListRecordSetResults]
+        .toResult[ListRecordSetByZoneResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
       setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
       setsWithAccess <- getListAccessLevels(authPrincipal, setsWithGroupName, zone).toResult
-    } yield ListRecordSetsResponse(
+    } yield ListRecordSetsByZoneResponse(
       setsWithAccess,
       recordSetResults.startFrom,
       recordSetResults.nextId,
@@ -387,4 +406,12 @@ class RecordSetService(
           .toResult
       case result => IO(result).toResult
     }
+
+  def formatRecordNameFilter(recordNameFilter: String): Result[String] = {
+    if (validateIpv4Address(recordNameFilter).isValid || validateIpv6Address(recordNameFilter).isValid) {
+      ReverseMap.fromAddress(recordNameFilter).toString
+    } else {
+      ensureTrailingDot(recordNameFilter)
+    }
+  }.toResult
 }

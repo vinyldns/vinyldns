@@ -21,7 +21,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -301,5 +301,12 @@ object RecordSetValidations {
       updates.zoneId == existing.zoneId,
       (),
       InvalidRequest("Cannot update RecordSet's zone ID.")
+    )
+
+  def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest("recordNameFilter must be at least two characters.")
+    )(
+      recordNameFilter.length > 1
     )
 }
