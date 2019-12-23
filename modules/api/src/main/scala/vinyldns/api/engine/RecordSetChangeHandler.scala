@@ -21,9 +21,11 @@ import cats.implicits._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused, TryAgain}
+import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 
 object RecordSetChangeHandler {
 
@@ -57,7 +59,13 @@ object RecordSetChangeHandler {
   )(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
-      completedState <- fsm(Pending(recordSetChange), conn, wildCardExists)
+      completedState <- fsm(
+        Pending(recordSetChange),
+        conn,
+        wildCardExists,
+        recordSetRepository,
+        recordChangeRepository
+      )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
       _ <- recordSetRepository.apply(changeSet)
       _ <- recordChangeRepository.save(changeSet)
@@ -114,46 +122,78 @@ object RecordSetChangeHandler {
   // Failure to process change. Permitted to retry.
   final case class Retry(change: RecordSetChange) extends ProcessingStatus
 
-  def getProcessingStatus(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessingStatus] = {
+  def syncAndGetProcessingStatusFromDnsBackend(
+      change: RecordSetChange,
+      dnsConn: DnsConnection,
+      recordSetRepository: RecordSetRepository,
+      recordChangeRepository: RecordChangeRepository,
+      performSync: Boolean = false
+  ): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(matches(_, recordSet, zoneName))
 
-    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).value.map {
+    // Determine processing status by comparing request against disposition of DNS backend
+    def getProcessingStatus(
+        change: RecordSetChange,
+        existingRecords: List[RecordSet]
+    ): IO[ProcessingStatus] = IO {
+      change.changeType match {
+        case RecordSetChangeType.Create =>
+          if (existingRecords.isEmpty) ReadyToApply(change)
+          else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
+            AlreadyApplied(change)
+          else Failure(change, "Incompatible record already exists in DNS.")
+
+        case RecordSetChangeType.Update =>
+          if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
+            AlreadyApplied(change)
+          else {
+            // record must not exist in the DNS backend, or be synced if it exists
+            val canApply = existingRecords.isEmpty ||
+              change.updates.exists(oldRs => isDnsMatch(existingRecords, oldRs, change.zone.name))
+
+            if (canApply) ReadyToApply(change)
+            else
+              Failure(
+                change,
+                "This record set is out of sync with the DNS backend; " +
+                  "sync this zone before attempting to update this record set."
+              )
+          }
+
+        case RecordSetChangeType.Delete =>
+          if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
+          else AlreadyApplied(change) // we did not find the record set, so already applied
+      }
+    }
+
+    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).value.flatMap {
       case Right(existingRecords) =>
-        change.changeType match {
-          case RecordSetChangeType.Create =>
-            if (existingRecords.isEmpty) ReadyToApply(change)
-            else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
-              AlreadyApplied(change)
-            else Failure(change, "Incompatible record already exists in DNS.")
-
-          case RecordSetChangeType.Update =>
-            if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
-              AlreadyApplied(change)
-            else {
-              // record must not exist in the DNS backend, or be synced if it exists
-              val canApply = existingRecords.isEmpty ||
-                change.updates.exists(oldRs => isDnsMatch(existingRecords, oldRs, change.zone.name))
-
-              if (canApply) ReadyToApply(change)
-              else
-                Failure(
-                  change,
-                  "This record set is out of sync with the DNS backend; " +
-                    "sync this zone before attempting to update this record set."
-                )
-            }
-
-          case RecordSetChangeType.Delete =>
-            if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
-            else AlreadyApplied(change) // we did not find the record set, so already applied
+        if (performSync) {
+          for {
+            dnsBackendRRSet <- syncAgainstDnsBackend(
+              change,
+              existingRecords,
+              recordSetRepository,
+              recordChangeRepository
+            )
+            processingStatus <- getProcessingStatus(change, dnsBackendRRSet)
+          } yield processingStatus
+        } else {
+          getProcessingStatus(change, existingRecords)
         }
-      case Left(_: TryAgain) => Retry(change)
-      case Left(error) => Failure(change, error.getMessage)
+      case Left(_: TryAgain) => IO(Retry(change))
+      case Left(error) => IO(Failure(change, error.getMessage))
     }
   }
 
-  private def fsm(state: ProcessorState, conn: DnsConnection, wildcardExists: Boolean)(
+  private def fsm(
+      state: ProcessorState,
+      conn: DnsConnection,
+      wildcardExists: Boolean,
+      recordSetRepository: RecordSetRepository,
+      recordChangeRepository: RecordChangeRepository
+  )(
       implicit timer: Timer[IO]
   ): IO[ProcessorState] = {
 
@@ -176,21 +216,27 @@ object RecordSetChangeHandler {
       val toRun =
         if (wildcardExists || state.change.recordSet.typ == RecordType.NS) IO.pure(skip) else orElse
 
-      toRun.flatMap(fsm(_, conn, wildcardExists))
+      toRun.flatMap(fsm(_, conn, wildcardExists, recordSetRepository, recordChangeRepository))
     }
 
     state match {
       case Pending(change) =>
         logger.info(s"CHANGE PENDING; ${getChangeLog(change)}")
-        bypassValidation(Validated(change))(orElse = validate(change, conn))
+        bypassValidation(Validated(change))(
+          orElse = validate(change, conn, recordSetRepository, recordChangeRepository)
+        )
 
       case Validated(change) =>
         logger.info(s"CHANGE VALIDATED; ${getChangeLog(change)}")
-        apply(change, conn).flatMap(fsm(_, conn, wildcardExists))
+        apply(change, conn).flatMap(
+          fsm(_, conn, wildcardExists, recordSetRepository, recordChangeRepository)
+        )
 
       case Applied(change) =>
         logger.info(s"CHANGE APPLIED; ${getChangeLog(change)}")
-        bypassValidation(Verified(change.successful))(orElse = verify(change, conn))
+        bypassValidation(Verified(change.successful))(
+          orElse = verify(change, conn, recordSetRepository, recordChangeRepository)
+        )
 
       case Verified(change) =>
         logger.info(s"CHANGE VERIFIED; ${getChangeLog(change)}")
@@ -207,9 +253,74 @@ object RecordSetChangeHandler {
     }
   }
 
+  private def syncAgainstDnsBackend(
+      change: RecordSetChange,
+      dnsBackendRRSet: List[RecordSet],
+      recordSetRepository: RecordSetRepository,
+      recordChangeRepository: RecordChangeRepository
+  ): IO[List[RecordSet]] = {
+
+    /*
+     * Sync current VinylDNS disposition of DNS records against DNS backend for the following conditions:
+     * - Create record from database for DELETE or UPDATE request if missing in database but exists in DNS backend
+     * - Delete record from database for ADD request if exists in database but does not exist in DNS backend
+     */
+    def syncDnsBackendRRSet(
+        storedRRSet: Option[RecordSet],
+        dnsBackendRRSet: Option[RecordSet],
+        zone: Zone,
+        recordSetRepository: RecordSetRepository,
+        recordChangeRepository: RecordChangeRepository
+    ): IO[Unit] = {
+      val recordSetToSync = (storedRRSet, dnsBackendRRSet) match {
+        case (Some(savedRs), None) if change.changeType == RecordSetChangeType.Create =>
+          Some(RecordSetChangeGenerator.forRecordSyncDelete(savedRs, zone))
+        case (None, Some(existingRs))
+            if change.changeType == RecordSetChangeType.Delete ||
+              change.changeType == RecordSetChangeType.Update =>
+          Some(RecordSetChangeGenerator.forRecordSyncAdd(existingRs, zone))
+        case _ => None
+      }
+
+      // Generate record set and record set change to store
+      recordSetToSync
+        .map { rsc =>
+          val changeSet = ChangeSet(rsc)
+          for {
+            _ <- recordChangeRepository.save(changeSet)
+            _ <- recordSetRepository.apply(changeSet)
+          } yield ()
+        }
+        .getOrElse(IO.unit)
+    }
+
+    for {
+      storedRRSet <- recordSetRepository
+        .getRecordSetsByName(change.zoneId, change.recordSet.name)
+      _ <- syncDnsBackendRRSet(
+        storedRRSet.find(_.typ == change.recordSet.typ),
+        dnsBackendRRSet.headOption,
+        change.zone,
+        recordSetRepository,
+        recordChangeRepository
+      )
+    } yield dnsBackendRRSet
+  }
+
   /* Step 1: Validate the change hasn't already been applied */
-  private def validate(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
-    getProcessingStatus(change, dnsConn).map {
+  private def validate(
+      change: RecordSetChange,
+      dnsConn: DnsConnection,
+      recordSetRepository: RecordSetRepository,
+      recordChangeRepository: RecordChangeRepository
+  ): IO[ProcessorState] =
+    syncAndGetProcessingStatusFromDnsBackend(
+      change,
+      dnsConn,
+      recordSetRepository,
+      recordChangeRepository,
+      true
+    ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
@@ -237,8 +348,18 @@ object RecordSetChangeHandler {
     }
 
   /* Step 3: Verify the record was created. If the ProcessorState is applied or failed we requeue the record.*/
-  private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
-    getProcessingStatus(change, dnsConn).map {
+  private def verify(
+      change: RecordSetChange,
+      dnsConn: DnsConnection,
+      recordSetRepository: RecordSetRepository,
+      recordChangeRepository: RecordChangeRepository
+  ): IO[ProcessorState] =
+    syncAndGetProcessingStatusFromDnsBackend(
+      change,
+      dnsConn,
+      recordSetRepository,
+      recordChangeRepository
+    ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case Failure(_, message) =>
         Completed(

@@ -26,7 +26,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
-import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply, Requeue}
+import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces}
 import vinyldns.core.domain.batch.{
@@ -129,6 +129,7 @@ class RecordSetChangeHandlerSpec
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -167,6 +168,7 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -211,6 +213,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -256,6 +259,7 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -299,6 +303,7 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
@@ -353,6 +358,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -394,6 +400,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, rsChange)
       a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
@@ -572,6 +579,9 @@ class RecordSetChangeHandlerSpec
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List(updateChange.recordSet)))
+        .when(mockRsRepo)
+        .getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, updateChange)
       test.unsafeRunSync()
@@ -605,7 +615,8 @@ class RecordSetChangeHandlerSpec
         changeType = RecordSetChangeType.Update,
         updates = Some(rsChange.recordSet.copy(ttl = 87))
       )
-      doReturn(Interfaces.result(Right(List(updateChange.recordSet.copy(ttl = 30)))))
+      val dnsBackendRs = updateChange.recordSet.copy(ttl = 30)
+      doReturn(Interfaces.result(Right(List(dnsBackendRs))))
         .when(mockConn)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
       doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
@@ -613,6 +624,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List(dnsBackendRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockConn, updateChange)
       test.unsafeRunSync()
@@ -643,9 +655,18 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List())))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus =
-        RecordSetChangeHandler.getProcessingStatus(rsChange, mockConn).unsafeRunSync()
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            rsChange,
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
       processorStatus shouldBe a[ReadyToApply]
     }
 
@@ -653,33 +674,68 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List(rs))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus =
-        RecordSetChangeHandler.getProcessingStatus(rsChange, mockConn).unsafeRunSync()
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            rsChange,
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
       processorStatus shouldBe an[AlreadyApplied]
     }
 
-    "return Failure if changes exist in the DNS backend that do not match the requested change" in {
-      doReturn(Interfaces.result(Right(List(rs.copy(ttl = 300)))))
+    "remove record from database for Add if record does not exist in DNS backend" in {
+      doReturn(Interfaces.result(Right(List())))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
+
       val processorStatus =
-        RecordSetChangeHandler.getProcessingStatus(rsChange, mockConn).unsafeRunSync()
-      processorStatus shouldBe a[Failure]
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            rsChange,
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
+
+      verify(mockRsRepo).apply(rsRepoCaptor.capture())
+      verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
+      processorStatus shouldBe a[ReadyToApply]
     }
   }
 
   "getProcessingStatus for Update" should {
     "return ReadyToApply if change hasn't been applied and current record set matches DNS backend" in {
+      val storedRs = rs.copy(ttl = 300)
       val syncedRsChange =
-        rsChange.copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 300)))
+        rsChange.copy(changeType = RecordSetChangeType.Update, updates = Some(storedRs))
       doReturn(Interfaces.result(Right(List(syncedRsChange.updates.get))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List(storedRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus =
-        RecordSetChangeHandler.getProcessingStatus(syncedRsChange, mockConn).unsafeRunSync()
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            syncedRsChange,
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
       processorStatus shouldBe a[ReadyToApply]
     }
 
@@ -687,12 +743,16 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List())))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
-        .getProcessingStatus(
+        .syncAndGetProcessingStatusFromDnsBackend(
           rsChange
             .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 300))),
-          mockConn
+          mockConn,
+          mockRsRepo,
+          mockChangeRepo,
+          true
         )
         .unsafeRunSync()
       processorStatus shouldBe a[ReadyToApply]
@@ -702,25 +762,49 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List(rsChange.recordSet))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List(rsChange.recordSet)))
+        .when(mockRsRepo)
+        .getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
-        .getProcessingStatus(rsChange.copy(changeType = RecordSetChangeType.Update), mockConn)
+        .syncAndGetProcessingStatusFromDnsBackend(
+          rsChange.copy(changeType = RecordSetChangeType.Update),
+          mockConn,
+          mockRsRepo,
+          mockChangeRepo,
+          true
+        )
         .unsafeRunSync()
       processorStatus shouldBe an[AlreadyApplied]
     }
 
-    "return Failure if DNS backend changes exist and do not match current record set" in {
-      doReturn(Interfaces.result(Right(List(rsChange.recordSet.copy(ttl = 300)))))
+    "sync in the DNS backend for update if record does not exist in database" in {
+      doReturn(Interfaces.result(Right(List(rs.copy(ttl = 100)))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val processorStatus = RecordSetChangeHandler
-        .getProcessingStatus(
-          rsChange.copy(changeType = RecordSetChangeType.Update, updates = None),
-          mockConn
-        )
-        .unsafeRunSync()
-      processorStatus shouldBe a[Failure]
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty))
+        .when(mockRsRepo)
+        .getRecordSetsByName(cs.zoneId, rs.name)
+
+      val processorStatus =
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            rsChange
+              .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 100))),
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
+
+      verify(mockRsRepo).apply(rsRepoCaptor.capture())
+      verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
+      processorStatus shouldBe a[ReadyToApply]
     }
   }
 
@@ -729,9 +813,16 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List(rs))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
-        .getProcessingStatus(rsChange.copy(changeType = RecordSetChangeType.Delete), mockConn)
+        .syncAndGetProcessingStatusFromDnsBackend(
+          rsChange.copy(changeType = RecordSetChangeType.Delete),
+          mockConn,
+          mockRsRepo,
+          mockChangeRepo,
+          true
+        )
         .unsafeRunSync()
       processorStatus shouldBe a[ReadyToApply]
     }
@@ -740,11 +831,47 @@ class RecordSetChangeHandlerSpec
       doReturn(Interfaces.result(Right(List())))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
-        .getProcessingStatus(rsChange.copy(changeType = RecordSetChangeType.Delete), mockConn)
+        .syncAndGetProcessingStatusFromDnsBackend(
+          rsChange.copy(changeType = RecordSetChangeType.Delete),
+          mockConn,
+          mockRsRepo,
+          mockChangeRepo,
+          true
+        )
         .unsafeRunSync()
       processorStatus shouldBe a[AlreadyApplied]
+    }
+
+    "sync in the DNS backend for Delete change if record exists" in {
+      doReturn(Interfaces.result(Right(List(rs))))
+        .when(mockConn)
+        .resolve(rs.name, rsChange.zone.name, rs.typ)
+
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(List.empty))
+        .when(mockRsRepo)
+        .getRecordSetsByName(cs.zoneId, rs.name)
+
+      val processorStatus =
+        RecordSetChangeHandler
+          .syncAndGetProcessingStatusFromDnsBackend(
+            rsChange
+              .copy(changeType = RecordSetChangeType.Delete),
+            mockConn,
+            mockRsRepo,
+            mockChangeRepo,
+            true
+          )
+          .unsafeRunSync()
+
+      verify(mockRsRepo).apply(rsRepoCaptor.capture())
+      verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
+      processorStatus shouldBe a[ReadyToApply]
     }
   }
 }

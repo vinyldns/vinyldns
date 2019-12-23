@@ -135,7 +135,7 @@ class ZoneSyncHandlerSpec
     records = List(NSData("172.17.42.1."))
   )
 
-  private val testRecordSetChange = RecordSetChangeGenerator.forSyncAdd(testRecord2, testZone)
+  private val testRecordSetChange = RecordSetChangeGenerator.forZoneSyncAdd(testRecord2, testZone)
   private val testChangeSet =
     ChangeSet.apply(testRecordSetChange).copy(status = ChangeSetStatus.Applied)
   private val testZoneChange =

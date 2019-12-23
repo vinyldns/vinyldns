@@ -23,14 +23,14 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
 object RecordSetChangeStatus extends Enumeration {
   type RecordSetChangeStatus = Value
-  val Pending, Complete, Failed = Value
+  val Pending, Complete, Failed, Synced = Value
 
-  def isDone(status: RecordSetChangeStatus): Boolean = (status == Complete || status == Failed)
+  def isDone(status: RecordSetChangeStatus): Boolean = status == Complete || status == Failed
 }
 
 object RecordSetChangeType extends Enumeration {
   type RecordSetChangeType = Value
-  val Create, Update, Delete = Value
+  val Create, Update, Delete, Sync = Value
 }
 import RecordSetChangeStatus._
 import RecordSetChangeType._
