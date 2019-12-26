@@ -17,5 +17,5 @@
 (function() {
     'use strict';
 
-    angular.module('recordset', []);
+    angular.module('dns-change', []);
 })();

@@ -1,0 +1,345 @@
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+
+@content = {
+    <!-- PAGE CONTENT -->
+    {{
+    @* Passes params from play to angular *@
+    ""
+    }}
+
+    <div class="right_col" role="main" >
+
+        <!-- START BREADCRUMB -->
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a></li>
+            <li><a href="/zones">RecordSets</a></li>
+        </ul>
+        <!-- END BREADCRUMB -->
+
+        <!-- PAGE TITLE -->
+        <div class="page-title">
+            <h3><span class="fa fa-table"></span> Global RecordSet Search
+            </h3>
+        </div>
+        <!-- END PAGE TITLE -->
+
+        <!-- PAGE CONTENT WRAPPER -->
+        <div class="page-content-wrap">
+
+            <div class="alert-wrapper">
+                <div ng-repeat="alert in alerts">
+                    <notification ng-model="alert"></notification>
+                </div>
+            </div>
+
+            <!-- START RECORD TABLE -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Records {{ getRecordPageTitle() }}</h3>
+                </div>
+
+                <div class="panel-body">
+                    <div class="vinyldns-panel-top">
+                        <div class="btn-group">
+                            <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
+                            <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
+                            <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+                        </div>
+
+                        <div>
+                            <form class="input-group" ng-submit="refreshRecords()">
+                                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                    </span>
+                                    <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
+                                </div>
+                                <div class="dropdown">
+                                    <a class="record-type-filter-heading force-cursor dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filter By Record Type <i class="fa fa-chevron-down"></i></a>
+                                    <ul class="dropdown-menu record-type-filters" aria-labelledby="dropdownMenu1">
+                                        <li ng-repeat="recordType in readRecordTypes"><input type="checkbox" ng-checked="selectedRecordTypes.indexOf(recordType) != -1" ng-click="toggleCheckedRecordType(recordType)"> {{recordType}}</li>
+                                    </ul>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- PAGINATION -->
+                    <div class="dataTables_paginate">
+                        <ul class="pagination">
+                            <li class="paginate_button previous">
+                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                            </li>
+                            <li class="paginate_button next">
+                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- END PAGINATION -->
+
+                    <table id="recordDataTable" class="table table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th class="col-md-4">
+                                <a class="force-cursor" ng-click="toggleNameSort()">Name
+                                    <i class="fa {{nameSortSymbol}}"></i>
+                                </a>
+                            </th>
+                            <th>Type</th>
+                            <th>TTL</th>
+                            <th class="col-md-4">Record Data</th>
+                            @if(meta.sharedDisplayEnabled) {
+                            <th ng-if="zoneInfo.shared">Owner Group Name</th>
+                            }
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="(recordName, record) in records track by $index">
+                            <td>
+                                <div ng-if="record.isDotted" class="text-danger wrap-long-text" data-toggle="tooltip" data-placement="top"
+                                     title="Dotted hosts are invalid! Please delete or update without a '.'">
+                                    {{record.name}} <span class="fa fa-warning" />
+                                </div>
+                                <div class="wrap-long-text" ng-if="!record.isDotted">
+                                    {{record.name}}
+                                </div>
+                            </td>
+                            <td class="wrap-long-text">{{record.type}}</td>
+                            <td class="wrap-long-text">{{record.ttl}}</td>
+                            <td class="record-data">
+                        <span ng-if="record.accessLevel != 'NoAccess'">
+                        <span ng-if="record.type == 'A'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.aRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.aRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'AAAA'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.aaaaRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.aaaaRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
+                        <span ng-if="record.type == 'DS'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.dsItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Keytag: {{ item.keytag }} | Algorithm: {{ item.algorithm }} | Digest Type: {{ item.digesttype }} | Digest: {{ item.digest }}
+                                </li>
+                                <span ng-if="record.onlyFour && record.mxItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'MX'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.mxItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Preference: {{ item.preference }} | Exchange: {{ item.exchange }}
+                                </li>
+                                <span ng-if="record.onlyFour && record.mxItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'NS'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.nsRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.nsRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'PTR'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.ptrRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.ptrRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SOA'">
+                            <table>
+                                <tr>
+                                    <td class="record-data-label"> Mname: </td>
+                                    <td class="wrap-long-text"> {{ record.soaMName }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Rname: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRName }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Serial: </td>
+                                    <td class="wrap-long-text"> {{ record.soaSerial }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Refresh: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRefresh }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Retry: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRetry }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Expire: </td>
+                                    <td class="wrap-long-text"> {{ record.soaExpire }} </td>
+                                </tr>
+                                <tr>
+                                    <td class="record-data-label"> Minimum:&emsp; </td>
+                                    <td class="wrap-long-text"> {{ record.soaMinimum }} </td>
+                                </tr>
+                            </table>
+                        </span>
+                        <span ng-if="record.type == 'SPF'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.spfRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.spfRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SRV'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.srvItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Priority: {{ item.priority }} | Weight: {{ item.weight }} | Port: {{ item.port }}
+                                    | Target: {{ item.target }}
+                                </li>
+                                <span ng-if="record.onlyFour && record.srvItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'NAPTR'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.naptrItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Order: {{ item.order }} | Preference: {{ item.preference }} | Flags: {{ item.flags }}
+                                    | Service: {{ item.service }} | Regexp: {{ item.regexp }} | Replacement: {{ item.replacement }}
+                                </li>
+                                <li ng-if="record.onlyFour && record.naptrItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SSHFP'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.sshfpItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Algorithm: {{ sshfpAlgorithms[item.algorithm-1].name }}
+                                    | Type: {{ sshfpTypes[item.type-1].name }}
+                                    | Fingerprint: {{ item.fingerprint }}
+                                </li>
+                                <span ng-if="record.onlyFour && record.sshfpItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'TXT'">
+                            <ul class="table-cell-list">
+                                <li class="wrap-long-text" ng-repeat="item in record.textRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.textRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
+                        </span>
+                            </td>
+                            @if(meta.sharedDisplayEnabled) {
+                            <td ng-if="zoneInfo.shared">
+                                <a ng-if="record.ownerGroupName && canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
+                                <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName"></span>
+                                <span ng-if="!record.ownerGroupId">Unowned</span>
+                                <span ng-if="record.ownerGroupId && !record.ownerGroupName" class="text-danger" data-toggle="tooltip" data-placement="top"
+                                      title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
+                            </td>
+                            }
+                            <td>
+                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                            <div class="table-form-group">
+                                <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
+                                <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>
+                            </div>
+                        </span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- PAGINATION -->
+                    <div class="dataTables_paginate">
+                        <ul class="pagination">
+                            <li class="paginate_button previous">
+                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                            </li>
+                            <li class="paginate_button next">
+                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- END PAGINATION -->
+
+                </div>
+                <div class="panel-footer"></div>
+            </div>
+            <!-- END RECORD TABLE -->
+
+        </div>
+        <!-- END PAGE CONTENT WRAPPER -->
+
+    </div>
+    <!-- END PAGE CONTENT -->
+}
+
+@plugins = {
+<script type='text/javascript' src='/public/gentelella/vendors/iCheck/icheck.min.js'></script>
+<script type="text/javascript" src="/public/gentelella/vendors/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js"></script>
+<script type="text/javascript" src="/public/gentelella/vendors/jQuery-Smart-Wizard/js/jquery.smartWizard.js"></script>
+}
+
+@main(rootAccountName)("RecordSetsController")("Recordsets")(content)(plugins)

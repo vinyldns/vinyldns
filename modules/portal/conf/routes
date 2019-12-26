@@ -16,6 +16,7 @@ GET           /zones/:zid                        @controllers.FrontendController
 GET           /dnschanges                        @controllers.FrontendController.viewAllBatchChanges
 GET           /dnschanges/new                    @controllers.FrontendController.viewNewBatchChange
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
+GET           /recordsets                        @controllers.FrontendController.viewRecordSets
 GET           /recordsets/:rsid                  @controllers.FrontendController.viewRecordSet(rsid: String)
 
 ### Routes to process requests, get data ###
@@ -24,6 +25,7 @@ POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
+GET           /api/recordsets                    @controllers.VinylDNS.listRecordSets
 GET           /api/recordsets/:id                @controllers.VinylDNS.getRecordSet(id: String)
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
@@ -35,7 +37,7 @@ PUT           /api/zones/:id                     @controllers.VinylDNS.updateZon
 DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZone(id: String)
 POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(id: String)
 
-GET           /api/zones/:id/recordsets          @controllers.VinylDNS.getRecordSets(id: String)
+GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)
 POST          /api/zones/:id/recordsets          @controllers.VinylDNS.addRecordSet(id: String)
 DELETE        /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.deleteRecordSet(zid: String, rid:String)
 PUT           /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.updateRecordSet(zid: String, rid:String)
