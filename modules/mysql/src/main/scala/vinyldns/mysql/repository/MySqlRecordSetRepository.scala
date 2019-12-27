@@ -48,7 +48,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val FIND_BY_ID =
     sql"""
-      |SELECT data
+      |SELECT data, fqdn
       |  FROM recordset
       | WHERE id = {id}
     """.stripMargin
@@ -208,7 +208,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             maxItems.map(m => 'maxItems -> m)).toSeq
 
-          val query = "SELECT data FROM recordset WHERE " + opts
+          val query = "SELECT data, fqdn FROM recordset WHERE " + opts
 
           val results = SQL(query)
             .bindByName(params: _*)
@@ -431,7 +431,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
   val unknownRecordType: Int = 100
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
-    fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
+    fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)), rs.stringOpt(2))
 
   def fromRecordType(typ: RecordType): Int =
     typ match {

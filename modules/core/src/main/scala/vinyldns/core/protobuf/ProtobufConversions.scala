@@ -63,19 +63,19 @@ trait ProtobufConversions {
       }
     record.RecordSetChange(
       zone = fromPB(chg.getZone),
-      recordSet = fromPB(chg.getRecordSet),
+      recordSet = fromPB(chg.getRecordSet, None),
       userId = chg.getUserId,
       changeType = RecordSetChangeType.withName(chg.getTyp),
       status = status,
       created = new DateTime(chg.getCreated),
       systemMessage = if (chg.hasSystemMessage) Option(chg.getSystemMessage) else None,
-      updates = if (chg.hasUpdates) Option(fromPB(chg.getUpdates)) else None,
+      updates = if (chg.hasUpdates) Option(fromPB(chg.getUpdates, None)) else None,
       id = chg.getId,
       singleBatchChangeIds = chg.getSingleBatchChangeIdsList.asScala.toList
     )
   }
 
-  def fromPB(rs: VinylDNSProto.RecordSet): RecordSet =
+  def fromPB(rs: VinylDNSProto.RecordSet, fqdn: Option[String]): RecordSet =
     record.RecordSet(
       zoneId = rs.getZoneId,
       name = rs.getName,
@@ -88,7 +88,8 @@ trait ProtobufConversions {
       records =
         rs.getRecordList.asScala.map(rd => fromPB(rd, RecordType.withName(rs.getTyp))).toList,
       account = rs.getAccount,
-      ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None
+      ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None,
+      fqdn = fqdn
     )
 
   def fromPB(zn: VinylDNSProto.Zone): Zone = {

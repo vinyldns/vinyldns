@@ -183,7 +183,8 @@ trait DnsJsonProtocol extends JsonValidation {
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system"),
-        (js \ "ownerGroupId").optional[String]
+        (js \ "ownerGroupId").optional[String],
+        (js \ "fqdn").optional[String]
       ).mapN(RecordSet.apply)
 
       // Put additional record set level checks below
@@ -249,7 +250,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
-        ("ownerGroupName" -> rs.ownerGroupName)
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn)
   }
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =

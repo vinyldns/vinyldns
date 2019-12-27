@@ -128,7 +128,8 @@ case class RecordSetListInfo(
     account: String,
     accessLevel: AccessLevel,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    fqdn: Option[String]
 )
 
 object RecordSetListInfo {
@@ -146,7 +147,8 @@ object RecordSetListInfo {
       account = recordSet.account,
       accessLevel = accessLevel,
       ownerGroupId = recordSet.ownerGroupId,
-      ownerGroupName = recordSet.ownerGroupName
+      ownerGroupName = recordSet.ownerGroupName,
+      fqdn = recordSet.fqdn
     )
 }
 
@@ -162,7 +164,8 @@ case class RecordSetInfo(
     id: String,
     account: String,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    fqdn: Option[String]
 )
 
 object RecordSetInfo {
@@ -179,7 +182,8 @@ object RecordSetInfo {
       id = recordSet.id,
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
-      ownerGroupName = groupName
+      ownerGroupName = groupName,
+      fqdn = recordSet.fqdn
     )
 }
 

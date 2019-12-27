@@ -47,7 +47,8 @@ case class RecordSet(
     records: List[RecordData] = List.empty,
     id: String = UUID.randomUUID().toString,
     account: String = "system",
-    ownerGroupId: Option[String] = None
+    ownerGroupId: Option[String] = None,
+    fqdn: Option[String] = None
 ) {
 
   def isPending: Boolean =
@@ -69,6 +70,7 @@ case class RecordSet(
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("records=\"").append(records.toString).append("\"; ")
     sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"")
+    sb.append("fqdn=\"").append(fqdn).append("\"")
     sb.append("]")
 
     sb.toString
