@@ -933,7 +933,7 @@ class RecordSetServiceSpec
     "return the recordSets" in {
       doReturn(IO.pure(Set(okGroup)))
         .when(mockGroupRepo)
-        .getGroups(Set(okGroup.id, "not-in-backend"))
+        .getGroups(any[Set[String]])
 
       doReturn(
         IO.pure(
@@ -945,11 +945,11 @@ class RecordSetServiceSpec
         )
       ).when(mockRecordRepo)
         .listRecordSets(
-          startFrom = None,
-          maxItems = None,
-          recordNameFilter = "aaaa*",
-          recordTypeFilter = None,
-          nameSort = NameSort.ASC
+          startFrom = any[Option[String]],
+          maxItems = any[Option[Int]],
+          recordNameFilter = any[String],
+          recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          nameSort = any[NameSort.NameSort]
         )
 
       val result: ListRecordSetsResponse = rightResultOf(
