@@ -81,7 +81,7 @@
                         <thead>
                         <tr>
                             <th class="col-md-4">
-                                <a class="force-cursor" ng-click="toggleNameSort()">Name
+                                <a class="force-cursor" ng-click="toggleNameSort()">FQDN
                                     <i class="fa {{nameSortSymbol}}"></i>
                                 </a>
                             </th>
@@ -97,12 +97,8 @@
                         <tbody>
                         <tr ng-repeat="(recordName, record) in records track by $index">
                             <td>
-                                <div ng-if="record.isDotted" class="text-danger wrap-long-text" data-toggle="tooltip" data-placement="top"
-                                     title="Dotted hosts are invalid! Please delete or update without a '.'">
-                                    {{record.name}} <span class="fa fa-warning" />
-                                </div>
-                                <div class="wrap-long-text" ng-if="!record.isDotted">
-                                    {{record.name}}
+                                <div class="wrap-long-text">
+                                    {{record.fqdn}}
                                 </div>
                             </td>
                             <td class="wrap-long-text">{{record.type}}</td>

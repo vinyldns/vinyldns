@@ -23,6 +23,8 @@
             $scope.recordSet = {};
             $scope.recordSetChanges = {};
             $scope.alerts = [];
+            $scope.nameSort = "asc";
+            $scope.nameSortSymbol = "fa-chevron-up";
             $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
             $scope.selectedRecordTypes = [];
 
@@ -32,7 +34,9 @@
             $scope.refreshRecords = function() {
                 recordsPaging = pagingService.resetPaging(recordsPaging);
                 function success(response) {
-                    $scope.records = response.data['recordSets'];
+                    recordsPaging.next = response.data.nextId;
+                    updateRecordDisplay(response.data['recordSets']);
+//                    $scope.records = response.data['recordSets'];
                     console.log($scope.records);
                 }
 
@@ -50,6 +54,39 @@
                 $scope.alerts.push(alert);
                 $scope.processing = false;
             }
+
+            $scope.toggleNameSort = function() {
+                if ($scope.nameSort == "asc") {
+                    $scope.nameSort = "desc";
+                    $scope.nameSortSymbol = "fa-chevron-down";
+                } else {
+                    $scope.nameSort = "asc";
+                    $scope.nameSortSymbol = "fa-chevron-up";
+                }
+                return $scope.refreshRecords();
+            };
+
+            $scope.toggleCheckedRecordType = function(recordType) {
+                if($scope.selectedRecordTypes.includes(recordType)) {
+                    $scope.selectedRecordTypes.splice($scope.selectedRecordTypes.indexOf(recordType),1)
+                } else {
+                    $scope.selectedRecordTypes.push(recordType);
+                }
+                return $scope.refreshRecords();
+            };
+
+            function updateRecordDisplay(records) {
+                var newRecords = [];
+                angular.forEach(records, function(record) {
+                    newRecords.push(recordsService.toDisplayRecord(record, ''));
+                });
+                $scope.records = newRecords;
+                if($scope.records.length > 0) {
+                  $("td.dataTables_empty").hide();
+                } else {
+                  $("td.dataTables_empty").show();
+                }
+            };
 //            $scope.refresh = function() {
 //                $scope.getRecordSets
 //            };
