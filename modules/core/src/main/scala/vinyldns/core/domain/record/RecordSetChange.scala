@@ -50,7 +50,6 @@ case class RecordSetChange(
     with ZoneCommandResult {
 
   val zoneId: String = zone.id
-  val recordSetId: String = recordSet.id
 
   def successful: RecordSetChange =
     copy(
@@ -85,7 +84,6 @@ case class RecordSetChange(
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("systemMessage=\"").append(systemMessage.toString).append("\"; ")
     sb.append("zoneId=\"").append(zone.id).append("\"; ")
-    sb.append("recordSetId=\"").append(recordSet.id).append("\"; ")
     sb.append("zoneName=\"").append(zone.name).append("\"; ")
     sb.append(recordSet.toString)
     sb.append(" ]")

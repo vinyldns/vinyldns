@@ -39,15 +39,12 @@ object DynamoDBRecordChangeRepository {
   private[repository] val RECORD_SET_CHANGE_ID = "record_set_change_id"
   private val CHANGE_SET_STATUS = "change_set_status"
   private val ZONE_ID = "zone_id"
-  private val RECORDSET_ID = "recordset_id"
   private val CREATED_TIMESTAMP = "created_timestamp"
   private val RECORD_SET_CHANGE_CREATED_TIMESTAMP = "record_set_change_created_timestamp"
   private val PROCESSING_TIMESTAMP = "processing_timestamp"
   private val RECORD_SET_CHANGE_BLOB = "record_set_change_blob"
   private val ZONE_ID_RECORD_SET_CHANGE_ID_INDEX = "zone_id_record_set_change_id_index"
-  private val RECORDSET_ID_RECORD_SET_CHANGE_ID_INDEX = "recordset_id_record_set_change_id_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
-  private val RECORDSET_ID_CREATED_INDEX = "recordset_id_created_index"
 
   def apply(
       config: DynamoDBRepositorySettings,
@@ -67,8 +64,7 @@ object DynamoDBRecordChangeRepository {
       Seq(
         new AttributeDefinition(RECORD_SET_CHANGE_ID, "S"),
         new AttributeDefinition(ZONE_ID, "S"),
-        new AttributeDefinition(RECORD_SET_CHANGE_CREATED_TIMESTAMP, "N"),
-        new AttributeDefinition(RECORDSET_ID, "S")
+        new AttributeDefinition(RECORD_SET_CHANGE_CREATED_TIMESTAMP, "N")
       )
 
     val secondaryIndexes =
@@ -86,22 +82,6 @@ object DynamoDBRecordChangeRepository {
           .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
           .withKeySchema(
             new KeySchemaElement(ZONE_ID, KeyType.HASH),
-            new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE)
-          )
-          .withProjection(new Projection().withProjectionType("ALL")),
-        new GlobalSecondaryIndex()
-          .withIndexName(RECORDSET_ID_RECORD_SET_CHANGE_ID_INDEX)
-          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-          .withKeySchema(
-            new KeySchemaElement(RECORDSET_ID, KeyType.HASH),
-            new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE)
-          )
-          .withProjection(new Projection().withProjectionType("ALL")),
-        new GlobalSecondaryIndex()
-          .withIndexName(RECORDSET_ID_CREATED_INDEX)
-          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-          .withKeySchema(
-            new KeySchemaElement(RECORDSET_ID, KeyType.HASH),
             new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE)
           )
           .withProjection(new Projection().withProjectionType("ALL"))
@@ -202,50 +182,6 @@ class DynamoDBRecordChangeRepository private[repository] (
       }
     }
 
-  def listRecordSetRecordSetChanges(
-      recordSetId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults] =
-    monitor("repo.RecordChange.getRecordSetChanges") {
-      log.info(s"Getting record set changes for recordSet $recordSetId")
-
-      // millisecond string
-      val startTime = startFrom.getOrElse(DateTime.now.getMillis.toString)
-
-      val expressionAttributeValues = new HashMap[String, AttributeValue]
-      expressionAttributeValues.put(":recordset_id", new AttributeValue(recordSetId))
-      expressionAttributeValues.put(":created", new AttributeValue().withN(startTime))
-
-      val expressionAttributeNames = new HashMap[String, String]
-      expressionAttributeNames.put("#recordset_id_attribute", RECORDSET_ID)
-      expressionAttributeNames.put("#created_attribute", RECORD_SET_CHANGE_CREATED_TIMESTAMP)
-
-      val keyConditionExpression: String =
-        "#recordset_id_attribute = :recordset_id AND #created_attribute < :created"
-
-      val queryRequest = new QueryRequest()
-        .withTableName(recordChangeTable)
-        .withIndexName(RECORDSET_ID_CREATED_INDEX)
-        .withExpressionAttributeNames(expressionAttributeNames)
-        .withExpressionAttributeValues(expressionAttributeValues)
-        .withKeyConditionExpression(keyConditionExpression)
-        .withScanIndexForward(false) // return in descending order by sort key
-        .withLimit(maxItems)
-
-      dynamoDBHelper.queryAll(queryRequest).map { resultList =>
-        val items = resultList.flatMap { result =>
-          result.getItems.asScala.map(toRecordSetChange)
-        }
-        val nextId = Try(
-          resultList.last.getLastEvaluatedKey
-            .get("record_set_change_created_timestamp")
-            .getN
-        ).toOption
-        ListRecordSetChangesResults(items, nextId, startFrom, maxItems)
-      }
-    }
-
   def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]] =
     monitor("repo.RecordChange.getRecordSetChange") {
       log.info(s"Getting record set change for zone $zoneId and changeId $changeId")
@@ -305,7 +241,6 @@ class DynamoDBRecordChangeRepository private[repository] (
 
     item.put(RECORD_SET_CHANGE_ID, new AttributeValue(change.id))
     item.put(RECORD_SET_CHANGE_BLOB, new AttributeValue().withB(recordSetChangeBB))
-    item.put(RECORDSET_ID, new AttributeValue(change.recordSetId))
 
     item
   }

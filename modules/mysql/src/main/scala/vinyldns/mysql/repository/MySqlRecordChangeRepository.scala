@@ -50,25 +50,6 @@ class MySqlRecordChangeRepository
       |  LIMIT {limit}
     """.stripMargin
 
-  private val LIST_RECORDSET_CHANGES_WITH_START =
-    sql"""
-         |SELECT data
-         |  FROM record_change
-         | WHERE recordset_id = {recordSetId}
-         |   AND created < {created}
-         |  ORDER BY created DESC
-         |  LIMIT {limit}
-    """.stripMargin
-
-  private val LIST_RECORDSET_CHANGES_NO_START =
-    sql"""
-         |SELECT data
-         |  FROM record_change
-         | WHERE recordset_id = {recordSetId}
-         |  ORDER BY created DESC
-         |  LIMIT {limit}
-    """.stripMargin
-
   private val GET_CHANGE =
     sql"""
       |SELECT data
@@ -77,7 +58,7 @@ class MySqlRecordChangeRepository
     """.stripMargin
 
   private val INSERT_CHANGES =
-    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, data, recordset_id) VALUES (?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, data) VALUES (?, ?, ?, ?, ?)"
 
   /**
     * We have the same issue with changes as record sets, namely we may have to save millions of them
@@ -96,8 +77,7 @@ class MySqlRecordChangeRepository
                   change.zoneId,
                   change.created.getMillis,
                   fromChangeType(change.changeType),
-                  toPB(change).toByteArray,
-                  change.recordSetId
+                  toPB(change).toByteArray
                 )
               }
             }
@@ -126,47 +106,6 @@ class MySqlRecordChangeRepository
             case None =>
               LIST_CHANGES_NO_START
                 .bindByName('zoneId -> zoneId, 'limit -> maxItems)
-                .map(toRecordSetChange)
-                .list()
-                .apply()
-          }
-
-          val nextId =
-            if (changes.size < maxItems) None
-            else changes.lastOption.map(_.created.getMillis.toString)
-
-          ListRecordSetChangesResults(
-            changes,
-            nextId,
-            startFrom,
-            maxItems
-          )
-        }
-      }
-    }
-
-  def listRecordSetRecordSetChanges(
-      recordSetId: String,
-      startFrom: Option[String],
-      maxItems: Int
-  ): IO[ListRecordSetChangesResults] =
-    monitor("repo.RecordChange.listRecordSetChanges") {
-      IO {
-        DB.readOnly { implicit s =>
-          val changes = startFrom match {
-            case Some(start) =>
-              LIST_RECORDSET_CHANGES_WITH_START
-                .bindByName(
-                  'recordSetId -> recordSetId,
-                  'created -> start.toLong,
-                  'limit -> maxItems
-                )
-                .map(toRecordSetChange)
-                .list()
-                .apply()
-            case None =>
-              LIST_RECORDSET_CHANGES_NO_START
-                .bindByName('recordSetId -> recordSetId, 'limit -> maxItems)
                 .map(toRecordSetChange)
                 .list()
                 .apply()

@@ -41,26 +41,3 @@ object ListRecordSetChangesResponse {
       listResults.maxItems
     )
 }
-
-case class ListRecordSetRecordSetChangesResponse(
-    recordSetId: String,
-    recordSetChanges: List[RecordSetChangeInfo] = Nil,
-    nextId: Option[String],
-    startFrom: Option[String],
-    maxItems: Int
-)
-
-object ListRecordSetRecordSetChangesResponse {
-  def apply(
-      recordSetId: String,
-      listResults: ListRecordSetChangesResults,
-      info: List[RecordSetChangeInfo]
-  ): ListRecordSetRecordSetChangesResponse =
-    ListRecordSetRecordSetChangesResponse(
-      recordSetId,
-      info,
-      listResults.nextId,
-      listResults.startFrom,
-      listResults.maxItems
-    )
-}
