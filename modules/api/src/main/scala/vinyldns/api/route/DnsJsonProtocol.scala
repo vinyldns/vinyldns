@@ -207,7 +207,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("records" -> Extraction.decompose(rs.records)) ~
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
-        ("ownerGroupId" -> rs.ownerGroupId)
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("fqdn" -> rs.fqdn)
   }
 
   case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
@@ -230,7 +231,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("account" -> rs.account) ~
         ("accessLevel" -> rs.accessLevel.toString) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
-        ("ownerGroupName" -> rs.ownerGroupName)
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn)
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {

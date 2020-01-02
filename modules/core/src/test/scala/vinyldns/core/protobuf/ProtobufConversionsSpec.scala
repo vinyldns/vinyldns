@@ -498,7 +498,7 @@ class ProtobufConversionsSpec
 
     "convert from protobuf for a recordset" in {
       val pb = toPB(aRs)
-      val rs = fromPB(pb)
+      val rs = fromPB(pb, None)
 
       rs shouldBe aRs
     }
@@ -515,55 +515,55 @@ class ProtobufConversionsSpec
       val rs = aRs.copy(ownerGroupId = Some("ownerGroupId"))
       val pb = toPB(rs)
 
-      fromPB(pb) shouldBe rs
+      fromPB(pb, None) shouldBe rs
     }
 
     "convert from protobuf for AAAA recordset" in {
-      fromPB(toPB(aaaa)) shouldBe aaaa
+      fromPB(toPB(aaaa), None) shouldBe aaaa
     }
 
     "convert from protobuf for CNAME recordset" in {
-      fromPB(toPB(cname)) shouldBe cname
+      fromPB(toPB(cname), None) shouldBe cname
     }
 
     "convert from protobuf for MX recordset" in {
-      fromPB(toPB(mx)) shouldBe mx
+      fromPB(toPB(mx), None) shouldBe mx
     }
 
     "convert from protobuf for NS recordset" in {
-      fromPB(toPB(ns)) shouldBe ns
+      fromPB(toPB(ns), None) shouldBe ns
     }
 
     "convert from protobuf for PTR recordset" in {
-      fromPB(toPB(ptr)) shouldBe ptr
+      fromPB(toPB(ptr), None) shouldBe ptr
     }
 
     "convert from protobuf for SOA recordset" in {
-      fromPB(toPB(soa)) shouldBe soa
+      fromPB(toPB(soa), None) shouldBe soa
     }
 
     "convert from protobuf for SPF recordset" in {
-      fromPB(toPB(spf)) shouldBe spf
+      fromPB(toPB(spf), None) shouldBe spf
     }
 
     "convert from protobuf for SRV recordset" in {
-      fromPB(toPB(srv)) shouldBe srv
+      fromPB(toPB(srv), None) shouldBe srv
     }
 
     "convert from protobuf for NAPTR recordset" in {
-      fromPB(toPB(naptr)) shouldBe naptr
+      fromPB(toPB(naptr), None) shouldBe naptr
     }
 
     "convert from protobuf for SSHFP recordset" in {
-      fromPB(toPB(sshfp)) shouldBe sshfp
+      fromPB(toPB(sshfp), None) shouldBe sshfp
     }
 
     "convert from protobuf for TXT recordset" in {
-      fromPB(toPB(txt)) shouldBe txt
+      fromPB(toPB(txt), None) shouldBe txt
     }
 
     "convert from protobuf for DS recordset" in {
-      fromPB(toPB(ds)) shouldBe ds
+      fromPB(toPB(ds), None) shouldBe ds
     }
 
     "convert to a protobuf for a recordset without an update date" in {
@@ -571,7 +571,7 @@ class ProtobufConversionsSpec
       val pb = toPB(rs)
 
       pb.hasUpdated shouldBe false
-      fromPB(pb).updated should not be defined
+      fromPB(pb, None).updated should not be defined
     }
 
     "convert to protobuf for AAAA data" in {

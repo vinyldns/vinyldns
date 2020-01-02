@@ -137,7 +137,7 @@ class DynamoDBRecordSetRepositorySpec
       when(dynamoDBHelper.getItem(any[GetItemRequest]))
         .thenReturn(IO.pure(dynamoResponse))
 
-      val response = store.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync()
+      val response = store.getRecordSet(rsOk.zoneId).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -148,7 +148,7 @@ class DynamoDBRecordSetRepositorySpec
         .thenThrow(new ResourceNotFoundException("bar does not exist"))
       val store = new TestDynamoRecordSetRepo
 
-      a[ResourceNotFoundException] should be thrownBy store.getRecordSet(rsOk.zoneId, rsOk.id)
+      a[ResourceNotFoundException] should be thrownBy store.getRecordSet(rsOk.zoneId)
 
     }
     "return None if not found" in {
@@ -158,7 +158,7 @@ class DynamoDBRecordSetRepositorySpec
         .thenReturn(IO.pure(dynamoResponse))
 
       val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
-      val response = store.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync()
+      val response = store.getRecordSet(rsOk.zoneId).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
