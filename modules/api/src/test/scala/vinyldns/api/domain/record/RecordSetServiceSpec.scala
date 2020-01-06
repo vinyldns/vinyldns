@@ -265,7 +265,7 @@ class RecordSetServiceSpec
   "updateRecordSet" should {
     "return the recordSet change as the result" in {
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = "newName")
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
@@ -292,9 +292,10 @@ class RecordSetServiceSpec
       )
       result shouldBe a[NotAuthorizedError]
     }
-    "fail if the new record name is dotted" in {
-      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = "new.name")
+    "succeed if the dotted record name is unchanged" in {
+      val oldRecord =
+        aaaa.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
@@ -303,27 +304,17 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
 
-      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
-      result shouldBe a[InvalidRequest]
-    }
-    "fail if the record is relative with trailing dot" in {
-      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = "new.")
+      val result: RecordSetChange = rightResultOf(
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
 
-      doReturn(IO.pure(Some(oldRecord)))
-        .when(mockRecordRepo)
-        .getRecordSet(okZone.id, newRecord.id)
-      doReturn(IO.pure(List()))
-        .when(mockRecordRepo)
-        .getRecordSetsByName(okZone.id, newRecord.name)
-
-      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
-      result shouldBe a[InvalidRequest]
+      result.recordSet.name shouldBe oldRecord.name
+      result.recordSet.ttl shouldBe oldRecord.ttl + 1000
     }
     "succeed if record is apex with dot" in {
       val name = okZone.name
-      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = name)
+      val oldRecord = aaaa.copy(name = name, zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
@@ -337,11 +328,12 @@ class RecordSetServiceSpec
       )
 
       result.recordSet.name shouldBe okZone.name
+      result.recordSet.ttl shouldBe oldRecord.ttl + 1000
     }
     "succeed if record is apex as '@'" in {
       val name = "@"
-      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = name)
+      val oldRecord = aaaa.copy(name = name, zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
@@ -355,11 +347,12 @@ class RecordSetServiceSpec
       )
 
       result.recordSet.name shouldBe okZone.name
+      result.recordSet.ttl shouldBe oldRecord.ttl + 1000
     }
     "succeed if record is apex without dot" in {
       val name = okZone.name.substring(0, okZone.name.length - 1)
-      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
-      val newRecord = oldRecord.copy(name = name)
+      val oldRecord = aaaa.copy(name = name, zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
@@ -373,12 +366,20 @@ class RecordSetServiceSpec
       )
 
       result.recordSet.name shouldBe okZone.name
+      result.recordSet.ttl shouldBe oldRecord.ttl + 1000
     }
     "fail if the record is a high value domain" in {
       val oldRecord =
         aaaa.copy(name = "high-value-domain", zoneId = okZone.id, status = RecordSetStatus.Active)
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe InvalidRequest(
@@ -395,6 +396,13 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, newRecord.name)
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
       result shouldBe a[NotAuthorizedError]
@@ -525,6 +533,23 @@ class RecordSetServiceSpec
       val auth = okAuth.copy(memberGroupIds = okAuth.memberGroupIds :+ abcZone.adminGroupId)
 
       doReturn(IO.pure(Some(abcZone)))
+        .when(mockZoneRepo)
+        .getZone(newRecord.zoneId)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.zoneId, newRecord.id)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
+      result shouldBe a[InvalidRequest]
+    }
+    "fail if the retrieved recordSet's name does not match the payload name" in {
+      val oldRecord =
+        aaaa.copy(name = "oldRecordName", zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(name = "newRecordName")
+
+      val auth = okAuth.copy(memberGroupIds = okAuth.memberGroupIds :+ abcZone.adminGroupId)
+
+      doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
         .getZone(newRecord.zoneId)
       doReturn(IO.pure(Some(oldRecord)))

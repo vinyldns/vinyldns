@@ -276,6 +276,13 @@ object RecordSetValidations {
     Either.cond(
       recordSet.zoneId == zone.id,
       (),
-      InvalidRequest(s"""Cannot update RecordSet's zoneId attribute""")
+      InvalidRequest("Cannot update RecordSet's zoneId attribute.")
+    )
+
+  def recordSetNameIsUnchanged(existing: RecordSet, updates: RecordSet): Either[Throwable, Unit] =
+    Either.cond(
+      updates.name == existing.name,
+      (),
+      InvalidRequest("Cannot update RecordSet's name attribute.")
     )
 }
