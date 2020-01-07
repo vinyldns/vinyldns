@@ -213,13 +213,12 @@ def test_sync_zone_success(shared_zone_test_context):
                 client.delete_recordset(rs['zoneId'], rs['id'], status=202)
                 client.wait_until_recordset_deleted(rs['zoneId'], rs['id'])
 
-            # confirm that we cannot update the dotted host if the name changes and still includes a dot
+            # confirm that we cannot update the dotted host if the name changes
             if rs['name'] == 'dott.ed-two':
                 attempt_update = rs
                 attempt_update['name'] = 'new.dotted'
                 errors = client.update_recordset(attempt_update, status=422)
-                assert_that(errors, is_("Record with name " + rs['name'] + " and type A is a dotted host which is "
-                                        "not allowed in zone " + zone_name + "."))
+                assert_that(errors, is_("Cannot update RecordSet's name attribute."))
 
 
                 # we should be able to delete the record
