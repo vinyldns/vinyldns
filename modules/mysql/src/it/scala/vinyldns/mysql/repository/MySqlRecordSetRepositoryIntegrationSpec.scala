@@ -20,6 +20,7 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
+import scala.util.Random
 import scalikejdbc.DB
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
@@ -50,8 +51,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
   def generateInserts(zone: Zone, count: Int): List[RecordSetChange] = {
     val newRecordSets =
       for {
-        i <- 1 to count
-      } yield aaaa.copy(zoneId = zone.id, name = s"$i-apply-test", id = UUID.randomUUID().toString)
+        _ <- 1 to count
+        r = Random.nextInt(1000)
+      } yield aaaa.copy(zoneId = zone.id, name = s"$r-apply-test", id = UUID.randomUUID().toString)
 
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
@@ -160,13 +162,13 @@ class MySqlRecordSetRepositoryIntegrationSpec
     }
 
     "apply successful updates and revert records for failed updates" in {
-      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "success")
+      val oldSuccess = aaaa.copy(name="old-success", zoneId = "test-update-converter", ttl = 100, id = "success")
       val updateSuccess = oldSuccess.copy(ttl = 200)
 
-      val oldPending = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "pending")
+      val oldPending = aaaa.copy(name="old-pending", zoneId = "test-update-converter", ttl = 100, id = "pending")
       val updatePending = oldPending.copy(ttl = 200, status = RecordSetStatus.PendingUpdate)
 
-      val oldFailure = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "failed")
+      val oldFailure = aaaa.copy(name="old-failure", zoneId = "test-update-converter", ttl = 100, id = "failed")
       val updateFailure = oldFailure.copy(ttl = 200, status = RecordSetStatus.Inactive)
 
       val successfulUpdate = makeCompleteTestUpdateChange(oldSuccess, updateSuccess)
@@ -213,9 +215,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
     }
 
     "apply successful deletes, save pending deletes, and revert failed deletes" in {
-      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", id = "success")
-      val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
-      val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
+      val oldSuccess = aaaa.copy(name="old-success", zoneId = "test-update-converter", id = "success")
+      val oldPending = aaaa.copy(name="old-pending", zoneId = "test-update-converter", id = "pending")
+      val oldFailure = aaaa.copy(name="old-failure", zoneId = "test-update-converter", id = "failed")
 
       val successfulDelete =
         makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
