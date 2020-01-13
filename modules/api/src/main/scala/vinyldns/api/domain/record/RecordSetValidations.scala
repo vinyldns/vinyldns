@@ -272,6 +272,16 @@ object RecordSetValidations {
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
 
+  def onlyUpdatesModifiableAttributes(
+      existing: RecordSet,
+      updates: RecordSet
+  ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.name == existing.name && updates.zoneId == existing.zoneId && updates.typ == existing.typ,
+      (),
+      InvalidRequest("Can only update RecordSet's record data, TTL, or owner group.")
+    )
+
   def recordSetIsInZone(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
     Either.cond(
       recordSet.zoneId == zone.id,

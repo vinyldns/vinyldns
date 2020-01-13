@@ -10,7 +10,7 @@ from test_data import TestData
 
 def test_update_recordset_name_fails(shared_zone_test_context):
     """
-    Tests updating a record set and changing the name fails
+    Tests updating a record set by changing the name fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
@@ -44,7 +44,51 @@ def test_update_recordset_name_fails(shared_zone_test_context):
         ]
 
         error = client.update_recordset(updated_rs, status=422)
-        assert_that(error, is_("Cannot update RecordSet's name attribute."))
+        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
+
+    finally:
+        if result_rs:
+            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
+            if result:
+                client.wait_until_recordset_change_status(result, 'Complete')
+
+
+def test_update_recordset_type_fails(shared_zone_test_context):
+    """
+    Tests updating a record set by changing the type fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_rs = None
+    try:
+        new_rs = {
+            'zoneId': shared_zone_test_context.system_test_zone['id'],
+            'name': 'test-update-change-name-success-1',
+            'type': 'A',
+            'ttl': 500,
+            'records': [
+                {
+                    'address': '1.1.1.1'
+                },
+                {
+                    'address': '1.1.1.2'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = result['recordSet']
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        # update the record set, changing the name
+        updated_rs = copy.deepcopy(result_rs)
+        updated_rs['type'] = 'AAAA'
+        updated_rs['records'] = [
+            {
+                'address': '1::1'
+            }
+        ]
+
+        error = client.update_recordset(updated_rs, status=422)
+        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
 
     finally:
         if result_rs:
@@ -92,48 +136,6 @@ def test_update_cname_with_multiple_records(shared_zone_test_context):
         if result_rs:
             r = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(r, 'Complete')
-
-
-def test_update_cname_with_multiple_records(shared_zone_test_context):
-    """
-    Test that creating a CNAME record set and then updating with multiple records returns an error
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    result_rs = None
-    try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'test_update_cname_with_multiple_records',
-            'type': 'CNAME',
-            'ttl': 500,
-            'records': [
-                {
-                    'cname': 'cname1.'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        result_rs = result['recordSet']
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        # update the record set, adding another cname record so there are multiple
-        updated_rs = copy.deepcopy(result_rs)
-        updated_rs['records'] = [
-            {
-                'cname': 'cname1.'
-            },
-            {
-                'cname': 'cname2.'
-            }
-        ]
-
-        errors = client.update_recordset(updated_rs, status=400)['errors']
-        assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
-    finally:
-        if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
 
 
 @pytest.mark.parametrize('record_name,test_rs', TestData.FORWARD_RECORDS)
@@ -185,8 +187,7 @@ def test_reverse_update_reverse_record_types(shared_zone_test_context, record_na
     """
     Test updating a record set in a reverse zone
     """
-    # TODO: reverse records are difficult to run in parallel because there aren't many, need to
-    # coordinate across tests
+    # TODO: reverse records are difficult to run in parallel because there aren't many, need to coordinate across tests
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
 
@@ -2099,7 +2100,7 @@ def test_update_ds_data_failures(shared_zone_test_context):
 @pytest.mark.serial
 def test_update_ds_bad_ttl(shared_zone_test_context):
     """
-    Test that updating a DS record with unmatching TTL fails
+    Test that updating a DS record with a TTL that doesn't match the zone NS record TTL fails
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -2173,7 +2174,7 @@ def test_update_fails_when_payload_and_actual_zone_id_do_not_match(shared_zone_t
 
         error = client.update_recordset(update, status=422)
 
-        assert_that(error, is_("Cannot update RecordSet's zoneId attribute."))
+        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
 
     finally:
         if created:
