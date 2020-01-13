@@ -515,27 +515,5 @@ class RecordSetValidationsSpec
         error shouldBe an[InvalidRequest]
       }
     }
-
-    "recordSetIsInZone" should {
-      "pass if the recordSet's zoneId matches the zone's id" in {
-        recordSetIsInZone(aaaa.copy(zoneId = okZone.id), okZone) should be(right)
-      }
-
-      "fail if the recordSet's zoneId does not match the zone's id" in {
-        val error = leftValue(recordSetIsInZone(aaaa.copy(zoneId = "not-ok-zone"), okZone))
-        error shouldBe an[InvalidRequest]
-      }
-    }
-
-    "recordSetNameIsUnchanged" should {
-      "pass if the updated recordSet's name matches the existing recordSet's name" in {
-        recordSetNameIsUnchanged(aaaa, aaaa.copy(ttl = aaaa.ttl + 1000)) should be(right)
-      }
-
-      "fail if the updated recordSet's name does not match the existing recordSet's name" in {
-        val error = leftValue(recordSetNameIsUnchanged(aaaa, aaaa.copy(name = "new-name")))
-        error shouldBe an[InvalidRequest]
-      }
-    }
   }
 }

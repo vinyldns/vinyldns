@@ -281,18 +281,4 @@ object RecordSetValidations {
       (),
       InvalidRequest("Can only update RecordSet's record data, TTL, or owner group.")
     )
-
-  def recordSetIsInZone(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
-    Either.cond(
-      recordSet.zoneId == zone.id,
-      (),
-      InvalidRequest("Cannot update RecordSet's zoneId attribute.")
-    )
-
-  def recordSetNameIsUnchanged(existing: RecordSet, updates: RecordSet): Either[Throwable, Unit] =
-    Either.cond(
-      updates.name == existing.name,
-      (),
-      InvalidRequest("Cannot update RecordSet's name attribute.")
-    )
 }

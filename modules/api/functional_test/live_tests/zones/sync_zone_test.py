@@ -218,7 +218,7 @@ def test_sync_zone_success(shared_zone_test_context):
                 attempt_update = rs
                 attempt_update['name'] = 'new.dotted'
                 errors = client.update_recordset(attempt_update, status=422)
-                assert_that(errors, is_("Cannot update RecordSet's name attribute."))
+                assert_that(errors, is_("Can only update RecordSet's record data, TTL, or owner group."))
 
 
                 # we should be able to delete the record
