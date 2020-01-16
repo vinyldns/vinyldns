@@ -20,8 +20,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{
   ChangeSet,
-  ListRecordSetByZoneResults,
   ListRecordSetResults,
+  NameSort,
   RecordSet,
   RecordSetRepository
 }
@@ -47,23 +47,14 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: String,
-      recordTypeFilter: Option[Set[RecordType]],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults(recordNameFilter = recordNameFilter, nameSort = nameSort))
-
-  def listRecordSetsByZone(
-      zoneId: String,
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
-  ): IO[ListRecordSetByZoneResults] =
-    IO.pure(ListRecordSetByZoneResults(nameSort = nameSort))
+  ): IO[ListRecordSetResults] =
+    IO.pure(ListRecordSetResults(nameSort = nameSort))
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())

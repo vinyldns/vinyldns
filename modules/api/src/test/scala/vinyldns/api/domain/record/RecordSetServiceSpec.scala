@@ -939,15 +939,16 @@ class RecordSetServiceSpec
         IO.pure(
           ListRecordSetResults(
             List(sharedZoneRecord),
-            recordNameFilter = "aaaa*",
+            recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC
           )
         )
       ).when(mockRecordRepo)
         .listRecordSets(
+          zoneId = any[Option[String]],
           startFrom = any[Option[String]],
           maxItems = any[Option[Int]],
-          recordNameFilter = any[String],
+          recordNameFilter = any[Option[String]],
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           nameSort = any[NameSort.NameSort]
         )
@@ -995,14 +996,14 @@ class RecordSetServiceSpec
 
       doReturn(
         IO.pure(
-          ListRecordSetByZoneResults(
+          ListRecordSetResults(
             List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup),
             nameSort = NameSort.ASC
           )
         )
       ).when(mockRecordRepo)
-        .listRecordSetsByZone(
-          zoneId = sharedZone.id,
+        .listRecordSets(
+          zoneId = Some(sharedZone.id),
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
@@ -1040,10 +1041,10 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroups(Set())
 
-      doReturn(IO.pure(ListRecordSetByZoneResults(List(aaaa), nameSort = NameSort.ASC)))
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC)))
         .when(mockRecordRepo)
-        .listRecordSetsByZone(
-          zoneId = okZone.id,
+        .listRecordSets(
+          zoneId = Some(okZone.id),
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,

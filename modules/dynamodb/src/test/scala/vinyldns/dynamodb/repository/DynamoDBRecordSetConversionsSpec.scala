@@ -49,7 +49,7 @@ class DynamoDBRecordSetConversionsSpec
   }
 
   private def theRecordSetIn(item: java.util.Map[String, AttributeValue]): RecordSet =
-    fromPB(VinylDNSProto.RecordSet.parseFrom(item.get(RECORD_SET_BLOB).getB.array()), None)
+    fromPB(VinylDNSProto.RecordSet.parseFrom(item.get(RECORD_SET_BLOB).getB.array()))
 
   "DynamoDBRecordSetConversions" should {
     "convert from and to item" in {

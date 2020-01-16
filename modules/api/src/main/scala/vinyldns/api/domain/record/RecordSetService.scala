@@ -185,12 +185,13 @@ class RecordSetService(
   ): Result[ListRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
-      recordName <- formatRecordNameFilter(recordNameFilter)
+      formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
       recordSetResults <- recordSetRepository
         .listRecordSets(
+          None,
           startFrom,
           maxItems,
-          recordName,
+          Some(formattedRecordNameFilter),
           recordTypeFilter,
           nameSort
         )
@@ -221,15 +222,15 @@ class RecordSetService(
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
       recordSetResults <- recordSetRepository
-        .listRecordSetsByZone(
-          zoneId,
+        .listRecordSets(
+          Some(zoneId),
           startFrom,
           maxItems,
           recordNameFilter,
           recordTypeFilter,
           nameSort
         )
-        .toResult[ListRecordSetByZoneResults]
+        .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
       setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
@@ -304,7 +305,7 @@ class RecordSetService(
       .getRecordSetByZone(zone.id, recordsetId)
       .orFail(
         RecordSetNotFoundError(
-          s"RecordSet with id $recordsetId does not exist."
+          s"RecordSet with id $recordsetId does not exist in zone ${zone.name}"
         )
       )
       .toResult[RecordSet]

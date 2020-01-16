@@ -87,10 +87,10 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
     "load the DNS Zones" in {
       val mockRecordSetRepo = mock[RecordSetRepository]
 
-      doReturn(IO(ListRecordSetByZoneResults(records, None, None, None, None, None, NameSort.ASC)))
+      doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, NameSort.ASC)))
         .when(mockRecordSetRepo)
-        .listRecordSetsByZone(
-          anyString(),
+        .listRecordSets(
+          any[Option[String]],
           any[Option[String]],
           any[Option[Int]],
           any[Option[String]],

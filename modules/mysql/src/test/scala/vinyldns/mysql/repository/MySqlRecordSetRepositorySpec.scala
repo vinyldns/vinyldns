@@ -102,12 +102,21 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
   }
 
   "PagingKey.toNextId" should {
-    "return correct NextId" in {
+    "return correct NextId if searching recordsets by zone" in {
       val expectedName = "name"
       val expectedType = MySqlRecordSetRepository.fromRecordType(RecordType.CNAME)
       val last = aaaa.copy(name = expectedName, typ = RecordType.CNAME)
 
-      PagingKey.toNextId(last) shouldBe s"$expectedName${PagingKey.delimiter}$expectedType"
+      PagingKey.toNextId(last, true) shouldBe s"$expectedName${PagingKey.delimiter}$expectedType"
+    }
+
+    "return correct NextId if searching recordsets globally" in {
+      val expectedName = "name"
+      val expectedFQDN = "name.ok.zone.recordsets."
+      val expectedType = MySqlRecordSetRepository.fromRecordType(RecordType.CNAME)
+      val last = aaaa.copy(name = expectedName, typ = RecordType.CNAME, fqdn = Some(expectedFQDN))
+
+      PagingKey.toNextId(last, false) shouldBe s"$expectedFQDN${PagingKey.delimiter}$expectedType"
     }
   }
 }

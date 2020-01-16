@@ -114,7 +114,7 @@ trait DynamoDBRecordSetConversions extends ProtobufConversions {
   def fromItem(item: java.util.Map[String, AttributeValue]): RecordSet =
     try {
       val recordSetBlob = item.get(RECORD_SET_BLOB)
-      fromPB(VinylDNSProto.RecordSet.parseFrom(recordSetBlob.getB.array()), None)
+      fromPB(VinylDNSProto.RecordSet.parseFrom(recordSetBlob.getB.array()))
     } catch {
       case ex: Throwable =>
         logger.error("fromItem", ex)

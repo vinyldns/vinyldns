@@ -25,13 +25,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{
-  ChangeSet,
-  ListRecordSetByZoneResults,
-  ListRecordSetResults,
-  RecordSet,
-  RecordSetRepository
-}
+import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 
@@ -143,9 +137,10 @@ class DynamoDBRecordSetRepository private[repository] (
   }
 
   def listRecordSets(
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: String,
+      recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
   ): IO[ListRecordSetResults] =
@@ -154,61 +149,6 @@ class DynamoDBRecordSetRepository private[repository] (
         UnsupportedDynamoDBRepoFunction(
           s"listRecordSets is not supported by VinylDNS DynamoDB RecordSetRepository"
         )
-      )
-    }
-
-  def listRecordSetsByZone(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      nameSort: NameSort
-  ): IO[ListRecordSetByZoneResults] =
-    monitor("repo.RecordSet.listRecordSetsByZone") {
-      log.info(s"Getting recordSets for zone $zoneId")
-
-      val keyConditions = Map[String, String](ZONE_ID -> zoneId)
-      val filterExpression = recordNameFilter.map(
-        filter => ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase))
-      )
-
-      val startKey = startFrom.map { inputString =>
-        val attributes = inputString.split('~')
-        Map(
-          ZONE_ID -> attributes(0),
-          RECORD_SET_NAME -> attributes(1),
-          RECORD_SET_ID -> attributes(2)
-        )
-      }
-      val responseFuture = doQuery(
-        recordSetTableName,
-        ZONE_ID_RECORD_SET_NAME_INDEX,
-        keyConditions,
-        filterExpression,
-        startKey,
-        maxItems
-      )(dynamoDBHelper)
-
-      for {
-        resp <- responseFuture
-        queryResp = resp.asInstanceOf[QueryResponseItems]
-        rs = queryResp.items.map(fromItem)
-        nextId = queryResp.lastEvaluatedKey.map { keyMap =>
-          List(
-            keyMap.get(ZONE_ID).getS,
-            keyMap.get(RECORD_SET_NAME).getS,
-            keyMap.get(RECORD_SET_ID).getS
-          ).mkString("~")
-        }
-      } yield ListRecordSetByZoneResults(
-        rs,
-        nextId,
-        startFrom,
-        maxItems,
-        recordNameFilter,
-        recordTypeFilter,
-        nameSort
       )
     }
 

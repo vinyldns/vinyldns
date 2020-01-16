@@ -179,8 +179,8 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = store
-        .listRecordSetsByZone(
-          zoneId = rsOk.zoneId,
+        .listRecordSets(
+          zoneId = Some(rsOk.zoneId),
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
@@ -207,13 +207,9 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response =
-        store
-          .listRecordSetsByZone(rsOk.zoneId, None, Some(3), None, None, NameSort.ASC)
-          .unsafeRunSync()
-      verify(dynamoDBHelper).query(any[QueryRequest])
-
-      (response.recordSets should contain).allOf(rsOk, aaaa, cname)
+      an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .listRecordSets(None, None, Some(3), Some("aa"), None, NameSort.ASC)
+        .unsafeRunSync()
     }
 
     "throw exception when query returns an unexpected response" in {
@@ -221,8 +217,8 @@ class DynamoDBRecordSetRepositorySpec
         .thenThrow(new ResourceNotFoundException("failed"))
       val store = new TestDynamoRecordSetRepo
 
-      a[ResourceNotFoundException] should be thrownBy store.listRecordSetsByZone(
-        zoneId = rsOk.zoneId,
+      a[ResourceNotFoundException] should be thrownBy store.listRecordSets(
+        zoneId = Some(rsOk.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = None,

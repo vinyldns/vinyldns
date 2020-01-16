@@ -26,21 +26,13 @@ trait RecordSetRepository extends Repository {
   def apply(changeSet: ChangeSet): IO[ChangeSet]
 
   def listRecordSets(
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: String,
-      recordTypeFilter: Option[Set[RecordType]],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults]
-
-  def listRecordSetsByZone(
-      zoneId: String,
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort
-  ): IO[ListRecordSetByZoneResults]
+  ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]
 
