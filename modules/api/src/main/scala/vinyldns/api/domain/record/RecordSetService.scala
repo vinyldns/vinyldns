@@ -86,7 +86,9 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
-      _ <- onlyUpdatesModifiableAttributes(existing, recordSet).toResult
+      _ <- unchangedRecordName(existing, recordSet, zone).toResult
+      _ <- unchangedRecordType(existing, recordSet).toResult
+      _ <- unchangedZoneId(existing, recordSet).toResult
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet

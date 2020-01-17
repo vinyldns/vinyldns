@@ -44,7 +44,7 @@ def test_update_recordset_name_fails(shared_zone_test_context):
         ]
 
         error = client.update_recordset(updated_rs, status=422)
-        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
+        assert_that(error, is_("Cannot update RecordSet's name."))
 
     finally:
         if result_rs:
@@ -88,7 +88,7 @@ def test_update_recordset_type_fails(shared_zone_test_context):
         ]
 
         error = client.update_recordset(updated_rs, status=422)
-        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
+        assert_that(error, is_("Cannot update RecordSet's record type."))
 
     finally:
         if result_rs:
@@ -2174,7 +2174,7 @@ def test_update_fails_when_payload_and_actual_zone_id_do_not_match(shared_zone_t
 
         error = client.update_recordset(update, status=422)
 
-        assert_that(error, is_("Can only update RecordSet's record data, TTL, or owner group."))
+        assert_that(error, is_("Cannot update RecordSet's zone ID."))
 
     finally:
         if created:

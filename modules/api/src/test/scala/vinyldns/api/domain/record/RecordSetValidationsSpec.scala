@@ -117,22 +117,6 @@ class RecordSetValidationsSpec
       }
     }
 
-    "isUniqueUpdate" should {
-      "return a RecordSetAlreadyExistsError if a record set already exists with the same name but different id" in {
-        val existing = List(aaaa.copy(id = "DifferentID"))
-        val error = leftValue(isUniqueUpdate(aaaa, existing, okZone))
-        error shouldBe a[RecordSetAlreadyExists]
-      }
-
-      "return the record set if the record set exists but has the same id" in {
-        isUniqueUpdate(aaaa, List(aaaa), okZone) should be(right)
-      }
-
-      "return the record set if the record set does not exist" in {
-        isUniqueUpdate(aaaa, List(), okZone) should be(right)
-      }
-    }
-
     "isNotDotted" should {
       "return a failure for any record with dotted hosts in forward zones" in {
         val test = aaaa.copy(name = "this.is.a.failure.")
@@ -513,6 +497,49 @@ class RecordSetValidationsSpec
 
         val error = leftValue(canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth))
         error shouldBe an[InvalidRequest]
+      }
+    }
+
+    "unchangedRecordName" should {
+      "return ok when given name is @ and existing record is apex" in {
+        val zone = okZone
+        val existing = rsOk.copy(name = zone.name)
+        val rs = rsOk.copy(name = "@")
+        unchangedRecordName(existing, rs, zone) should be(right)
+      }
+      "return ok when given name is apex without trailing dot and existing record is apex" in {
+        val zone = okZone
+        val existing = rsOk.copy(name = zone.name)
+        val rs = rsOk.copy(name = "ok.zone.recordsets")
+        unchangedRecordName(existing, rs, zone) should be(right)
+      }
+      "return invalid request when given record name does not match existing record name" in {
+        val existing = rsOk
+        val rs = rsOk.copy(name = "non-matching-name")
+        val zone = okZone
+        val error = leftValue(unchangedRecordName(existing, rs, zone))
+        error shouldBe an[InvalidRequest]
+        error.getMessage() shouldBe "Cannot update RecordSet's name."
+      }
+    }
+
+    "unchangedRecordType" should {
+      "return invalid request when given record type does not match existing recordset record type" in {
+        val existing = rsOk
+        val rs = rsOk.copy(typ = AAAA)
+        val error = leftValue(unchangedRecordType(existing, rs))
+        error shouldBe an[InvalidRequest]
+        error.getMessage() shouldBe "Cannot update RecordSet's record type."
+      }
+    }
+
+    "unchangedZoneId" should {
+      "return invalid request when given zone ID does not match existing recordset zone ID" in {
+        val existing = rsOk
+        val rs = rsOk.copy(typ = AAAA)
+        val error = leftValue(unchangedZoneId(existing, rs))
+        error shouldBe an[InvalidRequest]
+        error.getMessage() shouldBe "Cannot update RecordSet's zone ID."
       }
     }
   }

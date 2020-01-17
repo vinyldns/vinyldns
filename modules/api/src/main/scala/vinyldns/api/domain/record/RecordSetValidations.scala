@@ -21,7 +21,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.DomainHelpers.{ensureTrailingDot, omitTrailingDot}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -71,20 +71,6 @@ object RecordSetValidations {
       )
     )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
-    )
-
-  def isUniqueUpdate(
-      newRecordSet: RecordSet,
-      existingRecordsWithName: List[RecordSet],
-      zone: Zone
-  ): Either[Throwable, Unit] =
-    ensuring(
-      RecordSetAlreadyExists(
-        s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} already " +
-          s"exists in zone ${zone.name}"
-      )
-    )(
-      !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
     )
 
   def isNotDotted(
@@ -272,13 +258,35 @@ object RecordSetValidations {
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
 
-  def onlyUpdatesModifiableAttributes(
+  def unchangedRecordName(
+      existing: RecordSet,
+      updates: RecordSet,
+      zone: Zone
+  ): Either[Throwable, Unit] = Either.cond(
+    updates.name.toLowerCase == existing.name.toLowerCase
+      || ensureTrailingDot(updates.name.toLowerCase) == existing.name.toLowerCase
+      || (updates.name == "@" && existing.name.toLowerCase == zone.name),
+    (),
+    InvalidRequest("Cannot update RecordSet's name.")
+  )
+
+  def unchangedRecordType(
       existing: RecordSet,
       updates: RecordSet
   ): Either[Throwable, Unit] =
     Either.cond(
-      updates.name == existing.name && updates.zoneId == existing.zoneId && updates.typ == existing.typ,
+      updates.typ == existing.typ,
       (),
-      InvalidRequest("Can only update RecordSet's record data, TTL, or owner group.")
+      InvalidRequest("Cannot update RecordSet's record type.")
+    )
+
+  def unchangedZoneId(
+      existing: RecordSet,
+      updates: RecordSet
+  ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.typ == existing.typ,
+      (),
+      InvalidRequest("Cannot update RecordSet's zone ID.")
     )
 }
