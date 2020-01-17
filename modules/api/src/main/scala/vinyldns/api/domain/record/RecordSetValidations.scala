@@ -285,7 +285,7 @@ object RecordSetValidations {
       updates: RecordSet
   ): Either[Throwable, Unit] =
     Either.cond(
-      updates.typ == existing.typ,
+      updates.zoneId == existing.zoneId,
       (),
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )

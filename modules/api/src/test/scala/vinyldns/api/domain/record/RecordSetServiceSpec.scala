@@ -532,7 +532,7 @@ class RecordSetServiceSpec
 
       val auth = okAuth.copy(memberGroupIds = okAuth.memberGroupIds :+ abcZone.adminGroupId)
 
-      doReturn(IO.pure(Some(okZone)))
+      doReturn(IO.pure(Some(abcZone)))
         .when(mockZoneRepo)
         .getZone(newRecord.zoneId)
       doReturn(IO.pure(Some(oldRecord)))

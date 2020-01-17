@@ -536,7 +536,7 @@ class RecordSetValidationsSpec
     "unchangedZoneId" should {
       "return invalid request when given zone ID does not match existing recordset zone ID" in {
         val existing = rsOk
-        val rs = rsOk.copy(typ = AAAA)
+        val rs = rsOk.copy(zoneId = "not-real")
         val error = leftValue(unchangedZoneId(existing, rs))
         error shouldBe an[InvalidRequest]
         error.getMessage() shouldBe "Cannot update RecordSet's zone ID."
