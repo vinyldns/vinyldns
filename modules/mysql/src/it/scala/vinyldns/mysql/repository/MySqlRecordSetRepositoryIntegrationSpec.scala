@@ -47,17 +47,17 @@ class MySqlRecordSetRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM recordset")
     }
 
-  def generateInserts(zone: Zone, count: Int): List[RecordSetChange] = {
+  def generateInserts(zone: Zone, count: Int, word: String = "insert"): List[RecordSetChange] = {
     val newRecordSets =
       for {
         i <- 1 to count
-      } yield aaaa.copy(zoneId = zone.id, name = s"$i-apply-test", id = UUID.randomUUID().toString)
+      } yield aaaa.copy(zoneId = zone.id, name = s"$i-${word}-apply-test", id = UUID.randomUUID().toString)
 
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
 
-  def insert(zone: Zone, count: Int): List[RecordSetChange] = {
-    val pendingChanges = generateInserts(zone, count)
+  def insert(zone: Zone, count: Int, word: String = "insert"): List[RecordSetChange] = {
+    val pendingChanges = generateInserts(zone, count, word)
     val bigPendingChangeSet = ChangeSet(pendingChanges)
     repo.apply(bigPendingChangeSet).unsafeRunSync()
     pendingChanges
@@ -160,13 +160,13 @@ class MySqlRecordSetRepositoryIntegrationSpec
     }
 
     "apply successful updates and revert records for failed updates" in {
-      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "success")
+      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", name="success", ttl = 100, id = "success")
       val updateSuccess = oldSuccess.copy(ttl = 200)
 
-      val oldPending = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "pending")
+      val oldPending = aaaa.copy(zoneId = "test-update-converter", name="pending", ttl = 100, id = "pending")
       val updatePending = oldPending.copy(ttl = 200, status = RecordSetStatus.PendingUpdate)
 
-      val oldFailure = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "failed")
+      val oldFailure = aaaa.copy(zoneId = "test-update-converter", name="failure", ttl = 100, id = "failed")
       val updateFailure = oldFailure.copy(ttl = 200, status = RecordSetStatus.Inactive)
 
       val successfulUpdate = makeCompleteTestUpdateChange(oldSuccess, updateSuccess)
@@ -213,9 +213,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
     }
 
     "apply successful deletes, save pending deletes, and revert failed deletes" in {
-      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", id = "success")
-      val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
-      val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
+      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", name = "success", id = "success")
+      val oldPending = aaaa.copy(zoneId = "test-update-converter", name = "pending", id = "pending")
+      val oldFailure = aaaa.copy(zoneId = "test-update-converter", name = "failed", id = "failed")
 
       val successfulDelete =
         makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
@@ -292,7 +292,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val recordCount = repo.getRecordSetCount(okZone.id).unsafeRunSync()
       recordCount shouldBe 20
     }
-    "works for deletes, updates, and inserts" in {
+    "work for deletes, updates, and inserts" in {
       // create some record sets to be updated
       val existing = insert(okZone, 10).map(_.recordSet)
 
@@ -308,7 +308,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
       }
 
       // insert a few more
-      val inserts = generateInserts(okZone, 2)
+      val inserts = generateInserts(okZone, 2, "more-inserts")
 
       // exercise the entire change set
       val cs = ChangeSet(deletes ++ updates ++ inserts)
