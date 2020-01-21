@@ -117,6 +117,22 @@ class RecordSetValidationsSpec
       }
     }
 
+    "isUniqueUpdate" should {
+      "return a RecordSetAlreadyExistsError if a record set already exists with the same name but different id" in {
+        val existing = List(aaaa.copy(id = "DifferentID"))
+        val error = leftValue(recordSetDoesNotExist(aaaa, existing, okZone))
+        error shouldBe a[RecordSetAlreadyExists]
+      }
+
+      "return the record set if the record set exists but has the same id" in {
+        recordSetDoesNotExist(aaaa, List(aaaa), okZone) should be(right)
+      }
+
+      "return the record set if the record set does not exist" in {
+        recordSetDoesNotExist(aaaa, List(), okZone) should be(right)
+      }
+    }
+
     "isNotDotted" should {
       "return a failure for any record with dotted hosts in forward zones" in {
         val test = aaaa.copy(name = "this.is.a.failure.")

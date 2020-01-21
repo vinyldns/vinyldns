@@ -22,8 +22,10 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import vinyldns.api.Interfaces._
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
@@ -34,7 +36,7 @@ import vinyldns.core.domain.HighValueDomainError
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
+import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
@@ -51,6 +53,12 @@ class RecordSetServiceSpec
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMessageQueue = mock[MessageQueue]
+  private val zoneConnection =
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+  private val configuredDnsConnections =
+    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
+  private val mockDnsConnection =
+    mock[DnsConnection]
 
   doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(okZone.id)
   doReturn(IO.pure(Some(zoneNotAuthorized)))
@@ -68,7 +76,9 @@ class RecordSetServiceSpec
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
-    new AccessValidations()
+    new AccessValidations(),
+    (_, _) => mockDnsConnection,
+    configuredDnsConnections
   )
 
   "addRecordSet" should {
@@ -113,6 +123,10 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSets(okZone.id, record.name, record.typ)
 
+      doReturn(IO(List(aaaa)).toResult)
+        .when(mockDnsConnection)
+        .resolve(record.name, okZone.name, record.typ)
+
       val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
       result shouldBe a[RecordSetAlreadyExists]
     }
@@ -128,7 +142,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, record.name)
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
-      result shouldBe a[InvalidRequest]
+      result shouldBe an[InvalidRequest]
     }
     "fail if the record is relative with trailing dot" in {
       val record =
@@ -142,7 +156,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(okZone.id, record.name)
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
-      result shouldBe a[InvalidRequest]
+      result shouldBe an[InvalidRequest]
     }
     "fail if the record is a high value domain" in {
       val record =
@@ -241,7 +255,7 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
 
-      result shouldBe a[InvalidRequest]
+      result shouldBe an[InvalidRequest]
     }
     "fail if owner group is not found" in {
       val record = aaaa.copy(ownerGroupId = Some(dummyGroup.id))
@@ -258,7 +272,29 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
 
-      result shouldBe a[InvalidGroupError]
+      result shouldBe an[InvalidGroupError]
+    }
+    "succeed if record exists in database but not in DNS backend" in {
+      val record = aaaa.copy(zoneId = okZone.id)
+
+      doReturn(IO.pure(List(record)))
+        .when(mockRecordRepo)
+        .getRecordSets(okZone.id, record.name, record.typ)
+      doReturn(IO(List()).toResult)
+        .when(mockDnsConnection)
+        .resolve(record.name, okZone.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, record.name)
+
+      val result: RecordSetChange =
+        rightResultOf(
+          underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+        )
+
+      matches(result.recordSet, record, okZone.name) shouldBe true
+      result.changeType shouldBe RecordSetChangeType.Create
+      result.status shouldBe RecordSetChangeStatus.Pending
     }
   }
 
@@ -310,6 +346,20 @@ class RecordSetServiceSpec
 
       result.recordSet.name shouldBe oldRecord.name
       result.recordSet.ttl shouldBe oldRecord.ttl + 1000
+    }
+    "fail if the record is relative with trailing dot" in {
+      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(name = "new.")
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, newRecord.name)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
+      result shouldBe an[InvalidRequest]
     }
     "succeed if record is apex with dot" in {
       val name = okZone.name
@@ -434,7 +484,7 @@ class RecordSetServiceSpec
         .getGroup("doesnt-exist")
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
-      result shouldBe a[InvalidGroupError]
+      result shouldBe an[InvalidGroupError]
     }
     "fail if user not in new owner group" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
@@ -463,7 +513,7 @@ class RecordSetServiceSpec
         .getGroup(okGroup.id)
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
-      result shouldBe a[InvalidRequest]
+      result shouldBe an[InvalidRequest]
     }
     "succeed if user is in owner group and zone is shared" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
@@ -540,7 +590,30 @@ class RecordSetServiceSpec
         .getRecordSet(newRecord.zoneId, newRecord.id)
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
-      result shouldBe a[InvalidRequest]
+      result shouldBe an[InvalidRequest]
+    }
+    "succeed if new record exists in database but not in DNS backend" in {
+      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ttl = 3600)
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, newRecord.id)
+      doReturn(IO.pure(List(newRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO(List()).toResult)
+        .when(mockDnsConnection)
+        .resolve(newRecord.name, okZone.name, newRecord.typ)
+
+      val result: RecordSetChange = rightResultOf(
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
+
+      matches(result.recordSet, newRecord, okZone.name) shouldBe true
+      matches(result.updates.get, oldRecord, okZone.name) shouldBe true
+      result.changeType shouldBe RecordSetChangeType.Update
+      result.status shouldBe RecordSetChangeStatus.Pending
     }
     "fail if the retrieved recordSet's name does not match the payload name" in {
       val oldRecord =
