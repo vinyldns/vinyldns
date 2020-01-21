@@ -23,11 +23,12 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import vinyldns.api.domain.access.AccessValidationsAlgebra
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 
@@ -35,7 +36,9 @@ object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
-      accessValidation: AccessValidationsAlgebra
+      accessValidation: AccessValidationsAlgebra,
+      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
+      configuredDnsConnections: ConfiguredDnsConnections
   ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
@@ -44,7 +47,9 @@ object RecordSetService {
       dataAccessor.recordChangeRepository,
       dataAccessor.userRepository,
       messageQueue,
-      accessValidation
+      accessValidation,
+      dnsConnection,
+      configuredDnsConnections
     )
 }
 
@@ -55,7 +60,9 @@ class RecordSetService(
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
     messageQueue: MessageQueue,
-    accessValidation: AccessValidationsAlgebra
+    accessValidation: AccessValidationsAlgebra,
+    dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
+    configuredDnsConnections: ConfiguredDnsConnections
 ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
@@ -68,7 +75,7 @@ class RecordSetService(
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
-      _ <- recordSetDoesNotExist(rsForValidations, zone)
+      _ <- recordSetDoesNotExist(dnsConnection, configuredDnsConnections, zone, rsForValidations)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
       _ <- canAddRecordSet(auth, rsForValidations.name, rsForValidations.typ, zone).toResult
@@ -100,6 +107,14 @@ class RecordSetService(
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
+      _ <- isUniqueUpdate(
+        dnsConnection,
+        configuredDnsConnections,
+        rsForValidations,
+        existingRecordsWithName,
+        zone
+      )
+      _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone, Some(existing)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -229,7 +244,7 @@ class RecordSetService(
       )
       .toResult[RecordSet]
 
-  def recordSetDoesNotExist(recordSet: RecordSet, zone: Zone): Result[Unit] =
+  def recordSetDoesNotExistInDatabase(recordSet: RecordSet, zone: Zone): Result[Unit] =
     recordSetRepository
       .getRecordSets(zone.id, recordSet.name, recordSet.typ)
       .map {
@@ -279,4 +294,47 @@ class RecordSetService(
     } yield group
     ownerGroup.value.toResult
   }
+
+  def recordSetDoesNotExist(
+      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
+      configuredDnsConnections: ConfiguredDnsConnections,
+      zone: Zone,
+      recordSet: RecordSet
+  ): Result[Unit] =
+    recordSetDoesNotExistInDatabase(recordSet, zone).value.flatMap {
+      case Left(recordSetAlreadyExists: RecordSetAlreadyExists) =>
+        dnsConnection(zone, configuredDnsConnections)
+          .resolve(recordSet.name, zone.name, recordSet.typ)
+          .value
+          .map {
+            case Right(existingRecords) =>
+              if (existingRecords.isEmpty) Right(())
+              else Left(recordSetAlreadyExists)
+            case error => error
+          }
+      case result => IO(result)
+    }.toResult
+
+  def isUniqueUpdate(
+      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
+      configuredDnsConnections: ConfiguredDnsConnections,
+      newRecordSet: RecordSet,
+      existingRecordsWithName: List[RecordSet],
+      zone: Zone
+  ): Result[Unit] =
+    RecordSetValidations
+      .recordSetDoesNotExist(newRecordSet, existingRecordsWithName, zone) match {
+      case Left(recordSetAlreadyExists: RecordSetAlreadyExists) =>
+        dnsConnection(zone, configuredDnsConnections)
+          .resolve(newRecordSet.name, zone.name, newRecordSet.typ)
+          .value
+          .map {
+            case Right(existingRecords) =>
+              if (existingRecords.isEmpty) Right(())
+              else Left(recordSetAlreadyExists)
+            case error => error
+          }
+          .toResult
+      case result => IO(result).toResult
+    }
 }

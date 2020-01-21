@@ -73,6 +73,20 @@ object RecordSetValidations {
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
     )
 
+  def recordSetDoesNotExist(
+      newRecordSet: RecordSet,
+      existingRecordsWithName: List[RecordSet],
+      zone: Zone
+  ): Either[Throwable, Unit] =
+    ensuring(
+      RecordSetAlreadyExists(
+        s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} already " +
+          s"exists in zone ${zone.name}"
+      )
+    )(
+      !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
+    )
+
   def isNotDotted(
       newRecordSet: RecordSet,
       zone: Zone,

@@ -30,6 +30,7 @@ import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
@@ -123,7 +124,15 @@ object Boot extends App {
       val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(connections)
-      val recordSetService = RecordSetService(repositories, messageQueue, recordAccessValidations)
+      val recordSetService =
+        RecordSetService(
+          repositories,
+          messageQueue,
+          recordAccessValidations,
+          (zone, connections) =>
+            DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections)),
+          connections
+        )
       val zoneService = ZoneService(
         repositories,
         connectionValidator,
