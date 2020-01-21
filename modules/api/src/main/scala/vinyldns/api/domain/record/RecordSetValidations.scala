@@ -21,7 +21,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.DomainHelpers.{ensureTrailingDot, omitTrailingDot}
+import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -264,7 +264,6 @@ object RecordSetValidations {
       zone: Zone
   ): Either[Throwable, Unit] = Either.cond(
     updates.name.toLowerCase == existing.name.toLowerCase
-      || ensureTrailingDot(updates.name.toLowerCase) == existing.name.toLowerCase
       || (updates.name == "@" && existing.name.toLowerCase == zone.name),
     (),
     InvalidRequest("Cannot update RecordSet's name.")

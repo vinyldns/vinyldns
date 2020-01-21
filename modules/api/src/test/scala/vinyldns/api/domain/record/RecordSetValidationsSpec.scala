@@ -507,11 +507,13 @@ class RecordSetValidationsSpec
         val rs = rsOk.copy(name = "@")
         unchangedRecordName(existing, rs, zone) should be(right)
       }
-      "return ok when given name is apex without trailing dot and existing record is apex" in {
+      "return invalid when given name is apex without trailing dot and existing record is apex" in {
         val zone = okZone
         val existing = rsOk.copy(name = zone.name)
         val rs = rsOk.copy(name = "ok.zone.recordsets")
-        unchangedRecordName(existing, rs, zone) should be(right)
+        val error = leftValue(unchangedRecordName(existing, rs, zone))
+        error shouldBe an[InvalidRequest]
+        error.getMessage() shouldBe "Cannot update RecordSet's name."
       }
       "return invalid request when given record name does not match existing record name" in {
         val existing = rsOk

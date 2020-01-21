@@ -183,7 +183,7 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
 @pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
-def test_reverse_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
+def test_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
     Test updating a record set in a reverse zone
     """
@@ -226,7 +226,7 @@ def test_reverse_update_reverse_record_types(shared_zone_test_context, record_na
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
-def test_user_can_update_record_in_zone_it_owns(shared_zone_test_context):
+def test_update_record_in_zone_user_owns(shared_zone_test_context):
     """
     Test user can update a record that it owns
     """
