@@ -264,7 +264,7 @@ object RecordSetValidations {
       zone: Zone
   ): Either[Throwable, Unit] = Either.cond(
     updates.name.toLowerCase == existing.name.toLowerCase
-      || (updates.name == "@" && existing.name.toLowerCase == zone.name),
+      || (updates.name == "@" && existing.name.toLowerCase == zone.name.toLowerCase),
     (),
     InvalidRequest("Cannot update RecordSet's name.")
   )
