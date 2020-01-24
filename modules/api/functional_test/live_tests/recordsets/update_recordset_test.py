@@ -8,111 +8,93 @@ from utils import *
 from test_data import TestData
 
 
-def test_update_a_with_same_name_as_cname(shared_zone_test_context):
+def test_update_recordset_name_fails(shared_zone_test_context):
     """
-    Test that updating a A record fails if the name change conflicts with an existing CNAME name
+    Tests updating a record set by changing the name fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    cname_record = None
-    a_record = None
+    result_rs = None
     try:
-        cname_rs = {
+        new_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name1',
-            'type': 'CNAME',
-            'ttl': 500,
-            'records': [
-                {
-                    'cname': 'cname1.'
-                }
-            ]
-        }
-
-        a_rs = {
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name1',
+            'name': 'test-update-change-name-success-1',
             'type': 'A',
             'ttl': 500,
             'records': [
                 {
-                    'address': '10.1.1.1'
+                    'address': '1.1.1.1'
+                },
+                {
+                    'address': '1.1.1.2'
                 }
             ]
         }
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = result['recordSet']
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 
-        cname_create = client.create_recordset(cname_rs, status=202)
-        cname_record = client.wait_until_recordset_change_status(cname_create, 'Complete')['recordSet']
+        # update the record set, changing the name
+        updated_rs = copy.deepcopy(result_rs)
+        updated_rs['name'] = 'test-update-change-name-success-2'
+        updated_rs['ttl'] = 600
+        updated_rs['records'] = [
+            {
+                'address': '2.2.2.2'
+            }
+        ]
 
-        a_create = client.create_recordset(a_rs, status=202)
-        a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
+        error = client.update_recordset(updated_rs, status=422)
+        assert_that(error, is_("Cannot update RecordSet's name."))
 
-        a_rs_update = copy.deepcopy(a_record)
-        a_rs_update['name'] = 'duplicate-test-name1'
-
-        error = client.update_recordset(a_rs_update, status=409)
-        assert_that(error,
-                    is_('RecordSet with name duplicate-test-name1 and type CNAME already exists in zone system-test.'))
     finally:
-        if cname_record:
-            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-        if a_record:
-            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if result_rs:
+            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
+            if result:
+                client.wait_until_recordset_change_status(result, 'Complete')
 
 
-def test_update_cname_with_same_name_as_another_record(shared_zone_test_context):
+def test_update_recordset_type_fails(shared_zone_test_context):
     """
-    Test that updating a CNAME record fails if the name change conflicts with an existing record name
+    Tests updating a record set by changing the type fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    cname_record = None
-    a_record = None
+    result_rs = None
     try:
-        cname_rs = {
+        new_rs = {
             'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'unique-test-name2',
-            'type': 'CNAME',
-            'ttl': 500,
-            'records': [
-                {
-                    'cname': 'cname1.'
-                }
-            ]
-        }
-
-        a_rs = {
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'duplicate-test-name2',
+            'name': 'test-update-change-name-success-1',
             'type': 'A',
             'ttl': 500,
             'records': [
                 {
-                    'address': '10.1.1.1'
+                    'address': '1.1.1.1'
+                },
+                {
+                    'address': '1.1.1.2'
                 }
             ]
         }
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = result['recordSet']
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 
-        cname_create = client.create_recordset(cname_rs, status=202)
-        cname_record = client.wait_until_recordset_change_status(cname_create, 'Complete')['recordSet']
+        # update the record set, changing the name
+        updated_rs = copy.deepcopy(result_rs)
+        updated_rs['type'] = 'AAAA'
+        updated_rs['records'] = [
+            {
+                'address': '1::1'
+            }
+        ]
 
-        a_create = client.create_recordset(a_rs, status=202)
-        a_record = client.wait_until_recordset_change_status(a_create, 'Complete')['recordSet']
+        error = client.update_recordset(updated_rs, status=422)
+        assert_that(error, is_("Cannot update RecordSet's record type."))
 
-        cname_rs_update = copy.deepcopy(cname_record)
-        cname_rs_update['name'] = 'duplicate-test-name2'
-
-        error = client.update_recordset(cname_rs_update, status=409)
-        assert_that(error, is_(
-            'RecordSet with name duplicate-test-name2 already exists in zone system-test., CNAME record cannot use duplicate name'))
     finally:
-        if cname_record:
-            delete_result_cname = client.delete_recordset(cname_record['zoneId'], cname_record['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result_cname, 'Complete')
-
-        if a_record:
-            delete_result_a = client.delete_recordset(a_record['zoneId'], a_record['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result_a, 'Complete')
+        if result_rs:
+            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
+            if result:
+                client.wait_until_recordset_change_status(result, 'Complete')
 
 
 def test_update_cname_with_multiple_records(shared_zone_test_context):
@@ -154,97 +136,6 @@ def test_update_cname_with_multiple_records(shared_zone_test_context):
         if result_rs:
             r = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(r, 'Complete')
-
-
-def test_update_cname_with_multiple_records(shared_zone_test_context):
-    """
-    Test that creating a CNAME record set and then updating with multiple records returns an error
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    result_rs = None
-    try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'test_update_cname_with_multiple_records',
-            'type': 'CNAME',
-            'ttl': 500,
-            'records': [
-                {
-                    'cname': 'cname1.'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        result_rs = result['recordSet']
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        # update the record set, adding another cname record so there are multiple
-        updated_rs = copy.deepcopy(result_rs)
-        updated_rs['records'] = [
-            {
-                'cname': 'cname1.'
-            },
-            {
-                'cname': 'cname2.'
-            }
-        ]
-
-        errors = client.update_recordset(updated_rs, status=400)['errors']
-        assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
-    finally:
-        if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
-
-
-def test_update_change_name_success(shared_zone_test_context):
-    """
-    Tests updating a record set and changing the name works
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    result_rs = None
-    try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'test-update-change-name-success-1',
-            'type': 'A',
-            'ttl': 500,
-            'records': [
-                {
-                    'address': '1.1.1.1'
-                },
-                {
-                    'address': '1.1.1.2'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        result_rs = result['recordSet']
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        # update the record set, changing the name
-        updated_rs = copy.deepcopy(result_rs)
-        updated_rs['name'] = 'test-update-change-name-success-2'
-        updated_rs['ttl'] = 600
-        updated_rs['records'] = [
-            {
-                'address': '2.2.2.2'
-            }
-        ]
-
-        result = client.update_recordset(updated_rs, status=202)
-
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        assert_that(result_rs['ttl'], is_(600))
-        assert_that(result_rs['name'], is_('test-update-change-name-success-2'))
-        assert_that(result_rs['records'][0]['address'], is_('2.2.2.2'))
-        assert_that(result_rs['records'], has_length(1))
-    finally:
-        if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
 
 
 @pytest.mark.parametrize('record_name,test_rs', TestData.FORWARD_RECORDS)
@@ -292,12 +183,11 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
 @pytest.mark.serial
 @pytest.mark.parametrize('record_name,test_rs', TestData.REVERSE_RECORDS)
-def test_reverse_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
+def test_update_reverse_record_types(shared_zone_test_context, record_name, test_rs):
     """
     Test updating a record set in a reverse zone
     """
-    # TODO: reverse records are difficult to run in parallel because there aren't many, need to
-    # coordinate across tests
+    # TODO: reverse records are difficult to run in parallel because there aren't many, need to coordinate across tests
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
 
@@ -336,99 +226,7 @@ def test_reverse_update_reverse_record_types(shared_zone_test_context, record_na
                 client.wait_until_recordset_change_status(result, 'Complete')
 
 
-def test_update_recordset_long_name(shared_zone_test_context):
-    """
-    Test updating a record set where the name is too long
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    result_rs = None
-
-    try:
-        new_rs = {
-            'id': 'abc',
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'a',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-
-        result_rs = result['recordSet']
-        verify_recordset(result_rs, new_rs)
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        update_rs = {
-            'id': 'abc',
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'a' * 256,
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                }
-            ]
-        }
-        client.update_recordset(update_rs, status=400)
-    finally:
-        if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
-
-
-def test_update_recordset_with_spaces(shared_zone_test_context):
-    """
-    Test updating a record set where the name contains spaces
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    result_rs = None
-
-    try:
-        new_rs = {
-            'id': 'abc',
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'a',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-
-        result_rs = result['recordSet']
-        verify_recordset(result_rs, new_rs)
-        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        update_rs = {
-            'id': 'abc',
-            'zoneId': shared_zone_test_context.system_test_zone['id'],
-            'name': 'a a',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                }
-            ]
-        }
-        client.update_recordset(update_rs, status=400)
-    finally:
-        if result_rs:
-            result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202, 404))
-            if result:
-                client.wait_until_recordset_change_status(result, 'Complete')
-
-
-def test_user_can_update_record_in_zone_it_owns(shared_zone_test_context):
+def test_update_record_in_zone_user_owns(shared_zone_test_context):
     """
     Test user can update a record that it owns
     """
@@ -833,67 +631,6 @@ def test_update_ipv6_ptr_recordset(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_update_recordset_fails_when_changing_name_to_an_existing_name(shared_zone_test_context):
-    """
-    Test creating a new record set fails when an update attempts to change the name of one recordset
-    to the name of another that already exists
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
-    result_rs_1 = None
-    result_rs_2 = None
-    try:
-        new_rs_1 = {
-            'zoneId': ok_zone['id'],
-            'name': 'update_recordset_fails_when_changing_name_to_an_existing_name',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                },
-                {
-                    'address': '10.2.2.2'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs_1, status=202)
-        result_rs_1 = result['recordSet']
-        result_rs_1 = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        new_rs_2 = {
-            'zoneId': ok_zone['id'],
-            'name': 'update_recordset_fails_when_changing_name_to_an_existing_name_2',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '2.2.2.2'
-                },
-                {
-                    'address': '3.3.3.3'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs_2, status=202)
-        result_rs_2 = result['recordSet']
-        result_rs_2 = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        # attempt to change the name of the second to the name of the first
-        result_rs_2['name'] = result_rs_1['name']
-
-        client.update_recordset(result_rs_2, status=409)
-
-    finally:
-        if result_rs_1:
-            delete_result = client.delete_recordset(result_rs_1['zoneId'], result_rs_1['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result, 'Complete')
-
-        if result_rs_2:
-            delete_result = client.delete_recordset(result_rs_2['zoneId'], result_rs_2['id'], status=202)
-            client.wait_until_recordset_change_status(delete_result, 'Complete')
-
-
 def test_update_recordset_zone_not_found(shared_zone_test_context):
     """
     Test updating a record set in a zone that doesn't exist should return a 404
@@ -955,7 +692,7 @@ def test_update_recordset_not_found(shared_zone_test_context):
 
 def test_at_update_recordset(shared_zone_test_context):
     """
-    Test creating a new record set with name @ in an existing zone and then updating that recordset with name @
+    Test creating a new record set with name @ in an existing zone and then updating that recordset
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
@@ -1764,8 +1501,8 @@ def test_update_to_txt_dotted_host_succeeds(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     try:
-        result_rs = seed_text_recordset(client, "update_with_dots", ok_zone)
-        result_rs['name'] = "update_with.dots"
+        result_rs = seed_text_recordset(client, "update_with.dots", ok_zone)
+        result_rs['ttl'] = 333
 
         update_rs = client.update_recordset(result_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(update_rs, 'Complete')['recordSet']
@@ -1774,40 +1511,6 @@ def test_update_to_txt_dotted_host_succeeds(shared_zone_test_context):
         if result_rs:
             delete_result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
-
-
-def test_ns_update_change_ns_name_to_origin_fails(shared_zone_test_context):
-    """
-    Tests that an ns update for origin fails
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    ns_rs = None
-
-    try:
-        new_rs = {
-            'zoneId': zone['id'],
-            'name': 'update-change-ns-name-to-origin',
-            'type': 'NS',
-            'ttl': 38400,
-            'records': [
-                {
-                    'nsdname': 'ns1.parent.com.'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        ns_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        changed_rs = ns_rs
-        changed_rs['name'] = "@"
-
-        client.update_recordset(changed_rs, status=409)
-
-    finally:
-        if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202, 404))
-            client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
 
 def test_ns_update_existing_ns_origin_fails(shared_zone_test_context):
@@ -1824,100 +1527,6 @@ def test_ns_update_existing_ns_origin_fails(shared_zone_test_context):
     apex_ns['ttl'] = apex_ns['ttl'] + 100
 
     client.update_recordset(apex_ns, status=422)
-
-
-def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
-    """
-    Test that updating a dotted host name A record set fails.
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-
-    dotted_host_rs = {
-        'zoneId': zone['id'],
-        'name': generate_record_name(),
-        'type': 'A',
-        'ttl': 500,
-        'records': [{'address': '127.0.0.1'}]
-    }
-
-    create_response = client.create_recordset(dotted_host_rs, status=202)
-    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
-
-    create_rs['name'] = 'foo.bar'
-
-    try:
-        error = client.update_recordset(create_rs, status=422)
-        assert_that(error, is_("Record with name " + create_rs['name'] + " and type A is a dotted host which is "
-                                                                         "not allowed in zone " + zone['name']))
-
-    finally:
-        delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result, 'Complete')
-
-
-def test_update_dotted_a_record_apex_succeeds(shared_zone_test_context):
-    """
-    Test that updating an apex A record set containing dots succeeds.
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    zone_name = zone['name']
-
-    apex_rs = {
-        'zoneId': zone['id'],
-        'name': generate_record_name(),
-        'type': 'A',
-        'ttl': 500,
-        'records': [{'address': '127.0.0.1'}]
-    }
-
-    create_response = client.create_recordset(apex_rs, status=202)
-    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
-    create_rs['name'] = zone_name
-
-    try:
-        update_response = client.update_recordset(create_rs, status=202)
-        update_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
-        assert_that(update_rs['name'], is_(zone_name))
-
-    finally:
-        delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result, 'Complete')
-
-
-def test_update_dotted_a_record_apex_adds_trailing_dot_to_name(shared_zone_test_context):
-    """
-    Test that updating an A record set to apex adds a trailing dot to the name if it is not already in the name.
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    zone_name = zone['name']
-
-    recordset = {
-        'zoneId': zone['id'],
-        'name': generate_record_name(),
-        'type': 'A',
-        'ttl': 500,
-        'records': [{'address': '127.0.0.1'}]
-    }
-
-    create_response = client.create_recordset(recordset, status=202)
-    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
-    update_rs = create_rs
-    update_rs['name'] = zone['name'].rstrip('.')
-
-    try:
-        update_response = client.update_recordset(update_rs, status=202)
-        updated_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
-        assert_that(updated_rs['name'], is_(zone_name))
-
-    finally:
-        delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
-        client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_update_existing_dotted_a_record_succeeds(shared_zone_test_context):
@@ -1943,69 +1552,6 @@ def test_update_existing_dotted_a_record_succeeds(shared_zone_test_context):
         update_rs['records'] = [{'address': '7.7.7.7'}]
         revert_rs_update = client.update_recordset(update_rs, status=202)
         client.wait_until_recordset_change_status(revert_rs_update, 'Complete')
-
-
-def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
-    """
-    Test that updating a CNAME record set with record name matching dotted apex returns an error.
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    zone_name = zone['name'].rstrip('.')
-
-    apex_cname_rs = {
-        'zoneId': zone['id'],
-        'name': 'ygritte',
-        'type': 'CNAME',
-        'ttl': 500,
-        'records': [{'cname': 'got.reference'}]
-    }
-
-    create_response = client.create_recordset(apex_cname_rs, status=202)
-    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
-
-    create_rs['name'] = zone_name
-
-    try:
-        error = client.update_recordset(create_rs, status=422)
-        assert_that(error, is_("CNAME RecordSet cannot have name '@' because it points to zone origin"))
-
-    finally:
-        delete_response = client.delete_recordset(zone['id'], create_rs['id'], status=202)['status']
-        client.wait_until_recordset_deleted(delete_response, 'Complete')
-
-
-def test_update_cname_to_dotted_host_fails(shared_zone_test_context):
-    """
-    Test that updating a CNAME record set to record name being a dotted host fails.
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    zone_name = zone['name'].rstrip('.')
-
-    apex_cname_rs = {
-        'zoneId': zone['id'],
-        'name': 'link',
-        'type': 'CNAME',
-        'ttl': 500,
-        'records': [{'cname': 'got.reference'}]
-    }
-
-    create_response = client.create_recordset(apex_cname_rs, status=202)
-    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
-
-    create_rs['name'] = 'dotted.name'
-
-    try:
-        error = client.update_recordset(create_rs, status=422)
-        assert_that(error, is_(
-            "Record with name dotted.name and type CNAME is a dotted host which is not allowed in zone parent.com."))
-
-    finally:
-        delete_response = client.delete_recordset(zone['id'], create_rs['id'], status=202)['status']
-        client.wait_until_recordset_deleted(delete_response, 'Complete')
 
 
 def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
@@ -2554,7 +2100,7 @@ def test_update_ds_data_failures(shared_zone_test_context):
 @pytest.mark.serial
 def test_update_ds_bad_ttl(shared_zone_test_context):
     """
-    Test that updating a DS record with unmatching TTL fails
+    Test that updating a DS record with a TTL that doesn't match the zone NS record TTL fails
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -2628,7 +2174,7 @@ def test_update_fails_when_payload_and_actual_zone_id_do_not_match(shared_zone_t
 
         error = client.update_recordset(update, status=422)
 
-        assert_that(error, is_("Cannot update RecordSet's zoneId attribute"))
+        assert_that(error, is_("Cannot update RecordSet's zone ID."))
 
     finally:
         if created:

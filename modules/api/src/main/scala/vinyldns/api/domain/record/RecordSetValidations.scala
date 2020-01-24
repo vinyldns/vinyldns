@@ -73,20 +73,6 @@ object RecordSetValidations {
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
     )
 
-  def isUniqueUpdate(
-      newRecordSet: RecordSet,
-      existingRecordsWithName: List[RecordSet],
-      zone: Zone
-  ): Either[Throwable, Unit] =
-    ensuring(
-      RecordSetAlreadyExists(
-        s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} already " +
-          s"exists in zone ${zone.name}"
-      )
-    )(
-      !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
-    )
-
   def isNotDotted(
       newRecordSet: RecordSet,
       zone: Zone,
@@ -272,10 +258,34 @@ object RecordSetValidations {
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
 
-  def recordSetIsInZone(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
+  def unchangedRecordName(
+      existing: RecordSet,
+      updates: RecordSet,
+      zone: Zone
+  ): Either[Throwable, Unit] = Either.cond(
+    updates.name.toLowerCase == existing.name.toLowerCase
+      || (updates.name == "@" && existing.name.toLowerCase == zone.name.toLowerCase),
+    (),
+    InvalidRequest("Cannot update RecordSet's name.")
+  )
+
+  def unchangedRecordType(
+      existing: RecordSet,
+      updates: RecordSet
+  ): Either[Throwable, Unit] =
     Either.cond(
-      recordSet.zoneId == zone.id,
+      updates.typ == existing.typ,
       (),
-      InvalidRequest(s"""Cannot update RecordSet's zoneId attribute""")
+      InvalidRequest("Cannot update RecordSet's record type.")
+    )
+
+  def unchangedZoneId(
+      existing: RecordSet,
+      updates: RecordSet
+  ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.zoneId == existing.zoneId,
+      (),
+      InvalidRequest("Cannot update RecordSet's zone ID.")
     )
 }

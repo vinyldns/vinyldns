@@ -86,7 +86,9 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
-      _ <- recordSetIsInZone(existing, zone).toResult
+      _ <- unchangedRecordName(existing, recordSet, zone).toResult
+      _ <- unchangedRecordType(existing, recordSet).toResult
+      _ <- unchangedZoneId(existing, recordSet).toResult
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -95,13 +97,9 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
-      _ <- validRecordTypes(rsForValidations, zone).toResult
-      _ <- validRecordNameLength(rsForValidations, zone).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
-      _ <- isUniqueUpdate(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone, Some(existing)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
