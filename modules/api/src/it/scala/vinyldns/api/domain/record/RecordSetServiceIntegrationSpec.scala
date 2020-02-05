@@ -19,12 +19,15 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
+import org.mockito.Mockito._
 import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+import vinyldns.api.Interfaces._
 import vinyldns.api._
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._
@@ -34,7 +37,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
+import vinyldns.core.domain.zone._
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 
 import scala.concurrent.Await
@@ -221,6 +224,14 @@ class RecordSetServiceIntegrationSpec
     ownerGroupId = Some(sharedGroup.id)
   )
 
+  private val zoneConnection =
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+
+  private val configuredConnections =
+    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
+
+  private val mockDnsConnection = mock[DnsConnection]
+
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
@@ -254,7 +265,10 @@ class RecordSetServiceIntegrationSpec
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestMessageQueue,
-      new AccessValidations()
+      new AccessValidations(),
+      (_, _) => mockDnsConnection,
+      configuredConnections,
+      false
     )
   }
 
@@ -368,6 +382,15 @@ class RecordSetServiceIntegrationSpec
 
     "fail to add relative record if apex record with same name already exists" in {
       val newRecord = apexTestRecordNameConflict.copy(name = "zone-test-name-conflicts")
+
+      doReturn(IO(List(newRecord)).toResult)
+        .when(mockDnsConnection)
+        .resolve(
+          zoneTestNameConflicts.name,
+          zoneTestNameConflicts.name,
+          newRecord.typ
+        )
+
       val result =
         testRecordSetService
           .addRecordSet(newRecord, auth)
@@ -381,6 +404,11 @@ class RecordSetServiceIntegrationSpec
 
     "fail to add apex record if relative record with same name already exists" in {
       val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict.")
+
+      doReturn(IO(List(newRecord)).toResult)
+        .when(mockDnsConnection)
+        .resolve(newRecord.name, zoneTestNameConflicts.name, newRecord.typ)
+
       val result =
         testRecordSetService
           .addRecordSet(newRecord, auth)
