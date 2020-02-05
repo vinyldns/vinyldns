@@ -160,4 +160,9 @@ object VinylDNSConfig {
       zn => DomainHelpers.ensureTrailingDot(zn.toLowerCase)
     )
   }
+
+  lazy val validateRecordLookupAgainstDnsBackend: Boolean =
+    vinyldnsConfig
+      .as[Option[Boolean]]("validate-record-lookup-against-dns-backend")
+      .getOrElse(false)
 }

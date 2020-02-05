@@ -267,7 +267,8 @@ class RecordSetServiceIntegrationSpec
       TestMessageQueue,
       new AccessValidations(),
       (_, _) => mockDnsConnection,
-      configuredConnections
+      configuredConnections,
+      false
     )
   }
 

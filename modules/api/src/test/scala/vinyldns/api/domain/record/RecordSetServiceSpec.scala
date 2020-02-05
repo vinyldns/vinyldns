@@ -78,7 +78,21 @@ class RecordSetServiceSpec
     mockMessageQueue,
     new AccessValidations(),
     (_, _) => mockDnsConnection,
-    configuredDnsConnections
+    configuredDnsConnections,
+    false
+  )
+
+  val underTestWithDnsBackendValidations = new RecordSetService(
+    mockZoneRepo,
+    mockGroupRepo,
+    mockRecordRepo,
+    mockRecordChangeRepo,
+    mockUserRepo,
+    mockMessageQueue,
+    new AccessValidations(),
+    (_, _) => mockDnsConnection,
+    configuredDnsConnections,
+    true
   )
 
   "addRecordSet" should {
@@ -155,7 +169,8 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
 
-      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+      val result =
+        leftResultOf(underTestWithDnsBackendValidations.addRecordSet(record, okAuth).value)
       result shouldBe an[InvalidRequest]
     }
     "fail if the record is a high value domain" in {
@@ -289,7 +304,10 @@ class RecordSetServiceSpec
 
       val result: RecordSetChange =
         rightResultOf(
-          underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+          underTestWithDnsBackendValidations
+            .addRecordSet(record, okAuth)
+            .map(_.asInstanceOf[RecordSetChange])
+            .value
         )
 
       matches(result.recordSet, record, okZone.name) shouldBe true
@@ -607,7 +625,10 @@ class RecordSetServiceSpec
         .resolve(newRecord.name, okZone.name, newRecord.typ)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+        underTestWithDnsBackendValidations
+          .updateRecordSet(newRecord, okAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value
       )
 
       matches(result.recordSet, newRecord, okZone.name) shouldBe true

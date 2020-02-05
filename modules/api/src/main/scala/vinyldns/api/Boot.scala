@@ -131,7 +131,8 @@ object Boot extends App {
           recordAccessValidations,
           (zone, connections) =>
             DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections)),
-          connections
+          connections,
+          VinylDNSConfig.validateRecordLookupAgainstDnsBackend
         )
       val zoneService = ZoneService(
         repositories,

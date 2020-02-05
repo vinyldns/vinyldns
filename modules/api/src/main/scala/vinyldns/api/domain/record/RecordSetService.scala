@@ -38,7 +38,8 @@ object RecordSetService {
       messageQueue: MessageQueue,
       accessValidation: AccessValidationsAlgebra,
       dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-      configuredDnsConnections: ConfiguredDnsConnections
+      configuredDnsConnections: ConfiguredDnsConnections,
+      validateRecordLookupAgainstDnsBackend: Boolean
   ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
@@ -49,7 +50,8 @@ object RecordSetService {
       messageQueue,
       accessValidation,
       dnsConnection,
-      configuredDnsConnections
+      configuredDnsConnections,
+      validateRecordLookupAgainstDnsBackend
     )
 }
 
@@ -62,7 +64,8 @@ class RecordSetService(
     messageQueue: MessageQueue,
     accessValidation: AccessValidationsAlgebra,
     dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-    configuredDnsConnections: ConfiguredDnsConnections
+    configuredDnsConnections: ConfiguredDnsConnections,
+    validateRecordLookupAgainstDnsBackend: Boolean
 ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
@@ -75,7 +78,13 @@ class RecordSetService(
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
-      _ <- recordSetDoesNotExist(dnsConnection, configuredDnsConnections, zone, rsForValidations)
+      _ <- recordSetDoesNotExist(
+        dnsConnection,
+        configuredDnsConnections,
+        zone,
+        rsForValidations,
+        validateRecordLookupAgainstDnsBackend
+      )
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
       _ <- canAddRecordSet(auth, rsForValidations.name, rsForValidations.typ, zone).toResult
@@ -112,7 +121,8 @@ class RecordSetService(
         configuredDnsConnections,
         rsForValidations,
         existingRecordsWithName,
-        zone
+        zone,
+        validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone, Some(existing)).toResult
@@ -299,10 +309,12 @@ class RecordSetService(
       dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
       configuredDnsConnections: ConfiguredDnsConnections,
       zone: Zone,
-      recordSet: RecordSet
+      recordSet: RecordSet,
+      validateRecordLookupAgainstDnsBackend: Boolean
   ): Result[Unit] =
     recordSetDoesNotExistInDatabase(recordSet, zone).value.flatMap {
-      case Left(recordSetAlreadyExists: RecordSetAlreadyExists) =>
+      case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
+          if validateRecordLookupAgainstDnsBackend =>
         dnsConnection(zone, configuredDnsConnections)
           .resolve(recordSet.name, zone.name, recordSet.typ)
           .value
@@ -320,11 +332,13 @@ class RecordSetService(
       configuredDnsConnections: ConfiguredDnsConnections,
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone
+      zone: Zone,
+      validateRecordLookupAgainstDnsBackend: Boolean
   ): Result[Unit] =
     RecordSetValidations
       .recordSetDoesNotExist(newRecordSet, existingRecordsWithName, zone) match {
-      case Left(recordSetAlreadyExists: RecordSetAlreadyExists) =>
+      case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
+          if validateRecordLookupAgainstDnsBackend =>
         dnsConnection(zone, configuredDnsConnections)
           .resolve(newRecordSet.name, zone.name, newRecordSet.typ)
           .value
