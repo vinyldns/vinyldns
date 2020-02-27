@@ -29,14 +29,13 @@
             $scope.selectedRecordTypes = [];
 
             // paging status for recordsets
-            var recordsPaging = pagingService.getNewPagingParams(100);
+            var recordsPaging = pagingService.getNewPagingParams(2);
 
             $scope.refreshRecords = function() {
                 recordsPaging = pagingService.resetPaging(recordsPaging);
                 function success(response) {
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
-//                    $scope.records = response.data['recordSets'];
                     console.log($scope.records);
                 }
 
@@ -87,10 +86,50 @@
                   $("td.dataTables_empty").show();
                 }
             };
-//            $scope.refresh = function() {
-//                $scope.getRecordSets
-//            };
-//
-//            $timeout($scope.refresh, 0);
+
+
+            /**
+             * Recordset paging
+             */
+            $scope.getRecordPageTitle = function() {
+                return pagingService.getPanelTitle(recordsPaging);
+            };
+
+            $scope.prevPageEnabled = function() {
+                return pagingService.prevPageEnabled(recordsPaging);
+            };
+
+            $scope.nextPageEnabled = function() {
+                return pagingService.nextPageEnabled(recordsPaging);
+            };
+
+            $scope.prevPage = function() {
+                var startFrom = pagingService.getPrevStartFrom(recordsPaging);
+                return recordsService
+                    .listRecordSets(recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                    .then(function(response) {
+                        recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
+                        updateRecordDisplay(response.data.recordSets);
+                    })
+                    .catch(function (error){
+                        handleError(error, 'recordsService::prevPage-failure');
+                    });
+            };
+
+            $scope.nextPage = function() {
+                return recordsService
+                        .listRecordSets(recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                        .then(function(response) {
+                        var recordSets = response.data.recordSets;
+                        recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
+
+                        if(recordSets.length > 0 ){
+                            updateRecordDisplay(recordSets);
+                        }
+                    })
+                    .catch(function (error){
+                        handleError(error, 'recordsService::nextPage-failure');
+                    });
+            };
     });
 })();

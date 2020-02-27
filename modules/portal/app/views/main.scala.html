@@ -54,6 +54,13 @@
                                         }
                                         <a href="/dnschanges"><i class="fa fa-list-ol"></i>DNS Changes</a>
                                     </li>
+                                    @if(controller == "RecordSetsController") {
+                                    <li class="active">
+                                        } else {
+                                    <li>
+                                        }
+                                        <a href="/recordsets"><i class="fa fa-list-ul"></i>RecordSets</a>
+                                    </li>
                                   @if(controller == "GroupsController" || controller == "MembershipController") {
                                     <li class="active">
                                         } else {
