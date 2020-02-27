@@ -217,13 +217,15 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             s"""AND type IN ($list)"""
           }
 
+          val maxPlusOne = maxItems.map(_ + 1)
+
           val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++
             Some(s"""ORDER BY fqdn ${nameSort.toString}, type ASC""") ++
-            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+            maxPlusOne.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            maxPlusOne.map(m => 'maxItems -> m)).toSeq
 
           val query = "SELECT data, fqdn FROM recordset WHERE " + opts
 
@@ -233,17 +235,21 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .list()
             .apply()
 
-          logger.error(s"""$query""")
+          val newResults = if (maxPlusOne.contains(results.size)) {
+            results.dropRight(1)
+          } else {
+            results
+          }
 
-          // if size of results is less than the number returned, we don't have a next id
+          // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
 
-          val nextId = maxItems
+          val nextId = maxPlusOne
             .filter(_ == results.size)
-            .flatMap(_ => results.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
           ListRecordSetResults(
-            recordSets = results,
+            recordSets = newResults,
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
@@ -419,7 +425,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       } yield PagingKey(recordName, recordType)
 
     def toNextId(rs: RecordSet, searchByZone: Boolean): String = {
-      val nextIdName = if (searchByZone) rs.name else rs.fqdn
+      val nextIdName = if (searchByZone) rs.name else rs.fqdn.getOrElse("")
       val nextIdType = MySqlRecordSetRepository.fromRecordType(rs.typ)
 
       s"$nextIdName$delimiter$nextIdType"
