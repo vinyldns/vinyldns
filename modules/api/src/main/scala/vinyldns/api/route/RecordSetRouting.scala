@@ -165,13 +165,6 @@ class RecordSetRoute(
         }
       }
     } ~
-    path("recordsets" / Segment) { (rsId) =>
-      (get & monitor("Endpoint.getRecordSet")) {
-        authenticateAndExecute(recordSetService.getRecordSet(rsId, _)) { rs =>
-          complete(StatusCodes.OK, GetRecordSetResponse(rs))
-        }
-      }
-    } ~
     path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
       (get & monitor("Endpoint.getRecordSetByZone")) {
         authenticateAndExecute(recordSetService.getRecordSetByZone(rsId, zoneId, _)) { rs =>
