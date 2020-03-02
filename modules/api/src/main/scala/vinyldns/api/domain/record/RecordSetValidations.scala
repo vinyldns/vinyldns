@@ -28,6 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
+import scala.util.matching.Regex
 
 object RecordSetValidations {
 
@@ -305,8 +306,9 @@ object RecordSetValidations {
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest("recordNameFilter must be at least two characters.")
-    )(
-      recordNameFilter.length > 1
-    )
+      InvalidRequest("recordNameFilter must contain at least two letters or numbers.")
+    ) {
+      val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
+      searchRegex.findFirstIn(recordNameFilter).isDefined
+    }
 }
