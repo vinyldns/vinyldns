@@ -529,6 +529,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       (page3.recordSets should contain).theSameElementsInOrderAs(List(recordSetWithFQDN(existing(4), okZone)))
       page3.nextId shouldBe None
     }
+    "return applicable recordsets in ascending order when recordNameFilter is given" in {
+      val existing = insert(okZone, 10).map(_.recordSet)
+      val found = repo.listRecordSets(None, None, None, Some("*.ok*"), None, NameSort.ASC).unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone))
+    }
+    "return applicable recordsets in descending order when recordNameFilter is given and name sort is descending" in {
+      val existing = insert(okZone, 10).map(_.recordSet)
+      val found = repo.listRecordSets(None, None, None, Some("*.ok*"), None, NameSort.DESC).unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone)).reverse
+    }
   }
   "get record sets by name and type" should {
     "return a record set when there is a match" in {
