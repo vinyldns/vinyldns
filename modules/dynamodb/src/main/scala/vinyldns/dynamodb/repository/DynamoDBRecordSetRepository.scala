@@ -205,22 +205,6 @@ class DynamoDBRecordSetRepository private[repository] (
       }
     }
 
-  def getRecordSetByZone(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
-    monitor("repo.RecordSet.getRecordSetById") {
-      //Do not need ZoneId, recordSetId is unique
-      log.info(s"Getting recordSet $recordSetId and Zone $zoneId")
-      val key = new HashMap[String, AttributeValue]()
-      key.put(RECORD_SET_ID, new AttributeValue(recordSetId))
-      val request = new GetItemRequest().withTableName(recordSetTableName).withKey(key)
-
-      dynamoDBHelper.getItem(request).map { result =>
-        if (result != null && result.getItem != null && !result.getItem.isEmpty)
-          Some(fromItem(result.getItem))
-        else
-          None
-      }
-    }
-
   def getRecordSetCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetCount") {
       log.info(s"Getting record set count zone $zoneId")

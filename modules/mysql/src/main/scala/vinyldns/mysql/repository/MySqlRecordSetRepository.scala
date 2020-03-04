@@ -284,15 +284,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def getRecordSetByZone(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
-    monitor("repo.RecordSet.getRecordSet") {
-      IO {
-        DB.readOnly { implicit s =>
-          FIND_BY_ID.bindByName('id -> recordSetId).map(toRecordSet).single().apply()
-        }
-      }
-    }
-
   def getRecordSetCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetCount") {
       IO {

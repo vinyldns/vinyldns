@@ -62,9 +62,6 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
     IO.pure(None)
 
-  def getRecordSetByZone(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
-    IO.pure(None)
-
   def getRecordSetCount(zoneId: String): IO[Int] = IO.pure(0)
 
   def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] = IO.pure(List())

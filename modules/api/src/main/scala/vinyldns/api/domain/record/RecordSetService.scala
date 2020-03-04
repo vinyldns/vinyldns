@@ -139,7 +139,7 @@ class RecordSetService(
   ): Result[ZoneCommandResult] =
     for {
       zone <- getZone(zoneId)
-      existing <- getRecordSetByZone(recordSetId, zone)
+      existing <- getRecordSet(recordSetId)
       _ <- isNotHighValueDomain(existing, zone).toResult
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
@@ -164,7 +164,7 @@ class RecordSetService(
   ): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
-      recordSet <- getRecordSetByZone(recordSetId, zone)
+      recordSet <- getRecordSet(recordSetId)
       _ <- canViewRecordSet(
         authPrincipal,
         recordSet.name,
@@ -296,16 +296,6 @@ class RecordSetService(
       .orFail(
         RecordSetNotFoundError(
           s"RecordSet with id $recordsetId does not exist."
-        )
-      )
-      .toResult[RecordSet]
-
-  def getRecordSetByZone(recordsetId: String, zone: Zone): Result[RecordSet] =
-    recordSetRepository
-      .getRecordSetByZone(zone.id, recordsetId)
-      .orFail(
-        RecordSetNotFoundError(
-          s"RecordSet with id $recordsetId does not exist in zone ${zone.name}"
         )
       )
       .toResult[RecordSet]
