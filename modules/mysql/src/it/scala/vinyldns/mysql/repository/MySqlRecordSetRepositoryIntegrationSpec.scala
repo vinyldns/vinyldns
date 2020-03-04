@@ -539,6 +539,10 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val found = repo.listRecordSets(None, None, None, Some("*.ok*"), None, NameSort.DESC).unsafeRunSync()
       found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone)).reverse
     }
+    "return no recordsets when no zoneId or recordNameFilter are given" in {
+      val found = repo.listRecordSets(None, None, None, None, None, NameSort.ASC).unsafeRunSync()
+      found.recordSets shouldBe empty
+    }
   }
   "get record sets by name and type" should {
     "return a record set when there is a match" in {

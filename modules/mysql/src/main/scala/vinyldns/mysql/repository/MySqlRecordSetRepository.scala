@@ -183,9 +183,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         DB.readOnly { implicit s =>
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(s"""zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' """)
-            case (None, Some(fqdn)) => Some(s"""fqdn LIKE '${fqdn.replace('*', '%')}' """)
-            case (Some(zId), None) => Some(s"""zone_id = '$zId' """)
+              Some(s"""WHERE zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' """)
+            case (None, Some(fqdn)) => Some(s"""WHERE fqdn LIKE '${fqdn.replace('*', '%')}' """)
+            case (Some(zId), None) => Some(s"""WHERE zone_id = '$zId' """)
             case _ => None
           }
 
@@ -227,7 +227,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             maxPlusOne.map(m => 'maxItems -> m)).toSeq
 
-          val query = "SELECT data, fqdn FROM recordset WHERE " + opts
+          val query = "SELECT data, fqdn FROM recordset " + opts
 
           val results = SQL(query)
             .bindByName(params: _*)
