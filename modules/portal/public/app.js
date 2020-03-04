@@ -2,8 +2,7 @@ angular.module('vinyldns', [
     'services.module',
     'controllers.module',
     'directives.module',
-    'dns-change',
-    'recordset'
+    'dns-change'
 ])
     .config(function ($httpProvider, $animateProvider, $logProvider) {
         $httpProvider

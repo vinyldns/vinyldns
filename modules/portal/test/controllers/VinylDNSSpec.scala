@@ -1610,13 +1610,13 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
-    ".listRecordSetsByZone" should {
+    ".getRecordSets" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
 
         val underTest = withClient(client)
         val result =
-          underTest.listRecordSetsByZone(hobbitZoneId)(
+          underTest.getRecordSets(hobbitZoneId)(
             FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets")
           )
 
@@ -1627,7 +1627,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
         val client = mock[WSClient]
         val underTest = withLockedClient(client)
-        val result = underTest.listRecordSetsByZone(hobbitZoneId)(
+        val result = underTest.getRecordSets(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
             "username" -> lockedFrodoUser.userName,
             "accessKey" -> lockedFrodoUser.accessKey

@@ -54,13 +54,6 @@
                                         }
                                         <a href="/dnschanges"><i class="fa fa-list-ol"></i>DNS Changes</a>
                                     </li>
-                                    @if(controller == "RecordSetsController") {
-                                    <li class="active">
-                                        } else {
-                                    <li>
-                                        }
-                                        <a href="/recordsets"><i class="fa fa-list-ul"></i>RecordSets</a>
-                                    </li>
                                   @if(controller == "GroupsController" || controller == "MembershipController") {
                                     <li class="active">
                                         } else {
@@ -161,7 +154,6 @@
             <script src="/public/gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
             <script src="/public/javascripts/angular.min.js"></script>
             <script src="/public/lib/dns-change/dns-change.module.js"></script>
-            <script src="/public/lib/recordset/recordset.module.js"></script>
             <script src="/public/lib/controllers/controller.groups.js"></script>
             <script src="/public/lib/controllers/controller.manageZones.js"></script>
             <script src="/public/lib/controllers/controller.membership.js"></script>
@@ -187,8 +179,6 @@
             <script src="/public/lib/dns-change/dns-change.service.js"></script>
             <script src="/public/lib/dns-change/dns-changes.controller.js"></script>
             <script src="/public/lib/oidc-finish.js"></script>
-            <script src="/public/lib/recordset/recordset-detail.controller.js"></script>
-            <script src="/public/lib/recordset/recordsets.controller.js"></script>
             <script src="/public/lib/services/groups/service.groups.js"></script>
             <script src="/public/lib/services/paging/service.paging.js"></script>
             <script src="/public/lib/services/profile/service.profile.js"></script>
