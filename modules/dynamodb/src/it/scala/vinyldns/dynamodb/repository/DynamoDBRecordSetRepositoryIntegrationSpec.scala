@@ -92,7 +92,6 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
   "DynamoDBRecordSetRepository" should {
     "fail to return records with listRecordSets if zoneId not given" in {
-      val testRecordSet = recordSets.head
       val testFuture = repo.listRecordSets(
         zoneId = None,
         startFrom = None,
