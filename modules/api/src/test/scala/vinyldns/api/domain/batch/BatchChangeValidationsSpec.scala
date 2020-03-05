@@ -16,17 +16,23 @@
 
 package vinyldns.api.domain.batch
 
+import cats.effect.IO
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
 import org.scalacheck.Gen
+import org.mockito.Mockito._
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.EitherValues
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.{DomainValidations, batch}
+import vinyldns.api.Interfaces._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
@@ -34,7 +40,14 @@ import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
+import vinyldns.core.domain.zone.{
+  ACLRule,
+  AccessLevel,
+  ConfiguredDnsConnections,
+  Zone,
+  ZoneConnection,
+  ZoneStatus
+}
 
 import scala.util.Random
 
@@ -42,6 +55,7 @@ class BatchChangeValidationsSpec
     extends AnyPropSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
+    with MockitoSugar
     with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
@@ -52,8 +66,30 @@ class BatchChangeValidationsSpec
 
   private val maxChanges = 10
   private val accessValidations = new AccessValidations()
+
+  private val zoneConnection =
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+  private val configuredDnsConnections =
+    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
+  private val mockDnsConnection = mock[DnsConnection]
+
   private val underTest =
-    new BatchChangeValidations(maxChanges, accessValidations)
+    new BatchChangeValidations(
+      maxChanges,
+      accessValidations,
+      (_, _) => mockDnsConnection,
+      configuredDnsConnections
+    )
+
+  private val underTestWithDnsBackendValidations =
+    new BatchChangeValidations(
+      maxChanges,
+      accessValidations,
+      (_, _) => mockDnsConnection,
+      configuredDnsConnections,
+      false,
+      true
+    )
 
   import underTest._
 
@@ -334,7 +370,13 @@ class BatchChangeValidationsSpec
       scheduledTime = Some(DateTime.now)
     )
     val bcv =
-      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = false)
+      new BatchChangeValidations(
+        maxChanges,
+        accessValidations,
+        (_, _) => mockDnsConnection,
+        configuredDnsConnections,
+        scheduledChangesEnabled = false
+      )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled
     )
@@ -349,7 +391,13 @@ class BatchChangeValidationsSpec
       scheduledTime = Some(DateTime.now.minusHours(1))
     )
     val bcv =
-      new BatchChangeValidations(maxChanges, accessValidations, scheduledChangesEnabled = true)
+      new BatchChangeValidations(
+        maxChanges,
+        accessValidations,
+        (_, _) => mockDnsConnection,
+        configuredDnsConnections,
+        scheduledChangesEnabled = true
+      )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture
     )
@@ -784,7 +832,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -849,7 +897,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result.foreach(_ shouldBe valid)
   }
@@ -889,7 +937,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result.foreach(_ shouldBe valid)
   }
@@ -915,7 +963,7 @@ class BatchChangeValidationsSpec
       notAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -945,7 +993,7 @@ class BatchChangeValidationsSpec
       notAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
@@ -970,6 +1018,17 @@ class BatchChangeValidationsSpec
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
     val deleteNonExistentEntry = makeDeleteUpdateDeleteRRSet("ok", Some(AData("1.1.1.1")))
+
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRRSet.recordName, deleteRRSet.zone.name, RecordType.A)
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRecord.recordName, deleteRecord.zone.name, RecordType.A)
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteNonExistentEntry.recordName, deleteNonExistentEntry.zone.name, RecordType.A)
+
     val result = validateChangesWithContext(
       ChangeForValidationMap(
         List(
@@ -985,7 +1044,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1003,6 +1062,47 @@ class BatchChangeValidationsSpec
         DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
       )
     }
+  }
+
+  property(
+    """validateChangesWithContext: should succeed for update if disposition is bad in database but
+    |correct in DNS backend""".stripMargin
+  ) {
+    val dnsBackendDeleteRRSet = rsOk.copy(name = "deleteRRSet")
+    val dnsBackendDeleteRecord = rsOk.copy(name = "deleteRecord", records = List(AData("1.1.1.1")))
+
+    val deleteRRSetAddUpdate = makeAddUpdateRecord("deleteRRSet")
+    val deleteRecordAddUpdate = makeAddUpdateRecord("deleteRecord")
+
+    val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
+    val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
+
+    doReturn(IO(List(dnsBackendDeleteRRSet)).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRRSetAddUpdate.recordName, deleteRRSetAddUpdate.zone.name, RecordType.A)
+    doReturn(IO(List(dnsBackendDeleteRecord)).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRecordAddUpdate.recordName, deleteRecordAddUpdate.zone.name, RecordType.A)
+
+    val result = underTestWithDnsBackendValidations
+      .validateChangesWithContext(
+        ChangeForValidationMap(
+          List(
+            deleteRRSetAddUpdate, // Record does not exist
+            deleteRRSet,
+            deleteRecordAddUpdate, // Record does not exist
+            deleteRecord
+          ).map(_.validNel),
+          ExistingRecordSets(List(rsOk))
+        ),
+        okAuth,
+        false,
+        None
+      )
+      .unsafeRunSync()
+
+    result.foreach(_ shouldBe valid)
+    print("update disposition test passed!\n\n")
   }
 
   property(
@@ -1034,7 +1134,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -1072,7 +1172,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result.foreach(_ shouldBe valid)
   }
@@ -1095,7 +1195,7 @@ class BatchChangeValidationsSpec
           okAuth,
           false,
           None
-        )
+        ).unsafeRunSync()
 
         result(0) should haveInvalid[DomainValidationError](
           CnameIsNotUniqueError(input.inputChange.inputName, RecordType.CNAME)
@@ -1112,7 +1212,7 @@ class BatchChangeValidationsSpec
           okAuth,
           false,
           None
-        )
+        ).unsafeRunSync()
 
       result(0) shouldBe valid
     }
@@ -1128,7 +1228,7 @@ class BatchChangeValidationsSpec
           okAuth,
           false,
           None
-        )
+        ).unsafeRunSync()
         result(0) shouldBe valid
       }
     }
@@ -1147,7 +1247,7 @@ class BatchChangeValidationsSpec
         okAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
 
       result(0) should haveInvalid[DomainValidationError](
         RecordAlreadyExists(input.inputChange.inputName)
@@ -1178,7 +1278,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -1198,7 +1298,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       CnameIsNotUniqueError(addCname.inputChange.inputName, existingA.typ)
@@ -1226,7 +1326,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -1250,7 +1350,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       CnameIsNotUniqueError(addCname.inputChange.inputName, existingRecordPTR.typ)
@@ -1282,7 +1382,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -1314,7 +1414,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -1351,7 +1451,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1390,9 +1490,40 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result.map(_ shouldBe valid)
+  }
+
+  property(
+    """validateChangesWithContext: should succeed for AddChangeForValidation if record exists in database
+   |but doesn't exist in DNS backend""".stripMargin
+  ) {
+    val addA = AddChangeForValidation(
+      validZone,
+      "valid",
+      AddChangeInput("valid.ok.zone.recordsets.", RecordType.A, ttl, AData("1.1.1.1"))
+    )
+    val existingRecord = rsOk.copy(zoneId = validZone.id, "valid", records = List(AData("1.1.1.1")))
+
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(addA.recordName, validZone.name, RecordType.A)
+
+    val result =
+      underTestWithDnsBackendValidations
+        .validateChangesWithContext(
+          ChangeForValidationMap(
+            List(addA.validNel),
+            ExistingRecordSets(recordSetList :+ existingRecord)
+          ),
+          okAuth,
+          false,
+          None
+        )
+        .unsafeRunSync()
+
+    result(0) shouldBe valid
   }
 
   property("""validateChangesWithContext: should succeed for AddChangeForValidation
@@ -1408,7 +1539,7 @@ class BatchChangeValidationsSpec
         okAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -1426,7 +1557,7 @@ class BatchChangeValidationsSpec
       AuthPrincipal(superUser, Seq.empty),
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
@@ -1452,7 +1583,7 @@ class BatchChangeValidationsSpec
         notAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -1468,7 +1599,7 @@ class BatchChangeValidationsSpec
           notAuth,
           false,
           None
-        )
+        ).unsafeRunSync()
 
       result(0) should haveInvalid[DomainValidationError](
         UserIsNotAuthorizedError(
@@ -1498,7 +1629,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("existing.ok.", RecordType.CNAME)
@@ -1523,18 +1654,26 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
 
   property(
     """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
-      |if record does not exist""".stripMargin
+      |if record does not exist in database""".stripMargin
   ) {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
     val deleteRecord =
       makeDeleteUpdateDeleteRRSet("record-also-does-not-exist", Some(AData("1.1.1.1")))
+
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRRSet.recordName, deleteRRSet.zone.name, RecordType.A)
+    doReturn(IO(List.empty).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRecord.recordName, deleteRecord.zone.name, RecordType.A)
+
     val result =
       validateChangesWithContext(
         ChangeForValidationMap(
@@ -1544,7 +1683,7 @@ class BatchChangeValidationsSpec
         okAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteRRSet.inputChange.inputName)
@@ -1552,6 +1691,40 @@ class BatchChangeValidationsSpec
     result(1) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteRecord.inputChange.inputName)
     )
+  }
+
+  property(
+    """validateChangesWithContext: should succeed for DeleteChangeForValidation
+      |if record does not exist in database but exists in DNS backend""".stripMargin
+  ) {
+    val dnsBackendDeleteRRSet = rsOk.copy(name = "deleteRRSet")
+    val dnsBackendDeleteRecord = rsOk.copy(name = "deleteRecord", records = List(AData("1.1.1.1")))
+
+    val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
+    val deleteRecord =
+      makeDeleteUpdateDeleteRRSet("record-also-does-not-exist", Some(AData("1.1.1.1")))
+
+    doReturn(IO(List(dnsBackendDeleteRRSet)).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRRSet.recordName, deleteRRSet.zone.name, RecordType.A)
+    doReturn(IO(List(dnsBackendDeleteRecord)).toResult)
+      .when(mockDnsConnection)
+      .resolve(deleteRecord.recordName, deleteRecord.zone.name, RecordType.A)
+
+    val result =
+      underTestWithDnsBackendValidations
+        .validateChangesWithContext(
+          ChangeForValidationMap(
+            List(deleteRRSet.validNel, deleteRecord.validNel),
+            ExistingRecordSets(recordSetList)
+          ),
+          okAuth,
+          false,
+          None
+        )
+        .unsafeRunSync()
+
+    result.foreach(_ shouldBe valid)
   }
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
@@ -1574,7 +1747,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -1596,7 +1769,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -1618,7 +1791,7 @@ class BatchChangeValidationsSpec
       AuthPrincipal(superUser, Seq.empty),
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
@@ -1649,7 +1822,7 @@ class BatchChangeValidationsSpec
       notAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -1672,7 +1845,7 @@ class BatchChangeValidationsSpec
       notAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
@@ -1736,7 +1909,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1781,7 +1954,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result.map(_ shouldBe valid)
   }
 
@@ -1821,7 +1994,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result.map(_ shouldBe valid)
   }
 
@@ -1850,7 +2023,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result.map(_ shouldBe valid)
   }
 
@@ -1886,7 +2059,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1924,7 +2097,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result.map(_ shouldBe valid)
   }
 
@@ -1956,7 +2129,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result.map(_ shouldBe valid)
   }
 
@@ -1992,7 +2165,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result.map(_ shouldBe valid)
   }
@@ -2105,7 +2278,7 @@ class BatchChangeValidationsSpec
         okAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
 
@@ -2126,7 +2299,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result(0) shouldBe valid
   }
 
@@ -2156,7 +2329,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
     result(0) shouldBe valid
   }
 
@@ -2185,7 +2358,7 @@ class BatchChangeValidationsSpec
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
       Some("some-owner-group-id")
-    )
+    ).unsafeRunSync()
 
     result.foreach(_ shouldBe valid)
   }
@@ -2215,7 +2388,7 @@ class BatchChangeValidationsSpec
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) should
@@ -2244,7 +2417,7 @@ class BatchChangeValidationsSpec
       dummyAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) should
       haveInvalid[DomainValidationError](
@@ -2268,7 +2441,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -2282,7 +2455,7 @@ class BatchChangeValidationsSpec
       sharedAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
   }
@@ -2301,22 +2474,24 @@ class BatchChangeValidationsSpec
       rsOk.copy(name = deletePrivateChange.recordName)
     )
 
-    val result = underTest.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedAddChange.validNel,
-          deleteSingleRecordChange.validNel,
-          deleteSharedChange.validNel,
-          updatePrivateAddChange.validNel,
-          updatePrivateDeleteChange.validNel,
-          deletePrivateChange.validNel
+    val result = underTest
+      .validateChangesWithContext(
+        ChangeForValidationMap(
+          List(
+            updateSharedAddChange.validNel,
+            deleteSingleRecordChange.validNel,
+            deleteSharedChange.validNel,
+            updatePrivateAddChange.validNel,
+            updatePrivateDeleteChange.validNel,
+            deletePrivateChange.validNel
+          ),
+          ExistingRecordSets(existing)
         ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
+        okAuth,
+        false,
+        Some(okGroup.id)
+      )
+      .unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -2346,22 +2521,24 @@ class BatchChangeValidationsSpec
       inputChange = AddChangeInput("shared-add.shared", RecordType.A, ttl, AData("5.6.7.8"))
     )
 
-    val result = underTest.validateChangesWithContext(
-      ChangeForValidationMap(
-        List(
-          updateSharedDeleteChange.validNel,
-          update1.validNel,
-          update2.validNel,
-          add1.validNel,
-          add2.validNel,
-          updatePrivateAddChange.validNel
+    val result = underTest
+      .validateChangesWithContext(
+        ChangeForValidationMap(
+          List(
+            updateSharedDeleteChange.validNel,
+            update1.validNel,
+            update2.validNel,
+            add1.validNel,
+            add2.validNel,
+            updatePrivateAddChange.validNel
+          ),
+          ExistingRecordSets(existing)
         ),
-        ExistingRecordSets(existing)
-      ),
-      okAuth,
-      false,
-      Some(okGroup.id)
-    )
+        okAuth,
+        false,
+        Some(okGroup.id)
+      )
+      .unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -2415,7 +2592,7 @@ class BatchChangeValidationsSpec
         okAuth,
         false,
         None
-      )
+      ).unsafeRunSync()
 
     result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
     result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.aaaa.ok."))
@@ -2469,7 +2646,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -2566,7 +2743,7 @@ class BatchChangeValidationsSpec
       okAuth,
       false,
       None
-    )
+    ).unsafeRunSync()
 
     result(0) shouldBe valid
     result(1) shouldBe valid

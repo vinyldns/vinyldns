@@ -45,11 +45,12 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.{Group, ListUsersResults, User}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneConnection}
 import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.dns.DnsConnection
 
 import scala.concurrent.ExecutionContext
 
@@ -68,7 +69,18 @@ class BatchChangeServiceSpec
   private val nonFatalError = ZoneDiscoveryError("test")
   private val fatalError = RecordAlreadyExists("test")
 
-  private val validations = new BatchChangeValidations(10, new AccessValidations())
+  private val zoneConnection =
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+  private val configuredDnsConnections =
+    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
+  private val mockDnsConnection = mock[DnsConnection]
+
+  private val validations = new BatchChangeValidations(
+    10,
+    new AccessValidations(),
+    (_, _) => mockDnsConnection,
+    configuredDnsConnections
+  )
   private val ttl = Some(200L)
 
   private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
