@@ -521,12 +521,12 @@ class RecordSetRoutingSpec
         recordTypeFilter: Option[Set[RecordType]],
         nameSort: NameSort,
         authPrincipal: AuthPrincipal
-    ): Result[ListRecordSetsResponse] = {
+    ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
-          ListRecordSetsResponse(
+          ListGlobalRecordSetsResponse(
             List(
-              RecordSetInfo(rs4, None)
+              RecordSetGlobalInfo(rs4, okZone.name, okZone.shared, None)
             ),
             startFrom,
             None,
@@ -538,11 +538,11 @@ class RecordSetRoutingSpec
         )
       } else {
         Right(
-          ListRecordSetsResponse(
+          ListGlobalRecordSetsResponse(
             List(
-              RecordSetInfo(rs1, None),
-              RecordSetInfo(rs2, None),
-              RecordSetInfo(rs3, None)
+              RecordSetGlobalInfo(rs1, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs3, okZone.name, okZone.shared, None)
             ),
             startFrom,
             None,
@@ -926,7 +926,7 @@ class RecordSetRoutingSpec
     "return all recordsets" in {
       Get(s"/recordsets?recordNameFilter=rs*") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
-        val resultRs = responseAs[ListRecordSetsResponse]
+        val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs1.id, rs2.id, rs3.id)
       }
@@ -935,7 +935,7 @@ class RecordSetRoutingSpec
     "return all recordsets in descending order" in {
       Get(s"/recordsets?recordNameFilter=rs*&nameSort=desc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
-        val resultRs = responseAs[ListRecordSetsResponse]
+        val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs3.id, rs2.id, rs1.id)
       }
@@ -944,7 +944,7 @@ class RecordSetRoutingSpec
     "return recordsets of a specific type" in {
       Get(s"/recordsets?recordNameFilter=rs*&recordTypeFilter=cname") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
-        val resultRs = responseAs[ListRecordSetsResponse]
+        val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs4.id)
       }
@@ -953,7 +953,7 @@ class RecordSetRoutingSpec
     "return all recordsets if given an invalid record type" in {
       Get(s"/recordsets?recordNameFilter=rs*&recordTypeFilter=FAKE") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
-        val resultRs = responseAs[ListRecordSetsResponse]
+        val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs1.id, rs2.id, rs3.id)
       }

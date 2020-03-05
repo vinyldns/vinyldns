@@ -187,6 +187,26 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     }
   }
 
+  def getZones(zoneIds: Set[String]): IO[Set[Zone]] =
+    if (zoneIds.isEmpty) {
+      IO.pure(Set())
+    } else {
+      monitor("repo.ZoneJDBC.getZones") {
+        val zoneIdsList = zoneIds.toList
+        IO {
+          DB.readOnly { implicit s =>
+            val questionMarks = List.fill(zoneIds.size)("?").mkString(",")
+            SQL(
+              BASE_GET_ZONES_SQL + s"""WHERE id in ($questionMarks)""".stripMargin
+            ).bind(zoneIdsList: _*)
+              .map(extractZone(1))
+              .list()
+              .apply()
+          }.toSet
+        }
+      }
+    }
+
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] =
     if (zoneNames.isEmpty) {
       IO.pure(Set())

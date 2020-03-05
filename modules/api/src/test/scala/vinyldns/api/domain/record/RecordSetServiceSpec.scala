@@ -28,7 +28,7 @@ import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.route.{ListRecordSetsByZoneResponse, ListRecordSetsResponse}
+import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
@@ -983,7 +983,7 @@ class RecordSetServiceSpec
           nameSort = any[NameSort.NameSort]
         )
 
-      val result: ListRecordSetsResponse = rightResultOf(
+      val result: ListGlobalRecordSetsResponse = rightResultOf(
         underTest
           .listRecordSets(
             startFrom = None,
@@ -997,7 +997,12 @@ class RecordSetServiceSpec
       )
       result.recordSets shouldBe
         List(
-          RecordSetInfo(sharedZoneRecord, Some(okGroup.name))
+          RecordSetGlobalInfo(
+            sharedZoneRecord,
+            sharedZone.name,
+            sharedZone.shared,
+            Some(okGroup.name)
+          )
         )
     }
 

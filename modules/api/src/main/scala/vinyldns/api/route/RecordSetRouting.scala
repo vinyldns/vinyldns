@@ -31,8 +31,8 @@ import scala.concurrent.duration._
 
 case class GetRecordSetResponse(recordSet: RecordSetInfo)
 
-case class ListRecordSetsResponse(
-    recordSets: List[RecordSetInfo],
+case class ListGlobalRecordSetsResponse(
+    recordSets: List[RecordSetGlobalInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,

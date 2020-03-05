@@ -21,7 +21,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.api.route.{ListRecordSetsByZoneResponse, ListRecordSetsResponse}
+import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
@@ -182,7 +182,7 @@ class RecordSetService(
       recordTypeFilter: Option[Set[RecordType]],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetsResponse] =
+  ): Result[ListGlobalRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
       formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
@@ -197,10 +197,12 @@ class RecordSetService(
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
+      rsZoneIds = recordSetResults.recordSets.map(_.zoneId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
-      setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
-    } yield ListRecordSetsResponse(
-      setsWithGroupName,
+      rsZones <- zoneRepository.getZones(rsZoneIds).toResult[Set[Zone]]
+      setsWithSupplementalInfo = getSupplementalInfo(recordSetResults.recordSets, rsGroups, rsZones)
+    } yield ListGlobalRecordSetsResponse(
+      setsWithSupplementalInfo,
       recordSetResults.startFrom,
       recordSetResults.nextId,
       recordSetResults.maxItems,
@@ -333,6 +335,21 @@ class RecordSetService(
       val ownerGroupName =
         rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
       RecordSetInfo(rs, ownerGroupName)
+    }
+
+  def getSupplementalInfo(
+      recordsets: List[RecordSet],
+      groups: Set[Group],
+      zones: Set[Zone]
+  ): List[RecordSetGlobalInfo] =
+    recordsets.map { rs =>
+      val ownerGroupName =
+        rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
+      val (zoneName, zoneShared) = zones.find(_.id == rs.zoneId) match {
+        case Some(zone) => (zone.name, zone.shared)
+        case None => ("Unknown zone name", false)
+      }
+      RecordSetGlobalInfo(rs, zoneName, zoneShared, ownerGroupName)
     }
 
   def getGroupName(groupId: Option[String]): Result[Option[String]] = {

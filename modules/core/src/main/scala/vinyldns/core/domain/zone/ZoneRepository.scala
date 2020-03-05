@@ -27,6 +27,8 @@ trait ZoneRepository extends Repository {
 
   def getZone(zoneId: String): IO[Option[Zone]]
 
+  def getZones(zoneId: Set[String]): IO[Set[Zone]]
+
   def getZoneByName(zoneName: String): IO[Option[Zone]]
 
   def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]]
