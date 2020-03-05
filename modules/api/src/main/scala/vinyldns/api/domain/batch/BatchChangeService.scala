@@ -130,11 +130,13 @@ class BatchChangeService(
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
-      validatedSingleChanges = validateChangesWithContext(
-        groupedChanges,
-        auth,
-        isApproved,
-        batchChangeInput.ownerGroupId
+      validatedSingleChanges <- EitherT.liftF(
+        validateChangesWithContext(
+          groupedChanges,
+          auth,
+          isApproved,
+          batchChangeInput.ownerGroupId
+        )
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)

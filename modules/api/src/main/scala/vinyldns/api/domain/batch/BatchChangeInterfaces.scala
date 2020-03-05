@@ -26,6 +26,7 @@ object BatchChangeInterfaces {
 
   type SingleValidation[A] = ValidatedNel[DomainValidationError, A]
   type ValidatedBatch[A] = List[ValidatedNel[DomainValidationError, A]]
+  type ValidatedBatchMonad[F[_], A] = List[F[ValidatedNel[DomainValidationError, A]]]
   type BatchResult[A] = EitherT[IO, BatchChangeErrorResponse, A]
 
   implicit class IOBatchResultImprovements[A](theIo: IO[A]) {
@@ -61,6 +62,16 @@ object BatchChangeInterfaces {
       batch.map {
         case Valid(item) => fn(item)
         case Invalid(errList) => errList.invalid
+      }
+
+    def mapValidMonad[F[_], B](
+        validFn: A => F[SingleValidation[B]]
+    )(
+        invalidFn: NonEmptyList[DomainValidationError] => F[SingleValidation[B]]
+    ): ValidatedBatchMonad[F, B] =
+      batch.map {
+        case Valid(item) => validFn(item)
+        case Invalid(errList) => invalidFn(errList)
       }
 
     def getValid: List[A] = batch.collect {

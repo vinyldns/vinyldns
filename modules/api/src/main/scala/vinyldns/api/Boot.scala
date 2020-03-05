@@ -119,7 +119,11 @@ object Boot extends App {
       val batchChangeValidations = new BatchChangeValidations(
         batchChangeLimit,
         batchAccessValidations,
-        VinylDNSConfig.scheduledChangesEnabled
+        (zone, connections) =>
+          DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections)),
+        connections,
+        VinylDNSConfig.scheduledChangesEnabled,
+        VinylDNSConfig.validateRecordLookupAgainstDnsBackend
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =

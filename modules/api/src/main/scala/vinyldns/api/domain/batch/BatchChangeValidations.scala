@@ -19,6 +19,7 @@ package vinyldns.api.domain.batch
 import java.net.InetAddress
 
 import cats.data._
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
@@ -26,11 +27,13 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
 import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone}
 
 trait BatchChangeValidationsAlgebra {
 
@@ -50,7 +53,7 @@ trait BatchChangeValidationsAlgebra {
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]
-  ): ValidatedBatch[ChangeForValidation]
+  ): IO[ValidatedBatch[ChangeForValidation]]
 
   def canGetBatchChange(
       batchChange: BatchChange,
@@ -78,11 +81,17 @@ trait BatchChangeValidationsAlgebra {
 class BatchChangeValidations(
     changeLimit: Int,
     accessValidation: AccessValidationsAlgebra,
-    scheduledChangesEnabled: Boolean = false
+    dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
+    configuredDnsConnections: ConfiguredDnsConnections,
+    scheduledChangesEnabled: Boolean = false,
+    validateRecordLookupAgainstDnsBackend: Boolean = false
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
   import accessValidation._
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def validateBatchChangeInput(
       input: BatchChangeInput,
@@ -269,27 +278,35 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]
-  ): ValidatedBatch[ChangeForValidation] =
+  ): IO[ValidatedBatch[ChangeForValidation]] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
-    groupedChanges.changes.mapValid {
-      case add: AddChangeForValidation
-          if groupedChanges
-            .getLogicalChangeType(add.recordKey)
-            .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
-      case addUpdate: AddChangeForValidation =>
-        validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
-      // These cases MUST be below adds because:
-      // - order matters
-      // - all AddChangeForValidations are covered by this point
-      case delete
-          if groupedChanges
-            .getLogicalChangeType(delete.recordKey)
-            .contains(LogicalChangeType.FullDelete) =>
-        validateDeleteWithContext(delete, groupedChanges, auth, isApproved)
-      case deleteUpdate =>
-        validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
-    }
+    groupedChanges.changes
+      .mapValidMonad[IO, ChangeForValidation] {
+        case add: AddChangeForValidation
+            if groupedChanges
+              .getLogicalChangeType(add.recordKey)
+              .contains(LogicalChangeType.Add) =>
+          validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
+        case addUpdate: AddChangeForValidation =>
+          validateAddUpdateWithContext(
+            addUpdate,
+            groupedChanges,
+            auth,
+            isApproved,
+            batchOwnerGroupId
+          )
+        // These cases MUST be below adds because:
+        // - order matters
+        // - all AddChangeForValidations are covered by this point
+        case delete
+            if groupedChanges
+              .getLogicalChangeType(delete.recordKey)
+              .contains(LogicalChangeType.FullDelete) =>
+          validateDeleteWithContext(delete, groupedChanges, auth, isApproved)
+        case deleteUpdate =>
+          validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
+      }(errorList => IO(errorList.invalid))
+      .parSequence
 
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     if (change.recordName != change.zone.name && change.recordName.contains("."))
@@ -327,22 +344,52 @@ class BatchChangeValidations(
         ().validNel
     }
 
+  def ensureRecordExists(
+      change: ChangeForValidation,
+      dnsBackendRecords: List[RecordSet]
+  ): SingleValidation[Unit] =
+    change match {
+      // For DeleteRecord inputs, need to verify that the record data actually exists
+      case DeleteRRSetChangeForValidation(
+          _,
+          _,
+          DeleteRRSetChangeInput(inputName, _, Some(recordData))
+          )
+          if !dnsBackendRecords
+            .exists(rs => matchRecordData(rs.records, recordData)) =>
+        DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
+      case _ =>
+        ().validNel
+    }
+
   def validateDeleteWithContext(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean
-  ): SingleValidation[ChangeForValidation] = {
+  ): IO[SingleValidation[ChangeForValidation]] = {
 
     val validations =
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
-          userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          IO(
+            userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
+              zoneDoesNotRequireManualReview(change, isApproved) |+|
+              ensureRecordExists(change, groupedChanges)
+          )
+        case None =>
+          if (validateRecordLookupAgainstDnsBackend) {
+            dnsConnection(change.zone, configuredDnsConnections)
+              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+              .value
+              .map {
+                case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
+                  ensureRecordExists(change, dnsBackendRecords)
+                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+              }
+          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
-    validations.map(_ => change)
+    validations.map(_.map(_ => change))
   }
 
   def validateAddUpdateWithContext(
@@ -351,7 +398,7 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]
-  ): SingleValidation[ChangeForValidation] = {
+  ): IO[SingleValidation[ChangeForValidation]] = {
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
@@ -359,25 +406,35 @@ class BatchChangeValidations(
       case _ => ().validNel
     }
 
-    val commonValidations: SingleValidation[Unit] = {
+    val commonValidations: IO[SingleValidation[Unit]] = {
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, List(change.inputChange.record)) |+|
-            ownerGroupProvidedIfNeeded(
-              change,
-              groupedChanges.existingRecordSets
-                .get(change.zone.id, change.recordName, change.inputChange.typ),
-              batchOwnerGroupId
-            ) |+|
-            zoneDoesNotRequireManualReview(change, isApproved)
+          IO(
+            userCanUpdateRecordSet(change, auth, rs.ownerGroupId, List(change.inputChange.record)) |+|
+              ownerGroupProvidedIfNeeded(
+                change,
+                groupedChanges.existingRecordSets
+                  .get(change.zone.id, change.recordName, change.inputChange.typ),
+                batchOwnerGroupId
+              ) |+|
+              zoneDoesNotRequireManualReview(change, isApproved)
+          )
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          if (validateRecordLookupAgainstDnsBackend) {
+            dnsConnection(change.zone, configuredDnsConnections)
+              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+              .value
+              .map {
+                case Right(records) if records.nonEmpty => ().validNel
+                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+              }
+          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
     }
 
-    val validations = typedValidations |+| commonValidations
+    val validations = commonValidations.map(_ |+| typedValidations)
 
-    validations.map(_ => change)
+    validations.map(_.map(_ => change))
   }
 
   def validateDeleteUpdateWithContext(
@@ -385,19 +442,30 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean
-  ): SingleValidation[ChangeForValidation] = {
+  ): IO[SingleValidation[ChangeForValidation]] = {
     val validations =
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(change.recordKey).toList
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
+          IO(
+            userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
+              zoneDoesNotRequireManualReview(change, isApproved) |+|
+              ensureRecordExists(change, groupedChanges)
+          )
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          if (validateRecordLookupAgainstDnsBackend) {
+            dnsConnection(change.zone, configuredDnsConnections)
+              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+              .value
+              .map {
+                case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
+                  ensureRecordExists(change, dnsBackendRecords)
+                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+              }
+          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
 
-    validations.map(_ => change)
+    validations.map(_.map(_ => change))
   }
 
   def validateAddWithContext(
@@ -406,7 +474,7 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       ownerGroupId: Option[String]
-  ): SingleValidation[ChangeForValidation] = {
+  ): IO[SingleValidation[ChangeForValidation]] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
         newRecordSetIsNotDotted(change)
@@ -419,21 +487,23 @@ class BatchChangeValidations(
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
 
-    val validations =
-      typedValidations |+|
-        noIncompatibleRecordExists(change, groupedChanges) |+|
-        userCanAddRecordSet(change, auth) |+|
-        recordDoesNotExist(
-          change.zone.id,
-          change.recordName,
-          change.inputChange.inputName,
-          change.inputChange.typ,
-          groupedChanges
-        ) |+|
-        ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
-        zoneDoesNotRequireManualReview(change, isApproved)
+    recordDoesNotExist(
+      change.zone,
+      change.recordName,
+      change.inputChange.inputName,
+      change.inputChange.typ,
+      groupedChanges
+    ).map { recordDoesNotExistValidations =>
+      val validations =
+        typedValidations |+|
+          noIncompatibleRecordExists(change, groupedChanges) |+|
+          userCanAddRecordSet(change, auth) |+|
+          recordDoesNotExistValidations |+|
+          ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
+          zoneDoesNotRequireManualReview(change, isApproved)
 
-    validations.map(_ => change)
+      validations.map(_ => change)
+    }
   }
 
   def cnameHasUniqueNameInBatch(
@@ -466,15 +536,26 @@ class BatchChangeValidations(
   }
 
   def recordDoesNotExist(
-      zoneId: String,
+      zone: Zone,
       recordName: String,
       inputName: String,
       typ: RecordType,
       groupedChanges: ChangeForValidationMap
-  ): SingleValidation[Unit] =
-    groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, typ)) match {
-      case Some(_) => RecordAlreadyExists(inputName).invalidNel
-      case None => ().validNel
+  ): IO[SingleValidation[Unit]] =
+    groupedChanges.getExistingRecordSet(RecordKey(zone.id, recordName, typ)) match {
+      case Some(_) =>
+        if (validateRecordLookupAgainstDnsBackend) {
+          dnsConnection(zone, configuredDnsConnections)
+            .resolve(recordName, zone.name, typ)
+            .value
+            .map {
+              case Right(dnsBackendRecords) if dnsBackendRecords.isEmpty =>
+                ().validNel
+              case _ => RecordAlreadyExists(inputName).invalidNel
+            }
+        } else
+          IO(RecordAlreadyExists(inputName).invalidNel)
+      case None => IO(().validNel)
     }
 
   def noIncompatibleRecordExists(
