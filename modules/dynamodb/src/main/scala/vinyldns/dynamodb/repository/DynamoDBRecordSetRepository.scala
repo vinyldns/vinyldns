@@ -145,11 +145,59 @@ class DynamoDBRecordSetRepository private[repository] (
       nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
-      IO.raiseError(
-        UnsupportedDynamoDBRepoFunction(
-          s"listRecordSets is not supported by VinylDNS DynamoDB RecordSetRepository"
-        )
-      )
+      zoneId match {
+        case None =>
+          IO.raiseError(
+            UnsupportedDynamoDBRepoFunction(
+              "listRecordSets without zoneId is not supported by VinylDNS DynamoDB RecordSetRepository"
+            )
+          )
+        case Some(id) =>
+          log.info(s"Getting recordSets for zone $zoneId")
+
+          val keyConditions = Map[String, String](ZONE_ID -> id)
+          val filterExpression = recordNameFilter.map(
+            filter => ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase))
+          )
+
+          val startKey = startFrom.map { inputString =>
+            val attributes = inputString.split('~')
+            Map(
+              ZONE_ID -> attributes(0),
+              RECORD_SET_NAME -> attributes(1),
+              RECORD_SET_ID -> attributes(2)
+            )
+          }
+          val responseFuture = doQuery(
+            recordSetTableName,
+            ZONE_ID_RECORD_SET_NAME_INDEX,
+            keyConditions,
+            filterExpression,
+            startKey,
+            maxItems
+          )(dynamoDBHelper)
+
+          for {
+            resp <- responseFuture
+            queryResp = resp.asInstanceOf[QueryResponseItems]
+            rs = queryResp.items.map(fromItem)
+            nextId = queryResp.lastEvaluatedKey.map { keyMap =>
+              List(
+                keyMap.get(ZONE_ID).getS,
+                keyMap.get(RECORD_SET_NAME).getS,
+                keyMap.get(RECORD_SET_ID).getS
+              ).mkString("~")
+            }
+          } yield ListRecordSetResults(
+            rs,
+            nextId,
+            startFrom,
+            maxItems,
+            recordNameFilter,
+            recordTypeFilter,
+            nameSort
+          )
+      }
     }
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =

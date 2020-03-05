@@ -91,7 +91,21 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
   }
 
   "DynamoDBRecordSetRepository" should {
-    "fail to return records with listRecordSets" in {
+    "fail to return records with listRecordSets if zoneId not given" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = None,
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      assertThrows[UnsupportedDynamoDBRepoFunction](testFuture.unsafeRunSync())
+    }
+
+    "get a record set by id" in {
       val testRecordSet = recordSets.head
       val testFuture = repo.listRecordSets(
         zoneId = Some(testRecordSet.zoneId),
@@ -102,7 +116,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         nameSort = NameSort.ASC
       )
 
-      assertThrows[UnsupportedDynamoDBRepoFunction](testFuture.unsafeRunSync())
+      testFuture.unsafeRunSync().recordSets should contain(testRecordSet)
     }
 
     "get a record set count" in {
@@ -146,7 +160,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.find(_.name.endsWith("dotless")).get
       val testFuture =
         repo.getRecordSets(testRecordSet.zoneId, testRecordSet.name.concat("."), testRecordSet.typ)
-        testFuture.unsafeRunSync() shouldBe List(testRecordSet)
+      testFuture.unsafeRunSync() shouldBe List(testRecordSet)
     }
 
     "get a record set by zone id, name" in {
@@ -174,6 +188,268 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testFuture =
         repo.getRecordSetsByName(testRecordSet.zoneId, testRecordSet.name.concat("."))
       testFuture.unsafeRunSync() shouldBe List(testRecordSet)
+    }
+
+    "list record sets with page size of 1 returns recordSets[0] only" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = Some(1),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFuture.unsafeRunSync()
+
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets shouldNot contain(recordSets(1))
+      foundRecordSet.nextId.get.split('~')(2) shouldBe recordSets(0).id
+    }
+
+    "list record sets with page size of 1 reusing key with page size of 1 returns recordSets[0] and recordSets[1]" in {
+      val testRecordSet = recordSets.head
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = Some(1),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFutureOne.unsafeRunSync()
+
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets shouldNot contain(recordSets(1))
+      val key = foundRecordSet.nextId
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = key,
+        maxItems = Some(1),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
+
+      foundRecordSetTwo.recordSets shouldNot contain(recordSets(0))
+      foundRecordSetTwo.recordSets should contain(recordSets(1))
+      foundRecordSetTwo.recordSets shouldNot contain(recordSets(2))
+      foundRecordSetTwo.nextId.get.split('~')(2) shouldBe recordSets(1).id
+    }
+
+    "list record sets page size of 1 then reusing key with page size of 2 returns recordSets[0], recordSets[1,2]" in {
+      val testRecordSet = recordSets.head
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = Some(1),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFutureOne.unsafeRunSync()
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets shouldNot contain(recordSets(1))
+      val key = foundRecordSet.nextId
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = key,
+        maxItems = Some(2),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
+      foundRecordSetTwo.recordSets shouldNot contain(recordSets(0))
+      foundRecordSetTwo.recordSets should contain(recordSets(1))
+      foundRecordSetTwo.recordSets should contain(recordSets(2))
+      foundRecordSetTwo.nextId.get.split('~')(2) shouldBe recordSets(2).id
+    }
+
+    "return an empty list and nextId of None when passing last record as start" in {
+      val testRecordSet = recordSets.head
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = Some(6),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFutureOne.unsafeRunSync()
+
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets should contain(recordSets(1))
+      foundRecordSet.recordSets should contain(recordSets(2))
+      foundRecordSet.recordSets should contain(recordSets(3))
+      foundRecordSet.recordSets should contain(recordSets(4))
+      foundRecordSet.recordSets should contain(recordSets(5))
+      val key = foundRecordSet.nextId
+
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = key,
+        maxItems = Some(6),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSetTwo = testFutureTwo.unsafeRunSync()
+      foundRecordSetTwo.recordSets shouldBe List()
+      foundRecordSetTwo.nextId shouldBe None
+    }
+
+    "have nextId of None when exhausting recordSets" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = Some(7),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFuture.unsafeRunSync()
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets should contain(recordSets(1))
+      foundRecordSet.recordSets should contain(recordSets(2))
+      foundRecordSet.recordSets should contain(recordSets(3))
+      foundRecordSet.recordSets should contain(recordSets(4))
+      foundRecordSet.recordSets should contain(recordSets(5))
+      foundRecordSet.nextId shouldBe None
+    }
+
+    "only retrieve recordSet with name containing 'AAAA'" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = Some("AAAA"),
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFuture.unsafeRunSync()
+      foundRecordSet.recordSets shouldNot contain(recordSets(0))
+      foundRecordSet.recordSets shouldNot contain(recordSets(1))
+      foundRecordSet.recordSets should contain(recordSets(2))
+      foundRecordSet.recordSets should contain(recordSets(3))
+    }
+
+    "retrieve all recordSets with names containing 'A'" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = Some("A"),
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      val foundRecordSet = testFuture.unsafeRunSync()
+      foundRecordSet.recordSets should contain(recordSets(0))
+      foundRecordSet.recordSets should contain(recordSets(1))
+      foundRecordSet.recordSets should contain(recordSets(2))
+      foundRecordSet.recordSets should contain(recordSets(3))
+      foundRecordSet.recordSets should contain(recordSets(4))
+      foundRecordSet.recordSets should contain(recordSets(5))
+    }
+
+    "return an empty list if recordName filter had no match" in {
+      val testRecordSet = recordSets.head
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = Some("Dummy"),
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      testFuture.unsafeRunSync().recordSets shouldBe List()
+    }
+
+    "apply a change set" in {
+      val newRecordSets =
+        for {
+          i <- 1 to 1000
+        } yield aaaa.copy(
+          zoneId = "big-apply-zone",
+          name = s"$i.apply.test.",
+          id = UUID.randomUUID().toString
+        )
+
+      val pendingChanges = newRecordSets.map(makeTestAddChange(_, zones.head))
+
+      val bigPendingChangeSet = ChangeSet(pendingChanges)
+
+      try {
+        val f = repo.apply(bigPendingChangeSet)
+
+        val apply = f.unsafeRunTimed(1500.seconds)
+        if (apply.isEmpty) {
+          throw new RuntimeException("change set apply timed out")
+        }
+
+        // let's fail half of them
+        val split = pendingChanges.grouped(pendingChanges.length / 2).toSeq
+        val halfSuccess = split.head.map(_.successful)
+        val halfFailed = split(1).map(_.failed())
+        val halfFailedChangeSet = ChangeSet(halfSuccess ++ halfFailed)
+
+        val nextUp = repo.apply(halfFailedChangeSet)
+        val nextUpApply = nextUp.unsafeRunTimed(1500.seconds)
+        if (nextUpApply.isEmpty) {
+          throw new RuntimeException("nextUp change set apply timed out")
+        }
+
+        // let's run our query and see how long until we succeed(which will determine
+        // how long it takes DYNAMO to update its index)
+        var querySuccessful = false
+        var retries = 1
+        var recordSetsResult: List[RecordSet] = Nil
+        while (!querySuccessful && retries <= 10) {
+          // if we query now, we should get half that failed
+          val rsQuery = repo.listRecordSets(
+            zoneId = Some("big-apply-zone"),
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = None,
+            recordTypeFilter = None,
+            nameSort = NameSort.ASC
+          )
+
+          recordSetsResult = rsQuery.unsafeRunTimed(30.seconds) match {
+            case Some(result) => result.recordSets
+            case None => throw new RuntimeException("Query timed out")
+          }
+
+          querySuccessful = recordSetsResult.length == halfSuccess.length
+          retries += 1
+          Thread.sleep(100)
+        }
+
+        querySuccessful shouldBe true
+
+        // the result of the query should be the same as those pending that succeeded
+        val expected = halfSuccess.map(_.recordSet)
+        recordSetsResult should contain theSameElementsAs expected
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          fail("encountered error running apply test")
+      }
     }
 
     "apply successful and pending creates, and delete failed creates" in {

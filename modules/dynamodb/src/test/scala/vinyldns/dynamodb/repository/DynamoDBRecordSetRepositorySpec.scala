@@ -166,12 +166,76 @@ class DynamoDBRecordSetRepositorySpec
     }
   }
 
-  "DynamoDBRecordSetRepository.listRecordSets(zoneId)" should {
-    "return an error if used" in {
+  "DynamoDBRecordSetRepository.listRecordSets" should {
+    "returns empty if no record set exist" in {
+
+      val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
+
+      val dynamoResponse = mock[QueryResult]
+      val expectedItems = new util.ArrayList[util.HashMap[String, AttributeValue]]()
+
+      doReturn(expectedItems).when(dynamoResponse).getItems
+      doReturn(null).when(dynamoResponse).getLastEvaluatedKey
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+
+      val response = store
+        .listRecordSets(
+          zoneId = Some(rsOk.zoneId),
+          startFrom = None,
+          maxItems = None,
+          recordNameFilter = None,
+          recordTypeFilter = None,
+          nameSort = NameSort.ASC
+        )
+        .unsafeRunSync()
+
+      verify(dynamoDBHelper).query(any[QueryRequest])
+
+      response.recordSets shouldBe empty
+    }
+
+    "returns all record sets returned" in {
+      val store = new TestDynamoRecordSetRepo
+
+      val dynamoResponse = mock[QueryResult]
+      val expectedItems = new util.ArrayList[util.Map[String, AttributeValue]]()
+      expectedItems.add(store.toItem(rsOk))
+      expectedItems.add(store.toItem(aaaa))
+      expectedItems.add(store.toItem(cname))
+
+      doReturn(expectedItems).when(dynamoResponse).getItems
+      doReturn(null).when(dynamoResponse).getLastEvaluatedKey
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+
+      val response =
+        store
+          .listRecordSets(Some(rsOk.zoneId), None, Some(3), None, None, NameSort.ASC)
+          .unsafeRunSync()
+      verify(dynamoDBHelper).query(any[QueryRequest])
+
+      (response.recordSets should contain).allOf(rsOk, aaaa, cname)
+    }
+
+    "throw exception when query returns an unexpected response" in {
+      when(dynamoDBHelper.query(any[QueryRequest]))
+        .thenThrow(new ResourceNotFoundException("failed"))
+      val store = new TestDynamoRecordSetRepo
+
+      a[ResourceNotFoundException] should be thrownBy store.listRecordSets(
+        zoneId = Some(rsOk.zoneId),
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+    }
+
+    "return an error if used without a zoneId" in {
       val store = new TestDynamoRecordSetRepo
       an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
         .listRecordSets(
-          zoneId = Some(rsOk.zoneId),
+          zoneId = None,
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
