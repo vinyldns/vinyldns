@@ -965,6 +965,10 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(Set(sharedZone.id))
+
       doReturn(
         IO.pure(
           ListRecordSetResults(
