@@ -13,8 +13,9 @@
 
         <!-- PAGE TITLE -->
         <div class="page-title">
-            <h3><span class="fa fa-table"></span> Global RecordSet Search
+            <h3><span class="fa fa-list-ul"></span> Global RecordSet Search
             </h3>
+            <p>The Global RecordSet Search is a read-only view of the current disposition of records in VinylDNS.</p>
         </div>
         <!-- END PAGE TITLE -->
 
@@ -24,6 +25,40 @@
             <div class="alert-wrapper">
                 <div ng-repeat="alert in alerts">
                     <notification ng-model="alert"></notification>
+                </div>
+            </div>
+
+            <div>
+                <div>
+                    <h5>
+                        <a data-toggle="collapse" data-target="#collapseInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                            <span class="badge">How to Search <span class="fa fa-chevron-down"></span></span>
+                        </a>
+                    </h5>
+                </div>
+                <div class="collapse" id="collapseInstruction">
+                    <div class="well">
+                        <p>The search is based on the fully qualified domain name (FQDN) of a record. You can do an exact match search or fuzzy match to lookup records.</p>
+                        <p><strong>Examples:</strong>
+                        <ul>
+                            <li>test.example.com. -> test.example.com.</li>
+                            <li>test.example.com -> test.example.com.</li>
+                            <li>test.* -> test.example.com., test.example.net., test.net.</li>
+                            <li>*example.com -> one.example.com., test.example.com.</li>
+                            <li>*example* -> one.example.com., test.example.com., test.example.net.</li>
+                        </ul>
+                        </p>
+                        <hr/>
+                        <h5>PTR Records</h5>
+                        <p>For PTR records you can look up records by their IP address or by their FQDN. Compressed or expanded formats of IPv6 addresses are supported. Partial matching is not supported.</p>
+                        <p><strong>Examples:</strong>
+                        <ul>
+                            <li>4.4.8.8.in-addr.arpa. -> 4.4.8.8.in-addr.arpa.</li>
+                            <li>8.8.4.4 -> 4.4.8.8.in-addr.arpa.</li>
+                            <li>2001:db8::567:89ab -> b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.</li>
+                        </ul>
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -82,8 +117,9 @@
                             </th>
                             <th>Type</th>
                             <th>TTL</th>
-                            <th class="col-md-4">Record Data</th>
+                            <th>Record Data</th>
                             <th>Zone</th>
+                            <th>Zone Access Type</th>
                             @if(meta.sharedDisplayEnabled) {
                                 <th>Owner Group Name</th>
                             }
@@ -98,7 +134,7 @@
                             </td>
                             <td class="wrap-long-text">{{record.type}}</td>
                             <td class="wrap-long-text">{{record.ttl}}</td>
-                            <td class="record-data">
+                            <td class="record-data wrap-long-text">
                                 <span ng-if="record.accessLevel != 'NoAccess'">
                                 <span ng-if="record.type == 'A'">
                                     <ul class="table-cell-list">
@@ -281,7 +317,9 @@
                                 </span>
                                 </span>
                             </td>
-                            <td>{{record.zoneId}}</td>
+                            <td>{{record.zoneName}}</td>
+                            <td ng-if="record.zoneShared">Shared</td>
+                            <td ng-if="!record.zoneShared">Private</td>
                             @if(meta.sharedDisplayEnabled) {
                             <td>
                                 <a ng-if="record.ownerGroupName && canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>

@@ -29,7 +29,7 @@
             $scope.selectedRecordTypes = [];
 
             // paging status for recordsets
-            var recordsPaging = pagingService.getNewPagingParams(2);
+            var recordsPaging = pagingService.getNewPagingParams(100);
 
             $scope.refreshRecords = function() {
                 recordsPaging = pagingService.resetPaging(recordsPaging);
