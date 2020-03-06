@@ -154,6 +154,16 @@ class MySqlZoneRepositoryIntegrationSpec
       repo.getZoneByName("doesnotexist").unsafeRunSync() shouldBe empty
     }
 
+    "get a list of zones by set of IDs" in {
+      val zone = testZone("test1.")
+      val testZones = Seq(
+        zone
+      )
+      saveZones(testZones).unsafeRunSync()
+
+      repo.getZones(Set(zone.id)).unsafeRunSync() should contain theSameElementsAs List(zone)
+    }
+
     "get a list of zones by names" in {
       saveZones(testZones).unsafeRunSync()
       val testZonesList1 = testZones.toList.take(3)
