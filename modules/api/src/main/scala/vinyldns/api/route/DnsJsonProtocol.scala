@@ -24,7 +24,7 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
-import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
+import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -38,6 +38,7 @@ trait DnsJsonProtocol extends JsonValidation {
     ZoneConnectionSerializer,
     RecordSetSerializer,
     RecordSetListInfoSerializer,
+    RecordSetGlobalInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
@@ -183,7 +184,8 @@ trait DnsJsonProtocol extends JsonValidation {
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system"),
-        (js \ "ownerGroupId").optional[String]
+        (js \ "ownerGroupId").optional[String],
+        (js \ "fqdn").optional[String]
       ).mapN(RecordSet.apply)
 
       // Put additional record set level checks below
@@ -206,7 +208,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("records" -> Extraction.decompose(rs.records)) ~
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
-        ("ownerGroupId" -> rs.ownerGroupId)
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("fqdn" -> rs.fqdn)
   }
 
   case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
@@ -229,7 +232,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("account" -> rs.account) ~
         ("accessLevel" -> rs.accessLevel.toString) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
-        ("ownerGroupName" -> rs.ownerGroupName)
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn)
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
@@ -249,7 +253,35 @@ trait DnsJsonProtocol extends JsonValidation {
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
-        ("ownerGroupName" -> rs.ownerGroupName)
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn)
+  }
+
+  case object RecordSetGlobalInfoSerializer extends ValidationSerializer[RecordSetGlobalInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetGlobalInfo] =
+      (
+        RecordSetSerializer.fromJson(js),
+        (js \ "zoneName").required[String]("Missing Zone.name"),
+        (js \ "zoneShared").required[Boolean]("Missing Zone.shared"),
+        (js \ "ownerGroupName").optional[String]
+      ).mapN(RecordSetGlobalInfo.apply)
+
+    override def toJson(rs: RecordSetGlobalInfo): JValue =
+      ("type" -> Extraction.decompose(rs.typ)) ~
+        ("zoneId" -> rs.zoneId) ~
+        ("name" -> rs.name) ~
+        ("ttl" -> rs.ttl) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("updated" -> Extraction.decompose(rs.updated)) ~
+        ("records" -> Extraction.decompose(rs.records)) ~
+        ("id" -> rs.id) ~
+        ("account" -> rs.account) ~
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn) ~
+        ("zoneName" -> rs.zoneName) ~
+        ("zoneShared" -> rs.zoneShared)
   }
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =

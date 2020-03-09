@@ -273,6 +273,11 @@ class BatchChangeServiceSpec
   }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
+    override def getZones(zoneIds: Set[String]): IO[Set[Zone]] = {
+      val zones = zoneIds.map(Zone(_, "test@test.com"))
+      IO.pure(zones)
+    }
+
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = {
       val zones = zoneNames.map(Zone(_, "test@test.com"))
       IO.pure(zones)
@@ -314,6 +319,9 @@ class BatchChangeServiceSpec
         ipv6PTR17Zone,
         ipv6PTR18Zone
       )
+
+    override def getZones(zoneIds: Set[String]): IO[Set[Zone]] =
+      IO.pure(dbZones.filter(zn => zoneIds.contains(zn.id)))
 
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))

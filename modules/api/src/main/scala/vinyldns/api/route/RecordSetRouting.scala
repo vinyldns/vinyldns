@@ -30,7 +30,18 @@ import vinyldns.core.domain.zone.ZoneCommandResult
 import scala.concurrent.duration._
 
 case class GetRecordSetResponse(recordSet: RecordSetInfo)
-case class ListRecordSetsResponse(
+
+case class ListGlobalRecordSetsResponse(
+    recordSets: List[RecordSetGlobalInfo],
+    startFrom: Option[String] = None,
+    nextId: Option[String] = None,
+    maxItems: Option[Int] = None,
+    recordNameFilter: String,
+    recordTypeFilter: Option[Set[RecordType]] = None,
+    nameSort: NameSort
+)
+
+case class ListRecordSetsByZoneResponse(
     recordSets: List[RecordSetListInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
@@ -89,17 +100,7 @@ class RecordSetRoute(
               recordTypeFilter: Option[String],
               nameSort: String
           ) =>
-            val convertedRecordTypeFilter = recordTypeFilter match {
-              case Some(typeFilter) => {
-                val recordTypes = typeFilter.split(",").flatMap(RecordType.find).toSet
-                if (recordTypes.nonEmpty) {
-                  Some(recordTypes)
-                } else {
-                  None
-                }
-              }
-              case _ => None
-            }
+            val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -124,9 +125,49 @@ class RecordSetRoute(
         }
       }
   } ~
+    path("recordsets") {
+      (get & monitor("Endpoint.listRecordSets")) {
+        parameters(
+          "startFrom".?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "recordNameFilter".as[String],
+          "recordTypeFilter".?,
+          "nameSort".as[String].?("ASC")
+        ) {
+          (
+              startFrom: Option[String],
+              maxItems: Int,
+              recordNameFilter: String,
+              recordTypeFilter: Option[String],
+              nameSort: String
+          ) =>
+            val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
+              ) {
+                authenticateAndExecute(
+                  recordSetService
+                    .listRecordSets(
+                      startFrom,
+                      Some(maxItems),
+                      recordNameFilter,
+                      convertedRecordTypeFilter,
+                      NameSort.find(nameSort),
+                      _
+                    )
+                ) { rsResponse =>
+                  complete(StatusCodes.OK, rsResponse)
+                }
+              }
+            }
+        }
+      }
+    } ~
     path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
-      (get & monitor("Endpoint.getRecordSet")) {
-        authenticateAndExecute(recordSetService.getRecordSet(rsId, zoneId, _)) { rs =>
+      (get & monitor("Endpoint.getRecordSetByZone")) {
+        authenticateAndExecute(recordSetService.getRecordSetByZone(rsId, zoneId, _)) { rs =>
           complete(StatusCodes.OK, GetRecordSetResponse(rs))
         }
       } ~
@@ -187,4 +228,16 @@ class RecordSetRoute(
         complete(StatusCodes.BadRequest, msg)
     }
     .result()
+
+  def convertRecordTypeFilter(recordTypeFilter: Option[String]): Option[Set[RecordType.Value]] =
+    recordTypeFilter match {
+      case Some(typeFilter) =>
+        val recordTypes = typeFilter.split(",").flatMap(RecordType.find).toSet
+        if (recordTypes.nonEmpty) {
+          Some(recordTypes)
+        } else {
+          None
+        }
+      case _ => None
+    }
 }

@@ -520,7 +520,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
                                               input_name="update-mx.dummy.", record_data={'preference': 1000, 'exchange': 'foo.bar.'}, record_type="MX")
 
         rs1 = dummy_client.get_recordset(record_set_list[0][0], record_set_list[0][1], status=404)
-        assert_that(rs1, is_("RecordSet with id " + record_set_list[0][1] + " does not exist in zone dummy."))
+        assert_that(rs1, is_("RecordSet with id " + record_set_list[0][1] + " does not exist."))
 
         rs2 = dummy_client.get_recordset(record_set_list[1][0], record_set_list[1][1])['recordSet']
         expected2 = {'name': 'update',
@@ -535,7 +535,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         verify_recordset(rs3, expected2)
 
         rs4 = dummy_client.get_recordset(record_set_list[3][0], record_set_list[3][1], status=404)
-        assert_that(rs4, is_("RecordSet with id " + record_set_list[3][1] + " does not exist in zone ok."))
+        assert_that(rs4, is_("RecordSet with id " + record_set_list[3][1] + " does not exist."))
 
         rs5 = dummy_client.get_recordset(record_set_list[4][0], record_set_list[4][1])['recordSet']
         expected5 = {'name': '193',
@@ -550,10 +550,10 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         verify_recordset(rs6, expected5)
 
         rs7 = dummy_client.get_recordset(record_set_list[6][0], record_set_list[6][1], status=404)
-        assert_that(rs7, is_("RecordSet with id " + record_set_list[6][1] + " does not exist in zone dummy."))
+        assert_that(rs7, is_("RecordSet with id " + record_set_list[6][1] + " does not exist."))
 
         rs8 = dummy_client.get_recordset(record_set_list[7][0], record_set_list[7][1], status=404)
-        assert_that(rs8, is_("RecordSet with id " + record_set_list[7][1] + " does not exist in zone dummy."))
+        assert_that(rs8, is_("RecordSet with id " + record_set_list[7][1] + " does not exist."))
 
         rs9 = dummy_client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
         expected9 = {'name': 'update-mx',

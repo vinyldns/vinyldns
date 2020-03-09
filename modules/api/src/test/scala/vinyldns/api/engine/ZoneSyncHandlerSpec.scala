@@ -19,7 +19,7 @@ package vinyldns.api.engine
 import cats.effect._
 import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.{any, anyString}
+import org.mockito.Matchers.any
 import org.mockito.Mockito.{doReturn, reset, times, verify}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
@@ -171,8 +171,8 @@ class ZoneSyncHandlerSpec
     doReturn(
       IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, NameSort.ASC))
     ).when(recordSetRepo)
-      .listRecordSetsByZone(
-        anyString(),
+      .listRecordSets(
+        any[Option[String]],
         any[Option[String]],
         any[Option[Int]],
         any[Option[String]],

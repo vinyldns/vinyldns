@@ -18,7 +18,13 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  ChangeSet,
+  ListRecordSetResults,
+  NameSort,
+  RecordSet,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
 import vinyldns.core.domain.membership.{
@@ -40,8 +46,8 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
-  def listRecordSetsByZone(
-      zoneId: String,
+  def listRecordSets(
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
@@ -53,7 +59,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())
 
-  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+  def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
     IO.pure(None)
 
   def getRecordSetCount(zoneId: String): IO[Int] = IO.pure(0)

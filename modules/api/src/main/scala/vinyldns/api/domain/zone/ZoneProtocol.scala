@@ -128,7 +128,8 @@ case class RecordSetListInfo(
     account: String,
     accessLevel: AccessLevel,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    fqdn: Option[String]
 )
 
 object RecordSetListInfo {
@@ -146,7 +147,8 @@ object RecordSetListInfo {
       account = recordSet.account,
       accessLevel = accessLevel,
       ownerGroupId = recordSet.ownerGroupId,
-      ownerGroupName = recordSet.ownerGroupName
+      ownerGroupName = recordSet.ownerGroupName,
+      fqdn = recordSet.fqdn
     )
 }
 
@@ -162,7 +164,8 @@ case class RecordSetInfo(
     id: String,
     account: String,
     ownerGroupId: Option[String],
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    fqdn: Option[String]
 )
 
 object RecordSetInfo {
@@ -179,7 +182,52 @@ object RecordSetInfo {
       id = recordSet.id,
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
-      ownerGroupName = groupName
+      ownerGroupName = groupName,
+      fqdn = recordSet.fqdn
+    )
+}
+
+case class RecordSetGlobalInfo(
+    zoneId: String,
+    name: String,
+    typ: RecordType,
+    ttl: Long,
+    status: RecordSetStatus,
+    created: DateTime,
+    updated: Option[DateTime],
+    records: List[RecordData],
+    id: String,
+    account: String,
+    ownerGroupId: Option[String],
+    ownerGroupName: Option[String],
+    fqdn: Option[String],
+    zoneName: String,
+    zoneShared: Boolean
+)
+
+object RecordSetGlobalInfo {
+  def apply(
+      recordSet: RecordSet,
+      zoneName: String,
+      zoneShared: Boolean,
+      groupName: Option[String]
+  ): RecordSetGlobalInfo =
+    RecordSetGlobalInfo(
+      zoneId = recordSet.zoneId,
+      name = recordSet.name,
+      typ = recordSet.typ,
+      ttl = recordSet.ttl,
+      status = recordSet.status,
+      created = recordSet.created,
+      updated = recordSet.updated,
+      records = recordSet.records,
+      id = recordSet.id,
+      account = recordSet.account,
+      ownerGroupId = recordSet.ownerGroupId,
+      ownerGroupName = groupName,
+      fqdn = recordSet.fqdn,
+      zoneName = zoneName,
+      zoneShared = zoneShared
     )
 }
 

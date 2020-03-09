@@ -277,7 +277,7 @@ class RecordSetServiceIntegrationSpec
   "DynamoDBRecordSetRepository" should {
     "not alter record name when seeding database for tests" in {
       val originalRecord = testRecordSetService
-        .getRecordSet(apexTestRecordA.id, apexTestRecordA.zoneId, auth)
+        .getRecordSet(apexTestRecordA.id, auth)
         .value
         .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetInfo]]
@@ -460,7 +460,7 @@ class RecordSetServiceIntegrationSpec
     "get a shared record when user is in assigned ownerGroup" in {
       val result =
         testRecordSetService
-          .getRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth2)
+          .getRecordSet(sharedTestRecord.id, auth2)
           .value
           .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetInfo]]
@@ -473,7 +473,7 @@ class RecordSetServiceIntegrationSpec
     "get a shared record when owner group can't be found" in {
       val result =
         testRecordSetService
-          .getRecordSet(sharedTestRecordBadOwnerGroup.id, sharedTestRecord.zoneId, auth)
+          .getRecordSet(sharedTestRecordBadOwnerGroup.id, auth)
           .value
           .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetInfo]]

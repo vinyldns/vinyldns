@@ -91,10 +91,23 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
   }
 
   "DynamoDBRecordSetRepository" should {
+    "fail to return records with listRecordSets if zoneId not given" in {
+      val testFuture = repo.listRecordSets(
+        zoneId = None,
+        startFrom = None,
+        maxItems = None,
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        nameSort = NameSort.ASC
+      )
+
+      assertThrows[UnsupportedDynamoDBRepoFunction](testFuture.unsafeRunSync())
+    }
+
     "get a record set by id" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = None,
@@ -114,7 +127,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "get a record set by record set id and zone id" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.getRecordSet(testRecordSet.zoneId, testRecordSet.id)
+      val testFuture = repo.getRecordSet(testRecordSet.id)
       testFuture.unsafeRunSync() shouldBe Some(testRecordSet)
     }
 
@@ -178,8 +191,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets with page size of 1 returns recordSets[0] only" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
@@ -196,8 +209,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets with page size of 1 reusing key with page size of 1 returns recordSets[0] and recordSets[1]" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
@@ -210,8 +223,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       foundRecordSet.recordSets should contain(recordSets(0))
       foundRecordSet.recordSets shouldNot contain(recordSets(1))
       val key = foundRecordSet.nextId
-      val testFutureTwo = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = key,
         maxItems = Some(1),
         recordNameFilter = None,
@@ -229,8 +242,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "list record sets page size of 1 then reusing key with page size of 2 returns recordSets[0], recordSets[1,2]" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None,
@@ -242,8 +255,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       foundRecordSet.recordSets should contain(recordSets(0))
       foundRecordSet.recordSets shouldNot contain(recordSets(1))
       val key = foundRecordSet.nextId
-      val testFutureTwo = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = key,
         maxItems = Some(2),
         recordNameFilter = None,
@@ -260,8 +273,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "return an empty list and nextId of None when passing last record as start" in {
       val testRecordSet = recordSets.head
-      val testFutureOne = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureOne = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = Some(6),
         recordNameFilter = None,
@@ -279,8 +292,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       foundRecordSet.recordSets should contain(recordSets(5))
       val key = foundRecordSet.nextId
 
-      val testFutureTwo = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFutureTwo = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = key,
         maxItems = Some(6),
         recordNameFilter = None,
@@ -295,8 +308,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "have nextId of None when exhausting recordSets" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = Some(7),
         recordNameFilter = None,
@@ -316,8 +329,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "only retrieve recordSet with name containing 'AAAA'" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("AAAA"),
@@ -334,8 +347,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "retrieve all recordSets with names containing 'A'" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("A"),
@@ -354,8 +367,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     "return an empty list if recordName filter had no match" in {
       val testRecordSet = recordSets.head
-      val testFuture = repo.listRecordSetsByZone(
-        zoneId = testRecordSet.zoneId,
+      val testFuture = repo.listRecordSets(
+        zoneId = Some(testRecordSet.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("Dummy"),
@@ -407,8 +420,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         var recordSetsResult: List[RecordSet] = Nil
         while (!querySuccessful && retries <= 10) {
           // if we query now, we should get half that failed
-          val rsQuery = repo.listRecordSetsByZone(
-            zoneId = "big-apply-zone",
+          val rsQuery = repo.listRecordSets(
+            zoneId = Some("big-apply-zone"),
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,
@@ -485,24 +498,24 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         status = RecordSetChangeStatus.Pending
       )
       repo.apply(ChangeSet(existingPending)).unsafeRunSync()
-      repo.getRecordSet(recordForFailed.zoneId, failedChange.recordSet.id).unsafeRunSync() shouldBe
+      repo.getRecordSet(failedChange.recordSet.id).unsafeRunSync() shouldBe
         Some(existingPending.recordSet)
 
       repo.apply(ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
 
       // success and pending changes have records saved
       repo
-        .getRecordSet(successfulChange.recordSet.zoneId, successfulChange.recordSet.id)
+        .getRecordSet(successfulChange.recordSet.id)
         .unsafeRunSync() shouldBe
         Some(successfulChange.recordSet)
       repo
-        .getRecordSet(pendingChange.recordSet.zoneId, pendingChange.recordSet.id)
+        .getRecordSet(pendingChange.recordSet.id)
         .unsafeRunSync() shouldBe
         Some(pendingChange.recordSet)
 
       // check that the pending record was deleted because of failed record change
       repo
-        .getRecordSet(failedChange.recordSet.zoneId, failedChange.recordSet.id)
+        .getRecordSet(failedChange.recordSet.id)
         .unsafeRunSync() shouldBe None
     }
 
@@ -539,22 +552,22 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
       // ensure that success and pending updates store the new recordsets
       repo
-        .getRecordSet(successfulUpdate.recordSet.zoneId, successfulUpdate.recordSet.id)
+        .getRecordSet(successfulUpdate.recordSet.id)
         .unsafeRunSync() shouldBe
         Some(successfulUpdate.recordSet)
 
       repo
-        .getRecordSet(pendingUpdate.recordSet.zoneId, pendingUpdate.recordSet.id)
+        .getRecordSet(pendingUpdate.recordSet.id)
         .unsafeRunSync() shouldBe
         Some(pendingUpdate.recordSet)
 
       // ensure that failure update store the old recordset
       repo
-        .getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id)
+        .getRecordSet(failedUpdate.recordSet.id)
         .unsafeRunSync() shouldBe
         failedUpdate.updates
       repo
-        .getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id)
+        .getRecordSet(failedUpdate.recordSet.id)
         .unsafeRunSync() shouldNot
         be(Some(failedUpdate.recordSet))
     }
@@ -587,18 +600,18 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
       // ensure that successful change deletes the recordset
       repo
-        .getRecordSet(successfulDelete.recordSet.zoneId, successfulDelete.recordSet.id)
+        .getRecordSet(successfulDelete.recordSet.id)
         .unsafeRunSync() shouldBe None
 
       // ensure that pending change saves the recordset
       repo
-        .getRecordSet(pendingDelete.recordSet.zoneId, pendingDelete.recordSet.id)
+        .getRecordSet(pendingDelete.recordSet.id)
         .unsafeRunSync() shouldBe
         Some(pendingDelete.recordSet)
 
       // ensure that failed delete keeps the recordset
       repo
-        .getRecordSet(failedDelete.recordSet.zoneId, failedDelete.recordSet.id)
+        .getRecordSet(failedDelete.recordSet.id)
         .unsafeRunSync() shouldBe
         failedDelete.updates
     }

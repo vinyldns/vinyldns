@@ -136,8 +136,8 @@ class DynamoDBRecordSetRepository private[repository] (
     dynamoDBHelper.putItem(request).map(_ => recordSet)
   }
 
-  def listRecordSetsByZone(
-      zoneId: String,
+  def listRecordSets(
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
@@ -145,50 +145,59 @@ class DynamoDBRecordSetRepository private[repository] (
       nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
-      log.info(s"Getting recordSets for zone $zoneId")
+      zoneId match {
+        case None =>
+          IO.raiseError(
+            UnsupportedDynamoDBRepoFunction(
+              "listRecordSets without zoneId is not supported by VinylDNS DynamoDB RecordSetRepository"
+            )
+          )
+        case Some(id) =>
+          log.info(s"Getting recordSets for zone $zoneId")
 
-      val keyConditions = Map[String, String](ZONE_ID -> zoneId)
-      val filterExpression = recordNameFilter.map(
-        filter => ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase))
-      )
+          val keyConditions = Map[String, String](ZONE_ID -> id)
+          val filterExpression = recordNameFilter.map(
+            filter => ContainsFilter(RECORD_SET_SORT, omitTrailingDot(filter.toLowerCase))
+          )
 
-      val startKey = startFrom.map { inputString =>
-        val attributes = inputString.split('~')
-        Map(
-          ZONE_ID -> attributes(0),
-          RECORD_SET_NAME -> attributes(1),
-          RECORD_SET_ID -> attributes(2)
-        )
+          val startKey = startFrom.map { inputString =>
+            val attributes = inputString.split('~')
+            Map(
+              ZONE_ID -> attributes(0),
+              RECORD_SET_NAME -> attributes(1),
+              RECORD_SET_ID -> attributes(2)
+            )
+          }
+          val responseFuture = doQuery(
+            recordSetTableName,
+            ZONE_ID_RECORD_SET_NAME_INDEX,
+            keyConditions,
+            filterExpression,
+            startKey,
+            maxItems
+          )(dynamoDBHelper)
+
+          for {
+            resp <- responseFuture
+            queryResp = resp.asInstanceOf[QueryResponseItems]
+            rs = queryResp.items.map(fromItem)
+            nextId = queryResp.lastEvaluatedKey.map { keyMap =>
+              List(
+                keyMap.get(ZONE_ID).getS,
+                keyMap.get(RECORD_SET_NAME).getS,
+                keyMap.get(RECORD_SET_ID).getS
+              ).mkString("~")
+            }
+          } yield ListRecordSetResults(
+            rs,
+            nextId,
+            startFrom,
+            maxItems,
+            recordNameFilter,
+            recordTypeFilter,
+            nameSort
+          )
       }
-      val responseFuture = doQuery(
-        recordSetTableName,
-        ZONE_ID_RECORD_SET_NAME_INDEX,
-        keyConditions,
-        filterExpression,
-        startKey,
-        maxItems
-      )(dynamoDBHelper)
-
-      for {
-        resp <- responseFuture
-        queryResp = resp.asInstanceOf[QueryResponseItems]
-        rs = queryResp.items.map(fromItem)
-        nextId = queryResp.lastEvaluatedKey.map { keyMap =>
-          List(
-            keyMap.get(ZONE_ID).getS,
-            keyMap.get(RECORD_SET_NAME).getS,
-            keyMap.get(RECORD_SET_ID).getS
-          ).mkString("~")
-        }
-      } yield ListRecordSetResults(
-        rs,
-        nextId,
-        startFrom,
-        maxItems,
-        recordNameFilter,
-        recordTypeFilter,
-        nameSort
-      )
     }
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
@@ -228,10 +237,10 @@ class DynamoDBRecordSetRepository private[repository] (
       } yield rs
     }
 
-  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+  def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetById") {
       //Do not need ZoneId, recordSetId is unique
-      log.info(s"Getting recordSet $recordSetId and Zone $zoneId")
+      log.info(s"Getting recordSet $recordSetId")
       val key = new HashMap[String, AttributeValue]()
       key.put(RECORD_SET_ID, new AttributeValue(recordSetId))
       val request = new GetItemRequest().withTableName(recordSetTableName).withKey(key)

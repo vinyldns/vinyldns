@@ -137,7 +137,7 @@ class DynamoDBRecordSetRepositorySpec
       when(dynamoDBHelper.getItem(any[GetItemRequest]))
         .thenReturn(IO.pure(dynamoResponse))
 
-      val response = store.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync()
+      val response = store.getRecordSet(rsOk.zoneId).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -148,7 +148,7 @@ class DynamoDBRecordSetRepositorySpec
         .thenThrow(new ResourceNotFoundException("bar does not exist"))
       val store = new TestDynamoRecordSetRepo
 
-      a[ResourceNotFoundException] should be thrownBy store.getRecordSet(rsOk.zoneId, rsOk.id)
+      a[ResourceNotFoundException] should be thrownBy store.getRecordSet(rsOk.zoneId)
 
     }
     "return None if not found" in {
@@ -158,7 +158,7 @@ class DynamoDBRecordSetRepositorySpec
         .thenReturn(IO.pure(dynamoResponse))
 
       val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
-      val response = store.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync()
+      val response = store.getRecordSet(rsOk.zoneId).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -166,7 +166,7 @@ class DynamoDBRecordSetRepositorySpec
     }
   }
 
-  "DynamoDBRecordSetRepository.listRecordSets(zoneId)" should {
+  "DynamoDBRecordSetRepository.listRecordSets" should {
     "returns empty if no record set exist" in {
 
       val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
@@ -179,8 +179,8 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = store
-        .listRecordSetsByZone(
-          zoneId = rsOk.zoneId,
+        .listRecordSets(
+          zoneId = Some(rsOk.zoneId),
           startFrom = None,
           maxItems = None,
           recordNameFilter = None,
@@ -209,7 +209,7 @@ class DynamoDBRecordSetRepositorySpec
 
       val response =
         store
-          .listRecordSetsByZone(rsOk.zoneId, None, Some(3), None, None, NameSort.ASC)
+          .listRecordSets(Some(rsOk.zoneId), None, Some(3), None, None, NameSort.ASC)
           .unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -221,14 +221,28 @@ class DynamoDBRecordSetRepositorySpec
         .thenThrow(new ResourceNotFoundException("failed"))
       val store = new TestDynamoRecordSetRepo
 
-      a[ResourceNotFoundException] should be thrownBy store.listRecordSetsByZone(
-        zoneId = rsOk.zoneId,
+      a[ResourceNotFoundException] should be thrownBy store.listRecordSets(
+        zoneId = Some(rsOk.zoneId),
         startFrom = None,
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
         nameSort = NameSort.ASC
       )
+    }
+
+    "return an error if used without a zoneId" in {
+      val store = new TestDynamoRecordSetRepo
+      an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .listRecordSets(
+          zoneId = None,
+          startFrom = None,
+          maxItems = None,
+          recordNameFilter = None,
+          recordTypeFilter = None,
+          nameSort = NameSort.ASC
+        )
+        .unsafeRunSync()
     }
   }
 

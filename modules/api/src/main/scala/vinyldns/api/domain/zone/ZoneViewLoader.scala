@@ -102,8 +102,8 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
     () =>
       monitor("vinyldns.loadZoneView") {
         recordSetRepository
-          .listRecordSetsByZone(
-            zoneId = zone.id,
+          .listRecordSets(
+            zoneId = Some(zone.id),
             startFrom = None,
             maxItems = None,
             recordNameFilter = None,

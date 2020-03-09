@@ -21,13 +21,14 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
+import scala.util.matching.Regex
 
 object RecordSetValidations {
 
@@ -302,4 +303,12 @@ object RecordSetValidations {
       (),
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )
+
+  def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest("recordNameFilter must contain at least two letters or numbers.")
+    ) {
+      val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
+      searchRegex.findFirstIn(recordNameFilter).isDefined
+    }
 }

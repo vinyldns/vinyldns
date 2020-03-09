@@ -34,21 +34,21 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
-      |SELECT data
+      |SELECT data, fqdn
       |  FROM recordset
       | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-      |SELECT data
+      |SELECT data, fqdn
       |  FROM recordset
       | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
     sql"""
-      |SELECT data
+      |SELECT data, fqdn
       |  FROM recordset
       | WHERE id = {id}
     """.stripMargin
@@ -74,7 +74,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val BASE_FIND_RECORDSETS_BY_FQDNS =
     """
-      |SELECT data
+      |SELECT data, fqdn
       |  FROM recordset
       | WHERE fqdn
     """.stripMargin
@@ -170,17 +170,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }.as(changeSet)
     }
 
-  /**
-    * TODO: There is a potential issue with the way we do this today.  We load all record sets eagerly, potentially
-    * causing memory pressure for the app depending on the number of records in the zone.
-    *
-    * This needs to change in the future; however, for right now we just need to tune
-    * the JVM as we have the same issue in the DynamoDB repository.  Until
-    * we create a better sync and load process that is better for memory, this should
-    * be the same as the other repo.
-    */
-  def listRecordSetsByZone(
-      zoneId: String,
+  def listRecordSets(
+      zoneId: Option[String],
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String],
@@ -190,17 +181,34 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
+          val zoneAndNameFilters = (zoneId, recordNameFilter) match {
+            case (Some(zId), Some(rName)) =>
+              Some(s"""WHERE zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' """)
+            case (None, Some(fqdn)) => Some(s"""WHERE fqdn LIKE '${fqdn.replace('*', '%')}' """)
+            case (Some(zId), None) => Some(s"""WHERE zone_id = '$zId' """)
+            case _ => None
+          }
+
+          val searchByZone = zoneId.fold[Boolean](false)(_ => true)
           val pagingKey = PagingKey(startFrom)
 
-          // sort by name only
-          val sortBy = nameSort match {
-            case NameSort.ASC =>
-              pagingKey.as(
-                "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
-              )
-            case NameSort.DESC =>
+          // sort by name or fqdn in given order
+          val sortBy = (searchByZone, nameSort) match {
+            case (true, NameSort.DESC) =>
               pagingKey.as(
                 "AND ((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+              )
+            case (false, NameSort.ASC) =>
+              pagingKey.as(
+                "AND ((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+              )
+            case (false, NameSort.DESC) =>
+              pagingKey.as(
+                "AND ((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+              )
+            case _ =>
+              pagingKey.as(
+                "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
               )
           }
 
@@ -209,18 +217,17 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             s"""AND type IN ($list)"""
           }
 
-          val opts = (sortBy ++ typeFilter ++
-            recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            Some(s"""ORDER BY name ${nameSort.toString}, type ASC""") ++
-            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+          val maxPlusOne = maxItems.map(_ + 1)
 
-          val params = (Some('zoneId -> zoneId) ++
-            pagingKey.map(pk => 'startFromName -> pk.recordName) ++
+          val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++
+            Some(s"""ORDER BY fqdn ${nameSort.toString}, type ASC""") ++
+            maxPlusOne.as("LIMIT {maxItems}")).toList.mkString(" ")
+
+          val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
             pagingKey.map(pk => 'startFromType -> pk.recordType) ++
-            recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            maxPlusOne.map(m => 'maxItems -> m)).toSeq
 
-          val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
+          val query = "SELECT data, fqdn FROM recordset " + opts
 
           val results = SQL(query)
             .bindByName(params: _*)
@@ -228,15 +235,21 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .list()
             .apply()
 
-          // if size of results is less than the number returned, we don't have a next id
+          val newResults = if (maxPlusOne.contains(results.size)) {
+            results.dropRight(1)
+          } else {
+            results
+          }
+
+          // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
-          val nextId =
-            maxItems
-              .filter(_ == results.size)
-              .flatMap(_ => results.lastOption.map(PagingKey.toNextId))
+
+          val nextId = maxPlusOne
+            .filter(_ == results.size)
+            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
           ListRecordSetResults(
-            recordSets = results,
+            recordSets = newResults,
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
@@ -262,7 +275,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   // Note: In MySql we do not need the zone id, since can hit the key directly
-  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+  def getRecordSet(recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSet") {
       IO {
         DB.readOnly { implicit s =>
@@ -354,7 +367,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
   val unknownRecordType: Int = 100
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
-    fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
+    fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1))).copy(fqdn = rs.stringOpt(2))
 
   def fromRecordType(typ: RecordType): Int =
     typ match {
@@ -402,9 +415,9 @@ object MySqlRecordSetRepository extends ProtobufConversions {
         recordType <- Try(tokens(1).toInt).toOption
       } yield PagingKey(recordName, recordType)
 
-    def toNextId(last: RecordSet): String = {
-      val nextIdName = last.name
-      val nextIdType = MySqlRecordSetRepository.fromRecordType(last.typ)
+    def toNextId(rs: RecordSet, searchByZone: Boolean): String = {
+      val nextIdName = if (searchByZone) rs.name else rs.fqdn.getOrElse("")
+      val nextIdType = MySqlRecordSetRepository.fromRecordType(rs.typ)
 
       s"$nextIdName$delimiter$nextIdType"
     }

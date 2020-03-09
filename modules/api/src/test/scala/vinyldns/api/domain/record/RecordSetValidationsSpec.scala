@@ -560,5 +560,18 @@ class RecordSetValidationsSpec
         error.getMessage() shouldBe "Cannot update RecordSet's zone ID."
       }
     }
+
+    "validRecordNameFilterLength" should {
+      "return valid when given a string containing at least two letters or numbers" in {
+        val validString = ".ok"
+        validRecordNameFilterLength(validString) should be(right)
+      }
+      "return invalid when given a string that does not contan at least two letters or numbers" in {
+        val invalidString = "*o*"
+        val error = leftValue(validRecordNameFilterLength(invalidString))
+        error shouldBe an[InvalidRequest]
+        error.getMessage() shouldBe "recordNameFilter must contain at least two letters or numbers."
+      }
+    }
   }
 }

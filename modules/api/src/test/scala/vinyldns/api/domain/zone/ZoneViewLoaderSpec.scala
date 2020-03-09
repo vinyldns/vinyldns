@@ -89,8 +89,8 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
 
       doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, NameSort.ASC)))
         .when(mockRecordSetRepo)
-        .listRecordSetsByZone(
-          anyString(),
+        .listRecordSets(
+          any[Option[String]],
           any[Option[String]],
           any[Option[Int]],
           any[Option[String]],
