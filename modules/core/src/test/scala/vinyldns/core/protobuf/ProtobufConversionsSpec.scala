@@ -19,6 +19,7 @@ package vinyldns.core.protobuf
 import org.joda.time.DateTime
 import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
 import vinyldns.core.TestRecordSetData.ds
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
@@ -103,7 +104,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname"))
+    List(CNAMEData(Fqdn("cname")))
   )
   private val mx = RecordSet(
     zone.id,
@@ -113,7 +114,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange"))
+    List(MXData(100, Fqdn("exchange")))
   )
   private val ns = RecordSet(
     zone.id,
@@ -123,7 +124,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsrecordname"))
+    List(NSData(Fqdn("nsrecordname")))
   )
   private val ptr = RecordSet(
     zone.id,
@@ -133,7 +134,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr"))
+    List(PTRData(Fqdn("ptr")))
   )
   private val soa = RecordSet(
     zone.id,
@@ -143,7 +144,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("name", "name", 1, 2, 3, 4, 5))
+    List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
   private val spf = RecordSet(
     zone.id,
@@ -163,7 +164,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target"))
+    List(SRVData(1, 2, 3, Fqdn("target")))
   )
   private val naptr = RecordSet(
     zone.id,
@@ -173,7 +174,7 @@ class ProtobufConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target"))
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target")))
   )
   private val sshfp = RecordSet(
     zone.id,
@@ -587,26 +588,26 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for CNAME data" in {
-      val pb = toPB(CNAMEData("www."))
+      val pb = toPB(CNAMEData(Fqdn("www.")))
       pb.getCname shouldBe "www."
     }
 
     "convert from protobuf for CNAME data" in {
-      val pb = toPB(CNAMEData("www."))
+      val pb = toPB(CNAMEData(Fqdn("www.")))
       val data = fromPB(pb)
 
       data.cname shouldBe "www."
     }
 
     "convert to protobuf for MX data" in {
-      val mxData = MXData(100, "mx.test.com")
+      val mxData = MXData(100, Fqdn("mx.test.com"))
       val pb = toPB(mxData)
       pb.getPreference shouldBe mxData.preference
       pb.getExchange shouldBe mxData.exchange
     }
 
     "convert from protobuf for MX data" in {
-      val mxData = MXData(100, "mx.test.com")
+      val mxData = MXData(100, Fqdn("mx.test.com"))
       val pb = toPB(mxData)
       val data = fromPB(pb)
 
@@ -614,13 +615,13 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for NS data" in {
-      val nsData = NSData("ns1.test.com")
+      val nsData = NSData(Fqdn("ns1.test.com"))
       val pb = toPB(nsData)
       pb.getNsdname shouldBe nsData.nsdname
     }
 
     "convert from protobuf for NS data" in {
-      val nsData = NSData("ns1.test.com")
+      val nsData = NSData(Fqdn("ns1.test.com"))
       val pb = toPB(nsData)
       val data = fromPB(pb)
 
@@ -628,13 +629,13 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for PTR data" in {
-      val from = PTRData("ns1.test.com")
+      val from = PTRData(Fqdn("ns1.test.com"))
       val pb = toPB(from)
       pb.getPtrdname shouldBe from.ptrdname
     }
 
     "convert from protobuf for PTR data" in {
-      val from = PTRData("ns1.test.com")
+      val from = PTRData(Fqdn("ns1.test.com"))
       val pb = toPB(from)
       val data = fromPB(pb)
 
@@ -642,7 +643,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for SOA data" in {
-      val from = SOAData("name", "name", 1, 2, 3, 4, 5)
+      val from = SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5)
       val pb = toPB(from)
       pb.getExpire shouldBe from.expire
       pb.getMinimum shouldBe from.minimum
@@ -654,7 +655,7 @@ class ProtobufConversionsSpec
     }
 
     "convert from protobuf for SOA data" in {
-      val from = SOAData("name", "name", 1, 2, 3, 4, 5)
+      val from = SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5)
       val pb = toPB(from)
       val data = fromPB(pb)
 
@@ -676,7 +677,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for SRV data" in {
-      val from = SRVData(1, 2, 3, "target")
+      val from = SRVData(1, 2, 3, Fqdn("target"))
       val pb = toPB(from)
       pb.getPort shouldBe from.port
       pb.getPriority shouldBe from.priority
@@ -685,7 +686,7 @@ class ProtobufConversionsSpec
     }
 
     "convert from protobuf for SRV data" in {
-      val from = SRVData(1, 2, 3, "target")
+      val from = SRVData(1, 2, 3, Fqdn("target"))
       val pb = toPB(from)
       val data = fromPB(pb)
 
@@ -693,7 +694,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for NAPTR data" in {
-      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")
+      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target"))
       val pb = toPB(from)
       pb.getOrder shouldBe from.order
       pb.getPreference shouldBe from.preference
@@ -704,7 +705,7 @@ class ProtobufConversionsSpec
     }
 
     "convert from protobuf for NAPTR data" in {
-      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")
+      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target"))
       val pb = toPB(from)
       val data = fromPB(pb)
 

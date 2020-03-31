@@ -80,20 +80,26 @@ class BatchChangeServiceSpec
   private val dottedAddA =
     AddChangeInput("dot.ted.apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
   private val cnameAdd =
-    AddChangeInput("cname.test.com", RecordType.CNAME, ttl, CNAMEData("testing.test.com."))
+    AddChangeInput("cname.test.com", RecordType.CNAME, ttl, CNAMEData(Fqdn("testing.test.com.")))
   private val cnameApexAdd =
-    AddChangeInput("apex.test.com", RecordType.CNAME, ttl, CNAMEData("testing.test.com."))
+    AddChangeInput("apex.test.com", RecordType.CNAME, ttl, CNAMEData(Fqdn("testing.test.com.")))
   private val cnameReverseAdd = AddChangeInput(
     "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
     ttl,
-    CNAMEData("testing.cname.com.")
+    CNAMEData(Fqdn("testing.cname.com."))
   )
-  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, ttl, PTRData("ptr"))
-  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, ttl, PTRData("ptr"))
-  private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("ptr"))
+  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+  private val ptrDelegatedAdd =
+    AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
   private val ptrV6Add =
-    AddChangeInput("2001:0000:0000:0000:0000:ff00:0042:8329", RecordType.PTR, ttl, PTRData("ptr"))
+    AddChangeInput(
+      "2001:0000:0000:0000:0000:ff00:0042:8329",
+      RecordType.PTR,
+      ttl,
+      PTRData(Fqdn("ptr"))
+    )
 
   private val authGrp = okGroup
   private val auth = okAuth
@@ -433,7 +439,7 @@ class BatchChangeServiceSpec
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr")
+        PTRData(Fqdn("ptr"))
       )
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
@@ -463,7 +469,7 @@ class BatchChangeServiceSpec
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr")
+        PTRData(Fqdn("ptr"))
       )
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
@@ -1142,7 +1148,7 @@ class BatchChangeServiceSpec
         "0.1.0.0.2.ip6.arpa."
       )
 
-      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData("ptr.")).validNel
+      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
       val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
@@ -1167,7 +1173,7 @@ class BatchChangeServiceSpec
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
-      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData("ptr.")).validNel
+      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
       val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
@@ -1213,7 +1219,7 @@ class BatchChangeServiceSpec
 
       val ips = ip1 :: ip2s
       val ptrs = ips.map { v6Name =>
-        AddChangeInput(v6Name, RecordType.PTR, ttl, PTRData("ptr.")).validNel
+        AddChangeInput(v6Name, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
       }
 
       val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(ptrs))
@@ -1383,20 +1389,20 @@ class BatchChangeServiceSpec
       val ptrv6ZoneBig = Zone("0.1.0.0.2.ip6.arpa.", "email", id = "ptrv6big")
 
       val smallZoneAdd =
-        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, ttl, PTRData("ptr"))
+        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
       val medZoneAdd = AddChangeInput(
         "2001:0db8:0111:0000:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr")
+        PTRData(Fqdn("ptr"))
       )
       val bigZoneAdd = AddChangeInput(
         "2001:0000:0000:0000:0000:ff00:0042:8329",
         RecordType.PTR,
         ttl,
-        PTRData("ptr")
+        PTRData(Fqdn("ptr"))
       )
-      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, ttl, PTRData("ptr"))
+      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
 
       val ptripv6Adds = List(
         smallZoneAdd.validNel,
@@ -1491,7 +1497,7 @@ class BatchChangeServiceSpec
         "cname.test.com.",
         CNAME,
         ttl.get,
-        CNAMEData("testing.test.com."),
+        CNAMEData(Fqdn("testing.test.com.")),
         SingleChangeStatus.Pending,
         None,
         None,
@@ -1554,7 +1560,7 @@ class BatchChangeServiceSpec
         "cname.test.com.",
         CNAME,
         ttl.get,
-        CNAMEData("testing.test.com."),
+        CNAMEData(Fqdn("testing.test.com.")),
         SingleChangeStatus.Pending,
         None,
         None,

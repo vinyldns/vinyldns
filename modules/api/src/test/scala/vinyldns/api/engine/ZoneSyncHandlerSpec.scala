@@ -26,6 +26,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
@@ -114,7 +115,7 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(PTRData("test.com."))
+    records = List(PTRData(Fqdn("test.com.")))
   )
   private val testReverseSOA = RecordSet(
     zoneId = testReverseZone.id,
@@ -123,7 +124,7 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(SOAData("mname", "rname", 1439234395, 10800, 3600, 604800, 38400))
+    records = List(SOAData(Fqdn("mname"), "rname", 1439234395, 10800, 3600, 604800, 38400))
   )
   private val testReverseNS = RecordSet(
     zoneId = testReverseZone.id,
@@ -132,7 +133,7 @@ class ZoneSyncHandlerSpec
     ttl = 100,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(NSData("172.17.42.1."))
+    records = List(NSData(Fqdn("172.17.42.1.")))
   )
 
   private val testRecordSetChange = RecordSetChangeGenerator.forZoneSyncAdd(testRecord2, testZone)

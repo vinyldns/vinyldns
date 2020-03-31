@@ -25,6 +25,7 @@ import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
+import vinyldns.core.domain.Fqdn
 
 class VinylDNSJsonProtocolSpec
     extends WordSpec
@@ -116,7 +117,7 @@ class VinylDNSJsonProtocolSpec
 
     "parse a create zone input with a transfer connection" in {
       val createZoneInput: JValue =
-        ("name" -> "testZone.") ~~
+        ("name" -> "testZone ") ~~
           ("email" -> "test@test.com") ~~
           ("connection" -> primaryConnection) ~~
           ("transferConnection" -> transferConnection) ~~
@@ -326,7 +327,7 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(CNAMEData("cname."))
+        records = List(CNAMEData(Fqdn("cname. ")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
@@ -339,7 +340,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "CNAME") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> List("cname" -> "cname.data"))
+          ("records" -> List("cname" -> "cname.data "))
 
       val expected = RecordSet(
         "1",
@@ -348,12 +349,12 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(CNAMEData("cname.data."))
+        records = List(CNAMEData(Fqdn("cname.data.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).records shouldBe List(CNAMEData("cname.data."))
+      anonymize(actual).records shouldBe List(CNAMEData(Fqdn("cname.data.")))
     }
     "reject a relative CNAME record" in {
       val recordSetJValue: JValue =
@@ -362,7 +363,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "CNAME") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> List("cname" -> "cname"))
+          ("records" -> List("cname" -> "cname "))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
       thrown.msg should include("CNAME data must be absolute")
@@ -375,7 +376,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "MX") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(MXData(1, "mx."))))
+          ("records" -> Extraction.decompose(Set(MXData(1, Fqdn("mx.")))))
 
       val expected = RecordSet(
         "1",
@@ -384,7 +385,7 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(MXData(1, "mx."))
+        records = List(MXData(1, Fqdn("mx.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
@@ -397,7 +398,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "MX") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(MXData(1, "mx"))))
+          ("records" -> Extraction.decompose(Set(MXData(1, Fqdn("mx")))))
 
       val expected = RecordSet(
         "1",
@@ -406,12 +407,12 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(MXData(1, "mx."))
+        records = List(MXData(1, Fqdn("mx.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).records shouldBe List(MXData(1, "mx."))
+      anonymize(actual).records shouldBe List(MXData(1, Fqdn("mx.")))
     }
 
     "parse a record set with an absolute SRV target passes" in {
@@ -421,7 +422,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "SRV") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(SRVData(1, 20, 5000, "srv."))))
+          ("records" -> Extraction.decompose(Set(SRVData(1, 20, 5000, Fqdn("srv.")))))
 
       val expected = RecordSet(
         "1",
@@ -430,7 +431,7 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(SRVData(1, 20, 5000, "srv."))
+        records = List(SRVData(1, 20, 5000, Fqdn("srv.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
@@ -443,7 +444,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "SRV") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(SRVData(1, 20, 5000, "srv"))))
+          ("records" -> Extraction.decompose(Set(SRVData(1, 20, 5000, Fqdn("srv")))))
 
       val expected = RecordSet(
         "1",
@@ -452,12 +453,12 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(SRVData(1, 20, 5000, "srv."))
+        records = List(SRVData(1, 20, 5000, Fqdn("srv.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).records shouldBe List(SRVData(1, 20, 5000, "srv."))
+      anonymize(actual).records shouldBe List(SRVData(1, 20, 5000, Fqdn("srv.")))
     }
 
     "parse a record set with an absolute NAPTR target passes" in {
@@ -468,7 +469,7 @@ class VinylDNSJsonProtocolSpec
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> Extraction.decompose(
-            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr.")))
           ))
 
       val expected = RecordSet(
@@ -478,7 +479,7 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
@@ -492,7 +493,7 @@ class VinylDNSJsonProtocolSpec
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> Extraction.decompose(
-            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr"))
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr")))
           ))
 
       val expected = RecordSet(
@@ -502,13 +503,13 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
       anonymize(actual).records shouldBe List(
-        NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr.")
+        NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr."))
       )
     }
 
@@ -519,7 +520,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "PTR") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(PTRData("ptr."))))
+          ("records" -> Extraction.decompose(Set(PTRData(Fqdn("ptr.")))))
 
       val expected = RecordSet(
         "1",
@@ -528,7 +529,7 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(PTRData("ptr."))
+        records = List(PTRData(Fqdn("ptr.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
@@ -541,7 +542,7 @@ class VinylDNSJsonProtocolSpec
           ("type" -> "PTR") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> Extraction.decompose(Set(PTRData("ptr"))))
+          ("records" -> Extraction.decompose(Set(PTRData(Fqdn("ptr")))))
 
       val expected = RecordSet(
         "1",
@@ -550,12 +551,12 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(PTRData("ptr."))
+        records = List(PTRData(Fqdn("ptr.")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).records shouldBe List(PTRData("ptr."))
+      anonymize(actual).records shouldBe List(PTRData(Fqdn("ptr.")))
     }
     "convert non-dotted NS record to an absolute NS record" in {
       val recordSetJValue: JValue =
@@ -573,12 +574,12 @@ class VinylDNSJsonProtocolSpec
         1000,
         RecordSetStatus.Pending,
         new DateTime(2010, 1, 1, 0, 0),
-        records = List(NSData("abs.data"))
+        records = List(NSData(Fqdn("abs.data")))
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).records shouldBe List(NSData("abs.data."))
+      anonymize(actual).records shouldBe List(NSData(Fqdn("abs.data.")))
     }
     "reject a relative NS record" in {
       val data = List("nsdname" -> "abs")

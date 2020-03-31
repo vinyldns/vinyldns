@@ -28,6 +28,7 @@ import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.TestRecordSetData.ds
+import vinyldns.core.domain.Fqdn
 
 import scala.collection.JavaConverters._
 
@@ -80,7 +81,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname.foo.vinyldns."))
+    List(CNAMEData(Fqdn("cname.foo.vinyldns.")))
   )
   private val testMX = RecordSet(
     testZone.id,
@@ -90,7 +91,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange.vinyldns."))
+    List(MXData(100, Fqdn("exchange.vinyldns.")))
   )
   private val testNS = RecordSet(
     testZone.id,
@@ -100,7 +101,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsdname.vinyldns."))
+    List(NSData(Fqdn("nsdname.vinyldns.")))
   )
   private val testPTR = RecordSet(
     testZone.id,
@@ -110,7 +111,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr.vinyldns."))
+    List(PTRData(Fqdn("ptr.vinyldns.")))
   )
   private val testSOA = RecordSet(
     testZone.id,
@@ -120,7 +121,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("mname.vinyldns.", "rname.vinyldns.", 1L, 2L, 3L, 4L, 5L))
+    List(SOAData(Fqdn("mname.vinyldns."), "rname.vinyldns.", 1L, 2L, 3L, 4L, 5L))
   )
   private val testSPF = RecordSet(
     testZone.id,
@@ -150,7 +151,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target.vinyldns."))
+    List(SRVData(1, 2, 3, Fqdn("target.vinyldns.")))
   )
   private val testNAPTR = RecordSet(
     testZone.id,
@@ -160,7 +161,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target.vinyldns."))
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target.vinyldns.")))
   )
   private val testSSHFP = RecordSet(
     testZone.id,

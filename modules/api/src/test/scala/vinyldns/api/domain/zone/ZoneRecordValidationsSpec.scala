@@ -21,6 +21,7 @@ import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.{
   DomainValidationError,
+  Fqdn,
   HighValueDomainError,
   RecordRequiresManualReview
 }
@@ -58,12 +59,12 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
 
   "Approved Name Server check" should {
     "return successfully if the name server is in the list of approved name servers" in {
-      val result = isApprovedNameServer(approvedNameServers, NSData("ns1.test.com"))
-      result should beValid(NSData("ns1.test.com"))
+      val result = isApprovedNameServer(approvedNameServers, NSData(Fqdn("ns1.test.com")))
+      result should beValid(NSData(Fqdn("ns1.test.com")))
     }
 
     "return an error if the name server is not in the list of approved name servers" in {
-      val result = isApprovedNameServer(approvedNameServers, NSData("blah."))
+      val result = isApprovedNameServer(approvedNameServers, NSData(Fqdn("blah.")))
       result should haveInvalid("Name Server blah. is not an approved name server.")
     }
   }
@@ -133,14 +134,14 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
     }
 
     "return failure if none of the name servers are in the list of approved name servers" in {
-      val test = ns.copy(records = List(NSData("blah1."), NSData("blah2.")))
+      val test = ns.copy(records = List(NSData(Fqdn("blah1.")), NSData(Fqdn("blah2."))))
       containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
         "Name Server blah1. is not an approved name server."
       ).and(haveInvalid("Name Server blah2. is not an approved name server."))
     }
 
     "return a failure if any of the name servers are not in the list of approved name servers" in {
-      val test = ns.copy(records = List(NSData("blah1."), NSData("ns1.test.com")))
+      val test = ns.copy(records = List(NSData(Fqdn("blah1.")), NSData(Fqdn("ns1.test.com"))))
       containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
         "Name Server blah1. is not an approved name server."
       )
@@ -148,18 +149,18 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
 
     "return success if the name server matches a regular expression" in {
       for (nameServer <- fullNameServers) {
-        val test = ns.copy(records = List(NSData(nameServer)))
+        val test = ns.copy(records = List(NSData(Fqdn(nameServer))))
         containsApprovedNameServers(fullNameServerRx, test) should beValid(test)
       }
     }
 
     "return success even if part of the ns record matches an approved name server" in {
-      val test = ns.copy(records = List(NSData("cdn-tr-001-456")))
+      val test = ns.copy(records = List(NSData(Fqdn("cdn-tr-001-456"))))
       containsApprovedNameServers(fullNameServerRx, test) should beValid(test)
     }
 
     "return a failure if the name server does not match one of the regular expressions" in {
-      val test = ns.copy(records = List(NSData("test-foo-ns.")))
+      val test = ns.copy(records = List(NSData(Fqdn("test-foo-ns."))))
       val approved = List(".*bar.*".r, "www.*".r)
       containsApprovedNameServers(approved, test) should haveInvalid(
         "Name Server test-foo-ns. is not an approved name server."

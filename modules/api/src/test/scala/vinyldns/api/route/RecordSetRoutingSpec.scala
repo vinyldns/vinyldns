@@ -28,6 +28,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
@@ -202,7 +203,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("example.com"))
+    List(CNAMEData(Fqdn("example.com")))
   )
 
   private val aaaa = RecordSet(
@@ -224,7 +225,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname."))
+    List(CNAMEData(Fqdn("cname.")))
   )
 
   private val mx = RecordSet(
@@ -235,7 +236,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(100, "exchange."))
+    List(MXData(100, Fqdn("exchange.")))
   )
 
   private val ns = RecordSet(
@@ -246,7 +247,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("nsrecordname"))
+    List(NSData(Fqdn("nsrecordname")))
   )
 
   private val ptr = RecordSet(
@@ -257,7 +258,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr."))
+    List(PTRData(Fqdn("ptr.")))
   )
 
   private val soa = RecordSet(
@@ -268,7 +269,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("name", "name", 1, 2, 3, 4, 5))
+    List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
 
   private val spf = RecordSet(
@@ -290,7 +291,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target."))
+    List(SRVData(1, 2, 3, Fqdn("target.")))
   )
 
   private val naptr = RecordSet(
@@ -301,7 +302,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target."))
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target.")))
   )
 
   private val sshfp = RecordSet(
@@ -334,7 +335,7 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("cname"), CNAMEData("cname2"))
+    List(CNAMEData(Fqdn("cname")), CNAMEData(Fqdn("cname2")))
   )
 
   private val rsMissingData: JValue =
@@ -442,9 +443,7 @@ class RecordSetRoutingSpec
               Right(
                 RecordSetChange(
                   zone = okZone,
-                  recordSet = recordSets
-                    .get(other)
-                    .get
+                  recordSet = recordSets(other)
                     .copy(status = RecordSetStatus.Active, created = DateTime.now),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
@@ -455,9 +454,7 @@ class RecordSetRoutingSpec
               Right(
                 RecordSetChange(
                   zone = okZone,
-                  recordSet = recordSets
-                    .get(other)
-                    .get
+                  recordSet = recordSets(other)
                     .copy(
                       status = RecordSetStatus.Active,
                       created = DateTime.now,

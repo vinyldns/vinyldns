@@ -32,6 +32,7 @@ import vinyldns.core.domain.record._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import cats.effect._
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
@@ -252,7 +253,15 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           status = RecordSetStatus.Active,
           created = DateTime.now,
           records = List(
-            SOAData("172.17.42.1.", "admin.vinyldns.com.", 1439234395, 10800, 3600, 604800, 38400)
+            SOAData(
+              Fqdn("172.17.42.1."),
+              "admin.vinyldns.com.",
+              1439234395,
+              10800,
+              3600,
+              604800,
+              38400
+            )
           )
         )
       )

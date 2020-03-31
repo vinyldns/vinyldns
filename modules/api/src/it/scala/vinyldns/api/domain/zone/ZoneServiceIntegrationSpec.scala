@@ -29,6 +29,7 @@ import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
@@ -65,7 +66,7 @@ class ZoneServiceIntegrationSpec
     status = RecordSetStatus.Active,
     created = DateTime.now,
     records =
-      List(SOAData("172.17.42.1.", "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
+      List(SOAData(Fqdn("172.17.42.1."), "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
   )
   private val testRecordNS = RecordSet(
     zoneId = okZone.id,
@@ -74,7 +75,7 @@ class ZoneServiceIntegrationSpec
     ttl = 38400,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(NSData("172.17.42.1."))
+    records = List(NSData(Fqdn("172.17.42.1.")))
   )
   private val testRecordA = RecordSet(
     zoneId = okZone.id,

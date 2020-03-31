@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
+import vinyldns.core.domain.Fqdn
 
 class RecordSetSpec extends WordSpec with Matchers {
 
@@ -43,31 +44,31 @@ class RecordSetSpec extends WordSpec with Matchers {
     "ensure trailing dot on CNAME record cname" in {
       val result = cname
 
-      result.records shouldBe List(CNAMEData("cname."))
+      result.records shouldBe List(CNAMEData(Fqdn("cname.")))
     }
 
     "ensure trailing dot on MX record exchange" in {
       val result = mx
 
-      result.records shouldBe List(MXData(3, "mx."))
+      result.records shouldBe List(MXData(3, Fqdn("mx.")))
     }
 
     "ensure trailing dot on PTR record ptrdname" in {
       val result = ptrIp4
 
-      result.records shouldBe List(PTRData("ptr."))
+      result.records shouldBe List(PTRData(Fqdn("ptr.")))
     }
 
     "ensure trailing dot on SRV record target" in {
       val result = srv
 
-      result.records shouldBe List(SRVData(1, 2, 3, "target."))
+      result.records shouldBe List(SRVData(1, 2, 3, Fqdn("target.")))
     }
 
     "ensure trailing dot on NAPTR record target" in {
       val result = naptr
 
-      result.records shouldBe List(NAPTRData(1, 2, "S", "E2U+sip", "", "target."))
+      result.records shouldBe List(NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target.")))
     }
   }
 }

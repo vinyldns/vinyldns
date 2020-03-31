@@ -32,7 +32,7 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
-import vinyldns.core.domain.HighValueDomainError
+import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
@@ -129,7 +129,7 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("172.17.42.1."))
+    List(NSData(Fqdn("172.17.42.1.")))
   )
 
   private val zoneTestNameConflicts = Zone(

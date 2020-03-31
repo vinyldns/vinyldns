@@ -25,6 +25,7 @@ import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetLis
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
@@ -237,7 +238,7 @@ class AccessValidationsSpec
         "someRecordName",
         RecordType.PTR,
         zoneIp4,
-        List(PTRData("test.foo.comcast.net"))
+        List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }
@@ -351,7 +352,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData("test.foo.comcast.net"))
+        List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }
@@ -436,7 +437,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData("test.foo.comcast.net"))
+        List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }
@@ -542,7 +543,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData("test.foo.comcast.net"))
+        List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }
