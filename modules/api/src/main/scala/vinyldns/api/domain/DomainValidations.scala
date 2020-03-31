@@ -57,6 +57,9 @@ object DomainValidations {
   val MX_PREFERENCE_MIN_VALUE: Int = 0
   val MX_PREFERENCE_MAX_VALUE: Int = 65535
 
+  def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
+    validateHostName(name.fqdn).map(_ => name)
+
   def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
       Label rules are as follows (from RFC 952; detailed in RFC 1034):

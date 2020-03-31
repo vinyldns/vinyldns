@@ -25,7 +25,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChange
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.core.domain.{record, zone}
+import vinyldns.core.domain.{Fqdn, record, zone}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -175,7 +175,7 @@ trait ProtobufConversions {
 
   def fromPB(data: VinylDNSProto.AAAAData): AAAAData = AAAAData(data.getAddress)
 
-  def fromPB(data: VinylDNSProto.CNAMEData): CNAMEData = CNAMEData(data.getCname)
+  def fromPB(data: VinylDNSProto.CNAMEData): CNAMEData = CNAMEData(Fqdn(data.getCname))
 
   def fromPB(data: VinylDNSProto.DSData): DSData =
     DSData(
@@ -185,15 +185,16 @@ trait ProtobufConversions {
       ByteVector.apply(data.getDigest.asReadOnlyByteBuffer())
     )
 
-  def fromPB(data: VinylDNSProto.MXData): MXData = MXData(data.getPreference, data.getExchange)
+  def fromPB(data: VinylDNSProto.MXData): MXData =
+    MXData(data.getPreference, Fqdn(data.getExchange))
 
-  def fromPB(data: VinylDNSProto.NSData): NSData = NSData(data.getNsdname)
+  def fromPB(data: VinylDNSProto.NSData): NSData = NSData(Fqdn(data.getNsdname))
 
-  def fromPB(data: VinylDNSProto.PTRData): PTRData = PTRData(data.getPtrdname)
+  def fromPB(data: VinylDNSProto.PTRData): PTRData = PTRData(Fqdn(data.getPtrdname))
 
   def fromPB(data: VinylDNSProto.SOAData): SOAData =
     SOAData(
-      data.getMname,
+      Fqdn(data.getMname),
       data.getRname,
       data.getSerial,
       data.getRefresh,
@@ -205,7 +206,7 @@ trait ProtobufConversions {
   def fromPB(data: VinylDNSProto.SPFData): SPFData = SPFData(data.getText)
 
   def fromPB(data: VinylDNSProto.SRVData): SRVData =
-    SRVData(data.getPriority, data.getWeight, data.getPort, data.getTarget)
+    SRVData(data.getPriority, data.getWeight, data.getPort, Fqdn(data.getTarget))
 
   def fromPB(data: VinylDNSProto.NAPTRData): NAPTRData =
     NAPTRData(
@@ -214,7 +215,7 @@ trait ProtobufConversions {
       data.getFlags,
       data.getService,
       data.getRegexp,
-      data.getReplacement
+      Fqdn(data.getReplacement)
     )
 
   def fromPB(data: VinylDNSProto.SSHFPData): SSHFPData =
@@ -249,7 +250,7 @@ trait ProtobufConversions {
     VinylDNSProto.AAAAData.newBuilder().setAddress(data.address).build()
 
   def toPB(data: CNAMEData): VinylDNSProto.CNAMEData =
-    VinylDNSProto.CNAMEData.newBuilder().setCname(data.cname).build()
+    VinylDNSProto.CNAMEData.newBuilder().setCname(data.cname.fqdn).build()
 
   def toPB(data: DSData): VinylDNSProto.DSData =
     VinylDNSProto.DSData
@@ -264,20 +265,20 @@ trait ProtobufConversions {
     VinylDNSProto.MXData
       .newBuilder()
       .setPreference(data.preference)
-      .setExchange(data.exchange)
+      .setExchange(data.exchange.fqdn)
       .build()
 
   def toPB(data: PTRData): VinylDNSProto.PTRData =
-    VinylDNSProto.PTRData.newBuilder().setPtrdname(data.ptrdname).build()
+    VinylDNSProto.PTRData.newBuilder().setPtrdname(data.ptrdname.fqdn).build()
 
   def toPB(data: NSData): VinylDNSProto.NSData =
-    VinylDNSProto.NSData.newBuilder().setNsdname(data.nsdname).build()
+    VinylDNSProto.NSData.newBuilder().setNsdname(data.nsdname.fqdn).build()
 
   def toPB(data: SOAData): VinylDNSProto.SOAData =
     VinylDNSProto.SOAData
       .newBuilder()
       .setRname(data.rname)
-      .setMname(data.mname)
+      .setMname(data.mname.fqdn)
       .setExpire(data.expire)
       .setMinimum(data.minimum)
       .setRefresh(data.refresh)
@@ -293,7 +294,7 @@ trait ProtobufConversions {
       .newBuilder()
       .setPort(data.port)
       .setPriority(data.priority)
-      .setTarget(data.target)
+      .setTarget(data.target.fqdn)
       .setWeight(data.weight)
       .build()
 
@@ -305,7 +306,7 @@ trait ProtobufConversions {
       .setFlags(data.flags)
       .setService(data.service)
       .setRegexp(data.regexp)
-      .setReplacement(data.replacement)
+      .setReplacement(data.replacement.fqdn)
       .build()
 
   def toPB(data: SSHFPData): VinylDNSProto.SSHFPData =

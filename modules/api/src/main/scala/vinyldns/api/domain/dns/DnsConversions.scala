@@ -23,7 +23,7 @@ import org.joda.time.DateTime
 import org.xbill.DNS
 import scodec.bits.ByteVector
 import vinyldns.api.domain.dns.DnsProtocol._
-import vinyldns.core.domain.{DomainHelpers, record}
+import vinyldns.core.domain.{DomainHelpers, Fqdn, record}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 
@@ -231,7 +231,7 @@ trait DnsConversions {
 
   def fromCNAMERecord(r: DNS.CNAMERecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(CNAMEData(data.getAlias.toString))
+      List(CNAMEData(Fqdn(data.getAlias.toString)))
     }
 
   def fromDSRecord(r: DNS.DSRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -248,24 +248,24 @@ trait DnsConversions {
 
   def fromMXRecord(r: DNS.MXRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(MXData(data.getPriority, data.getTarget.toString))
+      List(MXData(data.getPriority, Fqdn(data.getTarget.toString)))
     }
 
   def fromNSRecord(r: DNS.NSRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(NSData(data.getTarget.toString))
+      List(NSData(Fqdn(data.getTarget.toString)))
     }
 
   def fromPTRRecord(r: DNS.PTRRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(PTRData(data.getTarget.toString))
+      List(PTRData(Fqdn(data.getTarget.toString)))
     }
 
   def fromSOARecord(r: DNS.SOARecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
       List(
         SOAData(
-          data.getHost.toString,
+          Fqdn(data.getHost.toString),
           data.getAdmin.toString,
           data.getSerial,
           data.getRefresh,
@@ -283,7 +283,7 @@ trait DnsConversions {
 
   def fromSRVRecord(r: DNS.SRVRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(SRVData(data.getPriority, data.getWeight, data.getPort, data.getTarget.toString))
+      List(SRVData(data.getPriority, data.getWeight, data.getPort, Fqdn(data.getTarget.toString)))
     }
 
   def fromNAPTRRecord(r: DNS.NAPTRRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -295,7 +295,7 @@ trait DnsConversions {
           data.getFlags,
           data.getService,
           data.getRegexp,
-          data.getReplacement.toString
+          Fqdn(data.getReplacement.toString)
         )
       )
     }
@@ -323,7 +323,7 @@ trait DnsConversions {
           new DNS.AAAARecord(recordName, DNS.DClass.IN, ttl, InetAddress.getByName(address))
 
         case CNAMEData(cname) =>
-          new DNS.CNAMERecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(cname))
+          new DNS.CNAMERecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(cname.fqdn))
 
         case DSData(keyTag, algorithm, digestType, digest) =>
           new DNS.DSRecord(
@@ -337,7 +337,7 @@ trait DnsConversions {
           )
 
         case NSData(nsdname) =>
-          new DNS.NSRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(nsdname))
+          new DNS.NSRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(nsdname.fqdn))
 
         case MXData(preference, exchange) =>
           new DNS.MXRecord(
@@ -345,18 +345,18 @@ trait DnsConversions {
             DNS.DClass.IN,
             ttl,
             preference,
-            DNS.Name.fromString(exchange)
+            DNS.Name.fromString(exchange.fqdn)
           )
 
         case PTRData(ptrdname) =>
-          new DNS.PTRRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(ptrdname))
+          new DNS.PTRRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(ptrdname.fqdn))
 
         case SOAData(mname, rname, serial, refresh, retry, expire, minimum) =>
           new DNS.SOARecord(
             recordName,
             DNS.DClass.IN,
             ttl,
-            DNS.Name.fromString(mname),
+            DNS.Name.fromString(mname.fqdn),
             DNS.Name.fromString(rname),
             serial,
             refresh,
@@ -373,7 +373,7 @@ trait DnsConversions {
             priority,
             weight,
             port,
-            DNS.Name.fromString(target)
+            DNS.Name.fromString(target.fqdn)
           )
 
         case NAPTRData(order, preference, flags, service, regexp, replacement) =>
@@ -386,7 +386,7 @@ trait DnsConversions {
             flags,
             service,
             regexp,
-            DNS.Name.fromString(replacement)
+            DNS.Name.fromString(replacement.fqdn)
           )
 
         case SSHFPData(algorithm, typ, fingerprint) =>

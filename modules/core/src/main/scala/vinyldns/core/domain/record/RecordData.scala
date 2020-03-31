@@ -17,7 +17,7 @@
 package vinyldns.core.domain.record
 
 import scodec.bits.ByteVector
-import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.Fqdn
 
 sealed trait RecordData
 
@@ -25,36 +25,36 @@ final case class AData(address: String) extends RecordData
 
 final case class AAAAData(address: String) extends RecordData
 
-final case class CNAMEData(cname: String) extends RecordData
+final case class CNAMEData(cname: Fqdn) extends RecordData
 
 object CNAMEData {
-  def apply(cname: String): CNAMEData =
-    new CNAMEData(ensureTrailingDot(cname))
+  def apply(cname: Fqdn): CNAMEData =
+    new CNAMEData(cname)
 }
 
-final case class MXData(preference: Integer, exchange: String) extends RecordData
+final case class MXData(preference: Integer, exchange: Fqdn) extends RecordData
 
 object MXData {
-  def apply(preference: Integer, exchange: String): MXData =
-    new MXData(preference, ensureTrailingDot(exchange))
+  def apply(preference: Integer, exchange: Fqdn): MXData =
+    new MXData(preference, exchange)
 }
 
-final case class NSData(nsdname: String) extends RecordData
+final case class NSData(nsdname: Fqdn) extends RecordData
 
 object NSData {
-  def apply(nsdname: String): NSData =
-    new NSData(ensureTrailingDot(nsdname))
+  def apply(nsdname: Fqdn): NSData =
+    new NSData(nsdname)
 }
 
-final case class PTRData(ptrdname: String) extends RecordData
+final case class PTRData(ptrdname: Fqdn) extends RecordData
 
 object PTRData {
-  def apply(ptrdname: String): PTRData =
-    new PTRData(ensureTrailingDot(ptrdname))
+  def apply(ptrdname: Fqdn): PTRData =
+    new PTRData(ptrdname)
 }
 
 final case class SOAData(
-    mname: String,
+    mname: Fqdn,
     rname: String,
     serial: Long,
     refresh: Long,
@@ -65,12 +65,12 @@ final case class SOAData(
 
 final case class SPFData(text: String) extends RecordData
 
-final case class SRVData(priority: Integer, weight: Integer, port: Integer, target: String)
+final case class SRVData(priority: Integer, weight: Integer, port: Integer, target: Fqdn)
     extends RecordData
 
 object SRVData {
-  def apply(priority: Integer, weight: Integer, port: Integer, target: String): SRVData =
-    new SRVData(priority, weight, port, ensureTrailingDot(target))
+  def apply(priority: Integer, weight: Integer, port: Integer, target: Fqdn): SRVData =
+    new SRVData(priority, weight, port, target)
 }
 
 final case class NAPTRData(
@@ -79,7 +79,7 @@ final case class NAPTRData(
     flags: String,
     service: String,
     regexp: String,
-    replacement: String
+    replacement: Fqdn
 ) extends RecordData
 
 object NAPTRData {
@@ -89,9 +89,9 @@ object NAPTRData {
       flags: String,
       service: String,
       regexp: String,
-      replacement: String
+      replacement: Fqdn
   ): NAPTRData =
-    new NAPTRData(order, preference, flags, service, regexp, ensureTrailingDot(replacement))
+    new NAPTRData(order, preference, flags, service, regexp, replacement)
 }
 
 final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String) extends RecordData

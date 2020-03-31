@@ -16,16 +16,19 @@
 
 package vinyldns.core.domain
 
-object DomainHelpers {
+import DomainHelpers.{ensureTrailingDot, removeWhitespace}
 
-  def ensureTrailingDot(str: String): String = if (str.endsWith(".")) str else s"$str."
-
-  def omitTrailingDot(name: String): String =
-    if (name.endsWith(".")) {
-      name.substring(0, name.length - 1)
-    } else {
-      name
+case class Fqdn(fqdn: String) {
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case Fqdn(otherFqdn) => otherFqdn.toLowerCase == fqdn.toLowerCase
+      case _ => false
     }
 
-  def removeWhitespace(str: String): String = str.replaceAll("\\s", "")
+  override def hashCode(): Int = fqdn.hashCode
+}
+
+case object Fqdn {
+  def apply(fqdn: String): Fqdn =
+    new Fqdn(ensureTrailingDot(removeWhitespace(fqdn)))
 }
