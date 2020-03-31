@@ -596,14 +596,14 @@ class ProtobufConversionsSpec
       val pb = toPB(CNAMEData(Fqdn("www.")))
       val data = fromPB(pb)
 
-      data.cname shouldBe "www."
+      data.cname.fqdn shouldBe "www."
     }
 
     "convert to protobuf for MX data" in {
       val mxData = MXData(100, Fqdn("mx.test.com"))
       val pb = toPB(mxData)
       pb.getPreference shouldBe mxData.preference
-      pb.getExchange shouldBe mxData.exchange
+      pb.getExchange shouldBe mxData.exchange.fqdn
     }
 
     "convert from protobuf for MX data" in {
@@ -617,7 +617,7 @@ class ProtobufConversionsSpec
     "convert to protobuf for NS data" in {
       val nsData = NSData(Fqdn("ns1.test.com"))
       val pb = toPB(nsData)
-      pb.getNsdname shouldBe nsData.nsdname
+      pb.getNsdname shouldBe nsData.nsdname.fqdn
     }
 
     "convert from protobuf for NS data" in {
@@ -631,7 +631,7 @@ class ProtobufConversionsSpec
     "convert to protobuf for PTR data" in {
       val from = PTRData(Fqdn("ns1.test.com"))
       val pb = toPB(from)
-      pb.getPtrdname shouldBe from.ptrdname
+      pb.getPtrdname shouldBe from.ptrdname.fqdn
     }
 
     "convert from protobuf for PTR data" in {
@@ -647,7 +647,7 @@ class ProtobufConversionsSpec
       val pb = toPB(from)
       pb.getExpire shouldBe from.expire
       pb.getMinimum shouldBe from.minimum
-      pb.getMname shouldBe from.mname
+      pb.getMname shouldBe from.mname.fqdn
       pb.getRefresh shouldBe from.refresh
       pb.getRetry shouldBe from.retry
       pb.getRname shouldBe from.rname
@@ -681,7 +681,7 @@ class ProtobufConversionsSpec
       val pb = toPB(from)
       pb.getPort shouldBe from.port
       pb.getPriority shouldBe from.priority
-      pb.getTarget shouldBe from.target
+      pb.getTarget shouldBe from.target.fqdn
       pb.getWeight shouldBe from.weight
     }
 
@@ -701,7 +701,7 @@ class ProtobufConversionsSpec
       pb.getFlags shouldBe from.flags
       pb.getService shouldBe from.service
       pb.getRegexp shouldBe from.regexp
-      pb.getReplacement shouldBe from.replacement
+      pb.getReplacement shouldBe from.replacement.fqdn
     }
 
     "convert from protobuf for NAPTR data" in {
