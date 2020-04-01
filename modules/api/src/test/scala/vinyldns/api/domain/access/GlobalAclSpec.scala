@@ -20,6 +20,7 @@ import cats.scalatest.EitherMatchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.api.ResultHelpers
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.{PTRData, RecordType}
 
 class GlobalAclSpec
@@ -44,7 +45,13 @@ class GlobalAclSpec
       globalAcls.isAuthorized(okAuth, "foo", RecordType.A, okZone, Nil) shouldBe true
     }
     "return true for a PTR record if the user and record match an acl" in {
-      globalAcls.isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, List(PTRData("foo.com"))) shouldBe true
+      globalAcls.isAuthorized(
+        okAuth,
+        "foo",
+        RecordType.PTR,
+        zoneIp4,
+        List(PTRData(Fqdn("foo.com")))
+      ) shouldBe true
     }
     "normalizes the record name before testing" in {
       globalAcls.isAuthorized(okAuth, "foo.", RecordType.A, okZone, Nil) shouldBe true
@@ -55,7 +62,7 @@ class GlobalAclSpec
         "foo",
         RecordType.PTR,
         zoneIp4,
-        List(PTRData("foo.com"), PTRData("bar.com"))
+        List(PTRData(Fqdn("foo.com")), PTRData(Fqdn("bar.com")))
       ) shouldBe true
     }
     "return false for a PTR record if one of the PTR records does not match an acl" in {
@@ -64,14 +71,20 @@ class GlobalAclSpec
         "foo",
         RecordType.PTR,
         zoneIp4,
-        List(PTRData("foo.com"), PTRData("blah.net"))
+        List(PTRData(Fqdn("foo.com")), PTRData(Fqdn("blah.net")))
       ) shouldBe false
     }
     "return false for a PTR record if the record data is empty" in {
       globalAcls.isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, Nil) shouldBe false
     }
     "return false for a PTR record if the ACL is empty" in {
-      GlobalAcls(Nil).isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, List(PTRData("foo.com"))) shouldBe false
+      GlobalAcls(Nil).isAuthorized(
+        okAuth,
+        "foo",
+        RecordType.PTR,
+        zoneIp4,
+        List(PTRData(Fqdn("foo.com")))
+      ) shouldBe false
     }
     "return false for a PTR record if the ACL is empty and the record data is empty" in {
       GlobalAcls(Nil).isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, Nil) shouldBe false

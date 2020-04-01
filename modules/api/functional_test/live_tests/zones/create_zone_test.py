@@ -45,7 +45,7 @@ def test_create_zone_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = 'one-time'
+        zone_name = 'one-time '
 
         zone = {
             'name': zone_name,
@@ -60,7 +60,7 @@ def test_create_zone_success(shared_zone_test_context):
         get_result = client.get_zone(result_zone['id'])
 
         get_zone = get_result['zone']
-        assert_that(get_zone['name'], is_(zone['name']+'.'))
+        assert_that(get_zone['name'], is_(zone['name'].strip()+'.'))
         assert_that(get_zone['email'], is_(zone['email']))
         assert_that(get_zone['adminGroupId'], is_(zone['adminGroupId']))
         assert_that(get_zone['latestSync'], is_not(none()))

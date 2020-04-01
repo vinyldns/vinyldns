@@ -31,6 +31,7 @@ import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
 
@@ -314,7 +315,7 @@ class RecordSetValidationsSpec
             RecordSetStatus.Active,
             DateTime.now,
             None,
-            List(SOAData("something", "other", 1, 2, 3, 5, 6))
+            List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
           )
 
           typeSpecificValidations(test, List(), zoneIp4) should be(right)
@@ -327,7 +328,7 @@ class RecordSetValidationsSpec
       "return ok if the record is an NS record but not origin" in {
         val valid = invalidNsApexRs.copy(
           name = "this-is-not-origin-mate",
-          records = List(NSData("some.test.ns."))
+          records = List(NSData(Fqdn("some.test.ns.")))
         )
 
         nsValidations(valid, okZone) should be(right)
@@ -351,7 +352,7 @@ class RecordSetValidationsSpec
       }
 
       "return an InvalidRequest if an NS record data is not in the approved server list" in {
-        val ns = invalidNsApexRs.copy(records = List(NSData("not.approved.")))
+        val ns = invalidNsApexRs.copy(records = List(NSData(Fqdn("not.approved."))))
         val error = leftValue(nsValidations(ns, okZone))
         error shouldBe an[InvalidRequest]
       }

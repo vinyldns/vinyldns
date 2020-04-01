@@ -31,6 +31,7 @@ import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.{
   DomainValidationErrorType,
+  Fqdn,
   InvalidIpv4Address,
   InvalidTTL,
   SingleChangeError,
@@ -87,10 +88,15 @@ class BatchChangeJsonProtocolSpec
     buildAddChangeInputJson(Some("bar."), Some(AAAA), Some(1200), Some(AAAAData("1:2:3:4:5:6:7:8")))
 
   val addCNAMEChangeInputJson: JObject =
-    buildAddChangeInputJson(Some("bizz.baz."), Some(CNAME), Some(200), Some(CNAMEData("buzz.")))
+    buildAddChangeInputJson(
+      Some("bizz.baz."),
+      Some(CNAME),
+      Some(200),
+      Some(CNAMEData(Fqdn("buzz.")))
+    )
 
   val addPTRChangeInputJson: JObject =
-    buildAddChangeInputJson(Some("4.5.6.7"), Some(PTR), Some(200), Some(PTRData("test.com.")))
+    buildAddChangeInputJson(Some("4.5.6.7"), Some(PTR), Some(200), Some(PTRData(Fqdn("test.com."))))
 
   val deleteAChangeInputJson: JObject = buildDeleteRRSetInputJson(Some("foo."), Some(A))
 
@@ -125,9 +131,9 @@ class BatchChangeJsonProtocolSpec
 
   val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
-  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
+  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData(Fqdn("buzz.")))
 
-  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
+  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData(Fqdn("test.com.")))
 
   val fooDiscoveryError = ZoneDiscoveryError("foo.")
 

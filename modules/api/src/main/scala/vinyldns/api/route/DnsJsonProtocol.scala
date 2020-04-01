@@ -26,6 +26,8 @@ import org.json4s._
 import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.DomainHelpers.removeWhitespace
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 
@@ -62,7 +64,8 @@ trait DnsJsonProtocol extends JsonValidation {
     NAPTRSerializer,
     SSHFPSerializer,
     TXTSerializer,
-    JsonV[ZoneACL]
+    JsonV[ZoneACL],
+    FqdnSerializer
   )
 
   case object RecordSetChangeSerializer extends ValidationSerializer[RecordSetChange] {
@@ -86,6 +89,7 @@ trait DnsJsonProtocol extends JsonValidation {
       (
         (js \ "name")
           .required[String]("Missing Zone.name")
+          .map(removeWhitespace)
           .map(name => if (name.endsWith(".")) name else s"$name."),
         (js \ "email").required[String]("Missing Zone.email"),
         (js \ "connection").optional[ZoneConnection],
@@ -330,7 +334,7 @@ trait DnsJsonProtocol extends JsonValidation {
           "CNAME domain name must not exceed 255 characters" -> checkDomainNameLen,
           "CNAME data must be absolute" -> nameContainsDots
         )
-        .map(ensureTrailingDot)
+        .map(Fqdn.apply)
         .map(CNAMEData.apply)
   }
 
@@ -347,7 +351,7 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "MX.exchange must be less than 255 characters" -> checkDomainNameLen
           )
-          .map(ensureTrailingDot)
+          .map(Fqdn.apply)
       ).mapN(MXData.apply)
   }
 
@@ -359,6 +363,7 @@ trait DnsJsonProtocol extends JsonValidation {
           "NS must be less than 255 characters" -> checkDomainNameLen,
           "NS data must be absolute" -> nameContainsDots
         )
+        .map(Fqdn.apply)
         .map(NSData.apply)
   }
 
@@ -369,7 +374,7 @@ trait DnsJsonProtocol extends JsonValidation {
         .check(
           "PTR must be less than 255 characters" -> checkDomainNameLen
         )
-        .map(ensureTrailingDot)
+        .map(Fqdn.apply)
         .map(PTRData.apply)
   }
 
@@ -380,12 +385,14 @@ trait DnsJsonProtocol extends JsonValidation {
           .required[String]("Missing SOA.mname")
           .check(
             "SOA.mname must be less than 255 characters" -> checkDomainNameLen
-          ),
+          )
+          .map(Fqdn.apply),
         (js \ "rname")
           .required[String]("Missing SOA.rname")
           .check(
             "SOA.rname must be less than 255 characters" -> checkDomainNameLen
-          ),
+          )
+          .map(removeWhitespace),
         (js \ "serial")
           .required[Long]("Missing SOA.serial")
           .check(
@@ -447,7 +454,7 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "SRV.target must be less than 255 characters" -> checkDomainNameLen
           )
-          .map(ensureTrailingDot)
+          .map(Fqdn.apply)
       ).mapN(SRVData.apply)
   }
 
@@ -485,7 +492,7 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "NAPTR.replacement must be less than 255 characters" -> checkDomainNameLen
           )
-          .map(ensureTrailingDot)
+          .map(Fqdn.apply)
       ).mapN(NAPTRData.apply)
   }
 
@@ -558,5 +565,9 @@ trait DnsJsonProtocol extends JsonValidation {
           "TXT record must be less than 64764 characters" -> (_.length < 64764)
         )
         .map(TXTData.apply)
+  }
+
+  case object FqdnSerializer extends ValidationSerializer[Fqdn] {
+    override def toJson(fqdn: Fqdn): JValue = Extraction.decompose(fqdn.fqdn)
   }
 }

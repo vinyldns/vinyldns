@@ -27,6 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
@@ -103,7 +104,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SOAData("something", "other", 1, 2, 3, 5, 6))
+    List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
   )
 
   private val successNS = RecordSet(
@@ -114,7 +115,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("some.test.ns."))
+    List(NSData(Fqdn("some.test.ns.")))
   )
 
   private val failureNs = RecordSet(
@@ -125,7 +126,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("some.test.ns."), NSData("not.approved."))
+    List(NSData(Fqdn("some.test.ns.")), NSData(Fqdn("not.approved.")))
   )
 
   private val delegatedNS = RecordSet(
@@ -136,7 +137,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("sub.some.test.ns."))
+    List(NSData(Fqdn("sub.some.test.ns.")))
   )
 
   private val mockRecordSet = mock[RecordSet]

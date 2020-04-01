@@ -20,6 +20,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 
 class RecordSetHelpersSpec extends WordSpec with Matchers {
@@ -27,7 +28,7 @@ class RecordSetHelpersSpec extends WordSpec with Matchers {
   "RecordSetHelpers" should {
     "matches" should {
       "match record data when not AAAA" in {
-        val records = List(CNAMEData("foo."))
+        val records = List(CNAMEData(Fqdn("foo.")))
         val left = cname.copy(records = records)
         val right = cname.copy(records = records)
         matches(left, right, okZone.name) shouldBe true

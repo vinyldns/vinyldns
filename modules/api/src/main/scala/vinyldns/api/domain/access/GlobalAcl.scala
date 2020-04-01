@@ -64,7 +64,7 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
           }
 
         // forall returns true if the list is empty
-        ptrs.nonEmpty && ptrs.forall(isAuthorized(authPrincipal, _))
+        ptrs.nonEmpty && ptrs.forall(ptrdname => isAuthorized(authPrincipal, ptrdname.fqdn))
       case _ =>
         val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
         isAuthorized(authPrincipal, fqdn)

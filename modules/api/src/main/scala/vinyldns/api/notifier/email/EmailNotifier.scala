@@ -174,9 +174,9 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def formatRecordData(rd: RecordData): String = rd match {
     case AData(address) => address
     case AAAAData(address) => address
-    case CNAMEData(cname) => cname
+    case CNAMEData(cname) => cname.fqdn
     case MXData(preference, exchange) => s"Preference: $preference Exchange: $exchange"
-    case PTRData(name) => name
+    case PTRData(name) => name.fqdn
     case TXTData(text) => text
     case _ => rd.toString
   }

@@ -23,6 +23,7 @@ import vinyldns.core.domain.record._
 import TestZoneData._
 import TestMembershipData._
 import scodec.bits.ByteVector
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.zone.Zone
 
 object TestRecordSetData {
@@ -80,7 +81,7 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(CNAMEData("cname"))
+    List(CNAMEData(Fqdn("cname")))
   )
 
   val ptrIp4: RecordSet = RecordSet(
@@ -91,7 +92,7 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr"))
+    List(PTRData(Fqdn("ptr")))
   )
 
   val ptrIp6: RecordSet = RecordSet(
@@ -102,7 +103,7 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(PTRData("ptr"))
+    List(PTRData(Fqdn("ptr")))
   )
 
   val srv: RecordSet = RecordSet(
@@ -113,7 +114,7 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SRVData(1, 2, 3, "target"))
+    List(SRVData(1, 2, 3, Fqdn("target")))
   )
 
   val naptr: RecordSet = RecordSet(
@@ -124,7 +125,7 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NAPTRData(1, 2, "S", "E2U+sip", "", "target"))
+    List(NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target")))
   )
 
   val mx: RecordSet = RecordSet(
@@ -135,7 +136,7 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     DateTime.now,
     None,
-    List(MXData(3, "mx"))
+    List(MXData(3, Fqdn("mx")))
   )
 
   val ns: RecordSet = RecordSet(
@@ -146,7 +147,7 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    records = List(NSData("ns1.test.com"), NSData("ns2.test.com"))
+    records = List(NSData(Fqdn("ns1.test.com")), NSData(Fqdn("ns2.test.com")))
   )
 
   val txt: RecordSet = RecordSet(
@@ -218,7 +219,7 @@ object TestRecordSetData {
       RecordSetStatus.Pending,
       DateTime.now,
       None,
-      List(MXData(3, "mx"))
+      List(MXData(3, Fqdn("mx")))
     )
 
   /* RECORDSET CHANGES */

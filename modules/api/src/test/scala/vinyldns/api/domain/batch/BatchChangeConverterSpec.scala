@@ -28,6 +28,7 @@ import vinyldns.api.repository._
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
@@ -101,10 +102,10 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleAddChange("repeat", AData("1.1.1.3")),
     makeSingleAddChange("repeat", AData("1.1.1.4")),
     makeSingleAddChange("aaaaRecord", AAAAData("1::1"), AAAA),
-    makeSingleAddChange("cnameRecord", CNAMEData("cname.com."), CNAME),
-    makeSingleAddChange("10.1.1.1", PTRData("ptrData"), PTR),
+    makeSingleAddChange("cnameRecord", CNAMEData(Fqdn("cname.com.")), CNAME),
+    makeSingleAddChange("10.1.1.1", PTRData(Fqdn("ptrData")), PTR),
     makeSingleAddChange("txtRecord", TXTData("text"), TXT),
-    makeSingleAddChange("mxRecord", MXData(1, "foo.bar."), MX)
+    makeSingleAddChange("mxRecord", MXData(1, Fqdn("foo.bar.")), MX)
   )
 
   private val addChangeForValidationGood = List(
@@ -113,10 +114,10 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeAddChangeForValidation("repeat", AData("1.1.1.3")),
     makeAddChangeForValidation("repeat", AData("1.1.1.4")),
     makeAddChangeForValidation("aaaaRecord", AAAAData("1::1"), AAAA),
-    makeAddChangeForValidation("cnameRecord", CNAMEData("cname.com."), CNAME),
-    makeAddChangeForValidation("10.1.1.1", PTRData("ptrData"), PTR),
+    makeAddChangeForValidation("cnameRecord", CNAMEData(Fqdn("cname.com.")), CNAME),
+    makeAddChangeForValidation("10.1.1.1", PTRData(Fqdn("ptrData")), PTR),
     makeAddChangeForValidation("txtRecord", TXTData("text"), TXT),
-    makeAddChangeForValidation("mxRecord", MXData(1, "foo.bar."), MX)
+    makeAddChangeForValidation("mxRecord", MXData(1, Fqdn("foo.bar.")), MX)
   )
 
   private val deleteSingleChangesGood = List(
@@ -139,22 +140,22 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleDeleteRRSetChange("aToUpdate", A),
     makeSingleAddChange("aToUpdate", AData("1.1.1.1")),
     makeSingleDeleteRRSetChange("cnameToUpdate", CNAME),
-    makeSingleAddChange("cnameToUpdate", CNAMEData("newcname.com."), CNAME),
+    makeSingleAddChange("cnameToUpdate", CNAMEData(Fqdn("newcname.com.")), CNAME),
     makeSingleDeleteRRSetChange("txtToUpdate", TXT),
     makeSingleAddChange("txtToUpdate", TXTData("update"), TXT),
     makeSingleDeleteRRSetChange("mxToUpdate", MX),
-    makeSingleAddChange("mxToUpdate", MXData(1, "update.com."), MX)
+    makeSingleAddChange("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
   )
 
   private val updateChangeForValidationGood = List(
     makeDeleteRRSetChangeForValidation("aToUpdate", A),
     makeAddChangeForValidation("aToUpdate", AData("1.1.1.1")),
     makeDeleteRRSetChangeForValidation("cnameToUpdate", CNAME),
-    makeAddChangeForValidation("cnameToUpdate", CNAMEData("newcname.com."), CNAME),
+    makeAddChangeForValidation("cnameToUpdate", CNAMEData(Fqdn("newcname.com.")), CNAME),
     makeDeleteRRSetChangeForValidation("txtToUpdate", TXT),
     makeAddChangeForValidation("txtToUpdate", TXTData("update"), TXT),
     makeDeleteRRSetChangeForValidation("mxToUpdate", MX),
-    makeAddChangeForValidation("mxToUpdate", MXData(1, "update.com."), MX)
+    makeAddChangeForValidation("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
   )
 
   private val singleChangesOneBad = List(
@@ -201,7 +202,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("old.com."))
+    List(CNAMEData(Fqdn("old.com.")))
   )
   private val aToUpdate = RecordSet(
     okZone.id,
@@ -221,7 +222,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(CNAMEData("old.com."))
+    List(CNAMEData(Fqdn("old.com.")))
   )
   private val txtToUpdate = RecordSet(
     okZone.id,
@@ -251,7 +252,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(1, "old.com."))
+    List(MXData(1, Fqdn("old.com.")))
   )
   private val mxToDelete = RecordSet(
     okZone.id,
@@ -261,7 +262,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(MXData(1, "delete.com."))
+    List(MXData(1, Fqdn("delete.com.")))
   )
   private def existingRecordSets =
     ExistingRecordSets(

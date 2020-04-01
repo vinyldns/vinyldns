@@ -48,10 +48,10 @@ object ZoneRecordValidations {
       approvedServerList: List[Regex],
       nsData: NSData
   ): ValidatedNel[String, NSData] =
-    if (isStringInRegexList(approvedServerList, nsData.nsdname)) {
+    if (isStringInRegexList(approvedServerList, nsData.nsdname.fqdn)) {
       nsData.validNel[String]
     } else {
-      s"Name Server ${nsData.nsdname} is not an approved name server.".invalidNel[NSData]
+      s"Name Server ${nsData.nsdname.fqdn} is not an approved name server.".invalidNel[NSData]
     }
 
   /* Inspects each record in the rdata, returning back the record set itself or all ns records that are not approved */
