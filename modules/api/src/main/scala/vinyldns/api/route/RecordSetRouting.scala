@@ -38,6 +38,7 @@ case class ListGlobalRecordSetsResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: String,
     recordTypeFilter: Option[Set[RecordType]] = None,
+    recordOwnerGroupFilter: Option[String] = None,
     nameSort: NameSort
 )
 
@@ -48,6 +49,7 @@ case class ListRecordSetsByZoneResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None,
     recordTypeFilter: Option[Set[RecordType]] = None,
+    recordOwnerGroupFilter: Option[String] = None,
     nameSort: NameSort
 )
 
@@ -91,6 +93,7 @@ class RecordSetRoute(
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "recordNameFilter".?,
           "recordTypeFilter".?,
+          "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC")
         ) {
           (
@@ -98,6 +101,7 @@ class RecordSetRoute(
               maxItems: Int,
               recordNameFilter: Option[String],
               recordTypeFilter: Option[String],
+              recordOwnerGroupFilter: Option[String],
               nameSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
@@ -114,6 +118,7 @@ class RecordSetRoute(
                       Some(maxItems),
                       recordNameFilter,
                       convertedRecordTypeFilter,
+                      recordOwnerGroupFilter,
                       NameSort.find(nameSort),
                       _
                     )
@@ -132,6 +137,7 @@ class RecordSetRoute(
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "recordNameFilter".as[String],
           "recordTypeFilter".?,
+          "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC")
         ) {
           (
@@ -139,6 +145,7 @@ class RecordSetRoute(
               maxItems: Int,
               recordNameFilter: String,
               recordTypeFilter: Option[String],
+              recordOwnerGroupFilter: Option[String],
               nameSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
@@ -154,6 +161,7 @@ class RecordSetRoute(
                       Some(maxItems),
                       recordNameFilter,
                       convertedRecordTypeFilter,
+                      recordOwnerGroupFilter,
                       NameSort.find(nameSort),
                       _
                     )
