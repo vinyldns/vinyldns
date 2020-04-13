@@ -18,7 +18,7 @@
     'use strict';
 
     angular.module('recordset')
-        .controller('RecordSetsController', function($scope, $log, $location, $timeout, recordsService, utilityService, pagingService){
+        .controller('RecordSetsController', function($scope, $log, $location, $timeout, recordsService, utilityService, pagingService, groupsService){
 
             $scope.recordSet = {};
             $scope.recordSetChanges = {};
@@ -27,6 +27,7 @@
             $scope.nameSortSymbol = "fa-chevron-up";
             $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
             $scope.selectedRecordTypes = [];
+            $scope.groups = [];
 
             // paging status for recordsets
             var recordsPaging = pagingService.getNewPagingParams(100);
@@ -40,12 +41,20 @@
                 }
 
                 return recordsService
-                    .listRecordSets(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                    .listRecordSets(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.ownerGroupFilter)
                     .then(success)
                     .catch(function (error) {
                         handleError(error, 'dnsChangesService::getRecordSet-failure');
                     });
             };
+
+            groupsService.getGroups(true)
+                .then(function (results) {
+                    $scope.groups = results['data']['groups'];
+                })
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getGroups-failure');
+                });
 
             function handleError(error, type) {
                 console.log(error);
@@ -106,7 +115,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(recordsPaging);
                 return recordsService
-                    .listRecordSets(recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                    .listRecordSets(recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
                     .then(function(response) {
                         recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                         updateRecordDisplay(response.data.recordSets);
@@ -118,7 +127,7 @@
 
             $scope.nextPage = function() {
                 return recordsService
-                        .listRecordSets(recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                        .listRecordSets(recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
                         .then(function(response) {
                         var recordSets = response.data.recordSets;
                         recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);

@@ -181,7 +181,8 @@ class RecordSetRoutingSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1"))
+    List(AData("10.1.1.1")),
+    ownerGroupId = Some("my-group")
   )
 
   private val rs3 = RecordSet(
@@ -516,6 +517,7 @@ class RecordSetRoutingSpec
         maxItems: Option[Int],
         recordNameFilter: String,
         recordTypeFilter: Option[Set[RecordType]],
+        recordOwnerGroupFilter: Option[String],
         nameSort: NameSort,
         authPrincipal: AuthPrincipal
     ): Result[ListGlobalRecordSetsResponse] = {
@@ -530,22 +532,29 @@ class RecordSetRoutingSpec
             maxItems,
             "rs*",
             recordTypeFilter,
+            recordOwnerGroupFilter,
             nameSort
           )
         )
       } else {
-        Right(
-          ListGlobalRecordSetsResponse(
+        val recordSetList = recordOwnerGroupFilter match {
+          case Some("my-group") => List(RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None))
+          case _ =>
             List(
               RecordSetGlobalInfo(rs1, okZone.name, okZone.shared, None),
               RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None),
               RecordSetGlobalInfo(rs3, okZone.name, okZone.shared, None)
-            ),
+            )
+        }
+        Right(
+          ListGlobalRecordSetsResponse(
+            recordSetList,
             startFrom,
             None,
             maxItems,
             "rs*",
             recordTypeFilter,
+            None,
             nameSort
           )
         )
@@ -558,6 +567,7 @@ class RecordSetRoutingSpec
         maxItems: Option[Int],
         recordNameFilter: Option[String],
         recordTypeFilter: Option[Set[RecordType]],
+        recordOwnerGroupFilter: Option[String],
         nameSort: NameSort,
         authPrincipal: AuthPrincipal
     ): Result[ListRecordSetsByZoneResponse] = {
@@ -574,6 +584,7 @@ class RecordSetRoutingSpec
               maxItems,
               recordNameFilter,
               recordTypeFilter,
+              recordOwnerGroupFilter,
               nameSort
             )
           )
@@ -590,6 +601,7 @@ class RecordSetRoutingSpec
               maxItems,
               recordNameFilter,
               recordTypeFilter,
+              None,
               nameSort
             )
           )
@@ -953,6 +965,15 @@ class RecordSetRoutingSpec
         val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs1.id, rs2.id, rs3.id)
+      }
+    }
+
+    "return all recordsets of a specific owner group" in {
+      Get(s"/recordsets?recordNameFilter=rs*&recordOwnerGroupFilter=my-group") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[ListGlobalRecordSetsResponse]
+        (resultRs.recordSets.map(_.id) should contain)
+          .only(rs2.id)
       }
     }
   }

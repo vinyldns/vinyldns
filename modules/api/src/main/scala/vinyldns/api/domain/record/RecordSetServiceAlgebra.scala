@@ -52,6 +52,7 @@ trait RecordSetServiceAlgebra {
       maxItems: Option[Int],
       recordNameFilter: String,
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupId: Option[String],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListGlobalRecordSetsResponse]
@@ -62,6 +63,7 @@ trait RecordSetServiceAlgebra {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupId: Option[String],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsByZoneResponse]

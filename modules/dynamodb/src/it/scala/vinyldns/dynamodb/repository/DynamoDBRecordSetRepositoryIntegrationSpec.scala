@@ -98,6 +98,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -112,6 +113,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -197,6 +199,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -215,6 +218,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -229,6 +233,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -248,6 +253,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(1),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -261,6 +267,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(2),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -279,6 +286,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(6),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -298,6 +306,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(6),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -314,6 +323,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = Some(7),
         recordNameFilter = None,
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -335,6 +345,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = None,
         recordNameFilter = Some("AAAA"),
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -353,6 +364,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = None,
         recordNameFilter = Some("A"),
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -373,6 +385,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         maxItems = None,
         recordNameFilter = Some("Dummy"),
         recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
         nameSort = NameSort.ASC
       )
 
@@ -426,6 +439,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
+            recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC
           )
 

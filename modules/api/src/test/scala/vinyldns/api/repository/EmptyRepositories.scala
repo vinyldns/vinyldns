@@ -52,6 +52,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupFilter: Option[String],
       nameSort: NameSort
   ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort))

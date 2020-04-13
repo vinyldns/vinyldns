@@ -180,6 +180,7 @@ class RecordSetService(
       maxItems: Option[Int],
       recordNameFilter: String,
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupFilter: Option[String],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListGlobalRecordSetsResponse] =
@@ -193,6 +194,7 @@ class RecordSetService(
           maxItems,
           Some(formattedRecordNameFilter),
           recordTypeFilter,
+          recordOwnerGroupFilter,
           nameSort
         )
         .toResult[ListRecordSetResults]
@@ -208,6 +210,7 @@ class RecordSetService(
       recordSetResults.maxItems,
       recordNameFilter,
       recordSetResults.recordTypeFilter,
+      recordSetResults.recordOwnerGroupFilter,
       recordSetResults.nameSort
     )
 
@@ -217,6 +220,7 @@ class RecordSetService(
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupFilter: Option[String],
       nameSort: NameSort,
       authPrincipal: AuthPrincipal
   ): Result[ListRecordSetsByZoneResponse] =
@@ -230,6 +234,7 @@ class RecordSetService(
           maxItems,
           recordNameFilter,
           recordTypeFilter,
+          recordOwnerGroupFilter,
           nameSort
         )
         .toResult[ListRecordSetResults]
@@ -244,6 +249,7 @@ class RecordSetService(
       recordSetResults.maxItems,
       recordSetResults.recordNameFilter,
       recordSetResults.recordTypeFilter,
+      recordSetResults.recordOwnerGroupFilter,
       recordSetResults.nameSort
     )
 
