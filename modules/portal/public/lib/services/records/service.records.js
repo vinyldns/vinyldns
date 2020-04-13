@@ -19,22 +19,28 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSets = function (limit, startFrom, nameFilter, typeFilter, nameSort) {
+        this.listRecordSets = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
             if (typeFilter == "") {
                 typeFilter = null;
             }
             if (nameSort == "") {
                 nameSort = null;
             }
+
+            if (ownerGroupFilter == "") {
+                ownerGroupFilter = null;
+            }
+
             var params = {
                 "maxItems": limit,
                 "startFrom": startFrom,
                 "recordNameFilter": nameFilter,
                 "recordTypeFilter": typeFilter,
-                "nameSort": nameSort
+                "nameSort": nameSort,
+                "recordOwnerGroupFilter": ownerGroupFilter
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
-            return $http.get(url);
+            return $http.get(url)
         };
 
         this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort) {
