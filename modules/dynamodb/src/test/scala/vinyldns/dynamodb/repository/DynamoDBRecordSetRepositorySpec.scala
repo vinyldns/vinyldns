@@ -185,7 +185,8 @@ class DynamoDBRecordSetRepositorySpec
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordOwnerGroupFilter = None
         )
         .unsafeRunSync()
 
@@ -209,7 +210,15 @@ class DynamoDBRecordSetRepositorySpec
 
       val response =
         store
-          .listRecordSets(Some(rsOk.zoneId), None, Some(3), None, None, NameSort.ASC)
+          .listRecordSets(
+            Some(rsOk.zoneId),
+            None,
+            Some(3),
+            None,
+            None,
+            None,
+            NameSort.ASC
+          )
           .unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -227,7 +236,8 @@ class DynamoDBRecordSetRepositorySpec
         maxItems = None,
         recordNameFilter = None,
         recordTypeFilter = None,
-        nameSort = NameSort.ASC
+        nameSort = NameSort.ASC,
+        recordOwnerGroupFilter = None
       )
     }
 
@@ -240,7 +250,8 @@ class DynamoDBRecordSetRepositorySpec
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordOwnerGroupFilter = None
         )
         .unsafeRunSync()
     }

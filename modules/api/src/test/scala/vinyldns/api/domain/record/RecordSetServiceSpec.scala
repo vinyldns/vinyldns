@@ -974,7 +974,8 @@ class RecordSetServiceSpec
           ListRecordSetResults(
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = Some("owner group id")
           )
         )
       ).when(mockRecordRepo)
@@ -984,6 +985,7 @@ class RecordSetServiceSpec
           maxItems = any[Option[Int]],
           recordNameFilter = any[Option[String]],
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort]
         )
 
@@ -994,6 +996,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = "aaaa*",
             recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = sharedAuth
           )
@@ -1010,7 +1013,7 @@ class RecordSetServiceSpec
         )
     }
 
-    "fail if recordNameFilter is less than two characters" in {
+    "fail if recordNameFilter is fewer than two characters" in {
       val result = leftResultOf(
         underTest
           .listRecordSets(
@@ -1018,6 +1021,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = "a",
             recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = okAuth
           )
@@ -1047,6 +1051,7 @@ class RecordSetServiceSpec
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
+          recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC
         )
 
@@ -1059,6 +1064,7 @@ class RecordSetServiceSpec
             recordNameFilter = None,
             authPrincipal = sharedAuth,
             recordTypeFilter = None,
+            recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC
           )
           .value
@@ -1088,6 +1094,7 @@ class RecordSetServiceSpec
           maxItems = None,
           recordNameFilter = None,
           recordTypeFilter = None,
+          recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC
         )
 
@@ -1099,6 +1106,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
+            recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
             authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
           )
@@ -1117,6 +1125,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = None,
             recordTypeFilter = None,
+            recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
             authPrincipal = okAuth
           )

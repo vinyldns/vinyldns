@@ -170,7 +170,7 @@ class ZoneSyncHandlerSpec
     reset(mockVinylDNSLoader)
 
     doReturn(
-      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, NameSort.ASC))
+      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, None, NameSort.ASC))
     ).when(recordSetRepo)
       .listRecordSets(
         any[Option[String]],
@@ -178,6 +178,7 @@ class ZoneSyncHandlerSpec
         any[Option[Int]],
         any[Option[String]],
         any[Option[Set[RecordType]]],
+        any[Option[String]],
         any[NameSort]
       )
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[ChangeSet])
