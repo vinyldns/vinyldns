@@ -31,6 +31,7 @@ trait RecordSetRepository extends Repository {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupFilter: Option[String],
       nameSort: NameSort
   ): IO[ListRecordSetResults]
 

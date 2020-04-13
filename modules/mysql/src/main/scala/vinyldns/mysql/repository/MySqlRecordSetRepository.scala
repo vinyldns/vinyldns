@@ -176,16 +176,20 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       maxItems: Option[Int],
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
+      recordOwnerGroupFilter: Option[String],
       nameSort: NameSort
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
+          val maxPlusOne = maxItems.map(_ + 1)
+
+          // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(s"""WHERE zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' """)
-            case (None, Some(fqdn)) => Some(s"""WHERE fqdn LIKE '${fqdn.replace('*', '%')}' """)
-            case (Some(zId), None) => Some(s"""WHERE zone_id = '$zId' """)
+              Some(s"zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' ")
+            case (None, Some(fqdn)) => Some(s"fqdn LIKE '${fqdn.replace('*', '%')}' ")
+            case (Some(zId), None) => Some(s"zone_id = '$zId' ")
             case _ => None
           }
 
@@ -196,40 +200,49 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                "AND ((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+                "((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
-                "AND ((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+                "((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
               )
             case (false, NameSort.DESC) =>
               pagingKey.as(
-                "AND ((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+                "((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
               )
             case _ =>
               pagingKey.as(
-                "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+                "((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
               )
           }
 
           val typeFilter = recordTypeFilter.map { t =>
             val list = t.map(fromRecordType).mkString(",")
-            s"""AND type IN ($list)"""
+            s"type IN ($list)"
           }
 
-          val maxPlusOne = maxItems.map(_ + 1)
+          val ownerGroupFilter =
+            recordOwnerGroupFilter.map(owner => s"owner_group_id = '$owner' ")
 
-          val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++
-            Some(s"""ORDER BY fqdn ${nameSort.toString}, type ASC""") ++
-            maxPlusOne.as("LIMIT {maxItems}")).toList.mkString(" ")
+          val opts =
+            (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+
+          val qualifiers = new StringBuilder()
+          qualifiers.append(s" ORDER BY fqdn ${nameSort.toString}, type ASC ")
+          maxPlusOne.foreach(limit => qualifiers.append(s"LIMIT $limit"))
 
           val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
-            pagingKey.map(pk => 'startFromType -> pk.recordType) ++
-            maxPlusOne.map(m => 'maxItems -> m)).toSeq
+            pagingKey.map(pk => 'startFromType -> pk.recordType)).toSeq
 
-          val query = "SELECT data, fqdn FROM recordset " + opts
+          // construct query
+          val query = new StringBuilder()
+          query.append("SELECT data, fqdn FROM recordset")
+          if (opts.nonEmpty) {
+            query.append(" WHERE ").append(opts.mkString(" AND "))
+          }
+          query.append(qualifiers)
 
-          val results = SQL(query)
+          val results = SQL(query.toString())
             .bindByName(params: _*)
             .map(toRecordSet)
             .list()
