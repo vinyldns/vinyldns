@@ -32,8 +32,8 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
 
   private final val PUT_GROUP =
     sql"""
-         |REPLACE INTO groups(id, name, data)
-         | VALUES ({id}, {name}, {data})
+         |REPLACE INTO groups(id, name, data, description, created_timestamp, email)
+         | VALUES ({id}, {name}, {data}, {description}, {createdTimestamp}, {email})
        """.stripMargin
 
   private final val DELETE_GROUP =
@@ -78,7 +78,10 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
             .bindByName(
               'id -> group.id,
               'name -> group.name,
-              'data -> fromGroup(group)
+              'data -> fromGroup(group),
+              'description -> group.description,
+              'createdTimestamp -> group.created,
+              'email -> group.email
             )
             .update()
             .apply()
