@@ -80,7 +80,6 @@
                 } else {
                     $scope.selectedRecordTypes.push(recordType);
                 }
-                return $scope.refreshRecords();
             };
 
             function updateRecordDisplay(records) {
