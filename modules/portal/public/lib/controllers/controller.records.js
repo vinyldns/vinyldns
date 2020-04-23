@@ -533,7 +533,7 @@ angular.module('controller.records', [])
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
 
-                if(recordSets.length > 0 ){
+                if (recordSets.length > 0){
                     updateRecordDisplay(recordSets);
                 }
             })
@@ -555,11 +555,10 @@ angular.module('controller.records', [])
 
     $scope.toggleCheckedRecordType = function(recordType) {
         if($scope.selectedRecordTypes.includes(recordType)) {
-            $scope.selectedRecordTypes.splice($scope.selectedRecordTypes.indexOf(recordType),1)
+            $scope.selectedRecordTypes.splice($scope.selectedRecordTypes.indexOf(recordType), 1);
         } else {
             $scope.selectedRecordTypes.push(recordType);
         }
-        return $scope.refreshRecords();
     };
 
     /**
