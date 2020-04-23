@@ -389,6 +389,7 @@ describe('Controller: RecordsController', function () {
         var expectedSort = "asc";
 
         this.scope.toggleCheckedRecordType("A");
+        this.scope.refreshRecords();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
