@@ -59,8 +59,8 @@ services:
       - mysql
       - bind9
       - localstack
-    logging:
-      driver: none
+#    logging:
+#      driver: none
 
   functest:
     build:

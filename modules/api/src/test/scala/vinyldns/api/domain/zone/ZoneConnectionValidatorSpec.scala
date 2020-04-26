@@ -60,7 +60,7 @@ class ZoneConnectionValidatorSpec
     case "error." => IO.raiseError(new RuntimeException("transfer connection failure!"))
     case "timeout." =>
       IO {
-        Thread.sleep(100)
+        Thread.sleep(200)
         mockZoneView
       }
     case _ =>
@@ -243,25 +243,6 @@ class ZoneConnectionValidatorSpec
       result.getMessage should include("transfer connection failure!")
     }
 
-    "respond with a failure if loadDns times out" in {
-      val badZone = Zone(
-        "timeout.",
-        "test@test.com",
-        connection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-        transferConnection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
-      )
-
-      doReturn(List(mockRecordSet).toResult)
-        .when(mockDnsConnection)
-        .resolve(badZone.name, badZone.name, RecordType.SOA)
-
-      val result = underTest.validateZoneConnections(badZone).value.unsafeRunSync()
-      val error = result.leftValue
-      error shouldBe a[ConnectionFailed]
-      error.getMessage should include("Transfer connection invalid")
-    }
     "isValidBackendId" should {
       val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
       val underTest =

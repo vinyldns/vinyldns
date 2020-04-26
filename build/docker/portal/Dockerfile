@@ -1,4 +1,4 @@
-FROM hseeberger/scala-sbt:8u212_1.2.8_2.12.9 as builder
+FROM hseeberger/scala-sbt:11.0.7_1.3.10_2.11.12 as builder
 
 ARG BRANCH=master
 ARG VINYLDNS_VERSION
@@ -20,7 +20,7 @@ RUN apt-get update \
 
 RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
 
-FROM openjdk:8u201-jdk-alpine3.9
+FROM adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine
 
 RUN apk add --update --no-cache netcat-openbsd bash
 

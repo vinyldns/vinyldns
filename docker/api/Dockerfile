@@ -1,4 +1,4 @@
-FROM openjdk:8u201-jdk-alpine3.9
+FROM adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine
 
 RUN apk add --update --no-cache netcat-openbsd bash
 
