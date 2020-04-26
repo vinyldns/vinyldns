@@ -19,20 +19,24 @@ package vinyldns.dynamodb
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.repository.{DataStoreConfig, RepositoriesConfig}
 import vinyldns.dynamodb.repository.DynamoDBRepositorySettings
+import pureconfig._
+import pureconfig.generic.auto._
 
 object DynamoTestConfig {
 
   lazy val config: Config = ConfigFactory.load()
 
   lazy val dynamoDBConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
+    ConfigSource.fromConfig(config).at("dynamodb").loadOrThrow[DataStoreConfig]
 
   lazy val baseReposConfigs: RepositoriesConfig = dynamoDBConfig.repositories
   lazy val zoneChangeStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.zoneChange.get)
+    ConfigSource.fromConfig(baseReposConfigs.zoneChange.get).loadOrThrow[DynamoDBRepositorySettings]
 
   lazy val recordChangeStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.recordChange.get)
+    ConfigSource
+      .fromConfig(baseReposConfigs.recordChange.get)
+      .loadOrThrow[DynamoDBRepositorySettings]
 
   // Needed for testing DynamoDBUserRepository, but can't include in config directly due to not being implemented
   lazy val usertableConfig: Config = ConfigFactory.parseString("""
@@ -42,15 +46,16 @@ object DynamoTestConfig {
     """.stripMargin)
 
   lazy val usersStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](usertableConfig)
+    ConfigSource.fromConfig(usertableConfig).loadOrThrow[DynamoDBRepositorySettings]
 
   lazy val groupsStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.group.get)
+    ConfigSource.fromConfig(baseReposConfigs.group.get).loadOrThrow[DynamoDBRepositorySettings]
 
   lazy val groupChangesStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.groupChange.get)
+    ConfigSource
+      .fromConfig(baseReposConfigs.groupChange.get)
+      .loadOrThrow[DynamoDBRepositorySettings]
 
   lazy val membershipStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.membership.get)
-
+    ConfigSource.fromConfig(baseReposConfigs.membership.get).loadOrThrow[DynamoDBRepositorySettings]
 }

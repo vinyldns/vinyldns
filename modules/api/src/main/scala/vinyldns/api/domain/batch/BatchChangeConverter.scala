@@ -18,7 +18,6 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.syntax.list._
-import cats.syntax.functor._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._

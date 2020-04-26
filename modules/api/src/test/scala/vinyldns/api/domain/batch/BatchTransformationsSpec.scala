@@ -16,11 +16,12 @@
 
 package vinyldns.api.domain.batch
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.batch.BatchTransformations.ExistingZones
 import vinyldns.core.domain.zone.Zone
 
-class BatchTransformationsSpec extends WordSpec with Matchers {
+class BatchTransformationsSpec extends AnyWordSpec with Matchers {
 
   "ExistingZones" should {
     val ip4base1 = Zone("1.2.3.in-addr.arpa.", "test")

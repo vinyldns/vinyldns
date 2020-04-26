@@ -23,8 +23,10 @@ import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS
 import org.xbill.DNS.{Lookup, Name}
 import vinyldns.api.ResultHelpers
@@ -37,7 +39,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 import scala.collection.JavaConverters._
 
 class DnsConnectionSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

@@ -17,10 +17,11 @@
 package vinyldns.core.domain.batch
 
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.{AData, RecordType}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class BatchChangeSummarySpec extends WordSpec with Matchers {
+class BatchChangeSummarySpec extends AnyWordSpec with Matchers {
   private val pendingChange = SingleAddChange(
     Some("zoneid"),
     Some("zonename"),

@@ -20,6 +20,8 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
@@ -28,7 +30,7 @@ import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 
 class MySqlRecordSetRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Matchers
@@ -51,7 +53,11 @@ class MySqlRecordSetRepositoryIntegrationSpec
     val newRecordSets =
       for {
         i <- 1 to count
-      } yield aaaa.copy(zoneId = zone.id, name = s"$i-${word}-apply-test", id = UUID.randomUUID().toString)
+      } yield aaaa.copy(
+        zoneId = zone.id,
+        name = s"$i-${word}-apply-test",
+        id = UUID.randomUUID().toString
+      )
 
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
@@ -69,9 +75,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
     ()
   }
 
-  def recordSetWithFQDN(recordSet: RecordSet, zone: Zone): RecordSet = {
+  def recordSetWithFQDN(recordSet: RecordSet, zone: Zone): RecordSet =
     recordSet.copy(fqdn = Some(s"""${recordSet.name}.${zone.name}"""))
-  }
 
   "apply" should {
     "properly revert changes that fail processing" in {
@@ -143,7 +148,10 @@ class MySqlRecordSetRepositoryIntegrationSpec
       )
       repo.apply(ChangeSet(existingPending)).unsafeRunSync()
       repo.getRecordSet(failedChange.recordSet.id).unsafeRunSync() shouldBe
-        Some(existingPending.recordSet.copy(fqdn=Some(s"""${failedChange.recordSet.name}.${okZone.name}""")))
+        Some(
+          existingPending.recordSet
+            .copy(fqdn = Some(s"""${failedChange.recordSet.name}.${okZone.name}"""))
+        )
 
       repo.apply(ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
 
@@ -164,13 +172,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
     }
 
     "apply successful updates and revert records for failed updates" in {
-      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", name="success", ttl = 100, id = "success")
+      val oldSuccess =
+        aaaa.copy(zoneId = "test-update-converter", name = "success", ttl = 100, id = "success")
       val updateSuccess = oldSuccess.copy(ttl = 200)
 
-      val oldPending = aaaa.copy(zoneId = "test-update-converter", name="pending", ttl = 100, id = "pending")
+      val oldPending =
+        aaaa.copy(zoneId = "test-update-converter", name = "pending", ttl = 100, id = "pending")
       val updatePending = oldPending.copy(ttl = 200, status = RecordSetStatus.PendingUpdate)
 
-      val oldFailure = aaaa.copy(zoneId = "test-update-converter", name="failure", ttl = 100, id = "failed")
+      val oldFailure =
+        aaaa.copy(zoneId = "test-update-converter", name = "failure", ttl = 100, id = "failed")
       val updateFailure = oldFailure.copy(ttl = 200, status = RecordSetStatus.Inactive)
 
       val successfulUpdate = makeCompleteTestUpdateChange(oldSuccess, updateSuccess)
@@ -213,7 +224,12 @@ class MySqlRecordSetRepositoryIntegrationSpec
       repo
         .getRecordSet(failedUpdate.recordSet.id)
         .unsafeRunSync() shouldNot
-        be(Some(failedUpdate.recordSet.copy(fqdn=Some(s"""${successfulUpdate.recordSet.name}.${okZone.name}"""))))
+        be(
+          Some(
+            failedUpdate.recordSet
+              .copy(fqdn = Some(s"""${successfulUpdate.recordSet.name}.${okZone.name}"""))
+          )
+        )
     }
 
     "apply successful deletes, save pending deletes, and revert failed deletes" in {
@@ -385,26 +401,40 @@ class MySqlRecordSetRepositoryIntegrationSpec
   "list record sets" should {
     "return all record sets in a zone when optional params are not set" in {
       val existing = insert(okZone, 10).map(_.recordSet)
-      val found = repo.listRecordSets(Some(okZone.id), None, None, None, None, None, NameSort.ASC).unsafeRunSync()
-      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone))
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, None, None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing.map(
+        r => recordSetWithFQDN(r, okZone)
+      )
     }
     "return record sets after the startFrom when set" in {
       // load 5, start after the 3rd, we should get back the last two
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
       val startFrom = Some(PagingKey.toNextId(existing(2), true))
-      val found = repo.listRecordSets(Some(okZone.id), startFrom, None, None, None, None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), startFrom, None, None, None, None, NameSort.ASC)
+        .unsafeRunSync()
 
-      (found.recordSets should contain).theSameElementsInOrderAs(existing.drop(3)
-        .map(r => recordSetWithFQDN(r, okZone)))
+      (found.recordSets should contain).theSameElementsInOrderAs(
+        existing
+          .drop(3)
+          .map(r => recordSetWithFQDN(r, okZone))
+      )
     }
     "return the record sets after the startFrom respecting maxItems" in {
       // load 5, start after the 2nd, take 2, we should get back the 3rd and 4th
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
       val startFrom = Some(PagingKey.toNextId(existing(1), true))
-      val found = repo.listRecordSets(Some(okZone.id), startFrom, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), startFrom, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
 
-      (found.recordSets should contain).theSameElementsInOrderAs(existing.slice(2, 4)
-        .map(r => recordSetWithFQDN(r, okZone)))
+      (found.recordSets should contain).theSameElementsInOrderAs(
+        existing
+          .slice(2, 4)
+          .map(r => recordSetWithFQDN(r, okZone))
+      )
     }
     "return the record sets after startFrom respecting maxItems and filter" in {
       val recordNames =
@@ -420,9 +450,17 @@ class MySqlRecordSetRepositoryIntegrationSpec
       insert(changes)
 
       val startFrom = Some(PagingKey.toNextId(newRecordSets(1), true))
-      val found = repo.listRecordSets(
-        Some(okZone.id), startFrom, Some(3), Some("*z*"), None, None, NameSort.ASC
-      ).unsafeRunSync()
+      val found = repo
+        .listRecordSets(
+          Some(okZone.id),
+          startFrom,
+          Some(3),
+          Some("*z*"),
+          None,
+          None,
+          NameSort.ASC
+        )
+        .unsafeRunSync()
       (found.recordSets.map(_.name) should contain).theSameElementsInOrderAs(expectedNames)
     }
     "return record sets using starts with wildcard" in {
@@ -437,7 +475,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       insert(changes)
 
-      val found = repo.listRecordSets(Some(okZone.id), None, Some(3), Some("aa*"), None, None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, Some(3), Some("aa*"), None, None, NameSort.ASC)
+        .unsafeRunSync()
       (found.recordSets.map(_.name) should contain).theSameElementsInOrderAs(expectedNames)
     }
     "return record sets using ends with wildcard" in {
@@ -452,7 +492,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       insert(changes)
 
-      val found = repo.listRecordSets(Some(okZone.id), None, Some(3), Some("*b"), None, None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, Some(3), Some("*b"), None, None, NameSort.ASC)
+        .unsafeRunSync()
       (found.recordSets.map(_.name) should contain).theSameElementsInOrderAs(expectedNames)
     }
     "return record sets exact match with no wildcards" in {
@@ -468,37 +510,60 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       insert(changes)
 
-      val found = repo.listRecordSets(Some(okZone.id), None, Some(3), Some("aaa"), None, None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, Some(3), Some("aaa"), None, None, NameSort.ASC)
+        .unsafeRunSync()
       (found.recordSets.map(_.name) should contain).theSameElementsInOrderAs(expectedNames)
     }
     "return select types of recordsets in a zone" in {
       insert(okZone, 10).map(_.recordSet)
-      val found = repo.listRecordSets(Some(okZone.id), None, None, None, Some(Set(CNAME)), None, NameSort.ASC).unsafeRunSync()
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, None, None, Some(Set(CNAME)), None, NameSort.ASC)
+        .unsafeRunSync()
       found.recordSets shouldBe List()
       found.recordTypeFilter shouldBe Some(Set(CNAME))
     }
     "return all recordsets in a zone in descending order" in {
       val existing = insert(okZone, 10).map(_.recordSet)
-      val found = repo.listRecordSets(Some(okZone.id), None, None, None, None, None, NameSort.DESC).unsafeRunSync()
-      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone))
+      val found = repo
+        .listRecordSets(Some(okZone.id), None, None, None, None, None, NameSort.DESC)
+        .unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing.map(
+        r => recordSetWithFQDN(r, okZone)
+      )
       found.nameSort shouldBe NameSort.DESC
     }
     "pages through the list properly" in {
       // load 5 records, pages of 2, last page should have 1 result and no next id
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
-      val page1 = repo.listRecordSets(Some(okZone.id), None, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page1.recordSets should contain).theSameElementsInOrderAs(existing.slice(0, 2)
-        .map(r => recordSetWithFQDN(r, okZone)))
+      val page1 = repo
+        .listRecordSets(Some(okZone.id), None, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page1.recordSets should contain).theSameElementsInOrderAs(
+        existing
+          .slice(0, 2)
+          .map(r => recordSetWithFQDN(r, okZone))
+      )
       page1.nextId shouldBe Some(PagingKey.toNextId(page1.recordSets(1), true))
 
-      val page2 = repo.listRecordSets(Some(okZone.id), page1.nextId, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page2.recordSets should contain).theSameElementsInOrderAs(existing.slice(2, 4)
-        .map(r => recordSetWithFQDN(r, okZone)))
+      val page2 = repo
+        .listRecordSets(Some(okZone.id), page1.nextId, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page2.recordSets should contain).theSameElementsInOrderAs(
+        existing
+          .slice(2, 4)
+          .map(r => recordSetWithFQDN(r, okZone))
+      )
       page2.nextId shouldBe Some(PagingKey.toNextId(page2.recordSets(1), true))
 
-      val page3 = repo.listRecordSets(Some(okZone.id), page2.nextId, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page3.recordSets should contain).theSameElementsInOrderAs(existing.slice(4, 5)
-        .map(r => recordSetWithFQDN(r, okZone)))
+      val page3 = repo
+        .listRecordSets(Some(okZone.id), page2.nextId, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page3.recordSets should contain).theSameElementsInOrderAs(
+        existing
+          .slice(4, 5)
+          .map(r => recordSetWithFQDN(r, okZone))
+      )
       page3.nextId shouldBe None
     }
     "page properly when records have the same name" in {
@@ -514,40 +579,58 @@ class MySqlRecordSetRepositoryIntegrationSpec
       insert(editedChanges)
       val existing = editedChanges.map(_.recordSet)
 
-      val page1 = repo.listRecordSets(Some(okZone.id), None, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page1.recordSets should contain).theSameElementsInOrderAs(List(
-        recordSetWithFQDN(existing.head, okZone),
-        recordSetWithFQDN(existing(1), okZone)))
+      val page1 = repo
+        .listRecordSets(Some(okZone.id), None, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page1.recordSets should contain).theSameElementsInOrderAs(
+        List(recordSetWithFQDN(existing.head, okZone), recordSetWithFQDN(existing(1), okZone))
+      )
       page1.nextId shouldBe Some(PagingKey.toNextId(page1.recordSets.last, true))
 
-      val page2 = repo.listRecordSets(Some(okZone.id), page1.nextId, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page2.recordSets should contain).theSameElementsInOrderAs(List(
-        recordSetWithFQDN(existing(2), okZone), recordSetWithFQDN(existing(3), okZone)))
+      val page2 = repo
+        .listRecordSets(Some(okZone.id), page1.nextId, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page2.recordSets should contain).theSameElementsInOrderAs(
+        List(recordSetWithFQDN(existing(2), okZone), recordSetWithFQDN(existing(3), okZone))
+      )
       page2.nextId shouldBe Some(PagingKey.toNextId(page2.recordSets.last, true))
 
-      val page3 = repo.listRecordSets(Some(okZone.id), page2.nextId, Some(2), None, None, None, NameSort.ASC).unsafeRunSync()
-      (page3.recordSets should contain).theSameElementsInOrderAs(List(recordSetWithFQDN(existing(4), okZone)))
+      val page3 = repo
+        .listRecordSets(Some(okZone.id), page2.nextId, Some(2), None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+      (page3.recordSets should contain)
+        .theSameElementsInOrderAs(List(recordSetWithFQDN(existing(4), okZone)))
       page3.nextId shouldBe None
     }
     "return applicable recordsets in ascending order when recordNameFilter is given" in {
       val existing = insert(okZone, 10).map(_.recordSet)
-      val found = repo.listRecordSets(None, None, None, Some("*.ok*"), None, None, NameSort.ASC).unsafeRunSync()
-      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone))
+      val found = repo
+        .listRecordSets(None, None, None, Some("*.ok*"), None, None, NameSort.ASC)
+        .unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing.map(
+        r => recordSetWithFQDN(r, okZone)
+      )
     }
     "return applicable recordsets in descending order when recordNameFilter is given and name sort is descending" in {
       val existing = insert(okZone, 10).map(_.recordSet)
-      val found = repo.listRecordSets(None, None, None, Some("*.ok*"), None, None, NameSort.DESC).unsafeRunSync()
-      found.recordSets should contain theSameElementsAs existing.map(r => recordSetWithFQDN(r, okZone)).reverse
+      val found = repo
+        .listRecordSets(None, None, None, Some("*.ok*"), None, None, NameSort.DESC)
+        .unsafeRunSync()
+      found.recordSets should contain theSameElementsAs existing
+        .map(r => recordSetWithFQDN(r, okZone))
+        .reverse
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
-      val found = repo.listRecordSets(None, None, None, None, None, None, NameSort.ASC).unsafeRunSync()
+      val found =
+        repo.listRecordSets(None, None, None, None, None, None, NameSort.ASC).unsafeRunSync()
       found.recordSets shouldBe empty
     }
   }
   "get record sets by name and type" should {
     "return a record set when there is a match" in {
       val existing = insert(okZone, 1).map(_.recordSet)
-      val results = repo.getRecordSets(okZone.id, existing.head.name, existing.head.typ).unsafeRunSync()
+      val results =
+        repo.getRecordSets(okZone.id, existing.head.name, existing.head.typ).unsafeRunSync()
       results.headOption shouldBe Some(recordSetWithFQDN(existing.head, okZone))
     }
     "return none when there is no match" in {
@@ -607,7 +690,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val result = repo.getRecordSetsByFQDNs(Set("no-existo", fqdn1, fqdn2)).unsafeRunSync()
       result should contain theSameElementsAs List(
         recordSetWithFQDN(change1.recordSet, okZone),
-        recordSetWithFQDN(change2.recordSet, okZone))
+        recordSetWithFQDN(change2.recordSet, okZone)
+      )
     }
 
     "return records of different types with the same fqdn" in {
@@ -621,7 +705,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val result = repo.getRecordSetsByFQDNs(Set(fqdn)).unsafeRunSync()
       result should contain theSameElementsAs List(
         recordSetWithFQDN(aaaaChange.recordSet, okZone),
-        recordSetWithFQDN(mxChange.recordSet, okZone))
+        recordSetWithFQDN(mxChange.recordSet, okZone)
+      )
     }
 
     "return an empty list when given no ids" in {
@@ -643,11 +728,13 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val result1 = repo.getRecordSetsByFQDNs(Set(fqdn1)).unsafeRunSync()
       result1 should contain theSameElementsAs List(
         recordSetWithFQDN(change1.recordSet, okZone),
-        recordSetWithFQDN(change2.recordSet, okZone))
+        recordSetWithFQDN(change2.recordSet, okZone)
+      )
       val result2 = repo.getRecordSetsByFQDNs(Set(fqdn2)).unsafeRunSync()
       result2 should contain theSameElementsAs List(
         recordSetWithFQDN(change1.recordSet, okZone),
-        recordSetWithFQDN(change2.recordSet, okZone))
+        recordSetWithFQDN(change2.recordSet, okZone)
+      )
     }
   }
 

@@ -16,13 +16,14 @@
 
 package vinyldns.api.domain.record
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.record.{AData, RecordSet}
 
-class RecordSetChangeSpec extends WordSpec with Matchers {
+class RecordSetChangeSpec extends AnyWordSpec with Matchers {
 
   val apexRs: RecordSet = rsOk.copy(name = "@")
 

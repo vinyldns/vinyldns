@@ -40,10 +40,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.ws.WSClient
 import play.api.mvc.RequestHeader
+import pureconfig.generic.auto._
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
+import pureconfig.ConfigSource
 
 object OidcAuthenticator {
   final case class OidcConfig(
@@ -79,7 +81,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
   private val logger: Logger = LoggerFactory.getLogger(classOf[OidcAuthenticator])
   val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
   lazy val oidcInfo: OidcConfig =
-    pureconfig.loadConfigOrThrow[OidcConfig](configuration.underlying, "oidc")
+    ConfigSource.fromConfig(configuration.underlying).at("oidc").loadOrThrow[OidcConfig]
 
   lazy val clientID = new ClientID(oidcInfo.clientId)
   lazy val clientSecret = new Secret(oidcInfo.secret)

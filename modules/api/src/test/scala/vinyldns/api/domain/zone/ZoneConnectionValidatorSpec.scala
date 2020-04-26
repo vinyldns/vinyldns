@@ -19,8 +19,10 @@ package vinyldns.api.domain.zone
 import cats.scalatest.{EitherMatchers, EitherValues}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
@@ -33,7 +35,7 @@ import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, Zo
 import scala.concurrent.duration._
 
 class ZoneConnectionValidatorSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach

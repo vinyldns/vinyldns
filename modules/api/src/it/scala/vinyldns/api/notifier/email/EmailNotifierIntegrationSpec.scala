@@ -20,7 +20,8 @@ import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.notifier._
 import vinyldns.api.MySqlApiIntegrationSpec
 import vinyldns.mysql.MySqlIntegrationSpec
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
@@ -36,7 +37,7 @@ class EmailNotifierIntegrationSpec
     extends MySqlApiIntegrationSpec
     with MySqlIntegrationSpec
     with Matchers
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterEach {
 
   import vinyldns.api.domain.DomainValidations._

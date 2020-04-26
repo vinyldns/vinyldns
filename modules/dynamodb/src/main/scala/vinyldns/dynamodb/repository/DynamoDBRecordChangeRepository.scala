@@ -20,7 +20,6 @@ import java.nio.ByteBuffer
 import java.util.HashMap
 
 import cats.effect._
-import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}

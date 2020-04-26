@@ -15,10 +15,11 @@
  */
 
 package vinyldns.core.domain.membership
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestMembershipData._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GroupSpec extends WordSpec with Matchers {
+class GroupSpec extends AnyWordSpec with Matchers {
   "Group" should {
     "correctly adds a user as a member" in {
       val newGroup = emptyGroup.addMember(okUser)

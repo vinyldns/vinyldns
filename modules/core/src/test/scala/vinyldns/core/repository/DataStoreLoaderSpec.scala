@@ -20,17 +20,18 @@ import cats.data._
 import cats.syntax.validated._
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.repository.DataStoreLoader.DataLoaderResponse
 import vinyldns.core.repository.RepositoryName._
 
 import scala.collection.JavaConverters._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class DataStoreLoaderSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with EitherValues

@@ -18,7 +18,8 @@ package vinyldns.api.domain.zone
 
 import cats.scalatest.ValidatedMatchers
 import com.comcast.ip4s._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.{
   DomainValidationError,
   Fqdn,
@@ -28,7 +29,7 @@ import vinyldns.core.domain.{
 import vinyldns.core.domain.record._
 import vinyldns.core.TestRecordSetData._
 
-class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMatchers {
+class ZoneRecordValidationsSpec extends AnyWordSpec with Matchers with ValidatedMatchers {
 
   import vinyldns.api.domain.zone.ZoneRecordValidations._
 

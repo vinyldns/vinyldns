@@ -16,10 +16,11 @@
 
 package vinyldns.core.domain.record
 
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.DnsSecAlgorithm._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RecordDataSpec extends WordSpec with Matchers {
+class RecordDataSpec extends AnyWordSpec with Matchers {
 
   "DigestType" should {
     "Properly convert from int" in {

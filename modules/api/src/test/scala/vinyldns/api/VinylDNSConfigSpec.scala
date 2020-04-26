@@ -16,12 +16,13 @@
 
 package vinyldns.api
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.RepositoryName._
 
-class VinylDNSConfigSpec extends WordSpec with Matchers {
+class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
 
   "VinylDNSConfig" should {
     "load the rest config" in {

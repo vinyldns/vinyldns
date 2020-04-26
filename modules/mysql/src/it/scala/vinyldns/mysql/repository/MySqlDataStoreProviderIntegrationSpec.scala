@@ -17,10 +17,11 @@
 package vinyldns.mysql.repository
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.mysql.TestMySqlInstance
 
-class MySqlDataStoreProviderIntegrationSpec extends WordSpec with Matchers with EitherMatchers {
+class MySqlDataStoreProviderIntegrationSpec extends AnyWordSpec with Matchers with EitherMatchers {
 
   "MySqlDataStoreProvider" should {
     "Successfully healthcheck" in {

@@ -17,7 +17,6 @@
 package vinyldns.api.notifier.sns
 
 import cats.effect.IO
-import cats.syntax.functor._
 import com.amazonaws.services.sns.AmazonSNS
 import com.amazonaws.services.sns.model.{MessageAttributeValue, PublishRequest}
 import org.json4s.JsonAST.JNull

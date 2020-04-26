@@ -27,8 +27,10 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.BatchChangeIsEmpty
@@ -39,7 +41,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 
 class BatchChangeRoutingSpec()
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with MockitoSugar
     with VinylDNSJsonProtocol
@@ -542,12 +544,10 @@ class BatchChangeRoutingSpec()
 
     "return a 400 BadRequest for scheduled change disabled" in {
       val scheduledDisabledRequest = buildValidBatchChangeInputJson("scheduledDisabledRequest")
-
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, scheduledDisabledRequest)
       ) ~>
         Route.seal(batchChangeRoute) ~> check {
-
         response.entity.toString should include(ScheduledChangesDisabled.message)
         status shouldBe BadRequest
       }

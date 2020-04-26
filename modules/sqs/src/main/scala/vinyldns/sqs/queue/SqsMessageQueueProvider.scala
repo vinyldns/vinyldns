@@ -22,17 +22,26 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.slf4j.LoggerFactory
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
+import cats.effect.Blocker
 import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
 
 import scala.util.matching.Regex
+import cats.effect.ContextShift
 
 class SqsMessageQueueProvider extends MessageQueueProvider {
   import SqsMessageQueueProvider._
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
   def load(config: MessageQueueConfig): IO[MessageQueue] =
     for {
-      settingsConfig <- loadConfigF[IO, SqsMessageQueueSettings](config.settings)
+      settingsConfig <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, SqsMessageQueueSettings](_)
+      )
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)

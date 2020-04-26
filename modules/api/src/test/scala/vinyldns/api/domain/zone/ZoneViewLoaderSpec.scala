@@ -22,8 +22,9 @@ import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures.whenReady
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS
 import org.xbill.DNS.{Name, ZoneTransferIn}
 import vinyldns.api.domain.dns.DnsConversions
@@ -37,7 +38,7 @@ import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
-class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with DnsConversions {
+class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
   val testZoneName = "vinyldns."
 
   val testZoneConnection: Option[ZoneConnection] = Some(

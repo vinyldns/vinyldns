@@ -18,13 +18,15 @@ package vinyldns.mysql.repository
 
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
 import vinyldns.mysql.TestMySqlInstance
 import org.joda.time.DateTime
 
 class MySqlGroupChangeRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {

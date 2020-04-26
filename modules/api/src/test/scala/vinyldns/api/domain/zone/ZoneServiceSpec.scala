@@ -18,12 +18,14 @@ package vinyldns.api.domain.zone
 
 import org.mockito.Matchers.{any, anyString}
 import org.mockito.Mockito.{doReturn, reset}
-import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.ResultHelpers
 import cats.effect._
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -36,7 +38,7 @@ import vinyldns.core.TestZoneData._
 import scala.concurrent.duration._
 
 class ZoneServiceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

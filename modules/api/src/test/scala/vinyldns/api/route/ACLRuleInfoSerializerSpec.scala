@@ -19,12 +19,13 @@ package vinyldns.api.route
 import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.json4s.JsonDSL._
 import org.json4s.{Extraction, Serializer => json4sSerializer}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.AccessLevel
 
 class ACLRuleInfoSerializerSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ACLJsonProtocol
     with Matchers
     with ValidatedMatchers

@@ -18,15 +18,17 @@ package vinyldns.api.domain
 
 import cats.scalatest.ValidatedMatchers
 import org.scalacheck._
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest._
-import org.scalatest.prop._
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 import vinyldns.api.ValidationTestImprovements._
 import vinyldns.core.domain.{InvalidDomainName, InvalidLength}
 
 class DomainValidationsSpec
-    extends PropSpec
+    extends AnyPropSpec
     with Matchers
-    with GeneratorDrivenPropertyChecks
+    with ScalaCheckDrivenPropertyChecks
     with ValidatedMatchers {
 
   import Gen._

@@ -17,10 +17,11 @@
 package vinyldns.core.domain.zone
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.CryptoAlgebra
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ZoneConnectionSpec extends WordSpec with Matchers with EitherMatchers {
+class ZoneConnectionSpec extends AnyWordSpec with Matchers with EitherMatchers {
 
   val testCrypto = new CryptoAlgebra {
     def encrypt(value: String): String = "encrypted!"

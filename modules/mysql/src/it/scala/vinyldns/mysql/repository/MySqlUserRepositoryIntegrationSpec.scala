@@ -17,12 +17,14 @@
 package vinyldns.mysql.repository
 
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{LockStatus, User, UserRepository}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlUserRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers

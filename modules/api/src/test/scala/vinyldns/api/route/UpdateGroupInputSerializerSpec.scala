@@ -20,11 +20,12 @@ import cats.scalatest.ValidatedMatchers
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.membership.UserId
 
 class UpdateGroupInputSerializerSpec
-    extends WordSpec
+    extends AnyWordSpec
     with MembershipJsonProtocol
     with Matchers
     with ValidatedMatchers {

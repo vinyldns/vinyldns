@@ -19,8 +19,9 @@ package vinyldns.mysql.repository
 import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
-import pureconfig.ConfigReader
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 import scalikejdbc.config.DBs
 import scalikejdbc._
 import vinyldns.core.crypto.CryptoAlgebra
@@ -36,9 +37,14 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[LoadedDataStore] =
     for {
-      settingsConfig <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
+      settingsConfig <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, MySqlConnectionConfig](_)
+      )
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)
       store <- initializeRepos(cryptoAlgebra)

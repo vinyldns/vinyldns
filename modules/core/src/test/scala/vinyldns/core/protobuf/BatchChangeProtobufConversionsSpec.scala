@@ -17,13 +17,15 @@
 package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.{EitherValues, Matchers, WordSpec}
+import org.scalatest.EitherValues
 import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteRRSetChange}
 import vinyldns.core.domain.record.{AData, RecordType}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class BatchChangeProtobufConversionsSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with BatchChangeProtobufConversions
     with EitherMatchers

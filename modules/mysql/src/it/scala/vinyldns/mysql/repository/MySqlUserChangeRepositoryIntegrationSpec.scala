@@ -16,14 +16,16 @@
 
 package vinyldns.mysql.repository
 
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{User, UserChangeRepository}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlUserChangeRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {

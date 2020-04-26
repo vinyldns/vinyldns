@@ -1,22 +1,22 @@
 import sbt._
 object Dependencies {
 
-  lazy val akkaHttpV = "10.1.9"
+  lazy val akkaHttpV = "10.1.10"
   lazy val akkaV = "2.5.23"
   lazy val jettyV = "8.1.12.v20130726"
-  lazy val pureConfigV = "0.9.2"
+  lazy val pureConfigV = "0.12.3"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
-  lazy val catsEffectV = "2.0.0"
-  lazy val configV = "1.3.2"
+  lazy val catsEffectV = "2.1.3"
+  lazy val configV = "1.4.0"
   lazy val scalikejdbcV = "3.3.1"
-  lazy val scalaTestV = "3.0.4"
-  lazy val scodecV = "1.1.5"
-  lazy val playV = "2.7.3"
+  lazy val scalaTestV = "3.1.1"
+  lazy val scodecV = "1.1.14"
+  lazy val playV = "2.7.4"
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "2.0.1"
+  lazy val fs2V = "2.3.0"
   lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(
@@ -71,7 +71,9 @@ object Dependencies {
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
-    "co.fs2"                    %% "fs2-core"                       % "1.0.0"
+    "co.fs2"                    %% "fs2-core"                       % "2.3.0",
+    "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
+    "javax.activation"          %  "activation"                     % "1.1.1"
   )
 
   lazy val dynamoDBDependencies = Seq(
@@ -94,9 +96,11 @@ object Dependencies {
 
   lazy val commonTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
-    "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
-    "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1",
-    "org.mockito"               %  "mockito-core"                   % "1.10.19"
+    "org.scalacheck"            %% "scalacheck"                     % "1.14.3",
+    "com.ironcorelabs"          %% "cats-scalatest"                 % "3.0.5",
+    "org.mockito"               %  "mockito-core"                   % "1.10.19",
+    "org.scalatestplus"         %% "scalatestplus-mockito"          % "1.0.0-M2",
+    "org.scalatestplus"         %% "scalatestplus-scalacheck"       % "3.1.0.0-RC2"
   )
 
   lazy val apiTestDependencies = commonTestDependencies ++ Seq(

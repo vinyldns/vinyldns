@@ -22,10 +22,12 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.effect.{ContextShift, IO}
 import fs2.concurrent.SignallingRef
 import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 
 class StatusRoutingSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with StatusRoute
     with OneInstancePerTest

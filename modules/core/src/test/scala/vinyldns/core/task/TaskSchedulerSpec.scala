@@ -18,12 +18,18 @@ package vinyldns.core.task
 import cats.effect.{ContextShift, IO, Timer}
 import org.mockito.Mockito
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
+class TaskSchedulerSpec
+    extends AnyWordSpec
+    with Matchers
+    with MockitoSugar
+    with BeforeAndAfterEach {
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)

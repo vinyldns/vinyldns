@@ -20,8 +20,10 @@ import com.amazonaws.services.dynamodbv2.model.{GetItemRequest, ResourceNotFound
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
@@ -29,7 +31,7 @@ import cats.effect._
 import vinyldns.dynamodb.DynamoTestConfig
 
 class DynamoDBGroupRepositorySpec
-    extends WordSpec
+    extends AnyWordSpec
     with MockitoSugar
     with Matchers
     with ScalaFutures

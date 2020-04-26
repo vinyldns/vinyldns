@@ -18,15 +18,16 @@ package vinyldns.api.domain.zone
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, ZoneACL}
 
 class ZoneValidationsSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

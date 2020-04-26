@@ -18,9 +18,15 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives.{complete, extractUnmatchedPath}
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.json4s.MappingException
 
-trait VinylDNSRouteTestHelper {
+trait VinylDNSRouteTestHelper { this: ScalatestRouteTest =>
+  import scala.concurrent.duration._
+  import akka.http.scaladsl.testkit.RouteTestTimeout
+
+  implicit val testTimeout = RouteTestTimeout(10.seconds)
+
   implicit def validationRejectionHandler: RejectionHandler =
     RejectionHandler
       .newBuilder()

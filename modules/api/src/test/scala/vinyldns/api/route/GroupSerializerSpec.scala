@@ -20,11 +20,12 @@ import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.membership.GroupStatus
 
 class GroupSerializerSpec
-    extends WordSpec
+    extends AnyWordSpec
     with MembershipJsonProtocol
     with Matchers
     with ValidatedMatchers

@@ -16,11 +16,14 @@
 
 package vinyldns.sqs.queue
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.queue.{MessageQueueConfig, MessageQueueLoader}
 import vinyldns.sqs.queue.SqsMessageQueueProvider.InvalidQueueName
+import pureconfig._
+import pureconfig.generic.auto._
 
-class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
+class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
   val undertest = new SqsMessageQueueProvider()
 
   "load" should {
@@ -40,7 +43,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    }
           |    """.stripMargin)
 
-      val badSettings = pureconfig.loadConfigOrThrow[MessageQueueConfig](badConfig)
+      val badSettings = ConfigSource.fromConfig(badConfig).loadOrThrow[MessageQueueConfig]
 
       a[pureconfig.error.ConfigReaderException[MessageQueueConfig]] should be thrownBy undertest
         .load(badSettings)
@@ -64,7 +67,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    }
           |    """.stripMargin)
 
-      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](nonExistentQueueConfig)
+      val messageConfig =
+        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig]
       val messageQueue = undertest.load(messageConfig).unsafeRunSync()
 
       noException should be thrownBy messageQueue
@@ -90,7 +94,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    }
           |    """.stripMargin)
 
-      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](invalidQueueNameConfig)
+      val messageConfig =
+        ConfigSource.fromConfig(invalidQueueNameConfig).loadOrThrow[MessageQueueConfig]
       assertThrows[InvalidQueueName](undertest.load(messageConfig).unsafeRunSync())
     }
 
@@ -111,7 +116,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    }
           |    """.stripMargin)
 
-      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](fifoQueueName)
+      val messageConfig = ConfigSource.fromConfig(fifoQueueName).loadOrThrow[MessageQueueConfig]
       assertThrows[InvalidQueueName](undertest.load(messageConfig).unsafeRunSync())
     }
   }
@@ -134,7 +139,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    }
           |    """.stripMargin)
 
-      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](nonExistentQueueConfig)
+      val messageConfig =
+        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig]
       val queue = MessageQueueLoader.load(messageConfig).unsafeRunSync()
 
       queue shouldBe a[SqsMessageQueue]

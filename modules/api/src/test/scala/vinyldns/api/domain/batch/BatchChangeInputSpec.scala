@@ -18,14 +18,15 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.{DomainValidationErrorType, Fqdn, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 
-class BatchChangeInputSpec extends WordSpec with Matchers {
+class BatchChangeInputSpec extends AnyWordSpec with Matchers {
   "BatchChangeInput" should {
     "ensure trailing dot on A, AAAA, and CNAME fqdn" in {
       val changeA = AddChangeInput("apex.test.com", A, Some(100), AData("1.1.1.1"))

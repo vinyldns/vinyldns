@@ -17,9 +17,10 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class Aws4AuthenticatorSpec extends WordSpec with Matchers {
+class Aws4AuthenticatorSpec extends AnyWordSpec with Matchers {
 
   "getting canonical headers" should {
     "pull the content type" in {

@@ -25,13 +25,15 @@ import com.codahale.metrics.Meter
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration, ScalaFutures}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.Logger
 
 class DynamoDBHelperSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with MockitoSugar
     with ScalaFutures

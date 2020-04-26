@@ -24,15 +24,17 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import nl.grons.metrics.scala.{Histogram, Meter}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.route.Monitor
 
 import scala.util.Failure
 
 class VinylDNSDirectivesSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with Matchers
     with MockitoSugar

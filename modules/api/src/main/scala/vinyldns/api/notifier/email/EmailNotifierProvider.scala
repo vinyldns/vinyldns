@@ -18,22 +18,27 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notifier, NotifierConfig, NotifierProvider}
 import vinyldns.core.domain.membership.UserRepository
-import pureconfig.module.catseffect.loadConfigF
-import cats.effect.IO
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
+import cats.effect.{Blocker, ContextShift, IO}
 import javax.mail.Session
 
 class EmailNotifierProvider extends NotifierProvider {
-
   import EmailNotifierConfig._
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def load(config: NotifierConfig, userRepository: UserRepository): IO[Notifier] =
     for {
-      emailConfig <- loadConfigF[IO, EmailNotifierConfig](config.settings)
+      emailConfig <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, EmailNotifierConfig](_)
+      )
       session <- createSession(emailConfig)
     } yield new EmailNotifier(emailConfig, session, userRepository)
 
   def createSession(config: EmailNotifierConfig): IO[Session] = IO {
     Session.getInstance(config.smtp)
   }
-
 }

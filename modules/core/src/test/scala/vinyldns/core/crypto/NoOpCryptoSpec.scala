@@ -17,9 +17,10 @@
 package vinyldns.core.crypto
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class NoOpCryptoSpec extends WordSpec with Matchers {
+class NoOpCryptoSpec extends AnyWordSpec with Matchers {
 
   private val conf =
     """

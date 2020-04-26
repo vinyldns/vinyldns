@@ -25,12 +25,14 @@ import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
 import vinyldns.core.task.TaskRepository
 import vinyldns.mysql.repository.MySqlDataStoreProvider
+import pureconfig._
+import pureconfig.generic.auto._
 
 trait MySqlIntegrationSpec {
   def mysqlConfig: Config
 
   lazy val dataStoreConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
+    ConfigSource.fromConfig(mysqlConfig).loadOrThrow[DataStoreConfig]
 
   lazy val provider = new MySqlDataStoreProvider()
 

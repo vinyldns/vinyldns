@@ -20,15 +20,17 @@ import com.amazonaws.services.dynamodbv2.model._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 import cats.effect._
 import vinyldns.dynamodb.DynamoTestConfig
 import vinyldns.core.TestZoneData._
 
 class DynamoDBZoneChangeRepositorySpec
-    extends WordSpec
+    extends AnyWordSpec
     with MockitoSugar
     with Matchers
     with ScalaFutures

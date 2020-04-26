@@ -15,8 +15,10 @@
  */
 
 package vinyldns.api.notifier.email
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
@@ -56,7 +58,7 @@ class MockTransport(session: Session, urlname: URLName) extends Transport(sessio
 }
 
 class EmailNotifierSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach

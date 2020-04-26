@@ -17,9 +17,10 @@
 package vinyldns.core.crypto
 
 import com.typesafe.config._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class JavaCryptoSpec extends WordSpec with Matchers {
+class JavaCryptoSpec extends AnyWordSpec with Matchers {
 
   val unencryptedString =
     s"""Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore

@@ -18,8 +18,9 @@ package vinyldns.api.domain.auth
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
@@ -27,7 +28,7 @@ import cats.effect._
 import vinyldns.core.domain.auth.AuthPrincipal
 
 class MembershipAuthPrincipalProviderSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers {

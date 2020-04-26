@@ -16,9 +16,10 @@
 
 package vinyldns.sqs.queue
 import com.amazonaws.services.sqs.model.Message
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SqsMessageTypeSpec extends WordSpec with Matchers {
+class SqsMessageTypeSpec extends AnyWordSpec with Matchers {
   import SqsMessageType._
 
   "fromString" should {

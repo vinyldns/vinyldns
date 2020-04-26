@@ -21,14 +21,15 @@ import akka.http.scaladsl.server.RequestContext
 import cats.effect._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 
-class VinylDNSAuthenticatorSpec extends WordSpec with Matchers with MockitoSugar {
+class VinylDNSAuthenticatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
   private val mockAuthenticator = mock[Aws4Authenticator]
   private val mockAuthPrincipalProvider = mock[AuthPrincipalProvider]
 

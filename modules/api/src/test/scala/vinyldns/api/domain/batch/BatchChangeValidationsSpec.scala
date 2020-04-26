@@ -20,8 +20,10 @@ import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{EitherValues, Matchers, PropSpec}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalatest.EitherValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{DomainValidations, batch}
@@ -37,9 +39,9 @@ import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 import scala.util.Random
 
 class BatchChangeValidationsSpec
-    extends PropSpec
+    extends AnyPropSpec
     with Matchers
-    with GeneratorDrivenPropertyChecks
+    with ScalaCheckDrivenPropertyChecks
     with EitherMatchers
     with EitherValues
     with ValidatedMatchers {

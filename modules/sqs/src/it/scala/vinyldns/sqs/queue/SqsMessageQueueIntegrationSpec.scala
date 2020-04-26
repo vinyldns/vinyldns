@@ -21,9 +21,10 @@ import java.util.concurrent.TimeUnit.SECONDS
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
 import com.amazonaws.services.sqs.model._
-import com.typesafe.config.ConfigFactory
 import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record.RecordSetChange
@@ -32,9 +33,11 @@ import vinyldns.core.queue.{MessageCount, MessageId, MessageQueueConfig}
 import vinyldns.sqs.queue.SqsMessageQueue.InvalidMessageTimeout
 
 import scala.concurrent.duration.FiniteDuration
+import pureconfig._
+import pureconfig.generic.auto._
 
 class SqsMessageQueueIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with MockitoSugar
     with BeforeAndAfterAll
     with BeforeAndAfterEach
@@ -44,7 +47,7 @@ class SqsMessageQueueIntegrationSpec
     with ProtobufConversions {
 
   private val sqsMessageQueueSettings: MessageQueueConfig =
-    pureconfig.loadConfigOrThrow[MessageQueueConfig](ConfigFactory.load().getConfig("sqs"))
+    ConfigSource.default.at("sqs").loadOrThrow[MessageQueueConfig]
 
   private val provider = new SqsMessageQueueProvider()
   private val queue: SqsMessageQueue =
