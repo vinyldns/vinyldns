@@ -1,11 +1,11 @@
 language: scala
 scala:
-- 2.12.9
+- 2.12.11
 python:
 - 2.7
 sudo: false
 jdk:
-- openjdk8
+- openjdk11
 services:
 - docker
 cache:
