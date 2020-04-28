@@ -26,7 +26,15 @@ import vinyldns.core.route.Monitored
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
 
-  private final val BASE_ADD_MEMBERS = "INSERT IGNORE INTO membership (user_id, group_id)"
+  private final val SAVE_MEMBERS =
+    sql"""
+        | INSERT INTO membership (user_id, group_id, is_admin)
+        |      VALUES ({userId}, {groupId}, {isAdmin})
+        | ON DUPLICATE KEY UPDATE is_admin = {isAdmin}
+       """.stripMargin
+
+  private final val BASE_GET_USERS_FOR_GROUP =
+    "SELECT user_id FROM membership WHERE group_id = {groupId}"
 
   private final val BASE_REMOVE_MEMBERS = "DELETE FROM membership WHERE group_id = ?"
 
@@ -37,7 +45,20 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       | WHERE user_id = ?
     """.stripMargin
 
-  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
+  def saveParams(
+      userIds: List[String],
+      groupId: String,
+      isAdmin: Boolean
+  ): Seq[Seq[(Symbol, Any)]] =
+    userIds.map { userId =>
+      Seq(
+        'userId -> userId,
+        'groupId -> groupId,
+        'isAdmin -> isAdmin
+      )
+    }
+
+  def saveMembers(groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
     memberUserIds.toList match {
       case Nil => IO.pure(memberUserIds)
       case nonEmpty =>
@@ -45,14 +66,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
           IO {
             logger.info(s"Saving into group $groupId members $nonEmpty")
             DB.localTx { implicit s =>
-              val valueClause = " VALUES " + nonEmpty.as("(?, ?)").mkString(",")
-              val query = BASE_ADD_MEMBERS + valueClause
-              val valueParams: List[String] = nonEmpty.flatMap(Seq(_, groupId))
-              SQL(query)
-                .bind(valueParams: _*)
-                .update
-                .apply()
-
+              SAVE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
               memberUserIds
             }
           }
@@ -92,6 +106,34 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
             .apply()
             .toSet
         }
+      }
+    }
+
+  def getUsersForGroup(groupId: String, isAdmin: Option[Boolean]): IO[Set[String]] =
+    IO {
+      logger.info(s"Getting users for group $groupId")
+      DB.readOnly { implicit s =>
+        val query = new StringBuilder();
+
+        query.append(BASE_GET_USERS_FOR_GROUP)
+        val baseConditions = Seq('groupId -> groupId)
+
+        // extra conditions based on whether isAdmin is set
+        val extraConditions = isAdmin match {
+          case None => Seq()
+          case Some(adminFlag) =>
+            query.append(" AND is_admin = {isAdmin}")
+            Seq('isAdmin -> adminFlag)
+        }
+
+        val conditions = baseConditions ++ extraConditions
+
+        SQL(query.toString())
+          .bindByName(conditions: _*)
+          .map(_.string(1))
+          .list()
+          .apply()
+          .toSet
       }
     }
 }

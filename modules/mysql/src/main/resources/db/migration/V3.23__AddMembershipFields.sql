@@ -1,0 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS ${dbName};
+
+USE ${dbName};
+
+ALTER TABLE membership ADD COLUMN is_admin TINYINT(1) NOT NULL;
