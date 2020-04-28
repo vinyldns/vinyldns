@@ -98,6 +98,7 @@ class DynamoDBMembershipRepository private[repository] (
   def saveMembers(groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
     monitor("repo.Membership.addMembers") {
       log.info(s"Saving members for group $groupId")
+      log.info(s"Passed in isAdmin value $isAdmin is not supported and therefore ignored for DynamoDB")
 
       val items = memberUserIds.toList
         .map(toItem(_, groupId))

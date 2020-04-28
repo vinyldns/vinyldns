@@ -113,22 +113,19 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
     IO {
       logger.info(s"Getting users for group $groupId")
       DB.readOnly { implicit s =>
-        val query = new StringBuilder();
-
-        query.append(BASE_GET_USERS_FOR_GROUP)
         val baseConditions = Seq('groupId -> groupId)
 
         // extra conditions based on whether isAdmin is set
-        val extraConditions = isAdmin match {
-          case None => Seq()
+        val (extraQuery, extraConditions) = isAdmin match {
+          case None => ("", Seq.empty)
           case Some(adminFlag) =>
-            query.append(" AND is_admin = {isAdmin}")
-            Seq('isAdmin -> adminFlag)
+            (" AND is_admin = {isAdmin}", Seq('isAdmin -> adminFlag))
         }
 
+        val query = BASE_GET_USERS_FOR_GROUP + extraQuery
         val conditions = baseConditions ++ extraConditions
 
-        SQL(query.toString())
+        SQL(query)
           .bindByName(conditions: _*)
           .map(_.string(1))
           .list()
