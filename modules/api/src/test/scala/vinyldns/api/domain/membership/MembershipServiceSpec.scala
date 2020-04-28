@@ -117,7 +117,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(groupInfo, okAuth).value)
@@ -125,7 +125,8 @@ class MembershipServiceSpec
 
         val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
 
-        verify(mockMembershipRepo).addMembers(anyString, any[Set[String]])
+        verify(mockMembershipRepo, times(2))
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         verify(mockGroupRepo).save(groupCaptor.capture())
 
         val savedGroup = groupCaptor.getValue
@@ -143,7 +144,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(groupInfo, okAuth).value)
@@ -169,19 +170,24 @@ class MembershipServiceSpec
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(IO.pure(Set(okUser.id)))
-          .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+        when(
+          mockMembershipRepo
+            .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
+        ).thenReturn(IO.pure(expectedMembersAdded))
         doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(info, okAuth).value)
         result shouldBe info
 
         val memberIdCaptor = ArgumentCaptor.forClass(classOf[Set[String]])
-        verify(mockMembershipRepo).addMembers(anyString, memberIdCaptor.capture())
+        verify(mockMembershipRepo, times(2)).saveMembers(
+          anyString,
+          memberIdCaptor.capture(),
+          isAdmin = anyBoolean
+        )
 
-        val memberIdsAdded = memberIdCaptor.getValue
-        memberIdsAdded should contain theSameElementsAs expectedMembersAdded
+        val memberIdsAdded = memberIdCaptor.getAllValues
+        memberIdsAdded should contain(expectedMembersAdded)
       }
 
       "set the current user as a member" in {
@@ -192,7 +198,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(info, okAuth).value)
@@ -209,7 +215,8 @@ class MembershipServiceSpec
         error shouldBe a[GroupAlreadyExistsError]
 
         verify(mockGroupRepo, never()).save(any[Group])
-        verify(mockMembershipRepo, never()).addMembers(anyString, any[Set[String]])
+        verify(mockMembershipRepo, never())
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
       }
 
       "return an error if users do not exist" in {
@@ -223,7 +230,8 @@ class MembershipServiceSpec
         error shouldBe a[UserNotFoundError]
 
         verify(mockGroupRepo, never()).save(any[Group])
-        verify(mockMembershipRepo, never()).addMembers(anyString, any[Set[String]])
+        verify(mockMembershipRepo, never())
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
       }
 
       "return an error if fail while saving the group" in {
@@ -236,7 +244,8 @@ class MembershipServiceSpec
         val error = leftResultOf(underTest.createGroup(groupInfo, okAuth).value)
         error shouldBe a[RuntimeException]
 
-        verify(mockMembershipRepo, never()).addMembers(anyString, any[Set[String]])
+        verify(mockMembershipRepo, never())
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
       }
 
       "return an error if fail while adding the members" in {
@@ -246,7 +255,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.raiseError(new RuntimeException("fail")))
           .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val error = leftResultOf(underTest.createGroup(groupInfo, okAuth).value)
@@ -264,7 +273,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(modifiedGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set()))
           .when(mockMembershipRepo)
-          .addMembers(anyString, any[Set[String]])
+          .saveMembers(anyString, any[Set[String]], isAdmin = anyBoolean)
         doReturn(IO.pure(Set()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
@@ -292,7 +301,11 @@ class MembershipServiceSpec
         val groupChangeCaptor = ArgumentCaptor.forClass(classOf[GroupChange])
 
         verify(mockGroupRepo).save(groupCaptor.capture())
-        verify(mockMembershipRepo).addMembers(anyString, addedMemberCaptor.capture())
+        verify(mockMembershipRepo, times(2)).saveMembers(
+          anyString,
+          addedMemberCaptor.capture(),
+          isAdmin = anyBoolean
+        )
         verify(mockMembershipRepo).removeMembers(anyString, removedMemberCaptor.capture())
         verify(mockGroupChangeRepo).save(groupChangeCaptor.capture())
 
@@ -306,14 +319,18 @@ class MembershipServiceSpec
         savedGroup.adminUserIds should contain theSameElementsAs expectedAdmins
         savedGroup.created shouldBe existingGroup.created
 
-        val expectedAddedMembers = Set("user5", "user6", "user7")
+        val expectedAddedAdmins = Set("user7")
+        val expectedAddedNonAdmins = Set("user2", "user5", "user6")
         val expectedRemovedMembers = Set("user3", "user4")
 
-        val addedMembers = addedMemberCaptor.getValue
-        addedMembers should contain theSameElementsAs expectedAddedMembers
+        val addedMembers = addedMemberCaptor.getAllValues
+        addedMembers should contain theSameElementsAs List(
+          expectedAddedAdmins,
+          expectedAddedNonAdmins
+        )
 
-        val removedMembers = removedMemberCaptor.getValue
-        removedMembers should contain theSameElementsAs expectedRemovedMembers
+        val removedMembers = removedMemberCaptor.getAllValues
+        removedMembers should contain(expectedRemovedMembers)
 
         val groupChange = groupChangeCaptor.getValue
         groupChange.changeType shouldBe GroupChangeType.Update

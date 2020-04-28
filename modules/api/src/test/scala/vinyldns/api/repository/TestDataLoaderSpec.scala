@@ -35,7 +35,9 @@ class TestDataLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar {
   val groupRepo: GroupRepository = mock[GroupRepository]
   doReturn(IO.pure(okGroup)).when(groupRepo).save(any[Group])
   val membershipRepo: MembershipRepository = mock[MembershipRepository]
-  doReturn(IO.pure(Set())).when(membershipRepo).addMembers(any[String], any[Set[String]])
+  doReturn(IO.pure(Set()))
+    .when(membershipRepo)
+    .saveMembers(any[String], any[Set[String]], anyBoolean)
 
   "loadTestData" should {
     "succeed if filtered appropriately" in {

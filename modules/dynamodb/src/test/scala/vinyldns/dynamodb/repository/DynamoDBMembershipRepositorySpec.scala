@@ -64,7 +64,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.addMembers(okGroup.id, members).unsafeRunSync()
+      val response = store.saveMembers(okGroup.id, members, isAdmin = false).unsafeRunSync()
 
       verify(dynamoDBHelper, times(3)).batchWriteItem(
         any[String],
@@ -96,7 +96,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.addMembers(okGroup.id, members).unsafeRunSync()
+      val response = store.saveMembers(okGroup.id, members, isAdmin = false).unsafeRunSync()
 
       verify(dynamoDBHelper, times(1)).batchWriteItem(
         any[String],
@@ -123,7 +123,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.addMembers(okGroup.id, members)
+      val response = store.saveMembers(okGroup.id, members, isAdmin = false)
       a[RuntimeException] shouldBe thrownBy(response.unsafeRunSync())
     }
   }
