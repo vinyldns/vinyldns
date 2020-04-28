@@ -19,7 +19,9 @@ package vinyldns.mysql.repository
 import java.util.UUID
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc._
 import vinyldns.core.domain.record.{
   ChangeSet,
@@ -31,7 +33,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlRecordChangeRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll
     with BeforeAndAfterEach

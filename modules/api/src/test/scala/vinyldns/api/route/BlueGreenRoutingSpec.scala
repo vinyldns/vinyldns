@@ -19,10 +19,11 @@ package vinyldns.api.route
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class BlueGreenRoutingSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with BlueGreenRoute
     with Matchers {

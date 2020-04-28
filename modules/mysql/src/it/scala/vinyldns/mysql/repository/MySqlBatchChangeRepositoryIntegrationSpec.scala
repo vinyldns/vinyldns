@@ -21,6 +21,8 @@ import java.util.UUID
 import cats.effect._
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.record.{AAAAData, AData, RecordData, RecordType}
 import vinyldns.core.domain.batch._
@@ -30,7 +32,7 @@ import vinyldns.core.domain.{SingleChangeError, ZoneDiscoveryError}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlBatchChangeRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers

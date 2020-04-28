@@ -19,8 +19,10 @@ package vinyldns.api.domain.zone
 import cats.effect._
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
@@ -40,7 +42,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class ZoneServiceIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalaFutures
     with Matchers
     with MockitoSugar

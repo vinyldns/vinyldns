@@ -18,7 +18,7 @@ package vinyldns.sqs.queue
 import java.util.Base64
 
 import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
-import org.scalatest.{EitherValues, Matchers, WordSpec}
+import org.scalatest.EitherValues
 import vinyldns.core.TestRecordSetData.pendingCreateAAAA
 import vinyldns.core.TestZoneData.zoneChangePending
 import vinyldns.core.domain.batch.BatchChangeCommand
@@ -30,8 +30,10 @@ import vinyldns.sqs.queue.SqsMessageType.{
 }
 
 import scala.collection.JavaConverters._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SqsMessageSpec extends WordSpec with Matchers with EitherValues with ProtobufConversions {
+class SqsMessageSpec extends AnyWordSpec with Matchers with EitherValues with ProtobufConversions {
   import SqsMessage._
 
   "parseSqsMessage" should {

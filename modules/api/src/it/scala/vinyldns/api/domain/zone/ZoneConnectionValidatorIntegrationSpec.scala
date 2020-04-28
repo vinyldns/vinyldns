@@ -16,12 +16,13 @@
 
 package vinyldns.api.domain.zone
 import cats.scalatest.EitherMatchers
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.zone.ConfiguredDnsConnections
 import vinyldns.core.health.HealthCheck.HealthCheckError
 
-class ZoneConnectionValidatorIntegrationSpec extends WordSpec with Matchers with EitherMatchers {
+class ZoneConnectionValidatorIntegrationSpec extends AnyWordSpec with Matchers with EitherMatchers {
   "ZoneConnectionValidatorIntegrationSpec" should {
     "have a valid health check if we can connect to DNS backend" in {
       val check = new ZoneConnectionValidator(VinylDNSConfig.configuredDnsConnections)

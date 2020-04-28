@@ -21,11 +21,12 @@ import cats.scalatest.EitherMatchers
 import com.codahale.metrics.ScheduledReporter
 import com.typesafe.config.ConfigFactory
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSConfig
 
-class APIMetricsSpec extends WordSpec with Matchers with MockitoSugar with EitherMatchers {
+class APIMetricsSpec extends AnyWordSpec with Matchers with MockitoSugar with EitherMatchers {
 
   "APIMetricsSettings" should {
     "succeed with valid config" in {

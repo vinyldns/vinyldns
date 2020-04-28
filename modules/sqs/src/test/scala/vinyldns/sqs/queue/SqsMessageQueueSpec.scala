@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 
 import cats.data.NonEmptyList
 import com.amazonaws.services.sqs.model._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.batch.BatchChangeCommand
@@ -34,9 +33,11 @@ import vinyldns.sqs.queue.SqsMessageType._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class SqsMessageQueueSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ProtobufConversions {

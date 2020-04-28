@@ -15,8 +15,10 @@
  */
 
 package vinyldns.api.notifier.sns
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.notifier.Notification
@@ -42,7 +44,7 @@ import com.amazonaws.services.sns.model.PublishRequest
 import com.amazonaws.services.sns.model.PublishResult
 
 class SnsNotifierSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach

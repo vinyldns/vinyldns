@@ -18,8 +18,9 @@ package vinyldns.api.domain.record
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{
   InvalidGroupError,
@@ -36,7 +37,7 @@ import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
 
 class RecordSetValidationsSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

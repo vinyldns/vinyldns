@@ -17,8 +17,10 @@
 package vinyldns.api.domain.membership
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -26,7 +28,7 @@ import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.domain.membership.User
 
 class MembershipValidationsSpec
-    extends WordSpecLike
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach

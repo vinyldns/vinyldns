@@ -17,17 +17,19 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.concurrent.duration._
 
 class MySqlZoneRepositorySpec
-    extends WordSpec
+    extends AnyWordSpec
     with MockitoSugar
     with Matchers
     with BeforeAndAfterEach {

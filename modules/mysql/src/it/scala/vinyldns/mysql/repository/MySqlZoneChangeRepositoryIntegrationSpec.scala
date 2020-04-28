@@ -22,6 +22,8 @@ import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
@@ -34,7 +36,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 class MySqlZoneChangeRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers

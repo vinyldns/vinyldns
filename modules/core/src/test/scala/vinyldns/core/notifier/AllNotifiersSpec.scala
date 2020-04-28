@@ -17,15 +17,16 @@
 package vinyldns.core.notifier
 
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
-import org.scalatest.mockito._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import org.mockito.Mockito._
 import cats.effect.IO
 import org.scalatest.BeforeAndAfterEach
 import cats.effect.ContextShift
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class AllNotifiersSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with EitherValues

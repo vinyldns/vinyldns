@@ -19,14 +19,16 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mockito.Mockito.doReturn
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.OneInstancePerTest
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import cats.effect._
 import vinyldns.core.health.HealthCheck.HealthCheckError
 import vinyldns.core.health.HealthService
 
 class HealthCheckRoutingSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with HealthCheckRoute
     with OneInstancePerTest

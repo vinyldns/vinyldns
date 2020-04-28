@@ -17,7 +17,8 @@
 package vinyldns.api.domain.batch
 
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.api.MySqlApiIntegrationSpec
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.batch.{
@@ -33,7 +34,7 @@ class BatchChangeRepositoryIntegrationSpec
     extends MySqlApiIntegrationSpec
     with MySqlIntegrationSpec
     with Matchers
-    with WordSpecLike {
+    with AnyWordSpecLike {
 
   import vinyldns.api.domain.DomainValidations._
 

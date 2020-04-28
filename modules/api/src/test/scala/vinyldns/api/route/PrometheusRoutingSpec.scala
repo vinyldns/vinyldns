@@ -20,12 +20,14 @@ import akka.http.scaladsl.model.{HttpProtocol, HttpResponse, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.VinylDNSMetrics
 
 class PrometheusRoutingSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with PrometheusRoute
     with BeforeAndAfterEach

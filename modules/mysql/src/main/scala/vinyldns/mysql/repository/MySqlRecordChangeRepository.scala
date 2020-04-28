@@ -17,7 +17,6 @@
 package vinyldns.mysql.repository
 
 import cats.effect._
-import cats.implicits._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record._

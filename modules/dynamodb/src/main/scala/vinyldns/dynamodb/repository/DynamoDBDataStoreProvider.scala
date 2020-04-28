@@ -20,7 +20,9 @@ import cats.implicits._
 import cats.effect.{ContextShift, IO}
 import org.slf4j.LoggerFactory
 import vinyldns.core.repository._
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
@@ -29,6 +31,8 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName._
 import vinyldns.core.health.HealthCheck._
 import vinyldns.core.task.TaskRepository
+import pureconfig.ConfigSource
+import cats.effect.Blocker
 
 class DynamoDBDataStoreProvider extends DataStoreProvider {
 
@@ -40,7 +44,9 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[LoadedDataStore] =
     for {
-      settingsConfig <- loadConfigF[IO, DynamoDBDataStoreSettings](config.settings)
+      settingsConfig <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, DynamoDBDataStoreSettings](_)
+      )
       _ <- validateRepos(config.repositories)
       repoConfigs <- loadRepoConfigs(config.repositories)
       dataStore <- initializeRepos(settingsConfig, repoConfigs, crypto)
@@ -65,7 +71,12 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
         repositoryName: RepositoryName
     ): Option[IO[(RepositoryName, DynamoDBRepositorySettings)]] =
       config.get(repositoryName).map { repoConf =>
-        loadConfigF[IO, DynamoDBRepositorySettings](repoConf).map(repositoryName -> _)
+        Blocker[IO].use(
+          ConfigSource
+            .fromConfig(repoConf)
+            .loadF[IO, DynamoDBRepositorySettings](_)
+            .map(repositoryName -> _)
+        )
       }
 
     val activeRepoSettings = RepositoryName.values.toList.flatMap(loadConfigIfDefined).parSequence

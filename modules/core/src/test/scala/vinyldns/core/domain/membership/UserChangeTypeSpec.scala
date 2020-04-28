@@ -15,10 +15,11 @@
  */
 
 package vinyldns.core.domain.membership
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.membership.UserChangeType.UnknownUserChangeType
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UserChangeTypeSpec extends WordSpec with Matchers {
+class UserChangeTypeSpec extends AnyWordSpec with Matchers {
   "fromString" should {
     "succeed for Create" in {
       UserChangeType.fromString("create") shouldBe Right(UserChangeType.Create)

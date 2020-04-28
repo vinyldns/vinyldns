@@ -18,10 +18,11 @@ package vinyldns.core.queue
 
 import cats.effect.IO
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object MockMessageQueueProvider extends MockitoSugar {
 
@@ -43,7 +44,7 @@ class FailMessageQueueProvider extends MessageQueueProvider {
 
 }
 
-class MessageQueueLoaderSpec extends WordSpec with Matchers {
+class MessageQueueLoaderSpec extends AnyWordSpec with Matchers {
 
   val placeholderConfig: Config = ConfigFactory.parseString("{}")
   private val pollingInterval = 250.millis

@@ -23,7 +23,8 @@ import org.joda.time.DateTime
 import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
 import vinyldns.api.domain.batch.ChangeInputType._
@@ -43,7 +44,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 
 class BatchChangeJsonProtocolSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with BatchChangeJsonProtocol
     with ValidatedValues

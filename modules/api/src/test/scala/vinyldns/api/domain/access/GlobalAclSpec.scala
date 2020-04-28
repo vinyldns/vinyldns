@@ -17,14 +17,15 @@
 package vinyldns.api.domain.access
 
 import cats.scalatest.EitherMatchers
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ResultHelpers
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.{PTRData, RecordType}
 
 class GlobalAclSpec
-    extends WordSpecLike
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

@@ -20,7 +20,6 @@ import java.util.HashMap
 
 import cats.data.OptionT
 import cats.effect.IO
-import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory

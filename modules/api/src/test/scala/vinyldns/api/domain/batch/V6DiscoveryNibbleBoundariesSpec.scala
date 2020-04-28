@@ -16,9 +16,10 @@
 
 package vinyldns.api.domain.batch
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class V6DiscoveryNibbleBoundariesSpec extends WordSpec with Matchers {
+class V6DiscoveryNibbleBoundariesSpec extends AnyWordSpec with Matchers {
   "V6DiscoveryNibbleBoundaries" should {
     "Succeed with valid input" in {
       noException should be thrownBy V6DiscoveryNibbleBoundaries(2, 10)

@@ -19,16 +19,17 @@ package vinyldns.core.crypto
 import java.lang.reflect.InvocationTargetException
 
 import com.typesafe.config.{Config, ConfigException, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConverters._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class TestCrypto(config: Config) extends CryptoAlgebra {
   val testMe: String = config.getString("test-me")
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }
-class CryptoAlgebraSpec extends WordSpec with Matchers {
+class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
 
   private val conf =
     """

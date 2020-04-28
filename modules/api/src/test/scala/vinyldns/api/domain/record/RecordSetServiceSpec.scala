@@ -20,8 +20,10 @@ import cats.effect._
 import cats.scalatest.EitherMatchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito.doReturn
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.access.AccessValidations
@@ -40,7 +42,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with EitherMatchers
     with Matchers
     with MockitoSugar

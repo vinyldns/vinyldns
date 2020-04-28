@@ -18,8 +18,7 @@ package vinyldns.core.notifier
 
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.mockito._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.core.domain.membership.UserRepository
 import cats.effect.IO
 import org.mockito.Mockito._
@@ -27,6 +26,8 @@ import org.mockito.Mockito._
 import scala.collection.JavaConverters._
 import org.scalatest.BeforeAndAfterEach
 import cats.effect.ContextShift
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object MockNotifierProvider extends MockitoSugar {
 
@@ -48,7 +49,7 @@ class FailingProvider extends NotifierProvider {
 }
 
 class NotifierLoaderSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with EitherValues

@@ -19,7 +19,8 @@ package vinyldns.api.domain.batch
 import cats.data.NonEmptyList
 import cats.implicits._
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
@@ -35,7 +36,7 @@ import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
-class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
+class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
 
   private def makeSingleAddChange(
       name: String,

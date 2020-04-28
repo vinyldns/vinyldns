@@ -23,6 +23,10 @@ import cats.scalatest.EitherMatchers
 import com.typesafe.config.{Config, ConfigFactory}
 import org.joda.time.DateTime
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import pureconfig._
+import pureconfig.generic.auto._
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
@@ -57,7 +61,7 @@ final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
 }
 
 class MySqlMessageQueueIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with BeforeAndAfterEach
     with EitherMatchers
@@ -71,7 +75,7 @@ class MySqlMessageQueueIntegrationSpec
 
   private val config: Config = ConfigFactory.load().getConfig("queue")
   lazy val queueConfig: MessageQueueConfig =
-    pureconfig.loadConfigOrThrow[MessageQueueConfig](config)
+    ConfigSource.fromConfig(config).loadOrThrow[MessageQueueConfig]
 
   private val underTest =
     MessageQueueLoader.load(queueConfig).map(_.asInstanceOf[MySqlMessageQueue]).unsafeRunSync()

@@ -16,14 +16,15 @@
 
 package vinyldns.api.domain.batch
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import cats.effect._
 import cats.implicits._
 import vinyldns.core.domain.{BatchChangeIsEmpty, ChangeLimitExceeded}
 
-class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers {
+class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers with CatsHelpers {
 
   "toBatchResult" should {
     "work with either success input" in {

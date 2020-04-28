@@ -18,8 +18,9 @@ package vinyldns.api.repository
 
 import cats.scalatest.ValidatedMatchers
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
@@ -32,7 +33,7 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoriesConfig}
 
 class ApiDataAccessorProviderSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ValidatedMatchers {

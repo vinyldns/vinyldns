@@ -21,12 +21,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.LogEntry
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.OneInstancePerTest
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.auth.AuthPrincipal
 
 class VinylDNSServiceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest

@@ -21,7 +21,8 @@ import cats.data.ValidatedNel
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.ValidatedMatchers
-import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -71,7 +72,7 @@ trait ResultHelpers {
   def rightValue[T](t: Either[Throwable, T]): T = t.toOption.get
 }
 
-object ValidationTestImprovements extends PropSpec with Matchers with ValidatedMatchers {
+object ValidationTestImprovements extends AnyPropSpec with Matchers with ValidatedMatchers {
 
   implicit class ValidatedNelTestImprovements[DomainValidationError, A](
       value: ValidatedNel[DomainValidationError, A]

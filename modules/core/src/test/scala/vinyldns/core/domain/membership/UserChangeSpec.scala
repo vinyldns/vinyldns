@@ -17,9 +17,11 @@
 package vinyldns.core.domain.membership
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
-import org.scalatest.{EitherValues, Matchers, WordSpec}
+import org.scalatest.EitherValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UserChangeSpec extends WordSpec with Matchers with EitherMatchers with EitherValues {
+class UserChangeSpec extends AnyWordSpec with Matchers with EitherMatchers with EitherValues {
 
   private val newUser = User("foo", "key", "secret")
   private val currentDate = DateTime.now

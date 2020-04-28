@@ -12,46 +12,13 @@ resolvers ++= additionalResolvers
 
 lazy val IntegrationTest = config("it") extend Test
 
-// Needed because we want scalastyle for integration tests which is not first class
-val codeStyleIntegrationTest = taskKey[Unit]("enforce code style then integration test")
-def scalaStyleIntegrationTest: Seq[Def.Setting[_]] = {
-  inConfig(IntegrationTest)(ScalastylePlugin.rawScalastyleSettings()) ++
-    Seq(
-      scalastyleConfig in IntegrationTest := root.base / "scalastyle-test-config.xml",
-      scalastyleTarget in IntegrationTest := target.value / "scalastyle-it-results.xml",
-      scalastyleFailOnError in IntegrationTest := (scalastyleFailOnError in scalastyle).value,
-      (scalastyleFailOnWarning in IntegrationTest) := (scalastyleFailOnWarning in scalastyle).value,
-      scalastyleSources in IntegrationTest := (unmanagedSourceDirectories in IntegrationTest).value,
-      codeStyleIntegrationTest := scalastyle.in(IntegrationTest).toTask("").value
-    )
-}
-
-// Create a default Scala style task to run with tests
-lazy val testScalastyle = taskKey[Unit]("testScalastyle")
-def scalaStyleTest: Seq[Def.Setting[_]] = Seq(
-  (scalastyleConfig in Test) := baseDirectory.value / ".." / ".." / "scalastyle-test-config.xml",
-  scalastyleTarget in Test := target.value / "scalastyle-test-results.xml",
-  scalastyleFailOnError in Test := (scalastyleFailOnError in scalastyle).value,
-  (scalastyleFailOnWarning in Test) := (scalastyleFailOnWarning in scalastyle).value,
-  scalastyleSources in Test := (unmanagedSourceDirectories in Test).value,
-  testScalastyle := scalastyle.in(Test).toTask("").value
-)
-
-lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
-def scalaStyleCompile: Seq[Def.Setting[_]] = Seq(
-  compileScalastyle := scalastyle.in(Compile).toTask("").value
-)
-
-def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTest ++ scalaStyleIntegrationTest
-
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
-  scalaVersion := "2.12.9",
+  scalaVersion := "2.12.11",
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-  scalacOptions += "-target:jvm-1.8",
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
   scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
@@ -93,7 +60,7 @@ lazy val apiSettings = Seq(
     "-Dlogback.configurationFile=test/logback.xml",
     s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
   ),
-  coverageExcludedPackages := ".*Boot.*"
+  coverageExcludedPackages := "Boot.*"
 )
 
 lazy val apiAssemblySettings = Seq(
@@ -113,7 +80,7 @@ lazy val apiAssemblySettings = Seq(
 )
 
 lazy val apiDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u191-jdk-alpine3.9",
+  dockerBaseImage := "adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
   dockerExposedPorts := Seq(9000),
@@ -140,7 +107,7 @@ lazy val apiDockerSettings = Seq(
 )
 
 lazy val portalDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u191-jdk-alpine3.9",
+  dockerBaseImage := "adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
   dockerExposedPorts := Seq(9001),
@@ -215,8 +182,7 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   apiAssemblySettings ++
   testSettings ++
   apiPublishSettings ++
-  apiDockerSettings ++
-  scalaStyleSettings
+  apiDockerSettings
 
 lazy val api = (project in file("modules/api"))
   .enablePlugins(JavaAppPackaging, AutomateHeaderPlugin)
@@ -236,8 +202,6 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
   .settings(sharedSettings)
   .settings(
     inConfig(IntegrationTest)(scalafmtConfigSettings),
-    (scalastyleConfig in Test) := baseDirectory.value / "scalastyle-test-config.xml",
-    (scalastyleConfig in IntegrationTest) := baseDirectory.value / "scalastyle-test-config.xml",
     killDocker := {
       import scala.sys.process._
       "./bin/remove-vinyl-containers.sh" !
@@ -284,7 +248,6 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(corePublishSettings)
   .settings(testSettings)
   .settings(libraryDependencies ++= coreDependencies ++ commonTestDependencies.map(_ % "test"))
-  .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns"
   )
@@ -299,7 +262,6 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(testSettings)
   .settings(Defaults.itSettings)
   .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
-  .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
     parallelExecution in Test := true,
@@ -317,7 +279,6 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(testSettings)
   .settings(Defaults.itSettings)
   .settings(libraryDependencies ++= mysqlDependencies ++ commonTestDependencies.map(_ % "test, it"))
-  .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns"
   ).dependsOn(core % "compile->compile;test->test")
@@ -333,7 +294,6 @@ lazy val sqs = (project in file("modules/sqs"))
   .settings(testSettings)
   .settings(Defaults.itSettings)
   .settings(libraryDependencies ++= sqsDependencies ++ commonTestDependencies.map(_ % "test, it"))
-  .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
   ).dependsOn(core % "compile->compile;test->test")
@@ -352,7 +312,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     name := "portal",
     libraryDependencies ++= portalDependencies,
     routesGenerator := InjectedRoutesGenerator,
-    coverageExcludedPackages := "<empty>;views.html.*;router.*",
+    coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
     
     // ads the version when working locally with sbt run
@@ -482,13 +442,7 @@ addCommandAlias("validate", "; root/clean; " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
-  "portal/headerCheck portal/test:headerCheck; " +
-  "all core/scalastyle core/test:scalastyle " +
-  "api/scalastyle api/test:scalastyle api/it:scalastyle " +
-  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
-  "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle" +
-  "sqs/scalastyle sqs/test:scalastyle sqs/it:scalastyle" +
-  "portal/scalastyle portal/test:scalastyle;" +
+  "portal/headerCheck portal/test:headerCheck; " +  
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
 )

@@ -18,8 +18,10 @@ package vinyldns.core.domain.zone
 
 import org.scalatest._
 import vinyldns.core.TestZoneData._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ZoneACLSpec extends WordSpec with Matchers {
+class ZoneACLSpec extends AnyWordSpec with Matchers {
 
   "ZoneACL" should {
     "add a new ACL rule" in {

@@ -18,13 +18,16 @@ package vinyldns.mysql.queue
 
 import cats.effect.IO
 import org.slf4j.LoggerFactory
-import pureconfig.ConfigReader
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import scalikejdbc.config.DBs
 import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
 import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
 import vinyldns.mysql.MySqlConnector._
+import cats.effect.ContextShift
+import cats.effect.Blocker
 
 class MySqlMessageQueueProvider extends MessageQueueProvider {
 
@@ -33,9 +36,14 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
   def load(config: MessageQueueConfig): IO[MessageQueue] =
     for {
-      connectionSettings <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
+      connectionSettings <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, MySqlConnectionConfig](_)
+      )
       _ <- runDBMigrations(connectionSettings)
       _ <- setupQueueConnection(connectionSettings)
     } yield new MySqlMessageQueue(config.maxRetries)

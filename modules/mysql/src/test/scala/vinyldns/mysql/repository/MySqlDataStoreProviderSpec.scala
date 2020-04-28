@@ -17,16 +17,19 @@
 package vinyldns.mysql.repository
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.DataStoreConfig
 import vinyldns.mysql.MySqlConnectionConfig
+import pureconfig._
+import pureconfig.generic.auto._
 
-class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
+class MySqlDataStoreProviderSpec extends AnyWordSpec with Matchers {
   val mySqlConfig: Config = ConfigFactory.load().getConfig("mysql")
 
   val dataStoreSettings: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](mySqlConfig)
+    ConfigSource.fromConfig(mySqlConfig).loadOrThrow[DataStoreConfig]
 
   val underTest = new MySqlDataStoreProvider()
 
@@ -56,7 +59,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |    """.stripMargin
       )
 
-      val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
+      val badSettings = ConfigSource.fromConfig(badConfig).loadOrThrow[DataStoreConfig]
 
       a[pureconfig.error.ConfigReaderException[MySqlConnectionConfig]] should be thrownBy underTest
         .load(badSettings, crypto)

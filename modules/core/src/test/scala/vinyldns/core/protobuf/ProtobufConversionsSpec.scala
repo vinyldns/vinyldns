@@ -17,7 +17,7 @@
 package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
-import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
+import org.scalatest.{Assertion, OptionValues}
 import vinyldns.core.TestRecordSetData.ds
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
@@ -27,9 +27,11 @@ import vinyldns.core.domain.zone._
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class ProtobufConversionsSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with ProtobufConversions
     with OptionValues {

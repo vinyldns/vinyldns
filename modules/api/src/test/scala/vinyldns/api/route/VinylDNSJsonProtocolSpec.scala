@@ -20,7 +20,8 @@ import cats.scalatest.ValidatedValues
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
@@ -28,7 +29,7 @@ import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.Fqdn
 
 class VinylDNSJsonProtocolSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with VinylDNSJsonProtocol
     with ValidatedValues

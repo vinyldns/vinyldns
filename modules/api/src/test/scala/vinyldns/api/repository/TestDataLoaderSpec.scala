@@ -19,15 +19,16 @@ package vinyldns.api.repository
 import java.util.UUID
 
 import cats.effect.IO
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository}
 import vinyldns.core.TestMembershipData._
 
-class TestDataLoaderSpec extends WordSpec with Matchers with MockitoSugar {
+class TestDataLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
   val userRepo: UserRepository = mock[UserRepository]
   doReturn(IO.pure(okUser)).when(userRepo).save(any[User])

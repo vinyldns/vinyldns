@@ -17,10 +17,11 @@
 package vinyldns.core.domain.zone
 
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestZoneData._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ZoneSpec extends WordSpec with Matchers {
+class ZoneSpec extends AnyWordSpec with Matchers {
 
   "Zone" should {
     "toString should output a zone properly" in {

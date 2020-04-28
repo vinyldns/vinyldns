@@ -15,11 +15,12 @@
  */
 
 package vinyldns.mysql.repository
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.TestRecordSetData.aaaa
 
-class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
+class MySqlRecordSetRepositorySpec extends AnyWordSpec with Matchers {
   import MySqlRecordSetRepository._
   "fromRecordType" should {
     "support all record types" in {

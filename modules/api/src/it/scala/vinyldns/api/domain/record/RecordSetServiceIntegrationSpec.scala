@@ -20,9 +20,9 @@ import cats.effect._
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api.Interfaces._
 import vinyldns.api._

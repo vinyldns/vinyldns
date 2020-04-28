@@ -27,6 +27,8 @@ import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore}
 import vinyldns.core.repository.RepositoryName._
+import pureconfig._
+import pureconfig.generic.auto._
 
 class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
@@ -34,7 +36,8 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
     IO.contextShift(scala.concurrent.ExecutionContext.global)
   val config: Config = ConfigFactory.load()
   val dynamoDBConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
+    ConfigSource.fromConfig(config).at("dynamodb").loadOrThrow[DataStoreConfig]
+
   val provider: DynamoDBDataStoreProvider = new DynamoDBDataStoreProvider()
   val crypto: CryptoAlgebra = new NoOpCrypto()
 
@@ -48,7 +51,7 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
   def tearDown(): Unit = {
     val deletes = dynamoDBConfig.repositories.configMap.map {
       case (_, config) => {
-        val asDynamo = pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](config)
+        val asDynamo = ConfigSource.fromConfig(config).loadOrThrow[DynamoDBRepositorySettings]
         val request = new DeleteTableRequest().withTableName(asDynamo.tableName)
         testDynamoDBHelper.deleteTable(request)
       }

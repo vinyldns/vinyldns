@@ -18,11 +18,13 @@ package controllers
 
 import java.net.URI
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{Blocker, ContextShift, IO}
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import play.api.{ConfigLoader, Configuration}
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 import vinyldns.core.repository.DataStoreConfig
 
 import scala.collection.JavaConverters._
@@ -55,8 +57,18 @@ class Settings(private val config: Configuration) {
   val portalTestLogin: Boolean = config.getOptional[Boolean]("portal.test_login").getOrElse(false)
 
   val dataStoreConfigs: IO[List[DataStoreConfig]] =
-    loadConfigF[IO, List[String]](config.underlying, "data-stores").flatMap { lst =>
-      lst.map(loadConfigF[IO, DataStoreConfig](config.underlying, _)).parSequence
+    Blocker[IO].use { blocker =>
+      ConfigSource
+        .fromConfig(config.underlying)
+        .at("data-stores")
+        .loadF[IO, List[String]](blocker)
+        .flatMap { lst =>
+          lst
+            .map(
+              ConfigSource.fromConfig(config.underlying).at(_).loadF[IO, DataStoreConfig](blocker)
+            )
+            .parSequence
+        }
     }
 
   val cryptoConfig = IO(config.get[Config]("crypto"))

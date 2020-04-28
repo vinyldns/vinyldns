@@ -18,8 +18,10 @@ package vinyldns.api.notifier.sns
 
 import vinyldns.core.notifier.{Notifier, NotifierConfig, NotifierProvider}
 import vinyldns.core.domain.membership.UserRepository
-import pureconfig.module.catseffect.loadConfigF
-import cats.effect.IO
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
+import cats.effect.{Blocker, ContextShift, IO}
 import com.amazonaws.services.sns.AmazonSNS
 import org.slf4j.LoggerFactory
 import com.amazonaws.services.sns.AmazonSNSClientBuilder
@@ -29,11 +31,15 @@ import com.amazonaws.auth.BasicAWSCredentials
 
 class SnsNotifierProvider extends NotifierProvider {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val logger = LoggerFactory.getLogger(classOf[SnsNotifierProvider])
 
   def load(config: NotifierConfig, userRepository: UserRepository): IO[Notifier] =
     for {
-      snsConfig <- loadConfigF[IO, SnsNotifierConfig](config.settings)
+      snsConfig <- Blocker[IO].use(
+        ConfigSource.fromConfig(config.settings).loadF[IO, SnsNotifierConfig](_)
+      )
       client <- createClient(snsConfig)
     } yield new SnsNotifier(snsConfig, client)
 

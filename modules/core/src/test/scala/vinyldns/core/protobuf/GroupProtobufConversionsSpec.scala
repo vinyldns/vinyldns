@@ -16,10 +16,11 @@
 
 package vinyldns.core.protobuf
 
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProtobufConversions {
+class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupProtobufConversions {
 
   "Converting groups to protobufs" should {
     "works with all fields present" in {

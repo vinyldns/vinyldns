@@ -16,11 +16,12 @@
 
 package vinyldns.api.domain.zone
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS.ZoneTransferException
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
-class ZoneViewLoaderIntegrationSpec extends WordSpec with Matchers {
+class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
   "ZoneViewLoader" should {
     "return a ZoneView upon success" in {
       DnsZoneViewLoader(Zone("vinyldns.", "test@test.com"))

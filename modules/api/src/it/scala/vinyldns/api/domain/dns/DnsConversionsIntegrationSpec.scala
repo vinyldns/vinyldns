@@ -16,7 +16,8 @@
 
 package vinyldns.api.domain.dns
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
@@ -25,7 +26,7 @@ import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData.{aaaa, ds}
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 
-class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
+class DnsConversionsIntegrationSpec extends AnyWordSpec with Matchers with ResultHelpers {
 
   private val zoneName = "example.com."
   private val testZone = Zone(

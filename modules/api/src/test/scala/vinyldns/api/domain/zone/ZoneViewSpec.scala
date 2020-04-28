@@ -17,13 +17,14 @@
 package vinyldns.api.domain.zone
 
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
-class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestHelpers {
+class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
 
   val testZone = Zone("vinyldns.", "test@test.com")
 

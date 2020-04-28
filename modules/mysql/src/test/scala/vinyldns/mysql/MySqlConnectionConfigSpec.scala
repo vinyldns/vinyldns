@@ -16,17 +16,17 @@
 
 package vinyldns.mysql
 
-import cats.effect.IO
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
-import pureconfig.ConfigReader
-import pureconfig.module.catseffect.loadConfigF
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import pureconfig._
+import pureconfig.generic.auto._
 import vinyldns.core.repository.DataStoreConfig
 
-class MySqlConnectionConfigSpec extends WordSpec with Matchers {
+class MySqlConnectionConfigSpec extends AnyWordSpec with Matchers {
   val mySqlConfig: Config = ConfigFactory.load().getConfig("mysql")
   val dataStoreSettings: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](mySqlConfig)
+    ConfigSource.fromConfig(mySqlConfig).loadOrThrow[DataStoreConfig]
 
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
@@ -41,8 +41,7 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
       )
 
       val settingsConfig =
-        loadConfigF[IO, MySqlConnectionConfig](dataStoreSettings.settings).unsafeRunSync()
-
+        ConfigSource.fromConfig(dataStoreSettings.settings).loadOrThrow[MySqlConnectionConfig]
       settingsConfig.mySqlProperties shouldBe configProperties
     }
 
@@ -59,9 +58,7 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
           |  }
           |  """.stripMargin)
 
-      val settingsConfig =
-        loadConfigF[IO, MySqlConnectionConfig](conf).unsafeRunSync()
-
+      val settingsConfig = ConfigSource.fromConfig(conf).loadOrThrow[MySqlConnectionConfig]
       settingsConfig.mySqlProperties shouldBe Map()
     }
   }

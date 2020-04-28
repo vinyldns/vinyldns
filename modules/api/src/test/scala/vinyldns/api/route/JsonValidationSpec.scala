@@ -22,7 +22,8 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import cats.implicits._
 
@@ -49,7 +50,7 @@ case class Pet(typ: PetType, name: String)
 case class User(name: String, pet: Option[Pet], home: Home, typ: UserType)
 
 class JsonValidationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with JsonValidation
     with ScalatestRouteTest
     with Matchers {

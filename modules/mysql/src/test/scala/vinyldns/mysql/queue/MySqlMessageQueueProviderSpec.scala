@@ -17,11 +17,14 @@
 package vinyldns.mysql.queue
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.mysql.MySqlConnectionConfig
+import pureconfig._
+import pureconfig.generic.auto._
 
-class MySqlMessageQueueProviderSpec extends WordSpec with Matchers {
+class MySqlMessageQueueProviderSpec extends AnyWordSpec with Matchers {
 
   val undertest = new MySqlMessageQueueProvider()
 
@@ -42,7 +45,8 @@ class MySqlMessageQueueProviderSpec extends WordSpec with Matchers {
             |
             |    """.stripMargin)
 
-      val badSettings = pureconfig.loadConfigOrThrow[MessageQueueConfig](badConfig)
+      val badSettings =
+        ConfigSource.fromConfig(badConfig).loadOrThrow[MessageQueueConfig]
 
       a[pureconfig.error.ConfigReaderException[MySqlConnectionConfig]] should be thrownBy undertest
         .load(badSettings)

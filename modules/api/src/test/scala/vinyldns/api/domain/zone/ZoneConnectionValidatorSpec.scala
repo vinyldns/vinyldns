@@ -19,8 +19,10 @@ package vinyldns.api.domain.zone
 import cats.scalatest.{EitherMatchers, EitherValues}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
@@ -33,7 +35,7 @@ import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, Zo
 import scala.concurrent.duration._
 
 class ZoneConnectionValidatorSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
@@ -58,7 +60,7 @@ class ZoneConnectionValidatorSpec
     case "error." => IO.raiseError(new RuntimeException("transfer connection failure!"))
     case "timeout." =>
       IO {
-        Thread.sleep(100)
+        Thread.sleep(200)
         mockZoneView
       }
     case _ =>
@@ -241,25 +243,6 @@ class ZoneConnectionValidatorSpec
       result.getMessage should include("transfer connection failure!")
     }
 
-    "respond with a failure if loadDns times out" in {
-      val badZone = Zone(
-        "timeout.",
-        "test@test.com",
-        connection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-        transferConnection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
-      )
-
-      doReturn(List(mockRecordSet).toResult)
-        .when(mockDnsConnection)
-        .resolve(badZone.name, badZone.name, RecordType.SOA)
-
-      val result = underTest.validateZoneConnections(badZone).value.unsafeRunSync()
-      val error = result.leftValue
-      error shouldBe a[ConnectionFailed]
-      error.getMessage should include("Transfer connection invalid")
-    }
     "isValidBackendId" should {
       val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
       val underTest =

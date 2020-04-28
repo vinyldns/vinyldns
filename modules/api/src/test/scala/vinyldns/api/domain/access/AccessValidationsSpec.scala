@@ -18,8 +18,9 @@ package vinyldns.api.domain.access
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpecLike}
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.TestMembershipData._
@@ -30,9 +31,10 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
+import org.scalatestplus.mockito.MockitoSugar
 
 class AccessValidationsSpec
-    extends WordSpecLike
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers

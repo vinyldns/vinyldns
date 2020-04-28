@@ -17,7 +17,8 @@
 package vinyldns.dynamodb.repository
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.repository.{
   DataStoreConfig,
@@ -26,8 +27,10 @@ import vinyldns.core.repository.{
   RepositoryName
 }
 import vinyldns.dynamodb.DynamoTestConfig
+import pureconfig._
+import pureconfig.generic.auto._
 
-class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
+class DynamoDBDataStoreProviderSpec extends AnyWordSpec with Matchers {
 
   private val underTest = new DynamoDBDataStoreProvider()
   private val crypto = new NoOpCrypto()
@@ -54,7 +57,7 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           |    """.stripMargin
       )
 
-      val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
+      val badSettings = ConfigSource.fromConfig(badConfig).loadOrThrow[DataStoreConfig]
 
       a[pureconfig.error.ConfigReaderException[DynamoDBDataStoreSettings]] should be thrownBy underTest
         .load(badSettings, crypto)

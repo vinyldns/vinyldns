@@ -20,14 +20,15 @@ import cats.effect._
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestZoneData.zoneChangePending
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
 
-class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
+class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
   trait Fixture {
     val mockZoneRepo = mock[ZoneRepository]

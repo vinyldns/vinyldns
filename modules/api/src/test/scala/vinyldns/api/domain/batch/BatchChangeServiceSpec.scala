@@ -21,8 +21,10 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
@@ -52,7 +54,7 @@ import vinyldns.api.domain.access.AccessValidations
 import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with CatsHelpers

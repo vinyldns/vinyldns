@@ -23,7 +23,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
+import org.scalatest.OneInstancePerTest
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
@@ -34,7 +36,7 @@ import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
 
 class ZoneRoutingSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalatestRouteTest
     with VinylDNSJsonProtocol
     with VinylDNSRouteTestHelper

@@ -20,6 +20,8 @@ import java.util.UUID
 
 import cats.effect._
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
@@ -30,7 +32,7 @@ import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlZoneRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers

@@ -19,10 +19,12 @@ package vinyldns.dynamodb.repository
 import java.util.UUID
 
 import org.scalatest._
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import org.slf4j.{Logger, LoggerFactory}
 
 trait DynamoDBIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with Matchers
     with Inspectors {

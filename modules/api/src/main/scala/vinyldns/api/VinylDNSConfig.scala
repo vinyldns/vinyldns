@@ -17,10 +17,12 @@
 package vinyldns.api
 
 import akka.actor.ActorSystem
-import cats.effect.{ContextShift, IO}
+import cats.effect.{Blocker, ContextShift, IO}
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
-import pureconfig.module.catseffect.loadConfigF
+import pureconfig._
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax._
 import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
@@ -51,7 +53,9 @@ object VinylDNSConfig {
       .asScala
       .toList
       .map { configKey =>
-        loadConfigF[IO, DataStoreConfig](vinyldnsConfig, configKey)
+        Blocker[IO].use(
+          ConfigSource.fromConfig(vinyldnsConfig).at(configKey).loadF[IO, DataStoreConfig](_)
+        )
       }
       .parSequence
 
@@ -61,14 +65,18 @@ object VinylDNSConfig {
       .asScala
       .toList
       .map { configKey =>
-        loadConfigF[IO, NotifierConfig](vinyldnsConfig, configKey)
+        Blocker[IO].use(
+          ConfigSource.fromConfig(vinyldnsConfig).at(configKey).loadF[IO, NotifierConfig](_)
+        )
       }
       .parSequence
 
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
   lazy val messageQueueConfig: IO[MessageQueueConfig] =
-    loadConfigF[IO, MessageQueueConfig](vinyldnsConfig.getConfig("queue"))
+    Blocker[IO].use(
+      ConfigSource.fromConfig(vinyldnsConfig.getConfig("queue")).loadF[IO, MessageQueueConfig](_)
+    )
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
@@ -111,7 +119,7 @@ object VinylDNSConfig {
           .getConfigList("backends")
           .asScala
           .map {
-            pureconfig.loadConfigOrThrow[DnsBackend]
+            ConfigSource.fromConfig(_).loadOrThrow[DnsBackend]
           }
           .toList
           .map(_.encrypted(Crypto.instance))
@@ -122,7 +130,14 @@ object VinylDNSConfig {
   }
 
   lazy val healthCheckTimeout: IO[Int] =
-    loadConfigF[IO, Option[Int]](vinyldnsConfig, "health-check-timeout").map(_.getOrElse(10000))
+    Blocker[IO].use(
+      ConfigSource
+        .fromConfig(vinyldnsConfig)
+        .at("health-check-timeout")
+        .loadF[IO, Option[Int]](_)
+        .map(_.getOrElse(10000))
+        .handleError(_ => 10000)
+    )
 
   def getOptionalStringList(key: String): List[String] =
     if (vinyldnsConfig.hasPath(key)) {
@@ -136,12 +151,21 @@ object VinylDNSConfig {
     .getOrElse(false)
 
   lazy val globalAcl: IO[GlobalAcls] =
-    loadConfigF[IO, List[GlobalAcl]](vinyldnsConfig, "global-acl-rules").map(GlobalAcls)
+    Blocker[IO]
+      .use(
+        ConfigSource.fromConfig(vinyldnsConfig).at("global-acl-rules").loadF[IO, List[GlobalAcl]](_)
+      )
+      .map(GlobalAcls(_))
 
   // defines nibble boundary for ipv6 zone discovery
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
   lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] =
-    loadConfigF[IO, V6DiscoveryNibbleBoundaries](vinyldnsConfig, "v6-discovery-nibble-boundaries")
+    Blocker[IO].use(
+      ConfigSource
+        .fromConfig(vinyldnsConfig)
+        .at("v6-discovery-nibble-boundaries")
+        .loadF[IO, V6DiscoveryNibbleBoundaries](_)
+    )
 
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")

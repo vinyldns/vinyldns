@@ -17,10 +17,11 @@
 package vinyldns.core.health
 
 import cats.effect._
-import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.health.HealthCheck._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HealthServiceSpec extends WordSpec with Matchers {
+class HealthServiceSpec extends AnyWordSpec with Matchers {
 
   "Checking Status" should {
     val successCheck: HealthCheck = IO.unit.attempt.asHealthCheck

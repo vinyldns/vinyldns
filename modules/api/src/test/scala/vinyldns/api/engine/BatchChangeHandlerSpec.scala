@@ -20,8 +20,9 @@ import cats.effect._
 import org.joda.time.DateTime
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{doReturn, verify}
-import org.scalatest.{BeforeAndAfterEach, WordSpec}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.core.domain.batch._
@@ -31,7 +32,7 @@ import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 import scala.concurrent.ExecutionContext
 
 class BatchChangeHandlerSpec
-    extends WordSpec
+    extends AnyWordSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with CatsHelpers {

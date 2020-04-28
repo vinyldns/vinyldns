@@ -29,3 +29,4 @@ package-lock.json
 .metals
 tmp.out
 .vscode
+project/metals.sbt

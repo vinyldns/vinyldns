@@ -20,13 +20,15 @@ import java.time.Instant
 
 import cats.effect.IO
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.{DB, _}
 import vinyldns.mysql.TestMySqlInstance
 
 import scala.concurrent.duration._
 
 class MySqlTaskRepositoryIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {

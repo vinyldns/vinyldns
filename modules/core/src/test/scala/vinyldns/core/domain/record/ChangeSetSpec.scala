@@ -16,9 +16,10 @@
 
 package vinyldns.core.domain.record
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ChangeSetSpec extends WordSpec with Matchers {
+class ChangeSetSpec extends AnyWordSpec with Matchers {
 
   "ChangeSet" should {
     "convert status fromInt properly" in {
