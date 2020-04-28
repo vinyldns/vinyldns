@@ -50,13 +50,21 @@ class MembershipService(
 
   def createGroup(inputGroup: Group, authPrincipal: AuthPrincipal): Result[Group] = {
     val newGroup = inputGroup.addAdminUser(authPrincipal.signedInUser)
+    val adminMembers = inputGroup.adminUserIds
+    val nonAdminMembers = inputGroup.memberIds.diff(adminMembers)
     for {
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
       _ <- groupChangeRepo.save(GroupChange.forAdd(newGroup, authPrincipal)).toResult[GroupChange]
       _ <- groupRepo.save(newGroup).toResult[Group]
-      _ <- membershipRepo.addMembers(newGroup.id, newGroup.memberIds).toResult[Set[String]]
+      // save admin and non-admin members separately
+      _ <- membershipRepo
+        .saveMembers(newGroup.id, adminMembers, isAdmin = true)
+        .toResult[Set[String]]
+      _ <- membershipRepo
+        .saveMembers(newGroup.id, nonAdminMembers, isAdmin = false)
+        .toResult[Set[String]]
     } yield newGroup
   }
 
@@ -73,16 +81,25 @@ class MembershipService(
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
-      addedMembers = newGroup.memberIds.diff(existingGroup.memberIds)
+      addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
+      // new non-admin members ++ admins converted to non-admins
+      addedNonAdmins = newGroup.memberIds.diff(existingGroup.memberIds).diff(addedAdmins) ++
+        existingGroup.adminUserIds.diff(newGroup.adminUserIds).intersect(newGroup.memberIds)
       removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
       _ <- hasMembersAndAdmins(newGroup).toResult
-      _ <- usersExist(addedMembers)
+      _ <- usersExist(addedNonAdmins)
       _ <- differentGroupWithSameNameDoesNotExist(newGroup.name, existingGroup.id)
       _ <- groupChangeRepo
         .save(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal))
         .toResult[GroupChange]
       _ <- groupRepo.save(newGroup).toResult[Group]
-      _ <- membershipRepo.addMembers(existingGroup.id, addedMembers).toResult[Set[String]]
+      // save admin and non-admin members separately
+      _ <- membershipRepo
+        .saveMembers(existingGroup.id, addedAdmins, isAdmin = true)
+        .toResult[Set[String]]
+      _ <- membershipRepo
+        .saveMembers(existingGroup.id, addedNonAdmins, isAdmin = false)
+        .toResult[Set[String]]
       _ <- membershipRepo.removeMembers(existingGroup.id, removedMembers).toResult[Set[String]]
     } yield newGroup
 

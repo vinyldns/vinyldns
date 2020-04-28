@@ -21,7 +21,7 @@ import vinyldns.core.repository.Repository
 
 trait MembershipRepository extends Repository {
 
-  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
+  def saveMembers(groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]]
 
   def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 

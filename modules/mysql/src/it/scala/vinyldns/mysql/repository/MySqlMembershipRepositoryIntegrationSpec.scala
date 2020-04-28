@@ -20,7 +20,6 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.{DB, _}
-import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlMembershipRepositoryIntegrationSpec
@@ -29,7 +28,7 @@ class MySqlMembershipRepositoryIntegrationSpec
     with BeforeAndAfterEach
     with Matchers {
 
-  private val repo: MembershipRepository = TestMySqlInstance.membershipRepository
+  private val repo: MySqlMembershipRepository = TestMySqlInstance.membershipRepository
 
   def clear(): Unit =
     DB.localTx { implicit s =>
@@ -62,7 +61,7 @@ class MySqlMembershipRepositoryIntegrationSpec
       val originalResult = getAllRecords
       val groupId = "group-id-1"
       val userIds: Set[String] = Set()
-      val addResult = repo.addMembers(groupId, userIds).unsafeRunSync()
+      val addResult = repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
       addResult shouldBe empty
 
       // records remain the same as original
@@ -72,7 +71,7 @@ class MySqlMembershipRepositoryIntegrationSpec
     "add a member successfully" in {
       val groupId = "group-id-1"
       val userIds = Set("user-id-1")
-      val addResult = repo.addMembers(groupId, userIds).unsafeRunSync()
+      val addResult = repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
 
       addResult should contain theSameElementsAs userIds
 
@@ -86,8 +85,12 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupId = "group-id-1"
       val userIds = Set("user-id-1")
 
-      repo.addMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
-      repo.addMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
+      repo
+        .saveMembers(groupId, userIds, isAdmin = false)
+        .unsafeRunSync() should contain theSameElementsAs userIds
+      repo
+        .saveMembers(groupId, userIds, isAdmin = false)
+        .unsafeRunSync() should contain theSameElementsAs userIds
 
       getAllRecords should contain theSameElementsAs List(Tuple2(userIds.head, groupId))
     }
@@ -95,7 +98,7 @@ class MySqlMembershipRepositoryIntegrationSpec
     "add multiple members successfully" in {
       val groupId = "group-id-1"
       val userIds = generateUserIds(10)
-      val addResult = repo.addMembers(groupId, userIds).unsafeRunSync()
+      val addResult = repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
 
       addResult should contain theSameElementsAs userIds
 
@@ -109,8 +112,8 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupIdTwo = "group-id-2"
       val userIds = Set("user-id-1")
 
-      repo.addMembers(groupIdOne, userIds).unsafeRunSync() shouldBe userIds
-      repo.addMembers(groupIdTwo, userIds).unsafeRunSync() shouldBe userIds
+      repo.saveMembers(groupIdOne, userIds, isAdmin = false).unsafeRunSync() shouldBe userIds
+      repo.saveMembers(groupIdTwo, userIds, isAdmin = false).unsafeRunSync() shouldBe userIds
 
       val expectedGroups = Set(groupIdOne, groupIdTwo)
       repo
@@ -124,7 +127,7 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupId = "group-id-1"
       val userIds = Set("user-id-1")
 
-      repo.addMembers(groupId, userIds).unsafeRunSync()
+      repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
       getAllRecords should contain theSameElementsAs Set(Tuple2(userIds.head, groupId))
 
       repo.removeMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
@@ -135,7 +138,7 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupId = "group-id-1"
       val userIds = generateUserIds(10)
 
-      repo.addMembers(groupId, userIds).unsafeRunSync()
+      repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
       getAllRecords should contain theSameElementsAs userIds.map(Tuple2(_, groupId))
 
       val toBeRemoved = userIds.take(5)
@@ -150,7 +153,7 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupId = "group-id-1"
       val userIds = Set("user-id-1")
 
-      repo.addMembers(groupId, userIds).unsafeRunSync()
+      repo.saveMembers(groupId, userIds, isAdmin = false).unsafeRunSync()
       val originalResult = getAllRecords
       val result = repo.removeMembers(groupId, Set()).unsafeRunSync()
       result shouldBe empty
@@ -167,13 +170,13 @@ class MySqlMembershipRepositoryIntegrationSpec
       val groupIdThree = "group-id-3"
 
       // make some noise
-      repo.addMembers(groupIdOne, noisyIds).unsafeRunSync()
-      repo.addMembers(groupIdTwo, noisyIds).unsafeRunSync()
-      repo.addMembers(groupIdThree, noisyIds).unsafeRunSync()
+      repo.saveMembers(groupIdOne, noisyIds, isAdmin = false).unsafeRunSync()
+      repo.saveMembers(groupIdTwo, noisyIds, isAdmin = false).unsafeRunSync()
+      repo.saveMembers(groupIdThree, noisyIds, isAdmin = false).unsafeRunSync()
 
       val underTest = Set("user-id-under-test")
-      repo.addMembers(groupIdOne, underTest).unsafeRunSync()
-      repo.addMembers(groupIdTwo, underTest).unsafeRunSync()
+      repo.saveMembers(groupIdOne, underTest, isAdmin = false).unsafeRunSync()
+      repo.saveMembers(groupIdTwo, underTest, isAdmin = false).unsafeRunSync()
       // not adding to group three
 
       val expectedGroups = Set(groupIdOne, groupIdTwo)
@@ -185,11 +188,32 @@ class MySqlMembershipRepositoryIntegrationSpec
     "return empty when no groups for user" in {
       val groupId = "group-id-1"
       val noisyIds = generateUserIds(2)
-      repo.addMembers(groupId, noisyIds).unsafeRunSync()
+      repo.saveMembers(groupId, noisyIds, isAdmin = false).unsafeRunSync()
 
       val underTest = Set("user-id-under-test")
       repo.getGroupsForUser(underTest.head).unsafeRunSync() shouldBe Set()
     }
   }
 
+  "MySqlMembershipRepo.getUsersForGroup" should {
+    "get correct users based on isAdmin flag" in {
+      val groupId = "group-id-1"
+      val adminIds = generateUserIds(2)
+      val allMemberUserIds = generateUserIds(4)
+      val nonAdminIds = allMemberUserIds.diff(adminIds)
+
+      val getMembers = for {
+        _ <- repo.saveMembers(groupId, adminIds, isAdmin = true)
+        _ <- repo.saveMembers(groupId, nonAdminIds, isAdmin = false)
+        allMembers <- repo.getUsersForGroup(groupId, None)
+        adminOnlyMembers <- repo.getUsersForGroup(groupId, Some(true))
+        nonAdminOnlyMembers <- repo.getUsersForGroup(groupId, Some(false))
+      } yield (allMembers, adminOnlyMembers, nonAdminOnlyMembers)
+
+      val (allMemberIds, adminOnlyMembers, nonAdminOnlyMembers) = getMembers.unsafeRunSync()
+      allMemberIds shouldBe allMemberUserIds
+      adminOnlyMembers shouldBe adminIds
+      nonAdminOnlyMembers shouldBe nonAdminIds
+    }
+  }
 }

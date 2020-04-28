@@ -272,22 +272,30 @@ object TestDataLoader {
       _ <- groupRepo.save(anotherGlobalACLGroup)
       _ <- groupRepo.save(duGroup)
       _ <- groupRepo.save(listBatchChangeSummariesGroup)
-      _ <- membershipRepo.addMembers(
+      _ <- membershipRepo.saveMembers(
         groupId = "shared-zone-group",
-        memberUserIds = Set(sharedZoneUser.id)
+        memberUserIds = Set(sharedZoneUser.id),
+        isAdmin = true
       )
-      _ <- membershipRepo.addMembers(
+      _ <- membershipRepo.saveMembers(
         groupId = "global-acl-group-id",
-        memberUserIds = Set(okUser.id, dummyUser.id)
+        memberUserIds = Set(okUser.id, dummyUser.id),
+        isAdmin = true
       )
-      _ <- membershipRepo.addMembers(
+      _ <- membershipRepo.saveMembers(
         groupId = "another-global-acl-group",
-        memberUserIds = Set(testUser.id)
+        memberUserIds = Set(testUser.id),
+        isAdmin = true
       )
-      _ <- membershipRepo.addMembers(groupId = duGroup.id, memberUserIds = duGroup.memberIds)
-      _ <- membershipRepo.addMembers(
+      _ <- membershipRepo.saveMembers(
+        groupId = duGroup.id,
+        memberUserIds = duGroup.memberIds,
+        isAdmin = true
+      )
+      _ <- membershipRepo.saveMembers(
         groupId = listBatchChangeSummariesGroup.id,
-        memberUserIds = listBatchChangeSummariesGroup.memberIds
+        memberUserIds = listBatchChangeSummariesGroup.memberIds,
+        isAdmin = true
       )
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)

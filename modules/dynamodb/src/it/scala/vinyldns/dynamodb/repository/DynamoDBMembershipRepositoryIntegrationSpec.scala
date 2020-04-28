@@ -38,7 +38,8 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     repo = DynamoDBMembershipRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     // Create all the items
-    val results = testGroupIds.map(repo.addMembers(_, testUserIds.toSet)).toList.parSequence
+    val results =
+      testGroupIds.map(repo.saveMembers(_, testUserIds.toSet, isAdmin = false)).toList.parSequence
 
     // Wait until all of the data is stored
     results.unsafeRunTimed(5.minutes).getOrElse(fail("timeout waiting for data load"))
@@ -55,16 +56,16 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     val user2 = genString
     "add members successfully" in {
       repo
-        .addMembers(groupId, Set(user1, user2))
+        .saveMembers(groupId, Set(user1, user2), isAdmin = false)
         .unsafeRunSync() should contain theSameElementsAs Set(user1, user2)
     }
 
     "add members with no member ids invokes no change" in {
       val user1 = genString
-      repo.addMembers(groupId, Set(user1)).unsafeRunSync()
+      repo.saveMembers(groupId, Set(user1), isAdmin = false).unsafeRunSync()
 
       val originalResult = repo.getGroupsForUser(user1).unsafeRunSync()
-      repo.addMembers(groupId, Set()).unsafeRunSync()
+      repo.saveMembers(groupId, Set(), isAdmin = false).unsafeRunSync()
       repo.getGroupsForUser(user1).unsafeRunSync() should contain theSameElementsAs originalResult
     }
 
@@ -74,8 +75,8 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       val user1 = genString
       val f =
         for {
-          _ <- repo.addMembers(group1, Set(user1))
-          _ <- repo.addMembers(group2, Set(user1))
+          _ <- repo.saveMembers(group1, Set(user1), isAdmin = false)
+          _ <- repo.saveMembers(group2, Set(user1), isAdmin = false)
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
@@ -92,8 +93,8 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       val user1 = genString
       val f =
         for {
-          _ <- repo.addMembers(group1, Set(user1))
-          _ <- repo.addMembers(group2, Set(user1))
+          _ <- repo.saveMembers(group1, Set(user1), isAdmin = false)
+          _ <- repo.saveMembers(group2, Set(user1), isAdmin = false)
           _ <- repo.removeMembers(group1, Set(user1))
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
@@ -107,7 +108,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       val user2 = genString
       val f =
         for {
-          _ <- repo.addMembers(group1, Set(user1))
+          _ <- repo.saveMembers(group1, Set(user1), isAdmin = false)
           _ <- repo.removeMembers(group1, Set(user2))
           userGroups <- repo.getGroupsForUser(user2)
         } yield userGroups
@@ -117,7 +118,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "remove members with no member ids invokes no change" in {
       val user1 = genString
-      repo.addMembers(groupId, Set(user1)).unsafeRunSync()
+      repo.saveMembers(groupId, Set(user1), isAdmin = false).unsafeRunSync()
 
       val originalResult = repo.getGroupsForUser(user1).unsafeRunSync()
       repo.removeMembers(groupId, Set()).unsafeRunSync()
@@ -131,9 +132,9 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       val user1 = genString
       val f =
         for {
-          _ <- repo.addMembers(group1, Set(user1))
-          _ <- repo.addMembers(group2, Set(user1))
-          _ <- repo.addMembers(group3, Set(user1))
+          _ <- repo.saveMembers(group1, Set(user1), isAdmin = false)
+          _ <- repo.saveMembers(group2, Set(user1), isAdmin = false)
+          _ <- repo.saveMembers(group3, Set(user1), isAdmin = false)
           _ <- repo.removeMembers(group1, Set(user1))
           _ <- repo.removeMembers(group2, Set(user1))
           _ <- repo.removeMembers(group3, Set(user1))

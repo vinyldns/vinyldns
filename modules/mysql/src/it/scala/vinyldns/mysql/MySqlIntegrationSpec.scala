@@ -24,8 +24,8 @@ import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
 import vinyldns.core.task.TaskRepository
-import vinyldns.mysql.repository.MySqlDataStoreProvider
 import pureconfig._
+import vinyldns.mysql.repository.{MySqlDataStoreProvider, MySqlMembershipRepository}
 import pureconfig.generic.auto._
 
 trait MySqlIntegrationSpec {
@@ -54,8 +54,8 @@ trait MySqlIntegrationSpec {
     instance.get[GroupRepository](RepositoryName.group).get
   lazy val recordChangeRepository: RecordChangeRepository =
     instance.get[RecordChangeRepository](RepositoryName.recordChange).get
-  lazy val membershipRepository: MembershipRepository =
-    instance.get[MembershipRepository](RepositoryName.membership).get
+  lazy val membershipRepository: MySqlMembershipRepository =
+    instance.get[MySqlMembershipRepository](RepositoryName.membership).get
   lazy val groupChangeRepository: GroupChangeRepository =
     instance.get[GroupChangeRepository](RepositoryName.groupChange).get
   lazy val userChangeRepository: UserChangeRepository =
