@@ -46,7 +46,8 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
         recordSet,
         group,
         membership,
-        groupChange
+        groupChange,
+        zoneChange
       )
     }
     "assign the correct dynamodb repositories" in {
@@ -56,7 +57,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
           .get
 
       dynamodbConfig.repositories.keys should contain theSameElementsAs
-        Set(recordChange, zoneChange)
+        Set(recordChange)
     }
 
     "load string list for key that exists" in {
