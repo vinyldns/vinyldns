@@ -377,17 +377,16 @@ class BatchChangeValidations(
               zoneDoesNotRequireManualReview(change, isApproved) |+|
               ensureRecordExists(change, groupedChanges)
           )
-        case None =>
-          if (validateRecordLookupAgainstDnsBackend) {
-            dnsConnection(change.zone, configuredDnsConnections)
-              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
-              .value
-              .map {
-                case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
-                  ensureRecordExists(change, dnsBackendRecords)
-                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
-              }
-          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
+        case None if validateRecordLookupAgainstDnsBackend =>
+          dnsConnection(change.zone, configuredDnsConnections)
+            .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+            .value
+            .map {
+              case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
+                ensureRecordExists(change, dnsBackendRecords)
+              case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+            }
+        case None => IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
     validations.map(_.map(_ => change))
   }
