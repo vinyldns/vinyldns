@@ -418,20 +418,19 @@ class BatchChangeValidations(
               ) |+|
               zoneDoesNotRequireManualReview(change, isApproved)
           )
-        case None =>
-          if (validateRecordLookupAgainstDnsBackend) {
-            dnsConnection(change.zone, configuredDnsConnections)
-              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
-              .value
-              .map {
-                case Right(records) if records.nonEmpty => ().validNel
-                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
-              }
-          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
+        case None if validateRecordLookupAgainstDnsBackend =>
+          dnsConnection(change.zone, configuredDnsConnections)
+            .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+            .value
+            .map {
+              case Right(records) if records.nonEmpty => ().validNel
+              case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+            }
+        case None => IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
     }
 
-    val validations = commonValidations.map(_ |+| typedValidations)
+    val validations: IO[SingleValidation[Unit]] = commonValidations.map(_ |+| typedValidations)
 
     validations.map(_.map(_ => change))
   }
@@ -451,17 +450,16 @@ class BatchChangeValidations(
               zoneDoesNotRequireManualReview(change, isApproved) |+|
               ensureRecordExists(change, groupedChanges)
           )
-        case None =>
-          if (validateRecordLookupAgainstDnsBackend) {
-            dnsConnection(change.zone, configuredDnsConnections)
-              .resolve(change.recordName, change.zone.name, change.inputChange.typ)
-              .value
-              .map {
-                case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
-                  ensureRecordExists(change, dnsBackendRecords)
-                case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
-              }
-          } else IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
+        case None if validateRecordLookupAgainstDnsBackend =>
+          dnsConnection(change.zone, configuredDnsConnections)
+            .resolve(change.recordName, change.zone.name, change.inputChange.typ)
+            .value
+            .map {
+              case Right(dnsBackendRecords) if dnsBackendRecords.nonEmpty =>
+                ensureRecordExists(change, dnsBackendRecords)
+              case _ => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+            }
+        case None => IO(RecordDoesNotExist(change.inputChange.inputName).invalidNel)
       }
 
     validations.map(_.map(_ => change))
@@ -542,18 +540,16 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap
   ): IO[SingleValidation[Unit]] =
     groupedChanges.getExistingRecordSet(RecordKey(zone.id, recordName, typ)) match {
-      case Some(_) =>
-        if (validateRecordLookupAgainstDnsBackend) {
-          dnsConnection(zone, configuredDnsConnections)
-            .resolve(recordName, zone.name, typ)
-            .value
-            .map {
-              case Right(dnsBackendRecords) if dnsBackendRecords.isEmpty =>
-                ().validNel
-              case _ => RecordAlreadyExists(inputName).invalidNel
-            }
-        } else
-          IO(RecordAlreadyExists(inputName).invalidNel)
+      case Some(_) if validateRecordLookupAgainstDnsBackend =>
+        dnsConnection(zone, configuredDnsConnections)
+          .resolve(recordName, zone.name, typ)
+          .value
+          .map {
+            case Right(dnsBackendRecords) if dnsBackendRecords.isEmpty =>
+              ().validNel
+            case _ => RecordAlreadyExists(inputName).invalidNel
+          }
+      case Some(_) => IO(RecordAlreadyExists(inputName).invalidNel)
       case None => IO(().validNel)
     }
 
