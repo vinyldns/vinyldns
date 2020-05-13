@@ -9,7 +9,7 @@ object Dependencies {
   lazy val prometheusV = "0.4.0"
   lazy val catsEffectV = "2.1.3"
   lazy val configV = "1.4.0"
-  lazy val scalikejdbcV = "3.3.1"
+  lazy val scalikejdbcV = "3.4.1"
   lazy val scalaTestV = "3.1.1"
   lazy val scodecV = "1.1.14"
   lazy val playV = "2.7.4"
