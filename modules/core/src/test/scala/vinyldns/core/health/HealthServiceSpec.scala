@@ -24,16 +24,16 @@ import org.scalatest.wordspec.AnyWordSpec
 class HealthServiceSpec extends AnyWordSpec with Matchers {
 
   "Checking Status" should {
-    val successCheck: HealthCheck = IO.unit.attempt.asHealthCheck
+    val successCheck: HealthCheck = IO.unit.attempt.asHealthCheck(classOf[HealthServiceSpec])
     val failCheck: HealthCheck =
-      IO.raiseError(new RuntimeException("bad!")).attempt.asHealthCheck
+      IO.raiseError(new RuntimeException("bad!")).attempt.asHealthCheck(classOf[HealthServiceSpec])
 
     "return all health check failures" in {
       val dsHealthCheck = List(successCheck, failCheck)
       val underTest = new HealthService(dsHealthCheck)
       val result = underTest.checkHealth().unsafeRunSync()
       result.length shouldBe 1
-      result.head.message shouldBe "bad!"
+      result.head.message shouldBe "vinyldns.core.health.HealthServiceSpec health check failed with msg='bad!'"
     }
 
     "return an empty list when no errors" in {

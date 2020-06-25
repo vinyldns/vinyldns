@@ -34,7 +34,8 @@ class HealthControllerSpec extends Specification {
 
   "HealthController" should {
     "send 200 if the healthcheck succeeds" in {
-      val healthService = new HealthService(List(IO.unit.attempt.asHealthCheck))
+      val healthService =
+        new HealthService(List(IO.unit.attempt.asHealthCheck(classOf[HealthControllerSpec])))
       val controller = new HealthController(components, healthService)
 
       val result = controller
@@ -44,8 +45,12 @@ class HealthControllerSpec extends Specification {
       status(result) must beEqualTo(200)
     }
     "send 500 if a healthcheck fails" in {
-      val err = IO.raiseError(new RuntimeException("bad!!")).attempt.asHealthCheck
-      val healthService = new HealthService(List(IO.unit.attempt.asHealthCheck, err))
+      val err = IO
+        .raiseError(new RuntimeException("bad!!"))
+        .attempt
+        .asHealthCheck(classOf[HealthControllerSpec])
+      val healthService =
+        new HealthService(List(IO.unit.attempt.asHealthCheck(classOf[HealthControllerSpec]), err))
       val controller = new HealthController(components, healthService)
 
       val result = controller

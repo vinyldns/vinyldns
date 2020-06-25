@@ -293,7 +293,7 @@ class LdapAuthenticator(
         case Some(Left(e)) => e.asLeft
         case _ => ().asRight
       }
-    }.asHealthCheck
+    }.asHealthCheck(classOf[LdapAuthenticator])
 
   // List[User] => List[Either[LdapException, LdapUserDetails]] => List[User]
   def getUsersNotInLdap(users: List[User]): IO[List[User]] =

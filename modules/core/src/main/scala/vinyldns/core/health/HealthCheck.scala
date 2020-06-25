@@ -28,11 +28,14 @@ object HealthCheck {
   private val logger = LoggerFactory.getLogger("HealthCheck")
 
   implicit class HealthCheckImprovements(io: IO[Either[Throwable, _]]) {
-    def asHealthCheck: HealthCheck =
+    def asHealthCheck(caller: Class[_]): HealthCheck =
       io.map {
         case Left(err) =>
-          logger.error("HealthCheck Failed", err)
-          Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))
+          logger.error(s"HealthCheck for ${caller.getCanonicalName} Failed", err)
+          val msg = Option(err.getMessage).getOrElse("no message from error")
+          Left(
+            HealthCheckError(s"${caller.getCanonicalName} health check failed with msg='${msg}'")
+          )
         case _ => Right(())
       }
   }

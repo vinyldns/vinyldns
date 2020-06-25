@@ -47,5 +47,5 @@ object TestMessageQueue extends MessageQueue {
 
   override def send[A <: ZoneCommand](command: A): IO[Unit] = IO.unit
 
-  override def healthCheck(): HealthCheck = IO.unit.attempt.asHealthCheck
+  override def healthCheck(): HealthCheck = IO.unit.attempt.asHealthCheck(TestMessageQueue.getClass)
 }
