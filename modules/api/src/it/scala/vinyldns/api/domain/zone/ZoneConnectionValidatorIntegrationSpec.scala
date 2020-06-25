@@ -39,7 +39,8 @@ class ZoneConnectionValidatorIntegrationSpec extends AnyWordSpec with Matchers w
         new ZoneConnectionValidator(toTest)
           .healthCheck(10000)
           .unsafeRunSync()
-      result should beLeft(HealthCheckError("Connection refused (Connection refused)"))
+      result should beLeft(HealthCheckError("vinyldns.api.domain.zone.ZoneConnectionValidator health " +
+        "check failed with msg='Connection refused (Connection refused)'"))
     }
   }
 }
