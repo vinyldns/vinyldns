@@ -150,7 +150,7 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
           IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout))
       )
       .attempt
-      .asHealthCheck
+      .asHealthCheck(classOf[ZoneConnectionValidator])
 
   def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
     ensuring(InvalidRequest(s"Invalid backendId: [$backendId]; please check system configuration")) {

@@ -110,5 +110,5 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       DB.readOnly { implicit s =>
         HEALTH_CHECK.map(_ => ()).first.apply()
       }
-    }.attempt.asHealthCheck
+    }.attempt.asHealthCheck(classOf[MySqlDataStoreProvider])
 }
