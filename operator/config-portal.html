@@ -1,0 +1,362 @@
+<html><head><title>VinylDNS: Portal Configuration Guide</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Management Platform" /><meta name="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Portal Configuration Guide" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="http://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Management Platform" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Portal Configuration Guide" /><meta name="twitter:image" content="http://vinyldns.ioimg/poster.png" /><meta name="twitter:description" content="DNS Management Platform" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/default.css" /><link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/palette.css" /><link rel="stylesheet" href="/css/codemirror.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>VinylDNS</span></div></a></li>        <li><a href="/operator/index.html" class="">Operator Guide</a></li> <li><a href="/operator/pre" class="">Pre-requisites</a> <ul class="sub_section"> <li><a href="/operator/setup-dynamodb" class="">Setup AWS DynamoDB</a></li> <li><a href="/operator/setup-mysql" class="">Setup MySQL</a></li> <li><a href="/operator/setup-sqs" class="">Setup AWS SQS</a></li> <li><a href="/operator/setup-ldap" class="">Setup LDAP</a></li></ul></li> <li><a href="/operator/setup-api" class="">Setup API Server</a> <ul class="sub_section"> <li><a href="/operator/config-api" class="">API Configuration Guide</a></li></ul></li> <li><a href="/operator/setup-portal" class="">Setup the Portal Server</a> <ul class="sub_section"> <li><a href="/operator/config-portal" class=" active ">Portal Configuration Guide</a></li></ul></li>      </ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="VinylDNS" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="portal-configuration-guide">Portal Configuration Guide</h1>
+<p>The portal configuration is much smaller than the API Server.</p>
+
+<p><strong>Note: Unlike the API server, not all configuration resides under a <code class="highlighter-rouge">vinyldns</code> namespace.</strong></p>
+
+<h2 id="configuration">Configuration</h2>
+<ul>
+  <li><a href="#database-configuration">Database Configuration</a></li>
+  <li><a href="#ldap">LDAP</a></li>
+  <li><a href="#cryptography-settings">Cryptography</a></li>
+  <li><a href="#custom-links">Custom Links</a></li>
+  <li><a href="#additional-configuration-settings">Additional Configuration Settings</a></li>
+  <li><a href="#full-example-config">Full Example Config</a></li>
+</ul>
+
+<h2 id="database-configuration">Database Configuration</h2>
+<p>VinylDNS supports both DynamoDB and MySQL backends (see <a href="config-api#database-configuration">API Database Configuration</a>).</p>
+
+<p>If using DynamoDB, follow the <a href="setup-dynamodb">AWS DynamoDB Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>If using MySQL, follow the <a href="setup-mysql">MySQL Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>The Portal uses the following tables:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">user</code></li>
+  <li><code class="highlighter-rouge">userChanges</code></li>
+</ul>
+
+<p>Note that the user table is shared between the API and the portal, and <em>must</em> be configured with
+the same values in both configs:</p>
+
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="s">vinyldns {</span>
+
+  <span class="s"># this list should include only the datastores being used by your portal instance (user and userChange repo)</span>
+  <span class="s">data-stores = ["dynamodb", "mysql"]</span>
+  
+  <span class="s">mysql {</span>
+    
+    <span class="s"># this is the path to the mysql provider. This should not be edited</span>
+    <span class="s"># from the default in reference.conf</span>
+    <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+    
+    <span class="s">settings {</span>
+      <span class="s"># the name of the database, recommend to leave this as is</span>
+      <span class="s">name = "vinyldns"</span>
+      
+      <span class="s"># the jdbc driver, recommended to leave this as is</span>
+      <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+  
+      <span class="s"># the URL used to create the schema, typically this will be without the "database" name</span>
+      <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+  
+      <span class="s"># the main connection URL</span>
+      <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+  
+      <span class="s"># the user to connect to MySQL</span>
+      <span class="s">user = "root"</span>
+  
+      <span class="s"># the password to connect to MySQL</span>
+      <span class="s">password = "pass"</span>
+  
+      <span class="s">## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields</span>
+      <span class="s"># the maximum number of connections to scale the connection pool to</span>
+      <span class="s">maximum-pool-size = 20</span>
+  
+      <span class="s"># the maximum number of milliseconds to wait for a connection from the connection pool</span>
+      <span class="s">connection-timeout-millis = 1000</span>
+      
+      <span class="s"># the minimum number of idle connections that HikariCP tries to maintain in the pool</span>
+      <span class="s">minimum-idle = 10</span>
+            
+      <span class="s"># the maximum number of milliseconds that a connection is can sit idle in the pool</span>
+      <span class="s">idle-timeout = 10000</span>
+  
+      <span class="s"># The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit</span>
+      <span class="s">max-lifetime = 600000</span>
+      
+      <span class="s"># controls whether JMX MBeans are registered</span>
+      <span class="s">register-mbeans = true</span>
+      
+      <span class="s"># my-sql-properties allows you to include any additional mysql performance settings you want.</span>
+      <span class="s"># Note that the properties within my-sql-properties must be camel case!</span>
+      <span class="s"># see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance</span>
+      <span class="s">my-sql-properties {</span>
+        <span class="s">prepStmtCacheSize = 300</span>
+        <span class="s">prepStmtCacheSqlLimit = 2048</span>
+        <span class="s">cachePrepStmts = true</span>
+        <span class="s">useServerPrepStmts = true</span>
+        <span class="s">rewriteBatchedStatements = true</span>
+      <span class="s">}</span>
+    <span class="s">}</span>
+    
+    <span class="s">repositories {</span>
+      <span class="s"># all repositories with config sections here will be enabled in mysql</span>
+      <span class="s">user {</span>
+      <span class="s"># no additional settings for repositories enabled in mysql</span>
+      <span class="s">}</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+  
+  <span class="s">dynamodb {</span>
+      
+    <span class="s"># this is the path to the DynamoDB provider. This should not be edited</span>
+    <span class="s"># from the default in reference.conf</span>
+    <span class="s">class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"</span>
+    
+    <span class="s">settings {</span>
+      <span class="s"># AWS_ACCESS_KEY, credential needed to access the SQS queue</span>
+      <span class="s">key = "x"</span>
+    
+      <span class="s"># AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue</span>
+      <span class="s">secret = "x"</span>
+    
+      <span class="s"># DynamoDB url for the region you are running in, this example is in us-east-1</span>
+      <span class="s">endpoint = "https://dynamodb.us-east-1.amazonaws.com"</span>
+      
+      <span class="s"># DynamoDB region</span>
+      <span class="s">region = "us-east-1"</span>
+    <span class="s">}</span>
+    
+    <span class="s">repositories {</span>
+      <span class="s"># all repositories with config sections here will be enabled in dynamodb</span>
+      <span class="s">user-change {</span>
+        <span class="s"># Name of the table where user changes are saved</span>
+        <span class="s">table-name = "userChangeTest"</span>
+        <span class="s"># Provisioned throughput for reads</span>
+        <span class="s">provisioned-reads = 30</span>
+        <span class="s"># Provisioned throughput for writes</span>
+        <span class="s">provisioned-writes = 20</span>
+      <span class="s">}</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre>
+</div>
+
+<h2 id="ldap">LDAP</h2>
+<p>Be sure to follow the <a href="setup-ldap">LDAP Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>LDAP configuration connects VinylDNS to your Directory where user information is stored.</p>
+
+<p>The default value for user sync enabled is <em>false</em> and user sync hours polling interval is 24 (max value). If the hours polling interval
+is configured higher than 24, 24 hours will be used.</p>
+
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="s">LDAP {</span>
+  <span class="s"># The name of the user to connect VinylDNS to LDAP</span>
+  <span class="s">user="test"</span>
+
+  <span class="s"># The password for the user to connect VinylDNS to LDAP</span>
+  <span class="s">password="test"</span>
+
+  <span class="s"># The domain for the user connecting VinylDNS to LDAP</span>
+  <span class="s">domain="test"</span>
+
+  <span class="s"># One or more search bases to find users.  If users come from multiple domains, list them here</span>
+  <span class="s">searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]</span>
+
+  <span class="s"># Connection information to LDAP</span>
+  <span class="s">context {</span>
+    <span class="s">initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"</span>
+    <span class="s">securityAuthentication = "simple"</span>
+
+    <span class="s"># Set this to point to your LDAP</span>
+    <span class="s">providerUrl = "ldaps://somedomain.com:9999"</span>
+  <span class="s">}</span>
+  
+  <span class="s">user-sync {</span>
+    <span class="s">enabled = true</span> <span class="c1"># Default value is false</span>
+    <span class="s">hours-polling-interval = 12</span> <span class="c1"># Default value is 24</span>
+  <span class="err">}</span>
+<span class="err">}</span>
+</code></pre>
+</div>
+
+<h2 id="cryptography-settings">Cryptography Settings</h2>
+<p>The Portal encrypts user secrets at rest using the same mechanism as the API server.</p>
+
+<p><strong>Note: It is extremely important that these settings match the API server, otherwise the API server will not
+be able to decrypt user secrets and your installation will fail!</strong></p>
+
+<p>Cryptography is <em>pluggable</em>, meaning you can bring your own crypto with you.  All that is required is to provide an
+implementation of <a href="https://github.com/vinyldns/vinyldns/blob/master/modules/core/src/main/scala/vinyldns/core/crypto/CryptoAlgebra.scala">CryptoAlgebra</a>
+using a crypto library of choice.  The default implementation is <code class="highlighter-rouge">NoOpCrypto</code>, which does not do any encryption (not recommended for production).</p>
+
+<p>The following are the configuration settings for crypto.  Notice here the <em>only</em> thing we see is the <code class="highlighter-rouge">type</code>.  The <code class="highlighter-rouge">type</code>
+is the fully qualified class name for the <code class="highlighter-rouge">CryptoAlgebra</code> you will be using.  If your crypto implementation requires
+additional settings, they will be configured inside the <code class="highlighter-rouge">crypto</code> element, adjacent to the <code class="highlighter-rouge">type</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="s">crypto {</span>
+  <span class="s">type = "vinyldns.core.crypto.JavaCrypto"</span>
+  <span class="s">secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"</span>
+<span class="err">}</span>
+</code></pre>
+</div>
+
+<h2 id="custom-links">Custom Links</h2>
+<p>Custom links display either on the nav bar once logged in, or on the log in screen.  These links are useful to point
+to internal documentation and procedures.  For example, how to raise certain tickets with engineering, or
+internal slack channels.</p>
+
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="c1"># an array of links</span>
+<span class="s">links = [</span>
+  <span class="s">{</span>
+    <span class="s"># indicates that this link should be display on the sidebar once logged in</span>
+    <span class="s">displayOnSidebar = true</span>
+
+    <span class="s"># display this link also on the login screen</span>
+    <span class="s">displayOnLoginScreen = true</span>
+
+    <span class="s"># text to display for the link</span>
+    <span class="s">title = "API Documentation"</span>
+
+    <span class="s"># the hyperlink address being linked to</span>
+    <span class="s">href = "http://vinyldns.io"</span>
+
+    <span class="s"># a fa icon to display</span>
+    <span class="s">icon = "fa fa-file-text-o"</span>
+  <span class="s">}</span>
+<span class="err">]</span>
+</code></pre>
+</div>
+
+<h2 id="additional-configuration-settings">Additional Configuration Settings</h2>
+
+<h3 id="play-secret">Play Secret</h3>
+<p>The play secret must be set to a secret value, and should be an environment variable</p>
+
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="c1"># See http://www.playframework.com/documentation/latest/ApplicationSecret for more details.</span>
+<span class="s">play.http.secret.key = "vinyldnsportal-change-this-for-production"</span>
+</code></pre>
+</div>
+
+<h3 id="test-login">Test Login</h3>
+<p>The test login should not be used for production environments.  It is useful to tinker with VinylDNS.  If this
+setting is true, then you can login with <code class="highlighter-rouge">testuser</code> and <code class="highlighter-rouge">testpassword</code>.  Logging in using the <code class="highlighter-rouge">testuser</code> will <em>not</em>
+contact LDAP.</p>
+
+<p><code class="highlighter-rouge">portal.test_login = false</code></p>
+
+<h3 id="http-port">HTTP Port</h3>
+<p>The HTTP Port that the Portal server will bind to</p>
+
+<p><code class="highlighter-rouge">http.port=9001</code></p>
+
+<h2 id="full-example-config">Full Example Config</h2>
+<div class="language-yaml highlighter-rouge"><pre class="highlight"><code><span class="c1"># This is the main configuration file for the application.</span>
+<span class="c1"># ~~~~~</span>
+
+<span class="c1"># Secret key</span>
+<span class="c1"># ~~~~~</span>
+<span class="c1"># The secret key is used to secure cryptographics functions.</span>
+<span class="c1">#</span>
+<span class="c1"># This must be changed for production, but we recommend not changing it in this file.</span>
+<span class="c1">#</span>
+<span class="c1"># See http://www.playframework.com/documentation/latest/ApplicationSecret for more details.</span>
+<span class="s">play.http.secret.key = "vinyldnsportal-change-this-for-production"</span>
+
+<span class="c1"># The application languages</span>
+<span class="c1"># ~~~~~</span>
+<span class="s">play.i18n.langs = [ "en" ]</span>
+<span class="s">portal.vinyldns.backend.url = "http://vinyldns-api:9000"</span>
+<span class="s">portal.test_login = false</span>
+
+<span class="c1"># configuration for the users and groups store</span>
+<span class="s">data-stores = ["dynamodb", "mysql"]</span>
+
+<span class="s">mysql {</span>
+  <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+  
+  <span class="s">settings {</span>
+    <span class="s">name = "vinyldns"</span>
+    <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+    <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+    <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+    <span class="s">user = "root"</span>
+    <span class="s">password = "pass"</span>
+    <span class="s">maximum-pool-size = 20</span>
+    <span class="s">minimum-idle = 10</span>
+    <span class="s">connection-timeout-millis = 1000</span>
+    <span class="s">idle-timeout = 10000</span>
+    <span class="s">max-lifetime = 600000</span>
+    <span class="s">register-mbeans = true</span>
+    <span class="s">my-sql-properties {</span>
+      <span class="s">prepStmtCacheSize = 300</span>
+      <span class="s">prepStmtCacheSqlLimit = 2048</span>
+      <span class="s">cachePrepStmts = true</span>
+      <span class="s">useServerPrepStmts = true</span>
+      <span class="s">rewriteBatchedStatements = true</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+  
+  <span class="s">repositories {</span>
+    <span class="s">user {</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+
+<span class="s">dynamodb {</span>
+  <span class="s">class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"</span>
+  
+  <span class="s">settings {</span>
+    <span class="s">key = "x"</span>
+    <span class="s">secret = "x"</span>
+    <span class="s">endpoint = "http://vinyldns-dynamodb:8000"</span>
+    <span class="s">region = "us-east-1"</span>
+  <span class="s">}</span>
+  
+  <span class="s">repositories {</span>
+    <span class="s">user-change {</span>
+      <span class="s">table-name = "userChangeTest"</span>
+      <span class="s">provisioned-reads = 30</span>
+      <span class="s">provisioned-writes = 20</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+
+<span class="s">LDAP {</span>
+  <span class="s">user="test"</span>
+  <span class="s">password="test"</span>
+  <span class="s">domain="test"</span>
+
+  <span class="s">searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]</span>
+
+  <span class="s">context {</span>
+    <span class="s">initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"</span>
+    <span class="s">securityAuthentication = "simple"</span>
+    <span class="s">providerUrl = "ldaps://somedomain.com:9999"</span>
+  <span class="s">}</span>
+
+<span class="err">}</span>
+
+<span class="s">play.filters.enabled += "play.filters.csrf.CSRFFilter"</span>
+
+<span class="c1"># Expire session after 10 hours</span>
+<span class="s">play.http.session.maxAge = 10h</span>
+
+<span class="c1"># session secure should be false in order to run properly locally, this is set properly on deployment</span>
+<span class="s">play.http.session.secure = false</span>
+<span class="s">play.http.session.httpOnly = true</span>
+
+<span class="c1"># use no-op by default</span>
+<span class="s">crypto {</span>
+  <span class="s">type = "vinyldns.core.crypto.NoOpCrypto"</span>
+<span class="err">}</span>
+
+<span class="s">http.port=9001</span>
+
+<span class="s">links = [</span>
+  <span class="s">{</span>
+    <span class="s">displayOnSidebar = true</span>
+    <span class="s">displayOnLoginScreen = true</span>
+    <span class="s">title = "API Documentation"</span>
+    <span class="s">href = "http://vinyldns.io"</span>
+    <span class="s">icon = "fa fa-file-text-o"</span>
+  <span class="s">}</span>
+<span class="err">]</span>
+</code></pre>
+</div>
+</section><div class="edit-button"><a href="https://github.com/VinylDNS/vinyldns/edit/master/modules/docs/src/main/tut/operator/config-portal.md" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlighting();
+              </script><script>((window.gitter = {}).chat = {}).options = {
+room: 'vinyldns/Lobby'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/main.js"></script></body></html>
