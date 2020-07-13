@@ -1,0 +1,151 @@
+<html><head><title>VinylDNS: Permissions Guide</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Management Platform" /><meta name="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Permissions Guide" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="http://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Management Platform" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Permissions Guide" /><meta name="twitter:image" content="http://vinyldns.ioimg/poster.png" /><meta name="twitter:description" content="DNS Management Platform" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/default.css" /><link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/palette.css" /><link rel="stylesheet" href="/css/codemirror.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body><header id="site-header"><div class="navbar-wrapper navbar-inverse"><div class="container"><div class="navbar-header"><button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="brand"><div class="icon-wrapper"><span>VinylDNS</span></div></a></div><nav class="text-right"><ul class=""><li><a href="https://github.com/VinylDNS/vinyldns"><i class="fa fa-github"></i><span class="hidden-xs">GitHub</span></a></li><li><a href="/api"><i class="fa fa-file-text"></i><span class="hidden-xs">API Documentation</span></a></li></ul></nav></div></div><div class="jumbotron" style="background-image:url('/img/jumbotron_pattern.png')"></div><div><ul class="horizontalNav">                                                                                                                               <li><a class="" href="/">Home</a></li>  <li><a class="" href="/portal/">Portal Guide</a></li>  <li><a class="" href="/operator/">Operator Guide</a></li>  <li><a class="" href="/contributing.html">Contributing</a></li>  <li><a class="" href="/tools.html">Tools</a></li>  <li><a class="" href="/faq.html">FAQ</a></li>  <li><a class=" active " href="/permissions.html">Permissions Guide</a></li>  <li><a class="" href="/getting-help.html">Getting Help</a></li> </ul></div></header><main id="site-main"><section class="use"><div class="container"><div id="content"><h1 id="vinyldns-permissions-guide">VinylDNS Permissions Guide</h1>
+
+<p>Vinyldns is about making DNS self-service <em>safe</em>.  There are a number of ways that you can govern access to your DNS infrastucture, from extremely restrictive, to extremely lax, and anywhere in between.</p>
+
+<p>This guide attempts to explain the various options available for governing access to your VinylDNS installation.</p>
+
+<h1 id="a-few-notes-on-vinyldns-groups">A few notes on VinylDNS Groups</h1>
+
+<p>Most of the access controls available in VinylDNS are managed by the way of <code class="highlighter-rouge">Groups</code>.  You can see the groups to which you belong to in the <code class="highlighter-rouge">Groups</code> tab in in the portal.</p>
+
+<p>Groups are completely separate from LDAP, OIDC, or other Authorization mechanisms.  They are tied deeply into the permissions capability in VinylDNS.</p>
+
+<p>Users can belong to many different groups, but typically they will belong to one “Primary” group.</p>
+
+<p>Groups are completely self-service, so users can create new groups, add / remove users from their groups, and even delete groups.</p>
+
+<p>We <em>strongly</em> recommend creating a <em>VinylDNS Admin</em> group for DNS administrators.</p>
+
+<h1 id="permission-precedence">Permission Precedence</h1>
+
+<p>We work on the most restrictive access wins.  In general:</p>
+
+<ol>
+  <li>High Value Domain - Can’t get past this step in VinylDNS</li>
+  <li>Zone Ownership - If the user owns a zone, the user can make any changes in that zone</li>
+  <li>Zone ACL - If the user was granted access to the zone via an ACL they can make the change</li>
+  <li>Shared Zone - If the zone is shared, and the record does not yet exist or has not yet been claimed</li>
+  <li>Record Owner - If the zone is shared, and the record is owned, the user has to be a member of the group that owns the record to make the change</li>
+  <li>Global ACL - If all the above fail, if the user has access to the record by way of a Global ACL, the user can make the change</li>
+</ol>
+
+<h1 id="permission-management">Permission Management</h1>
+
+<ol>
+  <li>High Value Domains - config file</li>
+  <li>Zone Ownership - web portal / Manage Zone</li>
+  <li>Zone ACL - web portal / Manage Zone</li>
+  <li>Shared Zone web portal / Manage Zone</li>
+  <li>Record Owner - (implicitly via DNS Requests)</li>
+  <li>Global ACL - config file</li>
+  <li>Manual Review - config file</li>
+</ol>
+
+<h1 id="zone-ownership">Zone Ownership</h1>
+
+<p>The original way to govern access is via Zone Ownership and Zone ACLs.  When connecting to a zone in VinylDNS, you <em>must</em> designate a VinylDNS group that will effectively “own” the Zone.  We refer to “Zone Owners” as any VinylDNS user that is a member of the VinylDNS Group on the Zone.  This can be changed subsequent to connecting at any time via the <code class="highlighter-rouge">Manage Zone</code> tab.</p>
+
+<p><em>Zone Owners</em> have full rights on a zone.  They can manage the zone, abandon it, change connection information, and assign ACLs.</p>
+
+<p>A <code class="highlighter-rouge">Zone ACL Rule</code> is a record level control that allows VinylDNS users who are <strong>not</strong> Zone Owners privileges to perform certain actions in the zone.  For example, you can <strong>grant access to A, AAAA, CNAME records in Zone foo.baz.com to user Josh</strong></p>
+
+<p>ACL rules provide an extremely flexible way to grant access to DNS records.  Each ACL Rule consists of the following:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">recordMask</code> - this is a <strong>regular expression</strong> that is used to match on the <strong>record name</strong> (without the zone name).  For example, a record mask <code class="highlighter-rouge">www.*</code> would match <strong>any</strong> record that started with <code class="highlighter-rouge">www</code>
+    <ul>
+      <li>For <code class="highlighter-rouge">reverse</code> zones, this is a <code class="highlighter-rouge">CIDR</code> expression.  This allows you to grant access based on individual or contiguous IP address space.  For example, you could have a record mask of <code class="highlighter-rouge">100.100.100.100/16</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">recordTypes</code> - types of DNS records that an ACL rule applies to.  Often times, special records like <code class="highlighter-rouge">NS</code> records you do not want to grant access to.  Add one or more record types to restrict the types of records you are granting access to.</li>
+  <li><code class="highlighter-rouge">accessLevel</code> - what kinds of permissions to give.
+    <ul>
+      <li><code class="highlighter-rouge">Create</code> allows a user to create new records, but not change or delete them.</li>
+      <li><code class="highlighter-rouge">Write</code> allows a user to create AND change records, but not delete them</li>
+      <li><code class="highlighter-rouge">Delete</code> allows a user full permissions to create, change, and delete any records that match the rule</li>
+      <li><code class="highlighter-rouge">NoAccess</code> explicitly negates other rules as an override.</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">user</code> - the user that the rule grants access to.  You can specify this <strong>OR</strong> a Group</li>
+  <li><code class="highlighter-rouge">group</code> - the group the rule grants access to.</li>
+  <li><code class="highlighter-rouge">description</code> - an optional description for the rule for personal audit purposes</li>
+</ul>
+
+<p>Depending on your organization, you may choose to exclusively use <em>Zone Ownership</em> for managing self-service.  This does come at a higher cost of administrative overhead than other options; however, it is the most restrictive and still very flexible.</p>
+
+<h1 id="shared-zone-ownership">Shared Zone Ownership</h1>
+
+<p>Shared Zones were introduced in order to alleviate the administrative burden of Zone Ownership for large organizations.  If you mark a zone as <code class="highlighter-rouge">Shared</code> (via the Manage Zone tab or API), you effectively grant anyone who can login to VinylDNS permissions to manage records in that DNS Zone.  Read this section closely, as it can be a little confusing.</p>
+
+<p><strong>Shared Zones</strong> still have a Zone Owner group that has full access.  This will typically be the VinylDNS Admin group / DNS administrators.  However, they open up access to everyone.</p>
+
+<p>This is very useful for universally “shared” DNS zones, in particular IP space.  Often times, IP space is not allocated to groups, but blocks (i.e. Reverse Zones) are shared across the enterprise.  It is common to use <strong>Shared Zones</strong> as a way to allow rather unfettered access to IP space.</p>
+
+<p>Shared Zones <strong>still have restrictions</strong>.  It wouldn’t be safe to allow <em>anyone</em> the ability to manage <em>anyone else’s</em> DNS records.  Therefore, we use a <strong>Record Ownership</strong> model that works in concert with <strong>Shared Zones</strong> to ensure that the user/group that <em>created</em> a DNS record, is the only group that can update or delete it.  You can think of Record Ownership like a land grab.  If I create it, I own it.</p>
+
+<p><strong>All</strong> changes to <em>Shared</em> zones are made via the <strong>DNS Changes</strong> tab.  Here is where users create one or more DNS record changes.  When users submit changes here, they assign a “Record Owner Group” to the DNS change.  As you have just learned, this Record Owner Group will be the group that <em>owns</em> any new records created as part of the batch change.</p>
+
+<p>In addition to shared zones, you can configure which record types you allow broad access to.  Certain record types like <code class="highlighter-rouge">NS</code> maybe sensitive to be “world writable”.  You can configure the allowable record types via config as shown below:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
+</code></pre>
+</div>
+
+<h1 id="global-acl-rules">Global ACL Rules</h1>
+
+<p>Global ACL Rules provide an <em>override</em> mechanism that applies for specific groups and FQDNs across ALL of VinylDNS.  These were created as a means of overriding <strong>Record Ownership</strong>.</p>
+
+<p>The use case that fits here is when</p>
+
+<ol>
+  <li>You want to use Shared Zones</li>
+  <li>You have group(s) that must override the record ownership model.  For example, one group may <em>create</em> or <em>provision</em> a DNS record, and another group may <em>update</em> or <em>decommission</em> that record.</li>
+</ol>
+
+<p>Global ACL rules are <em>configured</em> in VinylDNS (i.e. they are config file entries not available in the UI yet).  The configuration entry is <code class="highlighter-rouge">global-acl-rules</code>.  An example entry follows</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>global-acl-rules = [
+    {
+        group-ids: ['global-acl-group-id'],
+        fqdn-regex-list: ['.*shared.']
+    }
+]    
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">group-ids</code> are one or more VinylDNS group id (UUID) for the groups that you want to grant access to.  The <code class="highlighter-rouge">fqdn-regex-list</code> is a list of regular expressions matched against the <strong>FQDN</strong> (i.e. record name and zone name).</p>
+
+<h1 id="high-value-domains">High Value Domains</h1>
+
+<p>High value domains are currently <em>configured</em> in VinylDNS.  Sometimes, certain domain names are just too valuable that you do not want them to be even touched by VinylDNS.  See the operator guide for more information on configuring high value domains.</p>
+
+<h1 id="high-value-ip-addresses">High Value IP Addresses</h1>
+
+<p>Similarly to forward FQDN records, you can also set certain IP addresses as “off limits, do not touch in VinylDNS”.  Also done via the configuration file.</p>
+
+<h1 id="manual-review">Manual Review</h1>
+
+<p>VinylDNS provides the ability for have DNS changes made via the <code class="highlighter-rouge">DNS Change</code> screen to be <strong>manually reviewed</strong> before being applied.  This is another tool in the permissions toolkit to help you govern self-service.  Note: if you enable manual review, then someone will need to login to VinylDNS and <em>Approve</em> or <em>Reject</em> the changes that are submitted.  This can also be accomplished via scripting against the API if desired.</p>
+
+<p>In addition, Manual Review allows you to override certain error conditions.  For example, if you create a DNS change for a Zone that does not yet exist in VinylDNS, it will fail before the user can submit.  But if you have <code class="highlighter-rouge">manual-batch-review-enabled = true</code>, then those DNS changes can be sent to manual review, where a DNS administrator can create the DNS zone, add it to VinylDNS (marking it as shared or otherwise creating ACL access), and then <em>re submit</em> the change to complete processing.</p>
+
+<p>To turn on manual review, set the <code class="highlighter-rouge">manual-batch-review-enabled = true</code> in your application configuration file.</p>
+
+<p>In addition, you can specify certain zones that are <strong>ALWAYS</strong> manually reviewed.  Even with <strong>Shared Zones</strong> turned on, you can require manual inspection to certain FQDNs.  This is also done via configuration.  The following snippet shows the configuration for zones that are <strong>ALWAYS</strong> manually reviewed:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  manual-review-domains = {
+    domain-list = [".*imporant.biz.com"]
+    ip-list = ["1.2.3.4"]
+    zone-name-list = [
+        "zone.requires.review.",
+        "foo.com.",
+        "baz.com.",
+        "curl.bz."        
+    ]
+  }
+</code></pre>
+</div>
+</div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>VinylDNS is designed and developed by <a href="" target="_blank">VinylDNS</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/VinylDNS/vinyldns"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div></div></footer><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlighting();
+              </script><script>((window.gitter = {}).chat = {}).options = {
+room: 'vinyldns/Lobby'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script></body></html>
