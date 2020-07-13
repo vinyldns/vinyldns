@@ -701,7 +701,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
   }
   "return a successful health check" in {
     val mockLdapAuth = mock[LdapAuthenticator]
-    mockLdapAuth.healthCheck().returns(IO(Right(())).asHealthCheck)
+    mockLdapAuth.healthCheck().returns(IO(Right(())).asHealthCheck(classOf[LdapAuthenticatorSpec]))
 
     new TestAuthenticator(mockLdapAuth).healthCheck().unsafeRunSync() should beRight[Unit]
   }

@@ -147,5 +147,5 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     IO {
       val client = DynamoDBClient(dynamoConfig)
       client.listTables(1)
-    }.attempt.asHealthCheck
+    }.attempt.asHealthCheck(classOf[DynamoDBDataStoreProvider])
 }
