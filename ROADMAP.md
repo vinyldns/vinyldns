@@ -6,16 +6,20 @@ we anticipate the "plan" to change.  This document will be updated regularly to 
 
 This document is organized by priority / planned release timeframes.  Reading top-down should give you a sense of the order in which new features are planned to be delivered.
 
-## Batch Change
-**Planned for: Q2 2019**
-Q2 work is focused primarily on feature development for batch changes
+## Completed
 
-1. Scaling batch changes - allow up to 1000 record changes in a single batch
-1. Manual review of batch changes - allow a support user to manually review and approve or reject batch changes that fail under certain circumstances (such as missing zones)
-1. Bulk import for batch change - allow a user to bulk import batch changes from a CSV file (e.g. Excel) to simplify the input of a large number of record changes
+- **Batch Change** - users can now submit multiple changes across zones at the same time.  Included in batch change are:
+    - **Manual Review** - the ability to manually review certain DNS changes
+    - **Scheduled Changes** - the ability to schedule certain DNS changes to occur at a point in time in the future (requires manual processing right now)
+    - **Bulk import** - allows users to bulk load DNS changes from a CSV file
+- **Global ACL Rules** - allows override on Shared / Record ownership
+- **Global record search** - allows users to search for records across zones
+
+## Next up?
+
+We are currently reviewing our roadmap.  Some of the features we have discussed are below.  If you have features you would like to contribute, drop us a line!
 
 ## Zone Management
-**Planned for: Q3 2019**
 Presently VinylDNS _connects to existing zones_ for management.  Zone Management will allow users
 to create and manage zones in the authoritative systems themselves.  The following high-level features are planned:
 
@@ -30,10 +34,11 @@ the zone will live, VinylDNS creates the delegation as well as access controls f
 ## Other
 There are several other features that we would like to support.  We will be opening up these for RFC shortly.  These include:
 
-1. Improved search and filter - allow users to search for records across zones
 1. DNS SEC - There is no first-class support for DNS SEC.  That feature set is being defined.
 1. Record meta data - VinylDNS will allow the "tagging" of DNS records with arbitrary key-value pairs
 1. DNS Global Service Load Balancing (GSLB) - Support for common DNS GSLB use cases and integration with various GSLB vendors
 1. A new user interface
 1. Additional automation tools
+1. VinylDNS admin user experience - pull alot of things from Config into the Portal UI for simpler administration
+1. Split views / zone views
 
