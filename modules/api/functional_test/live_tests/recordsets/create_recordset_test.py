@@ -1644,7 +1644,7 @@ def test_create_long_txt_record_succeeds(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     zone = shared_zone_test_context.system_test_zone
-    record_data = 'a' * 64763
+    record_data = 'a' * 64761
     long_txt_rs = get_recordset_json(zone, 'long-txt-record', 'TXT', [{'text': record_data}])
 
     try:

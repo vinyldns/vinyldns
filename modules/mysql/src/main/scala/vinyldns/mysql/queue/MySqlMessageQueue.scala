@@ -281,5 +281,5 @@ class MySqlMessageQueue(maxRetries: Int)
       NamedDB(QUEUE_CONNECTION_NAME).readOnly { implicit s =>
         HEALTH_CHECK.map(_ => ()).first.apply()
       }
-    }.attempt.asHealthCheck
+    }.attempt.asHealthCheck(classOf[MySqlMessageQueue])
 }

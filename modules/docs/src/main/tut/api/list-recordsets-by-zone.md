@@ -4,7 +4,7 @@ title: "List / Search RecordSets"
 section: "api"
 ---
 
-# List / Search RecordSets
+# List / Search RecordSets by Zone
 
 Retrieves a list of RecordSets from the zone
 

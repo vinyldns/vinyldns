@@ -246,6 +246,26 @@ The HTTP Port that the Portal server will bind to
 
 `http.port=9001`
 
+### Shared Zones Display / Record Owner Selection
+Necessary to enable shared zones submission and record ownership
+
+`shared-display-enabled = true`
+
+### Batch Change Limit
+How many changes are allowable in a single DNS change request
+
+`batch-change-limit = 1000`
+
+### Manual Review Enabled
+Triggers the manual review process for certain DNS requests
+
+`manual-batch-review-enabled = true`
+
+### Scheduled Changes
+Allows users to schedule changes to be run sometime in the future
+
+`scheduled-changes-enabled = true`
+
 ## Full Example Config
 ```yaml
 # This is the main configuration file for the application.

@@ -175,7 +175,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         .withAttributeNames(QueueAttributeName.CreatedTimestamp)
         .withQueueUrl(queueUrl),
       client.getQueueAttributesAsync
-    ).as(()).attempt.asHealthCheck
+    ).as(()).attempt.asHealthCheck(classOf[SqsMessageQueue])
 }
 
 object SqsMessageQueue extends ProtobufConversions {
