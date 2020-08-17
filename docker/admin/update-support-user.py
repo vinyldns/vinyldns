@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import mysql.connector
 import VinylDNSProto_pb2
 import sys
@@ -21,22 +21,25 @@ query = "SELECT data FROM user where user_name = %(user_name)s"
 update = "UPDATE user SET data = %(pb)s WHERE user_name = %(user_name)s"
 
 cursor = cnx.cursor(dictionary=True)
-
-cursor.execute(query, { 'user_name': user_name })
-user = VinylDNSProto_pb2.User()
-for row in cursor:
-    user_raw = row['data']
+try:
+    cursor.execute(query, { 'user_name': user_name })
     user = VinylDNSProto_pb2.User()
-    user.ParseFromString(user_raw)
-    print("FOUND USER NAME {}, IS SUPPORT = {}".format(user.userName, user.isSupport))
+    for row in cursor:
+        user_raw = row['data']
+        user = VinylDNSProto_pb2.User()
+        user.ParseFromString(user_raw)
+        print("FOUND USER NAME {}, IS SUPPORT = {}".format(user.userName, user.isSupport))
 
-if make_support is not None:
-    print("Updating {}, Support = {}".format(user_name, make_support))
-    user.isSupport = make_support
-    cursor.execute(update, { 'pb': user.SerializeToString(), 'user_name': user_name })
-    cnx.commit()
-else:
-    print("Skipping making support as no make support value provided")
+    if user.userName is None or len(user.userName) == 0:
+        sys.exit("User {0} not found; cannot continue.".format(user_name))
 
-cursor.close()
-cnx.close()
+    if make_support is not None:
+        print("Updating {}, Support = {}".format(user_name, make_support))
+        user.isSupport = make_support
+        cursor.execute(update, { 'pb': user.SerializeToString(), 'user_name': user_name })
+        cnx.commit()
+    else:
+        print("Skipping making support as no make support value provided")
+finally:
+    cursor.close()
+    cnx.close()
