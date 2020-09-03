@@ -72,7 +72,7 @@ angular.module('service.groups', [])
 
         this.getGroups = function (ignoreAccess) {
             var url = '/api/groups';
-            url = this.urlBuilder(url, { maxItems: 1000, ignoreAccess: ignoreAccess});
+            url = this.urlBuilder(url, { maxItems: 1500, ignoreAccess: ignoreAccess});
             return $http.get(url);
         };
 
