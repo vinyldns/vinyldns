@@ -253,8 +253,8 @@ class MembershipRoutingSpec
         status shouldBe StatusCodes.BadRequest
       }
     }
-    "return a 400 response when maxItems is more than 1000" in {
-      Get("/groups?maxItems=1001") ~> Route.seal(membershipRoute) ~> check {
+    "return a 400 response when maxItems is more than 1500" in {
+      Get("/groups?maxItems=1501") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
