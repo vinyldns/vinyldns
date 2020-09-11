@@ -24,10 +24,11 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import nl.grons.metrics.scala.{Histogram, Meter}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
+import org.scalatestplus.mockito.MockitoSugar
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.route.Monitor
 
@@ -48,6 +49,8 @@ class VinylDNSDirectivesSpec
   private val mockErrors = mock[Meter]
 
   def getRoutes: Route = zoneRoute
+
+  def logger: Logger = LoggerFactory.getLogger(classOf[VinylDNSDirectivesSpec])
 
   val zoneRoute: Route =
     new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator]).getRoutes

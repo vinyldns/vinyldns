@@ -19,8 +19,10 @@ package models
 import java.io.{ByteArrayInputStream, InputStream}
 import java.util
 
-import com.amazonaws.{ReadLimitInfo, SignableRequest}
+import actions.UserRequest
 import com.amazonaws.http.HttpMethodName
+import com.amazonaws.{ReadLimitInfo, SignableRequest}
+import play.api.mvc.AnyContent
 
 object VinylDNSRequest {
   val APPLICATION_JSON = "application/json"
@@ -33,7 +35,7 @@ case class VinylDNSRequest(
     payload: Option[String] = None,
     parameters: util.HashMap[String, java.util.List[String]] =
       new util.HashMap[String, java.util.List[String]]()
-)
+)(implicit val userRequest: UserRequest[AnyContent])
 
 class SignableVinylDNSRequest(origReq: VinylDNSRequest) extends SignableRequest[VinylDNSRequest] {
 

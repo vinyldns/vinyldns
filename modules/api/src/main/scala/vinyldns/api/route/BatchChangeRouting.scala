@@ -18,6 +18,7 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
@@ -29,6 +30,8 @@ class BatchChangeRoute(
     with VinylDNSDirectives[BatchChangeErrorResponse] {
 
   def getRoutes: Route = batchChangeRoute
+
+  def logger: Logger = LoggerFactory.getLogger(classOf[BatchChangeRoute])
 
   def handleErrors(e: BatchChangeErrorResponse): PartialFunction[BatchChangeErrorResponse, Route] = {
     case ibci: InvalidBatchChangeInput => complete(StatusCodes.BadRequest, ibci)

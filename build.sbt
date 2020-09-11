@@ -1,12 +1,13 @@
-import Resolvers._
-import Dependencies._
 import CompilerOptions._
+import Dependencies._
+import Resolvers._
 import com.typesafe.sbt.packager.docker._
-import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
-import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
-import ReleaseTransformations._
-import sbtrelease.Version
+import org.scalafmt.sbt.ScalafmtPlugin._
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
+import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
+
+import scala.util.Try
 
 resolvers ++= additionalResolvers
 
@@ -32,7 +33,7 @@ lazy val sharedSettings = Seq(
   ),
 
   // scala format
-  scalafmtOnCompile := true,
+  scalafmtOnCompile := getEnvFlagOrDefault("build.scalafmtOnCompile", true),
   scalafmtOnCompile in IntegrationTest := true,
 
   // coverage options
@@ -216,8 +217,6 @@ lazy val coreBuildSettings = Seq(
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
-
-import xerial.sbt.Sonatype._
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -314,7 +313,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    
+
     // ads the version when working locally with sbt run
     PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
 
@@ -423,17 +422,23 @@ lazy val initReleaseStage = Seq[ReleaseStep](
   setSonatypeReleaseSettings
 )
 
-lazy val finalReleaseStage = Seq[ReleaseStep] (
+lazy val finalReleaseStage = Seq[ReleaseStep](
   releaseStepCommand("project root"), // use version.sbt file from root
   commitReleaseVersion,
   setNextVersion,
   commitNextVersion
 )
 
+def getEnvOrDefault(name: String, value: String) =
+  Option(System.getProperty(name)).getOrElse(value)
+
+def getEnvFlagOrDefault(name: String, value: Boolean): Boolean =
+  Option(System.getProperty(name)).flatMap(x => Try(x.toBoolean).toOption).getOrElse(value)
+
 releaseProcess :=
   initReleaseStage ++
-  sonatypePublishStage ++
-  finalReleaseStage
+    sonatypePublishStage ++
+    finalReleaseStage
 
 // Let's do things in parallel!
 addCommandAlias("validate", "; root/clean; " +
@@ -442,7 +447,7 @@ addCommandAlias("validate", "; root/clean; " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
-  "portal/headerCheck portal/test:headerCheck; " +  
+  "portal/headerCheck portal/test:headerCheck; " +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
 )

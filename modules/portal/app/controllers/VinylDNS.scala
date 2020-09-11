@@ -36,6 +36,7 @@ import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.logging.RequestTracing
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -591,14 +592,16 @@ class VinylDNS @Inject() (
     logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
     wsClient
       .url(signableRequest.getEndpoint.toString + "/" + signableRequest.getResourcePath)
-      .withHttpHeaders("Content-Type" -> signableRequest.contentType)
       .withBody(
         signableRequest.getOriginalRequestObject
           .asInstanceOf[VinylDNSRequest]
           .payload
           .getOrElse("")
       )
-      .withHttpHeaders(signableRequest.getHeaders.asScala.toSeq: _*)
+      .withHttpHeaders(
+        signableRequest.getHeaders.asScala.toSeq ++
+          Seq(RequestTracing.extractTraceHeader(request.userRequest.headers.toSimpleMap)): _*
+      )
       .withMethod(signableRequest.getHttpMethod.name())
       .withQueryStringParameters(extractParameters(signableRequest.getParameters): _*)
       .execute()
