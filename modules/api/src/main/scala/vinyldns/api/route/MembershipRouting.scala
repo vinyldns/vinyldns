@@ -31,6 +31,7 @@ class MembershipRoute(
     with VinylDNSDirectives[Throwable] {
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 1000
+  final private val MAX_GROUPS_LIST_LIMIT: Int = 1500
 
   def getRoutes: Route = membershipRoute
 
@@ -88,10 +89,10 @@ class MembershipRoute(
               {
                 handleRejections(invalidQueryHandler) {
                   validate(
-                    check = 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                    check = 0 < maxItems && maxItems <= MAX_GROUPS_LIST_LIMIT,
                     errorMsg = s"""
                            | maxItems was $maxItems, maxItems must be between 0 exclusive
-                           | and $MAX_ITEMS_LIMIT inclusive"
+                           | and $MAX_GROUPS_LIST_LIMIT inclusive"
                          """.stripMargin
                   ) {
                     authenticateAndExecute(
