@@ -35,7 +35,7 @@ case class VinylDNSRequest(
     payload: Option[String] = None,
     parameters: util.HashMap[String, java.util.List[String]] =
       new util.HashMap[String, java.util.List[String]]()
-)(implicit val userRequest: UserRequest[AnyContent])
+)
 
 class SignableVinylDNSRequest(origReq: VinylDNSRequest) extends SignableRequest[VinylDNSRequest] {
 

@@ -160,9 +160,7 @@ class VinylDNSRequestSpec extends Specification with Mockito {
     }
     "original request object is returned unmodified" in {
       val vinyldnsRequest =
-        VinylDNSRequest("FOO", "http://some.server.somewhere:9090/path/to/bar", "baz")(
-          mock[UserRequest[AnyContent]]
-        )
+        VinylDNSRequest("FOO", "http://some.server.somewhere:9090/path/to/bar", "baz")
       val underTest = new SignableVinylDNSRequest(vinyldnsRequest)
 
       underTest.getOriginalRequestObject must beTheSameAs(vinyldnsRequest)

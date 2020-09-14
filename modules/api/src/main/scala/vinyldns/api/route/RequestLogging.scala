@@ -44,12 +44,13 @@ trait RequestLogging {
     * Should be called before the request is handled by the routes.
     */
   def injectTrackingId: Directive0 = mapRequest { request: HttpRequest =>
-    if (request.getHeader(RequestTracing.requestIdHeaderName).isPresent) request
+    if (request.headers.exists(_.name.equalsIgnoreCase(RequestTracing.requestIdHeaderName))) request
     else request.addHeader(new VinylDnsRequestIdHeader(RequestTracing.generateTraceId))
   }
 
   /** A custom [[ExceptionHandler]] which logs the exception with the request context. */
   def loggingExceptionHandler: ExceptionHandler = ExceptionHandler {
+    // $COVERAGE-OFF$
     case NonFatal(e) =>
       ctx => {
         val message = Option(e.getMessage).getOrElse("(No error message supplied)")
@@ -60,6 +61,7 @@ trait RequestLogging {
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete(InternalServerError)
       }
+    // $COVERAGE-ON$
   }
 
   /** Performs request logging.  Should be used with the [[akka.http.scaladsl.server.directives.DebuggingDirectives.logRequestResult logRequestResult]] */

@@ -19,7 +19,7 @@ package controllers
 import java.util
 import java.util.HashMap
 
-import actions.SecuritySupport
+import actions.{SecuritySupport, UserRequest}
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
@@ -585,7 +585,9 @@ class VinylDNS @Inject() (
         acc ++ values.asScala.map(v => key -> v)
     }
 
-  private def executeRequest(request: VinylDNSRequest, user: User) = {
+  private def executeRequest(request: VinylDNSRequest, user: User)(
+      implicit userRequest: UserRequest[_]
+  ) = {
     val signableRequest = new SignableVinylDNSRequest(request)
     val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
     signer.sign(signableRequest, credentials)
@@ -600,7 +602,7 @@ class VinylDNS @Inject() (
       )
       .withHttpHeaders(
         signableRequest.getHeaders.asScala.toSeq ++
-          Seq(RequestTracing.extractTraceHeader(request.userRequest.headers.toSimpleMap)): _*
+          Seq(RequestTracing.extractTraceHeader(userRequest.headers.toSimpleMap)): _*
       )
       .withMethod(signableRequest.getHttpMethod.name())
       .withQueryStringParameters(extractParameters(signableRequest.getParameters): _*)

@@ -17,10 +17,12 @@
 package vinyldns.api.route
 
 import akka.event.Logging._
+import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive1, Route}
 import akka.http.scaladsl.server.directives.LogEntry
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.OneInstancePerTest
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,11 +32,12 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.logging.RequestTracing
 
 class VinylDNSServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest
     with RequestLogging
+    with ScalatestRouteTest
     with VinylDNSDirectives[Throwable] {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
@@ -62,13 +65,54 @@ class VinylDNSServiceSpec
   }
 
   private def buildUnloggedRequest(
-      path: String = "/path/to/unlogged/resource",
-      body: String = "request body"
-  ) =
+                                    path: String = "/path/to/unlogged/resource",
+                                    body: String = "request body"
+                                  ) =
     HttpRequest(uri = Uri(path), entity = HttpEntity(body))
 
   private def buildMockResponse(body: String = "results") =
     HttpResponse(StatusCodes.OK, entity = HttpEntity(body))
+
+  override def extractLog: Directive1[LoggingAdapter] = super.extractLog
+
+  ".injectTrackingId" should {
+    "preserve tracking id if it's present" in {
+      val testRoute: Route = (get & path("testpath")) {
+        headerValueByName(RequestTracing.requestIdHeaderName) { h =>
+          complete(StatusCodes.OK, h)
+        }
+      }
+
+      Get("/testpath") ~>
+        RawHeader(RequestTracing.requestIdHeaderName, "testValue") ~>
+        injectTrackingId {
+          testRoute
+        } ~>
+        check {
+          val responseString = responseAs[String]
+          responseString shouldBe "testValue"
+          response.status shouldBe StatusCodes.OK
+        }
+    }
+
+    "add a tracking id if it's not present" in {
+      val testRoute: Route = (get & path("testpath")) {
+        headerValueByName(RequestTracing.requestIdHeaderName) { h =>
+          complete(StatusCodes.OK, h)
+        }
+      }
+
+      Get("/testpath") ~>
+        injectTrackingId {
+          testRoute
+        } ~>
+        check {
+          val responseString = responseAs[String]
+          responseString should fullyMatch regex """(?i)[0-9a-f\-]+"""
+          response.status shouldBe StatusCodes.OK
+        }
+    }
+  }
 
   ".buildLogMessage" should {
     "build a string to be logged" in {
