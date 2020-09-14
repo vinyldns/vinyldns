@@ -20,16 +20,15 @@ import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, Input
 import java.net.URI
 import java.util
 
-import actions.UserRequest
 import com.amazonaws.HttpMethod
 import com.amazonaws.http.HttpMethodName
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
-import play.api.mvc.AnyContent
 
 import scala.collection.JavaConversions._
+
 import play.api.test._
 import play.api.test.Helpers._
 

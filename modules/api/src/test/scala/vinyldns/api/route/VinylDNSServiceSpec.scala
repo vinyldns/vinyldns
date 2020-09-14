@@ -32,7 +32,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.logging.RequestTracing
 
 class VinylDNSServiceSpec
-  extends AnyWordSpec
+    extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest
@@ -65,9 +65,9 @@ class VinylDNSServiceSpec
   }
 
   private def buildUnloggedRequest(
-                                    path: String = "/path/to/unlogged/resource",
-                                    body: String = "request body"
-                                  ) =
+      path: String = "/path/to/unlogged/resource",
+      body: String = "request body"
+  ) =
     HttpRequest(uri = Uri(path), entity = HttpEntity(body))
 
   private def buildMockResponse(body: String = "results") =

@@ -19,10 +19,8 @@ package models
 import java.io.{ByteArrayInputStream, InputStream}
 import java.util
 
-import actions.UserRequest
-import com.amazonaws.http.HttpMethodName
 import com.amazonaws.{ReadLimitInfo, SignableRequest}
-import play.api.mvc.AnyContent
+import com.amazonaws.http.HttpMethodName
 
 object VinylDNSRequest {
   val APPLICATION_JSON = "application/json"

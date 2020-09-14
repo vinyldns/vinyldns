@@ -1,11 +1,12 @@
-import CompilerOptions._
-import Dependencies._
 import Resolvers._
+import Dependencies._
+import CompilerOptions._
 import com.typesafe.sbt.packager.docker._
-import microsites._
-import org.scalafmt.sbt.ScalafmtPlugin._
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
+import org.scalafmt.sbt.ScalafmtPlugin._
+import microsites._
+import ReleaseTransformations._
+import sbtrelease.Version
 
 import scala.util.Try
 
@@ -33,8 +34,8 @@ lazy val sharedSettings = Seq(
   ),
 
   // scala format
-  scalafmtOnCompile := getEnvFlagOrDefault("build.scalafmtOnCompile", true),
-  scalafmtOnCompile in IntegrationTest := true,
+  scalafmtOnCompile := getPropertyFlagOrDefault("build.scalafmtOnCompile", true),
+  scalafmtOnCompile in IntegrationTest := getPropertyFlagOrDefault("build.scalafmtOnCompile", true),
 
   // coverage options
   coverageMinimum := 85,
@@ -217,6 +218,8 @@ lazy val coreBuildSettings = Seq(
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
+
+import xerial.sbt.Sonatype._
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -422,23 +425,20 @@ lazy val initReleaseStage = Seq[ReleaseStep](
   setSonatypeReleaseSettings
 )
 
-lazy val finalReleaseStage = Seq[ReleaseStep](
+lazy val finalReleaseStage = Seq[ReleaseStep] (
   releaseStepCommand("project root"), // use version.sbt file from root
   commitReleaseVersion,
   setNextVersion,
   commitNextVersion
 )
 
-def getEnvOrDefault(name: String, value: String) =
-  Option(System.getProperty(name)).getOrElse(value)
-
-def getEnvFlagOrDefault(name: String, value: Boolean): Boolean =
-  Option(System.getProperty(name)).flatMap(x => Try(x.toBoolean).toOption).getOrElse(value)
+def getPropertyFlagOrDefault(name: String, value: Boolean): Boolean =
+  sys.props.get(name).flatMap(propValue => Try(propValue.toBoolean).toOption).getOrElse(value)
 
 releaseProcess :=
   initReleaseStage ++
-    sonatypePublishStage ++
-    finalReleaseStage
+  sonatypePublishStage ++
+  finalReleaseStage
 
 // Let's do things in parallel!
 addCommandAlias("validate", "; root/clean; " +
