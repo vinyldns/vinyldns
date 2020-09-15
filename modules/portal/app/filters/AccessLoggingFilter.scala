@@ -21,6 +21,7 @@ import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import play.api.mvc.{Filter, RequestHeader, Result}
 import play.mvc.Http
+import vinyldns.core.logging.RequestTracing
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,14 +33,25 @@ class AccessLoggingFilter @Inject() (
   private val logger = LoggerFactory.getLogger(classOf[AccessLoggingFilter])
 
   def apply(next: RequestHeader => Future[Result])(request: RequestHeader): Future[Result] = {
-    val resultFuture = next(request)
+    val (trackingHeaderName, trackingHeaderValue) = RequestTracing.createTraceHeader
+    val newRequest =
+      request.withHeaders(
+        request.headers.add(trackingHeaderName -> trackingHeaderValue)
+      )
+    val resultFuture = next(newRequest)
 
     resultFuture.foreach(result => {
       if (!request.uri.contains("/public") && !request.uri.contains("/assets")) {
-        val msg = s"Request: method=${request.method}, path=${request.uri}, " +
-          s"remote_address=${request.remoteAddress}, " +
-          s"user_agent=${request.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")} " +
-          s"| Response: status_code=${result.header.status} "
+        val traceId =
+          RequestTracing.extractTraceId(newRequest.headers.toSimpleMap).getOrElse("(unknown)")
+        val userAgent = newRequest.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")
+
+        // This will get logged at the end of the request.  We eventually need to correlate all events during the request
+        // with this request identifier.
+        val msg = s"Request: method=${newRequest.method}, path=${newRequest.uri}, remote_address=${newRequest.remoteAddress}, " +
+          s"user_agent=$userAgent | " +
+          s"trace.id=$traceId |" +
+          s"Response: status_code=${result.header.status} "
         logger.info(msg)
       }
     })

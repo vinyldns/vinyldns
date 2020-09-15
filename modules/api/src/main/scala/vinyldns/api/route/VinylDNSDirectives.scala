@@ -26,27 +26,37 @@ import cats.data.{EitherT, ValidatedNel}
 import cats.effect.IO
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import org.slf4j.Logger
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.logging.RequestTracing
 import vinyldns.core.route.Monitor
 
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 
-trait VinylDNSDirectives[E] extends Directives {
+trait VinylDNSDirectives[E] extends Directives with RequestLogging {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator
 
   def getRoutes: Route
+
+  def logger: Logger
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
       onSuccess(
         vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture()
       ).flatMap {
-        case Right(authPrincipal) ⇒
+        case Right(authPrincipal) =>
+          // Correlate userId with requestId. This will be handled more effectively in the future
+          RequestTracing.extractTraceId(ctx.request.headerMap) match {
+            case Some(traceId) =>
+              logger.info(s"Request started by user ${authPrincipal.userId} | trace.id=$traceId")
+            case _ =>
+          }
           provide(authPrincipal)
-        case Left(e) ⇒
+        case Left(e) =>
           complete(handleAuthenticateError(e))
       }
     }
