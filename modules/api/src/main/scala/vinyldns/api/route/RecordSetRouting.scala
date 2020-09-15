@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone._
@@ -60,6 +61,8 @@ class RecordSetRoute(
     with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = recordSetRoute
+
+  def logger: Logger = LoggerFactory.getLogger(classOf[RecordSetRoute])
 
   final private val DEFAULT_MAX_ITEMS: Int = 100
 

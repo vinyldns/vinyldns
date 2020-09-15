@@ -94,13 +94,16 @@ class Monitor(val name: String) extends Instrumented {
   def duration(startTimeInMillis: Long): Long = System.currentTimeMillis() - startTimeInMillis
 
   def capture(duration: Long, success: Boolean): Unit = {
-    logger.info(Monitor.logEntry(name, duration, success))
+    if (logger.isDebugEnabled) {
+      logger.debug(Monitor.logEntry(name, duration, success))
+    }
+    // Testing
     latency += duration
     if (!success) errors.mark()
   }
 
   def fail(duration: Long): Unit = {
-    logger.info(Monitor.logEntry(name, duration, success = false))
+    logger.warn(Monitor.logEntry(name, duration, success = false))
     latency += duration
     errors.mark()
   }

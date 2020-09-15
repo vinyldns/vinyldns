@@ -19,7 +19,7 @@ package controllers
 import java.util
 import java.util.HashMap
 
-import actions.SecuritySupport
+import actions.{SecuritySupport, UserRequest}
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
@@ -36,6 +36,7 @@ import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.logging.RequestTracing
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -584,21 +585,25 @@ class VinylDNS @Inject() (
         acc ++ values.asScala.map(v => key -> v)
     }
 
-  private def executeRequest(request: VinylDNSRequest, user: User) = {
+  private def executeRequest(request: VinylDNSRequest, user: User)(
+      implicit userRequest: UserRequest[_]
+  ) = {
     val signableRequest = new SignableVinylDNSRequest(request)
     val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
     signer.sign(signableRequest, credentials)
     logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
     wsClient
       .url(signableRequest.getEndpoint.toString + "/" + signableRequest.getResourcePath)
-      .withHttpHeaders("Content-Type" -> signableRequest.contentType)
       .withBody(
         signableRequest.getOriginalRequestObject
           .asInstanceOf[VinylDNSRequest]
           .payload
           .getOrElse("")
       )
-      .withHttpHeaders(signableRequest.getHeaders.asScala.toSeq: _*)
+      .withHttpHeaders(
+        signableRequest.getHeaders.asScala.toSeq ++
+          Seq(RequestTracing.extractTraceHeader(userRequest.headers.toSimpleMap)): _*
+      )
       .withMethod(signableRequest.getHttpMethod.name())
       .withQueryStringParameters(extractParameters(signableRequest.getParameters): _*)
       .execute()

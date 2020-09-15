@@ -18,6 +18,7 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
@@ -33,6 +34,8 @@ class MembershipRoute(
   final private val MAX_GROUPS_LIST_LIMIT: Int = 1500
 
   def getRoutes: Route = membershipRoute
+
+  def logger: Logger = LoggerFactory.getLogger(classOf[MembershipRoute])
 
   def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case GroupNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
@@ -193,4 +196,5 @@ class MembershipRoute(
         complete(StatusCodes.BadRequest, msg)
     }
     .result()
+
 }

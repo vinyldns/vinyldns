@@ -8,6 +8,8 @@ import microsites._
 import ReleaseTransformations._
 import sbtrelease.Version
 
+import scala.util.Try
+
 resolvers ++= additionalResolvers
 
 lazy val IntegrationTest = config("it") extend Test
@@ -32,8 +34,8 @@ lazy val sharedSettings = Seq(
   ),
 
   // scala format
-  scalafmtOnCompile := true,
-  scalafmtOnCompile in IntegrationTest := true,
+  scalafmtOnCompile := getPropertyFlagOrDefault("build.scalafmtOnCompile", true),
+  scalafmtOnCompile in IntegrationTest := getPropertyFlagOrDefault("build.scalafmtOnCompile", true),
 
   // coverage options
   coverageMinimum := 85,
@@ -314,7 +316,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    
+
     // ads the version when working locally with sbt run
     PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
 
@@ -430,6 +432,9 @@ lazy val finalReleaseStage = Seq[ReleaseStep] (
   commitNextVersion
 )
 
+def getPropertyFlagOrDefault(name: String, value: Boolean): Boolean =
+  sys.props.get(name).flatMap(propValue => Try(propValue.toBoolean).toOption).getOrElse(value)
+
 releaseProcess :=
   initReleaseStage ++
   sonatypePublishStage ++
@@ -442,7 +447,7 @@ addCommandAlias("validate", "; root/clean; " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
-  "portal/headerCheck portal/test:headerCheck; " +  
+  "portal/headerCheck portal/test:headerCheck; " +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
 )
