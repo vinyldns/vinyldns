@@ -36,7 +36,7 @@ class AccessLoggingFilter @Inject() (
     val (trackingHeaderName, trackingHeaderValue) = RequestTracing.createTraceHeader
     val newRequest =
       request.withHeaders(
-        request.headers.add(trackingHeaderName -> trackingHeaderValue.unsafeRunSync())
+        request.headers.add(trackingHeaderName -> trackingHeaderValue)
       )
     val resultFuture = next(newRequest)
 

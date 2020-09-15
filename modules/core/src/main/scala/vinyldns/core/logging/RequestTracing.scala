@@ -18,8 +18,6 @@ package vinyldns.core.logging
 
 import java.util.UUID
 
-import cats.effect.IO
-
 /** Helper methods for request tracing */
 object RequestTracing {
   val requestIdHeaderName = "X-VinylDNS-TraceId"
@@ -28,16 +26,22 @@ object RequestTracing {
   def extractTraceId(headerMap: Map[String, String]): Option[String] =
     headerMap.get(requestIdHeaderName)
 
-  /** Generates a trace identifier */
-  def generateTraceId: IO[String] = IO {
+  /** Generates a trace identifier
+    *
+    * NOTE: this is impure and lacks referential transparency */
+  def generateTraceId: String =
     UUID.randomUUID().toString
-  }
 
-  /** Creates a trace header name/value pair */
-  def createTraceHeader: (String, IO[String]) = (requestIdHeaderName, generateTraceId)
+  /** Creates a trace header name/value pair
+    *
+    * NOTE: this is impure and lacks referential transparency */
+  def createTraceHeader: (String, String) = (requestIdHeaderName, generateTraceId)
 
-  /** Retrieves the trace header name/value pair from the given headerMap */
+  /** Retrieves the trace header name/value pair from the given headerMap.
+    * If the header does not exist, creates a new value using [[generateTraceId]].
+    *
+    * NOTE: this is impure and lacks referential transparency */
   def extractTraceHeader(headerMap: Map[String, String]): (String, String) =
-    requestIdHeaderName -> headerMap.getOrElse(requestIdHeaderName, generateTraceId.unsafeRunSync())
+    requestIdHeaderName -> headerMap.getOrElse(requestIdHeaderName, generateTraceId)
 
 }

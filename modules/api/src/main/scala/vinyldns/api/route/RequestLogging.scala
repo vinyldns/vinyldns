@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeade
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server.directives.{BasicDirectives, LogEntry}
 import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
-import cats.effect.IO
 import vinyldns.core.logging.RequestTracing
 
 import scala.util.Try
@@ -124,17 +123,17 @@ trait RequestLogging {
       s"Duration: request_duration=$duration"
   }
 
-  private[route] final class VinylDnsRequestIdHeader(requestId: IO[String])
+  private[route] final class VinylDnsRequestIdHeader(requestId: String)
       extends ModeledCustomHeader[VinylDnsRequestIdHeader] {
     override def renderInRequests = true
     override def renderInResponses = true
     override val companion = VinylDnsRequestIdHeader
-    override def value: String = requestId.unsafeRunSync()
+    override def value: String = requestId
   }
 
   private[route] object VinylDnsRequestIdHeader
       extends ModeledCustomHeaderCompanion[VinylDnsRequestIdHeader] {
     override val name = RequestTracing.requestIdHeaderName
-    override def parse(value: String) = Try(new VinylDnsRequestIdHeader(IO.pure(value)))
+    override def parse(value: String) = Try(new VinylDnsRequestIdHeader(value))
   }
 }

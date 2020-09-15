@@ -108,7 +108,7 @@ class VinylDNSServiceSpec
         } ~>
         check {
           val responseString = responseAs[String]
-          responseString should fullyMatch regex """(?i)[0-9a-f\-]+"""
+          (responseString should fullyMatch).regex("""(?i)[0-9a-f\-]+""")
           response.status shouldBe StatusCodes.OK
         }
     }
