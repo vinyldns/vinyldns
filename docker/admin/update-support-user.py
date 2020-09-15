@@ -21,13 +21,19 @@ query = "SELECT data FROM user where user_name = %(user_name)s"
 update = "UPDATE user SET data = %(pb)s WHERE user_name = %(user_name)s"
 
 cursor = cnx.cursor(dictionary=True)
+
 try:
     cursor.execute(query, { 'user_name': user_name })
     user = VinylDNSProto_pb2.User()
     for row in cursor:
         user_raw = row['data']
         user = VinylDNSProto_pb2.User()
-        user.ParseFromString(user_raw)
+        if isinstance(user_raw, str):
+            print("Type of user data is string {}".format(user_raw))
+            user.ParseFromString(base64.encodebytes(user_raw.encode()))
+        else:
+            print("Type of user data is bytes")
+            user.ParseFromString(user_raw)
         print("FOUND USER NAME {}, IS SUPPORT = {}".format(user.userName, user.isSupport))
 
     if user.userName is None or len(user.userName) == 0:
@@ -40,6 +46,7 @@ try:
         cnx.commit()
     else:
         print("Skipping making support as no make support value provided")
+
 finally:
     cursor.close()
     cnx.close()
