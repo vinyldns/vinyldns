@@ -33,3 +33,7 @@ class NoOpCrypto(val config: Config) extends CryptoAlgebra {
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }
+
+object NoOpCrypto {
+  val instance = new NoOpCrypto()
+}

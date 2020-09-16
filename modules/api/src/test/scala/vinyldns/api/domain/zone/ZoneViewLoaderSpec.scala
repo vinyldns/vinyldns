@@ -27,7 +27,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS
 import org.xbill.DNS.{Name, ZoneTransferIn}
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record._
 
 import scala.collection.JavaConverters._
@@ -37,6 +36,7 @@ import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
+import vinyldns.dns.DnsConversions
 
 class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
   val testZoneName = "vinyldns."

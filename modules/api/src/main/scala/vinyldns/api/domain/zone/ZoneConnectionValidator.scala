@@ -23,10 +23,11 @@ import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck._
+import vinyldns.dns.DnsConnection
 
 import scala.concurrent.duration._
 
@@ -129,7 +130,7 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
     val result =
       for {
         connection <- getDnsConnection(zone)
-        resp <- connection.resolve(zone.name, zone.name, RecordType.SOA)
+        resp <- connection.resolve(zone.name, zone.name, RecordType.SOA).toResult[List[RecordSet]]
         view <- loadZone(zone)
         _ <- hasApexNS(view)
         _ <- hasSOA(resp, zone)
@@ -157,5 +158,6 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
       backendId.forall(id => connections.dnsBackends.exists(_.id == id))
     }
 
-  private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
+  private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection =
+    DnsConnection(conn, Crypto.instance)
 }

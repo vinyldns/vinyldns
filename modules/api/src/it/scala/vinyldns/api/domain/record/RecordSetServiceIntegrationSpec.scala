@@ -24,10 +24,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.Interfaces._
 import vinyldns.api._
 import vinyldns.api.domain.access.AccessValidations
-import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._
@@ -38,6 +36,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.dns.DnsConnection
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 
 import scala.concurrent.Await
@@ -383,7 +382,7 @@ class RecordSetServiceIntegrationSpec
     "fail to add relative record if apex record with same name already exists" in {
       val newRecord = apexTestRecordNameConflict.copy(name = "zone-test-name-conflicts")
 
-      doReturn(IO(List(newRecord)).toResult)
+      doReturn(IO(List(newRecord)))
         .when(mockDnsConnection)
         .resolve(
           zoneTestNameConflicts.name,
@@ -405,7 +404,7 @@ class RecordSetServiceIntegrationSpec
     "fail to add apex record if relative record with same name already exists" in {
       val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict.")
 
-      doReturn(IO(List(newRecord)).toResult)
+      doReturn(IO(List(newRecord)))
         .when(mockDnsConnection)
         .resolve(newRecord.name, zoneTestNameConflicts.name, newRecord.typ)
 

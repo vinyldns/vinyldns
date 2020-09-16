@@ -24,13 +24,12 @@ import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.xbill.DNS
-import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
+import vinyldns.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
-import vinyldns.api.{CatsHelpers, Interfaces}
+import vinyldns.api.CatsHelpers
 import vinyldns.core.domain.batch.{
   BatchChange,
   BatchChangeApprovalStatus,
@@ -43,13 +42,15 @@ import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
+import vinyldns.dns.DnsConnection
 
 class RecordSetChangeHandlerSpec
     extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
-    with CatsHelpers {
+    with CatsHelpers
+    with EitherValues {
 
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private val mockConn = mock[DnsConnection]
@@ -126,7 +127,7 @@ class RecordSetChangeHandlerSpec
 
   "Handling Pending Changes" should {
     "complete the change successfully if already applied" in {
-      doReturn(Interfaces.result(List(rs)))
+      doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -162,12 +163,12 @@ class RecordSetChangeHandlerSpec
 
     "apply the change if not yet applied" in {
       // The second return is for verify
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List(rs)))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -205,12 +206,12 @@ class RecordSetChangeHandlerSpec
 
     "bypass verify and fail if the dns update fails" in {
       // The second return is for verify
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List(rs)))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(Left(NotAuthorized("dns failure"))))
+      doReturn(IO.raiseError(NotAuthorized("dns failure")))
         .when(mockConn)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -253,12 +254,12 @@ class RecordSetChangeHandlerSpec
 
     "fail the change in verify if verify errors" in {
       // All returns after first are for verify.  Retry 2 times and succeed
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(Left(NotAuthorized("dns-fail"))))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.raiseError(NotAuthorized("dns-fail")))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -297,12 +298,12 @@ class RecordSetChangeHandlerSpec
     }
 
     "requeue the change in verify if permissible errors" in {
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(Left(TryAgain("dns-fail"))))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.raiseError(TryAgain("dns-fail")))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -313,7 +314,7 @@ class RecordSetChangeHandlerSpec
 
     "fail the change if validating fails with an error" in {
       // Stage an error on the first resolve, which will cause validate to fail
-      doReturn(Interfaces.result(Left(NotAuthorized("dns-failure"))))
+      doReturn(IO.raiseError(NotAuthorized("dns-failure")))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
@@ -352,10 +353,10 @@ class RecordSetChangeHandlerSpec
     }
 
     "fail the change if applying fails with an error" in {
-      doReturn(Interfaces.result(List()))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(Interfaces.result(Left(NotAuthorized("dns-fail"))))
+      doReturn(IO.raiseError(NotAuthorized("dns-fail")))
         .when(mockConn)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -394,10 +395,10 @@ class RecordSetChangeHandlerSpec
     }
 
     "requeue the change in apply if permissible errors" in {
-      doReturn(Interfaces.result(List()))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(Interfaces.result(Left(Refused("dns-fail"))))
+      doReturn(IO.raiseError(Refused("dns-fail")))
         .when(mockConn)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -415,12 +416,12 @@ class RecordSetChangeHandlerSpec
         .getRecordSets(anyString, anyString, any(classOf[RecordType]))
 
       // The second return is for verify
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List(rs)))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+      doReturn(IO.pure(NoError(mockDnsMessage)))
         .when(mockConn)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -474,12 +475,12 @@ class RecordSetChangeHandlerSpec
         .getRecordSets(rsChange.recordSet.zoneId, "*", RecordType.CNAME)
 
       // The second return is for verify
-      doReturn(Interfaces.result(List()))
-        .doReturn(Interfaces.result(List(rs)))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+      doReturn(IO.pure(NoError(mockDnsMessage)))
         .when(mockConn)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -532,12 +533,12 @@ class RecordSetChangeHandlerSpec
         .getRecordSets(anyString, anyString, any(classOf[RecordType]))
 
       // The second return is for verify
-      doReturn(Interfaces.result(Right(List())))
-        .doReturn(Interfaces.result(Right(List(rsNs))))
+      doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List(rsNs)))
         .when(mockConn)
         .resolve(rsNs.name, rsChangeNs.zone.name, rsNs.typ)
 
-      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+      doReturn(IO.pure(NoError(mockDnsMessage)))
         .when(mockConn)
         .applyChange(rsChangeNs)
       doReturn(IO.pure(csNs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -573,10 +574,10 @@ class RecordSetChangeHandlerSpec
         changeType = RecordSetChangeType.Update,
         updates = Some(rsChange.recordSet.copy(ttl = 87))
       )
-      doReturn(Interfaces.result(Right(List(updateChange.recordSet))))
+      doReturn(IO.pure(List(updateChange.recordSet)))
         .when(mockConn)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
-      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+      doReturn(IO.pure(NoError(mockDnsMessage)))
         .when(mockConn)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -618,10 +619,10 @@ class RecordSetChangeHandlerSpec
         updates = Some(rsChange.recordSet.copy(ttl = 87))
       )
       val dnsBackendRs = updateChange.recordSet.copy(ttl = 30)
-      doReturn(Interfaces.result(Right(List(dnsBackendRs))))
+      doReturn(IO.pure(List(dnsBackendRs)))
         .when(mockConn)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
-      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+      doReturn(IO.pure(NoError(mockDnsMessage)))
         .when(mockConn)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -654,7 +655,7 @@ class RecordSetChangeHandlerSpec
 
   "getProcessingStatus for Create" should {
     "return ReadyToApply if there are no records in the DNS backend" in {
-      doReturn(Interfaces.result(Right(List())))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -673,7 +674,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "return AlreadyApplied if the change already exists in the DNS backend" in {
-      doReturn(Interfaces.result(Right(List(rs))))
+      doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -692,7 +693,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "remove record from database for Add if record does not exist in DNS backend" in {
-      doReturn(Interfaces.result(Right(List())))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
@@ -723,7 +724,7 @@ class RecordSetChangeHandlerSpec
       val storedRs = rs.copy(ttl = 300)
       val syncedRsChange =
         rsChange.copy(changeType = RecordSetChangeType.Update, updates = Some(storedRs))
-      doReturn(Interfaces.result(Right(List(syncedRsChange.updates.get))))
+      doReturn(IO.pure(List(syncedRsChange.updates.get)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(storedRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -742,7 +743,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "return ReadyToApply if current record set doesn't match DNS backend and DNS backend has no records" in {
-      doReturn(Interfaces.result(Right(List())))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -761,7 +762,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "return AlreadyApplied if the change already exists in the DNS backend" in {
-      doReturn(Interfaces.result(Right(List(rsChange.recordSet))))
+      doReturn(IO.pure(List(rsChange.recordSet)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rsChange.recordSet)))
@@ -781,7 +782,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "sync in the DNS backend for update if record does not exist in database" in {
-      doReturn(Interfaces.result(Right(List(rs.copy(ttl = 100)))))
+      doReturn(IO.pure(List(rs.copy(ttl = 100))))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
@@ -812,7 +813,7 @@ class RecordSetChangeHandlerSpec
 
   "getProcessingStatus for Delete" should {
     "return ReadyToApply if there are records in the DNS backend" in {
-      doReturn(Interfaces.result(Right(List(rs))))
+      doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -830,7 +831,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "return AlreadyApplied if there are no records in the DNS backend" in {
-      doReturn(Interfaces.result(Right(List())))
+      doReturn(IO.pure(List()))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
@@ -848,7 +849,7 @@ class RecordSetChangeHandlerSpec
     }
 
     "sync in the DNS backend for Delete change if record exists" in {
-      doReturn(Interfaces.result(Right(List(rs))))
+      doReturn(IO.pure(List(rs)))
         .when(mockConn)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 

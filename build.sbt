@@ -196,6 +196,7 @@ lazy val api = (project in file("modules/api"))
     dynamodb % "compile->compile;it->it",
     mysql % "compile->compile;it->it")
   .dependsOn(sqs % "compile->compile;it->it")
+  .dependsOn(dns % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
@@ -209,7 +210,7 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql, sqs)
+  .aggregate(core, api, portal, dynamodb, mysql, sqs, dns)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -285,6 +286,21 @@ lazy val mysql = (project in file("modules/mysql"))
     organization := "io.vinyldns"
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "mysql")
+
+lazy val dns = (project in file("modules/dns"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(corePublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= dnsDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(
+    organization := "io.vinyldns"
+  ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "dns")
 
 lazy val sqs = (project in file("modules/sqs"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -446,6 +462,7 @@ addCommandAlias("validate", "; root/clean; " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
+  "dns/headerCheck dns/test:headerCheck dns/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
   "portal/headerCheck portal/test:headerCheck; " +
   "portal/createJsHeaders;portal/checkJsHeaders;" +

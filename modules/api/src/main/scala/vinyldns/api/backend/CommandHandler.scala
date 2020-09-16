@@ -20,7 +20,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import fs2._
 import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone.ZoneConnectionValidator
 import vinyldns.api.engine.{
   BatchChangeHandler,
@@ -35,6 +35,7 @@ import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
+import vinyldns.dns.DnsConnection
 
 object CommandHandler {
 
@@ -162,7 +163,10 @@ object CommandHandler {
 
         case rcr: RecordSetChange =>
           val dnsConn =
-            DnsConnection(ZoneConnectionValidator.getZoneConnection(rcr.zone, connections))
+            DnsConnection(
+              ZoneConnectionValidator.getZoneConnection(rcr.zone, connections),
+              Crypto.instance
+            )
           outcomeOf(message)(recordChangeProcessor(dnsConn, rcr))
 
         case bcc: BatchChangeCommand =>

@@ -23,14 +23,13 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import vinyldns.api.Interfaces._
-import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
+import vinyldns.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
+import vinyldns.dns.DnsConnection
 
 import scala.concurrent.duration._
 
@@ -159,7 +158,7 @@ class ZoneConnectionValidatorSpec
       doReturn(generateZoneView(testZone, successSoa, successNS, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
-      doReturn(List(successSoa).toResult)
+      doReturn(IO.pure(List(successSoa)))
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
@@ -172,7 +171,7 @@ class ZoneConnectionValidatorSpec
       doReturn(generateZoneView(testZone, successSoa, failureNs, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
-      doReturn(List(successSoa).toResult)
+      doReturn(IO.pure(List(successSoa)))
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
@@ -187,7 +186,7 @@ class ZoneConnectionValidatorSpec
     "respond with a failure if no records are returned from the backend" in {
       doReturn(testZone).when(mockZoneView).zone
       doReturn(generateZoneView(testZone).recordSetsMap).when(mockZoneView).recordSetsMap
-      doReturn(List.empty[RecordSet].toResult)
+      doReturn(IO.pure(List.empty[RecordSet]))
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
@@ -201,7 +200,7 @@ class ZoneConnectionValidatorSpec
     }
 
     "respond with a failure if any failure is returned from the backend" in {
-      doReturn(result(TypeNotFound("fail")))
+      doReturn(IO.raiseError(TypeNotFound("fail")))
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
@@ -234,7 +233,7 @@ class ZoneConnectionValidatorSpec
           Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
       )
 
-      doReturn(List(mockRecordSet).toResult)
+      doReturn(IO.pure(List(mockRecordSet)))
         .when(mockDnsConnection)
         .resolve(badZone.name, badZone.name, RecordType.SOA)
 

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.dns
+package vinyldns.dns
 
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
-import vinyldns.api.Interfaces.{result, _}
-import vinyldns.api.crypto.Crypto
+import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.backend.BackendResponse
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
@@ -31,11 +31,10 @@ object DnsProtocol {
   sealed trait DnsRequest
   final case class Apply(change: RecordSetChange) extends DnsRequest
 
-  // TODO: Remove origin once we change to using Zone Activation
   case class Resolve(name: String, zone: Zone, typ: RecordType)
   case class UpdateConnection(zoneConnection: ZoneConnection)
 
-  sealed trait DnsResponse
+  sealed trait DnsResponse extends BackendResponse
   final case class NoError(message: DNS.Message) extends DnsResponse
 
   abstract class DnsFailure(message: String) extends Throwable(message)
@@ -90,19 +89,19 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
 
   val logger: Logger = LoggerFactory.getLogger(classOf[DnsConnection])
 
-  def applyChange(change: RecordSetChange): Result[DnsResponse] = change.changeType match {
+  def applyChange(change: RecordSetChange): IO[DnsResponse] = change.changeType match {
     case RecordSetChangeType.Create => addRecord(change)
     case RecordSetChangeType.Update => updateRecord(change)
     case RecordSetChangeType.Delete => deleteRecord(change)
   }
 
-  def resolve(name: String, zoneName: String, typ: RecordType): Result[List[RecordSet]] =
-    IO {
+  def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] =
+    IO.fromEither {
       for {
         query <- toQuery(name, zoneName, typ)
         records <- runQuery(query)
       } yield records
-    }.toResult
+    }
 
   private[dns] def toQuery(
       name: String,
@@ -125,7 +124,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
       case _ => Right(change)
     }
 
-  private[dns] def addRecord(change: RecordSetChange): Result[DnsResponse] = result {
+  private[dns] def addRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
     for {
       change <- recordsArePresent(change)
       addRecord <- toDnsRRset(change.recordSet, change.zone.name)
@@ -134,7 +133,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
     } yield response
   }
 
-  private[dns] def updateRecord(change: RecordSetChange): Result[DnsResponse] = result {
+  private[dns] def updateRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
     for {
       change <- recordsArePresent(change)
       dnsRecord <- toDnsRRset(change.recordSet, change.zone.name)
@@ -144,7 +143,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
     } yield response
   }
 
-  private[dns] def deleteRecord(change: RecordSetChange): Result[DnsResponse] = result {
+  private[dns] def deleteRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
     for {
       change <- recordsArePresent(change)
       dnsRecord <- toDnsRRset(change.recordSet, change.zone.name)
@@ -200,11 +199,12 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
 
 object DnsConnection {
 
-  def apply(conn: ZoneConnection): DnsConnection = new DnsConnection(createResolver(conn))
+  def apply(conn: ZoneConnection, crypto: CryptoAlgebra): DnsConnection =
+    new DnsConnection(createResolver(conn, crypto))
 
-  def createResolver(conn: ZoneConnection): DNS.SimpleResolver = {
+  def createResolver(conn: ZoneConnection, crypto: CryptoAlgebra): DNS.SimpleResolver = {
     // IMPORTANT!  Make sure we decrypt the zone connection before creating the resolver
-    val decryptedConnection = conn.decrypted(Crypto.instance)
+    val decryptedConnection = conn.decrypted(crypto)
     val (host, port) = parseHostAndPort(decryptedConnection.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)

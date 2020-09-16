@@ -16,8 +16,8 @@
 
 package vinyldns.api.domain.record
 
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record.RecordSet
+import vinyldns.dns.DnsConversions
 
 object RecordSetHelpers {
 

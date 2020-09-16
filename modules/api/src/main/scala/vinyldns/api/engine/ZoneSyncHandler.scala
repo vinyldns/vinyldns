@@ -20,7 +20,6 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
@@ -31,6 +30,7 @@ import vinyldns.core.domain.zone.{
   ZoneChangeStatus,
   ZoneRepository
 }
+import vinyldns.dns.DnsConversions
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 

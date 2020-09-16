@@ -24,10 +24,8 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import vinyldns.api.Interfaces._
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.access.AccessValidations
-import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
@@ -40,6 +38,7 @@ import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserR
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
+import vinyldns.dns.DnsConnection
 
 class RecordSetServiceSpec
     extends AnyWordSpec
@@ -140,7 +139,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSets(okZone.id, record.name, record.typ)
 
-      doReturn(IO(List(aaaa)).toResult)
+      doReturn(IO(List(aaaa)))
         .when(mockDnsConnection)
         .resolve(record.name, okZone.name, record.typ)
 
@@ -298,7 +297,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List(record)))
         .when(mockRecordRepo)
         .getRecordSets(okZone.id, record.name, record.typ)
-      doReturn(IO(List()).toResult)
+      doReturn(IO(List()))
         .when(mockDnsConnection)
         .resolve(record.name, okZone.name, record.typ)
       doReturn(IO.pure(List()))
@@ -653,7 +652,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List(newRecord)))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO(List()).toResult)
+      doReturn(IO(List()))
         .when(mockDnsConnection)
         .resolve(newRecord.name, okZone.name, newRecord.typ)
 

@@ -30,10 +30,10 @@ import cats.effect.IO
 import org.xbill.DNS.ReverseMap
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
-import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.dns.DnsConnection
 
 object RecordSetService {
   def apply(
@@ -386,7 +386,7 @@ class RecordSetService(
           if validateRecordLookupAgainstDnsBackend =>
         dnsConnection(zone, configuredDnsConnections)
           .resolve(recordSet.name, zone.name, recordSet.typ)
-          .value
+          .attempt
           .map {
             case Right(existingRecords) =>
               if (existingRecords.isEmpty) Right(())
@@ -410,7 +410,7 @@ class RecordSetService(
           if validateRecordLookupAgainstDnsBackend =>
         dnsConnection(zone, configuredDnsConnections)
           .resolve(newRecordSet.name, zone.name, newRecordSet.typ)
-          .value
+          .attempt
           .map {
             case Right(existingRecords) =>
               if (existingRecords.isEmpty) Right(())

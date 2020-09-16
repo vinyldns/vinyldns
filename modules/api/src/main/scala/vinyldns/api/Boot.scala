@@ -30,7 +30,6 @@ import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
-import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
@@ -45,6 +44,7 @@ import vinyldns.core.repository.DataStoreLoader
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
+import vinyldns.dns.DnsConnection
 
 object Boot extends App {
 
@@ -130,7 +130,7 @@ object Boot extends App {
           messageQueue,
           recordAccessValidations,
           (zone, connections) =>
-            DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections)),
+            DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections), crypto),
           connections,
           VinylDNSConfig.validateRecordLookupAgainstDnsBackend
         )

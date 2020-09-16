@@ -19,13 +19,13 @@ package vinyldns.api.engine
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused, TryAgain}
+import vinyldns.dns.DnsProtocol.{NoError, Refused, TryAgain}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
+import vinyldns.dns.DnsConnection
 
 object RecordSetChangeHandler {
 
@@ -167,7 +167,7 @@ object RecordSetChangeHandler {
       }
     }
 
-    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).value.flatMap {
+    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).attempt.flatMap {
       case Right(existingRecords) =>
         if (performSync) {
           for {
@@ -334,7 +334,7 @@ object RecordSetChangeHandler {
 
   /* Step 2: Apply the change to the dns backend */
   private def apply(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
-    dnsConn.applyChange(change).value.map {
+    dnsConn.applyChange(change).attempt.map {
       case Right(_: NoError) =>
         Applied(change)
       case Left(_: Refused) =>

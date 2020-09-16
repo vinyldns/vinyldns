@@ -20,7 +20,7 @@ import cats.implicits._
 import com.aaronbedra.orchard.CIDR
 import vinyldns.api.domain.zone.InvalidRequest
 import vinyldns.core.domain.zone.Zone
-import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.dns.DnsConversions._
 
 import scala.util.Try
 

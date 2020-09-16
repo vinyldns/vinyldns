@@ -89,6 +89,10 @@ object Dependencies {
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
   )
 
+  lazy val dnsDependencies = Seq(
+    "dnsjava"                   %  "dnsjava"                        % "2.1.7"
+  )
+
   lazy val sqsDependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-sqs"               % awsV withSources()
