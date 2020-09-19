@@ -25,7 +25,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
-import vinyldns.api.backend.CommandHandler
+import vinyldns.api.backend.{CommandHandler, DefaultBackendRegistry}
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
@@ -37,6 +37,7 @@ import vinyldns.api.metrics.APIMetrics
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
+import vinyldns.core.domain.backend.{BackendConfigs, BackendRegistry}
 import vinyldns.core.health.HealthService
 import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
@@ -74,7 +75,8 @@ object Boot extends App {
       loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
       repositories = loaderResponse.accessor
-      connections = VinylDNSConfig.configuredDnsConnections
+      backendConfigs <- BackendConfigs.load(VinylDNSConfig.apiBackend)
+      backendRegistry <- BackendRegistry.apply(backendConfigs)
       _ <- TestDataLoader
         .loadTestData(
           repositories.userRepository,
@@ -109,7 +111,7 @@ object Boot extends App {
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
           notifiers,
-          connections
+          backendRegistry
         )
         .start
     } yield {
@@ -123,15 +125,13 @@ object Boot extends App {
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(connections)
+        new ZoneConnectionValidator(backendRegistry)
       val recordSetService =
         RecordSetService(
           repositories,
           messageQueue,
           recordAccessValidations,
-          (zone, connections) =>
-            DnsConnection(ZoneConnectionValidator.getZoneConnection(zone, connections), crypto),
-          connections,
+          backendRegistry,
           VinylDNSConfig.validateRecordLookupAgainstDnsBackend
         )
       val zoneService = ZoneService(
@@ -139,10 +139,11 @@ object Boot extends App {
         connectionValidator,
         messageQueue,
         zoneValidations,
-        recordAccessValidations
+        recordAccessValidations,
+        backendRegistry
       )
       val healthService = new HealthService(
-        messageQueue.healthCheck :: connectionValidator.healthCheck(healthCheckTimeout) ::
+        messageQueue.healthCheck :: backendRegistry.healthCheck(healthCheckTimeout) ::
           loaderResponse.healthChecks
       )
       val batchChangeConverter =

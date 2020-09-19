@@ -22,12 +22,8 @@ import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone.ZoneConnectionValidator
-import vinyldns.api.engine.{
-  BatchChangeHandler,
-  RecordSetChangeHandler,
-  ZoneChangeHandler,
-  ZoneSyncHandler
-}
+import vinyldns.api.engine.{BatchChangeHandler, RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
+import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
@@ -52,14 +48,14 @@ object CommandHandler {
 
   def mainFlow(
       zoneChangeHandler: ZoneChange => IO[ZoneChange],
-      recordChangeHandler: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
+      recordChangeHandler: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncHandler: ZoneChange => IO[ZoneChange],
       batchChangeHandler: BatchChangeCommand => IO[Option[BatchChange]],
       mq: MessageQueue,
       count: MessageCount,
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
-      connections: ConfiguredDnsConnections,
+      backendRegistry: BackendRegistry,
       maxOpen: Int = 4
   )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
@@ -75,7 +71,7 @@ object CommandHandler {
         recordChangeHandler,
         zoneSyncHandler,
         batchChangeHandler,
-        connections
+        backendRegistry
       )
 
     // Delete messages from message queue when complete
@@ -146,11 +142,11 @@ object CommandHandler {
 
   /* Actually processes a change request */
   def processChangeRequests(
-      zoneChangeProcessor: ZoneChange => IO[ZoneChange],
-      recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
-      zoneSyncProcessor: ZoneChange => IO[ZoneChange],
-      batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
-      connections: ConfiguredDnsConnections
+                             zoneChangeProcessor: ZoneChange => IO[ZoneChange],
+                             recordChangeProcessor: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
+                             zoneSyncProcessor: ZoneChange => IO[ZoneChange],
+                             batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
+                             backendRegistry: BackendRegistry
   ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
@@ -162,12 +158,7 @@ object CommandHandler {
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
 
         case rcr: RecordSetChange =>
-          val dnsConn =
-            DnsConnection(
-              ZoneConnectionValidator.getZoneConnection(rcr.zone, connections),
-              Crypto.instance
-            )
-          outcomeOf(message)(recordChangeProcessor(dnsConn, rcr))
+          outcomeOf(message)(recordChangeProcessor(backendRegistry.backendForZone(rcr.zone), rcr))
 
         case bcc: BatchChangeCommand =>
           outcomeOf(message)(batchChangeProcessor(bcc))
@@ -211,7 +202,7 @@ object CommandHandler {
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
       notifiers: AllNotifiers,
-      connections: ConfiguredDnsConnections
+      backendRegistry: BackendRegistry
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
@@ -233,7 +224,7 @@ object CommandHandler {
         msgsPerPoll,
         pollingInterval,
         processingSignal,
-        connections
+        backendRegistry
       )
       .compile
       .drain

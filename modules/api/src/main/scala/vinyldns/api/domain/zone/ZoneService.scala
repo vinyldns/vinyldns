@@ -25,6 +25,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.backend.BackendRegistry
 
 object ZoneService {
   def apply(
@@ -32,7 +33,8 @@ object ZoneService {
       connectionValidator: ZoneConnectionValidatorAlgebra,
       messageQueue: MessageQueue,
       zoneValidations: ZoneValidations,
-      accessValidation: AccessValidationsAlgebra
+      accessValidation: AccessValidationsAlgebra,
+      backendRegistry: BackendRegistry
   ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
@@ -42,7 +44,8 @@ object ZoneService {
       connectionValidator,
       messageQueue,
       zoneValidations,
-      accessValidation
+      accessValidation,
+      backendRegistry
     )
 }
 
@@ -54,7 +57,8 @@ class ZoneService(
     connectionValidator: ZoneConnectionValidatorAlgebra,
     messageQueue: MessageQueue,
     zoneValidations: ZoneValidations,
-    accessValidation: AccessValidationsAlgebra
+    accessValidation: AccessValidationsAlgebra,
+    backendRegistry: BackendRegistry
 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
@@ -232,8 +236,9 @@ class ZoneService(
     } yield zoneChange
   }
 
-  def getBackendIds(): Result[List[String]] =
-    VinylDNSConfig.configuredDnsConnections.dnsBackends.map(_.id).toResult
+  def getBackendIds(): Result[List[String]] = {
+    backendRegistry.ids.toList.toResult
+  }
 
   def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository
