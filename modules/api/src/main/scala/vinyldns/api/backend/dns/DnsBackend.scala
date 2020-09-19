@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.backend
+package vinyldns.api.backend.dns
 
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.backend.{Backend, BackendConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneConnection}
 
-/* Given a config, initializes a backend so it is ready to use */
-trait Backend {
+class DnsBackend(configuredDnsConnections: ConfiguredDnsConnections, crypto: CryptoAlgebra)
+    extends Backend {
+
+  private val connMap: Map[String, ZoneConnection] =
+    configuredDnsConnections.dnsBackends.map { b =>
+      b.id -> b.zoneConnection
+    }.toMap
 
   /**
     * Given a zone, returns a connection to the zone, returns None if cannot connect
@@ -27,17 +34,26 @@ trait Backend {
     * @param zone The zone to attempt to connect to
     * @return A backend that is usable, or None if it could not connect
     */
-  def connect(zone: Zone): Option[BackendConnection]
+  def connect(zone: Zone): Option[BackendConnection] =
+    zone.backendId
+      .flatMap(connMap.get)
+      .orElse(Some(configuredDnsConnections.defaultZoneConnection))
+      .map { zc =>
+        new DnsBackendConnection(zone.backendId.getOrElse("default"), zc, DnsConnection(zc, crypto))
+      }
 
   /**
     * Given a backend id, looks up the backend for this provider if it exists
     *
     * @return A backend that is usable, or None if could not connect
     */
-  def connectById(backendId: String): Option[BackendConnection]
+  def connectById(backendId: String): Option[BackendConnection] =
+    connMap.get(backendId).map { zc =>
+      new DnsBackendConnection(backendId, zc, DnsConnection(zc, crypto))
+    }
 
   /**
     * @return The backend ids loaded with this provider
     */
-  def ids: List[String]
+  def ids: List[String] = connMap.keys.toList
 }

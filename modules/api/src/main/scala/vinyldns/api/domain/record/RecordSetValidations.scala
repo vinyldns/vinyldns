@@ -19,6 +19,7 @@ package vinyldns.api.domain.record
 import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
@@ -27,7 +28,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
-import vinyldns.dns.DnsConversions
 
 import scala.util.matching.Regex
 

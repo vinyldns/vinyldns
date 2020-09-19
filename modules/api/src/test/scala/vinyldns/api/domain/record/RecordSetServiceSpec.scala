@@ -25,6 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.ResultHelpers
+import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -38,7 +39,6 @@ import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserR
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
-import vinyldns.dns.DnsConnection
 
 class RecordSetServiceSpec
     extends AnyWordSpec

@@ -25,7 +25,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
-import vinyldns.api.backend.{CommandHandler, DefaultBackendRegistry}
+import vinyldns.api.backend.CommandHandler
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
@@ -45,7 +45,6 @@ import vinyldns.core.repository.DataStoreLoader
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
-import vinyldns.dns.DnsConnection
 
 object Boot extends App {
 

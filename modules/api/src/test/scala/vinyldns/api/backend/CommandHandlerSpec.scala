@@ -28,6 +28,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
+import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
@@ -38,7 +39,6 @@ import vinyldns.core.TestZoneData._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
-import vinyldns.dns.DnsConnection
 
 class CommandHandlerSpec
     extends AnyWordSpec

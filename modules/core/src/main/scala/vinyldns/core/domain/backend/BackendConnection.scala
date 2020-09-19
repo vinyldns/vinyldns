@@ -30,9 +30,9 @@ import vinyldns.core.domain.zone.Zone
 trait BackendConnection {
 
   /**
-   * Identifies this backend
-   * @return The id for the backend
-   */
+    * Identifies this backend
+    * @return The id for the backend
+    */
   def id: String
 
   /**

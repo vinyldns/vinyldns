@@ -20,9 +20,12 @@ import cats.effect.{ContextShift, IO, Timer}
 import fs2._
 import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
-import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.zone.ZoneConnectionValidator
-import vinyldns.api.engine.{BatchChangeHandler, RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
+import vinyldns.api.engine.{
+  BatchChangeHandler,
+  RecordSetChangeHandler,
+  ZoneChangeHandler,
+  ZoneSyncHandler
+}
 import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
@@ -31,7 +34,6 @@ import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
-import vinyldns.dns.DnsConnection
 
 object CommandHandler {
 
@@ -142,11 +144,11 @@ object CommandHandler {
 
   /* Actually processes a change request */
   def processChangeRequests(
-                             zoneChangeProcessor: ZoneChange => IO[ZoneChange],
-                             recordChangeProcessor: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
-                             zoneSyncProcessor: ZoneChange => IO[ZoneChange],
-                             batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
-                             backendRegistry: BackendRegistry
+      zoneChangeProcessor: ZoneChange => IO[ZoneChange],
+      recordChangeProcessor: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
+      zoneSyncProcessor: ZoneChange => IO[ZoneChange],
+      batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
+      backendRegistry: BackendRegistry
   ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
@@ -210,7 +212,7 @@ object CommandHandler {
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =
-      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo)
+      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo, backendRegistry)
     val batchChangeHandler =
       BatchChangeHandler(batchChangeRepo, notifiers)
 

@@ -16,18 +16,17 @@
 
 package vinyldns.core.domain.backend
 
-import cats.data.NonEmptyList
-import cats.effect.{Blocker, ContextShift, IO}
-import com.typesafe.config.Config
-import pureconfig._
-import pureconfig.generic.auto._
-import pureconfig.module.catseffect.syntax._
+import cats.effect.IO
 
-final case class BackendConfigs(defaultBackendId: String, backends: NonEmptyList[BackendConfig])
+trait BackendProvider {
 
-object BackendConfigs {
-  def load(config: Config)(implicit cs: ContextShift[IO]): IO[BackendConfigs] =
-    Blocker[IO].use(
-      ConfigSource.fromConfig(config).loadF[IO, BackendConfigs](_)
-    )
+  /**
+    * Loads a backend based on the provided config so that it is ready to use
+    * This is internally used typically during startup
+    *
+    * @param config The BackendConfig, has settings that are specific to this backend
+    *
+    * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
+    */
+  def load(config: BackendConfig): IO[Backend]
 }

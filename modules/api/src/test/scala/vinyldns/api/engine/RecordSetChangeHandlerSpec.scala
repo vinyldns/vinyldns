@@ -26,7 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.xbill.DNS
-import vinyldns.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
+import vinyldns.api.backend.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.CatsHelpers
@@ -42,7 +42,7 @@ import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
-import vinyldns.dns.DnsConnection
+import vinyldns.api.backend.dns.DnsConnection
 
 class RecordSetChangeHandlerSpec
     extends AnyWordSpec

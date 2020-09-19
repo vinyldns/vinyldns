@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.dns
+package vinyldns.api.backend.dns
 
 import cats.effect.IO
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
+import org.xbill._
 import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 import scala.collection.JavaConverters._
-import org.xbill._
 
-class DnsBackendConnection(zoneConnection: ZoneConnection, conn: DnsConnection)
+class DnsBackendConnection(val id: String, zoneConnection: ZoneConnection, conn: DnsConnection)
     extends BackendConnection
     with DnsConversions {
 

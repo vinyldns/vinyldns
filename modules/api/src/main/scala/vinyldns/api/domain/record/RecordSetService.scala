@@ -23,7 +23,7 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneCommandResult, ZoneRepository}
+import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
@@ -34,7 +34,6 @@ import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
-import vinyldns.dns.DnsConnection
 
 object RecordSetService {
   def apply(
@@ -371,10 +370,10 @@ class RecordSetService(
   }
 
   def recordSetDoesNotExist(
-                             backendConnection: Zone => BackendConnection,
-                             zone: Zone,
-                             recordSet: RecordSet,
-                             validateRecordLookupAgainstDnsBackend: Boolean
+      backendConnection: Zone => BackendConnection,
+      zone: Zone,
+      recordSet: RecordSet,
+      validateRecordLookupAgainstDnsBackend: Boolean
   ): Result[Unit] =
     recordSetDoesNotExistInDatabase(recordSet, zone).value.flatMap {
       case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
@@ -392,11 +391,11 @@ class RecordSetService(
     }.toResult
 
   def isUniqueUpdate(
-                      backendConnection: Zone => BackendConnection,
-                      newRecordSet: RecordSet,
-                      existingRecordsWithName: List[RecordSet],
-                      zone: Zone,
-                      validateRecordLookupAgainstDnsBackend: Boolean
+      backendConnection: Zone => BackendConnection,
+      newRecordSet: RecordSet,
+      existingRecordsWithName: List[RecordSet],
+      zone: Zone,
+      validateRecordLookupAgainstDnsBackend: Boolean
   ): Result[Unit] =
     RecordSetValidations
       .recordSetDoesNotExist(newRecordSet, existingRecordsWithName, zone) match {

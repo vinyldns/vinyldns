@@ -19,7 +19,7 @@ package vinyldns.api.engine
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
-import vinyldns.dns.DnsProtocol.{NoError, Refused, TryAgain}
+import vinyldns.api.backend.dns.DnsProtocol.{Refused, TryAgain}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.backend.BackendConnection
@@ -124,7 +124,7 @@ object RecordSetChangeHandler {
 
   def syncAndGetProcessingStatusFromDnsBackend(
       change: RecordSetChange,
-      dnsConn: BackendConnection,
+      conn: BackendConnection,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       performSync: Boolean = false
@@ -167,7 +167,7 @@ object RecordSetChangeHandler {
       }
     }
 
-    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).attempt.flatMap {
+    conn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).attempt.flatMap {
       case Right(existingRecords) =>
         if (performSync) {
           for {
@@ -310,13 +310,13 @@ object RecordSetChangeHandler {
   /* Step 1: Validate the change hasn't already been applied */
   private def validate(
       change: RecordSetChange,
-      dnsConn: BackendConnection,
+      conn: BackendConnection,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
-      dnsConn,
+      conn,
       recordSetRepository,
       recordChangeRepository,
       true
@@ -333,9 +333,9 @@ object RecordSetChangeHandler {
     }
 
   /* Step 2: Apply the change to the dns backend */
-  private def apply(change: RecordSetChange, dnsConn: BackendConnection): IO[ProcessorState] =
-    dnsConn.applyChange(change).attempt.map {
-      case Right(_: NoError) =>
+  private def apply(change: RecordSetChange, conn: BackendConnection): IO[ProcessorState] =
+    conn.applyChange(change).attempt.map {
+      case Right(_) =>
         Applied(change)
       case Left(_: Refused) =>
         Retrying(change)
@@ -350,13 +350,13 @@ object RecordSetChangeHandler {
   /* Step 3: Verify the record was created. If the ProcessorState is applied or failed we requeue the record.*/
   private def verify(
       change: RecordSetChange,
-      dnsConn: BackendConnection,
+      conn: BackendConnection,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
-      dnsConn,
+      conn,
       recordSetRepository,
       recordChangeRepository
     ).map {

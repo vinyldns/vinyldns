@@ -18,17 +18,12 @@ package vinyldns.api.domain.zone
 
 import cats.effect._
 import org.slf4j.LoggerFactory
-import org.xbill.DNS
-import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.crypto.Crypto
+import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.backend.BackendConnection
-import vinyldns.core.route.Monitored
-
-import scala.collection.JavaConverters._
-import vinyldns.core.domain.record.{NameSort, RecordSetRepository, RecordType}
+import vinyldns.core.domain.record.{NameSort, RecordSetRepository}
 import vinyldns.core.domain.zone.Zone
-import vinyldns.dns.DnsConversions
+import vinyldns.core.route.Monitored
 
 trait ZoneViewLoader {
   def load: () => IO[ZoneView]

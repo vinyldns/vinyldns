@@ -25,6 +25,7 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
+import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
@@ -36,7 +37,6 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.dns.DnsConnection
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 
 import scala.concurrent.Await

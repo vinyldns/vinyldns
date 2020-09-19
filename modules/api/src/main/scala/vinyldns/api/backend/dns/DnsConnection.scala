@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.dns
+package vinyldns.api.backend.dns
 
 import cats.effect._
 import cats.syntax.all._

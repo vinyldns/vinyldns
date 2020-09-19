@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.zone
 
-
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
@@ -46,7 +45,8 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
   // Takes a long time to load large zones
   val opTimeout: FiniteDuration = 60.seconds
 
-  def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
+  def loadDns(zone: Zone): IO[ZoneView] =
+    DnsZoneViewLoader(zone, backendRegistry.backendForZone(zone)).load()
 
   def hasApexNS(zoneView: ZoneView): Result[Unit] = {
     val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {
@@ -68,9 +68,8 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
       .toResult
   }
 
-  def getBackendConnection(zone: Zone): Result[BackendConnection] = {
+  def getBackendConnection(zone: Zone): Result[BackendConnection] =
     backendRegistry.backendForZone(zone).toResult
-  }
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(

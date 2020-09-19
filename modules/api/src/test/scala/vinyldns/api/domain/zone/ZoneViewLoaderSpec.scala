@@ -32,11 +32,11 @@ import vinyldns.core.domain.record._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import cats.effect._
+import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
-import vinyldns.dns.DnsConversions
 
 class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
   val testZoneName = "vinyldns."

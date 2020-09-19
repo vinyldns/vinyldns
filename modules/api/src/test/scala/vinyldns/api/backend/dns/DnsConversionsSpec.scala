@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package vinyldns.dns
+package vinyldns.api.backend.dns
 
 import java.net.InetAddress
 
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.xbill.DNS
+import vinyldns.api.backend.dns.DnsProtocol._
 import vinyldns.core.TestRecordSetData.ds
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
-import vinyldns.dns.DnsProtocol._
 
 import scala.collection.JavaConverters._
 

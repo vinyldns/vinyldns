@@ -18,7 +18,7 @@ package vinyldns.api.domain.zone
 
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
-import vinyldns.api.{Interfaces, VinylDNSConfig}
+import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
@@ -236,9 +236,8 @@ class ZoneService(
     } yield zoneChange
   }
 
-  def getBackendIds(): Result[List[String]] = {
+  def getBackendIds(): Result[List[String]] =
     backendRegistry.ids.toList.toResult
-  }
 
   def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository

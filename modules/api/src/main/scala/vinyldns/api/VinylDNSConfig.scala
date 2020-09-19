@@ -27,12 +27,10 @@ import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
-import vinyldns.api.backend.ApiBackendConfig
 import vinyldns.api.domain.access.{GlobalAcl, GlobalAcls}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.DomainHelpers
-import vinyldns.core.domain.backend.BackendConfigs
 import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._

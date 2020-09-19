@@ -23,13 +23,13 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import vinyldns.dns.DnsProtocol.TypeNotFound
+import vinyldns.api.backend.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
+import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
-import vinyldns.dns.DnsConnection
 
 import scala.concurrent.duration._
 
