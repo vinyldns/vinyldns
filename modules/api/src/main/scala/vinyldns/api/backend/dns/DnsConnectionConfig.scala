@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.backend
+package vinyldns.api.backend.dns
 
-import cats.effect.{Blocker, ContextShift, IO}
-import com.typesafe.config.Config
-import pureconfig._
-import pureconfig.generic.auto._
-import pureconfig.module.catseffect.syntax._
+import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.zone.ZoneConnection
 
-final case class BackendConfigs(defaultBackendId: String, backends: List[BackendConfig])
-
-object BackendConfigs {
-  def load(config: Config)(implicit cs: ContextShift[IO]): IO[BackendConfigs] =
-    Blocker[IO].use(
-      ConfigSource.fromConfig(config).loadF[IO, BackendConfigs](_)
-    )
+final case class DnsConnectionConfig(
+    id: String,
+    zoneConnection: ZoneConnection,
+    transferConnection: Option[ZoneConnection]
+) {
+  def toDnsConnection(crypto: CryptoAlgebra): DnsConnection =
+    DnsConnection.apply(id, zoneConnection, transferConnection, crypto)
 }

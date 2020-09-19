@@ -29,11 +29,11 @@ import vinyldns.core.health.HealthCheck.HealthCheck
 trait BackendRegistry {
 
   /**
-    * Attempts to get the backend for a given zone, returns `None` if not found
+    * Attempts to get the backend connection for a given zone, returns `None` if not found
     * @param zone A `Zone` to get a backend for
     * @return A working `Backend`, or `None` if the backend could not be found for this zone
     */
-  def backendForZone(zone: Zone): BackendConnection
+  def connectTo(zone: Zone): BackendConnection
 
   /**
     * Performs whatever health check considered necessary to ensure that the backends are in good health
@@ -77,7 +77,7 @@ object BackendRegistry {
         * @param zone A `Zone` to get a backend for
         * @return A working `Backend`, or `None` if the backend could not be found for this zone
         */
-      def backendForZone(zone: Zone): BackendConnection =
+      def connectTo(zone: Zone): BackendConnection =
         backends.collectFirstSome(_.connect(zone)).getOrElse(defaultConn)
 
       /**

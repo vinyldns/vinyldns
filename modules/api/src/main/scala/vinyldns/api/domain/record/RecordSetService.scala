@@ -79,7 +79,7 @@ class RecordSetService(
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- recordSetDoesNotExist(
-        backendRegistry.backendForZone,
+        backendRegistry.connectTo,
         zone,
         rsForValidations,
         validateRecordLookupAgainstDnsBackend
@@ -116,7 +116,7 @@ class RecordSetService(
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
       _ <- isUniqueUpdate(
-        backendRegistry.backendForZone,
+        backendRegistry.connectTo,
         rsForValidations,
         existingRecordsWithName,
         zone,

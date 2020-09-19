@@ -16,15 +16,19 @@
 
 package vinyldns.api.backend.dns
 
+import java.net.SocketAddress
+
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.backend.BackendResponse
+import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+
+import scala.collection.JavaConverters._
 
 object DnsProtocol {
 
@@ -83,7 +87,11 @@ class DnsQuery(val lookup: DNS.Lookup, val zoneName: DNS.Name) {
   def error: String = lookup.getErrorString
 }
 
-class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
+final case class TransferInfo(address: SocketAddress, tsig: DNS.TSIG)
+
+class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: TransferInfo)
+    extends BackendConnection
+    with DnsConversions {
 
   import DnsProtocol._
 
@@ -102,6 +110,32 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
         records <- runQuery(query)
       } yield records
     }
+
+  def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]] = {
+    val dnsZoneName = zoneDnsName(zone.name)
+    val zti = DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, xfrInfo.tsig)
+
+    for {
+      zoneXfr <- IO {
+        zti.run()
+        zti.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
+      }
+      rawDnsRecords = zoneXfr.filter(
+        record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN
+      )
+      _ <- if (rawDnsRecords.length > maxZoneSize) {
+        IO.raiseError(
+          new RuntimeException(
+            s"Zone too large ${zone.name}, ${rawDnsRecords.length} records exceeded max $maxZoneSize"
+          )
+        )
+      } else {
+        IO.pure(Unit)
+      }
+      dnsZoneName <- IO(zoneDnsName(zone.name))
+      recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
+    } yield recordSets
+  }
 
   private[dns] def toQuery(
       name: String,
@@ -199,18 +233,36 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
 
 object DnsConnection {
 
-  def apply(conn: ZoneConnection, crypto: CryptoAlgebra): DnsConnection =
-    new DnsConnection(createResolver(conn, crypto))
+  def apply(
+      id: String,
+      conn: ZoneConnection,
+      xfrConn: Option[ZoneConnection],
+      crypto: CryptoAlgebra
+  ): DnsConnection = {
+    val tsig = createTsig(conn, crypto)
+    val resolver = createResolver(conn, tsig)
+    val xfrInfo = xfrConn
+      .map { xc =>
+        val xt = createTsig(xc, crypto)
+        val xr = createResolver(xc, xt)
+        TransferInfo(xr.getAddress, xt)
+      }
+      .getOrElse(TransferInfo(resolver.getAddress, tsig))
+    new DnsConnection(id, resolver, xfrInfo)
+  }
 
-  def createResolver(conn: ZoneConnection, crypto: CryptoAlgebra): DNS.SimpleResolver = {
-    // IMPORTANT!  Make sure we decrypt the zone connection before creating the resolver
-    val decryptedConnection = conn.decrypted(crypto)
-    val (host, port) = parseHostAndPort(decryptedConnection.primaryServer)
+  def createResolver(conn: ZoneConnection, tsig: DNS.TSIG): DNS.SimpleResolver = {
+    val (host, port) = parseHostAndPort(conn.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)
-    resolver.setTSIGKey(new DNS.TSIG(decryptedConnection.keyName, decryptedConnection.key))
+    resolver.setTSIGKey(tsig)
 
     resolver
+  }
+
+  def createTsig(conn: ZoneConnection, crypto: CryptoAlgebra): DNS.TSIG = {
+    val decryptedConnection = conn.decrypted(crypto)
+    new DNS.TSIG(decryptedConnection.keyName, decryptedConnection.key)
   }
 
   def parseHostAndPort(primaryServer: String): (String, Int) = {

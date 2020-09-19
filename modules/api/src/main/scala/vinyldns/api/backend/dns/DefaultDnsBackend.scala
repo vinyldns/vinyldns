@@ -18,14 +18,13 @@ package vinyldns.api.backend.dns
 
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.{Backend, BackendConnection}
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneConnection}
+import vinyldns.core.domain.zone.Zone
 
-class DnsBackend(configuredDnsConnections: ConfiguredDnsConnections, crypto: CryptoAlgebra)
-    extends Backend {
+class DefaultDnsBackend(connections: List[DnsConnection], crypto: CryptoAlgebra) extends Backend {
 
-  private val connMap: Map[String, ZoneConnection] =
-    configuredDnsConnections.dnsBackends.map { b =>
-      b.id -> b.zoneConnection
+  private val connMap: Map[String, DnsConnection] =
+    connections.map { c =>
+      c.id -> c
     }.toMap
 
   /**
@@ -35,11 +34,13 @@ class DnsBackend(configuredDnsConnections: ConfiguredDnsConnections, crypto: Cry
     * @return A backend that is usable, or None if it could not connect
     */
   def connect(zone: Zone): Option[BackendConnection] =
-    zone.backendId
-      .flatMap(connMap.get)
-      .orElse(Some(configuredDnsConnections.defaultZoneConnection))
-      .map { zc =>
-        new DnsBackendConnection(zone.backendId.getOrElse("default"), zc, DnsConnection(zc, crypto))
+    // Use the connection info on the zone if present
+    zone.connection
+      .map { conn =>
+        DnsConnection.apply("unknown", conn, zone.transferConnection, crypto)
+      }
+      .orElse {
+        zone.backendId.flatMap(connectById)
       }
 
   /**
@@ -48,9 +49,7 @@ class DnsBackend(configuredDnsConnections: ConfiguredDnsConnections, crypto: Cry
     * @return A backend that is usable, or None if could not connect
     */
   def connectById(backendId: String): Option[BackendConnection] =
-    connMap.get(backendId).map { zc =>
-      new DnsBackendConnection(backendId, zc, DnsConnection(zc, crypto))
-    }
+    connMap.get(backendId)
 
   /**
     * @return The backend ids loaded with this provider

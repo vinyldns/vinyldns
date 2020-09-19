@@ -16,7 +16,7 @@
 
 package vinyldns.core.domain.backend
 
-import cats.data.NonEmptyList
+import cats.implicits._
 import cats.effect.IO
 import org.slf4j.LoggerFactory
 
@@ -24,7 +24,7 @@ object BackendLoader {
 
   private val logger = LoggerFactory.getLogger("BackendLoader")
 
-  def load(configs: NonEmptyList[BackendConfig]): IO[NonEmptyList[Backend]] = {
+  def load(configs: List[BackendConfig]): IO[List[Backend]] = {
     def loadOne(config: BackendConfig): IO[Backend] =
       for {
         _ <- IO(logger.error(s"Attempting to load backend ${config.className}"))

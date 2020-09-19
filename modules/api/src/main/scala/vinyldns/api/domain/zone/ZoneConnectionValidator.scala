@@ -46,7 +46,7 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
   val opTimeout: FiniteDuration = 60.seconds
 
   def loadDns(zone: Zone): IO[ZoneView] =
-    DnsZoneViewLoader(zone, backendRegistry.backendForZone(zone)).load()
+    DnsZoneViewLoader(zone, backendRegistry.connectTo(zone)).load()
 
   def hasApexNS(zoneView: ZoneView): Result[Unit] = {
     val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {
@@ -69,7 +69,7 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
   }
 
   def getBackendConnection(zone: Zone): Result[BackendConnection] =
-    backendRegistry.backendForZone(zone).toResult
+    backendRegistry.connectTo(zone).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(

@@ -160,7 +160,7 @@ object CommandHandler {
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
 
         case rcr: RecordSetChange =>
-          outcomeOf(message)(recordChangeProcessor(backendRegistry.backendForZone(rcr.zone), rcr))
+          outcomeOf(message)(recordChangeProcessor(backendRegistry.connectTo(rcr.zone), rcr))
 
         case bcc: BatchChangeCommand =>
           outcomeOf(message)(batchChangeProcessor(bcc))

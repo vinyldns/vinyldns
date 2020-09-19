@@ -16,15 +16,15 @@
 
 package vinyldns.api.backend.dns
 
-import cats.effect.IO
-import org.slf4j.LoggerFactory
+import cats.effect.{ContextShift, IO}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.backend.{Backend, BackendConfig, BackendProvider}
 
 class DnsBackendProvider extends BackendProvider {
 
-  private val logger = LoggerFactory.getLogger(classOf[DnsBackendProvider])
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /**
     * Loads a backend based on the provided config so that it is ready to use
@@ -33,11 +33,31 @@ class DnsBackendProvider extends BackendProvider {
     * @param config The BackendConfig, has settings that are specific to this backend
     * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
     */
-  def load(config: BackendConfig): IO[Backend] = {
-    // TODO: Migrate the YAML, for the time being using old yaml format for backward compat
-    logger.warn(s"Skipping backend configuration ${config.className}, using legacy config instead")
-
-    // Load the deprecated vinyldns config section elements into the DnsBackend
-    IO(new DnsBackend(VinylDNSConfig.configuredDnsConnections, Crypto.instance))
-  }
+  def load(config: BackendConfig): IO[Backend] =
+    // if legacy = true, load from the old configured dns connections
+    // otherwise, load new stuff
+    DnsBackendConfig.load(config.settings).map { bec =>
+      if (bec.legacy) {
+        // legacy adds a backend id named "default" with the default configuration
+        // and loads the backend connections from the legacy YAML config
+        val conns = VinylDNSConfig.configuredDnsConnections.dnsBackends.map { be =>
+          DnsConnection
+            .apply(be.id, be.zoneConnection, Some(be.transferConnection), Crypto.instance)
+        }
+        val defaultConn =
+          DnsConnection.apply(
+            "default",
+            VinylDNSConfig.configuredDnsConnections.defaultZoneConnection,
+            Some(VinylDNSConfig.configuredDnsConnections.defaultTransferConnection),
+            Crypto.instance
+          )
+        new DefaultDnsBackend(defaultConn :: conns, Crypto.instance)
+      } else {
+        // Assumes the "new" YAML config
+        new DefaultDnsBackend(
+          bec.connections.map(_.toDnsConnection(Crypto.instance)),
+          Crypto.instance
+        )
+      }
+    }
 }

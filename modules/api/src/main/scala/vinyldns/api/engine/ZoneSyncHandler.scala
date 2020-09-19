@@ -91,7 +91,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
-        val dnsLoader = DnsZoneViewLoader(zone, backendRegistry.backendForZone(zone))
+        val dnsLoader = DnsZoneViewLoader(zone, backendRegistry.connectTo(zone))
         val dnsView =
           time(
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
