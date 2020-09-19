@@ -78,6 +78,7 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
       ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid")
     )
 
+  // TODO: This should be moved to the backend connection with a "zone exists"
   def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
     if (records.isEmpty) {
       ConnectionFailed(zone, "SOA Record for zone not found").asLeft[Unit]

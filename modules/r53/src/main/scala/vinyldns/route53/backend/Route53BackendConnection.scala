@@ -1,17 +1,36 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package vinyldns.route53.backend
 
 import cats.data.OptionT
 import cats.effect.IO
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.route53.AmazonRoute53AsyncClient
+import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
 import com.amazonaws.services.route53.model._
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
+import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 
 /**
@@ -26,37 +45,40 @@ import scala.collection.concurrent.TrieMap
 class Route53BackendConnection(
     val id: String,
     hostedZones: List[HostedZone],
-    client: AmazonRoute53AsyncClient
+    val client: AmazonRoute53Async
 ) extends BackendConnection
     with Route53Conversions {
+  import Route53BackendConnection.r53
 
   /* Concurrent friendly map */
   private val zoneMap: TrieMap[String, String] = TrieMap(
     hostedZones.map(z => z.getName -> z.getId): _*
   )
 
-  def r53[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
-      request: A,
-      f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]
-  ): IO[B] =
-    IO.async[B] { complete: (Either[Throwable, B] => Unit) =>
-      val asyncHandler = new AsyncHandler[A, B] {
-        def onError(exception: Exception): Unit = complete(Left(exception))
-
-        def onSuccess(request: A, result: B): Unit = complete(Right(result))
-      }
-
-      f(request, asyncHandler)
-    }
-
   /* Lookup in the local cache, if a new zone is added since start, we have to retrieve it in real time */
-  private def lookupHostedZone(zoneName: String): OptionT[IO, String] =
+  private def lookupHostedZone(zoneName: String): OptionT[IO, String] = {
+    def parseHostedZoneId(hzid: String): String = {
+      val lastSlash = hzid.lastIndexOf('/')
+      if (lastSlash > 0) {
+        hzid.substring(lastSlash + 1)
+      } else {
+        hzid
+      }
+    }
     OptionT.fromOption[IO](zoneMap.get(zoneName)).orElseF {
       r53(
         new ListHostedZonesByNameRequest().withDNSName(zoneName),
         client.listHostedZonesByNameAsync
-      ).map(result => Option(result.getHostedZoneId))
+      ).map { result =>
+        // We must parse the hosted zone id which is annoying
+        result.getHostedZones.asScala.toList.headOption.map { hz =>
+          val hzid = parseHostedZoneId(hz.getId)
+          zoneMap.putIfAbsent(hz.getName, hzid)
+          hzid
+        }
+      }
     }
+  }
 
   /**
     * Does a lookup for a record given the record name, zone name, and record type
@@ -101,12 +123,14 @@ class Route53BackendConnection(
     def changeRequest(
         typ: RecordSetChangeType,
         rs: ResourceRecordSet
-    ): ChangeResourceRecordSetsRequest =
+    ): ChangeResourceRecordSetsRequest = {
+      println(s"\r\n!!! applying change to zone, record set is $rs")
       new ChangeResourceRecordSetsRequest().withChangeBatch(
         new ChangeBatch().withChanges(
           new Change().withAction(changeAction(typ)).withResourceRecordSet(rs)
         )
       )
+    }
 
     for {
       hostedZoneId <- lookupHostedZone(change.zone.name).value.flatMap {
@@ -117,16 +141,17 @@ class Route53BackendConnection(
           )
       }
 
-      r53RecordSet <- IO.fromOption(toR53RecordSet(change.recordSet))(
+      r53RecordSet <- IO.fromOption(toR53RecordSet(change.zone, change.recordSet))(
         new RuntimeException(
           s"Unable to convert record set to route 53 format for ${change.recordSet}"
         )
       )
-
       _ <- r53(
         changeRequest(change.changeType, r53RecordSet).withHostedZoneId(hostedZoneId),
         client.changeResourceRecordSetsAsync
-      )
+      ).map { result =>
+        println(s"\r\n!!! change result is ${result.getChangeInfo}")
+      }
     } yield Route53Response.NoError
   }
 
@@ -141,4 +166,56 @@ class Route53BackendConnection(
     * @return All record sets in the zone
     */
   def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]] = ???
+
+  /* Note: naive implementation to assist in testing, not meant for production yet */
+  def createZone(zone: Zone): IO[Zone] =
+    for {
+      result <- r53(
+        new CreateHostedZoneRequest().withCallerReference(zone.id).withName(zone.name),
+        client.createHostedZoneAsync
+      )
+      _ <- IO(println(s"\r\n! create zone result is $result"))
+    } yield zone.copy(status = ZoneStatus.Active)
+}
+
+object Route53BackendConnection {
+
+  /* Convenience method for working async with AWS */
+  def r53[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
+      request: A,
+      f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]
+  ): IO[B] =
+    IO.async[B] { complete: (Either[Throwable, B] => Unit) =>
+      val asyncHandler = new AsyncHandler[A, B] {
+        def onError(exception: Exception): Unit = complete(Left(exception))
+
+        def onSuccess(request: A, result: B): Unit = complete(Right(result))
+      }
+
+      f(request, asyncHandler)
+    }
+
+  def load(config: Route53ConnectionConfig): IO[Route53BackendConnection] = {
+    val clientIO = IO {
+      AmazonRoute53AsyncClientBuilder.standard
+        .withEndpointConfiguration(
+          new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
+        )
+        .withCredentials(
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(config.accessKey, config.secretKey)
+          )
+        )
+        .build()
+    }
+
+    // Connect to the client AND load the zones
+    for {
+      client <- clientIO
+      result <- r53(
+        new ListHostedZonesRequest(),
+        client.listHostedZonesAsync
+      )
+    } yield new Route53BackendConnection(config.id, result.getHostedZones.asScala.toList, client)
+  }
 }

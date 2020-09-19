@@ -63,7 +63,7 @@ object MXData {
     new MXData(preference, exchange)
 
   /* Assumes format preference fqdn, e.g. 10 www.example.com; otherwise returns None */
-  def fromString(value: String): Option[MXData] = {
+  def fromString(value: String): Option[MXData] =
     Option(value).flatMap { v =>
       val parts = v.split(' ')
       if (parts.length != 2) {
@@ -74,7 +74,6 @@ object MXData {
         }
       }
     }
-  }
 }
 
 final case class NSData(nsdname: Fqdn) extends RecordData {
@@ -113,7 +112,7 @@ final case class SOAData(
   override def toString: String = s"${mname.fqdn} ${rname} $serial $refresh $retry $expire $minimum"
 }
 object SOAData {
-  def fromString(value: String): Option[SOAData] = {
+  def fromString(value: String): Option[SOAData] =
     Option(value).flatMap { v =>
       val parts = v.split(' ')
       if (parts.length != 7) {
@@ -136,7 +135,6 @@ object SOAData {
         )
       }
     }
-  }
 }
 
 final case class SPFData(text: String) extends RecordData {
@@ -144,13 +142,12 @@ final case class SPFData(text: String) extends RecordData {
 }
 
 final case class SRVData(priority: Integer, weight: Integer, port: Integer, target: Fqdn)
-    extends RecordData
+    extends RecordData {
+  override def toString: String = s"$priority $weight $port ${target.fqdn}"
+}
 
 object SRVData {
-  def apply(priority: Integer, weight: Integer, port: Integer, target: Fqdn): SRVData =
-    new SRVData(priority, weight, port, target)
-
-  def fromString(value: String): Option[SRVData] = {
+  def fromString(value: String): Option[SRVData] =
     Option(value).flatMap { v =>
       val parts = v.split(' ')
       if (parts.length != 7) {
@@ -169,7 +166,6 @@ object SRVData {
         )
       }
     }
-  }
 }
 
 final case class NAPTRData(
@@ -194,7 +190,7 @@ object NAPTRData {
   ): NAPTRData =
     new NAPTRData(order, preference, flags, service, regexp, replacement)
 
-  def fromString(value: String): Option[NAPTRData] = {
+  def fromString(value: String): Option[NAPTRData] =
     Option(value).flatMap { v =>
       val parts = v.split(' ')
       if (parts.length != 6) {
@@ -210,10 +206,10 @@ object NAPTRData {
         } yield NAPTRData(order, pref, flags, service, reg, rep)
       }
     }
-  }
 }
 
-final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String) extends RecordData {
+final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String)
+    extends RecordData {
   override def toString: String = s"$algorithm $typ $fingerprint"
 }
 
