@@ -8,6 +8,8 @@ import vinyldns.core.domain.zone.Zone
 
 import scala.collection.JavaConverters._
 import org.scalatest.OptionValues._
+import org.scalatest.EitherValues._
+import vinyldns.core.domain.backend.BackendResponse
 import vinyldns.core.domain.{Fqdn, record}
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 
@@ -18,6 +20,7 @@ class Route53IntegrationSpec
     with Matchers {
 
   import vinyldns.core.TestRecordSetData._
+  import vinyldns.core.TestZoneData._
 
   private val testZone = Zone("example.com.", "test@test.com", backendId = Some("test"))
 
@@ -60,7 +63,7 @@ class Route53IntegrationSpec
     val testRecord = rs.copy(zoneId = zone.id)
     val change = makeTestAddChange(testRecord, zone, "test-user")
     val result = conn.applyChange(change).unsafeRunSync()
-    result shouldBe Route53Response.NoError
+    result shouldBe a[BackendResponse.NoError]
 
     // We should be able to resolve now
     checkRecordExists(testRecord, zone)
@@ -100,6 +103,13 @@ class Route53IntegrationSpec
       val notFound = Zone("blah.foo.", "test@test.com", backendId = Some("test"))
       testConnection.zoneExists(notFound).unsafeRunSync() shouldBe false
       testConnection.zoneExists(testZone).unsafeRunSync() shouldBe true
+    }
+    "fail when applying the change and it does not exist" in {
+      val testRecord = aaaa
+      val testZone = okZone
+      val change = makeTestAddChange(testRecord, testZone, "test-user")
+      val result = testConnection.applyChange(change).attempt.unsafeRunSync()
+      result.left.value shouldBe a[Route53BackendResponse.ZoneNotFoundError]
     }
   }
 }

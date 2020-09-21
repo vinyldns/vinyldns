@@ -18,7 +18,10 @@ package vinyldns.core.domain.backend
 
 import vinyldns.core.domain.zone.Zone
 
-/* Given a config, initializes a backend so it is ready to use */
+/**
+  * Implemented by each provider, provides a means of looking up a `BackendConnection`
+  * as well as showing which backend ids are registered on this provider
+  */
 trait Backend {
 
   /**

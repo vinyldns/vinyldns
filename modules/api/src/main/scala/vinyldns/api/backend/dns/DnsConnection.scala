@@ -39,7 +39,7 @@ object DnsProtocol {
   case class Resolve(name: String, zone: Zone, typ: RecordType)
   case class UpdateConnection(zoneConnection: ZoneConnection)
 
-  sealed trait DnsResponse extends BackendResponse
+  sealed trait DnsResponse
   final case class NoError(message: DNS.Message) extends DnsResponse
 
   abstract class DnsFailure(message: String) extends Throwable(message)
@@ -98,10 +98,16 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
 
   val logger: Logger = LoggerFactory.getLogger(classOf[DnsConnection])
 
-  def applyChange(change: RecordSetChange): IO[DnsResponse] = change.changeType match {
-    case RecordSetChangeType.Create => addRecord(change)
-    case RecordSetChangeType.Update => updateRecord(change)
-    case RecordSetChangeType.Delete => deleteRecord(change)
+  def applyChange(change: RecordSetChange): IO[BackendResponse] = {
+    change.changeType match {
+      case RecordSetChangeType.Create => addRecord(change)
+      case RecordSetChangeType.Update => updateRecord(change)
+      case RecordSetChangeType.Delete => deleteRecord(change)
+    }
+  }.flatMap {
+    case Refused(msg) => IO(BackendResponse.Retry(msg))
+    case NoError(msg) => IO(BackendResponse.NoError(msg.toString))
+    case fail: DnsFailure => IO.raiseError(fail)
   }
 
   def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] =

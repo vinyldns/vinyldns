@@ -18,6 +18,13 @@ package vinyldns.core.domain.backend
 
 import cats.effect.IO
 
+/**
+  * To be implemented by other DNS Backend providers.  This handles the loading of the backend config,
+  * typically comprised of multiple connections.
+  *
+  * All takes place inside IO, allowing implementers to do anything they need to ready the backend
+  * for integration with VinylDNS
+  */
 trait BackendProvider {
 
   /**

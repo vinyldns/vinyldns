@@ -96,9 +96,7 @@ object Dependencies {
 
   lazy val r53Dependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-route53"           % awsV withSources(),
-    "io.monix"                  %% "monix-catnap"                   % "3.2.2",
-    "dnsjava"                   %  "dnsjava"                        % "2.1.7",
+    "com.amazonaws"             %  "aws-java-sdk-route53"           % awsV withSources()
   )
 
   lazy val commonTestDependencies = Seq(

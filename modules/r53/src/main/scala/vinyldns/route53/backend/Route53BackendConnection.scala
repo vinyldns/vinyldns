@@ -147,23 +147,26 @@ class Route53BackendConnection(
         case Some(x) => IO(x)
         case None =>
           IO.raiseError(
-            new RuntimeException(s"Unable to find hosted zone for zone name ${change.zone.name}")
+            Route53BackendResponse.ZoneNotFoundError(
+              s"Unable to find hosted zone for zone name ${change.zone.name}"
+            )
           )
       }
 
       r53RecordSet <- IO.fromOption(toR53RecordSet(change.zone, change.recordSet))(
-        new RuntimeException(
+        Route53BackendResponse.ConversionError(
           s"Unable to convert record set to route 53 format for ${change.recordSet}"
         )
       )
 
-      _ <- r53(
+      result <- r53(
         changeRequest(change.changeType, r53RecordSet).withHostedZoneId(hostedZoneId),
         client.changeResourceRecordSetsAsync
-      ).map { result =>
-        logger.debug(s"applied record change $change, change result is ${result.getChangeInfo}")
+      ).map { response =>
+        logger.debug(s"applied record change $change, change result is ${response.getChangeInfo}")
+        BackendResponse.NoError(response.toString)
       }
-    } yield Route53Response.NoError
+    } yield result
   }
 
   /**

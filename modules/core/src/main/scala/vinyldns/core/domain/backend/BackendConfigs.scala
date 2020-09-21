@@ -22,6 +22,7 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
+/* The main VinylDNS backend configs, loaded by the BackendRegistry */
 final case class BackendConfigs(defaultBackendId: String, backends: List[BackendConfig])
 
 object BackendConfigs {

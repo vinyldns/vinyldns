@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.api.backend
+package vinyldns.route53.backend
 
-import cats.data.NonEmptyList
-import vinyldns.core.domain.backend.BackendConfig
-
-final case class ApiBackendConfig(defaultBackendId: String, backends: NonEmptyList[BackendConfig])
+sealed trait Route53BackendResponse
+object Route53BackendResponse {
+  final case class ZoneNotFoundError(message: String) extends Throwable(message)
+  final case class ConversionError(message: String) extends Throwable(message)
+}

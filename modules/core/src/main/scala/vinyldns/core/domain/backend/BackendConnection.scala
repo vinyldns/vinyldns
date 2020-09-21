@@ -25,7 +25,6 @@ import vinyldns.core.domain.zone.Zone
   * Provides the backend interface to work with any kind of DNS backend
   *
   * Implement this interface for your own backend.  The default backend is the DnsBackend that talks DDNS.
-  *
   */
 trait BackendConnection {
 

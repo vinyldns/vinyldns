@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.api.backend.dns.DnsProtocol.{Refused, TryAgain}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
-import vinyldns.core.domain.backend.BackendConnection
+import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
@@ -335,10 +335,10 @@ object RecordSetChangeHandler {
   /* Step 2: Apply the change to the dns backend */
   private def apply(change: RecordSetChange, conn: BackendConnection): IO[ProcessorState] =
     conn.applyChange(change).attempt.map {
-      case Right(_) =>
-        Applied(change)
-      case Left(_: Refused) =>
+      case Right(BackendResponse.Retry(_)) =>
         Retrying(change)
+      case Right(BackendResponse.NoError(_)) =>
+        Applied(change)
       case Left(error) =>
         Completed(
           change.failed(

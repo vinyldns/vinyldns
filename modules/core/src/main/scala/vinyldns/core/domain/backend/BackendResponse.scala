@@ -17,4 +17,11 @@
 package vinyldns.core.domain.backend
 
 /* Response from applying a change to a backend */
-trait BackendResponse
+sealed trait BackendResponse
+object BackendResponse {
+  /* Indicates the backend request worked properly */
+  final case class NoError(message: String) extends BackendResponse
+
+  /* Indicates there was a failure that maybe recoverable with a try again */
+  final case class Retry(message: String) extends BackendResponse
+}
