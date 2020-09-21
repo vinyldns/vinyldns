@@ -67,4 +67,12 @@ trait BackendConnection {
     * @return All record sets in the zone
     */
   def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]]
+
+  /**
+    * Indicates if the zone is present in the backend
+    *
+    * @param zone The zone to check if exists
+    * @return true if it exists; false otherwise
+    */
+  def zoneExists(zone: Zone): IO[Boolean]
 }

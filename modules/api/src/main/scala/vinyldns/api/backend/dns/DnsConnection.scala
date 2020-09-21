@@ -18,6 +18,7 @@ package vinyldns.api.backend.dns
 
 import java.net.SocketAddress
 
+import cats.data.OptionT
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
@@ -135,6 +136,17 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
       dnsZoneName <- IO(zoneDnsName(zone.name))
       recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
     } yield recordSets
+  }
+
+
+  /**
+   * Indicates if the zone is present in the backend
+   *
+   * @param zone The zone to check if exists
+   * @return true if it exists; false otherwise
+   */
+  def zoneExists(zone: Zone): IO[Boolean] = {
+    resolve(zone.name, zone.name, RecordType.SOA).map(_.nonEmpty)
   }
 
   private[dns] def toQuery(

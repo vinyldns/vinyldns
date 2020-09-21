@@ -20,32 +20,53 @@ import scodec.bits.ByteVector
 import vinyldns.core.domain.Fqdn
 
 import scala.util.Try
-import RecordDataUtils._
+import RecordData._
+import vinyldns.core.domain.record.RecordType._
 
 sealed trait RecordData {
   def toString: String
 }
-
-final case class AData(address: String) extends RecordData {
-  override def toString: String = address
-}
-
-final case class AAAAData(address: String) extends RecordData {
-  override def toString: String = address
-}
-
-final case class CNAMEData(cname: Fqdn) extends RecordData {
-  override def toString: String = cname.fqdn
-}
-
-object RecordDataUtils {
+object RecordData {
   def toInt(value: String): Option[Int] =
     Try(value.toInt).toOption
 
   def toLong(value: String): Option[Long] =
     Try(value.toLong).toOption
+
+  def fromString(value: String, typ: RecordType): Option[RecordData] = typ match {
+    case A => AData.fromString(value)
+    case AAAA => AAAAData.fromString(value)
+    case CNAME => CNAMEData.fromString(value)
+    case DS => DSData.fromString(value)
+    case MX => MXData.fromString(value)
+    case NAPTR => NAPTRData.fromString(value)
+    case NS => NSData.fromString(value)
+    case PTR => PTRData.fromString(value)
+    case SPF => SPFData.fromString(value)
+    case SRV => SRVData.fromString(value)
+    case SSHFP => SSHFPData.fromString(value)
+    case TXT => TXTData.fromString(value)
+    case UNKNOWN => None
+  }
 }
 
+final case class AData(address: String) extends RecordData {
+  override def toString: String = address
+}
+object AData {
+  def fromString(value: String): Option[AData] = Option(value).map(AData(_))
+}
+
+final case class AAAAData(address: String) extends RecordData {
+  override def toString: String = address
+}
+object AAAAData {
+  def fromString(value: String): Option[AAAAData] = Option(value).map(AAAAData(_))
+}
+
+final case class CNAMEData(cname: Fqdn) extends RecordData {
+  override def toString: String = cname.fqdn
+}
 object CNAMEData {
   def apply(cname: Fqdn): CNAMEData =
     new CNAMEData(cname)
@@ -140,6 +161,9 @@ object SOAData {
 final case class SPFData(text: String) extends RecordData {
   override def toString: String = text
 }
+object SPFData {
+  def fromString(value: String): Option[SPFData] = Option(value).map(SPFData(_))
+}
 
 final case class SRVData(priority: Integer, weight: Integer, port: Integer, target: Fqdn)
     extends RecordData {
@@ -212,9 +236,27 @@ final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String
     extends RecordData {
   override def toString: String = s"$algorithm $typ $fingerprint"
 }
+object SSHFPData {
+  def fromString(value: String): Option[SSHFPData] =
+    Option(value).flatMap { v =>
+      val parts = v.split(' ')
+      if (parts.length != 3) {
+        None
+      } else {
+        for {
+          alg <- toInt(parts(0))
+          typ <- toInt(parts(1))
+          fp = parts(2)
+        } yield SSHFPData(alg, typ, fp)
+      }
+    }
+}
 
 final case class TXTData(text: String) extends RecordData {
   override def toString: String = text
+}
+object TXTData {
+  def fromString(value: String): Option[TXTData] = Option(value).map(TXTData(_))
 }
 
 sealed abstract class DigestType(val value: Int)
@@ -280,4 +322,20 @@ final case class DSData(
     digest: ByteVector
 ) extends RecordData {
   override def toString: String = s"$keyTag $algorithm $digestType $digest"
+}
+object DSData {
+  def fromString(value: String): Option[DSData] =
+    Option(value).flatMap { v =>
+      val parts = v.split(' ')
+      if (parts.length != 3) {
+        None
+      } else {
+        for {
+          kt <- toInt(parts(0))
+          alg <- toInt(parts(1)).map(DnsSecAlgorithm.apply)
+          dt <- toInt(parts(2)).map(DigestType.apply)
+          dig <- Some(ByteVector(parts(3).getBytes))
+        } yield DSData(kt, alg, dt, dig)
+      }
+    }
 }

@@ -24,6 +24,8 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
 import com.amazonaws.services.route53.model._
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
+import org.slf4j.LoggerFactory
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -50,6 +52,8 @@ class Route53BackendConnection(
     with Route53Conversions {
   import Route53BackendConnection.r53
 
+  private val logger = LoggerFactory.getLogger(classOf[Route53BackendConnection])
+
   /* Concurrent friendly map */
   private val zoneMap: TrieMap[String, String] = TrieMap(
     hostedZones.map(z => z.getName -> z.getId): _*
@@ -71,11 +75,15 @@ class Route53BackendConnection(
         client.listHostedZonesByNameAsync
       ).map { result =>
         // We must parse the hosted zone id which is annoying
-        result.getHostedZones.asScala.toList.headOption.map { hz =>
+        val found = result.getHostedZones.asScala.toList.headOption.map { hz =>
           val hzid = parseHostedZoneId(hz.getId)
           zoneMap.putIfAbsent(hz.getName, hzid)
           hzid
         }
+        if (found.isEmpty) {
+          logger.warn(s"Unable to find hosted zone for '$zoneName'")
+        }
+        found
       }
     }
   }
@@ -94,16 +102,17 @@ class Route53BackendConnection(
     for {
       hostedZoneId <- lookupHostedZone(zoneName)
       awsRRType <- OptionT.fromOption[IO](toRoute53RecordType(typ))
+      fqdn = Fqdn.merge(name, zoneName).fqdn
       result <- OptionT.liftF {
         r53(
           new ListResourceRecordSetsRequest()
             .withHostedZoneId(hostedZoneId)
-            .withStartRecordName(name)
+            .withStartRecordName(fqdn)
             .withStartRecordType(awsRRType),
           client.listResourceRecordSetsAsync
         )
       }
-    } yield toVinylRecordSets(result.getResourceRecordSets)
+    } yield toVinylRecordSets(result.getResourceRecordSets, zoneName: String)
   }.getOrElse(Nil)
 
   /**
@@ -124,7 +133,7 @@ class Route53BackendConnection(
         typ: RecordSetChangeType,
         rs: ResourceRecordSet
     ): ChangeResourceRecordSetsRequest = {
-      println(s"\r\n!!! applying change to zone, record set is $rs")
+      logger.debug(s"applying change to zone, record set is $rs")
       new ChangeResourceRecordSetsRequest().withChangeBatch(
         new ChangeBatch().withChanges(
           new Change().withAction(changeAction(typ)).withResourceRecordSet(rs)
@@ -132,6 +141,7 @@ class Route53BackendConnection(
       )
     }
 
+    // We want to FAIL if unrecoverable errors occur so that the change ultimately is marked as failed
     for {
       hostedZoneId <- lookupHostedZone(change.zone.name).value.flatMap {
         case Some(x) => IO(x)
@@ -146,11 +156,12 @@ class Route53BackendConnection(
           s"Unable to convert record set to route 53 format for ${change.recordSet}"
         )
       )
+
       _ <- r53(
         changeRequest(change.changeType, r53RecordSet).withHostedZoneId(hostedZoneId),
         client.changeResourceRecordSetsAsync
       ).map { result =>
-        println(s"\r\n!!! change result is ${result.getChangeInfo}")
+        logger.debug(s"applied record change $change, change result is ${result.getChangeInfo}")
       }
     } yield Route53Response.NoError
   }
@@ -165,7 +176,50 @@ class Route53BackendConnection(
     * @param maxZoneSize The maximum number of records that we allow loading, typically configured
     * @return All record sets in the zone
     */
-  def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]] = ???
+  def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]] = {
+    // Loads a single page, up to 100 record sets
+    def loadPage(request: ListResourceRecordSetsRequest): IO[ListResourceRecordSetsResult] =
+      r53(
+        request,
+        client.listResourceRecordSetsAsync
+      )
+
+    // recursively pages through, exits once we hit the last page
+    def page(
+        request: ListResourceRecordSetsRequest,
+        result: ListResourceRecordSetsResult,
+        acc: List[RecordSet]
+    ): IO[List[RecordSet]] = {
+      val updatedAcc = acc ++ toVinylRecordSets(result.getResourceRecordSets, zone.name)
+      if (result.getIsTruncated) {
+        loadPage(
+          request
+            .withStartRecordName(result.getNextRecordName)
+            .withStartRecordType(result.getNextRecordType)
+        ).flatMap(nextResult => page(request, nextResult, updatedAcc))
+      } else {
+        IO(updatedAcc)
+      }
+    }
+
+    for {
+      hz <- lookupHostedZone(zone.name)
+      recordSets <- OptionT.liftF {
+        val req = new ListResourceRecordSetsRequest().withHostedZoneId(hz)
+
+        // recurse to load all pages
+        loadPage(req).flatMap(page(req, _, Nil))
+      }
+    } yield recordSets
+  }.getOrElse(Nil)
+
+  /**
+    * Indicates if the zone is present in the backend
+    *
+    * @param zone The zone to check if exists
+    * @return true if it exists; false otherwise
+    */
+  def zoneExists(zone: Zone): IO[Boolean] = lookupHostedZone(zone.name).isDefined
 
   /* Note: naive implementation to assist in testing, not meant for production yet */
   def createZone(zone: Zone): IO[Zone] =
@@ -174,7 +228,7 @@ class Route53BackendConnection(
         new CreateHostedZoneRequest().withCallerReference(zone.id).withName(zone.name),
         client.createHostedZoneAsync
       )
-      _ <- IO(println(s"\r\n! create zone result is $result"))
+      _ <- IO(logger.info(s"create zone result is $result"))
     } yield zone.copy(status = ZoneStatus.Active)
 }
 

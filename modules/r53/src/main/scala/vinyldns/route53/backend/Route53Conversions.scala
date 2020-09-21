@@ -19,18 +19,7 @@ package vinyldns.route53.backend
 import com.amazonaws.services.route53.model.{RRType, ResourceRecord, ResourceRecordSet}
 import org.joda.time.DateTime
 import vinyldns.core.domain.Fqdn
-import vinyldns.core.domain.record.{
-  AAAAData,
-  AData,
-  CNAMEData,
-  MXData,
-  NSData,
-  PTRData,
-  RecordData,
-  RecordSet,
-  RecordSetStatus,
-  TXTData
-}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetStatus}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
@@ -43,10 +32,13 @@ trait Route53Conversions {
     case A => Some(RRType.A)
     case AAAA => Some(RRType.AAAA)
     case CNAME => Some(RRType.CNAME)
-    case TXT => Some(RRType.TXT)
+    case MX => Some(RRType.MX)
+    case NAPTR => Some(RRType.NAPTR)
     case NS => Some(RRType.NS)
     case PTR => Some(RRType.PTR)
-    case MX => Some(RRType.MX)
+    case SPF => Some(RRType.SPF)
+    case SRV => Some(RRType.SRV)
+    case TXT => Some(RRType.TXT)
     case _ => None
   }
 
@@ -54,79 +46,48 @@ trait Route53Conversions {
     case RRType.A => A
     case RRType.AAAA => AAAA
     case RRType.CNAME => CNAME
-    case RRType.TXT => TXT
+    case RRType.MX => MX
+    case RRType.NAPTR => NAPTR
     case RRType.NS => NS
     case RRType.PTR => PTR
-    case RRType.MX => MX
+    case RRType.SPF => SPF
+    case RRType.SRV => SRV
+    case RRType.TXT => TXT
     case _ => UNKNOWN
   }
 
-  def toVinylA(r53: ResourceRecord): AData =
-    AData(r53.getValue)
+  def toVinyl(typ: RecordType, resourceRecord: ResourceRecord): Option[RecordData] =
+    RecordData.fromString(resourceRecord.getValue, typ)
 
-  def toVinylAAAA(r53: ResourceRecord): AAAAData =
-    AAAAData(r53.getValue)
-
-  def toVinylCNAME(r53: ResourceRecord): CNAMEData =
-    CNAMEData(Fqdn(r53.getValue))
-
-  def toVinylMX(r53: ResourceRecord): MXData = {
-    // format is preference fqdn, ex. 10 mail.example.com
-    val parts = r53.getValue.split(' ')
-    MXData(parts(0).toInt, Fqdn(parts(1)))
-  }
-
-  def toVinylNS(r53: ResourceRecord): NSData =
-    NSData(Fqdn(r53.getValue))
-
-  def toVinylPTR(r53: ResourceRecord): PTRData =
-    PTRData(Fqdn(r53.getValue))
-
-  def toVinylTXT(r53: ResourceRecord): TXTData =
-    TXTData(r53.getValue)
-
-  def toVinyl(typ: RecordType, resourceRecord: ResourceRecord): Option[RecordData] = typ match {
-    case A => Some(toVinylA(resourceRecord))
-    case AAAA => Some(toVinylAAAA(resourceRecord))
-    case CNAME => Some(toVinylCNAME(resourceRecord))
-    case MX => Some(toVinylMX(resourceRecord))
-    case NS => Some(toVinylNS(resourceRecord))
-    case PTR => Some(toVinylPTR(resourceRecord))
-    case TXT => Some(toVinylTXT(resourceRecord))
-    case _ => None
-  }
-
-  def toVinylRecordSet(r53RecordSet: ResourceRecordSet): RecordSet = {
+  def toVinylRecordSet(zoneName: String, r53RecordSet: ResourceRecordSet): RecordSet = {
     val typ = toVinylRecordType(RRType.fromValue(r53RecordSet.getType))
     RecordSet(
       "unknown",
-      r53RecordSet.getName,
+      Fqdn.merge(r53RecordSet.getName, zoneName).firstLabel,
       typ,
       r53RecordSet.getTTL,
       RecordSetStatus.Active,
       DateTime.now,
       Some(DateTime.now),
-      r53RecordSet.getResourceRecords.asScala.toList.flatMap(toVinyl(typ, _))
+      r53RecordSet.getResourceRecords.asScala.toList.flatMap(toVinyl(typ, _)),
+      fqdn = Some(r53RecordSet.getName)
     )
   }
 
-  def toVinylRecordSets(r53RecordSets: java.util.List[ResourceRecordSet]): List[RecordSet] =
-    r53RecordSets.asScala.toList.map(toVinylRecordSet)
+  def toVinylRecordSets(
+      r53RecordSets: java.util.List[ResourceRecordSet],
+      zoneName: String
+  ): List[RecordSet] =
+    r53RecordSets.asScala.toList.map(toVinylRecordSet(zoneName, _))
 
   def toR53RecordSet(zone: Zone, vinylRecordSet: RecordSet): Option[ResourceRecordSet] =
     toRoute53RecordType(vinylRecordSet.typ).map { typ =>
       new ResourceRecordSet()
-        .withName(fqdn(zone, vinylRecordSet))
+        .withName(Fqdn.merge(vinylRecordSet.name, zone.name).fqdn)
         .withTTL(vinylRecordSet.ttl)
         .withType(typ)
         .withResourceRecords(
           vinylRecordSet.records.map(rd => new ResourceRecord().withValue(rd.toString)).asJava
         )
     }
-
-  private def fqdn(zone: Zone, rs: RecordSet): String = {
-    // make sure we combine the rs name and zone name to make an fqdn
-    val zoneName = if (zone.name.endsWith(".")) zone.name else s"${zone.name}."
-    if (rs.name.endsWith(".")) rs.name + zoneName else s"${rs.name}.$zoneName"
-  }
 }

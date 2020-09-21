@@ -78,23 +78,22 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
       ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid")
     )
 
-  // TODO: This should be moved to the backend connection with a "zone exists"
-  def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
-    if (records.isEmpty) {
-      ConnectionFailed(zone, "SOA Record for zone not found").asLeft[Unit]
-    } else {
-      ().asRight[Throwable]
-    }
-  }.toResult
+  def zoneExists(zone: Zone, connection: BackendConnection): Result[Unit] = {
+    connection
+      .zoneExists(zone)
+      .ifM(
+        IO(Right(())),
+        IO(Left(ConnectionFailed(zone, "SOA Record for zone not found")))
+      ).toResult
+  }
 
   def validateZoneConnections(zone: Zone): Result[Unit] = {
     val result =
       for {
         connection <- getBackendConnection(zone)
-        resp <- connection.resolve(zone.name, zone.name, RecordType.SOA).toResult[List[RecordSet]]
+        _ <- zoneExists(zone, connection)
         view <- loadZone(zone)
         _ <- hasApexNS(view)
-        _ <- hasSOA(resp, zone)
       } yield ()
 
     result.leftMap {
