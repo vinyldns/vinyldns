@@ -18,7 +18,7 @@ package vinyldns.route53.backend
 
 import cats.implicits._
 import cats.effect.{ContextShift, IO}
-import vinyldns.core.domain.backend.{BackendConfig, BackendProvider, BackendProviderLoader}
+import vinyldns.core.domain.backend.{BackendProviderConfig, BackendProvider, BackendProviderLoader}
 
 class Route53BackendProviderLoader extends BackendProviderLoader {
 
@@ -32,9 +32,9 @@ class Route53BackendProviderLoader extends BackendProviderLoader {
     * @param config The BackendConfig, has settings that are specific to this backend
     * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
     */
-  def load(config: BackendConfig): IO[BackendProvider] =
+  def load(config: BackendProviderConfig): IO[BackendProvider] =
     Route53ProviderConfig.load(config.settings).flatMap { bec =>
-      bec.connections.traverse(Route53Backend.load).map { conns =>
+      bec.backends.traverse(Route53Backend.load).map { conns =>
         new Route53BackendProvider(conns)
       }
     }

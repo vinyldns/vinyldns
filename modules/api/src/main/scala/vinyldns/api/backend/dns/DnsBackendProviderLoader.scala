@@ -19,7 +19,7 @@ package vinyldns.api.backend.dns
 import cats.effect.{ContextShift, IO}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
-import vinyldns.core.domain.backend.{BackendConfig, BackendProvider, BackendProviderLoader}
+import vinyldns.core.domain.backend.{BackendProvider, BackendProviderConfig, BackendProviderLoader}
 
 class DnsBackendProviderLoader extends BackendProviderLoader {
 
@@ -33,10 +33,10 @@ class DnsBackendProviderLoader extends BackendProviderLoader {
     * @param config The BackendConfig, has settings that are specific to this backend
     * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
     */
-  def load(config: BackendConfig): IO[BackendProvider] =
+  def load(config: BackendProviderConfig): IO[BackendProvider] =
     // if legacy = true, load from the old configured dns connections
     // otherwise, load new stuff
-    DnsBackendConfig.load(config.settings).map { bec =>
+    DnsBackendProviderConfig.load(config.settings).map { bec =>
       if (bec.legacy) {
         // legacy adds a backend id named "default" with the default configuration
         // and loads the backend connections from the legacy YAML config
@@ -55,7 +55,7 @@ class DnsBackendProviderLoader extends BackendProviderLoader {
       } else {
         // Assumes the "new" YAML config
         new DnsBackendProvider(
-          bec.connections.map(_.toDnsConnection(Crypto.instance)),
+          bec.backends.map(_.toDnsConnection(Crypto.instance)),
           Crypto.instance
         )
       }

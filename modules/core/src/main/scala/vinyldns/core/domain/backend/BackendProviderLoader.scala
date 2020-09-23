@@ -35,5 +35,5 @@ trait BackendProviderLoader {
     *
     * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
     */
-  def load(config: BackendConfig): IO[BackendProvider]
+  def load(config: BackendProviderConfig): IO[BackendProvider]
 }

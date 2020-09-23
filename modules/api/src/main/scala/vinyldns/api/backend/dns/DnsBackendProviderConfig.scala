@@ -16,14 +16,17 @@
 
 package vinyldns.api.backend.dns
 
-import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.zone.ZoneConnection
+import cats.effect.{Blocker, ContextShift, IO}
+import com.typesafe.config.Config
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
+import pureconfig.module.catseffect.syntax.CatsEffectConfigSource
 
-final case class DnsConnectionConfig(
-    id: String,
-    zoneConnection: ZoneConnection,
-    transferConnection: Option[ZoneConnection]
-) {
-  def toDnsConnection(crypto: CryptoAlgebra): DnsBackend =
-    DnsBackend.apply(id, zoneConnection, transferConnection, crypto)
+final case class DnsBackendProviderConfig(legacy: Boolean, backends: List[DnsBackendConfig])
+
+object DnsBackendProviderConfig {
+  def load(config: Config)(implicit cs: ContextShift[IO]): IO[DnsBackendProviderConfig] =
+    Blocker[IO].use(
+      ConfigSource.fromConfig(config).loadF[IO, DnsBackendProviderConfig](_)
+    )
 }

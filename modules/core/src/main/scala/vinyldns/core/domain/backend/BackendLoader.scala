@@ -24,8 +24,8 @@ object BackendLoader {
 
   private val logger = LoggerFactory.getLogger("BackendLoader")
 
-  def load(configs: List[BackendConfig]): IO[List[BackendProvider]] = {
-    def loadOne(config: BackendConfig): IO[BackendProvider] =
+  def load(configs: List[BackendProviderConfig]): IO[List[BackendProvider]] = {
+    def loadOne(config: BackendProviderConfig): IO[BackendProvider] =
       for {
         _ <- IO(logger.error(s"Attempting to load backend ${config.className}"))
         provider <- IO(

@@ -23,7 +23,7 @@ import com.typesafe.config.Config
   * @param className The fully qualified class name of the provider to be loaded
   * @param settings A generic typesafe Config object that holds settings to be interpreted by the provider
   */
-final case class BackendConfig(
+final case class BackendProviderConfig(
     className: String,
     settings: Config
 )

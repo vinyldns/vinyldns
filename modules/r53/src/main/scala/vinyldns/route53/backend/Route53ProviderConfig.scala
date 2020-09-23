@@ -30,7 +30,7 @@ final case class Route53BackendConfig(
     serviceEndpoint: String,
     signingRegion: String
 )
-final case class Route53ProviderConfig(connections: List[Route53BackendConfig])
+final case class Route53ProviderConfig(backends: List[Route53BackendConfig])
 object Route53ProviderConfig {
 
   def load(config: Config)(implicit cs: ContextShift[IO]): IO[Route53ProviderConfig] =

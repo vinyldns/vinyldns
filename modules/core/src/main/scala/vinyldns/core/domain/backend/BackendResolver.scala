@@ -63,7 +63,7 @@ trait BackendResolver {
 object BackendResolver {
   def apply(configs: BackendConfigs): IO[BackendResolver] =
     for {
-      backends <- BackendLoader.load(configs.backends)
+      backends <- BackendLoader.load(configs.backendProviders)
       defaultConn <- IO.fromOption(
         backends.collectFirstSome(_.connectById(configs.defaultBackendId))
       )(
