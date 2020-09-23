@@ -16,7 +16,7 @@
 
 package vinyldns.api.backend.dns
 
-import java.net.InetAddress
+import java.net.{InetAddress, SocketAddress}
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
@@ -28,16 +28,17 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.xbill.DNS
-import org.xbill.DNS.{Lookup, Name}
+import org.xbill.DNS.{Lookup, Name, TSIG}
 import vinyldns.api.backend.dns.DnsProtocol._
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.backend.BackendResponse
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 import scala.collection.JavaConverters._
 
-class DnsConnectionSpec
+class DnsBackendSpec
     extends AnyWordSpec
     with Matchers
     with MockitoSugar
@@ -81,7 +82,10 @@ class DnsConnectionSpec
   private val mockMessage = mock[DNS.Message]
   private val messageCaptor = ArgumentCaptor.forClass(classOf[DNS.Message])
   private val mockDnsQuery = mock[DnsQuery]
-  private val underTest = new DnsConnection(mockResolver) {
+  private val mockSocketAddress = mock[SocketAddress]
+  private val mockTsig = mock[TSIG]
+  private val transferInfo = TransferInfo(mockSocketAddress, mockTsig)
+  private val underTest = new DnsBackend("test", mockResolver, transferInfo) {
     override def toQuery(
         name: String,
         zoneName: String,
@@ -93,7 +97,7 @@ class DnsConnectionSpec
         case _ => Right(mockDnsQuery)
       }
   }
-  private val dnsQueryTest = new DnsConnection(mockResolver)
+  private val dnsQueryTest = new DnsBackend("query-test", mockResolver, transferInfo)
 
   override def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
@@ -124,7 +128,7 @@ class DnsConnectionSpec
   "Creating a Dns Connection" should {
     "decrypt the zone connection" in {
       val conn = spy(zoneConnection)
-      DnsConnection(conn, new NoOpCrypto())
+      DnsBackend("test", conn, None, new NoOpCrypto())
 
       verify(conn).decrypted(any[CryptoAlgebra])
     }
@@ -132,7 +136,7 @@ class DnsConnectionSpec
     "parse the port when specified on the primary server" in {
       val conn = zoneConnection.copy(primaryServer = "dns.comcast.net:19001")
 
-      val dnsConn = DnsConnection(conn, new NoOpCrypto())
+      val dnsConn = DnsBackend("test", conn, None, new NoOpCrypto())
       val simpleResolver = dnsConn.resolver.asInstanceOf[DNS.SimpleResolver]
 
       val address = simpleResolver.getAddress
@@ -144,7 +148,7 @@ class DnsConnectionSpec
     "use default port of 53 when not specified" in {
       val conn = zoneConnection.copy(primaryServer = "dns.comcast.net")
 
-      val dnsConn = DnsConnection(conn, new NoOpCrypto())
+      val dnsConn = DnsBackend("test", conn, None, new NoOpCrypto())
       val simpleResolver = dnsConn.resolver.asInstanceOf[DNS.SimpleResolver]
 
       val address = simpleResolver.getAddress
@@ -564,15 +568,17 @@ class DnsConnectionSpec
 
   "applyChange" should {
     "yield a successful DNS response for a create if there are no errors" in {
-      underTest.applyChange(addRsChange()).unsafeRunSync() shouldBe NoError(mockMessage)
+      underTest.applyChange(addRsChange()).unsafeRunSync() shouldBe a[BackendResponse.NoError]
     }
 
     "yield a successful DNS response for an update if there are no errors" in {
-      underTest.applyChange(updateRsChange()).unsafeRunSync() shouldBe NoError(mockMessage)
+      underTest.applyChange(updateRsChange()).unsafeRunSync() shouldBe a[BackendResponse.NoError]
     }
 
     "yield a successful DNS response for a delete if there are no errors" in {
-      underTest.applyChange(deleteRsChange()).unsafeRunSync() shouldBe NoError(mockMessage)
+      underTest
+        .applyChange(deleteRsChange())
+        .unsafeRunSync() shouldBe a[BackendResponse.NoError]
     }
   }
 

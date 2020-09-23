@@ -16,26 +16,33 @@
 
 package vinyldns.route53.backend
 
-import cats.implicits._
-import cats.effect.{ContextShift, IO}
-import vinyldns.core.domain.backend.{Backend, BackendConfig, BackendProvider}
+import vinyldns.core.domain.backend.{Backend, BackendProvider}
+import vinyldns.core.domain.zone.Zone
 
-class Route53BackendProvider extends BackendProvider {
+class Route53BackendProvider(connections: List[Route53Backend]) extends BackendProvider {
 
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
+  private val connMap: Map[String, Route53Backend] = connections.map(c => c.id -> c).toMap
 
   /**
-    * Loads a backend based on the provided config so that it is ready to use
-    * This is internally used typically during startup
+    * Given a zone, returns a connection to the zone, returns None if cannot connect
     *
-    * @param config The BackendConfig, has settings that are specific to this backend
-    * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
+    * @param zone The zone to attempt to connect to
+    * @return A backend that is usable, or None if it could not connect
     */
-  def load(config: BackendConfig): IO[Backend] =
-    Route53BackendConfig.load(config.settings).flatMap { bec =>
-      bec.connections.traverse(Route53BackendConnection.load).map { conns =>
-        new Route53Backend(conns)
-      }
-    }
+  def connect(zone: Zone): Option[Backend] =
+    // only way to connect is via backend id right now
+    zone.backendId.flatMap(connectById)
+
+  /**
+    * Given a backend id, looks up the backend for this provider if it exists
+    *
+    * @return A backend that is usable, or None if could not connect
+    */
+  def connectById(backendId: String): Option[Backend] =
+    connMap.get(backendId)
+
+  /**
+    * @return The backend ids loaded with this provider
+    */
+  def ids: List[String] = connMap.keys.toList
 }

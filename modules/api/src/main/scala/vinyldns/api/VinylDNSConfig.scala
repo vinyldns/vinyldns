@@ -35,7 +35,7 @@ import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, LegacyDnsBackend, ZoneConnection}
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
 import vinyldns.core.notifier.NotifierConfig
@@ -122,7 +122,7 @@ object VinylDNSConfig {
           .getConfigList("backends")
           .asScala
           .map {
-            ConfigSource.fromConfig(_).loadOrThrow[DnsBackend]
+            ConfigSource.fromConfig(_).loadOrThrow[LegacyDnsBackend]
           }
           .toList
           .map(_.encrypted(Crypto.instance))

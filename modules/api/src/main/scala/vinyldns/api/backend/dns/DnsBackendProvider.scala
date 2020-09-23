@@ -16,48 +16,44 @@
 
 package vinyldns.api.backend.dns
 
-import cats.effect.{ContextShift, IO}
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.crypto.Crypto
-import vinyldns.core.domain.backend.{Backend, BackendConfig, BackendProvider}
+import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.backend.{Backend, BackendProvider}
+import vinyldns.core.domain.zone.Zone
 
-class DnsBackendProvider extends BackendProvider {
+class DnsBackendProvider(connections: List[DnsBackend], crypto: CryptoAlgebra)
+    extends BackendProvider {
 
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
+  private val connMap: Map[String, DnsBackend] =
+    connections.map { c =>
+      c.id -> c
+    }.toMap
 
   /**
-    * Loads a backend based on the provided config so that it is ready to use
-    * This is internally used typically during startup
+    * Given a zone, returns a connection to the zone, returns None if cannot connect
     *
-    * @param config The BackendConfig, has settings that are specific to this backend
-    * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
+    * @param zone The zone to attempt to connect to
+    * @return A backend that is usable, or None if it could not connect
     */
-  def load(config: BackendConfig): IO[Backend] =
-    // if legacy = true, load from the old configured dns connections
-    // otherwise, load new stuff
-    DnsBackendConfig.load(config.settings).map { bec =>
-      if (bec.legacy) {
-        // legacy adds a backend id named "default" with the default configuration
-        // and loads the backend connections from the legacy YAML config
-        val conns = VinylDNSConfig.configuredDnsConnections.dnsBackends.map { be =>
-          DnsConnection
-            .apply(be.id, be.zoneConnection, Some(be.transferConnection), Crypto.instance)
-        }
-        val defaultConn =
-          DnsConnection.apply(
-            "default",
-            VinylDNSConfig.configuredDnsConnections.defaultZoneConnection,
-            Some(VinylDNSConfig.configuredDnsConnections.defaultTransferConnection),
-            Crypto.instance
-          )
-        new DefaultDnsBackend(defaultConn :: conns, Crypto.instance)
-      } else {
-        // Assumes the "new" YAML config
-        new DefaultDnsBackend(
-          bec.connections.map(_.toDnsConnection(Crypto.instance)),
-          Crypto.instance
-        )
+  def connect(zone: Zone): Option[Backend] =
+    // Use the connection info on the zone if present
+    zone.connection
+      .map { conn =>
+        DnsBackend.apply("unknown", conn, zone.transferConnection, crypto)
       }
-    }
+      .orElse {
+        zone.backendId.flatMap(connectById)
+      }
+
+  /**
+    * Given a backend id, looks up the backend for this provider if it exists
+    *
+    * @return A backend that is usable, or None if could not connect
+    */
+  def connectById(backendId: String): Option[Backend] =
+    connMap.get(backendId)
+
+  /**
+    * @return The backend ids loaded with this provider
+    */
+  def ids: List[String] = connMap.keys.toList
 }

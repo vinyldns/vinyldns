@@ -33,14 +33,14 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 
 object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
       accessValidation: AccessValidationsAlgebra,
-      backendRegistry: BackendRegistry,
+      backendResolver: BackendResolver,
       validateRecordLookupAgainstDnsBackend: Boolean
   ): RecordSetService =
     new RecordSetService(
@@ -51,7 +51,7 @@ object RecordSetService {
       dataAccessor.userRepository,
       messageQueue,
       accessValidation,
-      backendRegistry,
+      backendResolver,
       validateRecordLookupAgainstDnsBackend
     )
 }
@@ -64,7 +64,7 @@ class RecordSetService(
     userRepository: UserRepository,
     messageQueue: MessageQueue,
     accessValidation: AccessValidationsAlgebra,
-    backendRegistry: BackendRegistry,
+    backendResolver: BackendResolver,
     validateRecordLookupAgainstDnsBackend: Boolean
 ) extends RecordSetServiceAlgebra {
 
@@ -79,7 +79,7 @@ class RecordSetService(
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- recordSetDoesNotExist(
-        backendRegistry.connectTo,
+        backendResolver.resolve,
         zone,
         rsForValidations,
         validateRecordLookupAgainstDnsBackend
@@ -116,7 +116,7 @@ class RecordSetService(
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
       _ <- isUniqueUpdate(
-        backendRegistry.connectTo,
+        backendResolver.resolve,
         rsForValidations,
         existingRecordsWithName,
         zone,
@@ -370,7 +370,7 @@ class RecordSetService(
   }
 
   def recordSetDoesNotExist(
-      backendConnection: Zone => BackendConnection,
+      backendConnection: Zone => Backend,
       zone: Zone,
       recordSet: RecordSet,
       validateRecordLookupAgainstDnsBackend: Boolean
@@ -391,7 +391,7 @@ class RecordSetService(
     }.toResult
 
   def isUniqueUpdate(
-      backendConnection: Zone => BackendConnection,
+      backendConnection: Zone => Backend,
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,

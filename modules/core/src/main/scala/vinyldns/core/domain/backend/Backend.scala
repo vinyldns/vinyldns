@@ -16,31 +16,62 @@
 
 package vinyldns.core.domain.backend
 
+import cats.effect.IO
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.Zone
 
 /**
-  * Implemented by each provider, provides a means of looking up a `BackendConnection`
-  * as well as showing which backend ids are registered on this provider
+  * Provides the backend interface to work with any kind of DNS backend
+  *
+  * Implement this interface for your own backend.  The default backend is the DnsBackend that talks DDNS.
   */
 trait Backend {
 
   /**
-    * Given a zone, returns a connection to the zone, returns None if cannot connect
-    *
-    * @param zone The zone to attempt to connect to
-    * @return A backend that is usable, or None if it could not connect
+    * Identifies this backend
+    * @return The id for the backend
     */
-  def connect(zone: Zone): Option[BackendConnection]
+  def id: String
 
   /**
-    * Given a backend id, looks up the backend for this provider if it exists
+    * Does a lookup for a record given the record name, zone name, and record type
     *
-    * @return A backend that is usable, or None if could not connect
+    * The record name + zone name should form the FQDN
+    *
+    * @param name The name of the record (without the zone - e.g. www)
+    * @param zoneName The full domain name (e.g. example.com)
+    * @param typ The type of record (e.g. AAAA)
+    * @return A list of record sets matching the name, empty if not found
     */
-  def connectById(backendId: String): Option[BackendConnection]
+  def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]]
 
   /**
-    * @return The backend ids loaded with this provider
+    * Applies a single record set change against the DNS backend
+    *
+    * @param change A RecordSetChange to apply.  Note: the key for a record set is the record name + type.
+    *               A single RecordSetChange can add or remove multiple individual records in a record set at one time.
+    * @return A BackendResponse that is backend provider specific
     */
-  def ids: List[String]
+  def applyChange(change: RecordSetChange): IO[BackendResponse]
+
+  /**
+    * Loads all record sets in a zone.  Used typically for zone syncs.
+    *
+    * Note, this will cause memory issues for large zones (100,000s of records).  Need to make
+    * zone sync memory safe before changing this
+    *
+    * @param zone The zone to load
+    * @param maxZoneSize The maximum number of records that we allow loading, typically configured
+    * @return All record sets in the zone
+    */
+  def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]]
+
+  /**
+    * Indicates if the zone is present in the backend
+    *
+    * @param zone The zone to check if exists
+    * @return true if it exists; false otherwise
+    */
+  def zoneExists(zone: Zone): IO[Boolean]
 }

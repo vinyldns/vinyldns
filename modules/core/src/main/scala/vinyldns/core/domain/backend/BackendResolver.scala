@@ -26,14 +26,16 @@ import vinyldns.core.health.HealthCheck.HealthCheck
 /**
   * Provides the means to discover backends for zones
   */
-trait BackendRegistry {
+trait BackendResolver {
 
   /**
-    * Attempts to get the backend connection for a given zone, returns `None` if not found
+    * Attempts to get the backend for a given zone, falls back to
+    * using the default-backend-id if no zones can be found
+    *
     * @param zone A `Zone` to get a backend for
-    * @return A working `Backend`, or `None` if the backend could not be found for this zone
+    * @return A working `Backend`, the default if necessary
     */
-  def connectTo(zone: Zone): BackendConnection
+  def resolve(zone: Zone): Backend
 
   /**
     * Performs whatever health check considered necessary to ensure that the backends are in good health
@@ -58,8 +60,8 @@ trait BackendRegistry {
     */
   def ids: NonEmptyList[String]
 }
-object BackendRegistry {
-  def apply(configs: BackendConfigs): IO[BackendRegistry] =
+object BackendResolver {
+  def apply(configs: BackendConfigs): IO[BackendResolver] =
     for {
       backends <- BackendLoader.load(configs.backends)
       defaultConn <- IO.fromOption(
@@ -69,7 +71,7 @@ object BackendRegistry {
           s"Unable to find default backend for configured id '${configs.defaultBackendId}''"
         )
       )
-    } yield new BackendRegistry {
+    } yield new BackendResolver {
 
       /**
         * Attempts to get the backend for a given zone, returns `None` if not found
@@ -77,7 +79,7 @@ object BackendRegistry {
         * @param zone A `Zone` to get a backend for
         * @return A working `Backend`, or `None` if the backend could not be found for this zone
         */
-      def connectTo(zone: Zone): BackendConnection =
+      def resolve(zone: Zone): Backend =
         backends.collectFirstSome(_.connect(zone)).getOrElse(defaultConn)
 
       /**

@@ -25,8 +25,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
-import org.xbill.DNS
-import vinyldns.api.backend.dns.DnsProtocol.{NoError, NotAuthorized, Refused, TryAgain}
+import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.CatsHelpers
@@ -42,7 +41,7 @@ import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
-import vinyldns.api.backend.dns.DnsConnection
+import vinyldns.core.domain.backend.{Backend, BackendResponse}
 
 class RecordSetChangeHandlerSpec
     extends AnyWordSpec
@@ -53,10 +52,9 @@ class RecordSetChangeHandlerSpec
     with EitherValues {
 
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
-  private val mockConn = mock[DnsConnection]
+  private val mockBackend = mock[Backend]
   private val mockRsRepo = mock[RecordSetRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
-  private val mockDnsMessage = mock[DNS.Message]
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
 
@@ -113,7 +111,7 @@ class RecordSetChangeHandlerSpec
     RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo)
 
   override protected def beforeEach(): Unit = {
-    reset(mockConn, mockRsRepo, mockChangeRepo)
+    reset(mockBackend, mockRsRepo, mockChangeRepo)
     batchRepo.clear()
 
     // seed the linked batch change in the DB
@@ -128,13 +126,13 @@ class RecordSetChangeHandlerSpec
   "Handling Pending Changes" should {
     "complete the change successfully if already applied" in {
       doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -165,15 +163,15 @@ class RecordSetChangeHandlerSpec
       // The second return is for verify
       doReturn(IO.pure(List()))
         .doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -189,8 +187,8 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       // make sure the record was applied and then verified
-      verify(mockConn).applyChange(rsChange)
-      verify(mockConn, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend).applyChange(rsChange)
+      verify(mockBackend, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -208,17 +206,17 @@ class RecordSetChangeHandlerSpec
       // The second return is for verify
       doReturn(IO.pure(List()))
         .doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.raiseError(NotAuthorized("dns failure")))
-        .when(mockConn)
+        .when(mockBackend)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -235,10 +233,10 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
 
       // make sure the record was applied
-      verify(mockConn).applyChange(rsChange)
+      verify(mockBackend).applyChange(rsChange)
 
       // make sure we only called resolve once when validating, ensures that verify was not called
-      verify(mockConn, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -256,15 +254,15 @@ class RecordSetChangeHandlerSpec
       // All returns after first are for verify.  Retry 2 times and succeed
       doReturn(IO.pure(List()))
         .doReturn(IO.raiseError(NotAuthorized("dns-fail")))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -280,10 +278,10 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
 
       // make sure the record was applied and then verified
-      verify(mockConn).applyChange(rsChange)
+      verify(mockBackend).applyChange(rsChange)
 
       // we will retry the verify 3 times based on the mock setup
-      verify(mockConn, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -300,28 +298,28 @@ class RecordSetChangeHandlerSpec
     "requeue the change in verify if permissible errors" in {
       doReturn(IO.pure(List()))
         .doReturn(IO.raiseError(TryAgain("dns-fail")))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage))).when(mockConn).applyChange(rsChange)
+      doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
     }
 
     "fail the change if validating fails with an error" in {
       // Stage an error on the first resolve, which will cause validate to fail
       doReturn(IO.raiseError(NotAuthorized("dns-failure")))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -337,8 +335,8 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
 
       // we failed in validation, so we should never issue a dns update
-      verify(mockConn, never()).applyChange(rsChange)
-      verify(mockConn, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, never()).applyChange(rsChange)
+      verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -354,16 +352,16 @@ class RecordSetChangeHandlerSpec
 
     "fail the change if applying fails with an error" in {
       doReturn(IO.pure(List()))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.raiseError(NotAuthorized("dns-fail")))
-        .when(mockConn)
+        .when(mockBackend)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -379,8 +377,8 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Failed
 
       // we failed in apply, we should only resolve once
-      verify(mockConn, times(1)).applyChange(rsChange)
-      verify(mockConn, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, times(1)).applyChange(rsChange)
+      verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -394,21 +392,6 @@ class RecordSetChangeHandlerSpec
       batchChangeUpdates.get.changes shouldBe scExpected
     }
 
-    "requeue the change in apply if permissible errors" in {
-      doReturn(IO.pure(List()))
-        .when(mockConn)
-        .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(IO.raiseError(Refused("dns-fail")))
-        .when(mockConn)
-        .applyChange(rsChange)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
-      doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
-
-      val test = underTest.apply(mockConn, rsChange)
-      a[Requeue] shouldBe thrownBy(test.unsafeRunSync())
-    }
-
     "bypass the validate and verify steps if a wildcard record exists" in {
       // Return a wildcard record
       doReturn(IO.pure(List(rsChange.recordSet)))
@@ -418,16 +401,16 @@ class RecordSetChangeHandlerSpec
       // The second return is for verify
       doReturn(IO.pure(List()))
         .doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage)))
-        .when(mockConn)
+      doReturn(IO.pure(BackendResponse.NoError("test")))
+        .when(mockBackend)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       val res = test.unsafeRunSync()
 
       res.status shouldBe RecordSetChangeStatus.Complete
@@ -446,10 +429,10 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       // make sure the record was applied
-      verify(mockConn).applyChange(rsChange)
+      verify(mockBackend).applyChange(rsChange)
 
       // make sure we never called resolve, as we skip validate step and verify
-      verify(mockConn, never).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, never).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -477,16 +460,16 @@ class RecordSetChangeHandlerSpec
       // The second return is for verify
       doReturn(IO.pure(List()))
         .doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage)))
-        .when(mockConn)
+      doReturn(IO.pure(BackendResponse.NoError("test")))
+        .when(mockBackend)
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
-      val test = underTest.apply(mockConn, rsChange)
+      val test = underTest.apply(mockBackend, rsChange)
       val res = test.unsafeRunSync()
 
       res.status shouldBe RecordSetChangeStatus.Complete
@@ -505,10 +488,10 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       // make sure the record was applied
-      verify(mockConn).applyChange(rsChange)
+      verify(mockBackend).applyChange(rsChange)
 
       // make sure we never called resolve, as we skip validate step and verify
-      verify(mockConn, never).resolve(rs.name, rsChange.zone.name, rs.typ)
+      verify(mockBackend, never).resolve(rs.name, rsChange.zone.name, rs.typ)
 
       val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
@@ -535,16 +518,16 @@ class RecordSetChangeHandlerSpec
       // The second return is for verify
       doReturn(IO.pure(List()))
         .doReturn(IO.pure(List(rsNs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rsNs.name, rsChangeNs.zone.name, rsNs.typ)
 
-      doReturn(IO.pure(NoError(mockDnsMessage)))
-        .when(mockConn)
+      doReturn(IO.pure(BackendResponse.NoError("test")))
+        .when(mockBackend)
         .applyChange(rsChangeNs)
       doReturn(IO.pure(csNs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(csNs)).when(mockRsRepo).apply(any[ChangeSet])
 
-      val test = underTest.apply(mockConn, rsChangeNs)
+      val test = underTest.apply(mockBackend, rsChangeNs)
       val res = test.unsafeRunSync()
 
       res.status shouldBe RecordSetChangeStatus.Complete
@@ -563,10 +546,10 @@ class RecordSetChangeHandlerSpec
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       // make sure the record was applied
-      verify(mockConn).applyChange(rsChangeNs)
+      verify(mockBackend).applyChange(rsChangeNs)
 
       // make sure we never called resolve, as we skip validate step and verify
-      verify(mockConn, never).resolve(rsNs.name, rsChangeNs.zone.name, rsNs.typ)
+      verify(mockBackend, never).resolve(rsNs.name, rsChangeNs.zone.name, rsNs.typ)
     }
 
     "complete an update successfully if the requested record set change matches the DNS backend" in {
@@ -575,10 +558,10 @@ class RecordSetChangeHandlerSpec
         updates = Some(rsChange.recordSet.copy(ttl = 87))
       )
       doReturn(IO.pure(List(updateChange.recordSet)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
-      doReturn(IO.pure(NoError(mockDnsMessage)))
-        .when(mockConn)
+      doReturn(IO.pure(BackendResponse.NoError("test")))
+        .when(mockBackend)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
@@ -586,7 +569,7 @@ class RecordSetChangeHandlerSpec
         .when(mockRsRepo)
         .getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, updateChange)
+      val test = underTest.apply(mockBackend, updateChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -620,16 +603,16 @@ class RecordSetChangeHandlerSpec
       )
       val dnsBackendRs = updateChange.recordSet.copy(ttl = 30)
       doReturn(IO.pure(List(dnsBackendRs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
-      doReturn(IO.pure(NoError(mockDnsMessage)))
-        .when(mockConn)
+      doReturn(IO.pure(BackendResponse.NoError("test")))
+        .when(mockBackend)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List(dnsBackendRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
-      val test = underTest.apply(mockConn, updateChange)
+      val test = underTest.apply(mockBackend, updateChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
@@ -656,7 +639,7 @@ class RecordSetChangeHandlerSpec
   "getProcessingStatus for Create" should {
     "return ReadyToApply if there are no records in the DNS backend" in {
       doReturn(IO.pure(List()))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -664,7 +647,7 @@ class RecordSetChangeHandlerSpec
         RecordSetChangeHandler
           .syncAndGetProcessingStatusFromDnsBackend(
             rsChange,
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true
@@ -675,7 +658,7 @@ class RecordSetChangeHandlerSpec
 
     "return AlreadyApplied if the change already exists in the DNS backend" in {
       doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -683,7 +666,7 @@ class RecordSetChangeHandlerSpec
         RecordSetChangeHandler
           .syncAndGetProcessingStatusFromDnsBackend(
             rsChange,
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true
@@ -694,7 +677,7 @@ class RecordSetChangeHandlerSpec
 
     "remove record from database for Add if record does not exist in DNS backend" in {
       doReturn(IO.pure(List()))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -705,7 +688,7 @@ class RecordSetChangeHandlerSpec
         RecordSetChangeHandler
           .syncAndGetProcessingStatusFromDnsBackend(
             rsChange,
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true
@@ -725,7 +708,7 @@ class RecordSetChangeHandlerSpec
       val syncedRsChange =
         rsChange.copy(changeType = RecordSetChangeType.Update, updates = Some(storedRs))
       doReturn(IO.pure(List(syncedRsChange.updates.get)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(storedRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -733,7 +716,7 @@ class RecordSetChangeHandlerSpec
         RecordSetChangeHandler
           .syncAndGetProcessingStatusFromDnsBackend(
             syncedRsChange,
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true
@@ -744,7 +727,7 @@ class RecordSetChangeHandlerSpec
 
     "return ReadyToApply if current record set doesn't match DNS backend and DNS backend has no records" in {
       doReturn(IO.pure(List()))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -752,7 +735,7 @@ class RecordSetChangeHandlerSpec
         .syncAndGetProcessingStatusFromDnsBackend(
           rsChange
             .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 300))),
-          mockConn,
+          mockBackend,
           mockRsRepo,
           mockChangeRepo,
           true
@@ -763,7 +746,7 @@ class RecordSetChangeHandlerSpec
 
     "return AlreadyApplied if the change already exists in the DNS backend" in {
       doReturn(IO.pure(List(rsChange.recordSet)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rsChange.recordSet)))
         .when(mockRsRepo)
@@ -772,7 +755,7 @@ class RecordSetChangeHandlerSpec
       val processorStatus = RecordSetChangeHandler
         .syncAndGetProcessingStatusFromDnsBackend(
           rsChange.copy(changeType = RecordSetChangeType.Update),
-          mockConn,
+          mockBackend,
           mockRsRepo,
           mockChangeRepo,
           true
@@ -783,7 +766,7 @@ class RecordSetChangeHandlerSpec
 
     "sync in the DNS backend for update if record does not exist in database" in {
       doReturn(IO.pure(List(rs.copy(ttl = 100))))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -797,7 +780,7 @@ class RecordSetChangeHandlerSpec
           .syncAndGetProcessingStatusFromDnsBackend(
             rsChange
               .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 100))),
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true
@@ -814,14 +797,14 @@ class RecordSetChangeHandlerSpec
   "getProcessingStatus for Delete" should {
     "return ReadyToApply if there are records in the DNS backend" in {
       doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
         .syncAndGetProcessingStatusFromDnsBackend(
           rsChange.copy(changeType = RecordSetChangeType.Delete),
-          mockConn,
+          mockBackend,
           mockRsRepo,
           mockChangeRepo,
           true
@@ -832,14 +815,14 @@ class RecordSetChangeHandlerSpec
 
     "return AlreadyApplied if there are no records in the DNS backend" in {
       doReturn(IO.pure(List()))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus = RecordSetChangeHandler
         .syncAndGetProcessingStatusFromDnsBackend(
           rsChange.copy(changeType = RecordSetChangeType.Delete),
-          mockConn,
+          mockBackend,
           mockRsRepo,
           mockChangeRepo,
           true
@@ -850,7 +833,7 @@ class RecordSetChangeHandlerSpec
 
     "sync in the DNS backend for Delete change if record exists" in {
       doReturn(IO.pure(List(rs)))
-        .when(mockConn)
+        .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
@@ -864,7 +847,7 @@ class RecordSetChangeHandlerSpec
           .syncAndGetProcessingStatusFromDnsBackend(
             rsChange
               .copy(changeType = RecordSetChangeType.Delete),
-            mockConn,
+            mockBackend,
             mockRsRepo,
             mockChangeRepo,
             true

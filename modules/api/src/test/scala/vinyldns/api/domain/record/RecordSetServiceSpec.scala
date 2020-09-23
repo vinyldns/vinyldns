@@ -25,7 +25,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.ResultHelpers
-import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -35,6 +34,7 @@ import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.HighValueDomainError
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -54,12 +54,9 @@ class RecordSetServiceSpec
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMessageQueue = mock[MessageQueue]
-  private val zoneConnection =
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
-  private val configuredDnsConnections =
-    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
-  private val mockDnsConnection =
-    mock[DnsConnection]
+  private val mockBackend =
+    mock[Backend]
+  private val mockBackendResolver = mock[BackendResolver]
 
   doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(okZone.id)
   doReturn(IO.pure(Some(zoneNotAuthorized)))
@@ -69,6 +66,7 @@ class RecordSetServiceSpec
   doReturn(IO.pure(Some(sharedZoneRecord.copy(status = RecordSetStatus.Active))))
     .when(mockRecordRepo)
     .getRecordSet(sharedZoneRecord.id)
+  doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
   val underTest = new RecordSetService(
     mockZoneRepo,
@@ -78,8 +76,7 @@ class RecordSetServiceSpec
     mockUserRepo,
     mockMessageQueue,
     new AccessValidations(),
-    (_, _) => mockDnsConnection,
-    configuredDnsConnections,
+    mockBackendResolver,
     false
   )
 
@@ -91,8 +88,7 @@ class RecordSetServiceSpec
     mockUserRepo,
     mockMessageQueue,
     new AccessValidations(),
-    (_, _) => mockDnsConnection,
-    configuredDnsConnections,
+    mockBackendResolver,
     true
   )
 
@@ -140,7 +136,7 @@ class RecordSetServiceSpec
         .getRecordSets(okZone.id, record.name, record.typ)
 
       doReturn(IO(List(aaaa)))
-        .when(mockDnsConnection)
+        .when(mockBackend)
         .resolve(record.name, okZone.name, record.typ)
 
       val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
@@ -298,7 +294,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSets(okZone.id, record.name, record.typ)
       doReturn(IO(List()))
-        .when(mockDnsConnection)
+        .when(mockBackend)
         .resolve(record.name, okZone.name, record.typ)
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
@@ -653,7 +649,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
       doReturn(IO(List()))
-        .when(mockDnsConnection)
+        .when(mockBackend)
         .resolve(newRecord.name, okZone.name, newRecord.typ)
 
       val result: RecordSetChange = rightResultOf(

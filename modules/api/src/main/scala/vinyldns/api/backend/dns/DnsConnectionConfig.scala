@@ -24,6 +24,6 @@ final case class DnsConnectionConfig(
     zoneConnection: ZoneConnection,
     transferConnection: Option[ZoneConnection]
 ) {
-  def toDnsConnection(crypto: CryptoAlgebra): DnsConnection =
-    DnsConnection.apply(id, zoneConnection, transferConnection, crypto)
+  def toDnsConnection(crypto: CryptoAlgebra): DnsBackend =
+    DnsBackend.apply(id, zoneConnection, transferConnection, crypto)
 }

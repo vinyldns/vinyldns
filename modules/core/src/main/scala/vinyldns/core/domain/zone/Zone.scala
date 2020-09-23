@@ -148,13 +148,13 @@ case class ZoneConnection(name: String, keyName: String, key: String, primarySer
     copy(key = crypto.decrypt(key))
 }
 
-final case class DnsBackend(
+final case class LegacyDnsBackend(
     id: String,
     zoneConnection: ZoneConnection,
     transferConnection: ZoneConnection
 ) {
 
-  def encrypted(crypto: CryptoAlgebra): DnsBackend = copy(
+  def encrypted(crypto: CryptoAlgebra): LegacyDnsBackend = copy(
     zoneConnection = zoneConnection.encrypted(crypto),
     transferConnection = transferConnection.encrypted(crypto)
   )
@@ -163,5 +163,5 @@ final case class DnsBackend(
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
-    dnsBackends: List[DnsBackend]
+    dnsBackends: List[LegacyDnsBackend]
 )

@@ -26,24 +26,28 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS
-import org.xbill.DNS.{Name, ZoneTransferIn}
+import org.xbill.DNS.Name
 import vinyldns.core.domain.record._
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import cats.effect._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
 class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
-  val testZoneName = "vinyldns."
 
-  val testZoneConnection: Option[ZoneConnection] = Some(
+  private val testZoneName = "vinyldns."
+
+  private val testZoneConnection: Option[ZoneConnection] = Some(
     ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
   )
+
+  private val mockBackendResolver = mock[BackendResolver]
+  private val mockBackend = mock[Backend]
 
   private val testZone = Zone("vinyldns.", "test@test.com")
   private val records = List(
@@ -121,8 +125,6 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         transferConnection = testZoneConnection
       )
 
-      val mockTransfer = mock[ZoneTransferIn]
-
       val expectedRecords = List(
         RecordSet(
           zoneId = testZone.id,
@@ -196,12 +198,10 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         )
       )
 
-      doReturn(dnsRecords.asJava).when(mockTransfer).getAXFR
+      doReturn(IO.pure(expectedRecords)).when(mockBackend).loadZone(any[Zone], any[Int])
+      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val mockTransferFunc = mock[Zone => ZoneTransferIn]
-      doReturn(mockTransfer).when(mockTransferFunc).apply(testZone)
-
-      val underTest = DnsZoneViewLoader(testZone, mockTransferFunc)
+      val underTest = DnsZoneViewLoader(testZone, mockBackend, 1000)
 
       val actual = underTest.load().unsafeToFuture()
 
@@ -234,8 +234,6 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         connection = testZoneConnection,
         transferConnection = testZoneConnection
       )
-
-      val mockTransfer = mock[ZoneTransferIn]
 
       val expectedRecords = List(
         RecordSet(
@@ -346,12 +344,10 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
         )
       )
 
-      doReturn(dnsRecords.asJava).when(mockTransfer).getAXFR
+      doReturn(IO.pure(expectedRecords)).when(mockBackend).loadZone(any[Zone], any[Int])
+      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val mockTransferFunc = mock[Zone => ZoneTransferIn]
-      doReturn(mockTransfer).when(mockTransferFunc).apply(testZone)
-
-      val underTest = DnsZoneViewLoader(testZone, mockTransferFunc)
+      val underTest = DnsZoneViewLoader(testZone, mockBackend, 1000)
 
       val actual = underTest.load().unsafeToFuture()
 

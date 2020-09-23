@@ -26,7 +26,7 @@ import vinyldns.api.engine.{
   ZoneChangeHandler,
   ZoneSyncHandler
 }
-import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
@@ -50,14 +50,14 @@ object CommandHandler {
 
   def mainFlow(
       zoneChangeHandler: ZoneChange => IO[ZoneChange],
-      recordChangeHandler: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
+      recordChangeHandler: (Backend, RecordSetChange) => IO[RecordSetChange],
       zoneSyncHandler: ZoneChange => IO[ZoneChange],
       batchChangeHandler: BatchChangeCommand => IO[Option[BatchChange]],
       mq: MessageQueue,
       count: MessageCount,
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
-      backendRegistry: BackendRegistry,
+      backendResolver: BackendResolver,
       maxOpen: Int = 4
   )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
@@ -73,7 +73,7 @@ object CommandHandler {
         recordChangeHandler,
         zoneSyncHandler,
         batchChangeHandler,
-        backendRegistry
+        backendResolver
       )
 
     // Delete messages from message queue when complete
@@ -145,10 +145,10 @@ object CommandHandler {
   /* Actually processes a change request */
   def processChangeRequests(
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
-      recordChangeProcessor: (BackendConnection, RecordSetChange) => IO[RecordSetChange],
+      recordChangeProcessor: (Backend, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
       batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
-      backendRegistry: BackendRegistry
+      backendResolver: BackendResolver
   ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
@@ -160,7 +160,7 @@ object CommandHandler {
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
 
         case rcr: RecordSetChange =>
-          outcomeOf(message)(recordChangeProcessor(backendRegistry.connectTo(rcr.zone), rcr))
+          outcomeOf(message)(recordChangeProcessor(backendResolver.resolve(rcr.zone), rcr))
 
         case bcc: BatchChangeCommand =>
           outcomeOf(message)(batchChangeProcessor(bcc))
@@ -204,7 +204,7 @@ object CommandHandler {
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
       notifiers: AllNotifiers,
-      backendRegistry: BackendRegistry
+      backendResolver: BackendResolver
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
@@ -212,7 +212,7 @@ object CommandHandler {
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =
-      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo, backendRegistry)
+      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo, backendResolver)
     val batchChangeHandler =
       BatchChangeHandler(batchChangeRepo, notifiers)
 
@@ -226,7 +226,7 @@ object CommandHandler {
         msgsPerPoll,
         pollingInterval,
         processingSignal,
-        backendRegistry
+        backendResolver
       )
       .compile
       .drain

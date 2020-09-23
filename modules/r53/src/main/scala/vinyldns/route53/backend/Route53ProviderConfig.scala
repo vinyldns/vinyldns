@@ -23,18 +23,18 @@ import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax.CatsEffectConfigSource
 
 // TODO: Add delegation set id and VPC options especially wrt CreateZone
-final case class Route53ConnectionConfig(
+final case class Route53BackendConfig(
     id: String,
     accessKey: String,
     secretKey: String,
     serviceEndpoint: String,
     signingRegion: String
 )
-final case class Route53BackendConfig(connections: List[Route53ConnectionConfig])
-object Route53BackendConfig {
+final case class Route53ProviderConfig(connections: List[Route53BackendConfig])
+object Route53ProviderConfig {
 
-  def load(config: Config)(implicit cs: ContextShift[IO]): IO[Route53BackendConfig] =
+  def load(config: Config)(implicit cs: ContextShift[IO]): IO[Route53ProviderConfig] =
     Blocker[IO].use(
-      ConfigSource.fromConfig(config).loadF[IO, Route53BackendConfig](_)
+      ConfigSource.fromConfig(config).loadF[IO, Route53ProviderConfig](_)
     )
 }

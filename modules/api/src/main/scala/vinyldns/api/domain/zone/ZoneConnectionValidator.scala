@@ -18,11 +18,10 @@ package vinyldns.api.domain.zone
 
 import cats.effect._
 import cats.syntax.all._
-import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.domain.backend.{BackendConnection, BackendRegistry}
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
+import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
 
 import scala.concurrent.duration._
@@ -32,12 +31,7 @@ trait ZoneConnectionValidatorAlgebra {
   def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit]
 }
 
-object ZoneConnectionValidator {
-
-  val logger: Logger = LoggerFactory.getLogger(classOf[ZoneConnectionValidator])
-}
-
-class ZoneConnectionValidator(backendRegistry: BackendRegistry)
+class ZoneConnectionValidator(backendResolver: BackendResolver)
     extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
@@ -46,7 +40,7 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
   val opTimeout: FiniteDuration = 60.seconds
 
   def loadDns(zone: Zone): IO[ZoneView] =
-    DnsZoneViewLoader(zone, backendRegistry.connectTo(zone)).load()
+    DnsZoneViewLoader(zone, backendResolver.resolve(zone)).load()
 
   def hasApexNS(zoneView: ZoneView): Result[Unit] = {
     val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {
@@ -68,8 +62,8 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
       .toResult
   }
 
-  def getBackendConnection(zone: Zone): Result[BackendConnection] =
-    backendRegistry.connectTo(zone).toResult
+  def getBackendConnection(zone: Zone): Result[Backend] =
+    backendResolver.resolve(zone).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
@@ -78,14 +72,14 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
       ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid")
     )
 
-  def zoneExists(zone: Zone, connection: BackendConnection): Result[Unit] = {
+  def zoneExists(zone: Zone, connection: Backend): Result[Unit] =
     connection
       .zoneExists(zone)
       .ifM(
         IO(Right(())),
         IO(Left(ConnectionFailed(zone, "SOA Record for zone not found")))
-      ).toResult
-  }
+      )
+      .toResult
 
   def validateZoneConnections(zone: Zone): Result[Unit] = {
     val result =
@@ -105,6 +99,6 @@ class ZoneConnectionValidator(backendRegistry: BackendRegistry)
 
   def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
     ensuring(InvalidRequest(s"Invalid backendId: [$backendId]; please check system configuration")) {
-      backendId.forall(id => backendRegistry.isRegistered(id))
+      backendId.forall(id => backendResolver.isRegistered(id))
     }
 }

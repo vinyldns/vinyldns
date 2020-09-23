@@ -34,7 +34,7 @@ case class CurrentStatus(
 
 object CurrentStatus {
   val color = VinylDNSConfig.vinyldnsConfig.getString("color")
-  val vinyldnsKeyName = "unknown"
+  val vinyldnsKeyName = "vinyldns."
   val version = VinylDNSConfig.vinyldnsConfig.getString("version")
 }
 

@@ -19,10 +19,10 @@ package vinyldns.api.engine
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
-import vinyldns.api.backend.dns.DnsProtocol.{Refused, TryAgain}
+import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
-import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
+import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
@@ -39,7 +39,7 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository
-  )(implicit timer: Timer[IO]): (BackendConnection, RecordSetChange) => IO[RecordSetChange] =
+  )(implicit timer: Timer[IO]): (Backend, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
@@ -54,7 +54,7 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
-      conn: BackendConnection,
+      conn: Backend,
       recordSetChange: RecordSetChange
   )(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
@@ -124,7 +124,7 @@ object RecordSetChangeHandler {
 
   def syncAndGetProcessingStatusFromDnsBackend(
       change: RecordSetChange,
-      conn: BackendConnection,
+      conn: Backend,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       performSync: Boolean = false
@@ -189,7 +189,7 @@ object RecordSetChangeHandler {
 
   private def fsm(
       state: ProcessorState,
-      conn: BackendConnection,
+      conn: Backend,
       wildcardExists: Boolean,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository
@@ -310,7 +310,7 @@ object RecordSetChangeHandler {
   /* Step 1: Validate the change hasn't already been applied */
   private def validate(
       change: RecordSetChange,
-      conn: BackendConnection,
+      conn: Backend,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository
   ): IO[ProcessorState] =
@@ -333,7 +333,7 @@ object RecordSetChangeHandler {
     }
 
   /* Step 2: Apply the change to the dns backend */
-  private def apply(change: RecordSetChange, conn: BackendConnection): IO[ProcessorState] =
+  private def apply(change: RecordSetChange, conn: Backend): IO[ProcessorState] =
     conn.applyChange(change).attempt.map {
       case Right(BackendResponse.Retry(_)) =>
         Retrying(change)
@@ -350,7 +350,7 @@ object RecordSetChangeHandler {
   /* Step 3: Verify the record was created. If the ProcessorState is applied or failed we requeue the record.*/
   private def verify(
       change: RecordSetChange,
-      conn: BackendConnection,
+      conn: Backend,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository
   ): IO[ProcessorState] =

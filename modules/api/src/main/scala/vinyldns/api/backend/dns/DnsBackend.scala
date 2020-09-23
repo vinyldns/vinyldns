@@ -18,13 +18,13 @@ package vinyldns.api.backend.dns
 
 import java.net.SocketAddress
 
-import cats.data.OptionT
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
+import vinyldns.api.domain.zone.ZoneTooLargeError
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.backend.{BackendConnection, BackendResponse}
+import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
@@ -90,13 +90,13 @@ class DnsQuery(val lookup: DNS.Lookup, val zoneName: DNS.Name) {
 
 final case class TransferInfo(address: SocketAddress, tsig: DNS.TSIG)
 
-class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: TransferInfo)
-    extends BackendConnection
+class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: TransferInfo)
+    extends Backend
     with DnsConversions {
 
   import DnsProtocol._
 
-  val logger: Logger = LoggerFactory.getLogger(classOf[DnsConnection])
+  val logger: Logger = LoggerFactory.getLogger(classOf[DnsBackend])
 
   def applyChange(change: RecordSetChange): IO[BackendResponse] = {
     change.changeType match {
@@ -104,10 +104,10 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
       case RecordSetChangeType.Update => updateRecord(change)
       case RecordSetChangeType.Delete => deleteRecord(change)
     }
-  }.flatMap {
-    case Refused(msg) => IO(BackendResponse.Retry(msg))
-    case NoError(msg) => IO(BackendResponse.NoError(msg.toString))
-    case fail: DnsFailure => IO.raiseError(fail)
+  }.attempt.flatMap {
+    case Left(DnsProtocol.Refused(msg)) => IO(BackendResponse.Retry(msg))
+    case Right(DnsProtocol.NoError(msg)) => IO(BackendResponse.NoError(msg.toString))
+    case Left(otherFailure) => IO.raiseError(otherFailure)
   }
 
   def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] =
@@ -132,7 +132,7 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
       )
       _ <- if (rawDnsRecords.length > maxZoneSize) {
         IO.raiseError(
-          new RuntimeException(
+          ZoneTooLargeError(
             s"Zone too large ${zone.name}, ${rawDnsRecords.length} records exceeded max $maxZoneSize"
           )
         )
@@ -144,16 +144,14 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
     } yield recordSets
   }
 
-
   /**
-   * Indicates if the zone is present in the backend
-   *
-   * @param zone The zone to check if exists
-   * @return true if it exists; false otherwise
-   */
-  def zoneExists(zone: Zone): IO[Boolean] = {
+    * Indicates if the zone is present in the backend
+    *
+    * @param zone The zone to check if exists
+    * @return true if it exists; false otherwise
+    */
+  def zoneExists(zone: Zone): IO[Boolean] =
     resolve(zone.name, zone.name, RecordType.SOA).map(_.nonEmpty)
-  }
 
   private[dns] def toQuery(
       name: String,
@@ -249,16 +247,17 @@ class DnsConnection(val id: String, val resolver: DNS.SimpleResolver, val xfrInf
   }
 }
 
-object DnsConnection {
+object DnsBackend {
 
   def apply(
       id: String,
       conn: ZoneConnection,
       xfrConn: Option[ZoneConnection],
       crypto: CryptoAlgebra
-  ): DnsConnection = {
+  ): DnsBackend = {
     val tsig = createTsig(conn, crypto)
     val resolver = createResolver(conn, tsig)
+
     val xfrInfo = xfrConn
       .map { xc =>
         val xt = createTsig(xc, crypto)
@@ -266,7 +265,7 @@ object DnsConnection {
         TransferInfo(xr.getAddress, xt)
       }
       .getOrElse(TransferInfo(resolver.getAddress, tsig))
-    new DnsConnection(id, resolver, xfrInfo)
+    new DnsBackend(id, resolver, xfrInfo)
   }
 
   def createResolver(conn: ZoneConnection, tsig: DNS.TSIG): DNS.SimpleResolver = {

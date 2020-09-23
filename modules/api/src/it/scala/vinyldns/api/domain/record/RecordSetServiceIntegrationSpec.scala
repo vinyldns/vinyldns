@@ -25,7 +25,6 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
-import vinyldns.api.backend.dns.DnsConnection
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
@@ -33,6 +32,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -223,13 +223,8 @@ class RecordSetServiceIntegrationSpec
     ownerGroupId = Some(sharedGroup.id)
   )
 
-  private val zoneConnection =
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
-
-  private val configuredConnections =
-    ConfiguredDnsConnections(zoneConnection, zoneConnection, List())
-
-  private val mockDnsConnection = mock[DnsConnection]
+  private val mockBackendResolver = mock[BackendResolver]
+  private val mockBackend = mock[Backend]
 
   def setup(): Unit = {
     recordSetRepo =
@@ -265,8 +260,7 @@ class RecordSetServiceIntegrationSpec
       mock[UserRepository],
       TestMessageQueue,
       new AccessValidations(),
-      (_, _) => mockDnsConnection,
-      configuredConnections,
+      mockBackendResolver,
       false
     )
   }
@@ -383,7 +377,7 @@ class RecordSetServiceIntegrationSpec
       val newRecord = apexTestRecordNameConflict.copy(name = "zone-test-name-conflicts")
 
       doReturn(IO(List(newRecord)))
-        .when(mockDnsConnection)
+        .when(mockBackend)
         .resolve(
           zoneTestNameConflicts.name,
           zoneTestNameConflicts.name,
@@ -405,7 +399,7 @@ class RecordSetServiceIntegrationSpec
       val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict.")
 
       doReturn(IO(List(newRecord)))
-        .when(mockDnsConnection)
+        .when(mockBackend)
         .resolve(newRecord.name, zoneTestNameConflicts.name, newRecord.typ)
 
       val result =

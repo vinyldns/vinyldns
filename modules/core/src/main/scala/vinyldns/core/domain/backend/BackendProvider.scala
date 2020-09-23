@@ -16,24 +16,31 @@
 
 package vinyldns.core.domain.backend
 
-import cats.effect.IO
+import vinyldns.core.domain.zone.Zone
 
 /**
-  * To be implemented by other DNS Backend providers.  This handles the loading of the backend config,
-  * typically comprised of multiple connections.
-  *
-  * All takes place inside IO, allowing implementers to do anything they need to ready the backend
-  * for integration with VinylDNS
+  * Implemented by each provider, provides a means of looking up a `BackendConnection`
+  * as well as showing which backend ids are registered on this provider
   */
 trait BackendProvider {
 
   /**
-    * Loads a backend based on the provided config so that it is ready to use
-    * This is internally used typically during startup
+    * Given a zone, returns a connection to the zone, returns None if cannot connect
     *
-    * @param config The BackendConfig, has settings that are specific to this backend
-    *
-    * @return A ready-to-use Backend instance, or does an IO.raiseError if something bad occurred.
+    * @param zone The zone to attempt to connect to
+    * @return A backend that is usable, or None if it could not connect
     */
-  def load(config: BackendConfig): IO[Backend]
+  def connect(zone: Zone): Option[Backend]
+
+  /**
+    * Given a backend id, looks up the backend for this provider if it exists
+    *
+    * @return A backend that is usable, or None if could not connect
+    */
+  def connectById(backendId: String): Option[Backend]
+
+  /**
+    * @return The backend ids loaded with this provider
+    */
+  def ids: List[String]
 }

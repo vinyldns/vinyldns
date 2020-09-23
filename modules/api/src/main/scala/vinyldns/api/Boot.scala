@@ -37,7 +37,7 @@ import vinyldns.api.metrics.APIMetrics
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
-import vinyldns.core.domain.backend.{BackendConfigs, BackendRegistry}
+import vinyldns.core.domain.backend.{BackendConfigs, BackendResolver}
 import vinyldns.core.health.HealthService
 import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
@@ -75,7 +75,7 @@ object Boot extends App {
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
       repositories = loaderResponse.accessor
       backendConfigs <- BackendConfigs.load(VinylDNSConfig.apiBackend)
-      backendRegistry <- BackendRegistry.apply(backendConfigs)
+      backendResolver <- BackendResolver.apply(backendConfigs)
       _ <- TestDataLoader
         .loadTestData(
           repositories.userRepository,
@@ -110,7 +110,7 @@ object Boot extends App {
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
           notifiers,
-          backendRegistry
+          backendResolver
         )
         .start
     } yield {
@@ -124,13 +124,13 @@ object Boot extends App {
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(backendRegistry)
+        new ZoneConnectionValidator(backendResolver)
       val recordSetService =
         RecordSetService(
           repositories,
           messageQueue,
           recordAccessValidations,
-          backendRegistry,
+          backendResolver,
           VinylDNSConfig.validateRecordLookupAgainstDnsBackend
         )
       val zoneService = ZoneService(
@@ -139,10 +139,10 @@ object Boot extends App {
         messageQueue,
         zoneValidations,
         recordAccessValidations,
-        backendRegistry
+        backendResolver
       )
       val healthService = new HealthService(
-        messageQueue.healthCheck :: backendRegistry.healthCheck(healthCheckTimeout) ::
+        messageQueue.healthCheck :: backendResolver.healthCheck(healthCheckTimeout) ::
           loaderResponse.healthChecks
       )
       val batchChangeConverter =
