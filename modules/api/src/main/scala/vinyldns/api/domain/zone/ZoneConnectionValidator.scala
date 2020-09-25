@@ -77,7 +77,7 @@ class ZoneConnectionValidator(backendResolver: BackendResolver)
       .zoneExists(zone)
       .ifM(
         IO(Right(())),
-        IO(Left(ConnectionFailed(zone, "SOA Record for zone not found")))
+        IO(Left(ConnectionFailed(zone, "Unable to find zone")))
       )
       .toResult
 
