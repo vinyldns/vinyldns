@@ -72,12 +72,12 @@ class ZoneConnectionValidator(backendResolver: BackendResolver)
       ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid")
     )
 
-  def zoneExists(zone: Zone, connection: Backend): Result[Unit] =
-    connection
+  def zoneExists(zone: Zone, backend: Backend): Result[Unit] =
+    backend
       .zoneExists(zone)
       .ifM(
         IO(Right(())),
-        IO(Left(ConnectionFailed(zone, "Unable to find zone")))
+        IO(Left(ConnectionFailed(zone, s"Unable to find zone ${zone.name} in backend ${backend.id}")))
       )
       .toResult
 
