@@ -15,6 +15,9 @@ This document is organized by priority / planned release timeframes.  Reading to
 - **Global ACL Rules** - allows override on Shared / Record ownership
 - **Global record search** - allows users to search for records across zones
 
+## In Progress
+- **Backend Providers** - allow connectivity to DNS backends _other_ than DDNS, e.g. AWS Route 53.  This will allow VinylDNS to extend its governance even out to cloud providers or other proprietary backends.  Note: this is the first, but significant, step to Zone Management.
+
 ## Next up?
 
 We are currently reviewing our roadmap.  Some of the features we have discussed are below.  If you have features you would like to contribute, drop us a line!
