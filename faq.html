@@ -26,10 +26,9 @@ of your zone. This ID is also present in the URL (if on that page it’s the ID 
 <p>To create a record with the same name as your zone, you have to use the special
 <code class="highlighter-rouge">@</code> character for the record name when you create your record set.</p>
 
-<blockquote>
-  <p>You cannot create CNAME records with <em>@</em> as those are not supported.  All other
-record types should be fine using the <em>@</em> symbol</p>
-</blockquote>
+<p>You cannot create CNAME records with <em>@</em> as those are not supported.  While some DNS services like 
+Route 53 support an ALIAS record type that <em>does</em> support a CNAME style <em>@</em>, ALIAS are not an official standard yet.<br />
+All other record types should be fine using the <em>@</em> symbol.</p>
 
 <h3 id="4-when-i-try-to-connect-to-my-zone-i-am-seeing-refused-">4. When I try to connect to my zone, I am seeing REFUSED <a id="4"></a></h3>
 <p>When VinylDNS connects to a zone, it first validates that the zone is suitable
