@@ -18,7 +18,7 @@ package vinyldns.api.notifier.email
 
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.notifier._
-import vinyldns.api.MySqlApiIntegrationSpec
+import vinyldns.api.{MySqlApiIntegrationSpec, SkipCI}
 import vinyldns.mysql.MySqlIntegrationSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -28,7 +28,9 @@ import vinyldns.core.domain.record.AData
 import org.joda.time.DateTime
 import vinyldns.core.TestMembershipData._
 import java.nio.file.{Files, Path, Paths}
+
 import cats.effect.{IO, Resource}
+
 import scala.collection.JavaConverters._
 import org.scalatest.BeforeAndAfterEach
 import cats.implicits._
@@ -54,7 +56,7 @@ class EmailNotifierIntegrationSpec
 
   "Email Notifier" should {
 
-    "send an email" in {
+    "send an email" taggedAs (SkipCI) in {
       val batchChange = BatchChange(
         okUser.id,
         okUser.userName,

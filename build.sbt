@@ -47,7 +47,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := true,
-  testOptions in Test += Tests.Argument("-oDNCXEPQRMIK"),
+  testOptions in Test += Tests.Argument("-oDNCXEPQRMIK", "-l", "SkipCI"),
   logBuffered in Test := false,
   // Hide stack traces in tests
   traceLevel in Test := -1,
