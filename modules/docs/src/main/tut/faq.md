@@ -32,8 +32,9 @@ of your zone. This ID is also present in the URL (if on that page it’s the ID 
 To create a record with the same name as your zone, you have to use the special
 `@` character for the record name when you create your record set.
 
-> You cannot create CNAME records with *@* as those are not supported.  All other
-record types should be fine using the *@* symbol
+You cannot create CNAME records with *@* as those are not supported.  While some DNS services like 
+Route 53 support an ALIAS record type that _does_ support a CNAME style *@*, ALIAS are not an official standard yet.  
+All other record types should be fine using the *@* symbol.
 
 ### 4. When I try to connect to my zone, I am seeing REFUSED <a id="4"></a>
 When VinylDNS connects to a zone, it first validates that the zone is suitable
