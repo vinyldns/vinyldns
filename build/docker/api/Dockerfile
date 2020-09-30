@@ -1,4 +1,4 @@
-FROM hseeberger/scala-sbt:11.0.7_1.3.10_2.11.12
+FROM hseeberger/scala-sbt:11.0.8_1.3.13_2.11.12 as builder
 
 ARG BRANCH=master
 ARG VINYLDNS_VERSION
@@ -10,7 +10,7 @@ COPY .jvmopts /vinyldns
 
 RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" api/stage
 
-FROM adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine
+FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
 
 RUN apk add --update --no-cache netcat-openbsd bash
 
