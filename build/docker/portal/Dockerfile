@@ -1,4 +1,4 @@
-FROM hseeberger/scala-sbt:11.0.7_1.3.10_2.11.12 as builder
+FROM hseeberger/scala-sbt:11.0.8_1.3.13_2.11.12 as builder
 
 ARG BRANCH=master
 ARG VINYLDNS_VERSION
@@ -14,13 +14,13 @@ RUN apt-get update \
     apt-transport-https \
     curl \
     gnupg \
-    && curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g grunt-cli
 
 RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
 
-FROM adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine
+FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
 
 RUN apk add --update --no-cache netcat-openbsd bash
 
