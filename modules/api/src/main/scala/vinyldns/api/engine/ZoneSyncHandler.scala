@@ -20,8 +20,9 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.domain.dns.DnsConversions
+import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
+import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 import vinyldns.core.route.Monitored
@@ -43,7 +44,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       recordChangeRepository: RecordChangeRepository,
       zoneChangeRepository: ZoneChangeRepository,
       zoneRepository: ZoneRepository,
-      dnsLoader: Zone => DnsZoneViewLoader = DnsZoneViewLoader.apply,
+      backendResolver: BackendResolver,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): ZoneChange => IO[ZoneChange] =
@@ -55,7 +56,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
           recordSetRepository,
           recordChangeRepository,
           zoneChange,
-          dnsLoader,
+          backendResolver,
           vinyldnsLoader
         )
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // final save to store zone status
@@ -83,18 +84,18 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       zoneChange: ZoneChange,
-      dnsLoader: Zone => DnsZoneViewLoader = DnsZoneViewLoader.apply,
+      backendResolver: BackendResolver,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): IO[ZoneChange] =
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
-
+        val dnsLoader = DnsZoneViewLoader(zone, backendResolver.resolve(zone))
         val dnsView =
           time(
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
-          )(dnsLoader(zone).load())
+          )(dnsLoader.load())
         val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
           vinyldnsLoader(zone, recordSetRepository).load()
         )

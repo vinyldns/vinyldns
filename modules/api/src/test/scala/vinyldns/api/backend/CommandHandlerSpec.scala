@@ -21,20 +21,21 @@ import fs2._
 import org.mockito
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.mockito.{ArgumentCaptor, Mockito}
+import org.mockito.Mockito
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
-import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.backend.dns.DnsBackend
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -66,19 +67,17 @@ class CommandHandlerSpec
 
   private val mockZoneChangeProcessor = mock[ZoneChange => IO[ZoneChange]]
   private val mockRecordChangeProcessor =
-    mock[(DnsConnection, RecordSetChange) => IO[RecordSetChange]]
+    mock[(Backend, RecordSetChange) => IO[RecordSetChange]]
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
   private val mockBatchChangeProcessor = mock[BatchChangeCommand => IO[Option[BatchChange]]]
-  private val defaultConn =
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
-  private val connections = ConfiguredDnsConnections(defaultConn, defaultConn, List())
+  private val mockBackendResolver = mock[BackendResolver]
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
       mockRecordChangeProcessor,
       mockZoneSyncProcessor,
       mockBatchChangeProcessor,
-      connections
+      mockBackendResolver
     )
 
   override protected def beforeEach(): Unit =
@@ -219,36 +218,11 @@ class CommandHandlerSpec
       val change = TestCommandMessage(pendingCreateAAAA, "foo")
       doReturn(IO.pure(change))
         .when(mockRecordChangeProcessor)
-        .apply(any[DnsConnection], any[RecordSetChange])
+        .apply(any[DnsBackend], any[RecordSetChange])
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
-      verify(mockRecordChangeProcessor).apply(any[DnsConnection], any[RecordSetChange])
+      verify(mockRecordChangeProcessor).apply(any[DnsBackend], any[RecordSetChange])
       verifyZeroInteractions(mockZoneSyncProcessor)
       verifyZeroInteractions(mockZoneChangeProcessor)
-    }
-    "use the default zone connection when the change zone connection is not defined" in {
-      val noConnChange =
-        pendingCreateAAAA.copy(
-          zone = pendingCreateAAAA.zone.copy(connection = None, transferConnection = None)
-        )
-      val default = defaultConn.copy(primaryServer = "default.conn.test.com")
-      val defaultConnProcessor =
-        CommandHandler.processChangeRequests(
-          mockZoneChangeProcessor,
-          mockRecordChangeProcessor,
-          mockZoneSyncProcessor,
-          mockBatchChangeProcessor,
-          ConfiguredDnsConnections(default, default, List())
-        )
-      val change = TestCommandMessage(noConnChange, "foo")
-      doReturn(IO.pure(change))
-        .when(mockRecordChangeProcessor)
-        .apply(any[DnsConnection], any[RecordSetChange])
-      Stream.emit(change).covary[IO].through(defaultConnProcessor).compile.drain.unsafeRunSync()
-
-      val connCaptor = ArgumentCaptor.forClass(classOf[DnsConnection])
-      verify(mockRecordChangeProcessor).apply(connCaptor.capture(), any[RecordSetChange])
-      val resolver = connCaptor.getValue.resolver
-      resolver.getAddress.getHostName shouldBe default.primaryServer
     }
     "handle zone creates" in {
       val change = TestCommandMessage(zoneCreate, "foo")
@@ -305,7 +279,11 @@ class CommandHandlerSpec
       // stage our record change processing
       doReturn(IO.pure(cmd))
         .when(mockRecordChangeProcessor)
-        .apply(any[DnsConnection], any[RecordSetChange])
+        .apply(any[Backend], any[RecordSetChange])
+
+      doReturn(mock[Backend])
+        .when(mockBackendResolver)
+        .resolve(any[Zone])
 
       // stage removing from the queue
       doReturn(IO.unit).when(mq).remove(cmd)
@@ -321,7 +299,7 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            connections,
+            mockBackendResolver,
             1
           )
           .take(1)
@@ -332,7 +310,7 @@ class CommandHandlerSpec
       // verify our interactions
       verify(mq, atLeastOnce()).receive(count)
       verify(mockRecordChangeProcessor)
-        .apply(any[DnsConnection], mockito.Matchers.eq(pendingCreateAAAA))
+        .apply(any[DnsBackend], mockito.Matchers.eq(pendingCreateAAAA))
       verify(mq).remove(cmd)
     }
     "continue processing on unexpected failure" in {
@@ -348,7 +326,11 @@ class CommandHandlerSpec
       // stage our record change processing our command
       doReturn(IO.pure(cmd.command))
         .when(mockRecordChangeProcessor)
-        .apply(any[DnsConnection], any[RecordSetChange])
+        .apply(any[Backend], any[RecordSetChange])
+
+      doReturn(mock[Backend])
+        .when(mockBackendResolver)
+        .resolve(any[Zone])
 
       // stage removing from the queue
       doReturn(IO.unit).when(mq).remove(cmd)
@@ -364,7 +346,7 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            connections
+            mockBackendResolver
           )
           .take(1)
 
@@ -403,6 +385,9 @@ class CommandHandlerSpec
         .receive(count)
 
       // stage processing for a zone update, the simplest of cases
+      doReturn(mock[Backend])
+        .when(mockBackendResolver)
+        .resolve(any[Zone])
       doReturn(IO.pure(Right(zoneUpdate.zone))).when(zoneRepo).save(zoneUpdate.zone)
       doReturn(IO.pure(zoneUpdate)).when(zoneChangeRepo).save(any[ZoneChange])
 
@@ -422,7 +407,7 @@ class CommandHandlerSpec
             recordChangeRepo,
             batchChangeRepo,
             AllNotifiers(List.empty),
-            connections
+            mockBackendResolver
           )
 
       // kick off processing of messages

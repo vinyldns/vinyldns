@@ -31,8 +31,9 @@ services:
     ports:
       - "19006:19006"
       - "19007:19007"
+      - "19009:19009"
     environment:
-      - SERVICES=sns:19006,sqs:19007
+      - SERVICES=sns:19006,sqs:19007,route53:19009
       - START_WEB=0
 
   mail:

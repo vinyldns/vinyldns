@@ -16,8 +16,10 @@
 
 package vinyldns.api.domain.zone
 
+import cats.data.NonEmptyList
 import cats.effect._
 import org.joda.time.DateTime
+import org.mockito.Mockito.doReturn
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -33,6 +35,7 @@ import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -93,6 +96,8 @@ class ZoneServiceIntegrationSpec
   private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, okZone))
   private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, okZone))
 
+  private val mockBackendResolver = mock[BackendResolver]
+
   def clearRecordSetRepo(): Unit =
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM recordset")
@@ -113,6 +118,8 @@ class ZoneServiceIntegrationSpec
     waitForSuccess(recordSetRepo.apply(changeSetNS))
     waitForSuccess(recordSetRepo.apply(changeSetA))
 
+    doReturn(NonEmptyList.one("func-test-backend")).when(mockBackendResolver).ids
+
     testZoneService = new ZoneService(
       zoneRepo,
       mock[GroupRepository],
@@ -121,7 +128,8 @@ class ZoneServiceIntegrationSpec
       mock[ZoneConnectionValidator],
       TestMessageQueue,
       new ZoneValidations(1000),
-      new AccessValidations()
+      new AccessValidations(),
+      mockBackendResolver
     )
   }
 

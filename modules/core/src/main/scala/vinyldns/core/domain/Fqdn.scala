@@ -19,6 +19,13 @@ package vinyldns.core.domain
 import DomainHelpers.{ensureTrailingDot, removeWhitespace}
 
 case class Fqdn(fqdn: String) {
+
+  // Everything up to the first dot / period
+  def firstLabel: String = fqdn.substring(0, fqdn.indexOf('.'))
+
+  // Everything up to the first dot, includes the dot to make it absolute
+  def firstLabelAbsolute: String = fqdn.substring(0, fqdn.indexOf('.') + 1)
+
   override def equals(obj: Any): Boolean =
     obj match {
       case Fqdn(otherFqdn) => otherFqdn.toLowerCase == fqdn.toLowerCase
@@ -31,4 +38,22 @@ case class Fqdn(fqdn: String) {
 case object Fqdn {
   def apply(fqdn: String): Fqdn =
     new Fqdn(ensureTrailingDot(removeWhitespace(fqdn)))
+
+  // Combines record name and zone name to create a valid fqdn
+  def merge(recordName: String, zoneName: String): Fqdn = {
+    def dropTrailingDot(value: String): String =
+      if (value.endsWith(".")) value.dropRight(1) else value
+
+    val rname = dropTrailingDot(recordName)
+    val zname = dropTrailingDot(zoneName)
+
+    val zIndex = rname.lastIndexOf(zname)
+    if (zIndex > 0) {
+      // zone name already there, or record name = zone name, so just return
+      Fqdn(rname + ".")
+    } else {
+      // zone name not in record name so combine
+      Fqdn(s"$rname.$zname.")
+    }
+  }
 }

@@ -19,8 +19,8 @@ package vinyldns.api.domain.record
 import java.util.UUID
 
 import org.joda.time.DateTime
+import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record._
 

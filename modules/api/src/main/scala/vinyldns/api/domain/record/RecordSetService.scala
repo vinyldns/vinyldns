@@ -23,25 +23,24 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneCommandResult, ZoneRepository}
+import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
-import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.backend.{Backend, BackendResolver}
 
 object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
       accessValidation: AccessValidationsAlgebra,
-      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-      configuredDnsConnections: ConfiguredDnsConnections,
+      backendResolver: BackendResolver,
       validateRecordLookupAgainstDnsBackend: Boolean
   ): RecordSetService =
     new RecordSetService(
@@ -52,8 +51,7 @@ object RecordSetService {
       dataAccessor.userRepository,
       messageQueue,
       accessValidation,
-      dnsConnection,
-      configuredDnsConnections,
+      backendResolver,
       validateRecordLookupAgainstDnsBackend
     )
 }
@@ -66,8 +64,7 @@ class RecordSetService(
     userRepository: UserRepository,
     messageQueue: MessageQueue,
     accessValidation: AccessValidationsAlgebra,
-    dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-    configuredDnsConnections: ConfiguredDnsConnections,
+    backendResolver: BackendResolver,
     validateRecordLookupAgainstDnsBackend: Boolean
 ) extends RecordSetServiceAlgebra {
 
@@ -82,8 +79,7 @@ class RecordSetService(
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- recordSetDoesNotExist(
-        dnsConnection,
-        configuredDnsConnections,
+        backendResolver.resolve,
         zone,
         rsForValidations,
         validateRecordLookupAgainstDnsBackend
@@ -120,8 +116,7 @@ class RecordSetService(
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
       _ <- isUniqueUpdate(
-        dnsConnection,
-        configuredDnsConnections,
+        backendResolver.resolve,
         rsForValidations,
         existingRecordsWithName,
         zone,
@@ -375,8 +370,7 @@ class RecordSetService(
   }
 
   def recordSetDoesNotExist(
-      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-      configuredDnsConnections: ConfiguredDnsConnections,
+      backendConnection: Zone => Backend,
       zone: Zone,
       recordSet: RecordSet,
       validateRecordLookupAgainstDnsBackend: Boolean
@@ -384,9 +378,9 @@ class RecordSetService(
     recordSetDoesNotExistInDatabase(recordSet, zone).value.flatMap {
       case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
           if validateRecordLookupAgainstDnsBackend =>
-        dnsConnection(zone, configuredDnsConnections)
+        backendConnection(zone)
           .resolve(recordSet.name, zone.name, recordSet.typ)
-          .value
+          .attempt
           .map {
             case Right(existingRecords) =>
               if (existingRecords.isEmpty) Right(())
@@ -397,8 +391,7 @@ class RecordSetService(
     }.toResult
 
   def isUniqueUpdate(
-      dnsConnection: (Zone, ConfiguredDnsConnections) => DnsConnection,
-      configuredDnsConnections: ConfiguredDnsConnections,
+      backendConnection: Zone => Backend,
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
@@ -408,9 +401,9 @@ class RecordSetService(
       .recordSetDoesNotExist(newRecordSet, existingRecordsWithName, zone) match {
       case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
           if validateRecordLookupAgainstDnsBackend =>
-        dnsConnection(zone, configuredDnsConnections)
+        backendConnection(zone)
           .resolve(newRecordSet.name, zone.name, newRecordSet.typ)
-          .value
+          .attempt
           .map {
             case Right(existingRecords) =>
               if (existingRecords.isEmpty) Right(())

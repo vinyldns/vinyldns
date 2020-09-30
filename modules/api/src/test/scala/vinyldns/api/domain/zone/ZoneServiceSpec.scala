@@ -34,6 +34,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.backend.BackendResolver
 
 import scala.concurrent.duration._
 
@@ -50,6 +51,7 @@ class ZoneServiceSpec
   private val mockUserRepo = mock[UserRepository]
   private val mockZoneChangeRepo = mock[ZoneChangeRepository]
   private val mockMessageQueue = mock[MessageQueue]
+  private val mockBackendResolver = mock[BackendResolver]
   private val badConnection = ZoneConnection("bad", "bad", "bad", "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name, AccessLevel.Delete)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name, AccessLevel.NoAccess)
@@ -76,7 +78,8 @@ class ZoneServiceSpec
     TestConnectionValidator,
     mockMessageQueue,
     new ZoneValidations(1000),
-    new AccessValidations()
+    new AccessValidations(),
+    mockBackendResolver
   )
 
   private val createZoneAuthorized = CreateZoneInput(

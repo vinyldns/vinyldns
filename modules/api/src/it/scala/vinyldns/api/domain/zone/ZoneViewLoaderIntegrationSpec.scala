@@ -16,46 +16,84 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.{ContextShift, IO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS.ZoneTransferException
+import vinyldns.api.VinylDNSConfig
+import vinyldns.api.backend.dns.DnsBackend
+import vinyldns.core.domain.backend.{BackendConfigs, BackendResolver}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
+import scala.concurrent.ExecutionContext
+
 class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
+  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+  private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+  private val backendResolver =
+    BackendResolver
+      .apply(BackendConfigs.load(VinylDNSConfig.apiBackend).unsafeRunSync())
+      .unsafeRunSync()
+
   "ZoneViewLoader" should {
     "return a ZoneView upon success" in {
-      DnsZoneViewLoader(Zone("vinyldns.", "test@test.com"))
+      val zone = Zone("vinyldns.", "test@test.com")
+      DnsZoneViewLoader(zone, backendResolver.resolve(zone))
         .load()
         .unsafeRunSync() shouldBe a[ZoneView]
     }
 
     "return a failure if the transfer connection is bad" in {
-      assertThrows[IllegalArgumentException](
-        DnsZoneViewLoader(
-          Zone("vinyldns.", "bad@transfer.connection")
-            .copy(
-              transferConnection =
-                Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))
+      assertThrows[IllegalArgumentException] {
+        val zone = Zone(
+          "vinyldns.",
+          "bad@transfer.connection",
+          connection = Some(
+            ZoneConnection(
+              "vinyldns.",
+              "vinyldns.",
+              "nzisn+4G2ldMn0q1CV3vsg==",
+              "127.0.0.1:19001"
             )
-        ).load()
+          ),
+          transferConnection =
+            Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))
+        )
+        val backend = backendResolver.resolve(zone).asInstanceOf[DnsBackend]
+        println(s"${backend.id}, ${backend.xfrInfo}, ${backend.resolver.getAddress}")
+        DnsZoneViewLoader(zone, backendResolver.resolve(zone))
+          .load()
           .unsafeRunSync()
-      )
+      }
     }
 
     "return a failure if the zone doesn't exist in the DNS backend" in {
-      assertThrows[ZoneTransferException](
-        DnsZoneViewLoader(Zone("non-existent-zone", "bad@zone.test"))
+      assertThrows[ZoneTransferException] {
+        val zone = Zone("non-existent-zone", "bad@zone.test")
+        DnsZoneViewLoader(zone, backendResolver.resolve(zone))
           .load()
           .unsafeRunSync()
-      )
+      }
     }
 
     "return a failure if the zone is larger than the max zone size" in {
-      assertThrows[ZoneTooLargeError](
-        DnsZoneViewLoader(Zone("vinyldns.", "test@test.com"), DnsZoneViewLoader.dnsZoneTransfer, 1)
+      assertThrows[ZoneTooLargeError] {
+        val zone = Zone(
+          "vinyldns.",
+          "test@test.com",
+          connection = Some(
+            ZoneConnection(
+              "vinyldns.",
+              "vinyldns.",
+              "nzisn+4G2ldMn0q1CV3vsg==",
+              "127.0.0.1:19001"
+            )
+          )
+        )
+        DnsZoneViewLoader(zone, backendResolver.resolve(zone), 1)
           .load()
           .unsafeRunSync()
-      )
+      }
     }
   }
 }

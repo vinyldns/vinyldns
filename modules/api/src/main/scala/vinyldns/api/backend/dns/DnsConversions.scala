@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.dns
+package vinyldns.api.backend.dns
 
 import java.net.InetAddress
 
@@ -22,10 +22,10 @@ import cats.syntax.either._
 import org.joda.time.DateTime
 import org.xbill.DNS
 import scodec.bits.ByteVector
-import vinyldns.api.domain.dns.DnsProtocol._
-import vinyldns.core.domain.{DomainHelpers, Fqdn, record}
+import vinyldns.api.backend.dns.DnsProtocol._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.{DomainHelpers, Fqdn, record}
 
 import scala.collection.JavaConverters._
 import scala.util.Try

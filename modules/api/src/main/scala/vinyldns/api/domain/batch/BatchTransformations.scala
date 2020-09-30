@@ -23,7 +23,7 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
-import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
+import vinyldns.api.backend.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{AAAAData, RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._

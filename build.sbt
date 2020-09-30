@@ -47,7 +47,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := true,
-  testOptions in Test += Tests.Argument("-oDNCXEPQRMIK"),
+  testOptions in Test += Tests.Argument("-oDNCXEPQRMIK", "-l", "SkipCI"),
   logBuffered in Test := false,
   // Hide stack traces in tests
   traceLevel in Test := -1,
@@ -301,6 +301,21 @@ lazy val sqs = (project in file("modules/sqs"))
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "sqs")
 
+lazy val r53 = (project in file("modules/r53"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(corePublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= r53Dependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(
+    organization := "io.vinyldns",
+  ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "r53")
+
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
 val createJsHeaders = TaskKey[Unit]("createJsHeaders", "Runs script to prepend APL 2.0 license headers to files")
@@ -446,6 +461,7 @@ addCommandAlias("validate", "; root/clean; " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
+  "r53/headerCheck r53/test:headerCheck r53/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
   "portal/headerCheck portal/test:headerCheck; " +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
