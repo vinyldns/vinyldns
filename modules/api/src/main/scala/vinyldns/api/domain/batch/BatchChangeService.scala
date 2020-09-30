@@ -26,7 +26,7 @@ import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.backend.dns.DnsConversions._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus

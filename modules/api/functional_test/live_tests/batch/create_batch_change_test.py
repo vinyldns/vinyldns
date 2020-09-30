@@ -3894,7 +3894,7 @@ def test_create_batch_delete_record_for_invalid_record_data_fails(shared_zone_te
         assert_failed_change_in_error_response(errors[0], input_name="delete-non-existent-record.ok.", record_data="1.1.1.1", change_type="DeleteRecordSet",
                                                error_messages=['Record "delete-non-existent-record.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(errors[1], input_name=a_delete_fqdn, record_data="4.5.6.7", change_type="DeleteRecordSet",
-                                               error_messages=['Record data AData(4.5.6.7) does not exist for "' + a_delete_fqdn + '".'])
+                                               error_messages=['Record data 4.5.6.7 does not exist for "' + a_delete_fqdn + '".'])
 
     finally:
         clear_recordset_list(to_delete, client)

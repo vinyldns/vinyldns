@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.backend.dns.DnsConversions._
 import vinyldns.api.domain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}

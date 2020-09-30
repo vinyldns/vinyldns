@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.dns
+package vinyldns.api.backend.dns
 
 import java.net.InetAddress
 
 import org.joda.time.DateTime
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatestplus.mockito.MockitoSugar
 import org.xbill.DNS
-import vinyldns.api.ResultHelpers
-import vinyldns.api.domain.dns.DnsProtocol._
-import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.Zone
+import vinyldns.api.backend.dns.DnsProtocol._
 import vinyldns.core.TestRecordSetData.ds
 import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 
 import scala.collection.JavaConverters._
 
@@ -38,9 +37,9 @@ class DnsConversionsSpec
     extends AnyWordSpec
     with Matchers
     with MockitoSugar
-    with ResultHelpers
     with BeforeAndAfterEach
-    with DnsConversions {
+    with DnsConversions
+    with EitherValues {
 
   private val testZoneName = "vinyldns."
   private val testZone = Zone(testZoneName, "test@test.com")
@@ -283,7 +282,7 @@ class DnsConversionsSpec
   }
 
   private def roundTrip(rs: RecordSet): RecordSet = {
-    val recordList = rightValue(toDnsRecords(rs, testZoneName)).map(toRecordSet(_, testZoneDnsName))
+    val recordList = toDnsRecords(rs, testZoneName).right.value.map(toRecordSet(_, testZoneDnsName))
     recordList.head.copy(records = recordList.flatMap(_.records))
   }
 
@@ -324,83 +323,83 @@ class DnsConversionsSpec
 
   "Converting to a DNS RRset" should {
     "convert A record set" in {
-      val result = rightValue(toDnsRRset(testA, testZoneName))
+      val result = toDnsRRset(testA, testZoneName).right.value
 
       verifyMatch(result, testA)
     }
 
     "convert multiple record set" in {
-      val result = rightValue(toDnsRRset(testAMultiple, testZoneName))
+      val result = toDnsRRset(testAMultiple, testZoneName).right.value
       verifyMatch(result, testAMultiple)
     }
 
     "convert AAAA record set" in {
-      val result = rightValue(toDnsRRset(testAAAA, testZoneName))
+      val result = toDnsRRset(testAAAA, testZoneName).right.value
       verifyMatch(result, testAAAA)
     }
 
     "convert CNAME record set" in {
-      val result = rightValue(toDnsRRset(testCNAME, testZoneName))
+      val result = toDnsRRset(testCNAME, testZoneName).right.value
       verifyMatch(result, testCNAME)
     }
 
     "convert DS record set" in {
-      val result = rightValue(toDnsRRset(testDS, testZoneName))
+      val result = toDnsRRset(testDS, testZoneName).right.value
       verifyMatch(result, testDS)
     }
 
     "convert MX record set" in {
-      val result = rightValue(toDnsRRset(testMX, testZoneName))
+      val result = toDnsRRset(testMX, testZoneName).right.value
       verifyMatch(result, testMX)
     }
 
     "convert NS record set" in {
-      val result = rightValue(toDnsRRset(testNS, testZoneName))
+      val result = toDnsRRset(testNS, testZoneName).right.value
       verifyMatch(result, testNS)
     }
 
     "convert PTR record set" in {
-      val result = rightValue(toDnsRRset(testPTR, testZoneName))
+      val result = toDnsRRset(testPTR, testZoneName).right.value
       verifyMatch(result, testPTR)
     }
 
     "convert SOA record set" in {
-      val result = rightValue(toDnsRRset(testSOA, testZoneName))
+      val result = toDnsRRset(testSOA, testZoneName).right.value
       verifyMatch(result, testSOA)
     }
 
     "convert SPF record set" in {
-      val result = rightValue(toDnsRRset(testSPF, testZoneName))
+      val result = toDnsRRset(testSPF, testZoneName).right.value
       verifyMatch(result, testSPF)
     }
 
     "convert SSHFP record set" in {
-      val result = rightValue(toDnsRRset(testSSHFP, testZoneName))
+      val result = toDnsRRset(testSSHFP, testZoneName).right.value
       verifyMatch(result, testSSHFP)
     }
 
     "convert SRV record set" in {
-      val result = rightValue(toDnsRRset(testSRV, testZoneName))
+      val result = toDnsRRset(testSRV, testZoneName).right.value
       verifyMatch(result, testSRV)
     }
 
     "convert NAPTR record set" in {
-      val result = rightValue(toDnsRRset(testNAPTR, testZoneName))
+      val result = toDnsRRset(testNAPTR, testZoneName).right.value
       verifyMatch(result, testNAPTR)
     }
 
     "convert TXT record set" in {
-      val result = rightValue(toDnsRRset(testTXT, testZoneName))
+      val result = toDnsRRset(testTXT, testZoneName).right.value
       verifyMatch(result, testTXT)
     }
 
     "convert long TXT record set" in {
-      val result = rightValue(toDnsRRset(testLongTXT, testZoneName))
+      val result = toDnsRRset(testLongTXT, testZoneName).right.value
       verifyMatch(result, testLongTXT)
     }
 
     "fail to convert a bad SPF record set" in {
-      val result = leftValue(toDnsRRset(testLongSPF, testZoneName))
+      val result = toDnsRRset(testLongSPF, testZoneName).left.value
       result shouldBe a[java.lang.IllegalArgumentException]
     }
   }
@@ -408,67 +407,67 @@ class DnsConversionsSpec
   "Converting to a Dns Response" should {
     "return the message when NoError" in {
       doReturn(DNS.Rcode.NOERROR).when(mockMessage).getRcode
-      rightValue(toDnsResponse(mockMessage)) shouldBe NoError(mockMessage)
+      toDnsResponse(mockMessage).right.value shouldBe NoError(mockMessage)
     }
     "return a BadKey" in {
       doReturn(DNS.Rcode.BADKEY).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[BadKey]
+      toDnsResponse(mockMessage).left.value shouldBe a[BadKey]
     }
     "return a BadMode" in {
       doReturn(DNS.Rcode.BADMODE).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[BadMode]
+      toDnsResponse(mockMessage).left.value shouldBe a[BadMode]
     }
     "return a BadSig" in {
       doReturn(DNS.Rcode.BADSIG).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[BadSig]
+      toDnsResponse(mockMessage).left.value shouldBe a[BadSig]
     }
     "return a BadTime" in {
       doReturn(DNS.Rcode.BADTIME).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[BadTime]
+      toDnsResponse(mockMessage).left.value shouldBe a[BadTime]
     }
     "return a FormatError" in {
       doReturn(DNS.Rcode.FORMERR).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[FormatError]
+      toDnsResponse(mockMessage).left.value shouldBe a[FormatError]
     }
     "return a NotAuthorized" in {
       doReturn(DNS.Rcode.NOTAUTH).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[NotAuthorized]
+      toDnsResponse(mockMessage).left.value shouldBe a[NotAuthorized]
     }
     "return a NotImplemented" in {
       doReturn(DNS.Rcode.NOTIMP).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[NotImplemented]
+      toDnsResponse(mockMessage).left.value shouldBe a[NotImplemented]
     }
     "return a NotZone" in {
       doReturn(DNS.Rcode.NOTZONE).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[NotZone]
+      toDnsResponse(mockMessage).left.value shouldBe a[NotZone]
     }
     "return a NameNotFound" in {
       doReturn(DNS.Rcode.NXDOMAIN).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[NameNotFound]
+      toDnsResponse(mockMessage).left.value shouldBe a[NameNotFound]
     }
     "return a RecordSetNotFound" in {
       doReturn(DNS.Rcode.NXRRSET).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[RecordSetNotFound]
+      toDnsResponse(mockMessage).left.value shouldBe a[RecordSetNotFound]
     }
     "return a Refused" in {
       doReturn(DNS.Rcode.REFUSED).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[Refused]
+      toDnsResponse(mockMessage).left.value shouldBe a[Refused]
     }
     "return a ServerFailure" in {
       doReturn(DNS.Rcode.SERVFAIL).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[ServerFailure]
+      toDnsResponse(mockMessage).left.value shouldBe a[ServerFailure]
     }
     "return a NameExists" in {
       doReturn(DNS.Rcode.YXDOMAIN).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[NameExists]
+      toDnsResponse(mockMessage).left.value shouldBe a[NameExists]
     }
     "return a RecordSetExists" in {
       doReturn(DNS.Rcode.YXRRSET).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[RecordSetExists]
+      toDnsResponse(mockMessage).left.value shouldBe a[RecordSetExists]
     }
     "return a UnrecognizedResponse" in {
       doReturn(999).when(mockMessage).getRcode
-      leftValue(toDnsResponse(mockMessage)) shouldBe a[UnrecognizedResponse]
+      toDnsResponse(mockMessage).left.value shouldBe a[UnrecognizedResponse]
     }
   }
 
@@ -572,7 +571,7 @@ class DnsConversionsSpec
 
   "Converting to an update message" should {
     "work for an Add message" in {
-      val dnsMessage = rightValue(toAddRecordMessage(rrset(testDnsA), testZoneName))
+      val dnsMessage = toAddRecordMessage(rrset(testDnsA), testZoneName).right.value
       val dnsRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
       dnsRecord.getName.toString shouldBe "a-record."
       dnsRecord.getTTL shouldBe testA.ttl
@@ -585,7 +584,7 @@ class DnsConversionsSpec
     }
     "work for an Update message" in {
       val dnsMessage =
-        rightValue(toUpdateRecordMessage(rrset(testDnsA), rrset(testDnsAReplace), testZoneName))
+        toUpdateRecordMessage(rrset(testDnsA), rrset(testDnsAReplace), testZoneName).right.value
       // Update record issues a replace, the first section is an EmptyRecord containing the name and type to replace
       val emptyRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
       emptyRecord.getName.toString shouldBe "a-record-2."
@@ -604,7 +603,7 @@ class DnsConversionsSpec
       zoneRRset.getName.toString shouldBe "vinyldns."
     }
     "work for a Delete message" in {
-      val dnsMessage = rightValue(toDeleteRecordMessage(rrset(testDnsA), testZoneName))
+      val dnsMessage = toDeleteRecordMessage(rrset(testDnsA), testZoneName).right.value
 
       val dnsRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
       dnsRecord.getName.toString shouldBe "a-record."
@@ -629,7 +628,7 @@ class DnsConversionsSpec
     "convert zone name to @" in {
       val actual = toDnsRecords(testAt, testZoneName)
       val omitFinalDot = false
-      rightValue(actual).head.getName.toString(omitFinalDot) shouldBe testZoneName
+      actual.right.value.head.getName.toString(omitFinalDot) shouldBe testZoneName
     }
   }
 

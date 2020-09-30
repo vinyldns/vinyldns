@@ -94,6 +94,11 @@ object Dependencies {
     "com.amazonaws"             %  "aws-java-sdk-sqs"               % awsV withSources()
   )
 
+  lazy val r53Dependencies = Seq(
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-route53"           % awsV withSources()
+  )
+
   lazy val commonTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.14.3",
