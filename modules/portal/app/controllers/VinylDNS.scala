@@ -20,6 +20,7 @@ import java.util
 import java.util.HashMap
 
 import actions.{SecuritySupport, UserRequest}
+import akka.util.ByteString
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
@@ -31,7 +32,7 @@ import play.api._
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json._
-import play.api.libs.ws.WSClient
+import play.api.libs.ws.{BodyWritable, InMemoryBody, WSClient}
 import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -592,6 +593,14 @@ class VinylDNS @Inject() (
     val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
     signer.sign(signableRequest, credentials)
     logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
+
+    // We stringify JSON before it gets here, so we need to specify the content type through this
+    // ugly implicit. If the body came as a JsonValue, we'd get this for free. Also, WSClient does
+    // some weird stuff inside such as preserve content type when specifically overriding the headers.
+    implicit val stringToJsonBody: BodyWritable[String] = {
+      BodyWritable(str => InMemoryBody(ByteString.fromString(str)), signableRequest.contentType)
+    }
+
     wsClient
       .url(signableRequest.getEndpoint.toString + "/" + signableRequest.getResourcePath)
       .withBody(
