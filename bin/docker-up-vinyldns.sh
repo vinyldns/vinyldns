@@ -80,6 +80,8 @@ DOCKER_COMPOSE_CONFIG="${DIR}/../docker/docker-compose-quick-start.yml"
 SERVICE=""
 # when CLEAN is set to 1, existing docker images are deleted so they are re-pulled
 CLEAN=0
+# default to latest for docker versions
+export VINYLDNS_VERSION=latest
 
 # source env before parsing args so vars can be overwritten
 set -a # Required in order to source docker/.env
