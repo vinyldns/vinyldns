@@ -1,6 +1,6 @@
 name: VinylDNS
 baseurl: ''
-description: DNS Management Platform
+description: DNS Governance
 highlighter: rouge
 docs: true
 collections:
