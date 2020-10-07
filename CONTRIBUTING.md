@@ -59,7 +59,6 @@ If you are unsure whether what you found is a bug, we encourage you to first pop
 help determine if what you're seeing is unexpected behavior, and if it is we will direct to make the bug report.
 * **Feature request**: Use this template if you have something you wish to be added to the project. Please be detailed
 when describing why you are requesting the feature, what you want it to do, and alternative solutions you have considered.
-If the feature is a substantial change to VinylDNS, it may be better suited as an RFC, through our [RFC process](https://github.com/vinyldns/rfcs).
 * **Maintenance request**: This template is for suggesting upgrades to the existing code base. This could include
 code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the
 reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and
@@ -68,8 +67,6 @@ what parts of the system will be impacted.
 ### Discussion Process
 
 Some issues may require discussion with the community before proceeding to implementation. This can happen if the issue is a larger change, for example a big refactoring or new feature. The VinylDNS maintainers may label an issue for **Discussion** in order to solicit more detail before proceeding. If the issue is straightforward and/or well documented, it can be implemented immediately by the submitter. If the submitter is unable to make the changes required to address the issue, the VinylDNS maintainers will prioritize the work in our backlog.
-
-If warranted, some issues may be moved to our [RFC process](https://github.com/vinyldns/rfcs) instead, depending on its size and impact.
 
 ## Pull Requests
 Contributions to VinylDNS are generally made via [Github Pull Requests](https://help.github.com/articles/about-pull-requests/).
