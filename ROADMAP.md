@@ -1,8 +1,7 @@
 # Roadmap
 What is a Roadmap in opensource?  VinylDNS would like to communicate _direction_ in terms of the features and needs
 expressed by the VinylDNS community.  In open source, demand is driven by the community through
-Github issues and the [VinylDNS RFC process](https://github.com/vinyldns/rfcs).  As more members join the discussion,
-we anticipate the "plan" to change.  This document will be updated regularly to reflect the changes in prioritization.
+Github issues.  As more members join the discussion, we anticipate the "plan" to change.  This document will be updated regularly to reflect the changes in prioritization.
 
 This document is organized by priority / planned release timeframes.  Reading top-down should give you a sense of the order in which new features are planned to be delivered.
 
@@ -14,9 +13,7 @@ This document is organized by priority / planned release timeframes.  Reading to
     - **Bulk import** - allows users to bulk load DNS changes from a CSV file
 - **Global ACL Rules** - allows override on Shared / Record ownership
 - **Global record search** - allows users to search for records across zones
-
-## In Progress
-- **Backend Providers** - allow connectivity to DNS backends _other_ than DDNS, e.g. AWS Route 53.  This will allow VinylDNS to extend its governance even out to cloud providers or other proprietary backends.  Note: this is the first, but significant, step to Zone Management.
+- **Backend Providers** - allow connectivity to DNS backends _other_ than DDNS, e.g. AWS Route 53
 
 ## Next up?
 
