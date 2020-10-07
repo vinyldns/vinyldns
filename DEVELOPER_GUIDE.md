@@ -236,7 +236,7 @@ that use the context are called using that same context.
 The shared test context sets up several things that can be reused:
 
 1. An `ok` user and group
-1. A `dummy` user and group - a separate user and group helpful for tesing access controls and authorization
+1. A `dummy` user and group - a separate user and group helpful for testing access controls and authorization
 1. An `ok.` zone accessible only by the `ok` user and `ok` group
 1. A `dummy.` zone accessible only by the `dummy` user and `dummy` group
 1. An IPv6 reverse zone
