@@ -192,10 +192,13 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core % "compile->compile;test->test",
+  .dependsOn(
+    core % "compile->compile;test->test",
     dynamodb % "compile->compile;it->it",
-    mysql % "compile->compile;it->it")
-  .dependsOn(sqs % "compile->compile;it->it")
+    mysql % "compile->compile;it->it",
+    sqs % "compile->compile;it->it",
+    r53 % "compile->compile;it->it"
+  )
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
@@ -209,7 +212,7 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql, sqs)
+  .aggregate(core, api, portal, dynamodb, mysql, sqs, r53)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -313,6 +316,7 @@ lazy val r53 = (project in file("modules/r53"))
   .settings(libraryDependencies ++= r53Dependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(
     organization := "io.vinyldns",
+    coverageMinimum := 65,
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "r53")
 
