@@ -316,6 +316,7 @@ lazy val r53 = (project in file("modules/r53"))
   .settings(libraryDependencies ++= r53Dependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(
     organization := "io.vinyldns",
+    coverageMinimum := 65,
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "r53")
 
