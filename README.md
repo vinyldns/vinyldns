@@ -1,5 +1,5 @@
 [![Join the chat at https://gitter.im/vinyldns](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns)
-[![Travis build](https://api.travis-ci.org/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.org/vinyldns/vinyldns)
+![Build](https://github.com/vinyldns/vinyldns/workflows/Continuous%20Integration/badge.svg)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2682/badge)](https://bestpractices.coreinfrastructure.org/projects/2682)
 [![License](https://img.shields.io/github/license/vinyldns/vinyldns)](https://github.com/vinyldns/vinyldns/blob/master/LICENSE)
