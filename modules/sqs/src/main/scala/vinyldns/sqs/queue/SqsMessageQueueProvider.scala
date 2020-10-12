@@ -17,7 +17,11 @@
 package vinyldns.sqs.queue
 import cats.effect.IO
 import cats.implicits._
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth.{
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  DefaultAWSCredentialsProviderChain
+}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
@@ -30,6 +34,7 @@ import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvid
 
 import scala.util.matching.Regex
 import cats.effect.ContextShift
+import org.apache.commons.lang3.StringUtils
 
 class SqsMessageQueueProvider extends MessageQueueProvider {
   import SqsMessageQueueProvider._
@@ -71,15 +76,25 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
           s"signing region: ${sqsMessageQueueSettings.serviceEndpoint}; " +
           s"queue name: ${sqsMessageQueueSettings.queueName}"
       )
-      AmazonSQSAsyncClientBuilder
-        .standard()
-        .withEndpointConfiguration(
-          new EndpointConfiguration(
-            sqsMessageQueueSettings.serviceEndpoint,
-            sqsMessageQueueSettings.signingRegion
-          )
+
+      val sqsAsyncClientBuilder = AmazonSQSAsyncClientBuilder.standard()
+      sqsAsyncClientBuilder.withEndpointConfiguration(
+        new EndpointConfiguration(
+          sqsMessageQueueSettings.serviceEndpoint,
+          sqsMessageQueueSettings.signingRegion
         )
-        .withCredentials(
+      )
+      // If either of accessKey or secretKey are empty in conf file; then use AWSCredentialsProviderChain to figure out
+      // credentials.
+      // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
+      if (StringUtils.isBlank(sqsMessageQueueSettings.accessKey) || StringUtils.isBlank(
+          sqsMessageQueueSettings.secretKey
+        )) {
+        sqsAsyncClientBuilder.withCredentials(
+          new DefaultAWSCredentialsProviderChain()
+        )
+      } else {
+        sqsAsyncClientBuilder.withCredentials(
           new AWSStaticCredentialsProvider(
             new BasicAWSCredentials(
               sqsMessageQueueSettings.accessKey,
@@ -87,7 +102,8 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
             )
           )
         )
-        .build()
+      }
+      sqsAsyncClientBuilder.build()
     }
 
   def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
