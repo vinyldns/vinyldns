@@ -1,0 +1,376 @@
+<html><head><title>VinylDNS: Batch Change Model</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Batch Change Model" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="http://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Batch Change Model" /><meta name="twitter:image" content="http://vinyldns.ioimg/poster.png" /><meta name="twitter:description" content="DNS Governance" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/default.css" /><link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/palette.css" /><link rel="stylesheet" href="/css/codemirror.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>VinylDNS</span></div></a></li>            <li><a href="/api/index" class="">API documentation</a></li> <li><a href="/api/auth-mechanism.html" class="">Authentication</a></li> <li><a href="/api/zone-model.html" class="">Zone</a> <ul class="sub_section"> <li><a href="/api/zone-model.html" class="">Zone Model</a></li> <li><a href="/api/create-zone.html" class="">Create Zone</a></li> <li><a href="/api/update-zone.html" class="">Update Zone</a></li> <li><a href="/api/delete-zone.html" class="">Delete Zone</a></li> <li><a href="/api/get-zone-by-id.html" class="">Get Zone by ID</a></li> <li><a href="/api/get-zone-by-name.html" class="">Get Zone by Name</a></li> <li><a href="/api/list-zones.html" class="">List / Search Zone</a></li> <li><a href="/api/sync-zone.html" class="">Sync Zone</a></li> <li><a href="/api/list-zone-changes.html" class="">List Zone Changes</a></li></ul></li> <li><a href="/api/recordset-model.html" class="">RecordSet</a> <ul class="sub_section"> <li><a href="/api/recordset-model.html" class="">RecordSet Model</a></li> <li><a href="/api/create-recordset.html" class="">Create RecordSet</a></li> <li><a href="/api/update-recordset.html" class="">Update RecordSet</a></li> <li><a href="/api/delete-recordset.html" class="">Delete RecordSet</a></li> <li><a href="/api/get-recordset.html" class="">Get RecordSet</a></li> <li><a href="/api/list-recordsets-by-zone.html" class="">List / Search RecordSets by Zone</a></li> <li><a href="/api/get-recordset-change.html" class="">Get RecordSet Change</a></li> <li><a href="/api/list-recordset-changes.html" class="">List RecordSet Changes</a></li> <li><a href="/api/list-recordsets-global.html" class="">Global List / Search RecordSets</a></li></ul></li> <li><a href="/api/batchchange-model.html" class="">Batch Change</a> <ul class="sub_section"> <li><a href="/api/batchchange-model.html" class=" active ">Batch Change Model</a></li> <li><a href="/api/create-batchchange.html" class="">Create Batch Change</a></li> <li><a href="/api/get-batchchange.html" class="">Get Batch Change</a></li> <li><a href="/api/list-batchchanges.html" class="">List Batch Changes</a></li> <li><a href="/api/batchchange-errors.html" class="">Batch Change Errors</a></li> <li><a href="/api/cancel-batchchange.html" class="">Cancel Batch Change</a></li> <li><a href="/api/approve-batchchange.html" class="">Approve Batch Change</a></li> <li><a href="/api/reject-batchchange.html" class="">Reject Batch Change</a></li></ul></li> <li><a href="/api/membership-model.html" class="">Membership</a> <ul class="sub_section"> <li><a href="/api/membership-model.html" class="">Membership Model</a></li> <li><a href="/api/create-group.html" class="">Create Group</a></li> <li><a href="/api/update-group.html" class="">Update Group</a></li> <li><a href="/api/delete-group.html" class="">Delete Group</a></li> <li><a href="/api/get-group.html" class="">Get Group</a></li> <li><a href="/api/list-groups.html" class="">List Groups</a></li> <li><a href="/api/list-group-admins.html" class="">List Group Admins</a></li> <li><a href="/api/list-group-members.html" class="">List Group Members</a></li> <li><a href="/api/list-group-activity.html" class="">List Group Activity</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="VinylDNS" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="batch-change-model">Batch Change Model</h1>
+
+<h4 id="table-of-contents">Table of Contents</h4>
+
+<ul>
+  <li><a href="#batchchange-info">Batch Change Information</a></li>
+  <li><a href="#batchchange-attributes">Batch Change Attributes</a></li>
+  <li><a href="#singlechange-attributes">Single Change Attributes</a></li>
+  <li><a href="#batchchange-example">Batch Change Example</a></li>
+</ul>
+
+<h4 id="batch-change-information-">BATCH CHANGE INFORMATION <a id="batchchange-info"></a></h4>
+
+<p>Batch change is an alternative to submitting individual <a href="../api/recordset-model">RecordSet</a> changes and provides the following:</p>
+
+<ul>
+  <li>The ability to accept multiple changes in a single API call.</li>
+  <li>The ability to include records of multiple record types across multiple zones.</li>
+  <li>Input names are entered as fully-qualified domain names (or IP addresses for <strong>PTR</strong> records), so users don’t have to think in record/zone context.</li>
+  <li>All record validations are processed simultaneously. <a href="../api/batchchange-errors#fatal-errors">Fatal errors</a> for any
+change in the batch will result in a <strong>400</strong> response and none will be applied.</li>
+  <li>Support for <a href="../../operator/config-api#additional-configuration-settings">manual review</a> if enabled in your VinylDNS instance.
+Batch change will remain in limbo until a system administrator (ie. support or super user) either rejects it resulting in
+an immediate failure or approves it resulting in revalidation and submission for processing.</li>
+  <li>Support for <a href="../../operator/config-api#additional-configuration-settings">notifications</a> when a batch change is rejected or implemented.</li>
+</ul>
+
+<p>A batch change consists of multiple single changes which can be a combination of <a href="#singleaddchange-attributes">SingleAddChanges</a> and <a href="#singledeleterrsetchange-attributes">SingleDeleteRRSetChanges</a>.</p>
+
+<p><strong>Note:</strong> In the portal batch change is referred to as <a href="../portal/dns-changes">DNS Change</a>.</p>
+
+<p>To update an existing record, you must delete the record first and add the record again with the updated changes.</p>
+
+<p>Batch changes are also susceptible to the following restrictions:</p>
+<ul>
+  <li>Current supported record types for batch change are: <strong>A</strong>, <strong>AAAA</strong>, <strong>CNAME</strong>, and <strong>PTR</strong>.</li>
+  <li>Batch change requests must contain at least one change.</li>
+  <li>The maximum number of single changes within a batch change depends on the instance of VinylDNS. Contact your VinylDNS administrators to find the batch change limit for your instance.</li>
+  <li>Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires <strong>Write</strong> access.</li>
+</ul>
+
+<h4 id="batch-change-attributes-">BATCH CHANGE ATTRIBUTES <a id="batchchange-attributes"></a></h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>userId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier of the user that created the batch change.</td>
+    </tr>
+    <tr>
+      <td>userName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The username of the user that created the batch change.</td>
+    </tr>
+    <tr>
+      <td>comments</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Optional comments about the batch change.</td>
+    </tr>
+    <tr>
+      <td>createdTimestamp</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">The timestamp (UTC) when the batch change was created.</td>
+    </tr>
+    <tr>
+      <td>changes</td>
+      <td style="text-align: left">Array of SingleChange</td>
+      <td style="text-align: left">Array of single changes within a batch change. A <em>SingleChange</em> can either be a <a href="#singleaddchange-attributes">SingleAddChange</a> or a <a href="#singledeleterrsetchange-attributes">SingleDeleteRRSetChange</a>.</td>
+    </tr>
+    <tr>
+      <td>status</td>
+      <td style="text-align: left">BatchChangeStatus</td>
+      <td style="text-align: left">- <strong>PendingProcessing</strong> - at least one change in batch has not finished processing<br />- <strong>Complete</strong> - all changes have been processed successfully<br />- <strong>Failed</strong> - all changes failed during processing<br />- <strong>PartialFailure</strong> - some changes have failed and the rest were successful<br />- <strong>PendingReview</strong> - one or more changes requires manual <a href="../api/approve-batchchange">approval</a>/<a href="../api/reject-batchchange">rejection</a> by a system administrator (ie. super or support user) to proceed<br />- <strong>Rejected</strong> - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied<br />- <strong>Scheduled</strong> - the batch change is scheduled for a later date at which time it needs to be approved to proceed.<br />- <strong>Cancelled</strong> - the PendingReview batch change was cancelled by its creator before review.</td>
+    </tr>
+    <tr>
+      <td>id</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for this batch change.</td>
+    </tr>
+    <tr>
+      <td>ownerGroupId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned.</td>
+    </tr>
+    <tr>
+      <td>approvalStatus</td>
+      <td style="text-align: left">BatchChangeApprovalStatus</td>
+      <td style="text-align: left">Whether the batch change is currently awaiting manual review. Can be one of <strong>AutoApproved</strong>, <strong>PendingReview</strong>, <strong>ManuallyApproved</strong>, <strong>Rejected</strong>, or <strong>Cancelled</strong>.</td>
+    </tr>
+    <tr>
+      <td>reviewerId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Optional unique identifier for the reviewer of the batch change. Required if batch change was manually rejected or approved.</td>
+    </tr>
+    <tr>
+      <td>reviewerUserName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Optional user name for the reviewer of the batch change. Required if batch change was manually rejected or approved.</td>
+    </tr>
+    <tr>
+      <td>reviewComment</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Optional comment for the reviewer of the batch change. Only applicable if batch change was manually rejected or approved.</td>
+    </tr>
+    <tr>
+      <td>reviewTimestamp</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">Optional timestamp (UTC) of when the batch change was manually reviewed. Required if batch change was manually rejected or approved.</td>
+    </tr>
+    <tr>
+      <td>scheduledTime</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">Optional requested date and time to process the batch change.</td>
+    </tr>
+    <tr>
+      <td>cancelledTimestamp</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">Optional date and time a batch change was cancelled by its creator.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="single-change-attributes-">SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes"></a></h4>
+
+<p>A successful batch change response consists of a corresponding <a href="#singleaddchange-attributes">SingleAddChange</a> or <a href="#singledeleterrsetchange-attributes">SingleDeleteRRSetChange</a> for each batch change input. See the <a href="../api/create-batchchange">batch change create</a> page for details on constructing a batch change request.</p>
+
+<h4 id="singleaddchange-">SingleAddChange <a id="singleaddchange-attributes"></a></h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>changeType</td>
+      <td style="text-align: left">ChangeInputType</td>
+      <td style="text-align: left">Type of change input. Can either be an <strong>Add</strong> or <strong>DeleteRecordSet</strong>.  <a href="#changetype-values">See more details</a> about behavior of <code class="highlighter-rouge">changeType</code> interaction.</td>
+    </tr>
+    <tr>
+      <td>inputName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The fully-qualified domain name of the record which was provided in the create batch request.</td>
+    </tr>
+    <tr>
+      <td>type</td>
+      <td style="text-align: left">RecordType</td>
+      <td style="text-align: left">Type of DNS record, supported records for batch changes are currently: <strong>A</strong>, <strong>AAAA</strong>, <strong>CNAME</strong>, and <strong>PTR</strong>.</td>
+    </tr>
+    <tr>
+      <td>ttl</td>
+      <td style="text-align: left">long</td>
+      <td style="text-align: left">The time-to-live in seconds.</td>
+    </tr>
+    <tr>
+      <td>record</td>
+      <td style="text-align: left"><a href="../api/recordset-model#record-data">RecordData</a></td>
+      <td style="text-align: left">The data added for this record, which varies by record type.</td>
+    </tr>
+    <tr>
+      <td>status</td>
+      <td style="text-align: left">SingleChangeStatus</td>
+      <td style="text-align: left">Status for this change. Can be one of: <strong>Pending</strong>, <strong>Complete</strong>, <strong>Failed</strong>, <strong>NeedsReview</strong> or <strong>Rejected</strong>.</td>
+    </tr>
+    <tr>
+      <td>recordName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the record. Record names for the apex will be match the zone name (including terminating dot).</td>
+    </tr>
+    <tr>
+      <td>zoneName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the zone.</td>
+    </tr>
+    <tr>
+      <td>zoneId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for the zone.</td>
+    </tr>
+    <tr>
+      <td>systemMessage</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: Returns system message relevant to corresponding batch change input.</td>
+    </tr>
+    <tr>
+      <td>recordChangeId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: The unique identifier for the record change; only returned on successful batch creation.</td>
+    </tr>
+    <tr>
+      <td>recordSetId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: The unique identifier for the record set; only returned on successful batch creation,</td>
+    </tr>
+    <tr>
+      <td>validationErrors</td>
+      <td style="text-align: left">Array of BatchChangeError</td>
+      <td style="text-align: left">Array containing any validation errors associated with this SingleAddChange. <em>Note: These will only exist on <code class="highlighter-rouge">NeedsReview</code> or <code class="highlighter-rouge">Rejected</code> <code class="highlighter-rouge">SingleChange</code>s</em></td>
+    </tr>
+    <tr>
+      <td>id</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for this change.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="singledeleterrsetchange-">SingleDeleteRRSetChange <a id="singledeleterrsetchange-attributes"></a></h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>changeType</td>
+      <td style="text-align: left">ChangeInputType</td>
+      <td style="text-align: left">Type of change input. Can either be an <strong>Add</strong> or <strong>DeleteRecordSet</strong>.  <a href="#changetype-values">See more details</a> about behavior of <code class="highlighter-rouge">changeType</code> interaction.</td>
+    </tr>
+    <tr>
+      <td>inputName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The fully-qualified domain name of the record which was provided in the create batch request.</td>
+    </tr>
+    <tr>
+      <td>type</td>
+      <td style="text-align: left">RecordType</td>
+      <td style="text-align: left">Type of DNS record, supported records for batch changes are currently: <strong>A</strong>, <strong>AAAA</strong>, <strong>CNAME</strong>, and <strong>PTR</strong>.</td>
+    </tr>
+    <tr>
+      <td>record</td>
+      <td style="text-align: left"><a href="../api/recordset-model#record-data">RecordData</a></td>
+      <td style="text-align: left">Optional. The data deleted for this record, which varies by record type.  If not provided, the entire DNS recordset was deleted.</td>
+    </tr>
+    <tr>
+      <td>status</td>
+      <td style="text-align: left">SingleChangeStatus</td>
+      <td style="text-align: left">Status for this change. Can be one of: <strong>Pending</strong>, <strong>Complete</strong>, <strong>Failed</strong>, <strong>NeedsReview</strong> or <strong>Rejected</strong>.</td>
+    </tr>
+    <tr>
+      <td>recordName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the record. Record names for the apex will be match the zone name (including terminating dot).</td>
+    </tr>
+    <tr>
+      <td>zoneName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the zone.</td>
+    </tr>
+    <tr>
+      <td>zoneId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for the zone.</td>
+    </tr>
+    <tr>
+      <td>systemMessage</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: Returns system message relevant to corresponding batch change input.</td>
+    </tr>
+    <tr>
+      <td>recordChangeId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: The unique identifier for the record change; only returned on successful batch creation.</td>
+    </tr>
+    <tr>
+      <td>recordSetId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Conditional: The unique identifier for the record set; only returned on successful batch creation,</td>
+    </tr>
+    <tr>
+      <td>validationErrors</td>
+      <td style="text-align: left">Array of BatchChangeError</td>
+      <td style="text-align: left">Array containing any validation errors associated with this SingleDeleteRRSetChange. <em>Note: These will only exist on <code class="highlighter-rouge">NeedsReview</code> or <code class="highlighter-rouge">Rejected</code> SingleChanges</em></td>
+    </tr>
+    <tr>
+      <td>id</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for this change.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="changetype-values-">ChangeType Values <a id="changetype-values"></a></h4>
+<p>There are two valid <code class="highlighter-rouge">changeType</code>s for a <code class="highlighter-rouge">SingleChange</code>: <strong>Add</strong> and <strong>DeleteRecordSet</strong></p>
+
+<p><code class="highlighter-rouge">changeType</code>s can be used independently or combined to achieve the desired behavior described below.</p>
+
+<ul>
+  <li>Create a new DNS record: <strong>Add</strong> with record data</li>
+  <li>Delete an entire record set: 1. <strong>DeleteRecordSet</strong> without specifying existing record data <em>or</em> 2. <strong>DeleteRecordSet</strong> for each entry of the DNS record</li>
+  <li>Delete a single entry from DNS record with multiple entries: <strong>DeleteRecordSet</strong> specifying existing record data</li>
+  <li>Update an existing record set: 1. <strong>DeleteRecordSet</strong> specifying existing record data (single entry delete) or not specifying record data (full delete) <em>and</em> 2. <strong>Add</strong> with record data</li>
+</ul>
+
+<h4 id="batch-change-example-">BATCH CHANGE EXAMPLE <a id="batchchange-example"></a></h4>
+
+<p>Successful batch change response example with a <a href="#singleaddchange-attributes">SingleAddChange</a> and a <a href="#singledeleterrsetchange-attributes">SingleDeleteRRSetChange</a>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+    "userId": "vinyl", 
+    "userName": "vinyl201", 
+    "comments": "this is optional", 
+    "createdTimestamp": "2018-05-08T18:46:34Z", 
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
+    "changes": [
+        {
+            "changeType": "Add",
+            "inputName": "recordName.zoneName.", 
+            "type": "A", 
+            "ttl": 3600,  
+            "record": {
+                "address": "1.1.1.1"
+            },
+            "status": "Complete", 
+            "recordName": "recordName", 
+            "zoneName": "zoneName.", 
+            "zoneId": "8f8f649f-998e-4428-a029-b4ba5f5bd4ca",
+            "recordChangeId": "4754ac4c-5f81-11e8-9c2d-fa7ae01bbebc",
+            "recordSetId": "4754b084-5f81-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
+            "id": "17350028-b2b8-428d-9f10-dbb518a0364d"
+        }, 
+        {
+            "changeType": "DeleteRecordSet",
+            "inputName": "recordName.zoneName.", 
+            "type": "AAAA", 
+            "status": "Complete", 
+            "recordName": "recordName", 
+            "zoneName": "zoneName.", 
+            "zoneId": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
+            "recordChangeId": "4754b322-5f81-11e8-9c2d-fa7ae01bbebc",
+            "recordSetId": "4754b084-5f81-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
+            "id": "c29d33e4-9bee-4417-a99b-6e815fdeb748"
+        },
+        {
+            "changeType": "DeleteRecordSet",
+            "inputName": "anotherRecordName.zoneName.",
+            "type": "A",
+            "record": {
+                "address": "1.1.1.1"
+            },
+            "status": "Complete",
+            "recordName": "recordName",
+            "zoneName": "zoneName.",
+            "zoneId": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
+            "recordChangeId": "9c449026-cffe-4379-beb7-217b8a31aadd",
+            "recordSetId": "e68776ab-f56f-41bf-a03e-c288b9469b53",
+            "validationErrors": [],
+            "id": "e68776ab-f56f-41bf-a03e-c288b9469b53"
+        }
+    ], 
+    "status": "Complete", 
+    "id": "937191c4-b1fd-4ab5-abb4-9553a65b44ab",
+    "approvalStatus": "AutoApproved"
+}
+</code></pre></div></div>
+</section><div class="edit-button"><a href="https://github.com/VinylDNS/vinyldns/edit/master/modules/docs/src/main/tut/api/batchchange-model.md" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlighting();
+              </script><script>((window.gitter = {}).chat = {}).options = {
+room: 'vinyldns/Lobby'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/main.js"></script></body></html>
