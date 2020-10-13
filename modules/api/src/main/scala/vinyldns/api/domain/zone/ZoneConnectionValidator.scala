@@ -77,7 +77,9 @@ class ZoneConnectionValidator(backendResolver: BackendResolver)
       .zoneExists(zone)
       .ifM(
         IO(Right(())),
-        IO(Left(ConnectionFailed(zone, s"Unable to find zone ${zone.name} in backend ${backend.id}")))
+        IO(
+          Left(ConnectionFailed(zone, s"Unable to find zone ${zone.name} in backend ${backend.id}"))
+        )
       )
       .toResult
 

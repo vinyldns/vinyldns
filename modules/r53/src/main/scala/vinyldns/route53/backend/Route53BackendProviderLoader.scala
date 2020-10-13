@@ -18,7 +18,7 @@ package vinyldns.route53.backend
 
 import cats.implicits._
 import cats.effect.{ContextShift, IO}
-import vinyldns.core.domain.backend.{BackendProviderConfig, BackendProvider, BackendProviderLoader}
+import vinyldns.core.domain.backend.{BackendProvider, BackendProviderConfig, BackendProviderLoader}
 
 class Route53BackendProviderLoader extends BackendProviderLoader {
 
