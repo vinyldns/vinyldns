@@ -44,6 +44,8 @@ angular.module('controller.manageZones', [])
         CONFIRM_UPDATE: 1
     };
 
+    $scope.keyAlgorithms = ['HMAC-MD5.SIG-ALG.REG.INT', 'hmac-sha1.', 'hmac-sha224.', 'hmac-sha256.', 'hmac-sha384.', 'hmac-sha512.'];
+
     /**
      * Acl scope data initial setup
      */

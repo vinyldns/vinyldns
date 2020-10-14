@@ -20,6 +20,7 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.zone.Algorithm.HMAC_MD5
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
@@ -139,7 +140,33 @@ final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
   def deleteRule(rule: ACLRule): ZoneACL = copy(rules = rules - rule)
 }
 
-case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
+sealed abstract class Algorithm(val name: String) {
+  override def toString: String = name
+}
+object Algorithm {
+  case object HMAC_MD5 extends Algorithm("HMAC-MD5.SIG-ALG.REG.INT")
+  case object HMAC_SHA1 extends Algorithm("hmac-sha1.")
+  case object HMAC_SHA224 extends Algorithm("hmac-sha224.")
+  case object HMAC_SHA256 extends Algorithm("hmac-sha256")
+  case object HMAC_SHA384 extends Algorithm("hmac-sha384.")
+  case object HMAC_SHA512 extends Algorithm("hmac-sha512.")
+
+  val Values = List(HMAC_MD5, HMAC_SHA1, HMAC_SHA224, HMAC_SHA256, HMAC_SHA384, HMAC_SHA512)
+  val Map = Values.map(v => v.name -> v).toMap
+
+  def fromString(name: String): Either[String, Algorithm] =
+    Map
+      .get(name)
+      .toRight[String](s"Unsupported algorithm $name, must be one of ${Values.mkString(",")}")
+}
+
+case class ZoneConnection(
+    name: String,
+    keyName: String,
+    key: String,
+    primaryServer: String,
+    algorithm: Algorithm = HMAC_MD5
+) {
 
   def encrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.encrypt(key))

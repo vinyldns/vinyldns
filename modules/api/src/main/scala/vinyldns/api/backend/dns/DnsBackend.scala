@@ -27,7 +27,7 @@ import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
 
 import scala.collection.JavaConverters._
 
@@ -279,7 +279,20 @@ object DnsBackend {
 
   def createTsig(conn: ZoneConnection, crypto: CryptoAlgebra): DNS.TSIG = {
     val decryptedConnection = conn.decrypted(crypto)
-    new DNS.TSIG(decryptedConnection.keyName, decryptedConnection.key)
+    new DNS.TSIG(
+      parseAlgorithm(conn.algorithm),
+      decryptedConnection.keyName,
+      decryptedConnection.key
+    )
+  }
+
+  def parseAlgorithm(algorithm: Algorithm): DNS.Name = algorithm match {
+    case Algorithm.HMAC_MD5 => DNS.TSIG.HMAC_MD5
+    case Algorithm.HMAC_SHA1 => DNS.TSIG.HMAC_SHA1
+    case Algorithm.HMAC_SHA224 => DNS.TSIG.HMAC_SHA224
+    case Algorithm.HMAC_SHA256 => DNS.TSIG.HMAC_SHA256
+    case Algorithm.HMAC_SHA384 => DNS.TSIG.HMAC_SHA384
+    case Algorithm.HMAC_SHA512 => DNS.TSIG.HMAC_SHA512
   }
 
   def parseHostAndPort(primaryServer: String): (String, Int) = {
