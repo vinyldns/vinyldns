@@ -29,7 +29,7 @@ import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.collection.JavaConverters._
@@ -219,11 +219,16 @@ class Route53Backend(
         loadPage(req).flatMap(recurseLoadNextPage(req, _, Nil))
       }
 
-      // get the delegation set so we can load the name server records
-      zoneInfo <- OptionT.liftF(
-        r53(new GetHostedZoneRequest().withId(hz), client.getHostedZoneAsync)
-      )
-    } yield toVinylNSRecordSet(zoneInfo.getDelegationSet, zone.name, zone.id) :: recordSets
+      // get the delegation set so we can load the name server records if we do not have any
+      fabbedPrivateZoneNsRecordSets <- if (recordSets.exists(_.typ == RecordType.NS)) {
+        OptionT.pure[IO](List.empty[RecordSet])
+      } else
+        OptionT.liftF {
+          r53(new GetHostedZoneRequest().withId(hz), client.getHostedZoneAsync)
+            .map(_.getDelegationSet)
+            .map(ds => List(toVinylNSRecordSet(ds, zone.name, zone.id)))
+        }
+    } yield recordSets ++ fabbedPrivateZoneNsRecordSets
   }.getOrElse(Nil)
 
   /**
