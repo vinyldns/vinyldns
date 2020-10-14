@@ -22,7 +22,7 @@ import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
-import com.amazonaws.services.route53.model._
+import com.amazonaws.services.route53.model.{GetHostedZoneRequest, _}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.Fqdn
@@ -196,7 +196,7 @@ class Route53Backend(
         result: ListResourceRecordSetsResult,
         acc: List[RecordSet]
     ): IO[List[RecordSet]] = {
-      val updatedAcc = acc ++ toVinylRecordSets(result.getResourceRecordSets, zone.name)
+      val updatedAcc = acc ++ toVinylRecordSets(result.getResourceRecordSets, zone.name, zone.id)
 
       // Here is our base case right here, getIsTruncated returns true if there are more records
       if (result.getIsTruncated) {
@@ -218,7 +218,12 @@ class Route53Backend(
         // recurse to load all pages
         loadPage(req).flatMap(recurseLoadNextPage(req, _, Nil))
       }
-    } yield recordSets
+
+      // get the delegation set so we can load the name server records
+      zoneInfo <- OptionT.liftF(
+        r53(new GetHostedZoneRequest().withId(hz), client.getHostedZoneAsync)
+      )
+    } yield toVinylNSRecordSet(zoneInfo.getDelegationSet, zone.name, zone.id) :: recordSets
   }.getOrElse(Nil)
 
   /**
