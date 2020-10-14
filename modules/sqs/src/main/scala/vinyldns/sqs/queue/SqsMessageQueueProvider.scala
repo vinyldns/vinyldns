@@ -34,7 +34,6 @@ import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvid
 
 import scala.util.matching.Regex
 import cats.effect.ContextShift
-import org.apache.commons.lang3.StringUtils
 
 class SqsMessageQueueProvider extends MessageQueueProvider {
   import SqsMessageQueueProvider._
@@ -87,23 +86,19 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       // If either of accessKey or secretKey are empty in conf file; then use AWSCredentialsProviderChain to figure out
       // credentials.
       // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
-      if (StringUtils.isBlank(sqsMessageQueueSettings.accessKey) || StringUtils.isBlank(
-          sqsMessageQueueSettings.secretKey
-        )) {
-        sqsAsyncClientBuilder.withCredentials(
-          new DefaultAWSCredentialsProviderChain()
-        )
-      } else {
-        sqsAsyncClientBuilder.withCredentials(
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(
-              sqsMessageQueueSettings.accessKey,
-              sqsMessageQueueSettings.secretKey
+      val credProvider = sqsMessageQueueSettings.accessKey
+        .zip(sqsMessageQueueSettings.secretKey)
+        .map {
+          case (key, secret) =>
+            new AWSStaticCredentialsProvider(
+              new BasicAWSCredentials(key, secret)
             )
-          )
-        )
-      }
-      sqsAsyncClientBuilder.build()
+        }
+        .headOption
+        .getOrElse {
+          new DefaultAWSCredentialsProviderChain()
+        }
+      sqsAsyncClientBuilder.withCredentials(credProvider).build()
     }
 
   def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
