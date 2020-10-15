@@ -124,7 +124,7 @@ object Boot extends App {
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(backendResolver)
+        new ZoneConnectionValidator(backendResolver, VinylDNSConfig.approvedNameServers)
       val recordSetService =
         RecordSetService(
           repositories,

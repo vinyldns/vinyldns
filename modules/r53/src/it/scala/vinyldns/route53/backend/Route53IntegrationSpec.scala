@@ -48,7 +48,13 @@ class Route53IntegrationSpec
   private def testConnection: Route53Backend =
     Route53Backend
       .load(
-        Route53BackendConfig("test", Option("access"), Option("secret"), "http://127.0.0.1:19009", "us-east-1")
+        Route53BackendConfig(
+          "test",
+          Option("access"),
+          Option("secret"),
+          "http://127.0.0.1:19009",
+          "us-east-1"
+        )
       )
       .unsafeRunSync()
 

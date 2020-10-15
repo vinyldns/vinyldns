@@ -26,14 +26,14 @@ import com.amazonaws.auth.{
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
-import com.amazonaws.services.route53.model._
+import com.amazonaws.services.route53.model.{GetHostedZoneRequest, _}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.collection.JavaConverters._
@@ -200,7 +200,7 @@ class Route53Backend(
         result: ListResourceRecordSetsResult,
         acc: List[RecordSet]
     ): IO[List[RecordSet]] = {
-      val updatedAcc = acc ++ toVinylRecordSets(result.getResourceRecordSets, zone.name)
+      val updatedAcc = acc ++ toVinylRecordSets(result.getResourceRecordSets, zone.name, zone.id)
 
       // Here is our base case right here, getIsTruncated returns true if there are more records
       if (result.getIsTruncated) {
@@ -222,7 +222,17 @@ class Route53Backend(
         // recurse to load all pages
         loadPage(req).flatMap(recurseLoadNextPage(req, _, Nil))
       }
-    } yield recordSets
+
+      // get the delegation set so we can load the name server records if we do not have any
+      fabbedPrivateZoneNsRecordSets <- if (recordSets.exists(_.typ == RecordType.NS)) {
+        OptionT.pure[IO](List.empty[RecordSet])
+      } else
+        OptionT.liftF {
+          r53(new GetHostedZoneRequest().withId(hz), client.getHostedZoneAsync)
+            .map(_.getDelegationSet)
+            .map(ds => List(toVinylNSRecordSet(ds, zone.name, zone.id)))
+        }
+    } yield recordSets ++ fabbedPrivateZoneNsRecordSets
   }.getOrElse(Nil)
 
   /**
