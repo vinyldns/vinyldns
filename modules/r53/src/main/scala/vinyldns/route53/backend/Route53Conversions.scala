@@ -72,7 +72,7 @@ trait Route53Conversions {
     val typ = toVinylRecordType(RRType.fromValue(r53RecordSet.getType))
     RecordSet(
       zoneId,
-      Fqdn.merge(r53RecordSet.getName, zoneName).firstLabel,
+      Fqdn.merge(r53RecordSet.getName, zoneName).zoneRecordName(zoneName),
       typ,
       r53RecordSet.getTTL,
       RecordSetStatus.Active,

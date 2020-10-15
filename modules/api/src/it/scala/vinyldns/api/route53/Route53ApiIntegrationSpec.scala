@@ -18,12 +18,14 @@ package vinyldns.api.route53
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import com.amazonaws.services.route53.model.DeleteHostedZoneRequest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
 import scalikejdbc.DB
+import vinyldns.api.domain.zone.ZoneConnectionValidator
 import vinyldns.api.engine.ZoneSyncHandler
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestRecordSetData._
@@ -33,25 +35,39 @@ import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneChangeType}
 import vinyldns.core.health.HealthCheck.HealthCheck
 import vinyldns.route53.backend.{Route53Backend, Route53BackendConfig}
 
+import scala.collection.JavaConverters._
+import scala.util.matching.Regex
+
 class Route53ApiIntegrationSpec
-    extends MySqlApiIntegrationSpec
-    with AnyWordSpecLike
+    extends AnyWordSpec
     with ScalaFutures
     with Matchers
     with MockitoSugar
     with ResultHelpers
     with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with MySqlApiIntegrationSpec {
 
   private val testZone = Zone("example.com.", "test@test.com", backendId = Some("test"))
   private def testConnection: Route53Backend =
     Route53Backend
       .load(
-        Route53BackendConfig("test", "access", "secret", "http://127.0.0.1:19009", "us-east-1")
+        Route53BackendConfig(
+          "test",
+          Some("access"),
+          Some("secret"),
+          "http://127.0.0.1:19009",
+          "us-east-1"
+        )
       )
       .unsafeRunSync()
 
-  override def afterEach(): Unit = clear()
+  override def beforeAll(): Unit = {
+    deleteZone()
+    createZone()
+  }
+
+  override def afterAll(): Unit = clear()
 
   private def clear(): Unit =
     DB.localTx { implicit s =>
@@ -62,21 +78,29 @@ class Route53ApiIntegrationSpec
       ()
     }
 
+  private def deleteZone(): Unit = {
+    val zoneIds = testConnection.client.listHostedZones().getHostedZones.asScala.map(_.getId).toList
+    zoneIds.foreach { id =>
+      testConnection.client.deleteHostedZone(new DeleteHostedZoneRequest().withId(id))
+    }
+  }
+
+  private def createZone(): Unit =
+    testConnection.createZone(testZone).unsafeRunSync()
+
+  private val backendResolver = new BackendResolver {
+    override def resolve(zone: Zone): Backend = testConnection
+
+    override def healthCheck(timeout: Int): HealthCheck = IO.pure(Right(()))
+
+    override def isRegistered(backendId: String): Boolean = true
+
+    override def ids: NonEmptyList[String] = NonEmptyList.one("r53")
+  }
+
   "Route53 backend" should {
     "connect to an existing route53 zone" in {
       val conn = testConnection
-
-      val backendResolver = new BackendResolver {
-        override def resolve(zone: Zone): Backend = conn
-
-        override def healthCheck(timeout: Int): HealthCheck = IO.pure(Right(()))
-
-        override def isRegistered(backendId: String): Boolean = true
-
-        override def ids: NonEmptyList[String] = NonEmptyList.one("r53")
-      }
-      conn.createZone(testZone).unsafeRunSync()
-
       val addRecord = makeTestAddChange(rsOk, testZone)
       conn.applyChange(addRecord).unsafeRunSync()
 
@@ -100,6 +124,18 @@ class Route53ApiIntegrationSpec
         RecordType.NS
       )
       results.recordSets.map(_.name) should contain(rsOk.name)
+
+      // Ensure that the NS record matches the zone name
+      val ns = results.recordSets.find(_.typ == RecordType.NS).head
+      ns.name shouldBe testZone.name
+    }
+
+    "be valid in the ZoneConnectionValidator" in {
+      // Check that the ZoneConnectionValidator can connect to the zone
+      val zcv = new ZoneConnectionValidator(backendResolver, List(new Regex(".*")))
+      zcv.isValidBackendId(Some("r53")) shouldBe Right(())
+      val result = zcv.validateZoneConnections(testZone).value.unsafeRunSync()
+      result shouldBe Right(())
     }
   }
 }
