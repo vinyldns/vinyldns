@@ -18,7 +18,11 @@ package vinyldns.route53.backend
 
 import cats.data.OptionT
 import cats.effect.IO
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth.{
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  DefaultAWSCredentialsProviderChain
+}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
@@ -270,16 +274,26 @@ object Route53Backend {
   // Loads a Route53 backend
   def load(config: Route53BackendConfig): IO[Route53Backend] = {
     val clientIO = IO {
-      AmazonRoute53AsyncClientBuilder.standard
-        .withEndpointConfiguration(
-          new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
-        )
-        .withCredentials(
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(config.accessKey, config.secretKey)
-          )
-        )
-        .build()
+      val r53ClientBuilder = AmazonRoute53AsyncClientBuilder.standard
+      r53ClientBuilder.withEndpointConfiguration(
+        new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
+      )
+      // If either of accessKey or secretKey are empty in conf file; then use AWSCredentialsProviderChain to figure out
+      // credentials.
+      // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
+      val credProvider = config.accessKey
+        .zip(config.secretKey)
+        .map {
+          case (key, secret) =>
+            new AWSStaticCredentialsProvider(
+              new BasicAWSCredentials(key, secret)
+            )
+        }
+        .headOption
+        .getOrElse {
+          new DefaultAWSCredentialsProviderChain()
+        }
+      r53ClientBuilder.withCredentials(credProvider).build()
     }
 
     // Connect to the client AND load the zones
