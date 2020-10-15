@@ -144,12 +144,12 @@ sealed abstract class Algorithm(val name: String) {
   override def toString: String = name
 }
 object Algorithm {
-  case object HMAC_MD5 extends Algorithm("HMAC-MD5.SIG-ALG.REG.INT")
-  case object HMAC_SHA1 extends Algorithm("hmac-sha1.")
-  case object HMAC_SHA224 extends Algorithm("hmac-sha224.")
-  case object HMAC_SHA256 extends Algorithm("hmac-sha256")
-  case object HMAC_SHA384 extends Algorithm("hmac-sha384.")
-  case object HMAC_SHA512 extends Algorithm("hmac-sha512.")
+  case object HMAC_MD5 extends Algorithm("HMAC-MD5")
+  case object HMAC_SHA1 extends Algorithm("HMAC-SHA1")
+  case object HMAC_SHA224 extends Algorithm("HMAC-SHA224")
+  case object HMAC_SHA256 extends Algorithm("HMAC-SHA256")
+  case object HMAC_SHA384 extends Algorithm("HMAC-SHA384")
+  case object HMAC_SHA512 extends Algorithm("HMAC-SHA512")
 
   val Values = List(HMAC_MD5, HMAC_SHA1, HMAC_SHA224, HMAC_SHA256, HMAC_SHA384, HMAC_SHA512)
   val Map = Values.map(v => v.name -> v).toMap

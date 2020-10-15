@@ -11,6 +11,31 @@ key "vinyldns." {
   secret "nzisn+4G2ldMn0q1CV3vsg==";
 };
 
+key "vinyldns-sha1." {
+  algorithm hmac-sha1;
+  secret "0nIhR1zS/nHUg2n0AIIUyJwXUyQ=";
+};
+
+key "vinyldns-sha224." {
+  algorithm hmac-sha224;
+  secret "yud/F666YjcnfqPSulHaYXrNObNnS1Jv+rX61A==";
+};
+
+key "vinyldns-sha256." {
+  algorithm hmac-sha256;
+  secret "wzLsDGgPRxFaC6z/9Bc0n1W4KrnmaUdFCgCn2+7zbPU=";
+};
+
+key "vinyldns-sha384." {
+  algorithm hmac-sha384;
+  secret "ne9jSUJ7PBGveM37aOX+ZmBXQgz1EqkbYBO1s5l/LNpjEno4OfYvGo1Lv1rnw3pE";
+};
+
+key "vinyldns-sha512." {
+  algorithm hmac-sha512;
+  secret "xfKA0DYb88tiUGND+cWddwUg3/SugYSsdvCfBOJ1jr8MEdgbVRyrlVDEXLsfTUGorQ3ShENdymw2yw+rTr+lwA==";
+};
+
 // Consider adding the 1918 zones here, if they are not used in your
 // organization
 //include "/etc/bind/zones.rfc1918";
@@ -101,7 +126,7 @@ zone "0.0.0.1.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa" {
 zone "one-time" {
 	type master;
 	file "/var/bind/one-time.hosts";
-	allow-update { key "vinyldns."; };
+	allow-update { key "vinyldns."; key "vinyldns-sha1."; key "vinyldns-sha224."; key "vinyldns-sha256."; key "vinyldns-sha384."; key "vinyldns-sha512."; };
 	};
 
 zone "sync-test" {

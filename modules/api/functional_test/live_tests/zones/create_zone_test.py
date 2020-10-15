@@ -38,6 +38,46 @@ records_in_dns = [
 
 
 @pytest.mark.serial
+def test_create_zone_sha1(shared_zone_test_context):
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = 'one-time'
+
+    zone = {
+        'name': zone_name,
+        'email': 'test@test.com',
+        'adminGroupId': shared_zone_test_context.ok_group['id']
+        'connection': {
+            'name': 'vinyldns-sha1.',
+            'keyName': 'vinyldns-sha1.',
+            'key': '0nIhR1zS/nHUg2n0AIIUyJwXUyQ=',
+            'primaryServer': VinylDNSTestContext.dns_ip
+        }
+    }
+
+    try:
+        zone_change = client.create_zone(zone, status=202)
+        zone = zone_change['zone']
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
+
+        # Check response from create
+        assert_that(zone['name'], is_(zone_name+'.'))
+        print "'connection' not in zone = " + 'connection' not in zone
+
+        assert_that('connection' not in zone)
+        assert_that('transferConnection' not in zone)
+
+        # Check that it was internally stored correctly using GET
+        zone_get = client.get_zone(zone['id'])['zone']
+        assert_that(zone_get['name'], is_(zone_name+'.'))
+        assert_that('connection' not in zone_get)
+        assert_that('transferConnection' not in zone_get)
+
+    finally:
+        if 'id' in zone:
+            client.abandon_zones([zone['id']], status=202)
+
+@pytest.mark.serial
 def test_create_zone_success(shared_zone_test_context):
     """
     Test successfully creating a zone
