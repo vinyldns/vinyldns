@@ -33,9 +33,6 @@ case class Fqdn(fqdn: String) {
 
   // Returns the record name relative to the zone name, or the zone name if it is a match
   def zoneRecordName(zoneName: String): String = {
-    println(
-      s"***calculating record name for $fqdn and zone $zoneName; match is ${matches(zoneName)}"
-    )
     if (matches(zoneName)) fqdn else firstLabel
   }
 
