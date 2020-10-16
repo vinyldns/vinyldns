@@ -32,8 +32,12 @@ case class Fqdn(fqdn: String) {
     else value.toLowerCase == fqdn.dropRight(1).toLowerCase
 
   // Returns the record name relative to the zone name, or the zone name if it is a match
-  def zoneRecordName(zoneName: String): String =
+  def zoneRecordName(zoneName: String): String = {
+    println(
+      s"***calculating record name for $fqdn and zone $zoneName; match is ${matches(zoneName)}"
+    )
     if (matches(zoneName)) fqdn else firstLabel
+  }
 
   override def equals(obj: Any): Boolean =
     obj match {
@@ -57,7 +61,7 @@ case object Fqdn {
     val zname = dropTrailingDot(zoneName)
 
     val zIndex = rname.lastIndexOf(zname)
-    if (zIndex > 0) {
+    if (zIndex >= 0) {
       // zone name already there, or record name = zone name, so just return
       Fqdn(rname + ".")
     } else {
