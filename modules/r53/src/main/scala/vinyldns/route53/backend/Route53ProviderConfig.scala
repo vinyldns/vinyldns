@@ -25,8 +25,8 @@ import pureconfig.module.catseffect.syntax.CatsEffectConfigSource
 // TODO: Add delegation set id and VPC options especially wrt CreateZone
 final case class Route53BackendConfig(
     id: String,
-    accessKey: String,
-    secretKey: String,
+    accessKey: Option[String],
+    secretKey: Option[String],
     serviceEndpoint: String,
     signingRegion: String
 )

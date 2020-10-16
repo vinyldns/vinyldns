@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.domain.record._
-import vinyldns.api.ResultHelpers
+import vinyldns.api.{ResultHelpers, VinylDNSConfig}
 import cats.effect._
 import org.mockito.Matchers.any
 import vinyldns.core.domain.Fqdn
@@ -66,7 +66,8 @@ class ZoneConnectionValidatorSpec
       recordSets = recordSets.toList
     )
 
-  class TestConnectionValidator() extends ZoneConnectionValidator(mockBackendResolver) {
+  class TestConnectionValidator()
+      extends ZoneConnectionValidator(mockBackendResolver, VinylDNSConfig.approvedNameServers) {
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
     override def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
@@ -223,7 +224,7 @@ class ZoneConnectionValidatorSpec
       doReturn(false).when(mockBackendResolver).isRegistered("bad")
 
       val underTest =
-        new ZoneConnectionValidator(mockBackendResolver)
+        new ZoneConnectionValidator(mockBackendResolver, Nil)
 
       "return success if the backendId exists" in {
         underTest.isValidBackendId(Some("some-test-backend")) shouldBe right
