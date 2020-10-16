@@ -68,4 +68,6 @@ trait MembershipServiceAlgebra {
       lockStatus: LockStatus,
       authPrincipal: AuthPrincipal
   ): Result[User]
+
+  def getUser(id: String, authPrincipal: AuthPrincipal): Result[User]
 }
