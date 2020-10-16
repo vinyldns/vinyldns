@@ -44,13 +44,13 @@ object VinylDNSConfig {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  lazy val config: Config = ConfigFactory.load()
-  lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
+  val config: Config = ConfigFactory.load()
+  val vinyldnsConfig: Config = config.getConfig("vinyldns")
 
-  lazy val apiBackend: Config =
+  val apiBackend: Config =
     vinyldnsConfig.getConfig("backend")
 
-  lazy val dataStoreConfigs: IO[List[DataStoreConfig]] =
+  val dataStoreConfigs: IO[List[DataStoreConfig]] =
     vinyldnsConfig
       .getStringList("data-stores")
       .asScala
@@ -62,7 +62,7 @@ object VinylDNSConfig {
       }
       .parSequence
 
-  lazy val notifierConfigs: IO[List[NotifierConfig]] =
+  val notifierConfigs: IO[List[NotifierConfig]] =
     vinyldnsConfig
       .getStringList("notifiers")
       .asScala
@@ -74,29 +74,28 @@ object VinylDNSConfig {
       }
       .parSequence
 
-  lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
-  lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
-  lazy val messageQueueConfig: IO[MessageQueueConfig] =
+  val restConfig: Config = vinyldnsConfig.getConfig("rest")
+  val messageQueueConfig: IO[MessageQueueConfig] =
     Blocker[IO].use(
       ConfigSource.fromConfig(vinyldnsConfig.getConfig("queue")).loadF[IO, MessageQueueConfig](_)
     )
-  lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
-  lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
-  lazy val approvedNameServers: List[Regex] =
+  val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
+  val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
+  val approvedNameServers: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(getOptionalStringList("approved-name-servers"))
 
-  lazy val highValueRegexList: List[Regex] =
+  val highValueRegexList: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(
       getOptionalStringList("high-value-domains.regex-list")
     )
 
-  lazy val highValueIpList: List[IpAddress] =
+  val highValueIpList: List[IpAddress] =
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
 
-  lazy val sharedApprovedTypes: Set[RecordType.Value] =
+  val sharedApprovedTypes: Set[RecordType.Value] =
     vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
 
-  lazy val configuredDnsConnections: ConfiguredDnsConnections = {
+  val configuredDnsConnections: ConfiguredDnsConnections = {
 
     val defaultZoneConnection = {
       val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
@@ -132,7 +131,7 @@ object VinylDNSConfig {
     ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
   }
 
-  lazy val healthCheckTimeout: IO[Int] =
+  val healthCheckTimeout: IO[Int] =
     Blocker[IO].use(
       ConfigSource
         .fromConfig(vinyldnsConfig)
@@ -147,13 +146,13 @@ object VinylDNSConfig {
       vinyldnsConfig.getStringList(key).asScala.toList
     } else List()
 
-  lazy val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
-  lazy val defaultTtl: Long = vinyldnsConfig.as[Option[Long]]("default-ttl").getOrElse(7200L)
-  lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
+  val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
+  val defaultTtl: Long = vinyldnsConfig.as[Option[Long]]("default-ttl").getOrElse(7200L)
+  val manualBatchReviewEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
 
-  lazy val globalAcl: IO[GlobalAcls] =
+  val globalAcl: IO[GlobalAcls] =
     Blocker[IO]
       .use(
         ConfigSource.fromConfig(vinyldnsConfig).at("global-acl-rules").loadF[IO, List[GlobalAcl]](_)
@@ -162,7 +161,7 @@ object VinylDNSConfig {
 
   // defines nibble boundary for ipv6 zone discovery
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
-  lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] =
+  val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] =
     Blocker[IO].use(
       ConfigSource
         .fromConfig(vinyldnsConfig)
@@ -170,25 +169,25 @@ object VinylDNSConfig {
         .loadF[IO, V6DiscoveryNibbleBoundaries](_)
     )
 
-  lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
+  val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")
     .getOrElse(false)
 
-  lazy val domainListRequiringManualReview: List[Regex] =
+  val domainListRequiringManualReview: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(
       getOptionalStringList("manual-review-domains.domain-list")
     )
 
-  lazy val ipListRequiringManualReview: List[IpAddress] =
+  val ipListRequiringManualReview: List[IpAddress] =
     getOptionalStringList("manual-review-domains.ip-list").flatMap(ip => IpAddress(ip))
 
-  lazy val zoneNameListRequiringManualReview: Set[String] = {
+  val zoneNameListRequiringManualReview: Set[String] = {
     Set() ++ getOptionalStringList("manual-review-domains.zone-name-list").map(
       zn => DomainHelpers.ensureTrailingDot(zn.toLowerCase)
     )
   }
 
-  lazy val validateRecordLookupAgainstDnsBackend: Boolean =
+  val validateRecordLookupAgainstDnsBackend: Boolean =
     vinyldnsConfig
       .as[Option[Boolean]]("validate-record-lookup-against-dns-backend")
       .getOrElse(false)
