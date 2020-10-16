@@ -36,8 +36,6 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    max-retries = 100
           |
           |    settings {
-          |      access-key = "x"
-          |      signing-region = "x"
           |      service-endpoint = "http://localhost:19007/"
           |      queue-name = "queue-name"
           |    }
