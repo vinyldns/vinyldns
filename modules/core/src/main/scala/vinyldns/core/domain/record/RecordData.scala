@@ -46,6 +46,7 @@ object RecordData {
     case SRV => SRVData.fromString(value)
     case SSHFP => SSHFPData.fromString(value)
     case TXT => TXTData.fromString(value)
+    case SOA => SOAData.fromString(value)
     case UNKNOWN => None
   }
 }

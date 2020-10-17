@@ -44,6 +44,7 @@ trait Route53Conversions {
     case SPF => Some(RRType.SPF)
     case SRV => Some(RRType.SRV)
     case TXT => Some(RRType.TXT)
+    case SOA => Some(RRType.SOA)
     case _ => None
   }
 
@@ -58,6 +59,7 @@ trait Route53Conversions {
     case RRType.SPF => SPF
     case RRType.SRV => SRV
     case RRType.TXT => TXT
+    case RRType.SOA => SOA
     case _ => UNKNOWN
   }
 
