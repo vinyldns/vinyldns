@@ -46,7 +46,7 @@ class StatusRoutingSpec
 
   "GET /status" should {
     "return the current status of true" in {
-      Get("/status") ~> statusRoute ~> check {
+      Get("/status") ~> statusRoute("blue", "unset", "vinyldns.") ~> check {
         response.status shouldBe StatusCodes.OK
         val resultStatus = responseAs[CurrentStatus]
         resultStatus.processingDisabled shouldBe false
@@ -59,7 +59,7 @@ class StatusRoutingSpec
 
   "POST /status" should {
     "disable processing" in {
-      Post("/status?processingDisabled=true") ~> statusRoute ~> check {
+      Post("/status?processingDisabled=true") ~> statusRoute("blue", "unset", "vinyldns.") ~> check {
         response.status shouldBe StatusCodes.OK
         val resultStatus = responseAs[CurrentStatus]
         resultStatus.processingDisabled shouldBe true
@@ -67,7 +67,7 @@ class StatusRoutingSpec
     }
 
     "enable processing" in {
-      Post("/status?processingDisabled=false") ~> statusRoute ~> check {
+      Post("/status?processingDisabled=false") ~> statusRoute("blue", "unset", "vinyldns.") ~> check {
         response.status shouldBe StatusCodes.OK
         val resultStatus = responseAs[CurrentStatus]
         resultStatus.processingDisabled shouldBe false

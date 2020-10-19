@@ -18,8 +18,13 @@ package vinyldns.core.domain.zone
 
 import java.util.UUID
 
+import cats.effect.IO
+import com.typesafe.config.Config
 import org.joda.time.DateTime
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
+import scala.collection.JavaConverters._
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
@@ -165,3 +170,40 @@ final case class ConfiguredDnsConnections(
     defaultTransferConnection: ZoneConnection,
     dnsBackends: List[LegacyDnsBackend]
 )
+object ConfiguredDnsConnections {
+  def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
+    CryptoAlgebra.load(cryptoConfig).map { crypto =>
+      val defaultZoneConnection = {
+        val connectionConfig = config.getConfig("vinyldns.defaultZoneConnection")
+        val name = connectionConfig.getString("name")
+        val keyName = connectionConfig.getString("keyName")
+        val key = connectionConfig.getString("key")
+        val primaryServer = connectionConfig.getString("primaryServer")
+        ZoneConnection(name, keyName, key, primaryServer).encrypted(crypto)
+      }
+
+      val defaultTransferConnection = {
+        val connectionConfig = config.getConfig("vinyldns.defaultTransferConnection")
+        val name = connectionConfig.getString("name")
+        val keyName = connectionConfig.getString("keyName")
+        val key = connectionConfig.getString("key")
+        val primaryServer = connectionConfig.getString("primaryServer")
+        ZoneConnection(name, keyName, key, primaryServer).encrypted(crypto)
+      }
+
+      val dnsBackends = {
+        if (config.hasPath("vinyldns.backends")) {
+          config
+            .getConfigList("vinyldns.backends")
+            .asScala
+            .map {
+              ConfigSource.fromConfig(_).loadOrThrow[LegacyDnsBackend]
+            }
+            .toList
+            .map(_.encrypted(crypto))
+        } else List.empty
+      }
+
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
+    }
+}

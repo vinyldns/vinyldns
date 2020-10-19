@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.batch
+package vinyldns.api.config
 
 import pureconfig.ConfigReader
+import pureconfig.generic.semiauto._
 
-final case class V6DiscoveryNibbleBoundaries(min: Int, max: Int) {
-  assert(min <= max)
-  assert(min > 0)
-  assert(max <= 32)
-}
-object V6DiscoveryNibbleBoundaries {
-  implicit val configReader: ConfigReader[V6DiscoveryNibbleBoundaries] =
-    ConfigReader.forProduct2[V6DiscoveryNibbleBoundaries, Int, Int]("min", "max")(
-      V6DiscoveryNibbleBoundaries(_, _)
-    )
+final case class HttpConfig(host: String, port: Int)
+object HttpConfig {
+  implicit val configReader: ConfigReader[HttpConfig] = deriveReader[HttpConfig]
 }

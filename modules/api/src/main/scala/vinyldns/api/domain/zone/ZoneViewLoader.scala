@@ -18,7 +18,6 @@ package vinyldns.api.domain.zone
 
 import cats.effect._
 import org.slf4j.LoggerFactory
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.backend.Backend
 import vinyldns.core.domain.record.{NameSort, RecordSetRepository}
@@ -36,7 +35,7 @@ object DnsZoneViewLoader extends DnsConversions {
 case class DnsZoneViewLoader(
     zone: Zone,
     backendConnection: Backend,
-    maxZoneSize: Int = VinylDNSConfig.maxZoneSize
+    maxZoneSize: Int
 ) extends ZoneViewLoader
     with DnsConversions
     with Monitored {

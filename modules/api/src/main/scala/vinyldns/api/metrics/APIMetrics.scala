@@ -17,23 +17,25 @@
 package vinyldns.api.metrics
 import java.util.concurrent.TimeUnit
 
-import cats.effect.{Blocker, ContextShift, IO}
+import cats.effect.IO
 import com.codahale.metrics.Slf4jReporter.LoggingLevel
 import com.codahale.metrics.{Metric, MetricFilter, ScheduledReporter, Slf4jReporter}
-import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import pureconfig._
-import pureconfig.generic.auto._
-import pureconfig.module.catseffect.syntax._
+import pureconfig.generic.semiauto._
 import vinyldns.core.VinylDNSMetrics
 
 final case class MemoryMetricsSettings(logEnabled: Boolean, logSeconds: Int)
+object MemoryMetricsSettings {
+  implicit val configReader: ConfigReader[MemoryMetricsSettings] =
+    deriveReader[MemoryMetricsSettings]
+}
 final case class APIMetricsSettings(memory: MemoryMetricsSettings)
+object APIMetricsSettings {
+  implicit val configReader: ConfigReader[APIMetricsSettings] = deriveReader[APIMetricsSettings]
+}
 
 object APIMetrics {
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
-
   // Output all memory metrics to the log, do not start unless configured
   private val logReporter = Slf4jReporter
     .forRegistry(VinylDNSMetrics.metricsRegistry)
@@ -55,9 +57,4 @@ object APIMetrics {
       reporter.start(settings.memory.logSeconds, TimeUnit.SECONDS)
     }
   }
-
-  def loadSettings(config: Config): IO[APIMetricsSettings] =
-    Blocker[IO].use(
-      ConfigSource.fromConfig(config).loadF[IO, APIMetricsSettings](_)
-    )
 }

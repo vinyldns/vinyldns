@@ -24,7 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import vinyldns.api.ResultHelpers
+import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -75,9 +75,13 @@ class RecordSetServiceSpec
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
-    new AccessValidations(),
+    new AccessValidations(
+      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+    ),
     mockBackendResolver,
-    false
+    false,
+    VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.approvedNameServers
   )
 
   val underTestWithDnsBackendValidations = new RecordSetService(
@@ -87,9 +91,13 @@ class RecordSetServiceSpec
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
-    new AccessValidations(),
+    new AccessValidations(
+      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+    ),
     mockBackendResolver,
-    true
+    true,
+    VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.approvedNameServers
   )
 
   "addRecordSet" should {

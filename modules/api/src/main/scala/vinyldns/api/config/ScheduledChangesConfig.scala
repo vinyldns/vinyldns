@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.api.crypto
+package vinyldns.api.config
 
-import cats.effect.IO
-import com.typesafe.config.Config
-import vinyldns.api.VinylDNSConfig
-import vinyldns.core.crypto.CryptoAlgebra
+import pureconfig.ConfigReader
 
-object Crypto {
-
-  lazy val instance: CryptoAlgebra = loadCrypto().unsafeRunSync()
-
-  def loadCrypto(cryptoConfig: Config = VinylDNSConfig.cryptoConfig): IO[CryptoAlgebra] =
-    CryptoAlgebra.load(cryptoConfig)
-
-  def encrypt(value: String): String = instance.encrypt(value)
-
-  def decrypt(value: String): String = instance.decrypt(value)
+final case class ScheduledChangesConfig(enabled: Boolean)
+object ScheduledChangesConfig {
+  implicit val configReader: ConfigReader[ScheduledChangesConfig] =
+    ConfigReader.forProduct1[ScheduledChangesConfig, Boolean]("scheduled-changes-enabled")(
+      ScheduledChangesConfig(_)
+    )
 }

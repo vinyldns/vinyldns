@@ -59,7 +59,8 @@ object BatchChangeService {
       authProvider: AuthPrincipalProvider,
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
-      v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries
+      v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries,
+      defaultTtl: Long
   ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
@@ -73,7 +74,8 @@ object BatchChangeService {
       authProvider,
       notifiers,
       scheduledChangesEnabled,
-      v6DiscoveryNibbleBoundaries
+      v6DiscoveryNibbleBoundaries,
+      defaultTtl
     )
 }
 
@@ -89,7 +91,8 @@ class BatchChangeService(
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
-    v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries
+    v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries,
+    defaultTtl: Long
 ) extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -370,7 +373,7 @@ class BatchChangeService(
       case Some(zn) if zn.name == change.inputName && change.typ == CNAME =>
         CnameAtZoneApexError(zn.name).invalidNel
       case Some(zn) =>
-        ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
+        ChangeForValidation(zn, relativize(change.inputName, zn.name), change, defaultTtl).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
@@ -387,7 +390,7 @@ class BatchChangeService(
       else validZones.headOption
     }
     zone match {
-      case Some(z) => ChangeForValidation(z, recordName, change).validNel
+      case Some(z) => ChangeForValidation(z, recordName, change, defaultTtl).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
@@ -414,7 +417,7 @@ class BatchChangeService(
           // remove zone name from fqdn for recordname
           getIPv6FullReverseName(change.inputName).map(_.dropRight(zone.name.length + 1))
         }
-      } yield ChangeForValidation(zone, recordName, change).validNel
+      } yield ChangeForValidation(zone, recordName, change, defaultTtl).validNel
 
       changeForValidation.getOrElse(ZoneDiscoveryError(change.inputName).invalidNel)
     }
@@ -437,7 +440,7 @@ class BatchChangeService(
         case (validated, input) =>
           validated match {
             case Valid(v) => v.asStoredChange()
-            case Invalid(e) => input.asNewStoredChange(e)
+            case Invalid(e) => input.asNewStoredChange(e, defaultTtl)
           }
       }
       BatchChange(

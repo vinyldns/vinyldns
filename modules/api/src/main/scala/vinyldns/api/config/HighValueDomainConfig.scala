@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.batch
+package vinyldns.api.config
 
+import com.comcast.ip4s.IpAddress
 import pureconfig.ConfigReader
+import vinyldns.api.domain.zone.ZoneRecordValidations
 
-final case class V6DiscoveryNibbleBoundaries(min: Int, max: Int) {
-  assert(min <= max)
-  assert(min > 0)
-  assert(max <= 32)
-}
-object V6DiscoveryNibbleBoundaries {
-  implicit val configReader: ConfigReader[V6DiscoveryNibbleBoundaries] =
-    ConfigReader.forProduct2[V6DiscoveryNibbleBoundaries, Int, Int]("min", "max")(
-      V6DiscoveryNibbleBoundaries(_, _)
-    )
+import scala.util.matching.Regex
+
+final case class HighValueDomainConfig(fqdnRegexes: List[Regex], ipList: List[IpAddress])
+object HighValueDomainConfig {
+  import ZoneRecordValidations.toCaseIgnoredRegexList
+  implicit val configReader: ConfigReader[HighValueDomainConfig] =
+    ConfigReader.forProduct2[HighValueDomainConfig, List[String], List[String]](
+      "regex-list",
+      "ip-list"
+    ) {
+      case (regexList, ipList) =>
+        HighValueDomainConfig(toCaseIgnoredRegexList(regexList), ipList.flatMap(IpAddress(_)))
+    }
 }

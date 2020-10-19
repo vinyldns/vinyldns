@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package vinyldns.api
+package vinyldns.api.config
 
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.RepositoryName._
 
-class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
+class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+
+  private val underTest: VinylDNSConfig = VinylDNSConfig.load().unsafeRunSync()
 
   "VinylDNSConfig" should {
     "load the rest config" in {
-      val restConfig = VinylDNSConfig.restConfig
-      restConfig.getInt("port") shouldBe 9000
+      underTest.httpConfig.port shouldBe 9000
     }
 
     "properly load the datastore configs" in {
-      VinylDNSConfig.dataStoreConfigs.unsafeRunSync.length shouldBe 2
+      (underTest.dataStoreConfigs should have).length(2L)
     }
     "assign the correct mysql repositories" in {
       val mysqlConfig =
-        VinylDNSConfig.dataStoreConfigs.unsafeRunSync
+        underTest.dataStoreConfigs
           .find(_.className == "vinyldns.mysql.repository.MySqlDataStoreProvider")
           .get
 
@@ -53,7 +54,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
     }
     "assign the correct dynamodb repositories" in {
       val dynamodbConfig =
-        VinylDNSConfig.dataStoreConfigs.unsafeRunSync
+        underTest.dataStoreConfigs
           .find(_.className == "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider")
           .get
 
@@ -61,16 +62,8 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
         Set()
     }
 
-    "load string list for key that exists" in {
-      VinylDNSConfig.getOptionalStringList("string-list-test").length shouldBe 1
-    }
-
-    "load empty string list that does not exist" in {
-      VinylDNSConfig.getOptionalStringList("no-existo").length shouldBe 0
-    }
-
     "properly load the notifier configs" in {
-      val notifierConfigs = VinylDNSConfig.notifierConfigs.unsafeRunSync
+      val notifierConfigs = underTest.notifierConfigs
 
       notifierConfigs.length shouldBe 1
 
@@ -83,23 +76,23 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers {
       val defaultConn =
         ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
 
-      VinylDNSConfig.configuredDnsConnections.defaultZoneConnection
-        .decrypted(Crypto.instance) shouldBe
+      underTest.configuredDnsConnections.defaultZoneConnection
+        .decrypted(underTest.crypto) shouldBe
         defaultConn
-      VinylDNSConfig.configuredDnsConnections.defaultTransferConnection
-        .decrypted(Crypto.instance) shouldBe
+      underTest.configuredDnsConnections.defaultTransferConnection
+        .decrypted(underTest.crypto) shouldBe
         defaultConn
     }
     "load specified backends" in {
       val zc = ZoneConnection("zoneconn.", "vinyldns.", "test-key", "127.0.0.1:19001")
       val tc = zc.copy(name = "transferconn.")
 
-      val backends = VinylDNSConfig.configuredDnsConnections.dnsBackends
+      val backends = underTest.configuredDnsConnections.dnsBackends
       backends.length shouldBe 1
 
       backends.head.id shouldBe "test"
-      backends.head.zoneConnection.decrypted(Crypto.instance) shouldBe zc
-      backends.head.transferConnection.decrypted(Crypto.instance) shouldBe tc
+      backends.head.zoneConnection.decrypted(underTest.crypto) shouldBe zc
+      backends.head.transferConnection.decrypted(underTest.crypto) shouldBe tc
     }
   }
 }

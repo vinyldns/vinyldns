@@ -34,6 +34,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.backend.BackendResolver
 
 import scala.concurrent.duration._
@@ -79,7 +80,8 @@ class ZoneServiceSpec
     mockMessageQueue,
     new ZoneValidations(1000),
     new AccessValidations(),
-    mockBackendResolver
+    mockBackendResolver,
+    NoOpCrypto.instance
   )
 
   private val createZoneAuthorized = CreateZoneInput(

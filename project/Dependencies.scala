@@ -4,10 +4,10 @@ object Dependencies {
   lazy val akkaHttpV = "10.1.10"
   lazy val akkaV = "2.5.23"
   lazy val jettyV = "8.1.12.v20130726"
-  lazy val pureConfigV = "0.12.3"
+  lazy val pureConfigV = "0.14.0"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
-  lazy val catsEffectV = "2.1.3"
+  lazy val catsEffectV = "2.2.0"
   lazy val configV = "1.4.0"
   lazy val scalikejdbcV = "3.4.1"
   lazy val scalaTestV = "3.1.1"
@@ -16,7 +16,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "2.3.0"
+  lazy val fs2V = "2.4.4"
   lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(

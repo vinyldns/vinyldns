@@ -407,7 +407,8 @@ class CommandHandlerSpec
             recordChangeRepo,
             batchChangeRepo,
             AllNotifiers(List.empty),
-            mockBackendResolver
+            mockBackendResolver,
+            10000
           )
 
       // kick off processing of messages
