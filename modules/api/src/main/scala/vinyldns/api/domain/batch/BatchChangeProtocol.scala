@@ -18,7 +18,6 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import org.joda.time.DateTime
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.{DomainValidationError, SingleChangeError}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.batch._
@@ -45,7 +44,7 @@ object BatchChangeInput {
 sealed trait ChangeInput {
   val inputName: String
   val typ: RecordType
-  def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange
+  def asNewStoredChange(errors: NonEmptyList[DomainValidationError], defaultTtl: Long): SingleChange
 }
 
 final case class AddChangeInput(
@@ -55,8 +54,11 @@ final case class AddChangeInput(
     record: RecordData
 ) extends ChangeInput {
 
-  def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange = {
-    val knownTtl = ttl.getOrElse(VinylDNSConfig.defaultTtl)
+  def asNewStoredChange(
+      errors: NonEmptyList[DomainValidationError],
+      defaultTtl: Long
+  ): SingleChange = {
+    val knownTtl = ttl.getOrElse(defaultTtl)
     SingleAddChange(
       None,
       None,
@@ -79,7 +81,10 @@ final case class DeleteRRSetChangeInput(
     typ: RecordType,
     record: Option[RecordData]
 ) extends ChangeInput {
-  def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
+  def asNewStoredChange(
+      errors: NonEmptyList[DomainValidationError],
+      defaultTtl: Long
+  ): SingleChange =
     SingleDeleteRRSetChange(
       None,
       None,

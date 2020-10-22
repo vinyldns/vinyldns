@@ -33,6 +33,7 @@ import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.BackendResolver
@@ -129,7 +130,8 @@ class ZoneServiceIntegrationSpec
       TestMessageQueue,
       new ZoneValidations(1000),
       new AccessValidations(),
-      mockBackendResolver
+      mockBackendResolver,
+      NoOpCrypto.instance
     )
   }
 

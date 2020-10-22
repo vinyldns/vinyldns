@@ -84,7 +84,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     AddChangeForValidation(
       okZone,
       s"$recordName",
-      AddChangeInput(s"$recordName.ok.", typ, Some(123), recordData)
+      AddChangeInput(s"$recordName.ok.", typ, Some(123), recordData),
+      7200L
     )
 
   private def makeDeleteRRSetChangeForValidation(

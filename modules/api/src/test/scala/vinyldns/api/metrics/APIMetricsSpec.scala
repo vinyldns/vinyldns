@@ -19,52 +19,12 @@ import java.util.concurrent.TimeUnit
 
 import cats.scalatest.EitherMatchers
 import com.codahale.metrics.ScheduledReporter
-import com.typesafe.config.ConfigFactory
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.VinylDNSConfig
 
 class APIMetricsSpec extends AnyWordSpec with Matchers with MockitoSugar with EitherMatchers {
-
-  "APIMetricsSettings" should {
-    "succeed with valid config" in {
-      val config = ConfigFactory.parseString(
-        """
-          |{
-          |  memory {
-          |    log-enabled = true
-          |    log-seconds = 5
-          |  }
-          |}
-        """.stripMargin
-      )
-      APIMetrics.loadSettings(config).attempt.unsafeRunSync() shouldBe Right(
-        APIMetricsSettings(MemoryMetricsSettings(logEnabled = true, logSeconds = 5))
-      )
-    }
-    "fail with invalid config" in {
-      val config = ConfigFactory.parseString(
-        """
-          |{
-          |  memory {
-          |    log-blah-enabled = true
-          |    log-seconds = 5
-          |  }
-          |}
-        """.stripMargin
-      )
-      APIMetrics.loadSettings(config).attempt.unsafeRunSync() shouldBe left
-    }
-    "default to log memory off" in {
-      APIMetrics
-        .loadSettings(VinylDNSConfig.vinyldnsConfig.getConfig("metrics"))
-        .unsafeRunSync()
-        .memory
-        .logEnabled shouldBe false
-    }
-  }
 
   "APIMetrics" should {
     "start the log reporter if enabled" in {

@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.ResultHelpers
+import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
@@ -52,7 +52,10 @@ class AccessValidationsSpec
   private val badGroupReadAcl =
     ACLRule(AccessLevel.Read, userId = None, groupId = Some("bad-group"))
 
-  private val accessValidationTest = new AccessValidations()
+  private val accessValidationTest = new AccessValidations(
+    sharedApprovedTypes =
+      List(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR, RecordType.TXT)
+  )
   private val groupIds = Seq(okGroup.id, twoUserGroup.id)
   private val userAccessNone = okUser.copy(id = "NoAccess")
   private val userAuthNone = AuthPrincipal(userAccessNone, groupIds)
@@ -81,7 +84,10 @@ class AccessValidationsSpec
   private val userAccessGlobalAcl = okUser.copy(id = "GlobalACL")
   private val userAuthGlobalAcl = AuthPrincipal(userAccessGlobalAcl, groupIds)
   private val globalAcl = GlobalAcl(List(okGroup.id), List(".*foo.*"))
-  private val globalAclTest = new AccessValidations(GlobalAcls(List(globalAcl)))
+  private val globalAclTest = new AccessValidations(
+    GlobalAcls(List(globalAcl)),
+    VinylDNSTestHelpers.sharedApprovedTypes
+  )
 
   private val testUser = User("test", "test", "test", isTest = true)
 

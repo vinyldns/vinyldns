@@ -19,7 +19,7 @@ package vinyldns.api.domain.zone
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.api.crypto.Crypto
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
 
@@ -40,9 +40,14 @@ object ZoneChangeGenerator {
       status
     )
 
-  def forUpdate(newZone: Zone, oldZone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
+  def forUpdate(
+      newZone: Zone,
+      oldZone: Zone,
+      authPrincipal: AuthPrincipal,
+      crypto: CryptoAlgebra
+  ): ZoneChange =
     ZoneChange(
-      newZone.copy(updated = Some(DateTime.now), connection = fixConn(oldZone, newZone)),
+      newZone.copy(updated = Some(DateTime.now), connection = fixConn(oldZone, newZone, crypto)),
       authPrincipal.userId,
       ZoneChangeType.Update,
       ZoneChangeStatus.Pending
@@ -64,12 +69,11 @@ object ZoneChangeGenerator {
       ZoneChangeStatus.Pending
     )
 
-  private def fixConn(oldZ: Zone, newZ: Zone): Option[ZoneConnection] =
+  private def fixConn(oldZ: Zone, newZ: Zone, crypto: CryptoAlgebra): Option[ZoneConnection] =
     newZ.connection.map(newConn => {
       val oldConn = oldZ.connection.getOrElse(newConn)
       newConn.copy(
-        key =
-          if (oldConn.key == newConn.decrypted(Crypto.instance).key) oldConn.key else newConn.key
+        key = if (oldConn.key == newConn.decrypted(crypto).key) oldConn.key else newConn.key
       )
     })
 }

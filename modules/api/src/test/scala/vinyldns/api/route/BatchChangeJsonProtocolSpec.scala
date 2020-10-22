@@ -487,8 +487,8 @@ class BatchChangeJsonProtocolSpec
   "Serializing BatchChangeErrorList" should {
     "serialize changes for valid inputs" in {
       val onlyValid = List(
-        AddChangeForValidation(okZone, "foo", addAChangeInput).validNel,
-        AddChangeForValidation(okZone, "bar", addAAAAChangeInput).validNel
+        AddChangeForValidation(okZone, "foo", addAChangeInput, 7200).validNel,
+        AddChangeForValidation(okZone, "bar", addAAAAChangeInput, 7200).validNel
       )
       val result = BatchChangeErrorListSerializer.toJson(
         InvalidBatchChangeResponses(List(addAChangeInput, addAAAAChangeInput), onlyValid)
@@ -522,10 +522,10 @@ class BatchChangeJsonProtocolSpec
           )
         )
 
-      val validAddA = AddChangeForValidation(okZone, "foo", addAChangeInput).validNel
+      val validAddA = AddChangeForValidation(okZone, "foo", addAChangeInput, 7200).validNel
       val invalidAddA = errorList.invalid[ChangeForValidation]
       val invalidAddAAAA = ZoneDiscoveryError("bar.").invalidNel
-      val validAddAAAA = AddChangeForValidation(okZone, "bar", addAAAAChangeInput).validNel
+      val validAddAAAA = AddChangeForValidation(okZone, "bar", addAAAAChangeInput, 7200).validNel
 
       val batchChangeErrorList = InvalidBatchChangeResponses(
         List(addAChangeInput, addAChangeInput, addAAAAChangeInput, addAAAAChangeInput),

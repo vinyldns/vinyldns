@@ -21,37 +21,34 @@ import akka.http.scaladsl.server.Directives
 import akka.util.Timeout
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
-import vinyldns.api.VinylDNSConfig
 
 import scala.concurrent.duration._
 
-case class CurrentStatus(
+final case class CurrentStatus(
     processingDisabled: Boolean,
     color: String,
     keyName: String,
     version: String
 )
 
-object CurrentStatus {
-  val color = VinylDNSConfig.vinyldnsConfig.getString("color")
-  val vinyldnsKeyName = "vinyldns."
-  val version = VinylDNSConfig.vinyldnsConfig.getString("version")
-}
-
 trait StatusRoute extends Directives {
   this: VinylDNSJsonProtocol =>
-  import CurrentStatus._
 
   implicit val timeout = Timeout(10.seconds)
 
   def processingDisabled: SignallingRef[IO, Boolean]
 
-  val statusRoute =
+  def statusRoute(color: String, version: String, keyName: String) =
     (get & path("status")) {
       onSuccess(processingDisabled.get.unsafeToFuture()) { isProcessingDisabled =>
         complete(
           StatusCodes.OK,
-          CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version)
+          CurrentStatus(
+            isProcessingDisabled,
+            color,
+            keyName,
+            version
+          )
         )
       }
     } ~
@@ -60,7 +57,12 @@ trait StatusRoute extends Directives {
           onSuccess(processingDisabled.set(isProcessingDisabled).unsafeToFuture()) {
             complete(
               StatusCodes.OK,
-              CurrentStatus(isProcessingDisabled, color, vinyldnsKeyName, version)
+              CurrentStatus(
+                isProcessingDisabled,
+                color,
+                keyName,
+                version
+              )
             )
           }
         }

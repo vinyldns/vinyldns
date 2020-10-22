@@ -204,7 +204,8 @@ object CommandHandler {
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
       notifiers: AllNotifiers,
-      backendResolver: BackendResolver
+      backendResolver: BackendResolver,
+      maxZoneSize: Int
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
@@ -212,7 +213,14 @@ object CommandHandler {
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =
-      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo, backendResolver)
+      ZoneSyncHandler(
+        recordSetRepo,
+        recordChangeRepo,
+        zoneChangeRepo,
+        zoneRepo,
+        backendResolver,
+        maxZoneSize
+      )
     val batchChangeHandler =
       BatchChangeHandler(batchChangeRepo, notifiers)
 
