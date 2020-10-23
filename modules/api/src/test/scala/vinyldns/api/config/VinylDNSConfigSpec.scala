@@ -32,7 +32,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
     }
 
     "properly load the datastore configs" in {
-      (underTest.dataStoreConfigs should have).length(2L)
+      (underTest.dataStoreConfigs should have).length(1L)
     }
     "assign the correct mysql repositories" in {
       val mysqlConfig =
@@ -51,15 +51,6 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
         zoneChange,
         recordChange
       )
-    }
-    "assign the correct dynamodb repositories" in {
-      val dynamodbConfig =
-        underTest.dataStoreConfigs
-          .find(_.className == "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider")
-          .get
-
-      dynamodbConfig.repositories.keys should contain theSameElementsAs
-        Set()
     }
 
     "properly load the notifier configs" in {

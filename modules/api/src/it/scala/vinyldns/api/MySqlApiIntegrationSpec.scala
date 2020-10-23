@@ -16,8 +16,24 @@
 
 package vinyldns.api
 import com.typesafe.config.{Config, ConfigFactory}
+import scalikejdbc.DB
 import vinyldns.mysql.MySqlIntegrationSpec
 
 trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
   val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns.mysql")
+
+  def clearRecordSetRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM recordset")
+    }
+
+  def clearZoneRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM zone")
+    }
+
+  def clearGroupRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM groups")
+    }
 }

@@ -76,11 +76,6 @@ object Dependencies {
     "javax.activation"          %  "activation"                     % "1.1.1"
   )
 
-  lazy val dynamoDBDependencies = Seq(
-    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
-  )
-
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
@@ -117,7 +112,6 @@ object Dependencies {
   lazy val portalDependencies = Seq(
     "com.typesafe.play"         %% "play-json"                      % "2.7.4",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
