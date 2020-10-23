@@ -30,5 +30,5 @@ package-lock.json
 tmp.out
 .vscode
 project/metals.sbt
-data
 .bsp
+docker/data

@@ -370,7 +370,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",
-  micrositeGithubOwner := "VinylDNS",
+  micrositeGithubOwner := "vinyldns",
   micrositeGithubRepo := "vinyldns",
   micrositeName := "VinylDNS",
   micrositeDescription := "DNS Governance",
@@ -396,6 +396,8 @@ lazy val docSettings = Seq(
   micrositeCompilingDocsTool := WithMdoc,
   micrositeFavicons := Seq(MicrositeFavicon("favicon16x16.png", "16x16"), MicrositeFavicon("favicon32x32.png", "32x32")),
   micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/mdoc/{{ page.path }}")),
+  micrositeFooterText := None,
+  micrositeHighlightTheme := "atom-one-light",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 
