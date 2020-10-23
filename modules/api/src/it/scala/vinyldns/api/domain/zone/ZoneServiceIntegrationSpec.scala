@@ -26,7 +26,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
@@ -98,16 +97,6 @@ class ZoneServiceIntegrationSpec
   private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, okZone))
 
   private val mockBackendResolver = mock[BackendResolver]
-
-  def clearRecordSetRepo(): Unit =
-    DB.localTx { s =>
-      s.executeUpdate("DELETE FROM recordset")
-    }
-
-  def clearZoneRepo(): Unit =
-    DB.localTx { s =>
-      s.executeUpdate("DELETE FROM zone")
-    }
 
   override protected def beforeEach(): Unit = {
     clearRecordSetRepo()
