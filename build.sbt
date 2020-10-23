@@ -378,8 +378,8 @@ lazy val docSettings = Seq(
   micrositeHomepage := "http://vinyldns.io",
   micrositeDocumentationUrl := "/api",
   micrositeGitterChannelUrl := "vinyldns/Lobby",
+  micrositeTwitterCreator := "@vinyldns",
   micrositeDocumentationLabelDescription := "API Documentation",
-  micrositeShareOnSocial := false,
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
@@ -390,13 +390,17 @@ lazy val docSettings = Seq(
   micrositePushSiteWith := GitHub4s,
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
-  fork in tut := true,
-  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}")),
+  fork in mdoc := true,
+  mdocIn := (sourceDirectory in Compile).value / "mdoc",
+  micrositeCssDirectory := (resourceDirectory in Compile).value / "microsite" / "css",
+  micrositeCompilingDocsTool := WithMdoc,
+  micrositeFavicons := Seq(MicrositeFavicon("favicon16x16.png", "16x16"), MicrositeFavicon("favicon32x32.png", "32x32")),
+  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/mdoc/{{ page.path }}")),
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 
 lazy val docs = (project in file("modules/docs"))
-  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(MicrositesPlugin, MdocPlugin)
   .settings(docSettings)
 
 // release stages
