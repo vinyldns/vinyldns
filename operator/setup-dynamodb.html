@@ -1,0 +1,694 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Setup AWS DynamoDB</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Setup AWS DynamoDB" /><meta name="title" property="og:title" content="VinylDNS: Setup AWS DynamoDB" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="http://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Setup AWS DynamoDB" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:creator" content="@vinyldns" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"><li><a href="/operator/config-api.html" class="">API Configuration Guide</a></li><li><a href="/operator/config-portal.html" class="">Portal Configuration Guide</a></li><li><a href="/operator/" class="">Operator Guide</a></li><li><a href="/operator/pre.html" class="">Pre-requisites</a></li><li><a href="/operator/setup-api.html" class="">Setup API Server</a></li><li><a href="/operator/setup-dynamodb.html" class="active">Setup AWS DynamoDB</a></li><li><a href="/operator/setup-ldap.html" class="">Setup LDAP</a></li><li><a href="/operator/setup-mysql.html" class="">Setup MySQL</a></li><li><a href="/operator/setup-portal.html" class="">Setup the Portal Server</a></li><li><a href="/operator/setup-sqs.html" class="">Setup AWS SQS</a></li></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/VinylDNS/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="VinylDNS" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="setup-aws-dynamodb">Setup AWS DynamoDB</h1>
+<p><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html">AWS DynamoDB</a> is currently the default database
+for <em>most</em> of the data that is stored in our instance of VinylDNS. However, all table implementations are available in MySQL
+ (see <a href="setup-mysql.html">Setup MySQL Guide</a> for more information). The following tables are present in DynamoDB in our instance of VinylDNS:</p>
+
+<ul>
+  <li><a href="#recordsetchange-table">RecordSetChange</a> - audit history of all changes made to records</li>
+  <li><a href="#group-table">Group</a> - group information, including name, email and description</li>
+  <li><a href="#membership-table">Membership</a> - connects users to groups</li>
+  <li><a href="#groupchange-table">GroupChange</a> - holds audit history for groups</li>
+  <li><a href="#userchange-table">UserChange</a> - holds audit history for all users (only used in the portal currently)</li>
+  <li><a href="#zonechange-table">ZoneChange</a> - audit history for changes to zones (not record related)</li>
+</ul>
+
+<h6 id="note-the-dynamodb-recordset-repository-is-only-partially-implemented-for-use-you-would-need-to-provide-implementations-of-those-methods">Note: the DynamoDB RecordSet repository is only partially implemented. For use you would need to provide implementations of those methods</h6>
+
+<p>AWS DynamoDB connection information is configured one time, and the same connection is used across all tables.  Therefore,
+you must ensure that all tables live inside the <em>same</em> AWS region accessible by the <em>same</em> credentials.</p>
+
+<h2 id="setting-up-dynamodb">Setting up DynamoDB</h2>
+<p><strong>If the tables do not yet exist, starting up the application will <em>automatically</em> create the tables for you.  Starting
+up the application for the first time is often the best way to setup the tables, as they do require attributes and indexes to be setup.</strong></p>
+
+<p><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html">Provisioned Throughput</a>
+is a mechanism that controls how many reads and writes can happen concurrently against your tables and indexes.  You can
+configure <em>Auto Scaling</em> for your tables, so you do not have to worry about these settings.</p>
+
+<p>The most <em>important</em> thing to remember for Provisioned Throughput is that you pay more for <em>writes</em> than <em>reads</em>.  To manage,
+costs, it is important to use Auto-Scaling, or turn down your provisioned throughput settings to be really low.</p>
+
+<p>If your installation does not have large zones (100,000 records), and takes relatively low throughput, you can turn
+the throughput very low and operate in the “almost” free-tier.</p>
+
+<h2 id="configuring-dynamodb">Configuring DynamoDB</h2>
+<p>Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
+DynamoDB endpoint (region) that you will be using.  Follow the <a href="config-api.html#database-configuration">API Database Configuration</a>
+to complete the setup for the API.</p>
+
+<p>You also need to configure DynamoDB for the portal <a href="config-portal.html#database-configuration">Portal Database Configuration</a></p>
+
+<h3 id="recordset-table">RecordSet Table</h3>
+
+<p>Each row in the RecordSet table is a <code class="highlighter-rouge">RRSet</code>, which means it comprises one or more “Records” inside of it.</p>
+
+<p><strong>Usage</strong>
+This table (and recordSetChange) require the highest throughput.  If you have large zones, the first time
+you load a zone, all records will be loaded into the <code class="highlighter-rouge">recordSet</code> table.  If the settings are too low, it can take a long time
+for the records to be loaded, and worst case scenario the operation will fail.</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">zone_id</code></td>
+      <td>String(UUID)</td>
+      <td>the id of the zone the record set belongs to</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique id for this record set</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_name</code></td>
+      <td>String</td>
+      <td>the record set name</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_type</code></td>
+      <td>String</td>
+      <td>the RRType of record set, for example A, AAAA, CNAME</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_sort</code></td>
+      <td>String</td>
+      <td>the case in-sensitive name for the record set, used for sort purposes</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_blob</code></td>
+      <td>Binary</td>
+      <td>hold a binary array representing the record set.  Currently protocol buffer byte array</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">record_set_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">&lt;none&gt;</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">zone_id_record_set_name_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">record_set_name</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">zone_id_record_set_sort_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">record_set_sort</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="recordsetchange-table">RecordSetChange Table</h3>
+<p>Each record set change could potentially live inside a <code class="highlighter-rouge">ChangeSet</code>.  A <code class="highlighter-rouge">ChangeSet</code> contains one or more individual
+<code class="highlighter-rouge">RecordSetChange</code> instances that are processed together.  Each <em>record</em> in the <code class="highlighter-rouge">RecordSetChange</code> table corresponds to an individual change
+such as “Create a new record set”.</p>
+
+<p><strong>Usage</strong>
+Every time any record is updated, the audit trail is inserted into the <code class="highlighter-rouge">recordSetChange</code> table.  This
+also should have higher settings, as usage, especially on writes, can be rather high.</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">change_set_id</code></td>
+      <td>String(UUID)</td>
+      <td>id for the change set this change belongs to</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_change_id</code></td>
+      <td>String(UUID)</td>
+      <td>the id for the record set change</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">zone_id</code></td>
+      <td>String(UUID)</td>
+      <td>the zone this record change was made for</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">change_set_status</code></td>
+      <td>Number</td>
+      <td>a number representing the status of the change (Pending = 0 ; Processing = 1 ; Complete = 2 ; Applied = 100)</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">created_timestamp</code></td>
+      <td>String</td>
+      <td>the timestamp (UTC) when the change set was created</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_change_created_timestamp</code></td>
+      <td>Number</td>
+      <td>a number in EPOCH millis when the change was created</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">processing_timestamp</code></td>
+      <td>String</td>
+      <td>the timestamp (UTC) when the change was processed</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">record_set_change_blob</code></td>
+      <td>Binary</td>
+      <td>the protobuf serialized bytes that represent the entire record set change</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">record_set_change_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">&lt;none&gt;</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">zone_id_record_set_change_id_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">record_set_change_id</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">zone_id_created_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">record_set_change_created_timestamp</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="user-table">User Table</h3>
+<p>The User Table holds user specific information.  Each row in the table is a separate distinct user.
+To enable encryption at rest, the user table should be encrypted.
+<strong>Encryption can only be enabled when the table is first created.</strong></p>
+
+<p><strong>Usage</strong>
+Very low writes, very small data, high read rate (every API call looks up the user info)</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">userid</code></td>
+      <td>String(UUID)</td>
+      <td>a unique identifier for this user</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">username</code></td>
+      <td>String</td>
+      <td>LDAP user name for this user</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">firstname</code></td>
+      <td>String</td>
+      <td>user first name</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">lastname</code></td>
+      <td>String</td>
+      <td>user last name</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">email</code></td>
+      <td>String</td>
+      <td>user’s email address</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">created</code></td>
+      <td>Number</td>
+      <td>EPOCH time in millis when the user was created in VinylDNS</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">accesskey</code></td>
+      <td>String</td>
+      <td>The access key (public) for the user to interact with the VinylDNS API</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">secretkey</code></td>
+      <td>String</td>
+      <td>the secret key (private) for the user to interact with the VinylDNS API.  This secret is encrypted by default using the configured <code class="highlighter-rouge">Crypto</code> implementation.  It is also encrypted at rest.</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">super</code></td>
+      <td>Boolean</td>
+      <td>an indicator that the user is a VinylDNS Admin user (can access all data and operations)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Note: there is no way to programmatically set the super flag, as it has a tremendous amount of power.  We are looking
+for ideas and ways that we can provide super type access with some additional checks.  To set this flag, you would need
+to hand-roll your own script at this point and set this attribute.</strong></p>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">userid</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">&lt;none&gt;</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">username_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">username</code></li>
+      <li>SORT = <code class="highlighter-rouge">&lt;none&gt;</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">access_key_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">accesskey</code></li>
+      <li>SORT = <code class="highlighter-rouge">&lt;none&gt;</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="group-table">Group Table</h3>
+<p>The Group table holds group information, including group name, email, and ids of members.</p>
+
+<p><strong>Usage</strong>
+Very low writes, very small data, moderate read rate</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_id</code></td>
+      <td>String(UUID)</td>
+      <td>unique identifier for the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">name</code></td>
+      <td>String</td>
+      <td>the name of the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">email</code></td>
+      <td>String</td>
+      <td>the email (usually distribution list) of the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">desc</code></td>
+      <td>String</td>
+      <td>the description of the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">status</code></td>
+      <td>String</td>
+      <td>the group status (Active, Deleted)</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">created</code></td>
+      <td>Number</td>
+      <td>the date-time in EPOCH millis when the group was created</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">member_ids</code></td>
+      <td>String Set</td>
+      <td>the ids of all members (users) of the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">admin_ids</code></td>
+      <td>String Set</td>
+      <td>the ids of all members who are group managers</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">group_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">&lt;none&gt;</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">group_name_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">name</code></li>
+      <li>SORT = <code class="highlighter-rouge">&lt;none&gt;</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="membership-table">Membership Table</h3>
+<p>The Membership table is a “join” table linking users and groups.  It supports fast look ups for all groups that
+a user is a member of.</p>
+
+<p><strong>Usage</strong>
+Very low writes, very small data, high read rate (every API call looks up the user groups)</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">user_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique id for the user</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique id for the group</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">user_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">group_id</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong>
+<em>none</em></p>
+
+<h3 id="groupchange-table">GroupChange Table</h3>
+<p>Group changes are required anytime groups are created, modified, or deleted.  This includes changes in group ownership
+and group membership.</p>
+
+<p><strong>Usage</strong>
+Very low writes, very small data, very low read</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_change_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique identifier for the group change</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique identifier for the group</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">created</code></td>
+      <td>Number</td>
+      <td>the date / time in EPOCH millis</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_change_blob</code></td>
+      <td>Binary</td>
+      <td>protobuf of the group change</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">group_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">created</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">GROUP_ID_AND_CREATED_INDEX</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">group_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">created</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="userchange-table">UserChange Table</h3>
+<p>UserChange holds information of when new users are created in VinylDNS.  It is different as it does not serialize
+the change data as protobuf.</p>
+
+<p><strong>Usage</strong>
+Very low writes, very small data, very low read</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">timestamp</code></td>
+      <td>String</td>
+      <td>the datetime the change was made</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">userId</code></td>
+      <td>String(UUID)</td>
+      <td>the unique identifier for the user being changed</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">username</code></td>
+      <td>String</td>
+      <td>the username for the user being changed</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">changeType</code></td>
+      <td>String</td>
+      <td>(created ; updated ; deleted)</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">updateUser</code></td>
+      <td>Map</td>
+      <td>a map of the attributes being updated</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">previousUser</code></td>
+      <td>Map</td>
+      <td>a map of the new attributes</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="zonechange-table">ZoneChange Table</h3>
+<p>Anytime an update is made to a zone, the event is stored here.  This includes changes to the admin group or ACL rules.</p>
+
+<p><strong>Usage</strong>
+Very low writes, small data, low read</p>
+
+<p><strong>Attributes</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>type</td>
+      <td>description</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">zone_id</code></td>
+      <td>String(UUID)</td>
+      <td>unique identifier for the zone</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">change_id</code></td>
+      <td>String(UUID)</td>
+      <td>the unique identifier for this zone change</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">status</code></td>
+      <td>String</td>
+      <td>the status of the zone change (Active, Deleted, PendingUpdate, PendingDelete, Syncing)</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">blob</code></td>
+      <td>Binary</td>
+      <td>the protobuf serialized bytes for this zone change</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">created</code></td>
+      <td>Number</td>
+      <td>the date/time in EPOCH milliseconds</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Table Keys</strong></p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>attribute name</td>
+    </tr>
+    <tr>
+      <td>HASH</td>
+      <td><code class="highlighter-rouge">zone_id</code></td>
+    </tr>
+    <tr>
+      <td>SORT</td>
+      <td><code class="highlighter-rouge">change_id</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Indexes</strong></p>
+<ul>
+  <li><code class="highlighter-rouge">zone_id_status_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">status</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">status_zone_id_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">status</code></li>
+      <li>SORT = <code class="highlighter-rouge">zone_id</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">zone_id_created_index</code> - Global Secondary Index
+    <ul>
+      <li>HASH = <code class="highlighter-rouge">zone_id</code></li>
+      <li>SORT = <code class="highlighter-rouge">created</code></li>
+      <li>Projection Type = <code class="highlighter-rouge">ALL</code></li>
+    </ul>
+  </li>
+</ul>
+</section><div class="edit-button"><a href="https://github.com/VinylDNS/vinyldns/edit/master/modules/docs/src/main/mdoc/operator/setup-dynamodb.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'vinyldns/Lobby'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/docs.js"></script></body></html>
