@@ -29,6 +29,13 @@ body nav#navigation div.navbar-wrapper div.navigation-brand a.background-mask di
   background: url("../img/sidebar_brand36x36.png") no-repeat;
 }
 
+body nav#navigation div.navbar-wrapper div.navigation-brand a.background-mask div.page-icon-wrapper {
+  background: url("../img/navbar_brand36x36.png") no-repeat;
+  -webkit-mask: none;
+  mask: none;
+  animation: none;
+}
+
 .important {
     color: red;
 }

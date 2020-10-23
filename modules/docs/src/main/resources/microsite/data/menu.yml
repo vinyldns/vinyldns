@@ -1,0 +1,235 @@
+options:
+
+  #############################
+  # Docs Layout Menu Options  #
+  #############################
+
+  - title: Portal Guide
+    url: portal/
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: Access the Portal
+    url: portal/access.html
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: DNS Changes
+    url: portal/dns-changes.html
+    menu_type: portal_menu
+    menu_section: portal_section
+    nested_options:
+      - title: Manual Review & Scheduling
+        url: portal/manual-review-scheduling.html
+        menu_section: portal_section
+
+  - title: RecordSet Search
+    url: portal/recordset-search.html
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: Groups
+    url: portal/groups.html
+    menu_type: portal_menu
+    menu_section: portal_section
+    nested_options:
+      - title: Create a Group
+        url: portal/create-a-group.html
+      - title: Manage Membership
+        url: portal/manage-membership.html
+
+  - title: Zones
+    url: portal/zones.html
+    menu_type: portal_menu
+    menu_section: portal_section
+    nested_options:
+      - title: Connect to your Zone
+        url: portal/connect-to-zone.html
+        menu_section: portal_section
+      - title: Manage Records
+        url: portal/manage-records.html
+      - title: Manage Access
+        url: portal/manage-access.html
+        menu_section: portal_section
+      - title: Understand Connections
+        url: portal/connections.html
+      - title: Search Zones
+        url: portal/search-zones.html
+
+  - title: Credentials
+    url: portal/credentials.html
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: Operator Guide
+    url: operator/index.html
+    menu_type: operator_menu
+    menu_section: operator_section
+
+  - title: Pre-requisites
+    url: operator/pre.html
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+      - title: Setup AWS DynamoDB
+        url: operator/setup-dynamodb.html
+      - title: Setup MySQL
+        url: operator/setup-mysql.html
+      - title: Setup AWS SQS
+        url: operator/setup-sqs.html
+      - title: Setup LDAP
+        url: operator/setup-ldap.html
+
+  - title: Setup API Server
+    url: operator/setup-api.html
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+      - title: API Configuration Guide
+        url: operator/config-api.html
+
+  - title: Setup the Portal Server
+    url: operator/setup-portal.html
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+      - title: Portal Configuration Guide
+        url: operator/config-portal.html
+
+  - title: API documentation
+    url: api/index.html
+    menu_type: api
+    menu_section: api
+
+  - title: Authentication
+    url: api/auth-mechanism.html
+    menu_type: api
+
+  - title: Zone
+    url: api/zone-model.html
+    menu_type: api
+    menu_section: zoneapireference
+    nested_options:
+      - title: Zone Model
+        url: api/zone-model.html
+        menu_section: zoneapireference
+      - title: Create Zone
+        url: api/create-zone.html
+        menu_section: zoneapireference
+      - title: Update Zone
+        url: api/update-zone.html
+        menu_section: zoneapireference
+      - title: Delete Zone
+        url: api/delete-zone.html
+        menu_section: zoneapireference
+      - title: Get Zone by ID
+        url: api/get-zone-by-id.html
+        menu_section: zoneapireference
+      - title: Get Zone by Name
+        url: api/get-zone-by-name.html
+        menu_section: zoneapireference
+      - title: List / Search Zone
+        url: api/list-zones.html
+        menu_section: zoneapireference
+      - title: Sync Zone
+        url: api/sync-zone.html
+        menu_section: zoneapireference
+      - title: List Zone Changes
+        url: api/list-zone-changes.html
+        menu_section: zoneapireference
+
+  - title: RecordSet
+    url: api/recordset-model.html
+    menu_type: api
+    menu_section: recordsetapireference
+    nested_options:
+      - title: RecordSet Model
+        url: api/recordset-model.html
+        menu_section: recordsetapireference
+      - title: Create RecordSet
+        url: api/create-recordset.html
+        menu_section: recordsetapireference
+      - title: Update RecordSet
+        url: api/update-recordset.html
+        menu_section: recordsetapireference
+      - title: Delete RecordSet
+        url: api/delete-recordset.html
+        menu_section: recordsetapireference
+      - title: Get RecordSet
+        url: api/get-recordset.html
+        menu_section: recordsetapireference
+      - title: List / Search RecordSets by Zone
+        url: api/list-recordsets-by-zone.html
+        menu_section: recordsetapireference
+      - title: Get RecordSet Change
+        url: api/get-recordset-change.html
+        menu_section: recordsetapireference
+      - title: List RecordSet Changes
+        url: api/list-recordset-changes.html
+        menu_section: recordsetapireference
+      - title: Global List / Search RecordSets
+        url: api/list-recordsets-global.html
+        menu_sectioon: recordsetapireference
+
+  - title: Batch Change
+    url: api/batchchange-model.html
+    menu_type: api
+    menu_section: batchchangeapireference
+    nested_options:
+      - title: Batch Change Model
+        url: api/batchchange-model.html
+        menu_section: batchchangeapireference
+      - title: Create Batch Change
+        url: api/create-batchchange.html
+        menu_section: batchchangeapireference
+      - title: Get Batch Change
+        url: api/get-batchchange.html
+        menu_section: batchchangeapireference
+      - title: List Batch Changes
+        url: api/list-batchchanges.html
+        menu_section: batchchangeapireference
+      - title: Batch Change Errors
+        url: api/batchchange-errors.html
+        menu_section: batchchangeapireference
+      - title: Cancel Batch Change
+        url: api/cancel-batchchange.html
+        menu_section: batchchangeapireference
+      - title: Approve Batch Change
+        url: api/approve-batchchange.html
+        menu_section: batchchangeapireference
+      - title: Reject Batch Change
+        url: api/reject-batchchange.html
+        menu_section: batchchangeapireference
+
+  - title: Membership
+    url: api/membership-model.html
+    menu_type: api
+    menu_section: membershipapireference
+    nested_options:
+      - title: Membership Model
+        url: api/membership-model.html
+        menu_section: membershipapireference
+      - title: Create Group
+        url: api/create-group.html
+        menu_section: membershipapireference
+      - title: Update Group
+        url: api/update-group.html
+        menu_section: membershipapireference
+      - title: Delete Group
+        url: api/delete-group.html
+        menu_section: membershipapireference
+      - title: Get Group
+        url: api/get-group.html
+        menu_section: membershipapireference
+      - title: List Groups
+        url: api/list-groups.html
+        menu_section: membershipapireference
+      - title: List Group Admins
+        url: api/list-group-admins.html
+        menu_section: membershipapireference
+      - title: List Group Members
+        url: api/list-group-members.html
+        menu_section: membershipapireference
+      - title: List Group Activity
+        url: api/list-group-activity.html
+        menu_section: membershipapireference
