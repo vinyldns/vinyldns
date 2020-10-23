@@ -25,6 +25,7 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
+import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
@@ -50,6 +51,8 @@ class RecordSetServiceIntegrationSpec
     with MockitoSugar
     with Matchers
     with MySqlApiIntegrationSpec {
+
+  private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
   private val recordSetTable = "recordSetTest"
 
@@ -261,7 +264,9 @@ class RecordSetServiceIntegrationSpec
       TestMessageQueue,
       new AccessValidations(),
       mockBackendResolver,
-      false
+      false,
+      vinyldnsConfig.highValueDomainConfig,
+      vinyldnsConfig.serverConfig.approvedNameServers
     )
   }
 

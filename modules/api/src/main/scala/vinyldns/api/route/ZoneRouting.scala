@@ -20,8 +20,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone._
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
@@ -29,8 +29,11 @@ import scala.concurrent.duration._
 case class GetZoneResponse(zone: ZoneInfo)
 case class ZoneRejected(zone: Zone, errors: List[String])
 
-class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: VinylDNSAuthenticator)
-    extends VinylDNSJsonProtocol
+class ZoneRoute(
+    zoneService: ZoneServiceAlgebra,
+    val vinylDNSAuthenticator: VinylDNSAuthenticator,
+    crypto: CryptoAlgebra
+) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = zoneRoute
@@ -180,14 +183,14 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
     */
   private def encrypt(createZoneInput: CreateZoneInput): CreateZoneInput =
     createZoneInput.copy(
-      connection = createZoneInput.connection.map(_.encrypted(Crypto.instance)),
-      transferConnection = createZoneInput.transferConnection.map(_.encrypted(Crypto.instance))
+      connection = createZoneInput.connection.map(_.encrypted(crypto)),
+      transferConnection = createZoneInput.transferConnection.map(_.encrypted(crypto))
     )
 
   private def encrypt(updateZoneInput: UpdateZoneInput): UpdateZoneInput =
     updateZoneInput.copy(
-      connection = updateZoneInput.connection.map(_.encrypted(Crypto.instance)),
-      transferConnection = updateZoneInput.transferConnection.map(_.encrypted(Crypto.instance))
+      connection = updateZoneInput.connection.map(_.encrypted(crypto)),
+      transferConnection = updateZoneInput.transferConnection.map(_.encrypted(crypto))
     )
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization

@@ -22,6 +22,7 @@ import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import org.json4s.MappingException
+import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
@@ -62,7 +63,8 @@ class VinylDNSService(
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
-    authPrincipalProvider: AuthPrincipalProvider
+    authPrincipalProvider: AuthPrincipalProvider,
+    vinyldnsConfig: VinylDNSConfig
 ) extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
@@ -75,14 +77,23 @@ class VinylDNSService(
 
   val aws4Authenticator = new Aws4Authenticator
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
-    new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
+    new ProductionVinylDNSAuthenticator(
+      aws4Authenticator,
+      authPrincipalProvider,
+      vinyldnsConfig.crypto
+    )
 
-  val zoneRoute: Route = new ZoneRoute(zoneService, vinylDNSAuthenticator).getRoutes
+  val zoneRoute: Route =
+    new ZoneRoute(zoneService, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
   val recordSetRoute: Route = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
     new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes
   val batchChangeRoute: Route =
-    new BatchChangeRoute(batchChangeService, vinylDNSAuthenticator).getRoutes
+    new BatchChangeRoute(
+      batchChangeService,
+      vinylDNSAuthenticator,
+      vinyldnsConfig.manualReviewConfig
+    ).getRoutes
 
   val unloggedUris = Seq(
     Uri.Path("/health"),
@@ -91,8 +102,13 @@ class VinylDNSService(
     Uri.Path("/status"),
     Uri.Path("/metrics/prometheus")
   )
-  val unloggedRoutes
-      : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
+  val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
+    vinyldnsConfig.serverConfig.color
+  ) ~ statusRoute(
+    vinyldnsConfig.serverConfig.color,
+    vinyldnsConfig.serverConfig.version,
+    vinyldnsConfig.serverConfig.keyName
+  ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~
     batchChangeRoute ~

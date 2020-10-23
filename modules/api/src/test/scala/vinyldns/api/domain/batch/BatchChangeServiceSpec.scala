@@ -49,6 +49,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.access.AccessValidations
 
 import scala.concurrent.ExecutionContext
@@ -63,12 +64,20 @@ class BatchChangeServiceSpec
     with EitherValues
     with ValidatedMatchers {
 
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val nonFatalError = ZoneDiscoveryError("test")
   private val fatalError = RecordAlreadyExists("test")
 
-  private val validations = new BatchChangeValidations(10, new AccessValidations())
+  private val validations = new BatchChangeValidations(
+    new AccessValidations(
+      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+    ),
+    VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.manualReviewConfig,
+    VinylDNSTestHelpers.batchChangeConfig,
+    VinylDNSTestHelpers.scheduledChangesConfig
+  )
   private val ttl = Some(200L)
 
   private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
@@ -122,15 +131,32 @@ class BatchChangeServiceSpec
   private val ipv6PTR18Zone =
     Zone("0.0.1.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.", "email", shared = true)
 
-  private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
-  private val nonApexAddForVal = AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
-  private val ptrAddForVal = AddChangeForValidation(ptrZone, "11", ptrAdd)
+  private val apexAddForVal = AddChangeForValidation(
+    apexZone,
+    "apex.test.com.",
+    apexAddA,
+    VinylDNSTestHelpers.defaultTtl
+  )
+  private val nonApexAddForVal = AddChangeForValidation(
+    baseZone,
+    "non-apex",
+    nonApexAddA,
+    VinylDNSTestHelpers.defaultTtl
+  )
+  private val ptrAddForVal =
+    AddChangeForValidation(ptrZone, "11", ptrAdd, VinylDNSTestHelpers.defaultTtl)
   private val ptrDelegatedAddForVal =
-    AddChangeForValidation(delegatedPTRZone, "193", ptrDelegatedAdd)
+    AddChangeForValidation(
+      delegatedPTRZone,
+      "193",
+      ptrDelegatedAdd,
+      VinylDNSTestHelpers.defaultTtl
+    )
   private val ptrV6AddForVal = AddChangeForValidation(
     ipv6PTRZone,
     "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-    ptrV6Add
+    ptrV6Add,
+    VinylDNSTestHelpers.defaultTtl
   )
 
   private val defaultv6Discovery = new V6DiscoveryNibbleBoundaries(5, 16)
@@ -380,7 +406,8 @@ class BatchChangeServiceSpec
     TestAuth,
     mockNotifiers,
     false,
-    defaultv6Discovery
+    defaultv6Discovery,
+    7200L
   )
 
   private val underTestManualEnabled = new BatchChangeService(
@@ -395,7 +422,8 @@ class BatchChangeServiceSpec
     TestAuth,
     mockNotifiers,
     false,
-    defaultv6Discovery
+    defaultv6Discovery,
+    7200L
   )
 
   private val underTestScheduledEnabled = new BatchChangeService(
@@ -410,7 +438,8 @@ class BatchChangeServiceSpec
     TestAuth,
     mockNotifiers,
     true,
-    defaultv6Discovery
+    defaultv6Discovery,
+    7200L
   )
 
   "applyBatchChange" should {
@@ -435,7 +464,8 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundaries(16, 17)
+        new V6DiscoveryNibbleBoundaries(16, 17),
+        7200L
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -465,7 +495,8 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundaries(16, 16)
+        new V6DiscoveryNibbleBoundaries(16, 16),
+        7200L
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -540,7 +571,10 @@ class BatchChangeServiceSpec
       val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result.changes.length shouldBe 4
-      result.changes(0).asInstanceOf[SingleAddChange].ttl shouldBe VinylDNSConfig.defaultTtl
+      result
+        .changes(0)
+        .asInstanceOf[SingleAddChange]
+        .ttl shouldBe VinylDNSTestHelpers.defaultTtl
       result.changes(1).asInstanceOf[SingleAddChange].ttl shouldBe 900
       result.changes(3).asInstanceOf[SingleAddChange].ttl shouldBe existingApex.ttl
     }
@@ -1131,7 +1165,8 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        defaultv6Discovery
+        defaultv6Discovery,
+        7200L
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1171,7 +1206,8 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundaries(16, 16)
+        new V6DiscoveryNibbleBoundaries(16, 16),
+        7200L
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1196,7 +1232,8 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        defaultv6Discovery
+        defaultv6Discovery,
+        7200L
       )
 
       val ip1 = "::1"
@@ -1251,7 +1288,7 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(onlyApexAddA.validNel), ExistingZones(Set(onlyApexZone)))
 
       result should containChangeForValidation(
-        AddChangeForValidation(onlyApexZone, "only.apex.exists.", onlyApexAddA)
+        AddChangeForValidation(onlyApexZone, "only.apex.exists.", onlyApexAddA, 7200L)
       )
     }
 
@@ -1260,7 +1297,7 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(onlyBaseAddAAAA.validNel), ExistingZones(Set(onlyBaseZone)))
 
       result should containChangeForValidation(
-        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA)
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA, 7200L)
       )
     }
 
@@ -1268,7 +1305,9 @@ class BatchChangeServiceSpec
       val result =
         underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone, baseZone)))
 
-      result should containChangeForValidation(AddChangeForValidation(baseZone, "cname", cnameAdd))
+      result should containChangeForValidation(
+        AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L)
+      )
     }
 
     "properly discover records in forward zones" in {
@@ -1280,9 +1319,9 @@ class BatchChangeServiceSpec
         AddChangeInput(s"some.dotted.record.$apex", RecordType.A, ttl, AData("1.2.3.4"))
 
       val expected = List(
-        AddChangeForValidation(apexZone, apex, aApex),
-        AddChangeForValidation(apexZone, "record", aNormal),
-        AddChangeForValidation(apexZone, "some.dotted.record", aDotted)
+        AddChangeForValidation(apexZone, apex, aApex, 7200L),
+        AddChangeForValidation(apexZone, "record", aNormal, 7200L),
+        AddChangeForValidation(apexZone, "some.dotted.record", aDotted, 7200L)
       )
 
       val discovered = underTest.zoneDiscovery(
@@ -1302,9 +1341,9 @@ class BatchChangeServiceSpec
         AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, ttl, TXTData("test"))
 
       val expected = List(
-        AddChangeForValidation(apexZone, apex, txtApex),
-        AddChangeForValidation(apexZone, "record", txtNormal),
-        AddChangeForValidation(apexZone, "some.dotted.record", txtDotted)
+        AddChangeForValidation(apexZone, apex, txtApex, 7200L),
+        AddChangeForValidation(apexZone, "record", txtNormal, 7200L),
+        AddChangeForValidation(apexZone, "some.dotted.record", txtDotted, 7200L)
       )
 
       val discovered = underTest.zoneDiscovery(
@@ -1343,10 +1382,10 @@ class BatchChangeServiceSpec
       result.head should beValid[ChangeForValidation](apexAddForVal)
       result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("only.apex.exists."))
       result(2) should beValid[ChangeForValidation](
-        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA)
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA, 7200L)
       )
       result(3) should beValid[ChangeForValidation](
-        AddChangeForValidation(baseZone, "cname", cnameAdd)
+        AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L)
       )
     }
 
@@ -1357,7 +1396,7 @@ class BatchChangeServiceSpec
       )
 
       result should containChangeForValidation(
-        AddChangeForValidation(delegatedPTRZone, "11", ptrAdd)
+        AddChangeForValidation(delegatedPTRZone, "11", ptrAdd, 7200L)
       )
     }
 
@@ -1367,7 +1406,9 @@ class BatchChangeServiceSpec
         ExistingZones(Set(delegatedPTRZone, ptrZone))
       )
 
-      result should containChangeForValidation(AddChangeForValidation(ptrZone, "255", ptrAdd2))
+      result should containChangeForValidation(
+        AddChangeForValidation(ptrZone, "255", ptrAdd2, 7200L)
+      )
     }
 
     "return an error if no zone is found for PTR records (ipv4)" in {
@@ -1422,21 +1463,24 @@ class BatchChangeServiceSpec
         AddChangeForValidation(
           ptrv6ZoneSmall,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0",
-          smallZoneAdd
+          smallZoneAdd,
+          7200L
         )
       )
       result should containChangeForValidation(
         AddChangeForValidation(
           ptrv6ZoneMed,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.1.1.1",
-          medZoneAdd
+          medZoneAdd,
+          7200L
         )
       )
       result should containChangeForValidation(
         AddChangeForValidation(
           ptrv6ZoneBig,
           "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-          bigZoneAdd
+          bigZoneAdd,
+          7200L
         )
       )
       result(3) should haveInvalid[DomainValidationError](
@@ -1451,9 +1495,9 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd)),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
-            AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
+            AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA, 7200L).validNel,
+            AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L).validNel
           ),
           okAuth,
           true
@@ -1514,9 +1558,9 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd)),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
-            AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
+            AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA, 7200L).validNel,
+            AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L).validNel
           ),
           okAuth,
           false
@@ -1582,7 +1626,7 @@ class BatchChangeServiceSpec
             scheduledTime = Some(DateTime.now.plusMinutes(1))
           ),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
           ),
           okAuth,
           true
@@ -1619,7 +1663,7 @@ class BatchChangeServiceSpec
             scheduledTime = Some(DateTime.now.plusMinutes(1))
           ),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
           ),
           okAuth,
           true
@@ -1652,7 +1696,7 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1719,7 +1763,7 @@ class BatchChangeServiceSpec
             Some(DateTime.now.plusMinutes(1))
           ),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1753,7 +1797,7 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
-            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
+            AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L).validNel,
             nonFatalError.invalidNel
           ),
           okAuth,
@@ -1768,7 +1812,7 @@ class BatchChangeServiceSpec
         ZoneDiscoveryError("no.zone.match.")
       )
       ibcr.changeRequestResponses(1) shouldBe Valid(
-        AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
+        AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L)
       )
       ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
@@ -1779,7 +1823,7 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1804,7 +1848,7 @@ class BatchChangeServiceSpec
             Some(DateTime.now.plusMinutes(1))
           ),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1828,7 +1872,7 @@ class BatchChangeServiceSpec
           ),
           List(
             ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
-            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel
+            AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L).validNel
           ),
           okAuth,
           true
@@ -1846,7 +1890,7 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1870,7 +1914,7 @@ class BatchChangeServiceSpec
             Some(DateTime.now.plusMinutes(1))
           ),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
@@ -1889,7 +1933,7 @@ class BatchChangeServiceSpec
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
           List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
             nonFatalError.invalidNel
           ),
           okAuth,
@@ -1923,9 +1967,15 @@ class BatchChangeServiceSpec
             AddChangeForValidation(
               baseZone,
               singleChangeGood.inputName.split('.').head,
-              asAdds.head
+              asAdds.head,
+              7200L
             ).validNel,
-            AddChangeForValidation(baseZone, singleChangeNR.inputName.split('.').head, asAdds(1)).validNel
+            AddChangeForValidation(
+              baseZone,
+              singleChangeNR.inputName.split('.').head,
+              asAdds(1),
+              VinylDNSTestHelpers.defaultTtl
+            ).validNel
           ),
           reviewInfo
         )
@@ -1943,7 +1993,8 @@ class BatchChangeServiceSpec
             AddChangeForValidation(
               baseZone,
               singleChangeGood.inputName.split('.').head,
-              asAdds.head
+              asAdds.head,
+              7200L
             ).validNel,
             fatalError.invalidNel
           ),
@@ -2492,7 +2543,7 @@ class BatchChangeServiceSpec
       )
 
       result(1) should beValid[ChangeForValidation](
-        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
+        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L)
       )
     }
   }

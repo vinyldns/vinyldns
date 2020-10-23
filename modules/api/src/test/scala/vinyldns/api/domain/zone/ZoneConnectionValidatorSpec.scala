@@ -32,6 +32,7 @@ import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, LegacyDnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
+import scala.util.matching.Regex
 
 class ZoneConnectionValidatorSpec
     extends AnyWordSpec
@@ -66,7 +67,12 @@ class ZoneConnectionValidatorSpec
       recordSets = recordSets.toList
     )
 
-  class TestConnectionValidator() extends ZoneConnectionValidator(mockBackendResolver) {
+  class TestConnectionValidator()
+      extends ZoneConnectionValidator(
+        mockBackendResolver,
+        List(new Regex("some.test.ns.")),
+        10000
+      ) {
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
     override def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
@@ -223,7 +229,7 @@ class ZoneConnectionValidatorSpec
       doReturn(false).when(mockBackendResolver).isRegistered("bad")
 
       val underTest =
-        new ZoneConnectionValidator(mockBackendResolver)
+        new ZoneConnectionValidator(mockBackendResolver, Nil, 10000)
 
       "return success if the backendId exists" in {
         underTest.isValidBackendId(Some("some-test-backend")) shouldBe right

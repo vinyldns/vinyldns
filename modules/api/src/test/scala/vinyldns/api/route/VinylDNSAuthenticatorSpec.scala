@@ -26,7 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.auth.AuthPrincipal
 
 class VinylDNSAuthenticatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
@@ -34,7 +34,11 @@ class VinylDNSAuthenticatorSpec extends AnyWordSpec with Matchers with MockitoSu
   private val mockAuthPrincipalProvider = mock[AuthPrincipalProvider]
 
   private val underTest =
-    new ProductionVinylDNSAuthenticator(mockAuthenticator, mockAuthPrincipalProvider)
+    new ProductionVinylDNSAuthenticator(
+      mockAuthenticator,
+      mockAuthPrincipalProvider,
+      NoOpCrypto.instance
+    )
 
   "VinylDNSAuthenticator" should {
     "use Crypto" in {

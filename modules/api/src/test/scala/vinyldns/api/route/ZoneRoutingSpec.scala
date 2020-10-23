@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.typesafe.config.ConfigFactory
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -27,10 +28,10 @@ import org.scalatest.OneInstancePerTest
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
-import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.crypto.{JavaCrypto, NoOpCrypto}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
@@ -131,8 +132,14 @@ class ZoneRoutingSpec
     maxItems = 100
   )
 
+  val crypto = new JavaCrypto(
+    ConfigFactory.parseString(
+      """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
+    )
+  )
+
   val zoneRoute: Route =
-    new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
@@ -359,7 +366,8 @@ class ZoneRoutingSpec
               .forUpdate(
                 ok.addACLRule(newRule),
                 ok,
-                authPrincipal
+                authPrincipal,
+                NoOpCrypto.instance
               )
               .copy(status = ZoneChangeStatus.Complete)
           )
@@ -383,7 +391,8 @@ class ZoneRoutingSpec
               .forUpdate(
                 ok.deleteACLRule(rule),
                 ok,
-                authPrincipal
+                authPrincipal,
+                NoOpCrypto.instance
               )
               .copy(status = ZoneChangeStatus.Complete)
           )
@@ -652,8 +661,8 @@ class ZoneRoutingSpec
         val resultKey = result.zone.connection.get.key
         val resultTCKey = result.zone.transferConnection.get.key
 
-        val decrypted = Crypto.decrypt(resultKey)
-        val decryptedTC = Crypto.decrypt(resultTCKey)
+        val decrypted = crypto.decrypt(resultKey)
+        val decryptedTC = crypto.decrypt(resultTCKey)
         decrypted shouldBe connectionOk.connection.get.key
         decryptedTC shouldBe connectionOk.transferConnection.get.key
       }

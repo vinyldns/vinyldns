@@ -19,20 +19,23 @@ package vinyldns.api.domain.zone
 import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.Interfaces._
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
 
 import scala.concurrent.duration._
+import scala.util.matching.Regex
 
 trait ZoneConnectionValidatorAlgebra {
   def validateZoneConnections(zone: Zone): Result[Unit]
   def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit]
 }
 
-class ZoneConnectionValidator(backendResolver: BackendResolver)
-    extends ZoneConnectionValidatorAlgebra {
+class ZoneConnectionValidator(
+    backendResolver: BackendResolver,
+    approvedNameServers: List[Regex],
+    maxZoneSize: Int
+) extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
 
@@ -40,11 +43,11 @@ class ZoneConnectionValidator(backendResolver: BackendResolver)
   val opTimeout: FiniteDuration = 60.seconds
 
   def loadDns(zone: Zone): IO[ZoneView] =
-    DnsZoneViewLoader(zone, backendResolver.resolve(zone)).load()
+    DnsZoneViewLoader(zone, backendResolver.resolve(zone), maxZoneSize).load()
 
   def hasApexNS(zoneView: ZoneView): Result[Unit] = {
     val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {
-      case Some(ns) => containsApprovedNameServers(VinylDNSConfig.approvedNameServers, ns)
+      case Some(ns) => containsApprovedNameServers(approvedNameServers, ns)
       case None => "Missing apex NS record".invalidNel
     }
 

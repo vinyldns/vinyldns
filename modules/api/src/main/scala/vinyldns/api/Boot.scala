@@ -20,14 +20,15 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import cats.effect.{ContextShift, IO, Timer}
+import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
-import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.config.VinylDNSConfig
+import vinyldns.api.domain.access.{AccessValidations, GlobalAcls}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
@@ -37,7 +38,7 @@ import vinyldns.api.metrics.APIMetrics
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
-import vinyldns.core.domain.backend.{BackendConfigs, BackendResolver}
+import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.health.HealthService
 import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
@@ -49,8 +50,6 @@ import vinyldns.core.notifier.NotifierLoader
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
-  private implicit val system: ActorSystem = VinylDNSConfig.system
-  private implicit val materializer: Materializer = ActorMaterializer()
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val timer: Timer[IO] = IO.timer(ec)
@@ -68,14 +67,16 @@ object Boot extends App {
     // that if anything fails, the app does not start!
     for {
       banner <- vinyldnsBanner()
-      crypto <- IO(Crypto.instance) // load crypto
-      v6DiscoveryBoundaries <- VinylDNSConfig.v6DiscoveryBoundaries
-      repoConfigs <- VinylDNSConfig.dataStoreConfigs
+      vinyldnsConfig <- VinylDNSConfig.load()
+      system <- IO(ActorSystem("VinylDNS", ConfigFactory.load()))
       loaderResponse <- DataStoreLoader
-        .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
+        .loadAll[ApiDataAccessor](
+          vinyldnsConfig.dataStoreConfigs,
+          vinyldnsConfig.crypto,
+          ApiDataAccessorProvider
+        )
       repositories = loaderResponse.accessor
-      backendConfigs <- BackendConfigs.load(VinylDNSConfig.apiBackend)
-      backendResolver <- BackendResolver.apply(backendConfigs)
+      backendResolver <- BackendResolver.apply(vinyldnsConfig.backendConfigs)
       _ <- TestDataLoader
         .loadTestData(
           repositories.userRepository,
@@ -83,55 +84,61 @@ object Boot extends App {
           repositories.zoneRepository,
           repositories.membershipRepository
         )
-      queueConfig <- VinylDNSConfig.messageQueueConfig
-      messageQueue <- MessageQueueLoader.load(queueConfig)
-      processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
-      processingSignal <- SignallingRef[IO, Boolean](processingDisabled)
-      restHost <- IO(VinylDNSConfig.restConfig.getString("host"))
-      restPort <- IO(VinylDNSConfig.restConfig.getInt("port"))
-      batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
-      globalAcls <- VinylDNSConfig.globalAcl
-      syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
-      msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
-      healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
-      notifierConfigs <- VinylDNSConfig.notifierConfigs
-      notifiers <- NotifierLoader.loadAll(notifierConfigs, repositories.userRepository)
-      metricsSettings <- APIMetrics.loadSettings(VinylDNSConfig.vinyldnsConfig.getConfig("metrics"))
-      _ <- APIMetrics.initialize(metricsSettings)
+      messageQueue <- MessageQueueLoader.load(vinyldnsConfig.messageQueueConfig)
+      processingSignal <- SignallingRef[IO, Boolean](vinyldnsConfig.serverConfig.processingDisabled)
+      msgsPerPoll <- IO.fromEither(MessageCount(vinyldnsConfig.messageQueueConfig.messagesPerPoll))
+      notifiers <- NotifierLoader.loadAll(
+        vinyldnsConfig.notifierConfigs,
+        repositories.userRepository
+      )
+      _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       _ <- CommandHandler
         .run(
           messageQueue,
           msgsPerPoll,
           processingSignal,
-          queueConfig.pollingInterval,
+          vinyldnsConfig.messageQueueConfig.pollingInterval,
           repositories.zoneRepository,
           repositories.zoneChangeRepository,
           repositories.recordSetRepository,
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
           notifiers,
-          backendResolver
+          backendResolver,
+          vinyldnsConfig.serverConfig.maxZoneSize
         )
         .start
     } yield {
-      val batchAccessValidations = new AccessValidations(globalAcls)
-      val recordAccessValidations = new AccessValidations()
-      val zoneValidations = new ZoneValidations(syncDelay)
+      val batchAccessValidations = new AccessValidations(
+        vinyldnsConfig.globalAcls,
+        vinyldnsConfig.batchChangeConfig.allowedRecordTypes
+      )
+      val recordAccessValidations =
+        new AccessValidations(GlobalAcls(Nil), vinyldnsConfig.batchChangeConfig.allowedRecordTypes)
+      val zoneValidations = new ZoneValidations(vinyldnsConfig.serverConfig.syncDelay)
       val batchChangeValidations = new BatchChangeValidations(
-        batchChangeLimit,
         batchAccessValidations,
-        VinylDNSConfig.scheduledChangesEnabled
+        vinyldnsConfig.highValueDomainConfig,
+        vinyldnsConfig.manualReviewConfig,
+        vinyldnsConfig.batchChangeConfig,
+        vinyldnsConfig.scheduledChangesConfig
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(backendResolver)
+        new ZoneConnectionValidator(
+          backendResolver,
+          vinyldnsConfig.serverConfig.approvedNameServers,
+          vinyldnsConfig.serverConfig.maxZoneSize
+        )
       val recordSetService =
         RecordSetService(
           repositories,
           messageQueue,
           recordAccessValidations,
           backendResolver,
-          VinylDNSConfig.validateRecordLookupAgainstDnsBackend
+          vinyldnsConfig.serverConfig.validateRecordLookupAgainstDnsBackend,
+          vinyldnsConfig.highValueDomainConfig,
+          vinyldnsConfig.serverConfig.approvedNameServers
         )
       val zoneService = ZoneService(
         repositories,
@@ -139,10 +146,13 @@ object Boot extends App {
         messageQueue,
         zoneValidations,
         recordAccessValidations,
-        backendResolver
+        backendResolver,
+        vinyldnsConfig.crypto
       )
       val healthService = new HealthService(
-        messageQueue.healthCheck :: backendResolver.healthCheck(healthCheckTimeout) ::
+        messageQueue.healthCheck :: backendResolver.healthCheck(
+          vinyldnsConfig.serverConfig.healthCheckTimeout
+        ) ::
           loaderResponse.healthChecks
       )
       val batchChangeConverter =
@@ -156,11 +166,12 @@ object Boot extends App {
         repositories,
         batchChangeValidations,
         batchChangeConverter,
-        VinylDNSConfig.manualBatchReviewEnabled,
+        vinyldnsConfig.manualReviewConfig.enabled,
         authPrincipalProvider,
         notifiers,
-        VinylDNSConfig.scheduledChangesEnabled,
-        v6DiscoveryBoundaries
+        vinyldnsConfig.scheduledChangesConfig.enabled,
+        vinyldnsConfig.batchChangeConfig.v6DiscoveryNibbleBoundaries,
+        vinyldnsConfig.serverConfig.defaultTtl
       )
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
@@ -171,7 +182,8 @@ object Boot extends App {
         recordSetService,
         batchChangeService,
         collectorRegistry,
-        authPrincipalProvider
+        authPrincipalProvider,
+        vinyldnsConfig
       )
 
       DefaultExports.initialize()
@@ -194,11 +206,19 @@ object Boot extends App {
         ()
       }
 
-      logger.error(s"STARTING VINYLDNS SERVER ON $restHost:$restPort")
+      logger.error(
+        s"STARTING VINYLDNS SERVER ON ${vinyldnsConfig.httpConfig.host}:${vinyldnsConfig.httpConfig.port}"
+      )
       logger.error(banner)
 
       // Starts up our http server
-      Http().bindAndHandle(vinyldnsService.routes, restHost, restPort)
+      implicit val actorSystem: ActorSystem = system
+      implicit val materializer: Materializer = ActorMaterializer()
+      Http().bindAndHandle(
+        vinyldnsService.routes,
+        vinyldnsConfig.httpConfig.host,
+        vinyldnsConfig.httpConfig.port
+      )
     }
 
   // runApp gives us a Task, we actually have to run it!  Running it will yield a Future, which is our app!

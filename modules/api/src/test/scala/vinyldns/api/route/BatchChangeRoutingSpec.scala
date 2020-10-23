@@ -31,6 +31,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
+import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.BatchChangeIsEmpty
@@ -51,13 +52,29 @@ class BatchChangeRoutingSpec()
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
   val batchChangeRoute: Route =
-    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new BatchChangeRoute(
+      TestBatchChangeService,
+      new TestVinylDNSAuthenticator(okAuth),
+      VinylDNSTestHelpers.manualReviewConfig
+    ).getRoutes
   val notAuthRoute: Route =
-    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(notAuth)).getRoutes
+    new BatchChangeRoute(
+      TestBatchChangeService,
+      new TestVinylDNSAuthenticator(notAuth),
+      VinylDNSTestHelpers.manualReviewConfig
+    ).getRoutes
   val supportUserRoute: Route =
-    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(supportUserAuth)).getRoutes
+    new BatchChangeRoute(
+      TestBatchChangeService,
+      new TestVinylDNSAuthenticator(supportUserAuth),
+      VinylDNSTestHelpers.manualReviewConfig
+    ).getRoutes
   val superUserRoute: Route =
-    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
+    new BatchChangeRoute(
+      TestBatchChangeService,
+      new TestVinylDNSAuthenticator(superUserAuth),
+      VinylDNSTestHelpers.manualReviewConfig
+    ).getRoutes
 
   import vinyldns.core.domain.batch.SingleChangeStatus._
 

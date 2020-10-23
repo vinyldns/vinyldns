@@ -16,10 +16,15 @@
 
 package vinyldns.route53.backend
 
-import com.amazonaws.services.route53.model.{RRType, ResourceRecord, ResourceRecordSet}
+import com.amazonaws.services.route53.model.{
+  DelegationSet,
+  RRType,
+  ResourceRecord,
+  ResourceRecordSet
+}
 import org.joda.time.DateTime
 import vinyldns.core.domain.Fqdn
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetStatus}
+import vinyldns.core.domain.record.{NSData, RecordData, RecordSet, RecordSetStatus, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
@@ -39,6 +44,7 @@ trait Route53Conversions {
     case SPF => Some(RRType.SPF)
     case SRV => Some(RRType.SRV)
     case TXT => Some(RRType.TXT)
+    case SOA => Some(RRType.SOA)
     case _ => None
   }
 
@@ -53,17 +59,22 @@ trait Route53Conversions {
     case RRType.SPF => SPF
     case RRType.SRV => SRV
     case RRType.TXT => TXT
+    case RRType.SOA => SOA
     case _ => UNKNOWN
   }
 
   def toVinyl(typ: RecordType, resourceRecord: ResourceRecord): Option[RecordData] =
     RecordData.fromString(resourceRecord.getValue, typ)
 
-  def toVinylRecordSet(zoneName: String, r53RecordSet: ResourceRecordSet): RecordSet = {
+  def toVinylRecordSet(
+      zoneName: String,
+      zoneId: String,
+      r53RecordSet: ResourceRecordSet
+  ): RecordSet = {
     val typ = toVinylRecordType(RRType.fromValue(r53RecordSet.getType))
     RecordSet(
-      "unknown",
-      Fqdn.merge(r53RecordSet.getName, zoneName).firstLabel,
+      zoneId,
+      Fqdn.merge(r53RecordSet.getName, zoneName).zoneRecordName(zoneName),
       typ,
       r53RecordSet.getTTL,
       RecordSetStatus.Active,
@@ -76,9 +87,31 @@ trait Route53Conversions {
 
   def toVinylRecordSets(
       r53RecordSets: java.util.List[ResourceRecordSet],
-      zoneName: String
+      zoneName: String,
+      zoneId: String = "unknown"
   ): List[RecordSet] =
-    r53RecordSets.asScala.toList.map(toVinylRecordSet(zoneName, _))
+    r53RecordSets.asScala.toList.map(toVinylRecordSet(zoneName, zoneId, _))
+
+  def toVinylNSRecordSet(
+      delegationSet: DelegationSet,
+      zoneName: String,
+      zoneId: String
+  ): RecordSet = {
+    val nsData = delegationSet.getNameServers.asScala.toList.map { ns =>
+      NSData(Fqdn(ns))
+    }
+    RecordSet(
+      zoneId,
+      zoneName,
+      RecordType.NS,
+      7200,
+      RecordSetStatus.Active,
+      DateTime.now,
+      Some(DateTime.now),
+      nsData,
+      fqdn = Some(Fqdn(zoneName).fqdn)
+    )
+  }
 
   def toR53RecordSet(zone: Zone, vinylRecordSet: RecordSet): Option[ResourceRecordSet] =
     toRoute53RecordType(vinylRecordSet.typ).map { typ =>

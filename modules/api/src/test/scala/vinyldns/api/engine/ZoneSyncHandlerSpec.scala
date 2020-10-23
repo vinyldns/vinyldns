@@ -155,6 +155,7 @@ class ZoneSyncHandlerSpec
     zoneChangeRepo,
     zoneRepo,
     mockBackendResolver,
+    10000,
     (_, _) => mockVinylDNSLoader
   )
 
@@ -163,6 +164,7 @@ class ZoneSyncHandlerSpec
     recordChangeRepo,
     testZoneChange,
     mockBackendResolver,
+    10000,
     (_, _) => mockVinylDNSLoader
   )
 
@@ -340,6 +342,7 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           mockBackendResolver,
+          10000,
           (_, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
@@ -357,6 +360,7 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           mockBackendResolver,
+          10000,
           (_, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
@@ -378,6 +382,7 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           testZoneChange,
           mockBackendResolver,
+          10000,
           vinyldnsLoader
         )
         .unsafeRunSync()
@@ -471,6 +476,7 @@ class ZoneSyncHandlerSpec
           recordChangeRepo,
           zoneChange,
           mockBackendResolver,
+          10000,
           (_, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()

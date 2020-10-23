@@ -19,7 +19,6 @@ package vinyldns.api.domain.batch
 import java.net.InetAddress
 import java.util.UUID
 
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
@@ -83,9 +82,14 @@ object BatchTransformations {
   }
 
   object ChangeForValidation {
-    def apply(zone: Zone, recordName: String, changeInput: ChangeInput): ChangeForValidation =
+    def apply(
+        zone: Zone,
+        recordName: String,
+        changeInput: ChangeInput,
+        defaultTtl: Long
+    ): ChangeForValidation =
       changeInput match {
-        case a: AddChangeInput => AddChangeForValidation(zone, recordName, a)
+        case a: AddChangeInput => AddChangeForValidation(zone, recordName, a, defaultTtl)
         case d: DeleteRRSetChangeInput =>
           DeleteRRSetChangeForValidation(zone, recordName, d)
       }
@@ -95,11 +99,12 @@ object BatchTransformations {
       zone: Zone,
       recordName: String,
       inputChange: AddChangeInput,
+      defaultTtl: Long,
       existingRecordTtl: Option[Long] = None
   ) extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange = {
 
-      val ttl = inputChange.ttl.orElse(existingRecordTtl).getOrElse(VinylDNSConfig.defaultTtl)
+      val ttl = inputChange.ttl.orElse(existingRecordTtl).getOrElse(defaultTtl)
 
       SingleAddChange(
         Some(zone.id),
