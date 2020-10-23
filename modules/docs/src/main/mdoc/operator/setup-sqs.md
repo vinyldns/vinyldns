@@ -34,4 +34,4 @@ The following SQS Queue Attributes are recommended (these are in AWS when you cr
 
 ## Configuring SQS
 Before you can configure SQS, make note of the AWS account (access key and secret access key) as well as the
-SQS Queue Url that you will be using.  Follow the [SQS Configuration](config-api.md#queue-configuration) to complete the setup.
+SQS Queue Url that you will be using.  Follow the [SQS Configuration](config-api.html#queue-configuration) to complete the setup.

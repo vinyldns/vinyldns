@@ -25,7 +25,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-zone          | map          | refer to [zone model](zone-model.md) |
+zone          | map          | refer to [zone model](zone-model.html) |
 
 #### EXAMPLE RESPONSE
 

@@ -7,12 +7,12 @@ section: "operator_menu"
 # Setup the Portal Server
 The Portal Server is the web UI for VinylDNS.  To setup the Portal server, follow these steps:
 
-1. [Setup API Server](setup-api.md)
-1. [Setup LDAP](setup-ldap.md)
-1. [Configure Portal Server](config-portal.md)
+1. [Setup API Server](setup-api.html)
+1. [Setup LDAP](setup-ldap.html)
+1. [Configure Portal Server](config-portal.html)
 1. [Using the Portal Docker Image](#using-the-portal-docker-image)
 
-Once you have you pre-requisites ready, review the [Portal Configuration Guide](config-portal.md) for how to build out
+Once you have you pre-requisites ready, review the [Portal Configuration Guide](config-portal.html) for how to build out
 your configuration file.
 
 # Using the Portal Docker Image
@@ -24,7 +24,7 @@ purposes.
 ## Volume mounts
 * `/opt/docker/lib_extra` - place here additional jar files that need to be loaded into the classpath when the application starts up.
 This is used for "plugins" that are proprietary or not part of the standard build.  All jar files here will be placed on the class path.
-* `/opt/docker/conf/application.conf` - to override default configuration settings.  Follow the [Portal Configuration Guide](config-portal.md)
+* `/opt/docker/conf/application.conf` - to override default configuration settings.  Follow the [Portal Configuration Guide](config-portal.html)
 * `/opt/docker/conf/application.ini` - to pass additional JVM options
 * `/opt/docker/conf/trustStore.jks` - to make available a custom trustStore, which has to be set in `/opt/docker/conf/application.ini` as `-Djavax.net.ssl.trustStore=/opt/docker/conf/trustStore.jks`
 

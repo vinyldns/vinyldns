@@ -58,7 +58,7 @@ Current supported record types are: A, AAAA, CNAME, DS, MX, NAPTR, NS, PTR, SOA,
 Each individual record encodes its data in a record data object, in which each record type has different required attributes
 <br><br>
 SOA records and NS origin records (record with the same name as the zone) are currently read-only and cannot be created, updated or deleted.
-Non-origin NS records can be created or updated for [approved name servers](../operator/config-api.md#additional-configuration-settings) only. Any non-origin NS record can be deleted.
+Non-origin NS records can be created or updated for [approved name servers](../operator/config-api.html#additional-configuration-settings) only. Any non-origin NS record can be deleted.
 
 record type  | attribute   | type        |
 ------------ | :---------- | :---------- |

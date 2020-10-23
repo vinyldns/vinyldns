@@ -77,7 +77,7 @@ in the DNS backend.
 #### Single Change Errors
 Single change errors can be further classified as *non-fatal* or *fatal* errors. The presence of one or more fatal
 errors will result in an immediate failure (ie. hard stop) and no changes in the batch will be accepted. The behavior of non-fatal errors depends
-on whether [manual review is configured on](../operator/config-api.md#additional-configuration-settings): if manual review
+on whether [manual review is configured on](../operator/config-api.html#additional-configuration-settings): if manual review
 is disabled, non-fatal errors are treated as fatal errors; if manual review is enabled, batches with only non-fatal errors will enter
 a pending review state.
 
@@ -161,7 +161,7 @@ Record set with name <input> requires manual review.
 
 ##### Details:
 
-Based on a [configurable list](../operator/config-api.md#manual-review-domains), VinylDNS will determine if the given inputName requires manual review before it can be processed.
+Based on a [configurable list](../operator/config-api.html#manual-review-domains), VinylDNS will determine if the given inputName requires manual review before it can be processed.
 
 ### Fatal Errors <a id="fatal-errors"></a>
 #### Invalid Domain Name <a id="InvalidDomainName"></a>
@@ -337,7 +337,7 @@ Record "<input>" Does Not Exist: cannot delete a record that does not exist.
 ##### Details:
 
 A record with the given name could not be found in VinylDNS.
-If the record exists in DNS, then you should [sync the zone](sync-zone.md) for that record to bring VinylDNS up to date with what is in the DNS backend.
+If the record exists in DNS, then you should [sync the zone](sync-zone.html) for that record to bring VinylDNS up to date with what is in the DNS backend.
 
 
 #### CNAME Conflict <a id="CNAMEConflict"></a>
@@ -484,7 +484,7 @@ If there are issues with the batch change input data provided in the batch chang
 
 Code          | description |
  ------------ | :---------- |
-404           | **Not Found** - batch change not found for specified ID in [get batch change](get-batchchange.md) request. |
+404           | **Not Found** - batch change not found for specified ID in [get batch change](get-batchchange.html) request. |
 
 ##### ERROR MESSAGE:
 
@@ -494,7 +494,7 @@ Batch change with id <id> cannot be found
 
 ##### DETAILS:
 
-The batch ID specified in the [get batch change](get-batchchange.md) request does not exist.
+The batch ID specified in the [get batch change](get-batchchange.html) request does not exist.
 
 
 #### MALFORMED JSON ERRORS <a id="malformed-json-errors" />

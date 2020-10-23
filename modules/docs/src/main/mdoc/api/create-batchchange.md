@@ -6,7 +6,7 @@ section: "api"
 
 # Create Batch Change
 
-Creates a batch change with [SingleAddChanges](batchchange-model.md#singleaddchange-attributes) and/or [SingleDeleteRRSetChanges](batchchange-model.md#singledeleterrsetchange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds.
+Creates a batch change with [SingleAddChanges](batchchange-model.html#singleaddchange-attributes) and/or [SingleDeleteRRSetChanges](batchchange-model.html#singledeleterrsetchange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds.
                                                                                                 
 Current supported record types for creating a batch change are: **A**, **AAAA**, **CNAME**, **MX**, **PTR**, **TXT**. A batch must contain at least one change and no more than 20 changes.
 Supported record types for records in shared zones may vary. Contact your VinylDNS administrators to find the allowed record types.
@@ -16,7 +16,7 @@ This does not apply to zone administrators or users with specific ACL access rul
 
 > POST /zones/batchrecordchanges?allowManualReview={true &#124; false}
 
-Note that the batch change request inputs are a subset of the full [batch change model](batchchange-model.md#batchchange-attributes).
+Note that the batch change request inputs are a subset of the full [batch change model](batchchange-model.html#batchchange-attributes).
 
 #### HTTP REQUEST PARAMS
 
@@ -24,7 +24,7 @@ name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes   | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
-ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](zone-model.md#shared-zones) and are new or unowned. |
+ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](zone-model.html#shared-zones) and are new or unowned. |
 scheduledTime | date-time      | no          | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date time string.|
 allowManualReview | boolean   | no          | Optional override to control whether manual review is enabled for the batch change request. Default value is `true`. Must be passed in as a query parameter, not in the request body. |
 
@@ -36,7 +36,7 @@ changeType    | ChangeInputType | yes       | Type of change input. Must be set 
 inputName     | string        | yes         | The fully qualified domain name of the record being added. For **PTR**, the input name is a valid IPv4 or IPv6 address. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
 ttl           | long          | no          | The time-to-live in seconds. The minimum and maximum values are 30 and 2147483647, respectively. If excluded, this will be set to the system default for new adds, or the existing TTL for updates |
-record        | [RecordData](recordset-model.md#record-data) | yes         | The data for the record. |
+record        | [RecordData](recordset-model.html#record-data) | yes         | The data for the record. |
 
 ##### DeleteChangeInput <a id="deletechangeinput-attributes" />
 
@@ -45,7 +45,7 @@ name          | type          | required?   | description |
 changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecordSet** for *DeleteChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being deleted. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
-record        | [RecordData](recordset-model.md#record-data) | no         | The data for the record. If specified, only this DNS entry for the existing DNS recordset will be deleted; if unspecified, the entire DNS recordset will be deleted. |
+record        | [RecordData](recordset-model.html#record-data) | no         | The data for the record. If specified, only this DNS entry for the existing DNS recordset will be deleted; if unspecified, the entire DNS recordset will be deleted. |
 
 
 #### EXAMPLE HTTP REQUEST
@@ -107,16 +107,16 @@ The first two items in the changes list are SingleAddChanges of an **A** record 
 Code          | description |
  ------------ | :---------- |
 202           | **Accepted** - The batch change is validated and is returned in the response body. Based on `status`, the batch will either be sent for immediate backend processing (`PendingProcessing`) or pending manual review (`PendingReview`). |
-400           | **Bad Request** - Error in the batch change. See [Batch Change Errors](batchchange-errors.md) page. |
+400           | **Bad Request** - Error in the batch change. See [Batch Change Errors](batchchange-errors.html) page. |
 403           | **Forbidden** - The user does not have the access required to perform the action. |
 413           | **Request Entity Too Large** - Cannot request more than <limit> changes in a single batch change request. |
 422           | **Unprocessable Entity** - the batch does not contain any changes, thus cannot be processed. |
 
-A batch change goes through numerous validations before it is processed. This results in corresponding BadRequest or error responses. View the full list of batch change errors [here](batchchange-errors.md).
+A batch change goes through numerous validations before it is processed. This results in corresponding BadRequest or error responses. View the full list of batch change errors [here](batchchange-errors.html).
 
 #### HTTP RESPONSE ATTRIBUTES
 
-On success, the response from create batch change includes the fields the user input, as well as some additional information provided by the system. This response is the same as that of [get batch change](get-batchchange.md#http-response-attributes).
+On success, the response from create batch change includes the fields the user input, as well as some additional information provided by the system. This response is the same as that of [get batch change](get-batchchange.html#http-response-attributes).
 
 
 #### EXAMPLE RESPONSE

@@ -38,11 +38,11 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](batchchange-model.md#singleaddchange-attributes) or a [SingleDeleteRRSetChange](batchchange-model.md#singledeleterrsetchange-attributes). |
-status        | BatchChangeStatus | [Status of the batch change](batchchange-model.md#batchchange-attributes). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](batchchange-model.html#singleaddchange-attributes) or a [SingleDeleteRRSetChange](batchchange-model.html#singledeleterrsetchange-attributes). |
+status        | BatchChangeStatus | [Status of the batch change](batchchange-model.html#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 scheduledTime | date-time    | Optional requested date and time to process the batch change. |
-approvalStatus| BatchChangeApprovalStatus      |[Approval status of the batch change](batchchange-model.md#batchchange-attributes). |
+approvalStatus| BatchChangeApprovalStatus      |[Approval status of the batch change](batchchange-model.html#batchchange-attributes). |
 reviewerId    | string      | Optional identifier of reviewer if batch change required manual review |
 reviewComment | string      | Optional comment by reviewer if batch change required manual review |
 reviewTimestamp | date-time   | Optional timestamp (UTC) when the batch change was reviewed if manual review was required. |

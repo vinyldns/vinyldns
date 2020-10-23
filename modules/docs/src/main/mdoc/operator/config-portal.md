@@ -18,11 +18,11 @@ The portal configuration is much smaller than the API Server.
 - [Full Example Config](#full-example-config)
 
 ## Database Configuration
-VinylDNS supports both DynamoDB and MySQL backends (see [API Database Configuration](config-api.md#database-configuration)).
+VinylDNS supports both DynamoDB and MySQL backends (see [API Database Configuration](config-api.html#database-configuration)).
 
-If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.md) first to get the values you need to configure here.
+If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.html) first to get the values you need to configure here.
 
-If using MySQL, follow the [MySQL Setup Guide](setup-mysql.md) first to get the values you need to configure here.
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
 
 
 The Portal uses the following tables:
@@ -139,7 +139,7 @@ vinyldns {
 ```
 
 ## LDAP
-Be sure to follow the [LDAP Setup Guide](setup-ldap.md) first to get the values you need to configure here.
+Be sure to follow the [LDAP Setup Guide](setup-ldap.html) first to get the values you need to configure here.
 
 LDAP configuration connects VinylDNS to your Directory where user information is stored.
 

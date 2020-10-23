@@ -7,7 +7,7 @@ section: "operator_menu"
 # Setup AWS DynamoDB
 [AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is currently the default database
 for _most_ of the data that is stored in our instance of VinylDNS. However, all table implementations are available in MySQL
- (see [Setup MySQL Guide](setup-mysql.md) for more information). The following tables are present in DynamoDB in our instance of VinylDNS:
+ (see [Setup MySQL Guide](setup-mysql.html) for more information). The following tables are present in DynamoDB in our instance of VinylDNS:
 
 * [RecordSetChange](#recordsetchange-table) - audit history of all changes made to records
 * [Group](#group-table) - group information, including name, email and description
@@ -37,10 +37,10 @@ the throughput very low and operate in the "almost" free-tier.
 
 ## Configuring DynamoDB
 Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
-DynamoDB endpoint (region) that you will be using.  Follow the [API Database Configuration](config-api.md#database-configuration)
+DynamoDB endpoint (region) that you will be using.  Follow the [API Database Configuration](config-api.html#database-configuration)
 to complete the setup for the API.
 
-You also need to configure DynamoDB for the portal [Portal Database Configuration](config-portal.md#database-configuration)
+You also need to configure DynamoDB for the portal [Portal Database Configuration](config-portal.html#database-configuration)
 
 ### RecordSet Table
 

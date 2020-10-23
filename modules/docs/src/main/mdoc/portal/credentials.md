@@ -4,7 +4,7 @@ title:  "Credentials"
 section: "portal_menu"
 ---
 ## Credentials
-In order to use [tooling](../tools.md) to access VinylDNS, all users must download their credentials from the VinylDNS
+In order to use [tooling](../tools.html) to access VinylDNS, all users must download their credentials from the VinylDNS
 portal. The credentials are located in the User Menu in the top right corner of the site after login.
 
 ### Regenerate Credentials

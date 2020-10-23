@@ -77,9 +77,9 @@ There are a couple of implementation-dependent settings that need to be specifie
 * `messages-per-poll`: Number of messages retrieved in a single queue receive request. Valid values are 1 through 10 (default).
 * `polling-interval`: Interval to delay between each poll for messages.
 
-If using SQS, be sure to follow the [AWS SQS Setup Guide](setup-sqs.md) first to get the values you need to configure here.
+If using SQS, be sure to follow the [AWS SQS Setup Guide](setup-sqs.html) first to get the values you need to configure here.
 
-If using MySQL, follow the [MySQL Setup Guide](setup-mysql.md) first to get the values you need to configure here.
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
 
 The following in a sample SQS config:
 
@@ -167,9 +167,9 @@ You must have all of the following required API repositories configured in exact
 | ZoneChange  |        X         |       X       |
 
 
-If using MySQL, follow the [MySQL Setup Guide](setup-mysql.md) first to get the values you need to configure here.
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
 
-If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.md) first to get the values you need to configure here.
+If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.html) first to get the values you need to configure here.
 
 
 ```yaml
@@ -334,7 +334,7 @@ VinylDNS has three ways of indicating zone connections:
 
 1. Global default connection applies to all zones unless overridden by one of the following connections. This configuration is required.
 2. Backends allows you to specify zone connection information for an individual zone by choosing a pre-configured zone connection. This configuration is optional.
-3. Zone level override allows you to specify zone update and transfer connection information _for each zone_. More information is in the [Zone Model](../api/zone-model.md).
+3. Zone level override allows you to specify zone update and transfer connection information _for each zone_. More information is in the [Zone Model](../api/zone-model.html).
 
 VinylDNS has **2** connections for each zone:
 

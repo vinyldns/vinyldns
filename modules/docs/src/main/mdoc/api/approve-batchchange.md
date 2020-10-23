@@ -9,9 +9,9 @@ section: "api"
 Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and
 submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch
 change. In the event that a batch change is approved and still encounters non-fatal errors, it will remain in manual
-review state until a successful approval (**202** Accepted) or [rejection](reject-batchchange.md) (**200** OK).
+review state until a successful approval (**202** Accepted) or [rejection](reject-batchchange.html) (**200** OK).
 
-Note: If [manual review is disabled](../operator/config-api.md#manual-review) in the VinylDNS instance,
+Note: If [manual review is disabled](../operator/config-api.html#manual-review) in the VinylDNS instance,
 users trying to access this endpoint will encounter a **404 Not Found** response since it will not exist. 
 
 
@@ -45,7 +45,7 @@ Code          | description |
 403           | **Forbidden** User is not a system administrator (ie. support or super user) or is attempting to approve a scheduled batch prior to its scheduled due date. |
 404           | **NotFound** Batch change does not exist.
 
-Since we re-run validations upon successful approval, the [create batch error codes](create-batchchange.md#http-response-types) still hold, so it is possible to see them as well.
+Since we re-run validations upon successful approval, the [create batch error codes](create-batchchange.html#http-response-types) still hold, so it is possible to see them as well.
 
 
 #### HTTP RESPONSE ATTRIBUTES <a id="http-response-attributes" />
@@ -56,8 +56,8 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Conditional: comments about the batch change, if provided. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](batchchange-model.md#singleaddchange-attributes) or a [SingleDeleteRRSetChange](batchchange-model.md#singledeleterrsetchange-attributes). |
-status        | BatchChangeStatus | [Status of the batch change](batchchange-model.md#batchchange-attributes). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](batchchange-model.html#singleaddchange-attributes) or a [SingleDeleteRRSetChange](batchchange-model.html#singledeleterrsetchange-attributes). |
+status        | BatchChangeStatus | [Status of the batch change](batchchange-model.html#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
 approvalStatus | BatchChangeApprovalStatus      | Whether the batch change is currently awaiting manual review. Will be **ManuallyApproved** status when approving. |

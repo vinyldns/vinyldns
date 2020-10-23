@@ -33,3 +33,5 @@ addSbtPlugin("com.47deg"  % "sbt-microsites" % "1.1.5")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 
 addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")
+
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.10" )

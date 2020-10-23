@@ -41,7 +41,7 @@ Code          | description |
 name          | type          | description |
  ------------ | ------------- | :---------- |
 status        | string        | Sync status |
-zone          | map           | Refer to [zone model](zone-model.md) |
+zone          | map           | Refer to [zone model](zone-model.html) |
 created       | string        | The timestamp (UTC) the sync was initiated |
 changeType    | string        | Type of change requested (Create, Update, Sync, Delete); in this case Sync |
 userId        | string        | The user ID that initiated the change |

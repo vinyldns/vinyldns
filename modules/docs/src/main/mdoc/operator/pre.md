@@ -30,7 +30,7 @@ for zone transfers.
 
 Connections (DDNS and Transfer) can be setup
 * `per zone` - every zone can override the global default by specifying its own connections.
-* `global default` - assuming you are managing a primary system, you can [configure default zone connections](config-api.md#default-zone-connections).
+* `global default` - assuming you are managing a primary system, you can [configure default zone connections](config-api.html#default-zone-connections).
 When no zone connection is specified on a zone, the global defaults will be used.
 
 ## Database
@@ -77,7 +77,7 @@ to use DynamoDB as the query interface is limited.  A SQL interface with `JOIN`s
 It should also be noted that all of the repositories have also been implemented in MySQL despite most currently running
 in DynamoDB in our VinylDNS instance.
 
-Review the [Setup MySQL Guide](setup-mysql.md) for more information.
+Review the [Setup MySQL Guide](setup-mysql.html) for more information.
 
 ### AWS DynamoDB
 VinylDNS has gone through several architecture evolutions.  Along the way, DynamoDB was chosen as the data store due to
@@ -97,7 +97,7 @@ VinylDNS has implemented DynamoDB for the following repositories:
 Currently using DynamoDB would also require the user to either use MySQL for the batch change and zone repositories or also provide
 an implementation for those repositories in a different data store.
 
-Review the [Setup AWS DynamoDB Guide](setup-dynamodb.md) for more information.
+Review the [Setup AWS DynamoDB Guide](setup-dynamodb.html) for more information.
 
 ## Message Queues
 Most operations that take place in VinylDNS use a message queue.  These operations require high-availability, fault-tolerance
@@ -119,13 +119,13 @@ bottlenecks in processing could cause an increase in heap pressure in the API no
 1. Price - SQS is very reasonably priced.  Comcast operates multiple message queues for different environments (dev, staging, prod, etc).
 The price to use SQS is in the single digit dollars per month.  VinylDNS can be tuned to run exclusively in the _free tier_.
 
-Review the [Setup AWS SQS Guide](setup-sqs.md) for more information.
+Review the [Setup AWS SQS Guide](setup-sqs.html) for more information.
 
 ### MySQL
 VinylDNS has also implemented a message queue using MySQL, which incorporates the features that we currently utilize through AWS SQS
 such as changing visibility timeout and re-queuing operations.
 
-Review the [Setup MySQL Guide](setup-mysql.md) for more information.
+Review the [Setup MySQL Guide](setup-mysql.html) for more information.
 
 ## LDAP
 VinylDNS uses LDAP in order to authenticate users in the **Portal**.  LDAP is **not** used in the API, instead the API uses
@@ -134,4 +134,4 @@ its own user and group database for authentication.
 When a user first logs into VinylDNS, their user information (first name, last name, user name, email) will be pulled from
 LDAP, and stored in the `UserRepository`.  Credentials will also be generated for the user and stored encrypted in the `UserRepository`.
 
-Review the [Setup LDAP Guide](setup-ldap.md) for more information
+Review the [Setup LDAP Guide](setup-ldap.html) for more information

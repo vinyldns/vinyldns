@@ -22,8 +22,8 @@ id            | string        | yes         | the id of the recordset being upda
 name          | string        | yes         | the name of the recordset being updated |
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
-records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.md) |
-ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.md#shared-zones) |
+records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.html) |
+ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
 
 *Note: If a recordset has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value
  

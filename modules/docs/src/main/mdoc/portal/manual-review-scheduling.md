@@ -16,7 +16,7 @@ section: "portal_menu"
 
 ## Manual Review <a id="manual-review" />
 
-If a DNS Change is submitted with only [non-fatal errors](../api/batchchange-errors.md#non-fatal-errors) you will be notified to either correct those errors or submit your DNS Change for manual review.
+If a DNS Change is submitted with only [non-fatal errors](../api/batchchange-errors.html#non-fatal-errors) you will be notified to either correct those errors or submit your DNS Change for manual review.
 If you submit the DNS Change for manual review a VinylDNS administrator will determine if your request can be approved or if it needs to be rejected. 
 After the review your DNS Change will include the review details, including the review status, reviewer name, review time and review comment, if provided.
 

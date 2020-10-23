@@ -12,7 +12,7 @@ VinylDNS.  VinylDNS does support service accounts, which are useful for automati
 user to be created is to login to the portal.  Implementers can choose to out-of-band manage the VinylDNS repositories.**
 
 There are no steps necessary for setup than having a Directory that can communicate via LDAP, and a user (account) that
-can read data from the Directory.  Once you have that information, proceed to the [Portal Configuration](config-portal.md).
+can read data from the Directory.  Once you have that information, proceed to the [Portal Configuration](config-portal.html).
 
 **Considerations**
 You _should_ communicate to your Directory over LDAP using TLS.  To do so, the SSL certs should be installed
@@ -21,7 +21,7 @@ a java key store when it starts up.
 
 ## Configuring LDAP
 Before you can configure LDAP, make note of the host, username, and password that you will be using.
-Follow the [Portal Configuration](config-portal.md) to complete the setup.
+Follow the [Portal Configuration](config-portal.html) to complete the setup.
 
 ## Syncing users against LDAP
 VinylDNS has implemented an optional feature to perform a recurring LDAP lookup against all non-test users in the database and perform

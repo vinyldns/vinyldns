@@ -6,8 +6,8 @@ section: "api"
 
 # API documentation
 
-* [Authentication](auth-mechanism.md)
-* [Zone](zone-model.md)
-* [RecordSet](recordset-model.md)
-* [Batch Change](batchchange-model.md)
-* [Membership](membership-model.md)
+* [Authentication](auth-mechanism.html)
+* [Zone](zone-model.html)
+* [RecordSet](recordset-model.html)
+* [Batch Change](batchchange-model.html)
+* [Membership](membership-model.html)

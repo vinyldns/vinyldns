@@ -97,7 +97,7 @@ accessLevel   | string      | Access level of the user requesting the zone. Curr
 #### ZONE ACL RULE ATTRIBUTES <a id="zone-acl-rule-attr"></a>
 ACL Rules are used to govern user and group access to record operations on a zone.  ACL Rules can be associated with a specific user, or all users in a specified group.  If neither a user _or_ a group is attached to an ACL rule, then the rule applies to _all_ users in the system.
 <br><br>
-Use the [Zone Update](update-zone.md) endpoint to update the **acl** attribute of the zone
+Use the [Zone Update](update-zone.html) endpoint to update the **acl** attribute of the zone
 
 > **Important!** If a user is mentioned on an ACL Rule directly, or is a member of a group that is mentioned on an ACL Rule, that user will be able to see the zone.
 
@@ -261,4 +261,4 @@ key           | string      | The TSIG secret key used to sign requests when com
 
 ### SHARED ZONES <a id="shared-zones"></a>
 
-Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with relevant ACL rules can modify or delete the record. The [batch change API endpoint](create-batchchange.md) and [batch change area of the portal](../portal/batch-changes.md) are where users can create new records in shared zones, modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access is no longer applicable.
+Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with relevant ACL rules can modify or delete the record. The [batch change API endpoint](create-batchchange.html) and [batch change area of the portal](../portal/batch-changes.html) are where users can create new records in shared zones, modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access is no longer applicable.

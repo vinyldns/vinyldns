@@ -16,12 +16,12 @@ section: "api"
 #### MEMBERSHIP BREAKDOWN
 
 Every zone can be connected to by only one group in VinylDNS. That initial group will be the admin group for that zone,
-which can be changed later on in a [Zone Update](update-zone.md). Every member of the admin group
+which can be changed later on in a [Zone Update](update-zone.html). Every member of the admin group
 will be an admin of that zone, and can preform zone syncs, zone updates, zone deletes, and record set changes regardless
 of any Access Control Rules set on them.
 <br><br>
 While users in the admin group will have complete zone access, further users can be given limited membership through [Zone
-ACL Rules](zone-model.md#zone-acl-rule-attr)
+ACL Rules](zone-model.html#zone-acl-rule-attr)
 
 #### GROUP ATTRIBUTES <a id="group-attributes"></a>
 

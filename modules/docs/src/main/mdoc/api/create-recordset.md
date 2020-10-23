@@ -20,8 +20,8 @@ zoneId        | string        | yes         | id of the zone where the recordset
 name          | string        | yes         | the name of the recordset being updated |
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
-records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.md) |
-ownerGroupId  | string        | no          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.md#shared-zones) |
+records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.html) |
+ownerGroupId  | string        | no          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
 
 #### EXAMPLE HTTP REQUEST
 ```

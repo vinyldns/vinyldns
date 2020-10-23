@@ -15,7 +15,7 @@ your zone.
 
 If you have an existing TSIG key that you are using for issuing DDNS updates to DNS,
 and you wish to continue to use it, you *must* request that your zone be setup to
-allow transfers from VinylDNS. **Note**: If you make any changes *outside* of VinylDNS they will not be reflected in VinylDNS unless you manually [sync the zone](manage-records.md#sync-zones).
+allow transfers from VinylDNS. **Note**: If you make any changes *outside* of VinylDNS they will not be reflected in VinylDNS unless you manually [sync the zone](manage-records.html#sync-zones).
 
 If you have an existing TSIG key that you are using for issuing DDNS updates,
 and you no longer need the key, please contact your VinylDNS administrators to ensure that the key is *revoked* and the zone is setup with the default VinylDNS TSIG key. Once

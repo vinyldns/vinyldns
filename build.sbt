@@ -379,7 +379,7 @@ lazy val docSettings = Seq(
   micrositeDocumentationUrl := "/api",
   micrositeGitterChannelUrl := "vinyldns/Lobby",
   micrositeTwitterCreator := "@vinyldns",
-  micrositeDocumentationLabelDescription := "VinylDNS Documentation",
+  micrositeDocumentationLabelDescription := "API Documentation",
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
@@ -394,13 +394,13 @@ lazy val docSettings = Seq(
   mdocIn := (sourceDirectory in Compile).value / "mdoc",
   micrositeCssDirectory := (resourceDirectory in Compile).value / "microsite" / "css",
   micrositeCompilingDocsTool := WithMdoc,
+  micrositeFavicons := Seq(MicrositeFavicon("favicon16x16.png", "16x16"), MicrositeFavicon("favicon32x32.png", "32x32")),
   micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/mdoc/{{ page.path }}")),
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 
 lazy val docs = (project in file("modules/docs"))
-  .enablePlugins(MicrositesPlugin)
-  .enablePlugins(MdocPlugin)
+  .enablePlugins(MicrositesPlugin, MdocPlugin)
   .settings(docSettings)
 
 // release stages

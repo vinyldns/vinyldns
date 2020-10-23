@@ -16,21 +16,21 @@ section: "api"
 #### BATCH CHANGE INFORMATION <a id="batchchange-info" />
 [batchchange-info]: #batchchange-info
 
-Batch change is an alternative to submitting individual [RecordSet](recordset-model.md) changes and provides the following:
+Batch change is an alternative to submitting individual [RecordSet](recordset-model.html) changes and provides the following:
 
 -   The ability to accept multiple changes in a single API call.
 -   The ability to include records of multiple record types across multiple zones.
 -   Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
--   All record validations are processed simultaneously. [Fatal errors](batchchange-errors.md#fatal-errors) for any
+-   All record validations are processed simultaneously. [Fatal errors](batchchange-errors.html#fatal-errors) for any
 change in the batch will result in a **400** response and none will be applied.
--   Support for [manual review](../operator/config-api.md#additional-configuration-settings) if enabled in your VinylDNS instance.
+-   Support for [manual review](../operator/config-api.html#additional-configuration-settings) if enabled in your VinylDNS instance.
 Batch change will remain in limbo until a system administrator (ie. support or super user) either rejects it resulting in
 an immediate failure or approves it resulting in revalidation and submission for processing.
--   Support for [notifications](../operator/config-api.md#additional-configuration-settings) when a batch change is rejected or implemented.
+-   Support for [notifications](../operator/config-api.html#additional-configuration-settings) when a batch change is rejected or implemented.
 
 A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteRRSetChanges](#singledeleterrsetchange-attributes).
 
-**Note:** In the portal batch change is referred to as [DNS Change](../portal/dns-changes.md).
+**Note:** In the portal batch change is referred to as [DNS Change](../portal/dns-changes.html).
 
 To update an existing record, you must delete the record first and add the record again with the updated changes.
 
@@ -51,7 +51,7 @@ userName      | string      | The username of the user that created the batch ch
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes). |
-status        | BatchChangeStatus | - **PendingProcessing** - at least one change in batch has not finished processing<br>- **Complete** - all changes have been processed successfully<br>- **Failed** - all changes failed during processing<br>- **PartialFailure** - some changes have failed and the rest were successful<br>- **PendingReview** - one or more changes requires manual [approval](approve-batchchange.md)/[rejection](reject-batchchange.md) by a system administrator (ie. super or support user) to proceed<br>- **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied<br>- **Scheduled** - the batch change is scheduled for a later date at which time it needs to be approved to proceed.<br>- **Cancelled** - the PendingReview batch change was cancelled by its creator before review.|
+status        | BatchChangeStatus | - **PendingProcessing** - at least one change in batch has not finished processing<br>- **Complete** - all changes have been processed successfully<br>- **Failed** - all changes failed during processing<br>- **PartialFailure** - some changes have failed and the rest were successful<br>- **PendingReview** - one or more changes requires manual [approval](approve-batchchange.html)/[rejection](reject-batchchange.html) by a system administrator (ie. super or support user) to proceed<br>- **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied<br>- **Scheduled** - the batch change is scheduled for a later date at which time it needs to be approved to proceed.<br>- **Cancelled** - the PendingReview batch change was cancelled by its creator before review.|
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
 approvalStatus | BatchChangeApprovalStatus | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved**, **Rejected**, or **Cancelled**. |
@@ -65,7 +65,7 @@ cancelledTimestamp | date-time | Optional date and time a batch change was cance
 #### SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes" />
 [singlechange-attributes]: #singlechange-attributes
 
-A successful batch change response consists of a corresponding [SingleAddChange](#singleaddchange-attributes) or [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes) for each batch change input. See the [batch change create](create-batchchange.md) page for details on constructing a batch change request.
+A successful batch change response consists of a corresponding [SingleAddChange](#singleaddchange-attributes) or [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes) for each batch change input. See the [batch change create](create-batchchange.html) page for details on constructing a batch change request.
 
 #### SingleAddChange <a id="singleaddchange-attributes" />
 [singleaddchange-attributes]: #singleaddchange-attributes
@@ -76,7 +76,7 @@ changeType    | ChangeInputType | Type of change input. Can either be an **Add**
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
 type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
 ttl           | long          | The time-to-live in seconds. |
-record        | [RecordData](recordset-model.md#record-data)    | The data added for this record, which varies by record type. |
+record        | [RecordData](recordset-model.html#record-data)    | The data added for this record, which varies by record type. |
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
 recordName    | string        | The name of the record. Record names for the apex will be match the zone name (including terminating dot). |
 zoneName      | string        | The name of the zone. |
@@ -95,7 +95,7 @@ name          | type          | description |
 changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**.  [See more details](#changetype-values) about behavior of `changeType` interaction. |
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
 type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
-record        | [RecordData](recordset-model.md#record-data)    | Optional. The data deleted for this record, which varies by record type.  If not provided, the entire DNS recordset was deleted. | 
+record        | [RecordData](recordset-model.html#record-data)    | Optional. The data deleted for this record, which varies by record type.  If not provided, the entire DNS recordset was deleted. | 
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
 recordName    | string        | The name of the record. Record names for the apex will be match the zone name (including terminating dot). |
 zoneName      | string        | The name of the zone. |

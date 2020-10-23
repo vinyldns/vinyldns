@@ -8,7 +8,7 @@ section: "api"
 
 Abandons an existing zone that has already been connected to.
 The zone will be disconnected from VinylDNS, but the RecordSets still exist in the backend DNS zone.
-To delete the RecordSets see [Delete RecordSet](delete-recordset.md)
+To delete the RecordSets see [Delete RecordSet](delete-recordset.html)
 
 *Note: We do not recommend that you abandon zones, as your zone history will be lost after the Delete.  This endpoint is provided in certain situations where a zone was incorrectly started.*
 

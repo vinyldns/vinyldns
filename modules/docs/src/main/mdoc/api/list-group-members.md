@@ -31,7 +31,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-members        | Array of Users | refer to [membership model](membership-model.md), these Users will also include an isAdmin attribute |
+members        | Array of Users | refer to [membership model](membership-model.html), these Users will also include an isAdmin attribute |
 startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
 nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if members are exhausted |
 maxItems      | integer       | maxItems sent in request, default is 100 |

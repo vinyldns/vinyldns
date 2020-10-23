@@ -87,4 +87,4 @@ If you need new API credentials select *Regenerate Credentials*. This will inval
 If you use any VinylDNS tools beyond the portal you will need to provide those tools with your new credentials.
 
 ### 9. How are requests authenticated to the VinylDNS API? <a id="9"></a>
-Refer to [API Authentication](api/auth-mechanism.md).
+Refer to [API Authentication](api/auth-mechanism.html).

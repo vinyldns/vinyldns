@@ -32,7 +32,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-groups        | Array of Groups | refer to [membership model](membership-model.md) |
+groups        | Array of Groups | refer to [membership model](membership-model.html) |
 groupNameFilter    | string  | name filter sent in request |
 startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
 nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if groups are exhausted |

@@ -37,7 +37,7 @@ records       | array of record data | Array of record data objects |
 id            | string        | The unique ID of the record set |
 account       | string        | **DEPRECATED** the ID of the account that created the record set |
 accessLevel   | string        | accessLevel that user has to record set based off acl rules and whether or not user is in Zone Admin Group |
-ownerGroupId  | string        | Record ownership assignment, if found, applicable if the recordset is in a [shared zone](zone-model.md#shared-zones) |
+ownerGroupId  | string        | Record ownership assignment, if found, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
 ownerGroupName   | string        | Name of assigned owner group, if found |
 
 #### EXAMPLE RESPONSE

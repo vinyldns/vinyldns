@@ -15,7 +15,7 @@ if no info is provided the default VinylDNS connections will be used
 
 #### HTTP REQUEST PARAMS
 
-**zone fields**  - adminGroupId, name, and email are required - refer to [zone model](zone-model.md) |
+**zone fields**  - adminGroupId, name, and email are required - refer to [zone model](zone-model.html) |
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -41,7 +41,7 @@ Code          | description |
 name          | type          | description |
  ------------ | ------------- | :---------- |
 status        | string       | Status of zone change |
-zone          | map          | Refer to [zone model](zone-model.md)  |
+zone          | map          | Refer to [zone model](zone-model.html)  |
 created       | string        | The timestamp (UTC) the change was initiated |
 changeType    | string        | Type of change requested (Create, Update, Sync, Delete); in this case Create |
 userId        | string        | The user id that initiated the change |
