@@ -144,7 +144,33 @@ final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
   def deleteRule(rule: ACLRule): ZoneACL = copy(rules = rules - rule)
 }
 
-case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
+sealed abstract class Algorithm(val name: String) {
+  override def toString: String = name
+}
+object Algorithm {
+  case object HMAC_MD5 extends Algorithm("HMAC-MD5")
+  case object HMAC_SHA1 extends Algorithm("HMAC-SHA1")
+  case object HMAC_SHA224 extends Algorithm("HMAC-SHA224")
+  case object HMAC_SHA256 extends Algorithm("HMAC-SHA256")
+  case object HMAC_SHA384 extends Algorithm("HMAC-SHA384")
+  case object HMAC_SHA512 extends Algorithm("HMAC-SHA512")
+
+  val Values = List(HMAC_MD5, HMAC_SHA1, HMAC_SHA224, HMAC_SHA256, HMAC_SHA384, HMAC_SHA512)
+  val Map = Values.map(v => v.name -> v).toMap
+
+  def fromString(name: String): Either[String, Algorithm] =
+    Map
+      .get(name)
+      .toRight[String](s"Unsupported algorithm $name, must be one of ${Values.mkString(",")}")
+}
+
+case class ZoneConnection(
+    name: String,
+    keyName: String,
+    key: String,
+    primaryServer: String,
+    algorithm: Algorithm = Algorithm.HMAC_MD5
+) {
 
   def encrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.encrypt(key))
@@ -179,7 +205,11 @@ object ConfiguredDnsConnections {
         val keyName = connectionConfig.getString("keyName")
         val key = connectionConfig.getString("key")
         val primaryServer = connectionConfig.getString("primaryServer")
-        ZoneConnection(name, keyName, key, primaryServer).encrypted(crypto)
+        val algorithm =
+          if (connectionConfig.hasPath("algorithm"))
+            Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
+          else Algorithm.HMAC_MD5
+        ZoneConnection(name, keyName, key, primaryServer, algorithm).encrypted(crypto)
       }
 
       val defaultTransferConnection = {
@@ -188,7 +218,11 @@ object ConfiguredDnsConnections {
         val keyName = connectionConfig.getString("keyName")
         val key = connectionConfig.getString("key")
         val primaryServer = connectionConfig.getString("primaryServer")
-        ZoneConnection(name, keyName, key, primaryServer).encrypted(crypto)
+        val algorithm =
+          if (connectionConfig.hasPath("algorithm"))
+            Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
+          else Algorithm.HMAC_MD5
+        ZoneConnection(name, keyName, key, primaryServer, algorithm).encrypted(crypto)
       }
 
       val dnsBackends = {

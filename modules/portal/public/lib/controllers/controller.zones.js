@@ -25,6 +25,8 @@ angular.module('controller.zones', [])
 
     $scope.query = "";
 
+    $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
+
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
     var allZonesPaging = pagingService.getNewPagingParams(100);

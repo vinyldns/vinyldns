@@ -3,11 +3,21 @@ syntax = "proto2";
 option java_package = "vinyldns.proto";
 option optimize_for = SPEED;
 
+enum Algorithm {
+  HMAC_MD5 = 0;
+  HMAC_SHA1 = 1;
+  HMAC_SHA224 = 2;
+  HMAC_SHA256 = 3;
+  HMAC_SHA384 = 4;
+  HMAC_SHA512 = 5;
+}
+
 message ZoneConnection {
   required string name = 1;
   required string keyName = 2;
   required string key = 3;
   required string primaryServer = 4;
+  optional Algorithm algorithm = 5 [default = HMAC_MD5];
 }
 
 message ACLRule {

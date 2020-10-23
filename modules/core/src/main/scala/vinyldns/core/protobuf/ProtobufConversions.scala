@@ -35,6 +35,17 @@ trait ProtobufConversions {
 
   val protoLogger: Logger = LoggerFactory.getLogger("vinyldns.core.protobuf.ProtobufConversions")
 
+  // Must match the numbers from the Vinyldns.proto file
+  def fromPB(algorithm: VinylDNSProto.Algorithm): Algorithm = algorithm.getNumber match {
+    case 0 => Algorithm.HMAC_MD5
+    case 1 => Algorithm.HMAC_SHA1
+    case 2 => Algorithm.HMAC_SHA224
+    case 3 => Algorithm.HMAC_SHA256
+    case 4 => Algorithm.HMAC_SHA384
+    case 5 => Algorithm.HMAC_SHA512
+    case _ => Algorithm.HMAC_MD5 // default
+  }
+
   def fromPB(rule: VinylDNSProto.ACLRule): ACLRule =
     ACLRule(
       accessLevel = AccessLevel.withName(rule.getAccessLevel),
@@ -122,7 +133,8 @@ trait ProtobufConversions {
       zc.getName,
       zc.getKeyName,
       zc.getKey,
-      zc.getPrimaryServer
+      zc.getPrimaryServer,
+      fromPB(zc.getAlgorithm)
     )
 
   def fromPB(chg: VinylDNSProto.ZoneChange): ZoneChange =
@@ -383,6 +395,15 @@ trait ProtobufConversions {
     builder.build()
   }
 
+  def toPB(algorithm: Algorithm): VinylDNSProto.Algorithm = algorithm match {
+    case Algorithm.HMAC_MD5 => VinylDNSProto.Algorithm.HMAC_MD5
+    case Algorithm.HMAC_SHA1 => VinylDNSProto.Algorithm.HMAC_SHA1
+    case Algorithm.HMAC_SHA224 => VinylDNSProto.Algorithm.HMAC_SHA224
+    case Algorithm.HMAC_SHA256 => VinylDNSProto.Algorithm.HMAC_SHA256
+    case Algorithm.HMAC_SHA384 => VinylDNSProto.Algorithm.HMAC_SHA384
+    case Algorithm.HMAC_SHA512 => VinylDNSProto.Algorithm.HMAC_SHA512
+  }
+
   def toPB(conn: ZoneConnection): VinylDNSProto.ZoneConnection =
     VinylDNSProto.ZoneConnection
       .newBuilder()
@@ -390,6 +411,7 @@ trait ProtobufConversions {
       .setKeyName(conn.keyName)
       .setKey(conn.key)
       .setPrimaryServer(conn.primaryServer)
+      .setAlgorithm(toPB(conn.algorithm))
       .build()
 
   def toPB(zoneChange: ZoneChange): VinylDNSProto.ZoneChange = {
