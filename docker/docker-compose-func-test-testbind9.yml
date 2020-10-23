@@ -19,17 +19,6 @@ services:
     logging:
       driver: none
 
-  dynamodb-local:
-    image: cnadiminti/dynamodb-local:2017-02-16
-    container_name: "vinyldns-dynamodb"
-    env_file:
-      .env
-    logging:
-      driver: none
-    ports:
-    - "19000:8000"
-    command: "--sharedDb --inMemory"
-
   localstack:
     image: localstack/localstack:0.10.4
     container_name: "vinyldns-localstack"
@@ -39,7 +28,7 @@ services:
       - "19007:19007"
       - "19009:19009"
     environment:
-      - SERVICES=dynamodb:19000,sns:19006,sqs:19007,route53:19009
+      - SERVICES=sns:19006,sqs:19007,route53:19009
       - START_WEB=0
       - HOSTNAME_EXTERNAL=vinyldns-localstack
 

@@ -71,8 +71,6 @@ options:
     menu_type: operator_menu
     menu_section: operator_section
     nested_options:
-      - title: Setup AWS DynamoDB
-        url: operator/setup-dynamodb.html
       - title: Setup MySQL
         url: operator/setup-mysql.html
       - title: Setup AWS SQS

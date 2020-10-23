@@ -141,10 +141,6 @@ lazy val portalDockerSettings = Seq(
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
-lazy val dynamoDBDockerSettings = Seq(
-  composeFile := baseDirectory.value.getAbsolutePath + "/docker/docker-compose.yml"
-)
-
 lazy val noPublishSettings = Seq(
   publish := {},
   publishLocal := {},
@@ -194,7 +190,6 @@ lazy val api = (project in file("modules/api"))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(
     core % "compile->compile;test->test",
-    dynamodb % "compile->compile;it->it",
     mysql % "compile->compile;it->it",
     sqs % "compile->compile;it->it",
     r53 % "compile->compile;it->it"
@@ -212,7 +207,7 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql, sqs, r53)
+  .aggregate(core, api, portal, mysql, sqs, r53)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -256,23 +251,6 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(
     organization := "io.vinyldns"
   )
-
-lazy val dynamodb = (project in file("modules/dynamodb"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .configs(IntegrationTest)
-  .settings(sharedSettings)
-  .settings(headerSettings(IntegrationTest))
-  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(corePublishSettings)
-  .settings(testSettings)
-  .settings(Defaults.itSettings)
-  .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
-  .settings(
-    organization := "io.vinyldns",
-    parallelExecution in Test := true,
-    parallelExecution in IntegrationTest := true
-  ).dependsOn(core % "compile->compile;test->test")
-  .settings(name := "dynamodb")
 
 lazy val mysql = (project in file("modules/mysql"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -366,7 +344,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal"
   )
-  .dependsOn(dynamodb, mysql)
+  .dependsOn(mysql)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",
@@ -469,7 +447,6 @@ releaseProcess :=
 addCommandAlias("validate", "; root/clean; " +
   "all core/headerCheck core/test:headerCheck " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
-  "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "r53/headerCheck r53/test:headerCheck r53/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +

@@ -25,41 +25,11 @@ at this time.
 1. You must have npm, if you don't have npm, follow instructions here <https://www.npmjs.com/get-npm>.
 2. Run `npm install` to install all dependencies, this includes those needed for testing. If you just want to run the portal then `npm install --production` would suffice
 3. You must have grunt, if you don't have grunt, run `npm install -g grunt`. Then run `grunt default` from the root of the portal project
-4. Create a local.conf file in the portal conf folder. Include in it the following information:
-
-```
-LDAP {
-  user = [get this from CAP member]
-  password = [get this from CAP member]
-  domain = [get this from CAP member]
-  searchBase = [get this from CAP member]
-  context.providerUrl = [get this from CAP member]
-}
-portal.vinyldns.backend.url = "http://127.0.0.1:9000"
-portal.dynamo_delay=0
-dynamo {
-  key = "local"
-  secret = "local"
-  endpoint = "http://127.0.0.1:19000"
-}
-users {
-  dummy = false
-  tablename = "users"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
-}
-changelog {
-  dummy = false
-  tablename = "usersAndGroupChanges"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
-}
-```
-
+4. Create a local.conf file in the portal conf folder for your settings if desired.
 5. Follow the instructions for building vinyl locally on the vinyl readme
 6. Start vinyl with `sbt run`. Vinyl will start on localhost on port 9000.
 7. Run the portal with `sbt -Djavax.net.ssl.trustStore="./private/trustStore.jks" -Dhttp.port=8080 run`
-8. In a web browser go to localhost:8080
+8. In a web browser go to localhost:9001
 
 # Working locally
 Often times as a developer you want to work with the portal locally in a "real" setting against your own LDAP

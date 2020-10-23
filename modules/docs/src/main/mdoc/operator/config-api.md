@@ -147,36 +147,17 @@ queue {
 ```
 
 ## Database Configuration
-VinylDNS supports both DynamoDB and MySQL backends. You can enable all repos in a single backend, or have a mix of the two.
+VinylDNS supports a MySQL database. You can enable all repos in a single backend, or have a mix of the two.
 For each backend, you need to configure the table(s) that should be loaded.
 
-You must have all of the following required API repositories configured in exactly one datastore.
-**Some repositories are implemented in DynamoDB, all repositories have MySQL support**:
-
-| Repository | DynamoDB support | MySQL support |
-| :---       |       :---:      |     :---:     |
-| BatchChange  |                 |       X       |
-| Group  |        X         |       X       |
-| GroupChange  |        X         |       X       |
-| Membership  |        X         |       X       |
-| RecordSet |                 |       X       |
-| RecordSetChange  |        X         |       X       |
-| User  |        X         |       X       |
-| UserChange  |        X         |       X       |
-| Zone  |                 |       X       |
-| ZoneChange  |        X         |       X       |
-
-
 If using MySQL, follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
-
-If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.html) first to get the values you need to configure here.
 
 
 ```yaml
 vinyldns {
 
   # this list should include only the datastores being used by your instance
-  data-stores = ["mysql", "dynamodb"]
+  data-stores = ["mysql"]
   
   mysql {
     
@@ -248,58 +229,6 @@ vinyldns {
     }
   }
   
-  dynamodb {
-      
-    # this is the path to the DynamoDB provider. This should not be edited
-    # from the default in reference.conf
-    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
-    
-    settings {
-      # AWS_ACCESS_KEY, credential needed to access the SQS queue
-      key = "x"
-    
-      # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
-      secret = "x"
-    
-      # DynamoDB url for the region you are running in, this example is in us-east-1
-      endpoint = "https://dynamodb.us-east-1.amazonaws.com"
-      
-      # DynamoDB region
-      region = "us-east-1"
-    }
-    
-    repositories {
-      # all repositories with config sections here will be enabled in dynamodb
-      record-change {
-        # Name of the table where recordsets are saved
-        table-name = "recordChangeTest"
-        # Provisioned throughput for reads
-        provisioned-reads = 30
-        # Provisioned throughput for writes
-        provisioned-writes = 20
-      }
-      zone-change {
-        table-name = "zoneChangesTest"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      group {
-        table-name = "groupsTest"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      group-change {
-        table-name = "groupChangesTest"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      membership {
-        table-name = "membershipTest"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-    }
-  }
 }
 ```
 
@@ -364,6 +293,9 @@ vinyldns {
 
     # the host name or IP address, note you can add a port if not using the default by settings hostname:port
     primaryServer = "ddns1.foo.bar.com"
+    
+    # the key algorithm to use: HMAC-MD5, HMAC-SHA1, HMAC-SHA224, HMAC-SHA256, HMAC-SHA384, HMAC-SHA512
+    algorithm = "HMAC-MD5"
   }
 
   # the AXFR connection information for the default dns backend
@@ -372,6 +304,7 @@ vinyldns {
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
     primaryServer = "vinyldns-bind9"
+    algorithm = "HMAC-MD5"
   }
 }
 
@@ -384,12 +317,14 @@ backends = [
         key-name = "vinyldns."
         key = "nzisn+4G2ldMn0q1CV3vsg=="
         primary-server = "127.0.0.1:19001"
+        algorithm = "HMAC-MD5"
       }
       transfer-connection {
         name = "vinyldns."
         key-name = "vinyldns."
         key = "nzisn+4G2ldMn0q1CV3vsg=="
         primary-server = "127.0.0.1:19001"
+        algorithm = "HMAC-MD5"
       }
     }
 ]
@@ -620,47 +555,8 @@ vinyldns {
   }
 
   # both datastore options are in use
-  data-stores = ["mysql", "dynamodb"]
-  
-  dynamodb {
-    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
-    
-    settings {
-      key = "x"
-      secret = "x"
-      endpoint = "http://vinyldns-dynamodb:8000"
-      region = "us-east-1"
-    }
-    
-    repositories {
-      record-change {
-        table-name = "recordChange"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      zone-change {
-        table-name = "zoneChanges"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      group {
-        table-name = "groups"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      group-change {
-        table-name = "groupChanges"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      membership {
-        table-name = "membership"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-    }
-  }
-  
+  data-stores = ["mysql"]
+     
   mysql {
     class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
     
@@ -687,13 +583,23 @@ vinyldns {
     }
     
     repositories {
-      zone {
+      zone {      
       }
       batch-change {
       }
       user {
       }
-      record-set{
+      record-set {
+      }
+      group {
+      }
+      membership {
+      }
+      group-change {
+      }
+      zone-change {
+      }
+      record-change {
       }
     }
   }
@@ -704,6 +610,7 @@ vinyldns {
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
     primaryServer = "vinyldns-bind9"
+    algorithm = "HMAC-MD5"
   }
 
   # the AXFR connection information for the default dns backend
@@ -712,6 +619,7 @@ vinyldns {
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
     primaryServer = "vinyldns-bind9"
+    algorithm = "HMAC-MD5"
   }
 
   # the max number of changes in a single batch change.  Change carefully as this has performance
@@ -804,12 +712,14 @@ vinyldns {
           key-name = "vinyldns."
           key = "nzisn+4G2ldMn0q1CV3vsg=="
           primary-server = "127.0.0.1:19001"
+          algorithm = "HMAC-MD5"
         }
         transfer-connection {
           name = "vinyldns."
           key-name = "vinyldns."
           key = "nzisn+4G2ldMn0q1CV3vsg=="
           primary-server = "127.0.0.1:19001"
+          algorithm = "HMAC-MD5"
         }
       }
   ]
