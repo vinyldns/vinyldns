@@ -9,7 +9,7 @@
   <a href="http://www.vinyldns.io/">
     <img
       alt="VinylDNS"
-      src="img/vinyldns-logo-full.png"
+      src="img/vinyldns_optimized.svg"
       width="400"
     />
   </a>
