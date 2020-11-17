@@ -53,7 +53,6 @@ object OidcAuthenticator {
       tokenEndpoint: String,
       jwksEndpoint: String,
       logoutEndpoint: String,
-      tenantId: String,
       clientId: String,
       secret: String,
       redirectUri: String,
@@ -61,7 +60,8 @@ object OidcAuthenticator {
       jwtFirstnameField: String,
       jwtLastnameField: String,
       jwtEmailField: String = "email",
-      scope: String = "openid profile email"
+      scope: String = "openid profile email",
+      tenantId: Option[String] = None
   )
 
   final case class OidcUserDetails(
@@ -168,7 +168,9 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     val tid = getStringFieldOption(claimsSet, "tid")
     val aid = Try(List(claimsSet.getStringListClaim("aud").asScala).flatten).getOrElse(List())
 
-    val isValidTenantId = tid.contains(oidcInfo.tenantId)
+    // forall will return true if tenant id is not configured
+    // if it is configured match to the tenant id returned
+    val isValidTenantId = oidcInfo.tenantId.forall(tid.contains)
     val isValidAppId = aid.contains(oidcInfo.clientId)
 
     if (isValidAppId && isValidTenantId) {
