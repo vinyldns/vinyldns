@@ -24,7 +24,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         with:
           java-version: ${{ matrix.java }}
 
@@ -80,3 +82,4 @@ jobs:
       - run: sbt ++${{ matrix.scala }} ";project docs; publishMicrosite";
         env:
           SBT_MICROSITES_PUBLISH_TOKEN: ${{ secrets.VINYLDNS_MICROSITE }}
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
