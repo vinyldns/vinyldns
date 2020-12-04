@@ -150,7 +150,7 @@ trait TestApplicationData { this: Mockito =>
        |  "id":          "ringbearer-group-uuid",
        |  "name":        "ringbearers",
        |  "email":       "future-minions@mordor.me",
-       |  "description": "Corruptable folk of middle-earth",
+       |  "description": "Corruptible folk of middle-earth",
        |  "members":     [ { "id": "${frodoUser.id}" },  { "id": "sauron-userId" } ],
        |  "admins":      [ { "id": "sauron-userId" } ]
        |  }
