@@ -613,7 +613,7 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "maintain backwards compatability for zoneName/recordName/zoneId" in {
+    "maintain backwards compatibility for zoneName/recordName/zoneId" in {
       Get(s"/zones/batchrecordchanges/${backwardsCompatable.id}") ~> batchChangeRoute ~> check {
 
         status shouldBe OK
