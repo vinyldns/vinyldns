@@ -89,18 +89,18 @@ class VinylDNSDirectivesSpec
 
   ".handleAuthenticateError" should {
     "respond with Forbidden status if account is locked" in {
-      val trythis = handleAuthenticateError(AccountLocked("error"))
+      val tryThis = handleAuthenticateError(AccountLocked("error"))
 
-      trythis shouldBe HttpResponse(
+      tryThis shouldBe HttpResponse(
         status = StatusCodes.Forbidden,
         entity = HttpEntity(s"Authentication Failed: error")
       )
     }
 
     "respond with Unauthorized status for other authentication errors" in {
-      val trythis = handleAuthenticateError(AuthRejected("error"))
+      val tryThis = handleAuthenticateError(AuthRejected("error"))
 
-      trythis shouldBe HttpResponse(
+      tryThis shouldBe HttpResponse(
         status = StatusCodes.Unauthorized,
         entity = HttpEntity(s"Authentication Failed: error")
       )
