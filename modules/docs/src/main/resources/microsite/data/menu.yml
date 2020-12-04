@@ -167,7 +167,7 @@ options:
         menu_section: recordsetapireference
       - title: Global List / Search RecordSets
         url: api/list-recordsets-global.html
-        menu_sectioon: recordsetapireference
+        menu_section: recordsetapireference
 
   - title: Batch Change
     url: api/batchchange-model.html
