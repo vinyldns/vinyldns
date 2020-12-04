@@ -419,7 +419,7 @@ class CommandHandlerSpec
       // sleep to allow the flow to run once
       Thread.sleep(200)
 
-      // shutoff processing on the flow
+      // shut off processing on the flow
       stop.set(true).unsafeRunSync()
 
       // verify our interactions
