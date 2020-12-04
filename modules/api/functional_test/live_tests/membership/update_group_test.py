@@ -30,7 +30,7 @@ def test_update_group_success(shared_zone_test_context):
         assert_that(group['created'], is_(saved_group['created']))
         assert_that(group['id'], is_(saved_group['id']))
 
-        time.sleep(1)  # sleep to ensure that update doesnt change created time
+        time.sleep(1)  # sleep to ensure that update doesn't change created time
 
         update_group = {
             'id': group['id'],

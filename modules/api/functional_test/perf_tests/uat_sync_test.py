@@ -21,7 +21,7 @@ def test_sync_zone_success():
         new = False
 
     else:
-        # create zone if it doesnt exist
+        # create zone if it doesn't exist
         zone = {
             'name': zone_name,
             'email': 'test@test.com',
