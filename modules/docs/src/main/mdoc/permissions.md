@@ -127,7 +127,7 @@ In addition, you can specify certain zones that are **ALWAYS** manually reviewed
 
 ```
   manual-review-domains = {
-    domain-list = [".*imporant.biz.com"]
+    domain-list = [".*important.biz.com"]
     ip-list = ["1.2.3.4"]
     zone-name-list = [
         "zone.requires.review.",
