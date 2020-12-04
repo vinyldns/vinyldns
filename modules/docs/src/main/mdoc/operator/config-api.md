@@ -421,7 +421,7 @@ exchange service that you are interfacing with.
 
 Below is an example e-mail notification:
 
-![Sample E-mail Notification](../img/sample-email-nofitication.png)
+![Sample E-mail Notification](../img/sample-email-notification.png)
 
 #### AWD Simple Notification Service (SNS) notifier
 Configuration for the AWS SNS notifier appears like the following:
