@@ -224,7 +224,7 @@ class DnsBackendSpec
 
       records shouldBe empty
     }
-    "return an Uncrecoverable error" in {
+    "return an Unrecoverable error" in {
       doReturn(DNS.Lookup.UNRECOVERABLE).when(mockDnsQuery).result
 
       val error =
