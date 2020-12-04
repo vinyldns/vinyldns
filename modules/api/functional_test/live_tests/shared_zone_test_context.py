@@ -399,7 +399,7 @@ class SharedZoneTestContext(object):
                 # initialize history
                 self.init_history()
 
-                # initalize group activity
+                # initialize group activity
                 self.init_group_activity()
 
                 # initialize list zones, only do this when constructing the whole!
