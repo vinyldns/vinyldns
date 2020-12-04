@@ -259,11 +259,11 @@ class ReverseZoneHelpersSpec
         }
       }
       "when testing IPv4" should {
-        "return ok if the ptr is for an IP4 reverse zone (octet boundry)" in {
+        "return ok if the ptr is for an IP4 reverse zone (octet boundary)" in {
           ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp4, ptrIp4.name) shouldBe right
         }
 
-        "return InvalidRequest if ptr is not valid for an IP4 reverse zone (octet boundry)" in {
+        "return InvalidRequest if ptr is not valid for an IP4 reverse zone (octet boundary)" in {
           val badPtr = ptrIp4.copy(name = "1.2.3")
 
           val error =
