@@ -66,7 +66,7 @@ class TestDataLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val toDelete = Set(TestDataLoader.sharedZone, TestDataLoader.nonTestSharedZone)
       val zoneResponse = toDelete + dataClone
 
-      // not mocking zoneRepo.save on purpose, it shouldnt be reached
+      // not mocking zoneRepo.save on purpose, it shouldn't be reached
 
       // have zone repo return 3 zones to delete
       doReturn(IO.pure(zoneResponse)).when(zoneRepo).getZonesByFilters(any[Set[String]])
