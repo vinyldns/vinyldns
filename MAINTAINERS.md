@@ -145,7 +145,7 @@ note you will have to generate a strong passphrase and save it in some password 
     password=ignored-must-use-pinentry
     ```
 
-1. Add credenial configuration to global sbt setting in `~/.sbt/1.0/credential.sbt` with the content
+1. Add credential configuration to global sbt setting in `~/.sbt/1.0/credential.sbt` with the content
 
     ```
     credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
