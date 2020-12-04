@@ -88,7 +88,7 @@ class DnsQuery(val lookup: DNS.Lookup, val zoneName: DNS.Name) {
   def error: String = lookup.getErrorString
 }
 
-final case class TransferInfo(address: SocketAddress, tsig: DNS.TSIG)
+final case class TransferInfo(address: SocketAddress, tsig: Option[DNS.TSIG])
 
 class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: TransferInfo)
     extends Backend
@@ -120,7 +120,11 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
 
   def loadZone(zone: Zone, maxZoneSize: Int): IO[List[RecordSet]] = {
     val dnsZoneName = zoneDnsName(zone.name)
-    val zti = DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, xfrInfo.tsig)
+
+    // Use null for tsig key if none
+    val zti = xfrInfo.tsig
+      .map(key => DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, key))
+      .getOrElse(DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, null))
 
     for {
       zoneXfr <- IO {
@@ -253,27 +257,33 @@ object DnsBackend {
       id: String,
       conn: ZoneConnection,
       xfrConn: Option[ZoneConnection],
-      crypto: CryptoAlgebra
+      crypto: CryptoAlgebra,
+      tsigUsage: DnsTsigUsage = DnsTsigUsage.UpdateAndTransfer
   ): DnsBackend = {
-    val tsig = createTsig(conn, crypto)
-    val resolver = createResolver(conn, tsig)
+    val updateTsig = if (tsigUsage.forUpdates) Some(createTsig(conn, crypto)) else None
+    val xfrTsig =
+      if (tsigUsage.forTransfers)
+        xfrConn.map(createTsig(_, crypto)).orElse(Some(createTsig(conn, crypto)))
+      else None
 
+    // if we do not use key for updates, do not create the resolver with it
+    val updateResolver = createResolver(conn, updateTsig)
+
+    // fallback to the update connection if we have no transfer connection
     val xfrInfo = xfrConn
       .map { xc =>
-        val xt = createTsig(xc, crypto)
-        val xr = createResolver(xc, xt)
-        TransferInfo(xr.getAddress, xt)
+        val xr = createResolver(xc, xfrTsig)
+        TransferInfo(xr.getAddress, xfrTsig)
       }
-      .getOrElse(TransferInfo(resolver.getAddress, tsig))
-    new DnsBackend(id, resolver, xfrInfo)
+      .getOrElse(TransferInfo(updateResolver.getAddress, xfrTsig))
+    new DnsBackend(id, updateResolver, xfrInfo)
   }
 
-  def createResolver(conn: ZoneConnection, tsig: DNS.TSIG): DNS.SimpleResolver = {
+  def createResolver(conn: ZoneConnection, tsig: Option[DNS.TSIG]): DNS.SimpleResolver = {
     val (host, port) = parseHostAndPort(conn.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)
-    resolver.setTSIGKey(tsig)
-
+    tsig.foreach(resolver.setTSIGKey)
     resolver
   }
 

@@ -218,3 +218,10 @@ zone "list-records" {
 	file "/var/bind/list-records.hosts";
 	allow-update { key "vinyldns."; };
 	};
+
+zone "open" {
+	type master;
+	file "/var/bind/open.hosts";
+	allow-update { any; };
+	allow-transfer { any; };
+	};
