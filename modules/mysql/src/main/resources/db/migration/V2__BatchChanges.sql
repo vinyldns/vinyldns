@@ -18,7 +18,7 @@ CREATE TABLE batch_change (
  
 /*
 Create the single_change table. This table stores the single changes and associated them with batch change via foreign key.
-It stores single change data as encoded protobuf in the data BLOLB. Whenever any column in the table is updated, the data column must be updated too.
+It stores single change data as encoded protobuf in the data BLOB. Whenever any column in the table is updated, the data column must be updated too.
 Just reading from the data column and decode the protobuf format can get all the data for a single change.
 It also stores other IDs to associate with zone, record set and record set change. These IDs allow getting additional data from the dynamodb where they're stored.
 */ 
