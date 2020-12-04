@@ -132,7 +132,7 @@ class JsonValidationSpec
       user.home.address.number shouldBe 5
     }
 
-    "throw errors for requried values" in {
+    "throw errors for required values" in {
       val pet: JValue = ("key" -> "val") ~ ("other" -> "whatever")
       val extracted = try {
         pet.extract[Pet].valid[Throwable]
