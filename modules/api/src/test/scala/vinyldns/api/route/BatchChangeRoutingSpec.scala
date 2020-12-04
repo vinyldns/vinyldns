@@ -237,7 +237,7 @@ class BatchChangeRoutingSpec()
       id = "singleDeleteChangeId"
     )
 
-    val backwardsCompatable: BatchChange = genericValidResponse.copy(
+    val backwardsCompatible: BatchChange = genericValidResponse.copy(
       id = "testBwComp",
       changes = List(backwardsCompatibleAdd, backwardsCompatibleDel)
     )
@@ -299,8 +299,8 @@ class BatchChangeRoutingSpec()
           EitherT(IO.pure(BatchChangeNotFound("nonexistentID").asLeft))
         case "notAuthedID" =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case backwardsCompatable.id =>
-          EitherT(IO.pure(createBatchChangeInfoResponse(backwardsCompatable).asRight))
+        case backwardsCompatible.id =>
+          EitherT(IO.pure(createBatchChangeInfoResponse(backwardsCompatible).asRight))
       }
 
     def listBatchChangeSummaries(
@@ -614,7 +614,7 @@ class BatchChangeRoutingSpec()
     }
 
     "maintain backwards compatibility for zoneName/recordName/zoneId" in {
-      Get(s"/zones/batchrecordchanges/${backwardsCompatable.id}") ~> batchChangeRoute ~> check {
+      Get(s"/zones/batchrecordchanges/${backwardsCompatible.id}") ~> batchChangeRoute ~> check {
 
         status shouldBe OK
 
