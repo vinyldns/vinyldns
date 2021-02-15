@@ -5,7 +5,8 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 
 ## Maintainers
 - Paul Cleary
-- Ryan Emerle (@remerle)
+- Ryan Emerle
+- Nima Eskandary
 
 ## Tool Maintainers
 - Mike Ball: vinyldns-cli, vinyldns-terraform
