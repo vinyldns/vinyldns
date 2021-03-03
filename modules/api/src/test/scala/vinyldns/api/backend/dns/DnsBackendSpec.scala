@@ -84,7 +84,7 @@ class DnsBackendSpec
   private val mockDnsQuery = mock[DnsQuery]
   private val mockSocketAddress = mock[SocketAddress]
   private val mockTsig = mock[TSIG]
-  private val transferInfo = TransferInfo(mockSocketAddress, mockTsig)
+  private val transferInfo = TransferInfo(mockSocketAddress, Some(mockTsig))
   private val underTest = new DnsBackend("test", mockResolver, transferInfo) {
     override def toQuery(
         name: String,
@@ -126,11 +126,34 @@ class DnsBackendSpec
   }
 
   "Creating a Dns Connection" should {
+    "omit the tsig key for transfers when update only" in {
+      val backend =
+        DnsBackend("test", zoneConnection, None, new NoOpCrypto(), DnsTsigUsage.UpdateOnly)
+      backend.xfrInfo.tsig shouldBe empty
+    }
+
+    "omit the tsig key for transfers when never" in {
+      val backend = DnsBackend("test", zoneConnection, None, new NoOpCrypto(), DnsTsigUsage.Never)
+      backend.xfrInfo.tsig shouldBe empty
+    }
+
+    "include the tsig key for transfers when transfer only" in {
+      val backend =
+        DnsBackend("test", zoneConnection, None, new NoOpCrypto(), DnsTsigUsage.TransferOnly)
+      backend.xfrInfo.tsig shouldBe defined
+    }
+
+    "include the tsig key for transfers when transfer and update" in {
+      val backend =
+        DnsBackend("test", zoneConnection, None, new NoOpCrypto(), DnsTsigUsage.UpdateAndTransfer)
+      backend.xfrInfo.tsig shouldBe defined
+    }
+
     "decrypt the zone connection" in {
       val conn = spy(zoneConnection)
       DnsBackend("test", conn, None, new NoOpCrypto())
 
-      verify(conn).decrypted(any[CryptoAlgebra])
+      verify(conn, times(2)).decrypted(any[CryptoAlgebra])
     }
 
     "parse the port when specified on the primary server" in {

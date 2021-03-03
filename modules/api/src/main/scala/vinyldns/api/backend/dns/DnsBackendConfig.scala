@@ -22,8 +22,9 @@ import vinyldns.core.domain.zone.ZoneConnection
 final case class DnsBackendConfig(
     id: String,
     zoneConnection: ZoneConnection,
-    transferConnection: Option[ZoneConnection]
+    transferConnection: Option[ZoneConnection],
+    tsigUsage: DnsTsigUsage
 ) {
   def toDnsConnection(crypto: CryptoAlgebra): DnsBackend =
-    DnsBackend.apply(id, zoneConnection, transferConnection, crypto)
+    DnsBackend.apply(id, zoneConnection, transferConnection, crypto, tsigUsage)
 }

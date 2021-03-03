@@ -5,10 +5,8 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 
 ## Maintainers
 - Paul Cleary
+- Ryan Emerle
 - Nima Eskandary
-- Michael Ly
-- Rebecca Star
-- Britney Wright
 
 ## Tool Maintainers
 - Mike Ball: vinyldns-cli, vinyldns-terraform
