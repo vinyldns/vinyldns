@@ -100,10 +100,8 @@ See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
 ## Maintainers and Contributors
 The current maintainers (people who can merge pull requests) are:
 - Paul Cleary
+- Ryan Emerle
 - Nima Eskandary
-- Michael Ly
-- Rebecca Star
-- Britney Wright
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 
