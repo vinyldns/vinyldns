@@ -310,6 +310,14 @@ class RecordSetValidationsSpec
 
           typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
+      }
+      "Skip dotted checks on TXT" should {
+        "return success for a TXT record with dots in a reverse zone" in {
+          val test = txt.copy(name = "sub.txt.example.com.")
+          val zone = okZone.copy(name = "example.com.")
+
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+        }
 
       }
       "Skip dotted checks on SOA in reverse zones" should {
