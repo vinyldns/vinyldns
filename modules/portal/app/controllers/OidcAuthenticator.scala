@@ -224,8 +224,8 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
       case _ => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
     }
 
-    def getClaimSet(oidcTokenResposne: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
-      val idToken = oidcTokenResposne.getOIDCTokens.getIDToken
+    def getClaimSet(oidcTokenResponse: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
+      val idToken = oidcTokenResponse.getOIDCTokens.getIDToken
 
       oidcTry(jwtProcessor.process(idToken, sc)).flatMap { claims =>
         if (isValidIdToken(claims)) {

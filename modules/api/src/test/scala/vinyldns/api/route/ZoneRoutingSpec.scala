@@ -329,7 +329,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case _ => Left(InvalidRequest("shouldnt get here"))
+        case _ => Left(InvalidRequest("shouldn't get here"))
       }
 
       outcome.toResult

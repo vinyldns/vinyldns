@@ -6,7 +6,7 @@ position: 6
 
 # VinylDNS Permissions Guide
 
-Vinyldns is about making DNS self-service _safe_.  There are a number of ways that you can govern access to your DNS infrastucture, from extremely restrictive, to extremely lax, and anywhere in between.
+Vinyldns is about making DNS self-service _safe_.  There are a number of ways that you can govern access to your DNS infrastructure, from extremely restrictive, to extremely lax, and anywhere in between.
 
 This guide attempts to explain the various options available for governing access to your VinylDNS installation.
 
@@ -127,7 +127,7 @@ In addition, you can specify certain zones that are **ALWAYS** manually reviewed
 
 ```
   manual-review-domains = {
-    domain-list = [".*imporant.biz.com"]
+    domain-list = [".*important.biz.com"]
     ip-list = ["1.2.3.4"]
     zone-name-list = [
         "zone.requires.review.",

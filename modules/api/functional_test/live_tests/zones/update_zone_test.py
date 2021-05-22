@@ -543,7 +543,7 @@ def test_delete_non_existent_acl_rule_success(shared_zone_test_context):
 @pytest.mark.serial
 def test_delete_acl_idempotent(shared_zone_test_context):
     """
-    Test deleting the same acl rule multiple times results in only one rule remomved
+    Test deleting the same acl rule multiple times results in only one rule removed
     """
     client = shared_zone_test_context.ok_vinyldns_client
 

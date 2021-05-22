@@ -8,7 +8,7 @@ def check_changes_response(response, recordChanges=False, nextId=False, startFro
     :param response: return value of list_recordset_changes()
     :param recordChanges: true if not empty or False if empty, cannot check exact values because don't have access to all attributes
     :param nextId: true if exists, false if doesn't, wouldn't be able to check exact value
-    :param startFrom: the string for startFrom or false if doesnt exist
+    :param startFrom: the string for startFrom or false if doesn't exist
     :param maxItems: maxItems is defined as an Int by default so will always return an Int
     """
 

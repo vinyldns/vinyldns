@@ -40,7 +40,7 @@ pre-built image locally
 - `-p | --push` - a flag that indicates to push to the remote docker registry.  The default docker registry 
 is `docker.io`
 - `-r | --repository [REPOSITORY]` - a URL to your docker registry, defaults to `docker.io`
-- `-t | --tag [TAG]` - a build qualifer for this build.  For example, pass in the build number for your 
+- `-t | --tag [TAG]` - a build qualifier for this build.  For example, pass in the build number for your 
 continuous integration tool
 - `-v | --version [VERSION]` - overrides the version calculation and forces the version passed in.  Used primarily for official releases
 

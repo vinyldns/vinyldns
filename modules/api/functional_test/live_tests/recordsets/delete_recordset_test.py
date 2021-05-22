@@ -273,7 +273,7 @@ def test_delete_ipv4_ptr_recordset(shared_zone_test_context):
 
 def test_delete_ipv4_ptr_recordset_does_not_exist_fails(shared_zone_test_context):
     """
-    Test deleting a nonexistant IPv4 PTR recordset returns not found
+    Test deleting a nonexistent IPv4 PTR recordset returns not found
     """
     client =shared_zone_test_context.ok_vinyldns_client
     client.delete_recordset(shared_zone_test_context.ip4_reverse_zone['id'], '4444', status=404)
@@ -313,7 +313,7 @@ def test_delete_ipv6_ptr_recordset(shared_zone_test_context):
 
 def test_delete_ipv6_ptr_recordset_does_not_exist_fails(shared_zone_test_context):
     """
-    Test deleting a nonexistant IPv6 PTR recordset returns not found
+    Test deleting a nonexistent IPv6 PTR recordset returns not found
     """
     client = shared_zone_test_context.ok_vinyldns_client
     client.delete_recordset(shared_zone_test_context.ip6_reverse_zone['id'], '6666', status=404)

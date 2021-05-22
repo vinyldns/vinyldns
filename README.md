@@ -69,7 +69,7 @@ and VinylDNS automatically syncs records with the backend DNS server upon zone c
 1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
 in the **Manage Zone** tab
 1. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
-TTL = 300, IP Addressess = 1.1.1.1`
+TTL = 300, IP Addresses = 1.1.1.1`
 1. Click on the **Refresh** button under Records, you should see your new record created
 
 ## Other things to note

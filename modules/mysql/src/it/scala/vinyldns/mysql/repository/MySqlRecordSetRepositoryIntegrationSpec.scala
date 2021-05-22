@@ -573,7 +573,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
         changes(2).copy(recordSet = cname.copy(zoneId = okZone.id, name = "a-duplicate")),
         changes(4).copy(recordSet = ns.copy(zoneId = okZone.id, name = "a-duplicate")),
         changes(1).copy(recordSet = changes(1).recordSet.copy(name = "b-unique")),
-        changes(3).copy(recordSet = changes(3).recordSet.copy(name = "c-unqiue"))
+        changes(3).copy(recordSet = changes(3).recordSet.copy(name = "c-unique"))
       )
 
       insert(editedChanges)

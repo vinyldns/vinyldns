@@ -800,7 +800,7 @@ class VinylDNSClient(object):
         Waits a period of time for the record set creation to complete.
 
         :param zone_id: the id of the zone the record set lives in
-        :param record_set_id: the id of the recprdset that has been created.
+        :param record_set_id: the id of the recordset that has been created.
         :param kw: Additional parameters for the http request
         :return: True when the recordset creation is complete False if the timeout expires
         """
