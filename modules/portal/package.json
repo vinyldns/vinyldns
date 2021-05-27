@@ -21,7 +21,7 @@
     "grunt-copy": "^0.1.0",
     "grunt-injector": "^1.1.0",
     "moment": "^2.24.0",
-    "puppeteer": "^1.11.0"
+    "puppeteer": "^3.0.0"
   },
   "devDependencies": {
     "angular-mocks": "1.6.1",
