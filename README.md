@@ -94,14 +94,14 @@ See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
 
 ## Contact
 - [Gitter](https://gitter.im/vinyldns)
-- [Mailing List](https://groups.google.com/forum/#!forum/vinyldns)
 - If you have any security concerns please contact the maintainers directly vinyldns-core@googlegroups.com
 
 ## Maintainers and Contributors
 The current maintainers (people who can merge pull requests) are:
 - Paul Cleary
 - Ryan Emerle
-- Nima Eskandary
+- Sriram Ramakrishnan
+- Jim Wakemen
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 
