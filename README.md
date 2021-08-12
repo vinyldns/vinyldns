@@ -40,7 +40,6 @@ Integration is simple with first-class language support including:
 - [Code of Conduct](#code-of-conduct)
 - [Developer Guide](#developer-guide)
 - [Contributing](#contributing)
-- [Roadmap](#roadmap)
 - [Contact](#contact)
 - [Maintainers and Contributors](#maintainers-and-contributors)
 - [Credits](#credits)
@@ -88,9 +87,6 @@ See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up Viny
 
 ## Contributing
 See the [Contributing Guide](CONTRIBUTING.md).
-
-## Roadmap
-See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
 
 ## Contact
 - [Gitter](https://gitter.im/vinyldns)
