@@ -19,7 +19,7 @@ package vinyldns.core
 object Messages {
 
   // When less than two letters or numbers is filled in Record Name Filter field in RecordSetSearch page
-  val RecordNameFilterErrMessage = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
+  val RecordNameFilterError = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
 
   // When creating group with name that already exists
   // s"Group with name $name already exists. Please try a different name or contact ${existingGroup.email} to be added to the group."
@@ -47,7 +47,7 @@ object Messages {
   // s"""User "$userName" is not authorized. Contact ${ownerType.toString.toLowerCase} owner group:
   //       |${ownerGroupName.getOrElse(ownerGroupId)} at ${contactEmail.getOrElse("")} to make DNS changes.
   //       |You must be a part of the owner group to make DNS changes.""".stripMargin .replaceAll("\n", " ")
-  val NotAuthorizedError = s"""User {"dummy"} is not authorized. Contact {zone} owner group: {ok-group} at
-     |{test@test.com} to make DNS changes. You must be a part of the owner group to make DNS changes."""
+  val NotAuthorizedError = s"""User {"dummy"} is not authorized. Contact {zone} owner group: {ok-group} at 
+  {test@test.com} to make DNS changes. You must be a part of the owner group to make DNS changes."""
 
 }
