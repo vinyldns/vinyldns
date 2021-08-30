@@ -76,7 +76,6 @@ object Messages {
    * 3. [string] owner group name | owner group id
    * 4. [string] contact email
    */
-  val NotAuthorizedErrorMsg =
-    "User '%s' is not authorized. Contact %s owner group: %s at %s to make DNS changes."
+  val NotAuthorizedErrorMsg =  "User \"%s\" is not authorized. Contact %s owner group: %s at %s to make DNS changes."
 
 }
