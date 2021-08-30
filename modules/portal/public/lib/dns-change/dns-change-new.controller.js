@@ -177,7 +177,7 @@
                             $scope.$apply()
                             resolve($scope.newBatch.changes.length);
                           } else {
-                            reject("Import failed. Not a valid file.");
+                            reject("Import failed. Not a valid file. File should be of ‘.csv’ type.");
                           }
                       }
                       reader.readAsText(file);

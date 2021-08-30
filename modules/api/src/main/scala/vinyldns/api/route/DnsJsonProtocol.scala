@@ -30,6 +30,7 @@ import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.Messages._
 
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
@@ -373,7 +374,7 @@ trait DnsJsonProtocol extends JsonValidation {
         .required[String]("Missing NS.nsdname")
         .check(
           "NS must be less than 255 characters" -> checkDomainNameLen,
-          "NS data must be absolute" -> nameContainsDots
+          NSDataError -> nameContainsDots
         )
         .map(Fqdn.apply)
         .map(NSData.apply)

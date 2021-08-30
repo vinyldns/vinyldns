@@ -27,6 +27,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.Fqdn
+import vinyldns.core.Messages._
 
 class VinylDNSJsonProtocolSpec
     extends AnyWordSpec
@@ -594,7 +595,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> data)
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("NS data must be absolute")
+      thrown.msg should include(NSDataError)
     }
     "round trip a DS record set" in {
       val rs = RecordSet(
