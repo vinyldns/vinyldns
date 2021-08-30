@@ -19,8 +19,7 @@ package vinyldns.core
 object Messages {
 
   // Error displayed when less than two letters or numbers is filled in Record Name Filter field in RecordSetSearch page
-  val RecordNameFilterError =
-    "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
+  val RecordNameFilterError = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
 
   /*
    *  Error displayed when attempting to create group with name that already exists
@@ -29,8 +28,7 @@ object Messages {
    * 1. [string] group name
    * 2. [string] group email address
    */
-  val GroupAlreadyExistsErrorMsg =
-    "Group with name %s already exists. Please try a different name or contact %s to be added to the group."
+  val GroupAlreadyExistsErrorMsg = "Group with name %s already exists. Please try a different name or contact %s to be added to the group."
 
   /*
    *  Error displayed when deleting a group being the admin of a zone
@@ -38,8 +36,7 @@ object Messages {
    * Placeholders:
    * 1. [string] group name
    */
-  val ZoneAdminError =
-    "%s is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting."
+  val ZoneAdminError = "%s is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting."
 
   /*
    *  Error displayed when deleting a group being the owner for a record set
@@ -48,8 +45,7 @@ object Messages {
    * 1. [string] group name
    * 2. [string] record set id
    */
-  val RecordSetOwnerError =
-    "%s is the owner for a record set including %s. Cannot delete. Please transfer the ownership to another group before deleting."
+  val RecordSetOwnerError = "%s is the owner for a record set including %s. Cannot delete. Please transfer the ownership to another group before deleting."
 
   /*
    *  Error displayed when deleting a group which has an ACL rule for a zone
@@ -58,8 +54,7 @@ object Messages {
    * 1. [string] group name
    * 2. [string] zone id
    */
-  val ACLRuleError =
-    "%s has an ACL rule for a zone including %s. Cannot delete. Please transfer the ownership to another group before deleting."
+  val ACLRuleError = "%s has an ACL rule for a zone including %s. Cannot delete. Please transfer the ownership to another group before deleting."
 
   // Error displayed when NSData field is not a positive integer
   val NSDataError = "NS data must be a positive integer"
