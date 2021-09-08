@@ -36,6 +36,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
+import vinyldns.core.Messages._
 
 import scala.util.matching.Regex
 
@@ -601,7 +602,7 @@ class RecordSetValidationsSpec
         val invalidString = "*o*"
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "recordNameFilter must contain at least two letters or numbers."
+        error.getMessage() shouldBe RecordNameFilterError
       }
     }
   }

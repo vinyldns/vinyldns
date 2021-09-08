@@ -24,6 +24,7 @@ import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.Messages._
 
 object MembershipService {
   def apply(dataAccessor: ApiDataAccessor): MembershipService =
@@ -235,7 +236,7 @@ class MembershipService(
       .getGroupByName(name)
       .map {
         case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
-          GroupAlreadyExistsError(s"Group with name $name already exists").asLeft
+          GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight
       }
@@ -257,7 +258,7 @@ class MembershipService(
       .map {
         case Some(existingGroup)
             if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
-          GroupAlreadyExistsError(s"Group with name $name already exists").asLeft
+          GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight
       }
@@ -267,7 +268,7 @@ class MembershipService(
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
-        ensuring(InvalidGroupRequestError(s"${group.name} is the admin of a zone. Cannot delete."))(
+        ensuring(InvalidGroupRequestError(ZoneAdminError.format(group.name)))(
           zones.isEmpty
         )
       }
@@ -279,7 +280,7 @@ class MembershipService(
       .map { rsId =>
         ensuring(
           InvalidGroupRequestError(
-            s"${group.name} is the owner for a record set including $rsId. Cannot delete."
+            RecordSetOwnerError.format(group.name, rsId)
           )
         )(rsId.isEmpty)
       }
@@ -291,7 +292,7 @@ class MembershipService(
       .map { zId =>
         ensuring(
           InvalidGroupRequestError(
-            s"${group.name} has an ACL rule for a zone including $zId. Cannot delete."
+            ACLRuleError.format(group.name, zId)
           )
         )(zId.isEmpty)
       }
