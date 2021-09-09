@@ -23,7 +23,7 @@ class ListRecordSetsTestContext(object):
         self.tear_down()
         group = {
             'name': 'list-records-group',
-            'email': 'test@test.com',
+            'email': 'list-records@test.com',
             'description': 'this is a description',
             'members': [{'id': 'list-records-user'}],
             'admins': [{'id': 'list-records-user'}]
@@ -32,7 +32,7 @@ class ListRecordSetsTestContext(object):
         zone_change = self.client.create_zone(
             {
                 'name': 'list-records.',
-                'email': 'test@test.com',
+                'email': 'list-records@test.com',
                 'shared': False,
                 'adminGroupId': self.group['id'],
                 'isTest': True,

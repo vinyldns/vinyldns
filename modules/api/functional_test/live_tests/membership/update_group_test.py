@@ -248,7 +248,7 @@ def test_update_group_conflict(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test_update_group_conflict',
-            'email': 'test@test.com',
+            'email': 'test-update@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -258,7 +258,7 @@ def test_update_group_conflict(shared_zone_test_context):
 
         other_group = {
             'name': 'change_me',
-            'email': 'test@test.com',
+            'email': 'test-other@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -270,7 +270,7 @@ def test_update_group_conflict(shared_zone_test_context):
         update_group = {
             'id': result['id'],
             'name': 'test_update_group_conflict',
-            'email': 'test@test.com',
+            'email': 'test-other@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -284,7 +284,7 @@ def test_update_group_conflict(shared_zone_test_context):
 
 
 def test_update_group_not_found(shared_zone_test_context):
-    """
+    """test_user_cannot_update_zone_to_nonmember_admin_group
     Tests that we can not update a group that has not been created
     """
 
