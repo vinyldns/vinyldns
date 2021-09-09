@@ -93,6 +93,17 @@ class MySqlGroupRepositoryIntegrationSpec
     }
   }
 
+  "MySqlGroupRepository.getGroupByEmailId" should {
+    "retrieve a group" in {
+      val getByEmail = repo.getGroupByEmailId(groups.head.email).unsafeRunSync()
+      getByEmail shouldBe (groups.find(x => (Option(x) == getByEmail)))
+    }
+
+    "returns None when group does not exist" in {
+      repo.getGroupByEmailId("no-existo").unsafeRunSync() shouldBe None
+    }
+  }
+
   "MySqlGroupRepository.getAllGroups" should {
     "retrieve all groups" in {
       repo.getAllGroups().unsafeRunSync() should contain theSameElementsAs groups.toSet
