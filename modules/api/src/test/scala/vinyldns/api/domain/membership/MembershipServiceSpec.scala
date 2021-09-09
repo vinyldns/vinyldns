@@ -113,6 +113,7 @@ class MembershipServiceSpec
       "save the group and add the members when the group is valid" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(groupInfo.email)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -140,6 +141,7 @@ class MembershipServiceSpec
       "save the groupChange in the groupChangeRepo" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(groupInfo.email)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -168,6 +170,7 @@ class MembershipServiceSpec
         val expectedMembersAdded = Set(okUserInfo.id, dummyUserInfo.id)
 
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         when(
@@ -194,6 +197,7 @@ class MembershipServiceSpec
         val info = groupInfo.copy(memberIds = Set.empty, adminUserIds = Set.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email)
         doReturn(().toResult).when(underTest).usersExist(Set(okAuth.userId))
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -222,6 +226,7 @@ class MembershipServiceSpec
       "return an error if users do not exist" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(groupInfo.email)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
           .usersExist(groupInfo.memberIds)
@@ -269,6 +274,9 @@ class MembershipServiceSpec
         doReturn(().toResult)
           .when(underTest)
           .differentGroupWithSameNameDoesNotExist(any[String], any[String])
+        doReturn(().toResult)
+          .when(underTest)
+          .differentGroupWithSameEmailIdDoesNotExist(any[String], any[String])
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
         doReturn(IO.pure(modifiedGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set()))
@@ -410,6 +418,9 @@ class MembershipServiceSpec
         doReturn(result(()))
           .when(underTest)
           .differentGroupWithSameNameDoesNotExist(updatedInfo.name, existingGroup.id)
+        doReturn(result(()))
+          .when(underTest)
+          .differentGroupWithSameEmailIdDoesNotExist(updatedInfo.email, existingGroup.id)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
           .usersExist(any[Set[String]])
@@ -846,6 +857,29 @@ class MembershipServiceSpec
       }
     }
 
+    "groupWithSameEmailIdDoesNotExist" should {
+      "return true when a group with the same email does not exist" in {
+        doReturn(IO.pure(None)).when(mockGroupRepo).getGroupByEmailId("foo")
+
+        val result = awaitResultOf(underTest.groupWithSameEmailIdDoesNotExist("foo").value)
+        result should be(right)
+      }
+
+      "return a GroupAlreadyExistsError if a group with the same email already exists" in {
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroupByEmailId("foo")
+
+        val result = leftResultOf(underTest.groupWithSameEmailIdDoesNotExist("foo").value)
+        result shouldBe a[GroupAlreadyExistsError]
+      }
+
+      "return true if a group with the same email exists but is deleted" in {
+        doReturn(IO.pure(Some(deletedGroup))).when(mockGroupRepo).getGroupByEmailId("foo")
+
+        val result = awaitResultOf(underTest.groupWithSameEmailIdDoesNotExist("foo").value)
+        result should be(right)
+      }
+    }
+
     "usersExist" should {
       "return a () if all users exist" in {
         doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
@@ -896,6 +930,41 @@ class MembershipServiceSpec
 
         val result = awaitResultOf(
           underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value
+        )
+        result should be(right)
+      }
+    }
+
+    "differentGroupWithSameEmailIdDoesNotExist" should {
+      "return GroupAlreadyExistsError if a different group with the same email already exists" in {
+        val existingGroup = okGroup.copy(id = "something else")
+
+        doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroupByEmailId("foo")
+
+        val error =
+          leftResultOf(underTest.differentGroupWithSameEmailIdDoesNotExist("foo", "bar").value)
+        error shouldBe a[GroupAlreadyExistsError]
+      }
+
+      "return true if the same group exists with the same email" in {
+
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroupByEmailId(okGroup.email)
+
+        val result = awaitResultOf(
+          underTest.differentGroupWithSameEmailIdDoesNotExist(okGroup.email, okGroup.id).value
+        )
+        result should be(right)
+      }
+
+      "return true if the a different group exists but is deleted" in {
+        val existingGroup = okGroup.copy(id = "something else", status = GroupStatus.Deleted)
+
+        doReturn(IO.pure(Some(existingGroup)))
+          .when(mockGroupRepo)
+          .getGroupByEmailId(okGroup.email)
+
+        val result = awaitResultOf(
+          underTest.differentGroupWithSameEmailIdDoesNotExist(okGroup.email, okGroup.id).value
         )
         result should be(right)
       }

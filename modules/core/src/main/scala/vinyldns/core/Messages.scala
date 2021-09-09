@@ -73,4 +73,22 @@ object Messages {
    */
   val NotAuthorizedErrorMsg =  "User \"%s\" is not authorized. Contact %s owner group: %s at %s to make DNS changes."
 
+  /*
+   *  Error displayed when a group already exists with the same email address
+   *
+   * Placeholders:
+   * 1. [string] group name
+   * 2. [string] email id
+   * 3. [string] contact email id
+   */
+  val GroupEmailAlreadyExists = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group."
+
+  /*
+   *  Error displayed when a group already exists with the same email address
+   *
+   * Placeholders:
+   * 1. [string] group name
+   * 2. [string] email id
+   */
+  val GroupEmailAlreadyExistsUpdate = "Cannot update group. A group, %s, is already associated with the email address %s."
 }

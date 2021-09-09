@@ -56,6 +56,7 @@ class MembershipService(
     for {
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
+      _ <- groupWithSameEmailIdDoesNotExist(newGroup.email)
       _ <- usersExist(newGroup.memberIds)
       _ <- groupChangeRepo.save(GroupChange.forAdd(newGroup, authPrincipal)).toResult[GroupChange]
       _ <- groupRepo.save(newGroup).toResult[Group]
@@ -90,6 +91,7 @@ class MembershipService(
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- usersExist(addedNonAdmins)
       _ <- differentGroupWithSameNameDoesNotExist(newGroup.name, existingGroup.id)
+      _ <- differentGroupWithSameEmailIdDoesNotExist(newGroup.email, existingGroup.id)
       _ <- groupChangeRepo
         .save(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -242,6 +244,19 @@ class MembershipService(
       }
       .toResult
 
+  def groupWithSameEmailIdDoesNotExist(emailId: String): Result[Unit] =
+    groupRepo
+      .getGroupByEmailId(emailId)
+      .map {
+        case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
+          GroupAlreadyExistsError(
+            GroupEmailAlreadyExists.format(existingGroup.name, emailId, existingGroup.email)
+          ).asLeft
+        case _ =>
+          ().asRight
+      }
+      .toResult
+
   def usersExist(userIds: Set[String]): Result[Unit] = {
     userRepo.getUsers(userIds, None, None).map { results =>
       val delta = userIds.diff(results.users.map(_.id).toSet)
@@ -259,6 +274,20 @@ class MembershipService(
         case Some(existingGroup)
             if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
           GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
+        case _ =>
+          ().asRight
+      }
+      .toResult
+
+  def differentGroupWithSameEmailIdDoesNotExist(emailId: String, groupId: String): Result[Unit] =
+    groupRepo
+      .getGroupByEmailId(emailId)
+      .map {
+        case Some(existingGroup)
+            if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
+          GroupAlreadyExistsError(
+            GroupEmailAlreadyExistsUpdate.format(existingGroup.name, emailId, existingGroup.email)
+          ).asLeft
         case _ =>
           ().asRight
       }
