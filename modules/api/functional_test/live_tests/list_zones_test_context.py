@@ -12,7 +12,7 @@ class ListZonesTestContext(object):
         self.tear_down()
         group = {
             'name': 'list-zones-group',
-            'email': 'test@test.com',
+            'email': 'list@test.com',
             'description': 'this is a description',
             'members': [{'id': 'list-zones-user'}],
             'admins': [{'id': 'list-zones-user'}]
@@ -21,7 +21,7 @@ class ListZonesTestContext(object):
         search_zone_1_change = self.client.create_zone(
             {
                 'name': 'list-zones-test-searched-1.',
-                'email': 'test@test.com',
+                'email': 'list@test.com',
                 'shared': False,
                 'adminGroupId': list_zones_group['id'],
                 'isTest': True,
@@ -31,7 +31,7 @@ class ListZonesTestContext(object):
         search_zone_2_change = self.client.create_zone(
             {
                 'name': 'list-zones-test-searched-2.',
-                'email': 'test@test.com',
+                'email': 'list@test.com',
                 'shared': False,
                 'adminGroupId': list_zones_group['id'],
                 'isTest': True,
@@ -41,7 +41,7 @@ class ListZonesTestContext(object):
         search_zone_3_change = self.client.create_zone(
             {
                 'name': 'list-zones-test-searched-3.',
-                'email': 'test@test.com',
+                'email': 'list@test.com',
                 'shared': False,
                 'adminGroupId': list_zones_group['id'],
                 'isTest': True,
@@ -51,7 +51,7 @@ class ListZonesTestContext(object):
         non_search_zone_1_change = self.client.create_zone(
             {
                 'name': 'list-zones-test-unfiltered-1.',
-                'email': 'test@test.com',
+                'email': 'list@test.com',
                 'shared': False,
                 'adminGroupId': list_zones_group['id'],
                 'isTest': True,
@@ -61,7 +61,7 @@ class ListZonesTestContext(object):
         non_search_zone_2_change = self.client.create_zone(
             {
                 'name': 'list-zones-test-unfiltered-2.',
-                'email': 'test@test.com',
+                'email': 'list@test.com',
                 'shared': False,
                 'adminGroupId': list_zones_group['id'],
                 'isTest': True,

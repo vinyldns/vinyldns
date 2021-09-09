@@ -222,7 +222,7 @@ object TestDataLoader {
   final val duGroup = Group(
     name = "duGroup",
     id = "duGroup-id",
-    email = "test@test.com",
+    email = "duGroup@test.com",
     memberIds = listOfDummyUsers.map(_.id).toSet + testUser.id,
     adminUserIds = listOfDummyUsers.map(_.id).toSet + testUser.id
   )

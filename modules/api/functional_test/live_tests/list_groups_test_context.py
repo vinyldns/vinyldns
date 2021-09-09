@@ -16,7 +16,7 @@ class ListGroupsTestContext(object):
             for runner in range(0, 50):
                 new_group = {
                     'name': "test-list-my-groups-{0:0>3}".format(runner),
-                    'email': 'test@test.com',
+                    'email': 'test-list-{0:0>3}@test.com'.format(runner),
                     'members': [{'id': 'list-group-user'}],
                     'admins': [{'id': 'list-group-user'}]
                 }
