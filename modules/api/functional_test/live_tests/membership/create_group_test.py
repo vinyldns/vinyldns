@@ -13,7 +13,7 @@ def test_create_group_success(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-create-group-success',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -46,7 +46,7 @@ def test_creator_is_an_admin(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-create-group-success',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': []
@@ -76,7 +76,7 @@ def test_create_group_without_name(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     new_group = {
-        'email': 'test@test.com',
+        'email': 'test-create@test.com',
         'description': 'this is a description',
         'members': [{'id': 'ok'}],
         'admins': [{'id': 'ok'}]
@@ -128,7 +128,7 @@ def test_create_group_without_members_or_admins(shared_zone_test_context):
 
     new_group = {
         'name': 'some-group-name',
-        'email': 'test@test.com',
+        'email': 'test-create@test.com',
         'description': 'this is a description'
     }
     errors = client.create_group(new_group, status=400)['errors']
@@ -149,7 +149,7 @@ def test_create_group_adds_admins_as_members(shared_zone_test_context):
 
         new_group = {
             'name': 'test-create-group-add-admins-as-members',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [],
             'admins': [{'id': 'ok'}]
@@ -178,7 +178,7 @@ def test_create_group_duplicate(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-create-group-duplicate',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -202,7 +202,7 @@ def test_create_group_no_members(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-create-group-no-members',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [],
             'admins': []
@@ -226,7 +226,7 @@ def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-create-group-add-admins-to-members',
-            'email': 'test@test.com',
+            'email': 'test-create@test.com',
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'dummy'}]

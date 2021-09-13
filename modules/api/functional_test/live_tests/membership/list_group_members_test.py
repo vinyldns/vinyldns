@@ -17,7 +17,7 @@ def test_list_group_members_success(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-list-group-members-success',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': [ { 'id': 'ok'}, { 'id': 'dummy' } ],
             'admins': [ { 'id': 'ok'} ]
         }
@@ -86,7 +86,7 @@ def test_list_group_members_start_from(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-start-from',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -142,7 +142,7 @@ def test_list_group_members_start_from_non_user(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-start-from-nonexistent',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -198,7 +198,7 @@ def test_list_group_members_max_item(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-max-items',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -254,7 +254,7 @@ def test_list_group_members_max_item_default(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-max-items-default',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -309,7 +309,7 @@ def test_list_group_members_max_item_zero(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-max-items-zero',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -346,7 +346,7 @@ def test_list_group_members_max_item_over_1000(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-max-items-over-limit',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -383,7 +383,7 @@ def test_list_group_members_next_id_correct(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-next-id',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -438,7 +438,7 @@ def test_list_group_members_next_id_exhausted(shared_zone_test_context):
 
         new_group = {
             'name': 'test-list-group-members-next-id-exhausted',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -492,7 +492,7 @@ def test_list_group_members_next_id_exhausted_two_pages(shared_zone_test_context
 
         new_group = {
             'name': 'test-list-group-members-next-id-exhausted-two-pages',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': members,
             'admins': [ { 'id': 'ok'} ]
         }
@@ -564,7 +564,7 @@ def test_list_group_members_unauthed(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-list-group-members-unauthed',
-            'email': 'test@test.com',
+            'email': 'test-members@test.com',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
         }

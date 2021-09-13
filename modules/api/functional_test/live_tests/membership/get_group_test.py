@@ -15,7 +15,7 @@ def test_get_group_success(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-get-group-success',
-            'email': 'test@test.com',
+            'email': 'test-get@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
@@ -54,7 +54,7 @@ def test_get_deleted_group(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-get-deleted-group',
-            'email': 'test@test.com',
+            'email': 'test-get@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
@@ -79,7 +79,7 @@ def test_get_group_unauthed(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-get-group-unauthed',
-            'email': 'test@test.com',
+            'email': 'test-get@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]

@@ -17,7 +17,7 @@ def test_delete_group_success(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-delete-group-success',
-            'email': 'test@test.com',
+            'email': 'test-delete@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
@@ -49,7 +49,7 @@ def test_delete_group_that_is_already_deleted(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-delete-group-already',
-            'email': 'test@test.com',
+            'email': 'test-delete@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
@@ -76,7 +76,7 @@ def test_delete_admin_group(shared_zone_test_context):
         #Create group
         new_group = {
             'name': 'test-delete-group-already',
-            'email': 'test@test.com',
+            'email': 'test-delete@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
@@ -88,7 +88,7 @@ def test_delete_admin_group(shared_zone_test_context):
         #Create zone with that group ID as admin
         zone = {
             'name': 'one-time.',
-            'email': 'test@test.com',
+            'email': 'test-delete@test.com',
             'adminGroupId': result_group['id'],
             'connection': {
                 'name': 'vinyldns.',
@@ -131,7 +131,7 @@ def test_delete_group_not_authorized(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test-delete-group-not-authorized',
-            'email': 'test@test.com',
+            'email': 'test-delete@test.com',
             'description': 'this is a description',
             'members': [ { 'id': 'ok'} ],
             'admins': [ { 'id': 'ok'} ]
