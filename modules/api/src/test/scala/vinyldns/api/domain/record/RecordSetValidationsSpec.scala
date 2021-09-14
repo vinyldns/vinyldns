@@ -36,6 +36,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
+import vinyldns.core.Messages._
 
 import scala.util.matching.Regex
 
@@ -307,6 +308,14 @@ class RecordSetValidationsSpec
         "return success for a PTR record with dots in a reverse zone" in {
           val test = ptrIp4.copy(name = "10.1.2.")
           val zone = zoneIp4.copy(name = "198.in-addr.arpa.")
+
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+        }
+      }
+      "Skip dotted checks on TXT" should {
+        "return success for a TXT record with dots in a reverse zone" in {
+          val test = txt.copy(name = "sub.txt.example.com.")
+          val zone = okZone.copy(name = "example.com.")
 
           typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
@@ -593,7 +602,7 @@ class RecordSetValidationsSpec
         val invalidString = "*o*"
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "recordNameFilter must contain at least two letters or numbers."
+        error.getMessage() shouldBe RecordNameFilterError
       }
     }
   }

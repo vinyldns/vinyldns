@@ -3,21 +3,13 @@
 This project would not be possible without the generous contributions of many people.
 Thank you! If you have contributed in any way, but do not see your name here, please open a PR to add yourself (in alphabetical order by last name)!
 
-## Maintainers
-- Paul Cleary
-- Ryan Emerle
-- Nima Eskandary
-
-## Tool Maintainers
-- Mike Ball: vinyldns-cli, vinyldns-terraform
-- Nathan Pierce: vinyldns-ruby
-
 ## DNS SMEs
 - Joe Crowe
 - David Back
 - Hong Ye
 
 ## Contributors
+- Mike Ball
 - Tommy Barker
 - Robert Barrimond
 - Charles Bitter
@@ -41,6 +33,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Jon Moore
 - Palash Nigam
 - Joshulyne Park
+- Nathan Pierce
 - Michael Pilquist
 - Sriram Ramakrishnan
 - Khalid Reid
