@@ -25,6 +25,7 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.api.config.GroupEmailConfig
 
 object MembershipService {
   def apply(dataAccessor: ApiDataAccessor): MembershipService =
@@ -56,7 +57,7 @@ class MembershipService(
     for {
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
-      _ <- groupWithSameEmailIdDoesNotExist(newGroup.email)
+      _ <- groupWithSameEmailIdDoesNotExist(newGroup.email, GroupEmailConfig.enforce_unique_email_address)
       _ <- usersExist(newGroup.memberIds)
       _ <- groupChangeRepo.save(GroupChange.forAdd(newGroup, authPrincipal)).toResult[GroupChange]
       _ <- groupRepo.save(newGroup).toResult[Group]
@@ -91,7 +92,7 @@ class MembershipService(
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- usersExist(addedNonAdmins)
       _ <- differentGroupWithSameNameDoesNotExist(newGroup.name, existingGroup.id)
-      _ <- differentGroupWithSameEmailIdDoesNotExist(newGroup.email, existingGroup.id)
+      _ <- differentGroupWithSameEmailIdDoesNotExist(newGroup.email, existingGroup.id, GroupEmailConfig.enforce_unique_email_address)
       _ <- groupChangeRepo
         .save(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -244,18 +245,22 @@ class MembershipService(
       }
       .toResult
 
-  def groupWithSameEmailIdDoesNotExist(emailId: String): Result[Unit] =
-    groupRepo
-      .getGroupByEmailId(emailId)
-      .map {
-        case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
-          GroupAlreadyExistsError(
-            GroupEmailAlreadyExists.format(existingGroup.name, emailId, existingGroup.email)
-          ).asLeft
-        case _ =>
-          ().asRight
-      }
-      .toResult
+  def groupWithSameEmailIdDoesNotExist(emailId: String, emailConf: Boolean): Result[Unit] =
+    if (emailConf) {
+      groupRepo
+        .getGroupByEmailId(emailId)
+        .map {
+          case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
+            GroupAlreadyExistsError(
+              GroupEmailAlreadyExists.format(existingGroup.name, emailId, existingGroup.email)
+            ).asLeft
+          case _ =>
+            ().asRight
+        }
+        .toResult
+    } else {
+      ().toResult
+    }
 
   def usersExist(userIds: Set[String]): Result[Unit] = {
     userRepo.getUsers(userIds, None, None).map { results =>
@@ -279,19 +284,27 @@ class MembershipService(
       }
       .toResult
 
-  def differentGroupWithSameEmailIdDoesNotExist(emailId: String, groupId: String): Result[Unit] =
-    groupRepo
-      .getGroupByEmailId(emailId)
-      .map {
-        case Some(existingGroup)
-            if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
-          GroupAlreadyExistsError(
-            GroupEmailAlreadyExistsUpdate.format(existingGroup.name, emailId, existingGroup.email)
-          ).asLeft
-        case _ =>
-          ().asRight
-      }
-      .toResult
+  def differentGroupWithSameEmailIdDoesNotExist(
+      emailId: String,
+      groupId: String,
+      emailConf: Boolean
+  ): Result[Unit] =
+    if (emailConf) {
+      groupRepo
+        .getGroupByEmailId(emailId)
+        .map {
+          case Some(existingGroup)
+              if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
+            GroupAlreadyExistsError(
+              GroupEmailAlreadyExistsUpdate.format(existingGroup.name, emailId, existingGroup.email)
+            ).asLeft
+          case _ =>
+            ().asRight
+        }
+        .toResult
+    } else {
+      ().toResult
+    }
 
   def isNotZoneAdmin(group: Group): Result[Unit] =
     zoneRepo

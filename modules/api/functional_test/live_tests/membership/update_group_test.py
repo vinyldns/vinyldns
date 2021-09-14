@@ -285,7 +285,7 @@ def test_update_group_conflict(shared_zone_test_context):
 
 def test_update_group_email_conflict(shared_zone_test_context):
     """
-    Tests that we can not update a groups name to a name already in use
+    Tests that we can not update a groups email to an email already in use when email configuration is set true
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -321,7 +321,8 @@ def test_update_group_email_conflict(shared_zone_test_context):
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
         }
-        client.update_group(update_group['id'], update_group, status=409)
+        # Status code will be 409 if email configuration was set true in GroupEmailConfig.scala else it'll be 200
+        client.update_group(update_group['id'], update_group, status=(200, 409))
     finally:
         if result:
             client.delete_group(result['id'], status=(200, 404))
