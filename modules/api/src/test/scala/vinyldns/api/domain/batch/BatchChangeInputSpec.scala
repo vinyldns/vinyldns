@@ -20,13 +20,14 @@ import cats.data.NonEmptyList
 import org.joda.time.DateTime
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.VinylDNSConfig
+import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.{DomainValidationErrorType, Fqdn, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 
 class BatchChangeInputSpec extends AnyWordSpec with Matchers {
+
   "BatchChangeInput" should {
     "ensure trailing dot on A, AAAA, and CNAME fqdn" in {
       val changeA = AddChangeInput("apex.test.com", A, Some(100), AData("1.1.1.1"))
@@ -57,7 +58,10 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
   "asNewStoredChange" should {
     "Convert an AddChangeInput into SingleAddChange" in {
       val changeA = AddChangeInput("some.test.com", A, None, AData("1.1.1.1"))
-      val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
+      val converted = changeA.asNewStoredChange(
+        NonEmptyList.of(ZoneDiscoveryError("test")),
+        VinylDNSTestHelpers.defaultTtl
+      )
 
       converted shouldBe a[SingleAddChange]
       val asAdd = converted.asInstanceOf[SingleAddChange]
@@ -67,7 +71,7 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
       asAdd.recordName shouldBe None
       asAdd.inputName shouldBe "some.test.com."
       asAdd.typ shouldBe A
-      asAdd.ttl shouldBe VinylDNSConfig.defaultTtl
+      asAdd.ttl shouldBe VinylDNSTestHelpers.defaultTtl
       asAdd.recordData shouldBe AData("1.1.1.1")
       asAdd.status shouldBe SingleChangeStatus.NeedsReview
       asAdd.systemMessage shouldBe None
@@ -76,7 +80,10 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
     }
     "Convert a DeleteChangeInput into SingleDeleteRRSetChange" in {
       val changeA = DeleteRRSetChangeInput("some.test.com", A)
-      val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
+      val converted = changeA.asNewStoredChange(
+        NonEmptyList.of(ZoneDiscoveryError("test")),
+        VinylDNSTestHelpers.defaultTtl
+      )
 
       converted shouldBe a[SingleDeleteRRSetChange]
       val asDelete = converted.asInstanceOf[SingleDeleteRRSetChange]

@@ -19,13 +19,14 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
+import vinyldns.api.config.ManualReviewConfig
 import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
-    val vinylDNSAuthenticator: VinylDNSAuthenticator
+    val vinylDNSAuthenticator: VinylDNSAuthenticator,
+    manualReviewConfig: ManualReviewConfig
 ) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[BatchChangeErrorResponse] {
 
@@ -147,7 +148,8 @@ class BatchChangeRoute(
           }
         }
 
-    if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes
+    if (manualReviewConfig.enabled)
+      standardBatchChangeRoutes ~ manualBatchReviewRoutes
     else standardBatchChangeRoutes
   }
 

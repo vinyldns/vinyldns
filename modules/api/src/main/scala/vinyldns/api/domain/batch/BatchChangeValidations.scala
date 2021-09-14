@@ -20,7 +20,12 @@ import java.net.InetAddress
 
 import cats.data._
 import cats.implicits._
-import vinyldns.api.VinylDNSConfig
+import vinyldns.api.config.{
+  BatchChangeConfig,
+  HighValueDomainConfig,
+  ManualReviewConfig,
+  ScheduledChangesConfig
+}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -76,9 +81,11 @@ trait BatchChangeValidationsAlgebra {
 }
 
 class BatchChangeValidations(
-    changeLimit: Int,
     accessValidation: AccessValidationsAlgebra,
-    scheduledChangesEnabled: Boolean = false
+    highValueDomainConfig: HighValueDomainConfig,
+    manualReviewConfig: ManualReviewConfig,
+    batchChangeConfig: BatchChangeConfig,
+    scheduledChangesConfig: ScheduledChangesConfig
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -100,15 +107,15 @@ class BatchChangeValidations(
         .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
         .toEither
         .toBatchResult
-      _ <- validateScheduledChange(input, scheduledChangesEnabled).toBatchResult
+      _ <- validateScheduledChange(input, scheduledChangesConfig.enabled).toBatchResult
     } yield ()
   }
 
   def validateBatchChangeInputSize(input: BatchChangeInput): SingleValidation[Unit] =
     if (input.changes.isEmpty) {
-      BatchChangeIsEmpty(changeLimit).invalidNel
-    } else if (input.changes.length > changeLimit) {
-      ChangeLimitExceeded(changeLimit).invalidNel
+      BatchChangeIsEmpty(batchChangeConfig.limit).invalidNel
+    } else if (input.changes.length > batchChangeConfig.limit) {
+      ChangeLimitExceeded(batchChangeConfig.limit).invalidNel
     } else {
       ().validNel
     }
@@ -611,10 +618,13 @@ class BatchChangeValidations(
   def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] =
     change.typ match {
       case RecordType.PTR =>
-        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, change.inputName)
+        ZoneRecordValidations.isNotHighValueIp(
+          highValueDomainConfig.ipList,
+          change.inputName
+        )
       case _ =>
         ZoneRecordValidations.isNotHighValueFqdn(
-          VinylDNSConfig.highValueRegexList,
+          highValueDomainConfig.fqdnRegexes,
           change.inputName
         )
     }
@@ -627,12 +637,12 @@ class BatchChangeValidations(
       change.typ match {
         case RecordType.PTR =>
           ZoneRecordValidations.ipDoesNotRequireManualReview(
-            VinylDNSConfig.ipListRequiringManualReview,
+            manualReviewConfig.ipList,
             change.inputName
           )
         case _ =>
           ZoneRecordValidations.domainDoesNotRequireManualReview(
-            VinylDNSConfig.domainListRequiringManualReview,
+            manualReviewConfig.domainList,
             change.inputName
           )
       }
@@ -673,7 +683,7 @@ class BatchChangeValidations(
       ().validNel
     } else {
       ZoneRecordValidations.zoneDoesNotRequireManualReview(
-        VinylDNSConfig.zoneNameListRequiringManualReview,
+        manualReviewConfig.zoneList,
         change.zone.name,
         change.inputChange.inputName
       )

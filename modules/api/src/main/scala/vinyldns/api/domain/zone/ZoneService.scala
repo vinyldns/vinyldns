@@ -21,6 +21,7 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
@@ -34,7 +35,8 @@ object ZoneService {
       messageQueue: MessageQueue,
       zoneValidations: ZoneValidations,
       accessValidation: AccessValidationsAlgebra,
-      backendResolver: BackendResolver
+      backendResolver: BackendResolver,
+      crypto: CryptoAlgebra
   ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
@@ -45,7 +47,8 @@ object ZoneService {
       messageQueue,
       zoneValidations,
       accessValidation,
-      backendResolver
+      backendResolver,
+      crypto
     )
 }
 
@@ -58,7 +61,8 @@ class ZoneService(
     messageQueue: MessageQueue,
     zoneValidations: ZoneValidations,
     accessValidation: AccessValidationsAlgebra,
-    backendResolver: BackendResolver
+    backendResolver: BackendResolver,
+    crypto: CryptoAlgebra
 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
@@ -99,7 +103,7 @@ class ZoneService(
       zoneWithUpdates = Zone(updateZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
-        .forUpdate(zoneWithUpdates, existingZone, auth)
+        .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
         .toResult
       _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange
@@ -209,7 +213,8 @@ class ZoneService(
         .forUpdate(
           newZone = zone.addACLRule(newRule),
           oldZone = zone,
-          authPrincipal = authPrincipal
+          authPrincipal = authPrincipal,
+          crypto
         )
         .toResult
       _ <- messageQueue.send(zoneChange).toResult[Unit]
@@ -229,7 +234,8 @@ class ZoneService(
         .forUpdate(
           newZone = zone.deleteACLRule(newRule),
           oldZone = zone,
-          authPrincipal = authPrincipal
+          authPrincipal = authPrincipal,
+          crypto
         )
         .toResult
       _ <- messageQueue.send(zoneChange).toResult[Unit]

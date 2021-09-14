@@ -9,7 +9,7 @@
   <a href="http://www.vinyldns.io/">
     <img
       alt="VinylDNS"
-      src="img/vinyldns-logo-full.png"
+      src="img/vinyldns_optimized.svg"
       width="400"
     />
   </a>
@@ -40,7 +40,6 @@ Integration is simple with first-class language support including:
 - [Code of Conduct](#code-of-conduct)
 - [Developer Guide](#developer-guide)
 - [Contributing](#contributing)
-- [Roadmap](#roadmap)
 - [Contact](#contact)
 - [Maintainers and Contributors](#maintainers-and-contributors)
 - [Credits](#credits)
@@ -89,21 +88,16 @@ See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up Viny
 ## Contributing
 See the [Contributing Guide](CONTRIBUTING.md).
 
-## Roadmap
-See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
-
 ## Contact
 - [Gitter](https://gitter.im/vinyldns)
-- [Mailing List](https://groups.google.com/forum/#!forum/vinyldns)
 - If you have any security concerns please contact the maintainers directly vinyldns-core@googlegroups.com
 
 ## Maintainers and Contributors
 The current maintainers (people who can merge pull requests) are:
 - Paul Cleary
-- Nima Eskandary
-- Michael Ly
-- Rebecca Star
-- Britney Wright
+- Ryan Emerle
+- Sriram Ramakrishnan
+- Jim Wakemen
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 

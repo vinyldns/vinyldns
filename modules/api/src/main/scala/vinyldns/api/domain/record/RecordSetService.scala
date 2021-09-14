@@ -28,6 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
+import vinyldns.api.config.HighValueDomainConfig
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -35,13 +36,17 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 
+import scala.util.matching.Regex
+
 object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
       messageQueue: MessageQueue,
       accessValidation: AccessValidationsAlgebra,
       backendResolver: BackendResolver,
-      validateRecordLookupAgainstDnsBackend: Boolean
+      validateRecordLookupAgainstDnsBackend: Boolean,
+      highValueDomainConfig: HighValueDomainConfig,
+      approvedNameServers: List[Regex]
   ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
@@ -52,7 +57,9 @@ object RecordSetService {
       messageQueue,
       accessValidation,
       backendResolver,
-      validateRecordLookupAgainstDnsBackend
+      validateRecordLookupAgainstDnsBackend,
+      highValueDomainConfig,
+      approvedNameServers
     )
 }
 
@@ -65,7 +72,9 @@ class RecordSetService(
     messageQueue: MessageQueue,
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
-    validateRecordLookupAgainstDnsBackend: Boolean
+    validateRecordLookupAgainstDnsBackend: Boolean,
+    highValueDomainConfig: HighValueDomainConfig,
+    approvedNameServers: List[Regex]
 ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
@@ -77,7 +86,7 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet, zone).toResult
+      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- recordSetDoesNotExist(
         backendResolver.resolve,
         zone,
@@ -93,7 +102,13 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone).toResult
+      _ <- typeSpecificValidations(
+        rsForValidations,
+        existingRecordsWithName,
+        zone,
+        None,
+        approvedNameServers
+      ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -107,7 +122,7 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet, zone).toResult
+      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
@@ -123,7 +138,13 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone, Some(existing)).toResult
+      _ <- typeSpecificValidations(
+        rsForValidations,
+        existingRecordsWithName,
+        zone,
+        Some(existing),
+        approvedNameServers
+      ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -135,7 +156,7 @@ class RecordSetService(
     for {
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId)
-      _ <- isNotHighValueDomain(existing, zone).toResult
+      _ <- isNotHighValueDomain(existing, zone, highValueDomainConfig).toResult
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult

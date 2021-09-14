@@ -18,14 +18,6 @@ services:
       - ./bind9/etc:/var/cache/bind/config
       - ./bind9/zones:/var/cache/bind/zones
 
-  dynamodb-local:
-    image: cnadiminti/dynamodb-local:2017-02-16<skipPull>
-    env_file:
-      .env
-    ports:
-      - "19000:8000"
-    command: "--sharedDb --inMemory"
-
   localstack:
     image: localstack/localstack:0.10.4<skipPull>
     ports:

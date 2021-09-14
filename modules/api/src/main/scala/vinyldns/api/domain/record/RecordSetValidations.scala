@@ -18,8 +18,8 @@ package vinyldns.api.domain.record
 
 import cats.syntax.either._
 import vinyldns.api.Interfaces._
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.backend.dns.DnsConversions
+import vinyldns.api.config.HighValueDomainConfig
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
@@ -28,6 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.Messages._
 
 import scala.util.matching.Regex
 
@@ -108,11 +109,12 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
-      existingRecordSet: Option[RecordSet] = None
+      existingRecordSet: Option[RecordSet],
+      approvedNameServers: List[Regex]
   ): Either[Throwable, Unit] =
     newRecordSet.typ match {
       case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet)
-      case NS => nsValidations(newRecordSet, zone, existingRecordSet)
+      case NS => nsValidations(newRecordSet, zone, existingRecordSet, approvedNameServers)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
@@ -197,7 +199,8 @@ object RecordSetValidations {
   def nsValidations(
       newRecordSet: RecordSet,
       zone: Zone,
-      oldRecordSet: Option[RecordSet] = None
+      oldRecordSet: Option[RecordSet],
+      approvedNameServers: List[Regex]
   ): Either[Throwable, Unit] = {
     // TODO kept consistency with old validation. Not sure why NS could be dotted in reverse specifically
     val isNotDottedHost = if (!zone.isReverse) isNotDotted(newRecordSet, zone) else ().asRight
@@ -209,7 +212,7 @@ object RecordSetValidations {
         zone,
         s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be added"
       )
-      _ <- containsApprovedNameServers(newRecordSet)
+      _ <- containsApprovedNameServers(newRecordSet, approvedNameServers)
       _ <- oldRecordSet
         .map { rs =>
           isNotOrigin(
@@ -235,9 +238,12 @@ object RecordSetValidations {
       !isOriginRecord(recordSet.name, omitTrailingDot(zone.name))
     )
 
-  private def containsApprovedNameServers(nsRecordSet: RecordSet): Either[Throwable, Unit] =
+  private def containsApprovedNameServers(
+      nsRecordSet: RecordSet,
+      approvedNameServers: List[Regex]
+  ): Either[Throwable, Unit] =
     ZoneRecordValidations
-      .containsApprovedNameServers(VinylDNSConfig.approvedNameServers, nsRecordSet)
+      .containsApprovedNameServers(approvedNameServers, nsRecordSet)
       .toEither
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.mkString(", ")))
@@ -245,14 +251,18 @@ object RecordSetValidations {
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
 
-  def isNotHighValueDomain(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
+  def isNotHighValueDomain(
+      recordSet: RecordSet,
+      zone: Zone,
+      highValueDomainConfig: HighValueDomainConfig
+  ): Either[Throwable, Unit] = {
     val result = recordSet.typ match {
       case RecordType.PTR =>
         val ip = ReverseZoneHelpers.reverseNameToIp(recordSet.name, zone)
-        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, ip)
+        ZoneRecordValidations.isNotHighValueIp(highValueDomainConfig.ipList, ip)
       case _ =>
         val fqdn = DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
-        ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, fqdn)
+        ZoneRecordValidations.isNotHighValueFqdn(highValueDomainConfig.fqdnRegexes, fqdn)
     }
 
     result.toEither
@@ -307,7 +317,7 @@ object RecordSetValidations {
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest("recordNameFilter must contain at least two letters or numbers.")
+      InvalidRequest(RecordNameFilterError)
     ) {
       val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
       searchRegex.findFirstIn(recordNameFilter).isDefined

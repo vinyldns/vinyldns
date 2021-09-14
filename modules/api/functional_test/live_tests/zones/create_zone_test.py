@@ -37,6 +37,50 @@ records_in_dns = [
      'records': [{u'address': u'6.6.6.6'}]}]
 
 
+# Defined in docker bind9 conf file
+TSIG_KEYS = [
+    ('vinyldns-sha1.', '0nIhR1zS/nHUg2n0AIIUyJwXUyQ=', 'HMAC-SHA1'),
+    ('vinyldns-sha224.', 'yud/F666YjcnfqPSulHaYXrNObNnS1Jv+rX61A==', 'HMAC-SHA224'),
+    ('vinyldns-sha256.', 'wzLsDGgPRxFaC6z/9Bc0n1W4KrnmaUdFCgCn2+7zbPU=', 'HMAC-SHA256'),
+    ('vinyldns-sha384.', 'ne9jSUJ7PBGveM37aOX+ZmBXQgz1EqkbYBO1s5l/LNpjEno4OfYvGo1Lv1rnw3pE', 'HMAC-SHA384'),
+    ('vinyldns-sha512.', 'xfKA0DYb88tiUGND+cWddwUg3/SugYSsdvCfBOJ1jr8MEdgbVRyrlVDEXLsfTUGorQ3ShENdymw2yw+rTr+lwA==', 'HMAC-SHA512'),
+]
+@pytest.mark.serial
+@pytest.mark.parametrize('key_name,key_secret,key_alg', TSIG_KEYS)
+def test_create_zone_with_tsigs(shared_zone_test_context, key_name, key_secret, key_alg):
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = 'one-time'
+
+    zone = {
+        'name': zone_name,
+        'email': 'test@test.com',
+        'adminGroupId': shared_zone_test_context.ok_group['id'],
+        'connection': {
+            'name': key_name,
+            'keyName': key_name,
+            'key': key_secret,
+            'primaryServer': VinylDNSTestContext.dns_ip,
+            'algorithm': key_alg
+        }
+    }
+
+    try:
+        zone_change = client.create_zone(zone, status=202)
+        zone = zone_change['zone']
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
+
+        # Check that it was internally stored correctly using GET
+        zone_get = client.get_zone(zone['id'])['zone']
+        assert_that(zone_get['name'], is_(zone_name+'.'))
+        assert_that('connection' in zone_get)
+        assert_that(zone_get['connection']['keyName'], is_(key_name))
+        assert_that(zone_get['connection']['algorithm'], is_(key_alg))
+
+    finally:
+        if 'id' in zone:
+            client.abandon_zones([zone['id']], status=202)
+
 @pytest.mark.serial
 def test_create_zone_success(shared_zone_test_context):
     """

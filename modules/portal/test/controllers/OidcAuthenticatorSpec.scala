@@ -78,6 +78,17 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
     override lazy val jwtProcessor: JWTProcessor[SimpleSecurityContext] = mockJwtProcessor
   }
 
+  val oidcConfigNoTenantId: Configuration =
+    Configuration.from(Map("oidc" -> (oidcConfigMap - "tenant-id")))
+  val testOidcAuthenticatorNoTenantId: OidcAuthenticator =
+    new OidcAuthenticator(ws, oidcConfigNoTenantId) {
+      val mockJwtProcessor: JWTProcessor[SimpleSecurityContext] =
+        mock[JWTProcessor[SimpleSecurityContext]]
+      mockJwtProcessor.process(any[JWT], any[SimpleSecurityContext]).returns(jwtClaims)
+
+      override lazy val jwtProcessor: JWTProcessor[SimpleSecurityContext] = mockJwtProcessor
+    }
+
   "OidcAuthenticator" should {
     "Initial code call" should {
       "properly generate the code call" in {
@@ -176,6 +187,33 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
              |"email":"test@test.com"}""".stripMargin
 
         testOidcAuthenticator.getValidUsernameFromToken(tokenInfo) must beNone
+      }
+      "succeed if tid is not configured" in {
+        val tokenInfo =
+          s"""{"username":"un",
+             |"tid":"bad-tid",
+             |"aud":"test-client-id",
+             |"firstname":"First",
+             |"lastname":"Last",
+             |"exp": $futureTime,
+             |"iat": $pastTime,
+             |"nbf": $pastTime,
+             |"email":"test@test.com"}""".stripMargin
+
+        testOidcAuthenticatorNoTenantId.getValidUsernameFromToken(tokenInfo) must beSome("un")
+      }
+      "succeed if the tid is not returned and it is not configured" in {
+        val tokenInfo =
+          s"""{"username":"un",
+             |"aud":"test-client-id",
+             |"firstname":"First",
+             |"lastname":"Last",
+             |"exp": $futureTime,
+             |"iat": $pastTime,
+             |"nbf": $pastTime,
+             |"email":"test@test.com"}""".stripMargin
+
+        testOidcAuthenticatorNoTenantId.getValidUsernameFromToken(tokenInfo) must beSome("un")
       }
       "fail if aud is invalid" in {
         val tokenInfo =

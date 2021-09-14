@@ -143,6 +143,22 @@
                                 </div>
 
                                 <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Algorithm</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <select class="form-control" ng-model="updateZoneInfo.connection.algorithm"
+                                                    ng-disabled="!isZoneAdmin">
+                                                <option value=""></option>
+                                                <option ng-repeat="alg in keyAlgorithms" value="{{alg}}"
+                                                        ng-selected="updateZoneInfo.conneciton.algorithm == alg">
+                                                    {{alg}}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
                                     <label class="col-md-3 control-label">DNS Server</label>
                                     <div class="col-md-9">
                                         <div>
@@ -178,6 +194,22 @@
                                         <div>
                                             <input type="password" class="form-control" ng-model="updateZoneInfo.hiddenTransferKey"
                                                    placeholder="Current Key Hidden - Enter new key to edit"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Algorithm</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <select class="form-control" ng-model="updateZoneInfo.transferConnection.algorithm"
+                                                    ng-disabled="!isZoneAdmin">
+                                                <option value=""></option>
+                                                <option ng-repeat="alg in keyAlgorithms" value="{{alg}}"
+                                                        ng-selected="updateZoneInfo.transferConnection.algorithm == alg">
+                                                    {{alg}}
+                                                </option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

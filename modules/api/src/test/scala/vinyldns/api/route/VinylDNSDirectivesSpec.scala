@@ -30,6 +30,7 @@ import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
 import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.route.Monitor
 
 import scala.util.Failure
@@ -53,7 +54,7 @@ class VinylDNSDirectivesSpec
   def logger: Logger = LoggerFactory.getLogger(classOf[VinylDNSDirectivesSpec])
 
   val zoneRoute: Route =
-    new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator]).getRoutes
+    new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
 
   val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
 

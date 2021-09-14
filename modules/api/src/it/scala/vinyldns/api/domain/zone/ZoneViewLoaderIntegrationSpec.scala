@@ -16,29 +16,27 @@
 
 package vinyldns.api.domain.zone
 
-import cats.effect.{ContextShift, IO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS.ZoneTransferException
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.backend.dns.DnsBackend
-import vinyldns.core.domain.backend.{BackendConfigs, BackendResolver}
+import vinyldns.api.config.VinylDNSConfig
+import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
-import scala.concurrent.ExecutionContext
-
 class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
-  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
-  private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+
+  private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
+
   private val backendResolver =
     BackendResolver
-      .apply(BackendConfigs.load(VinylDNSConfig.apiBackend).unsafeRunSync())
+      .apply(vinyldnsConfig.backendConfigs)
       .unsafeRunSync()
 
   "ZoneViewLoader" should {
     "return a ZoneView upon success" in {
       val zone = Zone("vinyldns.", "test@test.com")
-      DnsZoneViewLoader(zone, backendResolver.resolve(zone))
+      DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
         .load()
         .unsafeRunSync() shouldBe a[ZoneView]
     }
@@ -61,7 +59,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
         )
         val backend = backendResolver.resolve(zone).asInstanceOf[DnsBackend]
         println(s"${backend.id}, ${backend.xfrInfo}, ${backend.resolver.getAddress}")
-        DnsZoneViewLoader(zone, backendResolver.resolve(zone))
+        DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
           .load()
           .unsafeRunSync()
       }
@@ -70,7 +68,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
     "return a failure if the zone doesn't exist in the DNS backend" in {
       assertThrows[ZoneTransferException] {
         val zone = Zone("non-existent-zone", "bad@zone.test")
-        DnsZoneViewLoader(zone, backendResolver.resolve(zone))
+        DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
           .load()
           .unsafeRunSync()
       }

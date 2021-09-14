@@ -16,8 +16,16 @@
 
 package vinyldns.api.domain.batch
 
+import pureconfig.ConfigReader
+
 final case class V6DiscoveryNibbleBoundaries(min: Int, max: Int) {
   assert(min <= max)
   assert(min > 0)
   assert(max <= 32)
+}
+object V6DiscoveryNibbleBoundaries {
+  implicit val configReader: ConfigReader[V6DiscoveryNibbleBoundaries] =
+    ConfigReader.forProduct2[V6DiscoveryNibbleBoundaries, Int, Int]("min", "max")(
+      V6DiscoveryNibbleBoundaries(_, _)
+    )
 }

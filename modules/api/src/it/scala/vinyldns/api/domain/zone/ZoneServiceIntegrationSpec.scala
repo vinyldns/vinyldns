@@ -26,13 +26,13 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.BackendResolver
@@ -98,16 +98,6 @@ class ZoneServiceIntegrationSpec
 
   private val mockBackendResolver = mock[BackendResolver]
 
-  def clearRecordSetRepo(): Unit =
-    DB.localTx { s =>
-      s.executeUpdate("DELETE FROM recordset")
-    }
-
-  def clearZoneRepo(): Unit =
-    DB.localTx { s =>
-      s.executeUpdate("DELETE FROM zone")
-    }
-
   override protected def beforeEach(): Unit = {
     clearRecordSetRepo()
     clearZoneRepo()
@@ -129,7 +119,8 @@ class ZoneServiceIntegrationSpec
       TestMessageQueue,
       new ZoneValidations(1000),
       new AccessValidations(),
-      mockBackendResolver
+      mockBackendResolver,
+      NoOpCrypto.instance
     )
   }
 

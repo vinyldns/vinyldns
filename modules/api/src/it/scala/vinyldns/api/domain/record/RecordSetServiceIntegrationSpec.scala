@@ -17,14 +17,16 @@
 package vinyldns.api.domain.record
 
 import cats.effect._
+import cats.implicits._
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api._
+import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
@@ -37,29 +39,22 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 class RecordSetServiceIntegrationSpec
-    extends DynamoDBApiIntegrationSpec
+    extends AnyWordSpec
     with ResultHelpers
     with EitherMatchers
     with MockitoSugar
     with Matchers
-    with MySqlApiIntegrationSpec {
+    with MySqlApiIntegrationSpec
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll {
 
-  private val recordSetTable = "recordSetTest"
+  private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
-  private val recordSetStoreConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
-
-  private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
-
-  private var recordSetRepo: DynamoDBRecordSetRepository = _
-  private var zoneRepo: ZoneRepository = _
-  private var groupRepo: GroupRepository = _
+  private val recordSetRepo = recordSetRepository
+  private val zoneRepo: ZoneRepository = zoneRepository
+  private val groupRepo: GroupRepository = groupRepository
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
@@ -226,31 +221,57 @@ class RecordSetServiceIntegrationSpec
   private val mockBackendResolver = mock[BackendResolver]
   private val mockBackend = mock[Backend]
 
-  def setup(): Unit = {
-    recordSetRepo =
-      DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
-    zoneRepo = zoneRepository
-    groupRepo = groupRepository
-    List(group, group2, sharedGroup).map(g => waitForSuccess(groupRepo.save(g)))
-    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone).map(
-      z => waitForSuccess(zoneRepo.save(z))
-    )
+  override def afterAll(): Unit = {
+    clearRecordSetRepo()
+    clearZoneRepo()
+    clearGroupRepo()
+  }
+
+  override def beforeEach(): Unit = {
+    def makeAddChange(rs: RecordSet, zone: Zone): RecordSetChange =
+      RecordSetChange(
+        zone = zone,
+        recordSet = rs,
+        userId = "system",
+        changeType = RecordSetChangeType.Create,
+        status = RecordSetChangeStatus.Pending,
+        singleBatchChangeIds = Nil
+      )
+    clearRecordSetRepo()
+    clearZoneRepo()
+    clearGroupRepo()
+
+    List(group, group2, sharedGroup).traverse(g => groupRepo.save(g).void).unsafeRunSync()
+    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
+      .traverse(
+        z => zoneRepo.save(z)
+      )
+      .unsafeRunSync()
 
     // Seeding records in DB
-    val records = List(
+    val sharedRecords = List(
+      sharedTestRecord,
+      sharedTestRecordBadOwnerGroup
+    )
+    val conflictRecords = List(
+      subTestRecordNameConflict,
+      apexTestRecordNameConflict
+    )
+    val zoneRecords = List(
       apexTestRecordA,
       apexTestRecordAAAA,
       subTestRecordA,
       subTestRecordAAAA,
       subTestRecordNS,
-      apexTestRecordNameConflict,
-      subTestRecordNameConflict,
       highValueDomainRecord,
-      sharedTestRecord,
-      sharedTestRecordBadOwnerGroup,
       testOwnerGroupRecordInNormalZone
     )
-    records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
+    val changes = ChangeSet(
+      sharedRecords.map(makeAddChange(_, sharedZone)) ++
+        conflictRecords.map(makeAddChange(_, zoneTestNameConflicts)) ++
+        zoneRecords.map(makeAddChange(_, zone))
+    )
+    recordSetRepo.apply(changes).unsafeRunSync()
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
@@ -261,22 +282,19 @@ class RecordSetServiceIntegrationSpec
       TestMessageQueue,
       new AccessValidations(),
       mockBackendResolver,
-      false
+      false,
+      vinyldnsConfig.highValueDomainConfig,
+      vinyldnsConfig.serverConfig.approvedNameServers
     )
   }
 
-  def tearDown(): Unit = ()
-
-  "DynamoDBRecordSetRepository" should {
+  "MySqlRecordSetRepository" should {
     "not alter record name when seeding database for tests" in {
       val originalRecord = testRecordSetService
         .getRecordSet(apexTestRecordA.id, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetInfo]]
-      whenReady(originalRecord, timeout) { out =>
-        rightValue(out).name shouldBe "live-zone-test"
-      }
+        .unsafeRunSync()
+      rightValue(originalRecord).name shouldBe "live-zone-test"
     }
   }
 
@@ -296,11 +314,11 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        rightValue(out).recordSet.name shouldBe "zone-test-add-records."
-      }
+          .unsafeRunSync()
+      rightValue(result)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .name shouldBe "zone-test-add-records."
     }
 
     "update apex A record and add trailing dot" in {
@@ -308,13 +326,10 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        val change = rightValue(out)
-        change.recordSet.name shouldBe "live-zone-test."
-        change.recordSet.ttl shouldBe 200
-      }
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "live-zone-test."
+      change.recordSet.ttl shouldBe 200
     }
 
     "update apex AAAA record and add trailing dot" in {
@@ -322,13 +337,10 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        val change = rightValue(out)
-        change.recordSet.name shouldBe "live-zone-test."
-        change.recordSet.ttl shouldBe 200
-      }
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "live-zone-test."
+      change.recordSet.ttl shouldBe 200
     }
 
     "update relative A record without adding trailing dot" in {
@@ -336,13 +348,10 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        val change = rightValue(out)
-        change.recordSet.name shouldBe "a-record"
-        change.recordSet.ttl shouldBe 200
-      }
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "a-record"
+      change.recordSet.ttl shouldBe 200
     }
 
     "update relative AAAA without adding trailing dot" in {
@@ -350,13 +359,10 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        val change = rightValue(out)
-        change.recordSet.name shouldBe "aaaa-record"
-        change.recordSet.ttl shouldBe 200
-      }
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "aaaa-record"
+      change.recordSet.ttl shouldBe 200
     }
 
     "update relative NS record without trailing dot" in {
@@ -364,13 +370,10 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
-        .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        val change = rightValue(out)
-        change.recordSet.name shouldBe "ns-record"
-        change.recordSet.ttl shouldBe 200
-      }
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "ns-record"
+      change.recordSet.ttl shouldBe 200
     }
 
     "fail to add relative record if apex record with same name already exists" in {
@@ -388,15 +391,12 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        leftValue(out) shouldBe a[RecordSetAlreadyExists]
-      }
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[RecordSetAlreadyExists]
     }
 
     "fail to add apex record if relative record with same name already exists" in {
-      val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict.")
+      val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict")
 
       doReturn(IO(List(newRecord)))
         .when(mockBackend)
@@ -406,11 +406,8 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        leftValue(out) shouldBe a[RecordSetAlreadyExists]
-      }
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[RecordSetAlreadyExists]
     }
 
     "fail to add a dns record whose name is a high value domain" in {
@@ -455,12 +452,10 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .getRecordSet(sharedTestRecord.id, auth2)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetInfo]]
-      whenReady(result, timeout) { out =>
-        rightValue(out).name shouldBe "shared-record"
-        rightValue(out).ownerGroupName shouldBe Some(sharedGroup.name)
-      }
+          .unsafeRunSync()
+
+      rightValue(result).name shouldBe "shared-record"
+      rightValue(result).ownerGroupName shouldBe Some(sharedGroup.name)
     }
 
     "get a shared record when owner group can't be found" in {
@@ -468,12 +463,9 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .getRecordSet(sharedTestRecordBadOwnerGroup.id, auth)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetInfo]]
-      whenReady(result, timeout) { out =>
-        rightValue(out).name shouldBe "shared-record-bad-owner-group"
-        rightValue(out).ownerGroupName shouldBe None
-      }
+          .unsafeRunSync()
+      rightValue(result).name shouldBe "shared-record-bad-owner-group"
+      rightValue(result).ownerGroupName shouldBe None
     }
 
     "fail updating if user is in owner group but zone is not shared" in {
@@ -581,10 +573,5 @@ class RecordSetServiceIntegrationSpec
 
       result should be(right)
     }
-  }
-
-  private def waitForSuccess[T](f: => IO[T]): T = {
-    val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
-    Await.result[T](waiting, 15.seconds)
   }
 }

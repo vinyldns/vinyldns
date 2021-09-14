@@ -12,6 +12,12 @@
   background-color: #123051;
 }
 
+#masthead {
+  background-attachment: scroll;
+  background: url("../img/jumbotron_pattern.png") repeat center;
+  background-color: #123051;
+}
+
 .important {
     color: red;
 }

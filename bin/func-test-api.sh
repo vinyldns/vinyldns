@@ -48,7 +48,6 @@ docker logs vinyldns-api > $DIR/../target/vinyldns-api.log 2>/dev/null
 docker logs vinyldns-bind9 > $DIR/../target/vinyldns-bind9.log 2>/dev/null
 docker logs vinyldns-mysql > $DIR/../target/vinyldns-mysql.log 2>/dev/null
 docker logs vinyldns-elasticmq > $DIR/../target/vinyldns-elasticmq.log 2>/dev/null
-docker logs vinyldns-dynamodb > $DIR/../target/vinyldns-dynamodb.log 2>/dev/null
 docker logs vinyldns-functest > $DIR/../target/vinyldns-functest.log 2>/dev/null
 
 echo "Cleaning up docker containers..."

@@ -141,10 +141,6 @@ lazy val portalDockerSettings = Seq(
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
-lazy val dynamoDBDockerSettings = Seq(
-  composeFile := baseDirectory.value.getAbsolutePath + "/docker/docker-compose.yml"
-)
-
 lazy val noPublishSettings = Seq(
   publish := {},
   publishLocal := {},
@@ -194,7 +190,6 @@ lazy val api = (project in file("modules/api"))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(
     core % "compile->compile;test->test",
-    dynamodb % "compile->compile;it->it",
     mysql % "compile->compile;it->it",
     sqs % "compile->compile;it->it",
     r53 % "compile->compile;it->it"
@@ -212,7 +207,7 @@ lazy val root = (project in file(".")).enablePlugins(DockerComposePlugin, Automa
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql, sqs, r53)
+  .aggregate(core, api, portal, mysql, sqs, r53)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -256,23 +251,6 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(
     organization := "io.vinyldns"
   )
-
-lazy val dynamodb = (project in file("modules/dynamodb"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .configs(IntegrationTest)
-  .settings(sharedSettings)
-  .settings(headerSettings(IntegrationTest))
-  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(corePublishSettings)
-  .settings(testSettings)
-  .settings(Defaults.itSettings)
-  .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
-  .settings(
-    organization := "io.vinyldns",
-    parallelExecution in Test := true,
-    parallelExecution in IntegrationTest := true
-  ).dependsOn(core % "compile->compile;test->test")
-  .settings(name := "dynamodb")
 
 lazy val mysql = (project in file("modules/mysql"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -366,11 +344,11 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal"
   )
-  .dependsOn(dynamodb, mysql)
+  .dependsOn(mysql)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",
-  micrositeGithubOwner := "VinylDNS",
+  micrositeGithubOwner := "vinyldns",
   micrositeGithubRepo := "vinyldns",
   micrositeName := "VinylDNS",
   micrositeDescription := "DNS Governance",
@@ -378,8 +356,8 @@ lazy val docSettings = Seq(
   micrositeHomepage := "http://vinyldns.io",
   micrositeDocumentationUrl := "/api",
   micrositeGitterChannelUrl := "vinyldns/Lobby",
+  micrositeTwitterCreator := "@vinyldns",
   micrositeDocumentationLabelDescription := "API Documentation",
-  micrositeShareOnSocial := false,
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
@@ -390,13 +368,19 @@ lazy val docSettings = Seq(
   micrositePushSiteWith := GitHub4s,
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
-  fork in tut := true,
-  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}")),
+  fork in mdoc := true,
+  mdocIn := (sourceDirectory in Compile).value / "mdoc",
+  micrositeCssDirectory := (resourceDirectory in Compile).value / "microsite" / "css",
+  micrositeCompilingDocsTool := WithMdoc,
+  micrositeFavicons := Seq(MicrositeFavicon("favicon16x16.png", "16x16"), MicrositeFavicon("favicon32x32.png", "32x32")),
+  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/mdoc/{{ page.path }}")),
+  micrositeFooterText := None,
+  micrositeHighlightTheme := "atom-one-light",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 
 lazy val docs = (project in file("modules/docs"))
-  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(MicrositesPlugin, MdocPlugin)
   .settings(docSettings)
 
 // release stages
@@ -463,7 +447,6 @@ releaseProcess :=
 addCommandAlias("validate", "; root/clean; " +
   "all core/headerCheck core/test:headerCheck " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
-  "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "r53/headerCheck r53/test:headerCheck r53/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +

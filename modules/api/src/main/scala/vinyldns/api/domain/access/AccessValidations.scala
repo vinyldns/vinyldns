@@ -17,7 +17,6 @@
 package vinyldns.api.domain.access
 
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -26,8 +25,10 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
-class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
-    extends AccessValidationsAlgebra {
+class AccessValidations(
+    globalAcls: GlobalAcls = GlobalAcls(List.empty),
+    sharedApprovedTypes: List[RecordType.Value] = Nil
+) extends AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
@@ -234,5 +235,5 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       recordOwnerGroupId: Option[String]
   ): Boolean =
     recordOwnerGroupId.exists(auth.isGroupMember) ||
-      (recordOwnerGroupId.isEmpty && VinylDNSConfig.sharedApprovedTypes.contains(recordType))
+      (recordOwnerGroupId.isEmpty && sharedApprovedTypes.contains(recordType))
 }

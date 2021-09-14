@@ -45,6 +45,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       zoneChangeRepository: ZoneChangeRepository,
       zoneRepository: ZoneRepository,
       backendResolver: BackendResolver,
+      maxZoneSize: Int,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): ZoneChange => IO[ZoneChange] =
@@ -57,6 +58,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
           recordChangeRepository,
           zoneChange,
           backendResolver,
+          maxZoneSize,
           vinyldnsLoader
         )
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // final save to store zone status
@@ -85,13 +87,14 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       recordChangeRepository: RecordChangeRepository,
       zoneChange: ZoneChange,
       backendResolver: BackendResolver,
+      maxZoneSize: Int,
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): IO[ZoneChange] =
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
-        val dnsLoader = DnsZoneViewLoader(zone, backendResolver.resolve(zone))
+        val dnsLoader = DnsZoneViewLoader(zone, backendResolver.resolve(zone), maxZoneSize)
         val dnsView =
           time(
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"

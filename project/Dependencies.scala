@@ -4,10 +4,10 @@ object Dependencies {
   lazy val akkaHttpV = "10.1.10"
   lazy val akkaV = "2.5.23"
   lazy val jettyV = "8.1.12.v20130726"
-  lazy val pureConfigV = "0.12.3"
+  lazy val pureConfigV = "0.14.0"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
-  lazy val catsEffectV = "2.1.3"
+  lazy val catsEffectV = "2.2.0"
   lazy val configV = "1.4.0"
   lazy val scalikejdbcV = "3.4.1"
   lazy val scalaTestV = "3.1.1"
@@ -16,7 +16,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "2.3.0"
+  lazy val fs2V = "2.4.4"
   lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(
@@ -30,7 +30,7 @@ object Dependencies {
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
-    "dnsjava"                   %  "dnsjava"                        % "2.1.7",
+    "dnsjava"                   %  "dnsjava"                        % "2.1.8",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
@@ -76,11 +76,6 @@ object Dependencies {
     "javax.activation"          %  "activation"                     % "1.1.1"
   )
 
-  lazy val dynamoDBDependencies = Seq(
-    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
-  )
-
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
@@ -117,7 +112,6 @@ object Dependencies {
   lazy val portalDependencies = Seq(
     "com.typesafe.play"         %% "play-json"                      % "2.7.4",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,

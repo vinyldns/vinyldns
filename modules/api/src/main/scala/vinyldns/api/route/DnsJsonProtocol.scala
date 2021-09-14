@@ -30,6 +30,7 @@ import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.Messages._
 
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
@@ -38,6 +39,7 @@ trait DnsJsonProtocol extends JsonValidation {
     CreateZoneInputSerializer,
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
+    AlgorithmSerializer,
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
@@ -118,13 +120,24 @@ trait DnsJsonProtocol extends JsonValidation {
       ).mapN(UpdateZoneInput.apply)
   }
 
+  case object AlgorithmSerializer extends ValidationSerializer[Algorithm] {
+    override def fromJson(js: JValue): ValidatedNel[String, Algorithm] =
+      js match {
+        case JString(value) => Algorithm.fromString(value).toValidatedNel
+        case _ => "Unsupported type for key algorithm, must be a string".invalidNel
+      }
+
+    override def toJson(a: Algorithm): JValue = JString(a.name)
+  }
+
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
         (js \ "name").required[String]("Missing ZoneConnection.name"),
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
         (js \ "key").required[String]("Missing ZoneConnection.key"),
-        (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer")
+        (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
+        (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
       ).mapN(ZoneConnection.apply)
   }
 
@@ -361,7 +374,7 @@ trait DnsJsonProtocol extends JsonValidation {
         .required[String]("Missing NS.nsdname")
         .check(
           "NS must be less than 255 characters" -> checkDomainNameLen,
-          "NS data must be absolute" -> nameContainsDots
+          NSDataError -> nameContainsDots
         )
         .map(Fqdn.apply)
         .map(NSData.apply)

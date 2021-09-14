@@ -24,12 +24,11 @@ services:
     image: localstack/localstack:0.10.4
     container_name: "vinyldns-localstack"
     ports:
-      - "19000:19000"
       - "19006:19006"
       - "19007:19007"
       - "19009:19009"
     environment:
-      - SERVICES=dynamodb:19000,sns:19006,sqs:19007,route53:19009
+      - SERVICES=sns:19006,sqs:19007,route53:19009
       - START_WEB=0
       - HOSTNAME_EXTERNAL=vinyldns-localstack
 

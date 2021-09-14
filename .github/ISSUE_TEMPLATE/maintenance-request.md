@@ -1,6 +1,9 @@
 ---
 name: Maintenance request
 about: Suggest an upgrade, refactoring, code move, new library
+title: ''
+labels: status/needs-label
+assignees: ''
 
 ---
 

@@ -29,12 +29,16 @@ import vinyldns.api.domain.zone.{
   RecordSetAlreadyExists
 }
 import vinyldns.api.ResultHelpers
+import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
+import vinyldns.core.Messages._
+
+import scala.util.matching.Regex
 
 class RecordSetValidationsSpec
     extends AnyWordSpec
@@ -190,19 +194,19 @@ class RecordSetValidationsSpec
         val dottedARecord = rsOk.copy(name = "this.is.a.failure.")
         "return a failure for any new record with dotted hosts in forward zones" in {
           leftValue(
-            typeSpecificValidations(dottedARecord, List(), okZone)
+            typeSpecificValidations(dottedARecord, List(), okZone, None, Nil)
           ) shouldBe an[InvalidRequest]
         }
 
         "return a failure for any new record with dotted hosts in forward zones (CNAME)" in {
           leftValue(
-            typeSpecificValidations(dottedARecord.copy(typ = CNAME), List(), okZone)
+            typeSpecificValidations(dottedARecord.copy(typ = CNAME), List(), okZone, None, Nil)
           ) shouldBe an[InvalidRequest]
         }
 
         "return a failure for any new record with dotted hosts in forward zones (NS)" in {
           leftValue(
-            typeSpecificValidations(dottedARecord.copy(typ = NS), List(), okZone)
+            typeSpecificValidations(dottedARecord.copy(typ = NS), List(), okZone, None, Nil)
           ) shouldBe an[InvalidRequest]
         }
 
@@ -211,7 +215,8 @@ class RecordSetValidationsSpec
             dottedARecord,
             List(),
             okZone,
-            Some(dottedARecord.copy(ttl = 300))
+            Some(dottedARecord.copy(ttl = 300)),
+            Nil
           ) should be(right)
         }
 
@@ -221,7 +226,8 @@ class RecordSetValidationsSpec
             dottedCNAMERecord,
             List(),
             okZone,
-            Some(dottedCNAMERecord.copy(ttl = 300))
+            Some(dottedCNAMERecord.copy(ttl = 300)),
+            Nil
           ) should be(right)
         }
 
@@ -232,7 +238,8 @@ class RecordSetValidationsSpec
               dottedNSRecord,
               List(),
               okZone,
-              Some(dottedNSRecord.copy(ttl = 300))
+              Some(dottedNSRecord.copy(ttl = 300)),
+              Nil
             )
           ) shouldBe an[InvalidRequest]
         }
@@ -243,35 +250,35 @@ class RecordSetValidationsSpec
           val test = srv.copy(name = "_sip._tcp.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success for an SRV record following convention without FQDN" in {
           val test = srv.copy(name = "_sip._tcp")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success for an SRV record following convention with a record name" in {
           val test = srv.copy(name = "_sip._tcp.foo.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success on a wildcard SRV that follows convention" in {
           val test = srv.copy(name = "*._tcp.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success on a wildcard in second position SRV that follows convention" in {
           val test = srv.copy(name = "_sip._*.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
       }
       "Skip dotted checks on NAPTR" should {
@@ -279,21 +286,21 @@ class RecordSetValidationsSpec
           val test = naptr.copy(name = "sub.naptr.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success for an NAPTR record without FQDN" in {
           val test = naptr.copy(name = "sub.naptr")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
         "return success on a wildcard NAPTR" in {
           val test = naptr.copy(name = "*.sub.naptr.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
       }
@@ -302,7 +309,15 @@ class RecordSetValidationsSpec
           val test = ptrIp4.copy(name = "10.1.2.")
           val zone = zoneIp4.copy(name = "198.in-addr.arpa.")
 
-          typeSpecificValidations(test, List(), zone) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+        }
+      }
+      "Skip dotted checks on TXT" should {
+        "return success for a TXT record with dots in a reverse zone" in {
+          val test = txt.copy(name = "sub.txt.example.com.")
+          val zone = okZone.copy(name = "example.com.")
+
+          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
         }
 
       }
@@ -319,7 +334,7 @@ class RecordSetValidationsSpec
             List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
           )
 
-          typeSpecificValidations(test, List(), zoneIp4) should be(right)
+          typeSpecificValidations(test, List(), zoneIp4, None, Nil) should be(right)
         }
       }
     }
@@ -332,29 +347,29 @@ class RecordSetValidationsSpec
           records = List(NSData(Fqdn("some.test.ns.")))
         )
 
-        nsValidations(valid, okZone) should be(right)
+        nsValidations(valid, okZone, None, List(new Regex(".*"))) should be(right)
       }
 
       "return an InvalidRequest if an NS record is '@'" in {
-        val error = leftValue(nsValidations(invalidNsApexRs, okZone))
+        val error = leftValue(nsValidations(invalidNsApexRs, okZone, None, Nil))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record is the same as the zone" in {
         val invalid = invalidNsApexRs.copy(name = okZone.name)
-        val error = leftValue(nsValidations(invalid, okZone))
+        val error = leftValue(nsValidations(invalid, okZone, None, Nil))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if the NS record being updated is '@'" in {
         val valid = invalidNsApexRs.copy(name = "this-is-not-origin-mate")
-        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs)))
+        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs), Nil))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record data is not in the approved server list" in {
         val ns = invalidNsApexRs.copy(records = List(NSData(Fqdn("not.approved."))))
-        val error = leftValue(nsValidations(ns, okZone))
+        val error = leftValue(nsValidations(ns, okZone, None, List(new Regex("not.*"))))
         error shouldBe an[InvalidRequest]
       }
     }
@@ -438,7 +453,8 @@ class RecordSetValidationsSpec
         val zone = okZone.copy(name = "2.0.192.in-addr.arpa.")
         val record = ptrIp4.copy(name = "252")
 
-        val error = leftValue(isNotHighValueDomain(record, zone))
+        val error =
+          leftValue(isNotHighValueDomain(record, zone, VinylDNSTestHelpers.highValueDomainConfig))
         error shouldBe an[InvalidRequest]
       }
 
@@ -446,7 +462,8 @@ class RecordSetValidationsSpec
         val zone = okZone.copy(name = "1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.")
         val record = ptrIp6.copy(name = "f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
 
-        val error = leftValue(isNotHighValueDomain(record, zone))
+        val error =
+          leftValue(isNotHighValueDomain(record, zone, VinylDNSTestHelpers.highValueDomainConfig))
         error shouldBe an[InvalidRequest]
       }
 
@@ -454,7 +471,8 @@ class RecordSetValidationsSpec
         val zone = okZone
         val record = aaaa.copy(name = "high-value-domain")
 
-        val error = leftValue(isNotHighValueDomain(record, zone))
+        val error =
+          leftValue(isNotHighValueDomain(record, zone, VinylDNSTestHelpers.highValueDomainConfig))
         error shouldBe an[InvalidRequest]
       }
 
@@ -471,10 +489,22 @@ class RecordSetValidationsSpec
         val zoneAAAA = okZone
         val recordAAAA = aaaa.copy(name = "not-important")
 
-        isNotHighValueDomain(recordIp4, zoneIp4) should be(right)
-        isNotHighValueDomain(recordIp6, zoneIp6) should be(right)
-        isNotHighValueDomain(recordClassless, zoneClassless) should be(right)
-        isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
+        isNotHighValueDomain(recordIp4, zoneIp4, VinylDNSTestHelpers.highValueDomainConfig) should be(
+          right
+        )
+        isNotHighValueDomain(recordIp6, zoneIp6, VinylDNSTestHelpers.highValueDomainConfig) should be(
+          right
+        )
+        isNotHighValueDomain(
+          recordClassless,
+          zoneClassless,
+          VinylDNSTestHelpers.highValueDomainConfig
+        ) should be(
+          right
+        )
+        isNotHighValueDomain(recordAAAA, zoneAAAA, VinylDNSTestHelpers.highValueDomainConfig) should be(
+          right
+        )
       }
     }
 
@@ -572,7 +602,7 @@ class RecordSetValidationsSpec
         val invalidString = "*o*"
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "recordNameFilter must contain at least two letters or numbers."
+        error.getMessage() shouldBe RecordNameFilterError
       }
     }
   }

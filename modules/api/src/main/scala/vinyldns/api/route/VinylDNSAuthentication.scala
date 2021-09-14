@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RequestContext
 import cats.effect._
-import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -42,7 +41,8 @@ trait VinylDNSAuthenticator {
 
 class ProductionVinylDNSAuthenticator(
     val authenticator: Aws4Authenticator,
-    val authPrincipalProvider: AuthPrincipalProvider
+    val authPrincipalProvider: AuthPrincipalProvider,
+    val crypto: CryptoAlgebra
 ) extends VinylDNSAuthenticator
     with Monitored {
 
@@ -51,7 +51,7 @@ class ProductionVinylDNSAuthenticator(
       content: String
   ): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     // Need to refactor getAuthPrincipal to be an IO[Either[E, A]] instead of how it is implemented.
-    getAuthPrincipal(ctx, content).attempt.flatMap {
+    getAuthPrincipal(ctx, content, crypto).attempt.flatMap {
       case Left(e: VinylDNSAuthenticationError) => IO.pure(Left(e))
       case Right(ok) => IO.pure(Right(ok))
       case Left(e) => IO.raiseError(e)
@@ -131,7 +131,11 @@ class ProductionVinylDNSAuthenticator(
     * @param ctx The Http Request Context
     * @return A Future containing the AuthPrincipal for the request.
     */
-  def getAuthPrincipal(ctx: RequestContext, content: String): IO[AuthPrincipal] =
+  def getAuthPrincipal(
+      ctx: RequestContext,
+      content: String,
+      crypto: CryptoAlgebra
+  ): IO[AuthPrincipal] =
     for {
       authHeader <- getAuthHeader(ctx)
       regexMatch <- parseAuthHeader(authHeader)
@@ -139,13 +143,13 @@ class ProductionVinylDNSAuthenticator(
       authPrincipal <- getAuthPrincipal(accessKey)
       _ <- validateRequestSignature(
         ctx.request,
-        decryptSecret(authPrincipal.secretKey),
+        decryptSecret(authPrincipal.secretKey, crypto),
         regexMatch,
         content
       )
     } yield authPrincipal
 
-  def decryptSecret(str: String, crypto: CryptoAlgebra = Crypto.instance): String =
+  def decryptSecret(str: String, crypto: CryptoAlgebra): String =
     crypto.decrypt(str)
 
   def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
