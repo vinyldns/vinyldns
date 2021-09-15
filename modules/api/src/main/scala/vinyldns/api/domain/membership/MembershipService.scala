@@ -25,17 +25,18 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
-import vinyldns.api.config.GroupEmailConfig
+import vinyldns.api.config.GroupConfig
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor, config: GroupConfig): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
-      dataAccessor.recordSetRepository
+      dataAccessor.recordSetRepository,
+      config
     )
 }
 
@@ -45,7 +46,8 @@ class MembershipService(
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
-    recordSetRepo: RecordSetRepository
+    recordSetRepo: RecordSetRepository,
+    groupConfig: GroupConfig
 ) extends MembershipServiceAlgebra {
 
   import MembershipValidations._
@@ -57,7 +59,7 @@ class MembershipService(
     for {
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
-      _ <- groupWithSameEmailIdDoesNotExist(newGroup.email, GroupEmailConfig.enforce_unique_email_address)
+      _ <- groupWithSameEmailIdDoesNotExist(newGroup.email, groupConfig.enforceUniqueEmailId)
       _ <- usersExist(newGroup.memberIds)
       _ <- groupChangeRepo.save(GroupChange.forAdd(newGroup, authPrincipal)).toResult[GroupChange]
       _ <- groupRepo.save(newGroup).toResult[Group]
@@ -92,7 +94,11 @@ class MembershipService(
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- usersExist(addedNonAdmins)
       _ <- differentGroupWithSameNameDoesNotExist(newGroup.name, existingGroup.id)
-      _ <- differentGroupWithSameEmailIdDoesNotExist(newGroup.email, existingGroup.id, GroupEmailConfig.enforce_unique_email_address)
+      _ <- differentGroupWithSameEmailIdDoesNotExist(
+        newGroup.email,
+        existingGroup.id,
+        groupConfig.enforceUniqueEmailId
+      )
       _ <- groupChangeRepo
         .save(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal))
         .toResult[GroupChange]
