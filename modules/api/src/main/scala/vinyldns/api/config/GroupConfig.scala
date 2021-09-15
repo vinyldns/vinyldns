@@ -16,6 +16,13 @@
 
 package vinyldns.api.config
 
-object GroupEmailConfig {
-  var enforce_unique_email_address: Boolean = false
+import pureconfig.ConfigReader
+
+case class GroupConfig(enforceUniqueEmailId: Boolean)
+
+object GroupConfig {
+  implicit val configReader: ConfigReader[GroupConfig] =
+    ConfigReader.forProduct1[GroupConfig, Boolean]("enforce-unique-email-id") {
+      case (email) => GroupConfig(email)
+    }
 }

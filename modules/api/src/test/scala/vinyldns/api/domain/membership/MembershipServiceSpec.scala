@@ -34,6 +34,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.api.config.GroupConfig
 
 class MembershipServiceSpec
     extends AnyWordSpec
@@ -49,6 +50,7 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
+  private val mockGroupConfig = mock[GroupConfig]
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -56,7 +58,8 @@ class MembershipServiceSpec
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
-    mockRecordSetRepo
+    mockRecordSetRepo,
+    mockGroupConfig
   )
   private val underTest = spy(backingService)
 
@@ -115,7 +118,7 @@ class MembershipServiceSpec
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult)
           .when(underTest)
-          .groupWithSameEmailIdDoesNotExist(groupInfo.email, true)
+          .groupWithSameEmailIdDoesNotExist(groupInfo.email, false)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -145,7 +148,7 @@ class MembershipServiceSpec
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult)
           .when(underTest)
-          .groupWithSameEmailIdDoesNotExist(groupInfo.email, true)
+          .groupWithSameEmailIdDoesNotExist(groupInfo.email, false)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -174,7 +177,7 @@ class MembershipServiceSpec
         val expectedMembersAdded = Set(okUserInfo.id, dummyUserInfo.id)
 
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
-        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email, true)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email, false)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         when(
@@ -201,7 +204,7 @@ class MembershipServiceSpec
         val info = groupInfo.copy(memberIds = Set.empty, adminUserIds = Set.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
-        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email, true)
+        doReturn(().toResult).when(underTest).groupWithSameEmailIdDoesNotExist(info.email, false)
         doReturn(().toResult).when(underTest).usersExist(Set(okAuth.userId))
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
         doReturn(IO.pure(Set(okUser.id)))
@@ -232,7 +235,7 @@ class MembershipServiceSpec
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult)
           .when(underTest)
-          .groupWithSameEmailIdDoesNotExist(groupInfo.email, true)
+          .groupWithSameEmailIdDoesNotExist(groupInfo.email, false)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
           .usersExist(groupInfo.memberIds)
@@ -426,7 +429,7 @@ class MembershipServiceSpec
           .differentGroupWithSameNameDoesNotExist(updatedInfo.name, existingGroup.id)
         doReturn(result(()))
           .when(underTest)
-          .differentGroupWithSameEmailIdDoesNotExist(updatedInfo.email, existingGroup.id, true)
+          .differentGroupWithSameEmailIdDoesNotExist(updatedInfo.email, existingGroup.id, false)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
           .usersExist(any[Set[String]])

@@ -49,7 +49,8 @@ final case class VinylDNSConfig(
     configuredDnsConnections: ConfiguredDnsConnections,
     apiMetricSettings: APIMetricsSettings,
     crypto: CryptoAlgebra,
-    globalAcls: GlobalAcls
+    globalAcls: GlobalAcls,
+    groupConfig: GroupConfig
 )
 object VinylDNSConfig {
 
@@ -96,6 +97,7 @@ object VinylDNSConfig {
       metricSettings <- loadIO[APIMetricsSettings](config, "vinyldns.metrics")
       globalAcls <- loadIO[List[GlobalAcl]](config, "vinyldns.global-acl-rules")
         .map(GlobalAcls.apply)
+      groupConfig <- loadIO[GroupConfig](config, "vinyldns.membership.groups")
     } yield VinylDNSConfig(
       serverConfig,
       httpConfig,
@@ -110,7 +112,8 @@ object VinylDNSConfig {
       connections,
       metricSettings,
       crypto,
-      globalAcls
+      globalAcls,
+      groupConfig
     )
   }
 }
