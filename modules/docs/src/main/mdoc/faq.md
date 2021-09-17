@@ -91,7 +91,7 @@ If you use any VinylDNS tools beyond the portal you will need to provide those t
 Refer to [API Authentication](api/auth-mechanism.html).
 
 ### 10. How to change email configuration for groups? <a id="10"></a>
-By default, VinylDNS is configured to disallow multiple groups with the same email address. We have found that 
-supporting multiple groups with the same email address to be confusing to many users when there are ownership questions 
-in the future. Therefore, we strongly recommend that VinylDNS deployments utilize this feature. If, however, you do not 
-wish you use this feature, you can set "vinyldns.groups.enforce-unique-email-id = false" in the configuration.
+VinylDNS can be configured to disallow multiple groups with the same email address. We have found that
+supporting multiple groups with the same email address to be confusing to many users when there are ownership questions
+in the future. Therefore, we strongly recommend that VinylDNS deployments utilize this feature. If you wish to use this feature,
+you can set "vinyldns.groups.enforce-unique-email-id = true" in the configuration.

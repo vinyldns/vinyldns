@@ -1,10 +1,5 @@
 <div class="alert alert-box" ng-class="'alert-'+ngModel.type" role="alert">
     <button type="button" class="close" data-dismiss="alert">
         <span aria-hidden="true">×</span><span class="sr-only">Close</span>
-    </button>
-    <div>{{ngModel.content}}
-    <a ng-if="ngModel.content.includes('HTTP 409 (Conflict): Cannot create group.') || ngModel.content.includes('HTTP 409 (Conflict): Cannot update group.')"
-       style="text-decoration: none;"
-       href="https://www.vinyldns.io/faq.html#10">ℹ️</a>
-    </div>
+    </button>{{ngModel.content}}
 </div>
