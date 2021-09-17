@@ -1,9 +1,10 @@
+from future.backports.urllib.parse import urljoin
 from utils import *
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
 from dns.resolver import *
-from vinyldns_context import VinylDNSTestContext
-from requests.compat import urljoin
+
+from functional_test.vinyldns_context import VinylDNSTestContext
+from functional_test.vinyldns_python import VinylDNSClient
 
 
 def test_request_fails_when_user_account_is_locked():

@@ -1,7 +1,10 @@
 import uuid
 
+import pytest
 from hamcrest import *
 from utils import *
+
+from functional_test.utils import generate_acl_rule
 
 
 def test_get_zone_by_id(shared_zone_test_context):

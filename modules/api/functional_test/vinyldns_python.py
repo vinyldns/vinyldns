@@ -1,18 +1,20 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import json
 import time
 import logging
 import collections
 
 import requests
+from future.backports.urllib.parse import urlparse, urljoin, urlsplit
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from hamcrest import *
 
 # TODO: Didn't like this boto request signer, fix when moving back
-from boto_request_signer import BotoRequestSigner
+from .boto_request_signer import BotoRequestSigner
 
 # Python 2/3 compatibility
-from requests.compat import urljoin, urlparse, urlsplit
 from builtins import str
 from future.utils import iteritems
 from future.moves.urllib.parse import parse_qs
@@ -28,6 +30,7 @@ __all__ = [u'VinylDNSClient', u'MAX_RETRIES', u'RETRY_WAIT']
 
 MAX_RETRIES = 40
 RETRY_WAIT = 0.05
+
 
 class VinylDNSClient(object):
 
@@ -82,7 +85,8 @@ class VinylDNSClient(object):
         session.mount(u'https://', adapter)
         return session
 
-    def make_request(self, url, method=u'GET', headers=None, body_string=None, sign_request=True, not_found_ok=False, **kwargs):
+    def make_request(self, url, method=u'GET', headers=None, body_string=None, sign_request=True, not_found_ok=False,
+                     **kwargs):
 
         # pull out status or None
         status_code = kwargs.pop(u'status', None)
@@ -99,29 +103,30 @@ class VinylDNSClient(object):
         if query:
             # the problem with parse_qs is that it will return a list for ALL params, even if they are a single value
             # we need to essentially flatten the params if a param has only one value
-            query = dict((k, v if len(v)>1 else v[0])
+            query = dict((k, v if len(v) > 1 else v[0])
                          for k, v in iteritems(query))
 
         if sign_request:
             signed_headers, signed_body = self.build_vinyldns_request(method, path, body_string, query,
-                                                                   with_headers=headers or {}, **kwargs)
+                                                                      with_headers=headers or {}, **kwargs)
         else:
             signed_headers = headers or {}
             signed_body = body_string
 
         if not_found_ok:
-            response = self.session_not_found_ok.request(method, url, data=signed_body, headers=signed_headers, **kwargs)
+            response = self.session_not_found_ok.request(method, url, data=signed_body, headers=signed_headers,
+                                                         **kwargs)
         else:
             response = self.session.request(method, url, data=signed_body, headers=signed_headers, **kwargs)
 
         if status_code is not None:
             if isinstance(status_code, collections.Iterable):
                 if not response.status_code in status_code:
-                    print response.text
+                    print(response.text)
                 assert_that(response.status_code, is_in(status_code))
             else:
                 if response.status_code != status_code:
-                    print response.text
+                    print(response.text)
                 assert_that(response.status_code, is_(status_code))
 
         try:
@@ -506,7 +511,8 @@ class VinylDNSClient(object):
         """
         url = urljoin(self.index_url, u'/zones/{0}/recordsets/{1}'.format(recordset[u'zoneId'], recordset[u'id']))
 
-        response, data = self.make_request(url, u'PUT', self.headers, json.dumps(recordset), not_found_ok=True, **kwargs)
+        response, data = self.make_request(url, u'PUT', self.headers, json.dumps(recordset), not_found_ok=True,
+                                           **kwargs)
         return data
 
     def get_recordset(self, zone_id, rs_id, **kwargs):
@@ -534,7 +540,8 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, None, not_found_ok=True, **kwargs)
         return data
 
-    def list_recordsets_by_zone(self, zone_id, start_from=None, max_items=None, record_name_filter=None, record_type_filter=None, name_sort=None, **kwargs):
+    def list_recordsets_by_zone(self, zone_id, start_from=None, max_items=None, record_name_filter=None,
+                                record_type_filter=None, name_sort=None, **kwargs):
         """
         Retrieves all recordsets in a zone
         :param zone_id: the zone to retrieve
@@ -617,7 +624,8 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, u'POST', self.headers, **kwargs)
         return data
 
-    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None, **kwargs):
+    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None,
+                                    **kwargs):
         """
         Gets list of user's batch change summaries
         :return: the content of the response
@@ -700,7 +708,8 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         url = urljoin(self.index_url, '/zones/{0}/acl/rules'.format(zone_id))
-        response, data = self.make_request(url, 'PUT', self.headers, json.dumps(acl_rule), sign_request=sign_request, **kwargs)
+        response, data = self.make_request(url, 'PUT', self.headers, json.dumps(acl_rule), sign_request=sign_request,
+                                           **kwargs)
 
         return data
 
@@ -726,17 +735,19 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         url = urljoin(self.index_url, '/zones/{0}/acl/rules'.format(zone_id))
-        response, data = self.make_request(url, 'DELETE', self.headers, json.dumps(acl_rule), sign_request=sign_request, **kwargs)
+        response, data = self.make_request(url, 'DELETE', self.headers, json.dumps(acl_rule), sign_request=sign_request,
+                                           **kwargs)
 
         return data
 
     def wait_until_recordset_deleted(self, zone_id, record_set_id, **kwargs):
         retries = MAX_RETRIES
         url = urljoin(self.index_url, u'/zones/{0}/recordsets/{1}'.format(zone_id, record_set_id))
-        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404),  **kwargs)
+        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
         while response != 404 and retries > 0:
             url = urljoin(self.index_url, u'/zones/{0}/recordsets/{1}'.format(zone_id, record_set_id))
-            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
+            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404),
+                                               **kwargs)
             retries -= 1
             time.sleep(RETRY_WAIT)
 
@@ -773,7 +784,8 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
         while response != 404 and retries > 0:
             url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
-            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
+            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404),
+                                               **kwargs)
             retries -= 1
             time.sleep(RETRY_WAIT)
 
@@ -808,7 +820,8 @@ class VinylDNSClient(object):
         url = urljoin(self.index_url, u'/zones/{0}/recordsets/{1}'.format(zone_id, record_set_id))
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
         while response != 200 and retries > 0:
-            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
+            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404),
+                                               **kwargs)
             retries -= 1
             time.sleep(RETRY_WAIT)
 
@@ -818,7 +831,7 @@ class VinylDNSClient(object):
         return response == 200
 
     def abandon_zones(self, zone_ids, **kwargs):
-        #delete each zone
+        # delete each zone
         for zone_id in zone_ids:
             self.delete_zone(zone_id, status=(202, 404))
 
@@ -837,7 +850,7 @@ class VinylDNSClient(object):
         retries = MAX_RETRIES
         while change['status'] != expected_status and retries > 0:
             latest_change = self.get_recordset_change(change['recordSet']['zoneId'], change['recordSet']['id'],
-                                                      change['id'], status=(200,404))
+                                                      change['id'], status=(200, 404))
             if "Unable to find record set change" in latest_change:
                 change = change
             else:
@@ -847,10 +860,10 @@ class VinylDNSClient(object):
             retries -= 1
 
         if change['status'] != expected_status:
-            print 'Failed waiting for record change status'
-            print json.dumps(change, indent=3)
+            print('Failed waiting for record change status')
+            print(json.dumps(change, indent=3))
             if 'systemMessage' in change:
-                print 'systemMessage is ' + change['systemMessage']
+                print('systemMessage is ' + change['systemMessage'])
 
         assert_that(change['status'], is_(expected_status))
         return change
@@ -869,7 +882,7 @@ class VinylDNSClient(object):
         retries = MAX_RETRIES
 
         while not self.batch_is_completed(change) and retries > 0:
-            latest_change = self.get_batch_change(change['id'], status=(200,404))
+            latest_change = self.get_batch_change(change['id'], status=(200, 404))
             if "cannot be found" in latest_change:
                 change = change
             else:
@@ -879,8 +892,8 @@ class VinylDNSClient(object):
             retries -= 1
 
         if not self.batch_is_completed(change):
-            print 'Failed waiting for record change status'
-            print change
+            print('Failed waiting for record change status')
+            print(change)
 
         assert_that(self.batch_is_completed(change), is_(True))
         return change

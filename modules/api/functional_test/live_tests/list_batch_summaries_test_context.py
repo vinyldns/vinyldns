@@ -1,8 +1,11 @@
+from __future__ import print_function
 import time
-from hamcrest import *
-from utils import *
-from vinyldns_context import VinylDNSTestContext
-from vinyldns_python import VinylDNSClient
+
+from hamcrest import assert_that, equal_to, has_key, is_not, is_, has_length
+
+from functional_test.utils import generate_acl_rule, add_ok_acl_rules, get_change_CNAME_json, clear_ok_acl_rules
+from functional_test.vinyldns_context import VinylDNSTestContext
+from functional_test.vinyldns_python import VinylDNSClient
 
 
 class ListBatchChangeSummariesTestContext():
@@ -46,7 +49,7 @@ class ListBatchChangeSummariesTestContext():
         self.completed_changes = []
 
         if len(initial_db_check['batchChanges']) == 0:
-            print "\r\n!!! CREATING NEW SUMMARIES"
+            print ("\r\n!!! CREATING NEW SUMMARIES")
             # make some batch changes
             for input in batch_change_inputs:
                 change = self.client.create_batch_change(input, status=202)
@@ -62,7 +65,7 @@ class ListBatchChangeSummariesTestContext():
             self.completed_changes = self.client.list_batch_change_summaries(status=200)['batchChanges']
             assert_that(len(self.completed_changes), equal_to(len(batch_change_inputs)))
         else:
-            print "\r\n!!! USING EXISTING SUMMARIES"
+            print ("\r\n!!! USING EXISTING SUMMARIES")
             self.completed_changes = initial_db_check['batchChanges']
         self.to_delete = set(record_set_list)
 

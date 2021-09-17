@@ -1,13 +1,16 @@
+from __future__ import print_function
 import time
-from hamcrest import *
-from utils import *
-from vinyldns_context import VinylDNSTestContext
-from vinyldns_python import VinylDNSClient
+#from utils import *
+from hamcrest import assert_that, is_
 
-from list_batch_summaries_test_context import ListBatchChangeSummariesTestContext
-from list_groups_test_context import ListGroupsTestContext
-from list_recordsets_test_context import ListRecordSetsTestContext
-from list_zones_test_context import ListZonesTestContext
+from functional_test.live_tests.list_batch_summaries_test_context import ListBatchChangeSummariesTestContext
+from functional_test.live_tests.list_groups_test_context import ListGroupsTestContext
+from functional_test.live_tests.list_recordsets_test_context import ListRecordSetsTestContext
+from functional_test.live_tests.list_zones_test_context import ListZonesTestContext
+from functional_test.vinyldns_context import VinylDNSTestContext
+from functional_test.vinyldns_python import VinylDNSClient
+
+from functional_test.utils import clear_zones, clear_groups
 
 
 class SharedZoneTestContext(object):
@@ -43,17 +46,17 @@ class SharedZoneTestContext(object):
 
         # if we are using an existing fixture, load the fixture file and pull all of our data from there
         if fixture_file:
-            print "\r\n!!! FIXTURE FILE IS SET !!!"
+            print ("\r\n!!! FIXTURE FILE IS SET !!!")
             self.load_fixture_file(fixture_file)
         else:
-            print "\r\n!!! FIXTURE FILE NOT SET, BUILDING FIXTURE !!!"
+            print ("\r\n!!! FIXTURE FILE NOT SET, BUILDING FIXTURE !!!")
             # No fixture file, so we have to build everything ourselves
             self.tear_down()  # ensures that the environment is clean before starting
             try:
                 ok_group = {
                     'name': 'ok-group',
                     'email': 'test@test.com',
-                    'description': 'this is a description',
+                    'description': 'this is a descriptionn',
                     'members': [{'id': 'ok'}, {'id': 'support-user-id'}],
                     'admins': [{'id': 'ok'}]
                 }
@@ -551,7 +554,7 @@ class SharedZoneTestContext(object):
             self.group_activity_updated = data['group_activity_updated']
 
     def out_fixture_file(self, fixture_file):
-        print "\r\n!!! PRINTING OUT FIXTURE FILE !!!"
+        print ("\r\n!!! PRINTING OUT FIXTURE FILE !!!")
         import json
         # output the fixture file, be sure to be in sync with the load_fixture_file
         data = {'ok_group': self.ok_group, 'ok_zone': self.ok_zone, 'dummy_group': self.dummy_group,

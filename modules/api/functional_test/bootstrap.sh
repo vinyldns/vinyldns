@@ -2,7 +2,7 @@
 
 if [ ! -d "./.virtualenv" ]; then
     echo "Creating virtualenv..."
-    virtualenv --clear --python="$(which python2.7)" ./.virtualenv
+    virtualenv --clear --python="$(which python3.9)" ./.virtualenv
 fi
 
 if ! diff ./requirements.txt ./.virtualenv/requirements.txt &> /dev/null; then

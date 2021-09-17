@@ -1,6 +1,9 @@
 from hamcrest import *
 from utils import *
 
+from functional_test.utils import generate_record_name, get_change_A_AAAA_json
+
+
 def test_get_batch_change_success(shared_zone_test_context):
     """
     Test successfully getting a batch change

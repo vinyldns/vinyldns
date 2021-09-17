@@ -1,10 +1,11 @@
+from __future__ import print_function
 import copy
 import pytest
 import uuid
 
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from vinyldns_context import VinylDNSTestContext
+from functional_test.vinyldns_python import VinylDNSClient
+from functional_test.vinyldns_context import VinylDNSTestContext
 from utils import *
 
 records_in_dns = [
@@ -276,7 +277,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
 
         # Check response from create
         assert_that(zone['name'], is_(zone_name+'.'))
-        print "'connection' not in zone = " + 'connection' not in zone
+        print(("'connection' not in zone = " + 'connection' not in zone))
 
         assert_that('connection' not in zone)
         assert_that('transferConnection' not in zone)

@@ -3,7 +3,9 @@ import uuid
 
 from utils import *
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
+
+from functional_test.utils import verify_recordset, get_recordset_json
+from functional_test.vinyldns_python import VinylDNSClient
 
 def test_get_recordset_no_authorization(shared_zone_test_context):
     """

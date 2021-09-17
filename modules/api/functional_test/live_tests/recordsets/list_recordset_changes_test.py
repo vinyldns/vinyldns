@@ -1,6 +1,8 @@
+import pytest
 from hamcrest import *
 from utils import *
-from vinyldns_python import VinylDNSClient
+
+from functional_test.utils import clear_ok_acl_rules, generate_acl_rule, add_ok_acl_rules
 
 
 def check_changes_response(response, recordChanges=False, nextId=False, startFrom=False, maxItems=100):

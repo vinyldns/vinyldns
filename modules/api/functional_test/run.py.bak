@@ -2,6 +2,7 @@
 import os
 import sys
 
+
 basedir = os.path.dirname(os.path.realpath(__file__))
 vedir = os.path.join(basedir, '.virtualenv')
 os.system('./bootstrap.sh')
@@ -13,10 +14,11 @@ report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../targe
 if not os.path.exists(report_dir):
     os.system('mkdir -p ' + report_dir)
 
-#execfile(activate_virtualenv, dict(__file__=activate_virtualenv))
+# execfile(activate_virtualenv, dict(__file__=activate_virtualenv))
 exec(open(activate_virtualenv).read(), {'__file__': activate_virtualenv})
 
 import pytest
 
 result = pytest.main(list(sys.argv[1:]))
+
 sys.exit(result)

@@ -3,8 +3,9 @@ import sys
 from utils import *
 
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from test_data import TestData
+
+from functional_test.utils import get_recordset_json, verify_recordset, seed_text_recordset, generate_acl_rule, \
+    clear_ok_acl_rules, add_ok_acl_rules
 
 
 @pytest.fixture(scope="module")
@@ -46,7 +47,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
         assert_that(list_results['recordSets'], has_length(23))
 
         # confirm the created recordset is in the list of recordsets
-        rs_from_list = (r for r in list_results['recordSets'] if r['id'] == result_rs['id']).next()
+        rs_from_list = next((r for r in list_results['recordSets'] if r['id'] == result_rs['id']))
         assert_that(rs_from_list['name'], is_("test-owned-recordset"))
         assert_that(rs_from_list['ownerGroupId'], is_(shared_group['id']))
         assert_that(rs_from_list['ownerGroupName'], is_(shared_group['name']))

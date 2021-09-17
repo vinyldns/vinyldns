@@ -1,19 +1,21 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
+
+import dns
 import pytest
 import uuid
 import json
-import dns.query
-import dns.tsigkeyring
-import dns.update
 
-from utils import *
+
+#from utils import *
+from dns.resolver import NXDOMAIN
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from vinyldns_context import VinylDNSTestContext
-from test_data import TestData
-from dns.resolver import *
-import copy
 
+#from vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
+from functional_test.live_tests.test_data import TestData
+import copy
 
 def verify_recordset(actual, expected):
     """
@@ -102,7 +104,7 @@ def dns_do_command(zone, record_name, record_type, command, ttl=0, rdata=""):
 
     fqdn = record_name + "." + zone['name']
 
-    print "updating " + fqdn + " to have data " + rdata
+    print ("updating " + fqdn + " to have data " + rdata)
 
     update = dns.update.Update(zone['name'], keyring=keyring)
     if (command == 'add'):
@@ -174,15 +176,15 @@ def dns_resolve(zone, record_name, record_type):
         # assert that we are looking up the zone name / @ symbol
         fqdn = vinyldns_resolver.domain
 
-    print "looking up " + fqdn
+    print ("looking up " + fqdn)
 
     try:
         answers = vinyldns_resolver.query(fqdn, record_type)
     except NXDOMAIN:
-        print "query returned NXDOMAIN"
+        print ("query returned NXDOMAIN")
         answers = []
     except dns.resolver.NoAnswer:
-        print "query returned NoAnswer"
+        print ("query returned NoAnswer")
         answers = []
 
     if answers:
@@ -201,8 +203,8 @@ def parse_record(record_string):
     # for each record, we have exactly 4 fields in order: 1 record name; 2 TTL; 3 DCLASS; 4 TYPE; 5 RDATA
     parts = record_string.split(' ')
 
-    print "record parts"
-    print str(parts)
+    print ("record parts")
+    print (str(parts))
 
     # any parts over 4 have to be kept together
     offset = record_string.find(parts[3]) + len(parts[3]) + 1
@@ -217,8 +219,8 @@ def parse_record(record_string):
         'rdata': record_data
     }
 
-    print "parsed record:"
-    print str(record)
+    print ("parsed record:")
+    print (str(record))
     return record
 
 
@@ -365,9 +367,9 @@ def seed_text_recordset(client, record_name, zone, records=[{'text': 'someText'}
     result = client.create_recordset(new_rs, status=202)
     result_rs = result['recordSet']
     if client.wait_until_recordset_exists(result_rs['zoneId'], result_rs['id']):
-        print "\r\n!!! record set exists !!!"
+        print ("\r\n!!! record set exists !!!")
     else:
-        print "\r\n!!! record set does not exist !!!"
+        print ("\r\n!!! record set does not exist !!!")
 
     return result_rs
 
@@ -383,9 +385,9 @@ def seed_ptr_recordset(client, record_name, zone, records=[{'ptrdname': 'foo.com
     result = client.create_recordset(new_rs, status=202)
     result_rs = result['recordSet']
     if client.wait_until_recordset_exists(result_rs['zoneId'], result_rs['id']):
-        print "\r\n!!! record set exists !!!"
+        print ("\r\n!!! record set exists !!!")
     else:
-        print "\r\n!!! record set does not exist !!!"
+        print ("\r\n!!! record set does not exist !!!")
 
     return result_rs
 

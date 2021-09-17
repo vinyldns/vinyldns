@@ -1,8 +1,11 @@
+from __future__ import print_function
 import pytest
 import uuid
 from hamcrest import *
 from utils import *
-from vinyldns_context import VinylDNSTestContext
+
+from functional_test.utils import verify_acl_rule_is_present_once, verify_acl_rule_is_not_present, get_recordset_json
+from functional_test.vinyldns_context import VinylDNSTestContext
 
 
 @pytest.mark.serial
@@ -739,7 +742,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
         client.wait_until_zone_active(result[u'zone'][u'id'])
 
         import json
-        print json.dumps(zone, indent=3)
+        print(json.dumps(zone, indent=3))
 
         new_joint_group = {
             'name': 'new-ok-group',

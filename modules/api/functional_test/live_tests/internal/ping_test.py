@@ -1,7 +1,6 @@
 import pytest
 
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
 
 
 def test_ping(shared_zone_test_context):

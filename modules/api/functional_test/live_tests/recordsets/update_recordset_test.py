@@ -1,11 +1,16 @@
+from __future__ import print_function
 import copy
 import json
 import pytest
+from future.backports.urllib.parse import urljoin
 from hamcrest import *
-from requests.compat import urljoin
 from utils import *
 
-from test_data import TestData
+from functional_test.live_tests.test_data import TestData
+from functional_test.utils import verify_recordset, dns_resolve, rdata, generate_record_name, generate_acl_rule, \
+    seed_text_recordset, add_ok_acl_rules, clear_ok_acl_rules, seed_ptr_recordset, add_ip4_acl_rules, \
+    clear_ip4_acl_rules, clear_ip6_acl_rules, add_ip6_acl_rules, get_recordset_json, dns_update, \
+    clear_shared_zone_acl_rules, add_shared_zone_acl_rules
 
 
 def test_update_recordset_name_fails(shared_zone_test_context):
@@ -152,7 +157,7 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
-        print str(result)
+        print(str(result))
 
         result_rs = result['recordSet']
         verify_recordset(result_rs, new_rs)
@@ -196,7 +201,7 @@ def test_update_reverse_record_types(shared_zone_test_context, record_name, test
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
-        print str(result)
+        print(str(result))
 
         result_rs = result['recordSet']
         verify_recordset(result_rs, new_rs)
@@ -309,7 +314,7 @@ def test_update_recordset_replace_2_records_with_1_different_record(shared_zone_
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print str(result)
+        print(str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -381,7 +386,7 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print str(result)
+        print(str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -398,8 +403,8 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
 
         answers = dns_resolve(ok_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
-        print "GOT ANSWERS BACK FOR INITIAL CREATE:"
-        print str(rdata_strings)
+        print("GOT ANSWERS BACK FOR INITIAL CREATE:")
+        print(str(rdata_strings))
 
         # Update the record set, adding a new record to the existing one
         modified_records = [
@@ -431,8 +436,8 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
         answers = dns_resolve(ok_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
 
-        print "GOT BACK ANSWERS FOR UPDATE"
-        print str(rdata_strings)
+        print("GOT BACK ANSWERS FOR UPDATE")
+        print(str(rdata_strings))
         assert_that(rdata_strings, has_length(2))
         assert_that('10.2.2.2', is_in(rdata_strings))
         assert_that('4.4.4.8', is_in(rdata_strings))
@@ -544,27 +549,27 @@ def test_update_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print "\r\n\r\n!!!recordset is active!  Updating..."
+        print("\r\n\r\n!!!recordset is active!  Updating...")
 
         new_ptr_target = 'www.vinyldns.'
         new_rs = result_rs
-        print new_rs
+        print(new_rs)
         new_rs['records'][0]['ptrdname'] = new_ptr_target
-        print new_rs
+        print(new_rs)
         result = client.update_recordset(new_rs, status=202)
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print "\r\n\r\n!!!updated recordset is active!  Verifying..."
+        print("\r\n\r\n!!!updated recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print "\r\n\r\n!!!recordset verified..."
+        print("\r\n\r\n!!!recordset verified...")
 
-        print result_rs
+        print(result_rs)
         records = result_rs['records']
         assert_that(records[0]['ptrdname'], is_(new_ptr_target))
 
-        print "\r\n\r\n!!!verifying recordset in dns backend"
+        print("\r\n\r\n!!!verifying recordset in dns backend")
         # verify that the record exists in the backend dns server
         answers = dns_resolve(reverse4_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
@@ -600,27 +605,27 @@ def test_update_ipv6_ptr_recordset(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print "\r\n\r\n!!!recordset is active!  Updating..."
+        print("\r\n\r\n!!!recordset is active!  Updating...")
 
         new_ptr_target = 'www.vinyldns.'
         new_rs = result_rs
-        print new_rs
+        print(new_rs)
         new_rs['records'][0]['ptrdname'] = new_ptr_target
-        print new_rs
+        print(new_rs)
         result = client.update_recordset(new_rs, status=202)
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print "\r\n\r\n!!!updated recordset is active!  Verifying..."
+        print("\r\n\r\n!!!updated recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print "\r\n\r\n!!!recordset verified..."
+        print("\r\n\r\n!!!recordset verified...")
 
-        print result_rs
+        print(result_rs)
         records = result_rs['records']
         assert_that(records[0]['ptrdname'], is_(new_ptr_target))
 
-        print "\r\n\r\n!!!verifying recordset in dns backend"
+        print("\r\n\r\n!!!verifying recordset in dns backend")
         answers = dns_resolve(reverse6_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
         assert_that(rdata_strings, has_length(1))
@@ -711,7 +716,7 @@ def test_at_update_recordset(shared_zone_test_context):
         }
 
         result = client.create_recordset(new_rs, status=202)
-        print str(result)
+        print(str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))

@@ -1,5 +1,8 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import os
 
+from functional_test.live_tests.shared_zone_test_context import SharedZoneTestContext
 from vinyldns_context import VinylDNSTestContext
 
 
@@ -63,32 +66,31 @@ def pytest_configure(config):
                                   config.getoption("url"),
                                   config.getoption("teardown"))
 
-    from shared_zone_test_context import SharedZoneTestContext
+    from live_tests.shared_zone_test_context import SharedZoneTestContext
     if not hasattr(config, 'workerinput'):
-        print 'Master, standing up the test fixture...'
+        print ('Master, standing up the test fixture...')
         # use the fixture file if it exists
         if os.path.isfile('tmp.out'):
-            print 'Fixture file found, assuming the fixture file'
+            print ('Fixture file found, assuming the fixture file')
             SharedZoneTestContext('tmp.out')
         else:
-            print 'No fixture file found, loading a new test fixture'
+            print ('No fixture file found, loading a new test fixture')
             ctx = SharedZoneTestContext()
             ctx.out_fixture_file("tmp.out")
     else:
-        print 'This is a worker'
+        print ('This is a worker')
 
 
 def pytest_unconfigure(config):
     # this attribute is only set on workers
-    print 'Master exiting...'
+    print ('Master exiting...')
     if not hasattr(config, 'workerinput') and VinylDNSTestContext.teardown:
-        print 'Master cleaning up...'
-        from shared_zone_test_context import SharedZoneTestContext
+        print ('Master cleaning up...')
         ctx = SharedZoneTestContext('tmp.out')
         ctx.tear_down()
         os.remove('tmp.out')
     else:
-        print 'Worker exiting...'
+        print ('Worker exiting...')
 
 
 def pytest_report_header(config):
