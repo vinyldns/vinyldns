@@ -18,6 +18,7 @@ position: 6
 7. [When I try to connect to my zone, I am seeing "invalid name server" errors](#7)
 8. [How do I get API credentials?](#8)
 9. [How are requests authenticated to the VinylDNS API?](#9)
+10. [How to change email configuration for groups?](#10)
 
 
 ### 1. Can I create a zone in VinylDNS? <a id="1"></a>
@@ -88,3 +89,9 @@ If you use any VinylDNS tools beyond the portal you will need to provide those t
 
 ### 9. How are requests authenticated to the VinylDNS API? <a id="9"></a>
 Refer to [API Authentication](api/auth-mechanism.html).
+
+### 10. How to change email configuration for groups? <a id="10"></a>
+VinylDNS can be configured to disallow multiple groups with the same email address. We have found that
+supporting multiple groups with the same email address to be confusing to many users when there are ownership questions
+in the future. Therefore, we strongly recommend that VinylDNS deployments utilize this feature. If you wish to use this feature,
+you can set "vinyldns.groups.enforce-unique-email-id = true" in the configuration.

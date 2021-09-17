@@ -251,8 +251,8 @@ class MembershipService(
       }
       .toResult
 
-  def groupWithSameEmailIdDoesNotExist(emailId: String, emailConf: Boolean): Result[Unit] =
-    if (emailConf) {
+  def groupWithSameEmailIdDoesNotExist(emailId: String, enforceUniqueEmailId: Boolean): Result[Unit] =
+    if (enforceUniqueEmailId) {
       groupRepo
         .getGroupByEmailId(emailId)
         .map {
@@ -290,12 +290,8 @@ class MembershipService(
       }
       .toResult
 
-  def differentGroupWithSameEmailIdDoesNotExist(
-      emailId: String,
-      groupId: String,
-      emailConf: Boolean
-  ): Result[Unit] =
-    if (emailConf) {
+  def differentGroupWithSameEmailIdDoesNotExist(emailId: String, groupId: String, enforceUniqueEmailId: Boolean): Result[Unit] =
+    if (enforceUniqueEmailId) {
       groupRepo
         .getGroupByEmailId(emailId)
         .map {
