@@ -26,7 +26,7 @@ angular.module('directives.notifications.module', [])
         link: function(scope, element, attrs) {
           $timeout(function() {
             element.fadeOut(50);
-          }, 6000)
+          }, 10000)
         }
       }
     });

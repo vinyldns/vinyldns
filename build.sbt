@@ -371,7 +371,6 @@ lazy val docSettings = Seq(
   fork in mdoc := true,
   mdocIn := (sourceDirectory in Compile).value / "mdoc",
   micrositeCssDirectory := (resourceDirectory in Compile).value / "microsite" / "css",
-  micrositeCompilingDocsTool := WithMdoc,
   micrositeFavicons := Seq(MicrositeFavicon("favicon16x16.png", "16x16"), MicrositeFavicon("favicon32x32.png", "32x32")),
   micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/mdoc/{{ page.path }}")),
   micrositeFooterText := None,

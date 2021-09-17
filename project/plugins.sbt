@@ -28,10 +28,10 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.4")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-license-report" % "1.2.0")
 
-addSbtPlugin("com.47deg"  % "sbt-microsites" % "1.1.5")
+addSbtPlugin("com.47deg"  % "sbt-microsites" % "1.3.4")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 
 addSbtPlugin("io.crashbox" % "sbt-gpg" % "0.2.0")
 
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.10" )
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.23" )
