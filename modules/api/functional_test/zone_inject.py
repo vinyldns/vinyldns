@@ -1,4 +1,3 @@
-from __future__ import print_function
 import requests
 import json
 
@@ -26,7 +25,7 @@ for i in zone_data['zones']:
     if z<5:
         z=z+1
         recurl = newzone + '/' + str(i['id']) + '/recordsets'
-        print(recurl)
+        print (recurl)
         payload = {"zoneId":i['id'],"name":"record."+i['name'],"type":"A","ttl":300,"records":[{"address":records[z-1]}]}
         headers = {'Content-type': 'application/json'}
         r = requests.post(recurl, data=json.dumps(payload),headers=headers)
@@ -34,7 +33,7 @@ for i in zone_data['zones']:
     elif 4<z<10:
         z=z+1
         recurl = newzone + '/' + str(i['id']) + '/recordsets'
-        print(recurl)
+        print (recurl)
         payload = {"zoneId":i['id'],"name":"record."+i['name'],"type":"AAAA","ttl":1800,"records":[{"address":records[z-1]}]}
         headers = {'Content-type': 'application/json'}
         r = requests.post(recurl, data=json.dumps(payload),headers=headers)
@@ -42,7 +41,7 @@ for i in zone_data['zones']:
     else:
         z=z+1
         recurl = newzone + '/' + str(i['id']) + '/recordsets'
-        print(recurl)
+        print (recurl)
         payload = {"zoneId":i['id'],"name":"record."+i['name'],"type":"CNAME","ttl":10800,"records":[{"cname":records[z-1]}]}
         headers = {'Content-type': 'application/json'}
         r = requests.post(recurl, data=json.dumps(payload),headers=headers)

@@ -2,8 +2,8 @@ from hamcrest import *
 
 import time
 
-from functional_test.vinyldns_context import VinylDNSTestContext
-from functional_test.vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
 
 
 def test_sync_zone_success():

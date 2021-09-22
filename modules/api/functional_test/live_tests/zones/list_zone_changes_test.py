@@ -2,7 +2,7 @@ import pytest
 from hamcrest import *
 from utils import *
 
-from functional_test.utils import generate_acl_rule, add_ok_acl_rules, clear_ok_acl_rules
+from utils import generate_acl_rule, add_ok_acl_rules, clear_ok_acl_rules
 
 
 def check_zone_changes_page_accuracy(results, expected_first_change, expected_num_results):

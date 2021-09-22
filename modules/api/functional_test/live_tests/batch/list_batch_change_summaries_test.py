@@ -1,10 +1,8 @@
 import pytest
 from hamcrest import *
 from utils import *
-
-from functional_test.utils import get_change_A_AAAA_json
-from functional_test.vinyldns_context import VinylDNSTestContext
-from functional_test.vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
 
 
 @pytest.fixture(scope="module")

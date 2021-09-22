@@ -1,5 +1,4 @@
 import pytest
-from future.backports.http import client
 from hamcrest import *
 from utils import *
 
@@ -122,7 +121,7 @@ def test_list_my_groups_no_deleted(list_my_groups_context):
         assert_that(g['status'], is_not('Deleted'))
 
     while 'nextId' in results:
-        results = client.list_my_groups(max_items=20, group_name_filter="test-list-my-groups-",
+        results = list_my_groups_context.client.list_my_groups(max_items=20, group_name_filter="test-list-my-groups-",
                                         start_from=results['nextId'], status=200)
 
         assert_that(results, has_key('groups'))

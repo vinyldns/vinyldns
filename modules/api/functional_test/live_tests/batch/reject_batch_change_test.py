@@ -1,8 +1,5 @@
-import pytest
 from hamcrest import *
 from utils import *
-
-from functional_test.utils import get_change_A_AAAA_json, clear_zoneid_rsid_tuple_list
 
 
 @pytest.mark.manual_batch_review

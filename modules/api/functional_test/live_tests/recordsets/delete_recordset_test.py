@@ -5,10 +5,10 @@ from utils import *
 
 from hamcrest import *
 
-from functional_test.utils import generate_record_name, verify_recordset, dns_resolve, rdata, generate_acl_rule, \
+from utils import generate_record_name, verify_recordset, dns_resolve, rdata, generate_acl_rule, \
     seed_text_recordset, add_ok_acl_rules, clear_ok_acl_rules, get_recordset_json, dns_update
-from functional_test.vinyldns_python import VinylDNSClient
-from functional_test.live_tests.test_data import TestData
+from vinyldns_python import VinylDNSClient
+from live_tests.test_data import TestData
 import time
 
 

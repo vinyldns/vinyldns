@@ -3,6 +3,10 @@ import time
 
 from hamcrest import *
 
+from vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
+from utils import *
+
 
 def test_get_status_success(shared_zone_test_context):
     """
@@ -12,7 +16,7 @@ def test_get_status_success(shared_zone_test_context):
     result = client.get_status()
 
     assert_that([True, False], has_item(result['processingDisabled']))
-    assert_that(["green", "blue"], has_item(result['color']))
+    assert_that(["green","blue"], has_item(result['color']))
     assert_that(result['keyName'], not_none())
     assert_that(result['version'], not_none())
 

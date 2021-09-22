@@ -4,8 +4,8 @@ import pytest
 import uuid
 
 from hamcrest import *
-from functional_test.vinyldns_python import VinylDNSClient
-from functional_test.vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
 from utils import *
 
 records_in_dns = [

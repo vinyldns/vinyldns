@@ -1,11 +1,10 @@
-from __future__ import print_function
 import pytest
 import uuid
 import json
 
 from hamcrest import *
-
-from functional_test.vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
 
 
 def test_delete_group_success(shared_zone_test_context):
@@ -84,7 +83,7 @@ def test_delete_admin_group(shared_zone_test_context):
         }
 
         result_group = client.create_group(new_group, status=200)
-        print(result_group)
+        print (result_group)
 
         #Create zone with that group ID as admin
         zone = {

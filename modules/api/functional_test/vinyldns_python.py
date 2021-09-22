@@ -1,20 +1,18 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import json
 import time
 import logging
 import collections
 
 import requests
-from future.backports.urllib.parse import urlparse, urljoin, urlsplit
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from hamcrest import *
 
 # TODO: Didn't like this boto request signer, fix when moving back
-from .boto_request_signer import BotoRequestSigner
+from boto_request_signer import BotoRequestSigner
 
 # Python 2/3 compatibility
+from requests.compat import urljoin, urlparse, urlsplit
 from builtins import str
 from future.utils import iteritems
 from future.moves.urllib.parse import parse_qs

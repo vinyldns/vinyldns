@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 
 import dns
@@ -14,7 +12,7 @@ from hamcrest import *
 
 #from vinyldns_python import VinylDNSClient
 from vinyldns_context import VinylDNSTestContext
-from functional_test.live_tests.test_data import TestData
+from live_tests.test_data import TestData
 import copy
 
 def verify_recordset(actual, expected):

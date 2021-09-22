@@ -1,6 +1,7 @@
 import pytest
 
 from hamcrest import *
+from vinyldns_python import VinylDNSClient
 
 
 def test_health(shared_zone_test_context):

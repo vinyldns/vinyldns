@@ -1,9 +1,9 @@
 import pytest
 from hamcrest import *
 
-from functional_test.utils import dns_update, dns_add, dns_delete
-from functional_test.vinyldns_python import VinylDNSClient
-from functional_test.vinyldns_context import VinylDNSTestContext
+from utils import dns_update, dns_add, dns_delete
+from vinyldns_python import VinylDNSClient
+from vinyldns_context import VinylDNSTestContext
 from utils import *
 import time
 

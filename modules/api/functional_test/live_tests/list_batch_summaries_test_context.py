@@ -1,11 +1,10 @@
-from __future__ import print_function
 import time
+from hamcrest import *
+from utils import *
+from vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
 
-from hamcrest import assert_that, equal_to, has_key, is_not, is_, has_length
-
-from functional_test.utils import generate_acl_rule, add_ok_acl_rules, get_change_CNAME_json, clear_ok_acl_rules
-from functional_test.vinyldns_context import VinylDNSTestContext
-from functional_test.vinyldns_python import VinylDNSClient
+from utils import get_change_CNAME_json, clear_ok_acl_rules, generate_acl_rule, add_ok_acl_rules
 
 
 class ListBatchChangeSummariesTestContext():

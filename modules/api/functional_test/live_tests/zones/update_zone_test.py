@@ -4,8 +4,8 @@ import uuid
 from hamcrest import *
 from utils import *
 
-from functional_test.utils import verify_acl_rule_is_present_once, verify_acl_rule_is_not_present, get_recordset_json
-from functional_test.vinyldns_context import VinylDNSTestContext
+from utils import verify_acl_rule_is_present_once, verify_acl_rule_is_not_present, get_recordset_json
+from vinyldns_context import VinylDNSTestContext
 
 
 @pytest.mark.serial

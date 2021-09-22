@@ -6,8 +6,8 @@ from future.backports.urllib.parse import urljoin
 from hamcrest import *
 from utils import *
 
-from functional_test.live_tests.test_data import TestData
-from functional_test.utils import verify_recordset, dns_resolve, rdata, generate_record_name, generate_acl_rule, \
+from live_tests.test_data import TestData
+from utils import verify_recordset, dns_resolve, rdata, generate_record_name, generate_acl_rule, \
     seed_text_recordset, add_ok_acl_rules, clear_ok_acl_rules, seed_ptr_recordset, add_ip4_acl_rules, \
     clear_ip4_acl_rules, clear_ip6_acl_rules, add_ip6_acl_rules, get_recordset_json, dns_update, \
     clear_shared_zone_acl_rules, add_shared_zone_acl_rules

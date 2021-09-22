@@ -4,7 +4,7 @@ from utils import *
 
 from hamcrest import *
 
-from functional_test.utils import get_recordset_json, verify_recordset, seed_text_recordset, generate_acl_rule, \
+from utils import get_recordset_json, verify_recordset, seed_text_recordset, generate_acl_rule, \
     clear_ok_acl_rules, add_ok_acl_rules
 
 

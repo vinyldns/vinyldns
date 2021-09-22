@@ -1,14 +1,14 @@
 import pytest
-from cffi.backend_ctypes import xrange
 from hamcrest import *
+from past.builtins import xrange
 from utils import *
 import datetime
 import json
 
-from functional_test.utils import verify_recordset, get_change_A_AAAA_json, generate_record_name, \
-    clear_zoneid_rsid_tuple_list, generate_acl_rule, get_recordset_json, get_change_PTR_json, get_change_MX_json, \
-    get_change_CNAME_json, get_change_TXT_json, add_ok_acl_rules, add_classless_acl_rules, dns_add, dns_delete, \
-    clear_recordset_list, clear_ok_acl_rules
+from utils import get_change_A_AAAA_json, get_change_CNAME_json, get_change_PTR_json, \
+    get_change_TXT_json, get_change_MX_json, verify_recordset, get_recordset_json, generate_acl_rule, add_ok_acl_rules, \
+    add_classless_acl_rules, clear_classless_acl_rules, clear_zoneid_rsid_tuple_list, clear_ok_acl_rules, \
+    generate_record_name, dns_add, clear_recordset_list, dns_delete
 
 
 def does_not_contain(x):

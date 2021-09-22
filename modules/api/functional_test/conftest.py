@@ -1,8 +1,5 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 
-from functional_test.live_tests.shared_zone_test_context import SharedZoneTestContext
 from vinyldns_context import VinylDNSTestContext
 
 
@@ -66,7 +63,7 @@ def pytest_configure(config):
                                   config.getoption("url"),
                                   config.getoption("teardown"))
 
-    from live_tests.shared_zone_test_context import SharedZoneTestContext
+    from shared_zone_test_context import SharedZoneTestContext
     if not hasattr(config, 'workerinput'):
         print ('Master, standing up the test fixture...')
         # use the fixture file if it exists
@@ -86,6 +83,7 @@ def pytest_unconfigure(config):
     print ('Master exiting...')
     if not hasattr(config, 'workerinput') and VinylDNSTestContext.teardown:
         print ('Master cleaning up...')
+        from shared_zone_test_context import SharedZoneTestContext
         ctx = SharedZoneTestContext('tmp.out')
         ctx.tear_down()
         os.remove('tmp.out')

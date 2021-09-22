@@ -3,9 +3,10 @@ import logging
 from datetime import datetime
 from hashlib import sha256
 
+from boto.dynamodb2.layer1 import DynamoDBConnection
 
 import requests.compat as urlparse
-from boto.dynamodb2.layer1 import DynamoDBConnection
+
 
 logger = logging.getLogger(__name__)
 

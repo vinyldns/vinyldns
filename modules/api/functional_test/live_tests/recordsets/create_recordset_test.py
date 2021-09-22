@@ -1,13 +1,9 @@
-from __future__ import print_function
 import pytest
 from dns.resolver import *
 from hamcrest import *
-from utils import *
+from functional_test.utils import *
 
-from functional_test.live_tests.test_data import TestData
-from functional_test.utils import verify_recordset, dns_resolve, rdata, get_recordset_json, add_ok_acl_rules, \
-    clear_ok_acl_rules, generate_acl_rule, add_shared_zone_acl_rules, clear_shared_zone_acl_rules, generate_record_name, \
-    dns_add, dns_delete
+from test_data import TestData
 
 
 def test_create_recordset_with_dns_verify(shared_zone_test_context):
@@ -31,9 +27,9 @@ def test_create_recordset_with_dns_verify(shared_zone_test_context):
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print "\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n"
         result = client.create_recordset(new_rs, status=202)
-        print (str(result))
+        print str(result)
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -42,17 +38,17 @@ def test_create_recordset_with_dns_verify(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
         records = [x['address'] for x in result_rs['records']]
         assert_that(records, has_length(2))
         assert_that('10.1.1.1', is_in(records))
         assert_that('10.2.2.2', is_in(records))
 
-        print("\r\n\r\n!!!verifying recordset in dns backend")
+        print ("\r\n\r\n!!!verifying recordset in dns backend")
         answers = dns_resolve(shared_zone_test_context.ok_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
 
@@ -167,9 +163,9 @@ def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -178,10 +174,10 @@ def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
     finally:
         if result_rs:
@@ -210,9 +206,9 @@ def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -221,10 +217,10 @@ def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
     finally:
         if result_rs:
@@ -250,9 +246,9 @@ def test_create_aaaa_recordset_with_shorthand_record(shared_zone_test_context):
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -261,10 +257,10 @@ def test_create_aaaa_recordset_with_shorthand_record(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
     finally:
         if result_rs:
@@ -290,9 +286,9 @@ def test_create_aaaa_recordset_with_normal_record(shared_zone_test_context):
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -301,10 +297,10 @@ def test_create_aaaa_recordset_with_normal_record(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
     finally:
         if result_rs:
@@ -460,9 +456,9 @@ def test_create_recordset_conflict_with_dns_different_type(shared_zone_test_cont
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(shared_zone_test_context.ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -471,16 +467,16 @@ def test_create_recordset_conflict_with_dns_different_type(shared_zone_test_cont
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
         text = [x['text'] for x in result_rs['records']]
         assert_that(text, has_length(1))
         assert_that('should succeed', is_in(text))
 
-        print("\r\n\r\n!!!verifying recordset in dns backend")
+        print ("\r\n\r\n!!!verifying recordset in dns backend")
         answers = dns_resolve(shared_zone_test_context.ok_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
         assert_that(rdata_strings, has_length(1))
@@ -1119,7 +1115,7 @@ def test_create_recordset_forward_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
-        print(str(result))
+        print (str(result))
 
         result_rs = result['recordSet']
         verify_recordset(result_rs, new_rs)
@@ -1151,7 +1147,7 @@ def test_reverse_create_recordset_reverse_record_types(shared_zone_test_context,
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result['status'], is_('Pending'))
-        print(str(result))
+        print (str(result))
 
         result_rs = result['recordSet']
         verify_recordset(result_rs, new_rs)
@@ -1269,9 +1265,9 @@ def test_create_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(reverse4_zone) + "\r\n")
+        print ("\r\nCreating recordset in zone " + str(reverse4_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -1280,15 +1276,15 @@ def test_create_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
         records = result_rs['records']
         assert_that(records[0]['ptrdname'], is_('ftp.vinyldns.'))
 
-        print("\r\n\r\n!!!verifying recordset in dns backend")
+        print ("\r\n\r\n!!!verifying recordset in dns backend")
         # verify that the record exists in the backend dns server
         answers = dns_resolve(reverse4_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
@@ -1362,7 +1358,7 @@ def test_create_ipv6_ptr_recordset(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
+        print (str(result))
 
         assert_that(result['changeType'], is_('Create'))
         assert_that(result['status'], is_('Pending'))
@@ -1371,15 +1367,15 @@ def test_create_ipv6_ptr_recordset(shared_zone_test_context):
 
         result_rs = result['recordSet']
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
+        print ("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
+        print ("\r\n\r\n!!!recordset verified...")
 
         records = result_rs['records']
         assert_that(records[0]['ptrdname'], is_('ftp.vinyldns.'))
 
-        print("\r\n\r\n!!!verifying recordset in dns backend")
+        print ("\r\n\r\n!!!verifying recordset in dns backend")
         answers = dns_resolve(reverse6_zone, result_rs['name'], result_rs['type'])
         rdata_strings = rdata(answers)
         assert_that(answers, has_length(1))
