@@ -1,3 +1,4 @@
+#Functional test docker image name.
 IMAGE_NAME = vinyldns-functest
 
 #Build docker image for functional_tests.
