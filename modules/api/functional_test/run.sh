@@ -57,23 +57,23 @@ if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     # run parallel tests first (not serial)
     echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    ./run.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
       echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      ./run.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
       result=$?
     fi
 else
     # run parallel tests first (not serial)
     echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    ./run.py live_tests -n${PAR_CPU} -v -m "not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
       echo "./run-tests.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run-tests.py live_tests -n0 -v -m "serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      ./run.py live_tests -n0 -v -m "serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
       result=$?
     fi
 fi

@@ -5,14 +5,14 @@ RUN apt-get update && apt-get install dnsutils -y
 
 # The run script is what actually runs our func tests
 
-COPY vinyldns/docker/functest/run.sh /app/run.sh
+COPY run.sh /app/run.sh
 RUN chmod a+x /app/run.sh
 
-COPY "$WORK_DIR"/modules/functional_test/run.py /app/run.py
+COPY functional_test/run.py /app/run.py
 RUN chmod a+x /app/run.py
 
 # Copy over the functional test directory, this must have been copied into the build context previous to this building!
-ADD "$PROJECT_DIR"/modules/functional_test /app
+ADD functional_test /app
 
 # Install our func test requirements
 RUN pip install --index-url https://pypi.python.org/simple/ -r /app/requirements.txt

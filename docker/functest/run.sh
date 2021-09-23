@@ -2,7 +2,7 @@
 
 # Assume defaults of local docker-compose if not set
 if [ -z "${VINYLDNS_URL}" ]; then
-  VINYLDNS_URL="http://vinyldns:9000"
+  VINYLDNS_URL="http://vinyldns-api:9000"
 fi
 if [ -z "${DNS_IP}" ]; then
   DNS_IP=$(dig +short vinyldns-bind9)
@@ -56,24 +56,24 @@ result=0
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     # run parallel tests first (not serial)
-    echo "./run.py live_tests -n${PAR_CPU} -v -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not skip_production and not serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
+    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not skip_production and not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
-      echo "./run.py live_tests -n0 -v -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      echo "./run-tests.py live_tests -n0 -v -m \"not skip_production and serial\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
+      ./run-tests.py live_tests -n0 -v -m "not skip_production and serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
       result=$?
     fi
 else
     # run parallel tests first (not serial)
-    echo "./run.py live_tests -n${PAR_CPU} -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
-    ./run.py live_tests -n${PAR_CPU} -v -m "not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
+    echo "./run-tests.py live_tests -n${PAR_CPU} -v -m \"not serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False"
+    ./run-tests.py live_tests -n${PAR_CPU} -v -m "not serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=False
     result=$?
     if [ $result -eq 0 ]; then
       # run serial tests second (serial marker)
-      echo "./run.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
-      ./run.py live_tests -n0 -v -m "serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
+      echo "./run-tests.py live_tests -n0 -v -m \"serial\" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True"
+      ./run-tests.py live_tests -n0 -v -m "serial" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN} --teardown=True
       result=$?
     fi
 fi
