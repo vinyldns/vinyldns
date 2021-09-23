@@ -35,6 +35,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Joshulyne Park
 - Nathan Pierce
 - Michael Pilquist
+- Aravindh Raju
 - Sriram Ramakrishnan
 - Khalid Reid
 - Timo Schmid
@@ -47,4 +48,3 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Fei Wan
 - Andrew Wang
 - Peter Willis
-- Aravindh Raju
