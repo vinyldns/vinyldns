@@ -40,6 +40,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Joshulyne Park
 - Nathan Pierce
 - Michael Pilquist
+- Aravindh Raju
 - Sriram Ramakrishnan
 - Khalid Reid
 - Timo Schmid
