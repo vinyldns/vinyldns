@@ -4,7 +4,7 @@ IMAGE_NAME = vinyldns-functest
 #Build docker image for functional_tests.
 .PHONY: build_docker_functest
 build_docker_functest:
-	docker build -t $(IMAGE_NAME) modules/api/functional_test
+	docker build -t $(IMAGE_NAME) .
 
 #run docker image for functional_tests.
 .PHONY: run_docker_functest

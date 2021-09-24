@@ -4,15 +4,15 @@ FROM python:2.7-buster
 RUN apt-get update && apt-get install dnsutils -y
 
 # The run script is what actually runs our func tests
-
 COPY run.sh /app/run.sh
-RUN chmod a+x /app/run.sh
+RUN chmod u+x /app/run.sh
 
-COPY functional_test/run.py /app/run.py
-RUN chmod a+x /app/run.py
+COPY run.py /app/run.py
+RUN chmod u+x /app/run.py
 
 # Copy over the functional test directory, this must have been copied into the build context previous to this building!
-ADD functional_test /app
+ADD . /app
+RUN rm -Rf /app/functional_test/Dockerfile
 
 # Install our func test requirements
 RUN pip install --index-url https://pypi.python.org/simple/ -r /app/requirements.txt
@@ -21,4 +21,6 @@ RUN pip install --index-url https://pypi.python.org/simple/ -r /app/requirements
 ENV PAR_CPU=2
 
 # set the entry point for the container to start vinyl, specify the config resource
-ENTRYPOINT ["/app/run.sh"]
+#ENTRYPOINT ["/app/run.sh"]
+CMD ["/bin/sh", "/app/run.sh"]
+

@@ -49,7 +49,7 @@ cd /app
 
 # Cleanup any errant cached file copies
 find . -name "*.pyc" -delete
-find . -name ".pytest_cache" -delete
+find . -name "__pycache__" -delete
 
 result=0
 # -m plays havoc with -k, using variables is a headache, so doing this by hand

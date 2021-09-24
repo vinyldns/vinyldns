@@ -765,6 +765,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
             shared_zone_test_context.ok_vinyldns_client.delete_group(group['id'], status=(200, 404))
 
 
+@pytest.mark.serial
 def test_user_cannot_update_zone_to_nonmember_admin_group(shared_zone_test_context):
     """
     Test user cannot update a zone adminGroupId to a group they are not a member of
