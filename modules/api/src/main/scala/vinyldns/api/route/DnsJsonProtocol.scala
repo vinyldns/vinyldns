@@ -374,7 +374,7 @@ trait DnsJsonProtocol extends JsonValidation {
         .required[String]("Missing NS.nsdname")
         .check(
           "NS must be less than 255 characters" -> checkDomainNameLen,
-          NSDataError -> nameContainsDots
+          NSDataErrorMsg -> nameContainsDots
         )
         .map(Fqdn.apply)
         .map(NSData.apply)
