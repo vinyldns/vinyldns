@@ -561,7 +561,7 @@ class RecordSetValidationsSpec
         val rs = rsOk.copy(name = "ok.zone.recordsets")
         val error = leftValue(unchangedRecordName(existing, rs, zone))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's name."
+        error.getMessage() shouldBe UnchangedRecordNameErrorMsg
       }
       "return invalid request when given record name does not match existing record name" in {
         val existing = rsOk
@@ -569,7 +569,7 @@ class RecordSetValidationsSpec
         val zone = okZone
         val error = leftValue(unchangedRecordName(existing, rs, zone))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's name."
+        error.getMessage() shouldBe UnchangedRecordNameErrorMsg
       }
     }
 
@@ -579,7 +579,7 @@ class RecordSetValidationsSpec
         val rs = rsOk.copy(typ = AAAA)
         val error = leftValue(unchangedRecordType(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's record type."
+        error.getMessage() shouldBe UnchangedRecordTypeErrorMsg
       }
     }
 
@@ -589,7 +589,7 @@ class RecordSetValidationsSpec
         val rs = rsOk.copy(zoneId = "not-real")
         val error = leftValue(unchangedZoneId(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's zone ID."
+        error.getMessage() shouldBe UnchangedZoneIdErrorMsg
       }
     }
 
