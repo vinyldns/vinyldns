@@ -18,14 +18,13 @@ package vinyldns.api.domain.membership
 
 import cats.implicits._
 import vinyldns.api.Interfaces._
-import vinyldns.api.config.Messages
-import vinyldns.api.domain.MessagesService.finalMessages
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.Messages._
 
 object MembershipService {
   def apply(dataAccessor: ApiDataAccessor): MembershipService =
@@ -223,19 +222,13 @@ class MembershipService(
   def getExistingUser(userId: String): Result[User] =
     userRepo
       .getUser(userId)
-      .orFail(UserNotFoundError(finalMessages("membership-user-not-found") match {
-        case Messages(_, _, message) =>
-          message.format(userId)
-      }))
+      .orFail(UserNotFoundError(UserNotFoundErrorMsg.format(userId)))
       .toResult[User]
 
   def getExistingGroup(groupId: String): Result[Group] =
     groupRepo
       .getGroup(groupId)
-      .orFail(GroupNotFoundError(finalMessages("membership-group-not-found") match {
-        case Messages(_, _, message) =>
-          message.format(groupId)
-      }))
+      .orFail(GroupNotFoundError(GroupNotFoundErrorMsg.format(groupId)))
       .toResult[Group]
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
@@ -243,10 +236,7 @@ class MembershipService(
       .getGroupByName(name)
       .map {
         case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
-          GroupAlreadyExistsError(finalMessages("group-exists") match {
-            case Messages(_, _, message) =>
-              message.format(name, existingGroup.email)
-          }).asLeft
+          GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight
       }
@@ -258,10 +248,7 @@ class MembershipService(
       if (delta.isEmpty)
         ().asRight
       else
-        UserNotFoundError(finalMessages("membership-users-not-found") match {
-          case Messages(_, _, message) =>
-            message.format(delta.mkString(","))
-        }).asLeft
+        UserNotFoundError(UsersNotFoundErrorMsg.format(delta.mkString(","))).asLeft
     }
   }.toResult
 
@@ -271,10 +258,7 @@ class MembershipService(
       .map {
         case Some(existingGroup)
             if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
-          GroupAlreadyExistsError(finalMessages("group-exists") match {
-            case Messages(_, _, message) =>
-              message.format(name, existingGroup.email)
-          }).asLeft
+          GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight
       }
@@ -284,10 +268,7 @@ class MembershipService(
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
-        ensuring(InvalidGroupRequestError(finalMessages("zone-admin-error") match {
-          case Messages(_, _, message) =>
-            message.format(group.name)
-        }))(
+        ensuring(InvalidGroupRequestError(ZoneAdminErrorMsg.format(group.name)))(
           zones.isEmpty
         )
       }
@@ -299,10 +280,7 @@ class MembershipService(
       .map { rsId =>
         ensuring(
           InvalidGroupRequestError(
-            finalMessages("record-set-owner-error") match {
-              case Messages(_, _, message) =>
-                message.format(group.name, rsId)
-            }
+            RecordSetOwnerErrorMsg.format(group.name, rsId)
           )
         )(rsId.isEmpty)
       }
@@ -314,10 +292,7 @@ class MembershipService(
       .map { zId =>
         ensuring(
           InvalidGroupRequestError(
-            finalMessages("acl-rule-error") match {
-              case Messages(_, _, message) =>
-                message.format(group.name, zId)
-            }
+            ACLRuleErrorMsg.format(group.name, zId)
           )
         )(zId.isEmpty)
       }

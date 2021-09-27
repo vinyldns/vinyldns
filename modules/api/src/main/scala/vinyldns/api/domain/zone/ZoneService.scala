@@ -21,6 +21,7 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.Messages._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
@@ -179,7 +180,7 @@ class ZoneService(
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
-        case None => "Unknown group name"
+        case None => UnknownGroupNameMsg
       }
       val zoneAccess = getZoneAccess(auth, zn)
       ZoneSummaryInfo(zn, groupName, zoneAccess)
@@ -251,8 +252,7 @@ class ZoneService(
       .map {
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
           ZoneAlreadyExistsError(
-            s"Zone with name $zoneName already exists. " +
-              s"Please contact ${existingZone.email} to request access to the zone."
+            ZoneAlreadyExistsErrorMsg.format(zoneName, existingZone.email)
           ).asLeft
         case _ => ().asRight
       }
@@ -263,27 +263,27 @@ class ZoneService(
       .getGroup(groupId)
       .map {
         case Some(_) => ().asRight
-        case None => InvalidGroupError(s"Admin group with ID $groupId does not exist").asLeft
+        case None => InvalidGroupError(AdminGroupNotExistsErrorMsg.format(groupId)).asLeft
       }
       .toResult
 
   def getGroupName(groupId: String): Result[String] = {
     groupRepository.getGroup(groupId).map {
       case Some(group) => group.name
-      case None => "Unknown group name"
+      case None => UnknownGroupNameMsg
     }
   }.toResult
 
   def getZoneOrFail(zoneId: String): Result[Zone] =
     zoneRepository
       .getZone(zoneId)
-      .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
+      .orFail(ZoneNotFoundError(ZoneIdNotFoundErrorMsg.format(zoneId)))
       .toResult[Zone]
 
   def getZoneByNameOrFail(zoneName: String): Result[Zone] =
     zoneRepository
       .getZoneByName(zoneName)
-      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
+      .orFail(ZoneNotFoundError(ZoneNameNotFoundErrorMsg.format(zoneName)))
       .toResult[Zone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =

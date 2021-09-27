@@ -18,7 +18,6 @@ package vinyldns.sqs.queue
 
 import java.util.Base64
 import java.util.concurrent.TimeUnit.SECONDS
-
 import cats.data._
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
@@ -27,6 +26,7 @@ import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
+import vinyldns.core.Messages.InvalidDurationErrorMsg
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
@@ -184,8 +184,8 @@ object SqsMessageQueue extends ProtobufConversions {
   sealed abstract class SqsMessageQueueError(message: String) extends Throwable(message)
   final case class InvalidMessageTimeout(duration: Long)
       extends SqsMessageQueueError(
-        s"Invalid duration: $duration seconds. Duration must be between " +
-          s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds."
+        InvalidDurationErrorMsg
+          .format(duration, MINIMUM_VISIBILITY_TIMEOUT, MAXIMUM_VISIBILITY_TIMEOUT)
       )
 
   // AWS limits as specified at:

@@ -19,27 +19,28 @@ package vinyldns.api.domain.membership
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
+import vinyldns.core.Messages._
 import vinyldns.core.domain.membership.Group
 
 object MembershipValidations {
 
   def hasMembersAndAdmins(group: Group): Either[Throwable, Unit] =
-    ensuring(InvalidGroupError("Group must have at least one member and one admin")) {
+    ensuring(InvalidGroupError(hasNoMembersAndAdminsErrorMsg)) {
       group.memberIds.nonEmpty && group.adminUserIds.nonEmpty
     }
 
   def canEditGroup(group: Group, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    ensuring(NotAuthorizedError("Not authorized")) {
+    ensuring(NotAuthorizedError(NoAuthorizationErrorMsg)) {
       authPrincipal.isGroupAdmin(group) || authPrincipal.isSuper
     }
 
   def isSuperAdmin(authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    ensuring(NotAuthorizedError("Not authorized")) {
+    ensuring(NotAuthorizedError(NoAuthorizationErrorMsg)) {
       authPrincipal.isSuper
     }
 
   def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    ensuring(NotAuthorizedError("Not authorized")) {
+    ensuring(NotAuthorizedError(NoAuthorizationErrorMsg)) {
       authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin
     }
 }

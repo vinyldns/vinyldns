@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import java.util.NoSuchElementException
-
 import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.implicits._
@@ -28,6 +27,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.ext._
 import org.json4s.jackson.JsonMethods._
+import vinyldns.core.Messages._
 
 import scala.reflect.ClassTag
 
@@ -43,7 +43,7 @@ object VinylDateParser {
       .map(_.getTime)
       .getOrElse(
         throw new MappingException(
-          s"Invalid date format $s; provide the date format as YYYY-MM-DDTHH:MM:SSZ"
+          InvalidDateFormatErrorMsg.format(s)
         )
       )
 }
@@ -177,11 +177,11 @@ trait JsonValidation extends JsonValidationSupport {
       try {
         Extraction.extract(js, TypeInfo(Class, None))(subsetFormats) match {
           case a: A => a.validNel[String]
-          case _ => "Extraction.extract returned unexpected type".invalidNel[A]
+          case _ => UnexpectedExtractionErrorMsg.invalidNel[A]
         }
       } catch {
         case _: MappingException | _: JsonParseException =>
-          s"Failed to parse ${Class.getSimpleName.replace("$", "")}".invalidNel[A]
+          JsonParseErrorMsg.format(Class.getSimpleName.replace("$", "")).invalidNel[A]
       }
 
     // use a subset of formats that does not include this class or we will StackOverflow
@@ -217,7 +217,7 @@ trait JsonValidation extends JsonValidationSupport {
                   err.invalidNel[T]
               }
             case e: JsonParseException =>
-              s"While parsing $json, received unexpected error '${e.getMessage}'".invalidNel[T]
+              UnexpectedJsonErrorMsg.format(json, e.getMessage).invalidNel[T]
           }
       }
 
@@ -225,7 +225,7 @@ trait JsonValidation extends JsonValidationSupport {
         enum: E
     )(default: => ValidatedNel[String, E#Value]): ValidatedNel[String, E#Value] = {
       lazy val invalidMsg =
-        s"Invalid ${enum.getClass.getSimpleName.replace("$", "")}".invalidNel[E#Value]
+        InvalidMsg.format(enum.getClass.getSimpleName.replace("$", "")).invalidNel[E#Value]
 
       json match {
         case JNothing | JNull => default

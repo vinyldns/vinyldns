@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.api.config
+package vinyldns.core.config
 
 import pureconfig._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import pureconfig.error.ConfigReaderFailures
 
-final case class Messages(id: String, alertType: String, text: String)
-final case class MessagesConfig(messages: List[Messages])
+final case class Message(text: String, overrideText: String)
+final case class MessagesConfig(messages: List[Message])
 
 object MessagesConfig {
 

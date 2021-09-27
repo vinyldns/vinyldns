@@ -19,8 +19,7 @@ package vinyldns.api.domain.record
 import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.backend.dns.DnsConversions
-import vinyldns.api.config.{HighValueDomainConfig, Messages}
-import vinyldns.api.domain.MessagesService.finalMessages
+import vinyldns.api.config.HighValueDomainConfig
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
@@ -29,6 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.Messages._
 
 import scala.util.matching.Regex
 
@@ -38,37 +38,23 @@ object RecordSetValidations {
     recordSet.typ match {
       case CNAME | SOA | TXT | NS | DS => ().asRight
       case PTR =>
-        ensuring(InvalidRequest(finalMessages("invalid-ptr") match {
-          case Messages(_, _, message) =>
-            message
-        }))(zone.isReverse)
+        ensuring(InvalidRequest(InvalidPtrErrorMsg))(zone.isReverse)
       case _ =>
-        ensuring(InvalidRequest(finalMessages("reverse-lookup-error") match {
-          case Messages(_, _, message) =>
-            message.format(recordSet.typ)
-        }))(
+        ensuring(InvalidRequest(ReverseLookupErrorMsg.format(recordSet.typ)))(
           !zone.isReverse
         )
     }
 
   def validRecordNameLength(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     val absoluteName = recordSet.name + "." + zone.name
-    ensuring(InvalidRequest(finalMessages("record-name-length-error") match {
-      case Messages(_, _, message) =>
-        message.format(recordSet.name)
-    })) {
+    ensuring(InvalidRequest(RecordNameLengthErrorMsg.format(recordSet.name))) {
       absoluteName.length < 256 || isOriginRecord(recordSet.name, zone.name)
     }
   }
 
   def notPending(recordSet: RecordSet): Either[Throwable, Unit] =
     ensuring(
-      PendingUpdateError(
-        finalMessages("pending-update") match {
-          case Messages(_, _, message) =>
-            message.format(recordSet.id, recordSet.name, recordSet.typ)
-        }
-      )
+      PendingUpdateError(PendingUpdateErrorMsg.format(recordSet.id, recordSet.name, recordSet.typ))
     )(
       !recordSet.isPending
     )
@@ -79,12 +65,7 @@ object RecordSetValidations {
       zone: Zone
   ): Either[Throwable, Unit] =
     ensuring(
-      RecordSetAlreadyExists(
-        finalMessages("recordset-cname-exists") match {
-          case Messages(_, _, message) =>
-            message.format(newRecordSet.name, zone.name)
-        }
-      )
+      RecordSetAlreadyExists(RecordSetCnameExistsErrorMsg.format(newRecordSet.name, zone.name))
     )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
     )
@@ -96,10 +77,7 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     ensuring(
       RecordSetAlreadyExists(
-        finalMessages("recordset-already-exists") match {
-          case Messages(_, _, message) =>
-            message.format(newRecordSet.name, newRecordSet.typ, zone.name)
-        }
+        RecordSetAlreadyExistsErrorMsg.format(newRecordSet.name, newRecordSet.typ, zone.name)
       )
     )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
@@ -111,12 +89,7 @@ object RecordSetValidations {
       existingRecordSet: Option[RecordSet] = None
   ): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(
-        finalMessages("dotted-host-error") match {
-          case Messages(_, _, message) =>
-            message.format(newRecordSet.name, newRecordSet.typ, zone.name)
-        }
-      )
+      InvalidRequest(DottedHostErrorMsg.format(newRecordSet.name, newRecordSet.typ, zone.name))
     )(
       newRecordSet.name == zone.name || !newRecordSet.name.contains(".") ||
         existingRecordSet.exists(_.name == newRecordSet.name)
@@ -146,16 +119,9 @@ object RecordSetValidations {
         isNotOrigin(
           recordSet,
           zone,
-          finalMessages("ns-apex-edit-error") match {
-            case Messages(_, _, message) =>
-              message.format(recordSet.name)
-          }
+          NSApexEditErrorMsg.format(recordSet.name)
         )
-      case SOA =>
-        InvalidRequest(finalMessages("soa-delete-error") match {
-          case Messages(_, _, message) =>
-            message
-        }).asLeft
+      case SOA => InvalidRequest(SOADeleteErrorMsg).asLeft
       case _ => ().asRight
     }
 
@@ -169,12 +135,7 @@ object RecordSetValidations {
     // cannot create a cname record if a record with the same exists
     val noRecordWithName = {
       ensuring(
-        RecordSetAlreadyExists(
-          finalMessages("duplicate-cname-error") match {
-            case Messages(_, _, message) =>
-              message.format(newRecordSet.name, zone.name)
-          }
-        )
+        RecordSetAlreadyExists(CnameDuplicateErrorMsg.format(newRecordSet.name, zone.name))
       )(
         existingRecordsWithName.forall(_.id == newRecordSet.id)
       )
@@ -184,10 +145,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        finalMessages("invalid-cname") match {
-          case Messages(_, _, message) =>
-            message
-        }
+        InvalidCnameErrorMsg
       )
       _ <- noRecordWithName
       _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
@@ -204,19 +162,9 @@ object RecordSetValidations {
     val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
       case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
       case Some(ns) =>
-        InvalidRequest(
-          finalMessages("ds-ttl-error") match {
-            case Messages(_, _, message) =>
-              message.format(newRecordSet.name, ns.ttl)
-          }
-        ).asLeft
+        InvalidRequest(DSTTLErrorMsg.format(newRecordSet.name, ns.ttl)).asLeft
       case None =>
-        InvalidRequest(
-          finalMessages("invalid-ds") match {
-            case Messages(_, _, message) =>
-              message.format(newRecordSet.name, zone.name)
-          }
-        ).asLeft
+        InvalidRequest(DSInvalidErrorMsg.format(newRecordSet.name, zone.name)).asLeft
     }
 
     for {
@@ -224,10 +172,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        finalMessages("ds-apex-error") match {
-          case Messages(_, _, message) =>
-            message.format(newRecordSet.name)
-        }
+        DSApexErrorMsg.format(newRecordSet.name)
       )
       _ <- nsChecks
     } yield ()
@@ -247,10 +192,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        finalMessages("ns-apex-error") match {
-          case Messages(_, _, message) =>
-            message.format(newRecordSet.name)
-        }
+        NSApexErrorMsg.format(newRecordSet.name)
       )
       _ <- containsApprovedNameServers(newRecordSet, approvedNameServers)
       _ <- oldRecordSet
@@ -258,10 +200,7 @@ object RecordSetValidations {
           isNotOrigin(
             rs,
             zone,
-            finalMessages("ns-apex-edit-error") match {
-              case Messages(_, _, message) =>
-                message.format(newRecordSet.name)
-            }
+            NSApexEditErrorMsg.format(newRecordSet.name)
           )
         }
         .getOrElse(().asRight)
@@ -321,17 +260,10 @@ object RecordSetValidations {
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>
-        InvalidGroupError(finalMessages("owner-group-not-found") match {
-          case Messages(_, _, message) =>
-            message.format(groupId)
-        }).asLeft
+        InvalidGroupError(RecordOwnerGroupNotFoundErrorMsg.format(groupId)).asLeft
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
-        else
-          InvalidRequest(finalMessages("user-not-in-owner-group") match {
-            case Messages(_, _, message) =>
-              message.format(groupId)
-          }).asLeft
+        else InvalidRequest(UserNotInOwnerGroupErrorMsg.format(groupId)).asLeft
     }
 
   def unchangedRecordName(
@@ -342,10 +274,7 @@ object RecordSetValidations {
     updates.name.toLowerCase == existing.name.toLowerCase
       || (updates.name == "@" && existing.name.toLowerCase == zone.name.toLowerCase),
     (),
-    InvalidRequest(finalMessages("unchanged-record-name") match {
-      case Messages(_, _, message) =>
-        message
-    })
+    InvalidRequest(UnchangedRecordNameErrorMsg)
   )
 
   def unchangedRecordType(
@@ -355,10 +284,7 @@ object RecordSetValidations {
     Either.cond(
       updates.typ == existing.typ,
       (),
-      InvalidRequest(finalMessages("unchanged-record-type") match {
-        case Messages(_, _, message) =>
-          message
-      })
+      InvalidRequest(UnchangedRecordTypeErrorMsg)
     )
 
   def unchangedZoneId(
@@ -368,18 +294,12 @@ object RecordSetValidations {
     Either.cond(
       updates.zoneId == existing.zoneId,
       (),
-      InvalidRequest(finalMessages("unchanged-zone-id") match {
-        case Messages(_, _, message) =>
-          message
-      })
+      InvalidRequest(UnchangedZoneIdErrorMsg)
     )
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(finalMessages("record-name-filter-error") match {
-        case Messages(_, _, message) =>
-          message
-      })
+      InvalidRequest(RecordNameFilterErrorMsg)
     ) {
       val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
       searchRegex.findFirstIn(recordNameFilter).isDefined

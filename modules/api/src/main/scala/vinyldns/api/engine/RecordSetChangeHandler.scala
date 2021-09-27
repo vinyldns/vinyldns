@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.Messages._
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
@@ -142,7 +143,7 @@ object RecordSetChangeHandler {
           if (existingRecords.isEmpty) ReadyToApply(change)
           else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
             AlreadyApplied(change)
-          else Failure(change, "Incompatible record already exists in DNS.")
+          else Failure(change, IncompatibleRecordMsg)
 
         case RecordSetChangeType.Update =>
           if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
@@ -156,8 +157,7 @@ object RecordSetChangeHandler {
             else
               Failure(
                 change,
-                "This record set is out of sync with the DNS backend; " +
-                  "sync this zone before attempting to update this record set."
+                OutOfSyncMsg
               )
           }
 
@@ -326,7 +326,7 @@ object RecordSetChangeHandler {
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message
+            UpdateValidateMsg.format(change.id, change.recordSet.name, message)
           )
         )
       case Retry(_) => Retrying(change)
@@ -342,7 +342,7 @@ object RecordSetChangeHandler {
       case Left(error) =>
         Completed(
           change.failed(
-            s"Failed applying update to DNS for change ${change.id}:${change.recordSet.name}: ${error.getMessage}"
+            UpdateApplyMsg.format(change.id, change.recordSet.name, error.getMessage)
           )
         )
     }
@@ -364,7 +364,7 @@ object RecordSetChangeHandler {
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
+            UpdateVerifyMsg.format(change.id, change.recordSet.name, message)
           )
         )
       case _ => Retrying(change)

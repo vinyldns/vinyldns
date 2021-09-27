@@ -602,7 +602,7 @@ class RecordSetValidationsSpec
         val invalidString = "*o*"
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe RecordNameFilterError
+        error.getMessage() shouldBe RecordNameFilterErrorMsg
       }
     }
   }

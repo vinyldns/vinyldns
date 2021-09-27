@@ -20,6 +20,7 @@ import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
 import org.joda.time.DateTime
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.core.Messages._
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
@@ -31,7 +32,7 @@ class ZoneValidations(syncDelayMillis: Int) {
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
       case Some(time) if DateTime.now.getMillis - time.getMillis < syncDelayMillis => {
-        RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
+        RecentSyncError(RecentSyncErrorMsg.format(zone.name)).asLeft
       }
       case _ => Right(())
     }
@@ -49,7 +50,7 @@ class ZoneValidations(syncDelayMillis: Int) {
     } yield ()
 
   def isUserOrGroupRule(rule: ACLRule): Either[Throwable, Unit] =
-    ensuring(InvalidRequest("Invalid ACL rule: ACL rules must have a group or user id")) {
+    ensuring(InvalidRequest(InvalidACLRuleErrorMsg)) {
       (rule.groupId ++ rule.userId).size == 1
     }
 
@@ -59,21 +60,21 @@ class ZoneValidations(syncDelayMillis: Int) {
         Try(CIDR.valueOf(mask)) match {
           case Success(_) => Right(())
           case Failure(e) =>
-            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").asLeft
+            InvalidRequest(CIDRErrorMsg.format(e.getMessage)).asLeft
         }
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
-        InvalidRequest("Multiple record types including PTR must have no mask").asLeft
+        InvalidRequest(PTRNoMaskErrorMsg).asLeft
       case Some(mask) =>
         Try("string".matches(mask)) match {
           case Success(_) => ().asRight
-          case Failure(_) => InvalidRequest(s"record mask $mask is an invalid regex").asLeft
+          case Failure(_) => InvalidRequest(InvalidRegexErrorMsg.format(mask)).asLeft
         }
       case None => ().asRight
     }
 
   // Validates that the zone is either not shared or shared and the user is a super or support user
   def validateSharedZoneAuthorized(zoneShared: Boolean, user: User): Either[Throwable, Unit] =
-    ensuring(NotAuthorizedError("Not authorized to create shared zones."))(
+    ensuring(NotAuthorizedError(CreateSharedZoneErrorMsg))(
       !zoneShared || user.isSuper || user.isSupport
     )
 
@@ -85,7 +86,7 @@ class ZoneValidations(syncDelayMillis: Int) {
   ): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(
-        s"Not authorized to update zone shared status from $currentShared to $updateShared."
+        UpdateSharedZoneErrorMsg.format(currentShared, updateShared)
       )
     )(currentShared == updateShared || user.isSuper || user.isSupport)
 }

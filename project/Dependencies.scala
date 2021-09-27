@@ -74,6 +74,8 @@ object Dependencies {
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
     "javax.activation"          %  "activation"                     % "1.1.1",
+    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
   )
 
   lazy val mysqlDependencies = Seq(

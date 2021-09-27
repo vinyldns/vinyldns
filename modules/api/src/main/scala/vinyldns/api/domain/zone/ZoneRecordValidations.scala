@@ -20,6 +20,7 @@ import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
+import vinyldns.core.Messages.ApprovedNameServerMsg
 import vinyldns.core.domain.{
   DomainHelpers,
   DomainValidationError,
@@ -51,7 +52,7 @@ object ZoneRecordValidations {
     if (isStringInRegexList(approvedServerList, nsData.nsdname.fqdn)) {
       nsData.validNel[String]
     } else {
-      s"Name Server ${nsData.nsdname.fqdn} is not an approved name server.".invalidNel[NSData]
+      ApprovedNameServerMsg.format(nsData.nsdname.fqdn).invalidNel[NSData]
     }
 
   /* Inspects each record in the rdata, returning back the record set itself or all ns records that are not approved */

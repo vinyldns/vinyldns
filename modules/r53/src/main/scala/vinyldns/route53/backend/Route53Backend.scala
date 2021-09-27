@@ -29,6 +29,7 @@ import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncCli
 import com.amazonaws.services.route53.model.{GetHostedZoneRequest, _}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
+import vinyldns.core.Messages._
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
@@ -154,16 +155,12 @@ class Route53Backend(
         case Some(x) => IO(x)
         case None =>
           IO.raiseError(
-            Route53BackendResponse.ZoneNotFoundError(
-              s"Unable to find hosted zone for zone name ${change.zone.name}"
-            )
+            Route53BackendResponse.ZoneNotFoundError(HostedZoneErrorMsg.format(change.zone.name))
           )
       }
 
       r53RecordSet <- IO.fromOption(toR53RecordSet(change.zone, change.recordSet))(
-        Route53BackendResponse.ConversionError(
-          s"Unable to convert record set to route 53 format for ${change.recordSet}"
-        )
+        Route53BackendResponse.ConversionError(RecordConversionErrorMsg.format(change.recordSet))
       )
 
       result <- r53(
