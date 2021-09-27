@@ -79,7 +79,7 @@ class AccessValidations(
     val accessLevel =
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
     ensuring(
-      NotAuthorizedError(CannotUpdateRecordErrorMsg.format(auth.signedInUser.userName, zone.name))
+      NotAuthorizedError(CannotUpdateRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name))
     )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
   }
 
@@ -92,7 +92,7 @@ class AccessValidations(
       existingRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(CannotDeleteRecordErrorMsg.format(auth.signedInUser.userName, zone.name))
+      NotAuthorizedError(CannotDeleteRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name))
     )(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, existingRecordData) == AccessLevel.Delete
     )
@@ -106,7 +106,7 @@ class AccessValidations(
       recordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(CannotViewRecordErrorMsg.format(auth.signedInUser.userName, zone.name))
+      NotAuthorizedError(CannotViewRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name))
     )(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, recordData) != AccessLevel.NoAccess
     )
