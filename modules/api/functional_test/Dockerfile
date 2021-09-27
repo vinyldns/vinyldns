@@ -5,13 +5,15 @@ RUN apt-get update && apt-get install dnsutils -y
 
 # The run script is what actually runs our func tests
 COPY run.sh /app/run.sh
-RUN chmod u+x /app/run.sh
+RUN chmod a+x /app/run.sh
 
 COPY run.py /app/run.py
-RUN chmod u+x /app/run.py
+RUN chmod a+x /app/run.py
 
 # Copy over the functional test directory, this must have been copied into the build context previous to this building!
 ADD . /app
+
+#Remove Docker file from app directory, this file is not necessary in app folder
 RUN rm -Rf /app/functional_test/Dockerfile
 
 # Install our func test requirements
