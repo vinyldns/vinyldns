@@ -23,6 +23,7 @@ import org.json4s._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.membership.GroupStatus
+import vinyldns.core.Messages._
 
 class GroupSerializerSpec
     extends AnyWordSpec
@@ -65,7 +66,7 @@ class GroupSerializerSpec
           ("description" -> Extraction.decompose(Some("description")))
 
       val result = GroupSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.name")
+      result should haveInvalid(MissingGroupNameMsg)
     }
 
     "require the email" in {
@@ -74,7 +75,7 @@ class GroupSerializerSpec
           ("description" -> Extraction.decompose(Some("description")))
 
       val result = GroupSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.email")
+      result should haveInvalid(MissingGroupEmailMsg)
     }
 
     "default the description to None" in {

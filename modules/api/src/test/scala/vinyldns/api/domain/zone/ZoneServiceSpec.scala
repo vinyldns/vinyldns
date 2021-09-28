@@ -36,6 +36,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.backend.BackendResolver
+import vinyldns.core.Messages._
 
 import scala.concurrent.duration._
 
@@ -484,7 +485,7 @@ class ZoneServiceSpec
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo =
-        ZoneInfo(abcZone, ZoneACLInfo(Set()), "Unknown group name", AccessLevel.Delete)
+        ZoneInfo(abcZone, ZoneACLInfo(Set()), UnknownGroupNameMsg, AccessLevel.Delete)
       val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
       result shouldBe expectedZoneInfo
     }
@@ -570,7 +571,7 @@ class ZoneServiceSpec
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       val expectedZones =
-        List(abcZoneSummary, xyzZoneSummary).map(_.copy(adminGroupName = "Unknown group name"))
+        List(abcZoneSummary, xyzZoneSummary).map(_.copy(adminGroupName = UnknownGroupNameMsg))
       result.zones shouldBe expectedZones
       result.maxItems shouldBe 100
       result.startFrom shouldBe None

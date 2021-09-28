@@ -368,7 +368,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List("cname" -> "cname "))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("CNAME data must be absolute")
+      thrown.msg should include(CnameAbsoluteMsg)
     }
 
     "parse a record set with an absolute MX exchange passes" in {
@@ -625,7 +625,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List(dsData))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("Could not convert digest to valid hex")
+      thrown.msg should include(DigestConvertMsg)
     }
     "reject a DS record with unknown algorithm" in {
       val dsData = ("keytag" -> 60485) ~
@@ -642,7 +642,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List(dsData))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("Algorithm 0 is not a supported DNSSEC algorithm")
+      thrown.msg should include(UnsupportedDNSSECMsg.format(dsData.values("algorithm")))
     }
     "reject a DS record with digest type" in {
       val dsData = ("keytag" -> 60485) ~
@@ -659,7 +659,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List(dsData))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("Digest Type 0 is not a supported DS record digest type")
+      thrown.msg should include(UnsupportedDigestTypeMsg.format(dsData.values("digesttype")))
     }
   }
 }

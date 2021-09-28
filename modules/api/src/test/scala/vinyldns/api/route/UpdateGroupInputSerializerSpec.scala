@@ -23,6 +23,7 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.membership.UserId
+import vinyldns.core.Messages._
 
 class UpdateGroupInputSerializerSpec
     extends AnyWordSpec
@@ -83,33 +84,33 @@ class UpdateGroupInputSerializerSpec
     "return an error if the id is not specified" in {
       val json = render("email" -> "test@test.com")
       val result = UpdateGroupInputSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.name")
+      result should haveInvalid(MissingGroupNameMsg)
     }
 
     "return an error if the name is not specified" in {
       val json = render("email" -> "test@test.com")
       val result = UpdateGroupInputSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.name")
+      result should haveInvalid(MissingGroupNameMsg)
     }
 
     "return an error if the email is not specified" in {
       val json = render("name" -> "myname")
       val result = UpdateGroupInputSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.email")
+      result should haveInvalid(MissingGroupEmailMsg)
     }
 
     "return an error if both the email and name are not specified" in {
       val json = render("description" -> "some description")
       val result = UpdateGroupInputSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.email")
-      result should haveInvalid("Missing Group.name")
+      result should haveInvalid(MissingGroupEmailMsg)
+      result should haveInvalid(MissingGroupNameMsg)
     }
 
     "return an error if the members or admins are not provided" in {
       val json = render(("name" -> "name") ~~ ("email" -> "email"))
       val result = UpdateGroupInputSerializer.fromJson(json)
-      result should haveInvalid("Missing Group.members")
-      result should haveInvalid("Missing Group.admins")
+      result should haveInvalid(MissingGroupMembersMsg)
+      result should haveInvalid(MissingGroupAdminsMsg)
     }
   }
 }

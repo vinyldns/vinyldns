@@ -38,6 +38,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{Group, LockStatus}
+import vinyldns.core.Messages._
 
 class MembershipRoutingSpec
     extends AnyWordSpec
@@ -146,10 +147,10 @@ class MembershipRoutingSpec
         val errs = (result \ "errors").extractOpt[List[String]]
         errs should not be None
         errs.get.toSet shouldBe Set(
-          "Missing Group.name",
-          "Missing Group.email",
-          "Missing Group.members",
-          "Missing Group.admins"
+          MissingGroupNameMsg,
+          MissingGroupEmailMsg,
+          MissingGroupMembersMsg,
+          MissingGroupAdminsMsg
         )
       }
     }

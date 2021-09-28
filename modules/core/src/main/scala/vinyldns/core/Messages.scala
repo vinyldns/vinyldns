@@ -28,11 +28,11 @@ object Messages {
   }
 
   // Checking if a message is present in config file and overriding the existing message
-  implicit class MessagesStringExtension(s: String) {
+  implicit class MessagesStringExtension(existingMessage: String) {
     def orConfig: String =
-      if (configMessages.contains(s) && configMessages(s).overrideText != null)
-        configMessages(s).overrideText
-      else s
+      if (configMessages.contains(existingMessage) && configMessages(existingMessage).overrideText != null && configMessages(existingMessage).overrideText != "")
+        configMessages(existingMessage).overrideText
+      else existingMessage
   }
 
   // Messages displayed to the user and the files in which they are present
