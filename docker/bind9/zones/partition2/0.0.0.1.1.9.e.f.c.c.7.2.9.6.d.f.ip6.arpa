@@ -1,0 +1,12 @@
+$ttl 38400
+0.0.0.1.2.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.	IN	SOA	172.17.42.1. admin.vinyldns.com. (
+					1439234395
+					10800
+					3600
+					604800
+					38400 )
+0.0.0.1.2.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.	IN	NS	172.17.42.1.
+4.2.0.0.0.0.0.0.0.0.0.0.0.0.0.0	IN	PTR	www.vinyldns.
+5.2.0.0.0.0.0.0.0.0.0.0.0.0.0.0	IN	PTR	mail.vinyldns.
+0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0 IN  PTR high.value.domain.ip6.
+2.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0 IN  PTR needs.review.domain.ip6.

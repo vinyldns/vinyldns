@@ -1,0 +1,9 @@
+$ttl 38400
+not.loaded{partition}.	IN	SOA	172.17.42.1. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+not.loaded{partition}.      IN  NS  172.17.42.1.
+foo              IN  A   1.1.1.1

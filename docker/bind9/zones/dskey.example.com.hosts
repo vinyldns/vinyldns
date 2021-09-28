@@ -1,9 +1,0 @@
-$TTL 1h
-$ORIGIN dskey.example.com.
-@	IN	SOA	ns1.parent.com. admin.test.com. (
-			1439234395
-			10800
-			3600
-			604800
-			38400 )
-dskey.example.com.   IN  NS  172.17.42.1.

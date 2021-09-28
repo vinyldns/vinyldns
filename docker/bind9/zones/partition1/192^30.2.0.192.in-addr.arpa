@@ -1,0 +1,11 @@
+$ttl 38400
+192/30.1.0.192.in-addr.arpa.	IN	SOA	172.17.42.1. admin.vinyldns.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+192/30.1.0.192.in-addr.arpa.	IN	NS	172.17.42.1.
+192         IN  PTR portal.vinyldns.
+194			IN	PTR	mail.vinyldns.
+195         IN  PTR test.vinyldns.

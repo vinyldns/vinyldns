@@ -1,18 +1,22 @@
 class VinylDNSTestContext:
-    dns_ip = 'localhost'
-    dns_zone_name = 'vinyldns.'
-    dns_rev_v4_zone_name = '10.10.in-addr.arpa.'
-    dns_rev_v6_zone_name = '1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.'
-    dns_key_name = 'vinyldns.'
-    dns_key = 'nzisn+4G2ldMn0q1CV3vsg=='
-    vinyldns_url = 'http://localhost:9000'
-    teardown = True
+    name_server_ip: str = None
+    resolver_ip: str = None
+    dns_zone_name: str = None
+    dns_key_name: str = None
+    dns_key: str = None
+    dns_key_algo: str = None
+    vinyldns_url: str = None
+    teardown: bool = False
+    enable_safety_check: bool = False
 
     @staticmethod
-    def configure(ip, zone, key_name, key, url, teardown):
-        VinylDNSTestContext.dns_ip = ip
+    def configure(name_server_ip: str, resolver_ip: str, zone: str, key_name: str, key: str, key_algo: str, url: str, teardown: bool, enable_safety_check: bool = False) -> None:
+        VinylDNSTestContext.name_server_ip = name_server_ip
+        VinylDNSTestContext.resolver_ip = resolver_ip
         VinylDNSTestContext.dns_zone_name = zone
         VinylDNSTestContext.dns_key_name = key_name
         VinylDNSTestContext.dns_key = key
+        VinylDNSTestContext.dns_key_algo = key_algo
         VinylDNSTestContext.vinyldns_url = url
-        VinylDNSTestContext.teardown = teardown.lower() == 'true'
+        VinylDNSTestContext.teardown = teardown
+        VinylDNSTestContext.enable_safety_check = enable_safety_check
