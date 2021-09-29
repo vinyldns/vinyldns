@@ -1,5 +1,3 @@
-import json
-
 from hamcrest import *
 
 
@@ -30,7 +28,6 @@ def test_create_group_success(shared_zone_test_context):
         assert_that(result["members"][0]["id"], is_("ok"))
         assert_that(result["admins"], has_length(1))
         assert_that(result["admins"][0]["id"], is_("ok"))
-
     finally:
         if result:
             client.delete_group(result["id"], status=(200, 404))
@@ -63,7 +60,6 @@ def test_creator_is_an_admin(shared_zone_test_context):
         assert_that(result["members"][0]["id"], is_("ok"))
         assert_that(result["admins"], has_length(1))
         assert_that(result["admins"][0]["id"], is_("ok"))
-
     finally:
         if result:
             client.delete_group(result["id"], status=(200, 404))
@@ -186,7 +182,6 @@ def test_create_group_duplicate(shared_zone_test_context):
 
         result = client.create_group(new_group, status=200)
         client.create_group(new_group, status=409)
-
     finally:
         if result:
             client.delete_group(result["id"], status=(200, 404))

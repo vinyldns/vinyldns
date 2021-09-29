@@ -3,6 +3,7 @@ import logging
 import os
 import ssl
 import sys
+import traceback
 
 import _pytest.config
 import pytest
@@ -109,7 +110,8 @@ def retrieve_resolver(resolver_name: str) -> str:
             resolver_address = [resolver_address] + parts[1:]
             resolver_address = ":".join(resolver_address)
             logger.warning("Translating `%s` resolver to `%s`", resolver_name, resolver_address)
-        except:
+        except Exception:
+            traceback.print_exc()
             logger.error("Cannot translate `%s` into a usable resolver address", resolver_name)
             pytest.exit(1)
 

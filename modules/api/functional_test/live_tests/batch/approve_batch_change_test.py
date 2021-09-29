@@ -118,7 +118,6 @@ def test_approve_batch_change_with_invalid_batch_change_id_fails(shared_zone_tes
     """
     Test approving a batch change with invalid batch change ID
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
 
     error = client.approve_batch_change("some-id", status=404)
@@ -130,7 +129,6 @@ def test_approve_batch_change_with_comments_exceeding_max_length_fails(shared_zo
     """
     Test approving a batch change with comments exceeding 1024 characters fails
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     approve_batch_change_input = {
         "reviewComment": "a" * 1025

@@ -72,10 +72,6 @@ class SharedZoneTestContext(object):
     def requires_review_zone(self) -> Mapping:
         return self.attempt_retrieve_value("_requires_review_zone")
 
-    @property
-    def non_test_shared_zone(self) -> Mapping:
-        return self._non_test_shared_zone
-
     def __init__(self, partition_id: str):
         self.partition_id = partition_id
         self.ok_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "okAccessKey", "okSecretKey")
@@ -113,7 +109,6 @@ class SharedZoneTestContext(object):
         self._ds_zone = None
         self._requires_review_zone = None
         self._shared_zone = None
-        self._non_test_shared_zone = None
 
         self.ip4_10_prefix = None
         self.ip4_classless_prefix = None
@@ -472,31 +467,6 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self._shared_zone = shared_zone_change["zone"]
 
-            # Shared zone
-            non_test_shared_zone_change = self.support_user_client.create_zone(
-                {
-                    "name": f"non.test.shared{partition_id}.",
-                    "email": "test@test.com",
-                    "shared": True,
-                    "adminGroupId": self.shared_record_group["id"],
-                    "isTest": False,
-                    "connection": {
-                        "name": "shared.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "shared.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
-                }, status=202)
-            self._non_test_shared_zone = non_test_shared_zone_change["zone"]
-
             # wait until our zones are created
             self.ok_vinyldns_client.wait_until_zone_active(system_test_zone_change["zone"]["id"])
             self.ok_vinyldns_client.wait_until_zone_active(ok_zone_change["zone"]["id"])
@@ -512,13 +482,12 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_active(requires_review_zone_change["zone"]["id"])
             self.history_client.wait_until_zone_active(history_zone_change["zone"]["id"])
             self.shared_zone_vinyldns_client.wait_until_zone_active(shared_zone_change["zone"]["id"])
-            self.shared_zone_vinyldns_client.wait_until_zone_active(non_test_shared_zone_change["zone"]["id"])
 
             # validate all in there
             zones = self.dummy_vinyldns_client.list_zones()["zones"]
             assert_that(len(zones), is_(2))
             zones = self.ok_vinyldns_client.list_zones()["zones"]
-            assert_that(len(zones), is_(12))
+            assert_that(len(zones), is_(11))
 
             # initialize history
             self.init_history()
@@ -533,15 +502,16 @@ class SharedZoneTestContext(object):
             self.list_zones_client = self.list_zones.client
 
             # build the list of records; note: we do need to save the test records
-            self.list_records_context.build()
+            self.list_records_context.setup()
 
             # build the list of groups
             self.list_groups_context.build()
 
             self.list_batch_summaries_context = ListBatchChangeSummariesTestContext()
-        except Exception as e:
+        except Exception:
             # Cleanup if setup fails
             self.tear_down()
+            traceback.print_exc()
             raise
 
     def init_history(self):
@@ -650,7 +620,7 @@ class SharedZoneTestContext(object):
             self.list_records_context.tear_down()
 
             if self.list_batch_summaries_context:
-                self.list_batch_summaries_context.tear_down()
+                self.list_batch_summaries_context.tear_down(self)
 
             if self.list_groups_context:
                 self.list_groups_context.tear_down()
@@ -666,7 +636,8 @@ class SharedZoneTestContext(object):
             for client in self.clients:
                 client.tear_down()
 
-        except Exception as e:
+        except Exception:
+            traceback.print_exc()
             raise
 
     @staticmethod

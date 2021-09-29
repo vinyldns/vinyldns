@@ -15,7 +15,6 @@ def test_list_group_activity_start_from_success(group_activity_context, shared_z
     """
     Test that we can list the changes starting from a given timestamp
     """
-    import json
 
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
@@ -53,7 +52,6 @@ def test_list_group_activity_start_from_fake_time(group_activity_context, shared
     """
     Test that we can start from a fake time stamp
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     updated_groups = group_activity_context["updated_groups"]
@@ -76,7 +74,6 @@ def test_list_group_activity_max_item_success(group_activity_context, shared_zon
     """
     Test that we can set the max_items returned
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     updated_groups = group_activity_context["updated_groups"]
@@ -98,7 +95,6 @@ def test_list_group_activity_max_item_zero(group_activity_context, shared_zone_t
     """
     Test that max_item set to zero fails
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     client.get_group_changes(created_group["id"], max_items=0, status=400)
@@ -108,7 +104,6 @@ def test_list_group_activity_max_item_over_1000(group_activity_context, shared_z
     """
     Test that when max_item is over 1000 fails
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     client.get_group_changes(created_group["id"], max_items=1001, status=400)
@@ -118,7 +113,6 @@ def test_get_group_changes_paging(group_activity_context, shared_zone_test_conte
     """
     Test that we can page through multiple pages of group changes
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     updated_groups = group_activity_context["updated_groups"]
@@ -159,7 +153,6 @@ def test_get_group_changes_unauthed(shared_zone_test_context):
     """
     Tests that we cant get group changes without access
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     saved_group = None

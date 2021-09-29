@@ -1,5 +1,4 @@
 import pytest
-import pytz
 
 from utils import *
 
@@ -8,88 +7,6 @@ API_SYNC_DELAY = 10
 MAX_RETRIES = 30
 RETRY_WAIT = 0.05
 
-records_in_dns = [
-    {"name": "sync-test.",
-     "type": "SOA",
-     "records": [{"mname": "172.17.42.1.",
-                  "rname": "admin.test.com.",
-                  "retry": 3600,
-                  "refresh": 10800,
-                  "minimum": 38400,
-                  "expire": 604800,
-                  "serial": 1439234395}]},
-    {"name": "sync-test.",
-     "type": "NS",
-     "records": [{"nsdname": "172.17.42.1."}]},
-    {"name": "jenkins",
-     "type": "A",
-     "records": [{"address": "10.1.1.1"}]},
-    {"name": "foo",
-     "type": "A",
-     "records": [{"address": "2.2.2.2"}]},
-    {"name": "test",
-     "type": "A",
-     "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
-    {"name": "sync-test.",
-     "type": "A",
-     "records": [{"address": "5.5.5.5"}]},
-    {"name": "already-exists",
-     "type": "A",
-     "records": [{"address": "6.6.6.6"}]},
-    {"name": "fqdn",
-     "type": "A",
-     "records": [{"address": "7.7.7.7"}]},
-    {"name": "_sip._tcp",
-     "type": "SRV",
-     "records": [{"priority": 10, "weight": 60, "port": 5060, "target": "foo.sync-test."}]},
-    {"name": "existing.dotted",
-     "type": "A",
-     "records": [{"address": "9.9.9.9"}]}]
-
-records_post_update = [
-    {"name": "sync-test.",
-     "type": "SOA",
-     "records": [{"mname": "172.17.42.1.",
-                  "rname": "admin.test.com.",
-                  "retry": 3600,
-                  "refresh": 10800,
-                  "minimum": 38400,
-                  "expire": 604800,
-                  "serial": 0}]},
-    {"name": "sync-test.",
-     "type": "NS",
-     "records": [{"nsdname": "172.17.42.1."}]},
-    {"name": "foo",
-     "type": "A",
-     "records": [{"address": "1.2.3.4"}]},
-    {"name": "test",
-     "type": "A",
-     "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
-    {"name": "sync-test.",
-     "type": "A",
-     "records": [{"address": "5.5.5.5"}]},
-    {"name": "already-exists",
-     "type": "A",
-     "records": [{"address": "6.6.6.6"}]},
-    {"name": "newrs",
-     "type": "A",
-     "records": [{"address": "2.3.4.5"}]},
-    {"name": "fqdn",
-     "type": "A",
-     "records": [{"address": "7.7.7.7"}]},
-    {"name": "_sip._tcp",
-     "type": "SRV",
-     "records": [{"priority": 10, "weight": 60, "port": 5060, "target": "foo.sync-test."}]},
-    {"name": "existing.dotted",
-     "type": "A",
-     "records": [{"address": "9.9.9.9"}]},
-    {"name": "dott.ed",
-     "type": "A",
-     "records": [{"address": "6.7.8.9"}]},
-    {"name": "dott.ed-two",
-     "type": "A",
-     "records": [{"address": "6.7.8.9"}]}]
-
 
 @pytest.mark.skip_production
 def test_sync_zone_success(shared_zone_test_context):
@@ -97,7 +14,7 @@ def test_sync_zone_success(shared_zone_test_context):
     Test syncing a zone
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    zone_name = "sync-test"
+    zone_name = f"sync-test{shared_zone_test_context.partition_id}"
     updated_rs_id = None
     check_rs = None
 
@@ -133,14 +50,15 @@ def test_sync_zone_success(shared_zone_test_context):
         # Confirm that the recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets_by_zone(zone["id"])["recordSets"]
 
-        assert_that(len(recordsets), is_(10))
+        records_in_dns = build_records_in_dns(shared_zone_test_context)
+        assert_that(len(recordsets), is_(len(records_in_dns)))
         for rs in recordsets:
             if rs["name"] == "foo":
                 # get the ID for recordset with name "foo"
                 updated_rs_id = rs["id"]
             small_rs = dict((k, rs[k]) for k in ["name", "type", "records"])
             if small_rs["type"] == "SOA":
-                assert_that(small_rs["name"], is_("sync-test."))
+                assert_that(small_rs["name"], is_(f"{zone_name}."))
             else:
                 assert_that(records_in_dns, has_item(small_rs))
 
@@ -182,7 +100,8 @@ def test_sync_zone_success(shared_zone_test_context):
 
         # confirm that the updated recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets_by_zone(zone["id"])["recordSets"]
-        assert_that(len(recordsets), is_(12))
+        records_post_update = build_records_post_update(shared_zone_test_context)
+        assert_that(len(recordsets), is_(len(records_post_update)))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ["name", "type", "records"])
             small_rs["records"] = small_rs["records"]
@@ -228,7 +147,6 @@ def test_sync_zone_success(shared_zone_test_context):
                 good_update["name"] = "example-dotted"
                 change = client.update_recordset(good_update, status=202)
                 client.wait_until_recordset_change_status(change, "Complete")
-
     finally:
         # reset the ownerGroupId for foo record
         if check_rs:
@@ -243,3 +161,90 @@ def test_sync_zone_success(shared_zone_test_context):
             dns_delete(zone, "dott.ed", "A")
             dns_delete(zone, "dott.ed-two", "A")
             client.abandon_zones([zone["id"]], status=202)
+
+def build_records_in_dns(shared_zone_test_context):
+    partition_id = shared_zone_test_context.partition_id
+    return [
+        {"name": f"sync-test{partition_id}.",
+         "type": "SOA",
+         "records": [{"mname": "172.17.42.1.",
+                      "rname": "admin.test.com.",
+                      "retry": 3600,
+                      "refresh": 10800,
+                      "minimum": 38400,
+                      "expire": 604800,
+                      "serial": 1439234395}]},
+        {"name": f"sync-test{partition_id}.",
+         "type": "NS",
+         "records": [{"nsdname": "172.17.42.1."}]},
+        {"name": "jenkins",
+         "type": "A",
+         "records": [{"address": "10.1.1.1"}]},
+        {"name": "foo",
+         "type": "A",
+         "records": [{"address": "2.2.2.2"}]},
+        {"name": "test",
+         "type": "A",
+         "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
+        {"name": f"sync-test{partition_id}.",
+         "type": "A",
+         "records": [{"address": "5.5.5.5"}]},
+        {"name": "already-exists",
+         "type": "A",
+         "records": [{"address": "6.6.6.6"}]},
+        {"name": "fqdn",
+         "type": "A",
+         "records": [{"address": "7.7.7.7"}]},
+        {"name": "_sip._tcp",
+         "type": "SRV",
+         "records": [{"priority": 10, "weight": 60, "port": 5060, "target": "foo.sync-test."}]},
+        {"name": "existing.dotted",
+         "type": "A",
+         "records": [{"address": "9.9.9.9"}]}]
+
+
+def build_records_post_update(shared_zone_test_context):
+    partition_id = shared_zone_test_context.partition_id
+    return [
+        {"name": f"sync-test{partition_id}.",
+         "type": "SOA",
+         "records": [{"mname": "172.17.42.1.",
+                      "rname": "admin.test.com.",
+                      "retry": 3600,
+                      "refresh": 10800,
+                      "minimum": 38400,
+                      "expire": 604800,
+                      "serial": 0}]},
+        {"name": f"sync-test{partition_id}.",
+         "type": "NS",
+         "records": [{"nsdname": "172.17.42.1."}]},
+        {"name": "foo",
+         "type": "A",
+         "records": [{"address": "1.2.3.4"}]},
+        {"name": "test",
+         "type": "A",
+         "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
+        {"name": f"sync-test{partition_id}.",
+         "type": "A",
+         "records": [{"address": "5.5.5.5"}]},
+        {"name": "already-exists",
+         "type": "A",
+         "records": [{"address": "6.6.6.6"}]},
+        {"name": "newrs",
+         "type": "A",
+         "records": [{"address": "2.3.4.5"}]},
+        {"name": "fqdn",
+         "type": "A",
+         "records": [{"address": "7.7.7.7"}]},
+        {"name": "_sip._tcp",
+         "type": "SRV",
+         "records": [{"priority": 10, "weight": 60, "port": 5060, "target": "foo.sync-test."}]},
+        {"name": "existing.dotted",
+         "type": "A",
+         "records": [{"address": "9.9.9.9"}]},
+        {"name": "dott.ed",
+         "type": "A",
+         "records": [{"address": "6.7.8.9"}]},
+        {"name": "dott.ed-two",
+         "type": "A",
+         "records": [{"address": "6.7.8.9"}]}]

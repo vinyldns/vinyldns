@@ -1,25 +1,18 @@
-
-import pytest
-import json
-
 from hamcrest import *
-
-from vinyldns_python import VinylDNSClient
 
 
 def test_list_group_admins_success(shared_zone_test_context):
     """
     Test that we can list all the admins of a given group
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
         new_group = {
             "name": "test-list-group-admins-success",
             "email": "test@test.com",
-            "members": [ { "id": "ok"} ],
-            "admins": [ { "id": "ok"}, { "id": "dummy"} ]
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}, {"id": "dummy"}]
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -51,7 +44,6 @@ def test_list_group_admins_group_not_found(shared_zone_test_context):
     """
     Test that listing the admins of a non-existent group fails
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     client.list_group_admins("doesntexist", status=404)
 
@@ -60,7 +52,6 @@ def test_list_group_admins_unauthed(shared_zone_test_context):
     """
     Tests that we cant list admins without access
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     saved_group = None
@@ -68,8 +59,8 @@ def test_list_group_admins_unauthed(shared_zone_test_context):
         new_group = {
             "name": "test-list-group-admins-unauthed",
             "email": "test@test.com",
-            "members": [ { "id": "ok"} ],
-            "admins": [ { "id": "ok"} ]
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
         }
         saved_group = client.create_group(new_group, status=200)
 

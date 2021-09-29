@@ -1,8 +1,14 @@
-from hamcrest import *
+import pytest
+
 from utils import *
 
 
-def test_list_zones_success(shared_zone_test_context):
+@pytest.fixture(scope="module")
+def list_zone_context(shared_zone_test_context):
+    return shared_zone_test_context.list_zones
+
+
+def test_list_zones_success(list_zone_context, shared_zone_test_context):
     """
     Test that we can retrieve a list of the user's zones
     """
@@ -10,8 +16,8 @@ def test_list_zones_success(shared_zone_test_context):
     retrieved = result["zones"]
 
     assert_that(retrieved, has_length(5))
-    assert_that(retrieved, has_item(has_entry("name", "list-zones-test-searched-1.")))
-    assert_that(retrieved, has_item(has_entry("adminGroupName", "list-zones-group")))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone1["name"])))
+    assert_that(retrieved, has_item(has_entry("adminGroupName", list_zone_context.list_zones_group["name"])))
     assert_that(retrieved, has_item(has_entry("backendId", "func-test-backend")))
 
 
@@ -22,12 +28,14 @@ def test_list_zones_max_items_100(shared_zone_test_context):
     result = shared_zone_test_context.list_zones_client.list_zones(status=200)
     assert_that(result["maxItems"], is_(100))
 
+
 def test_list_zones_ignore_access_default_false(shared_zone_test_context):
     """
     Test that the default ignore access value for a list zones request is false
     """
     result = shared_zone_test_context.list_zones_client.list_zones(status=200)
     assert_that(result["ignoreAccess"], is_(False))
+
 
 def test_list_zones_invalid_max_items_fails(shared_zone_test_context):
     """
@@ -44,7 +52,7 @@ def test_list_zones_no_authorization(shared_zone_test_context):
     shared_zone_test_context.list_zones_client.list_zones(sign_request=False, status=401)
 
 
-def test_list_zones_no_search_first_page(shared_zone_test_context):
+def test_list_zones_no_search_first_page(list_zone_context, shared_zone_test_context):
     """
     Test that the first page of listing zones returns correctly when no name filter is provided
     """
@@ -52,51 +60,51 @@ def test_list_zones_no_search_first_page(shared_zone_test_context):
     zones = result["zones"]
 
     assert_that(zones, has_length(3))
-    assert_that(zones[0]["name"], is_("list-zones-test-searched-1."))
-    assert_that(zones[1]["name"], is_("list-zones-test-searched-2."))
-    assert_that(zones[2]["name"], is_("list-zones-test-searched-3."))
+    assert_that(zones[0]["name"], is_(list_zone_context.search_zone1["name"]))
+    assert_that(zones[1]["name"], is_(list_zone_context.search_zone2["name"]))
+    assert_that(zones[2]["name"], is_(list_zone_context.search_zone3["name"]))
 
-    assert_that(result["nextId"], is_("list-zones-test-searched-3."))
+    assert_that(result["nextId"], is_(list_zone_context.search_zone3["name"]))
     assert_that(result["maxItems"], is_(3))
     assert_that(result, is_not(has_key("startFrom")))
     assert_that(result, is_not(has_key("nameFilter")))
 
 
-def test_list_zones_no_search_second_page(shared_zone_test_context):
+def test_list_zones_no_search_second_page(list_zone_context, shared_zone_test_context):
     """
     Test that the second page of listing zones returns correctly when no name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(start_from="list-zones-test-searched-2.", max_items=2, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(start_from=list_zone_context.search_zone2["name"], max_items=2, status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
-    assert_that(zones[0]["name"], is_("list-zones-test-searched-3."))
-    assert_that(zones[1]["name"], is_("list-zones-test-unfiltered-1."))
+    assert_that(zones[0]["name"], is_(list_zone_context.search_zone3["name"]))
+    assert_that(zones[1]["name"], is_(list_zone_context.non_search_zone1["name"]))
 
-    assert_that(result["nextId"], is_("list-zones-test-unfiltered-1."))
+    assert_that(result["nextId"], is_(list_zone_context.non_search_zone1["name"]))
     assert_that(result["maxItems"], is_(2))
-    assert_that(result["startFrom"], is_("list-zones-test-searched-2."))
+    assert_that(result["startFrom"], is_(list_zone_context.search_zone2["name"]))
     assert_that(result, is_not(has_key("nameFilter")))
 
 
-def test_list_zones_no_search_last_page(shared_zone_test_context):
+def test_list_zones_no_search_last_page(list_zone_context, shared_zone_test_context):
     """
     Test that the last page of listing zones returns correctly when no name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(start_from="list-zones-test-searched-3.", max_items=4, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(start_from=list_zone_context.search_zone3["name"], max_items=4, status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
-    assert_that(zones[0]["name"], is_("list-zones-test-unfiltered-1."))
-    assert_that(zones[1]["name"], is_("list-zones-test-unfiltered-2."))
+    assert_that(zones[0]["name"], is_(list_zone_context.non_search_zone1["name"]))
+    assert_that(zones[1]["name"], is_(list_zone_context.non_search_zone2["name"]))
 
     assert_that(result, is_not(has_key("nextId")))
     assert_that(result["maxItems"], is_(4))
-    assert_that(result["startFrom"], is_("list-zones-test-searched-3."))
+    assert_that(result["startFrom"], is_(list_zone_context.search_zone3["name"]))
     assert_that(result, is_not(has_key("nameFilter")))
 
 
-def test_list_zones_with_search_first_page(shared_zone_test_context):
+def test_list_zones_with_search_first_page(list_zone_context, shared_zone_test_context):
     """
     Test that the first page of listing zones returns correctly when a name filter is provided
     """
@@ -104,10 +112,10 @@ def test_list_zones_with_search_first_page(shared_zone_test_context):
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
-    assert_that(zones[0]["name"], is_("list-zones-test-searched-1."))
-    assert_that(zones[1]["name"], is_("list-zones-test-searched-2."))
+    assert_that(zones[0]["name"], is_(list_zone_context.search_zone1["name"]))
+    assert_that(zones[1]["name"], is_(list_zone_context.search_zone2["name"]))
 
-    assert_that(result["nextId"], is_("list-zones-test-searched-2."))
+    assert_that(result["nextId"], is_(list_zone_context.search_zone2["name"]))
     assert_that(result["maxItems"], is_(2))
     assert_that(result["nameFilter"], is_("*searched*"))
     assert_that(result, is_not(has_key("startFrom")))
@@ -128,20 +136,24 @@ def test_list_zones_with_no_results(shared_zone_test_context):
     assert_that(result, is_not(has_key("nextId")))
 
 
-def test_list_zones_with_search_last_page(shared_zone_test_context):
+def test_list_zones_with_search_last_page(list_zone_context, shared_zone_test_context):
     """
     Test that the second page of listing zones returns correctly when a name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(name_filter="*test-searched-3", start_from="list-zones-test-searched-2.", max_items=2, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*test-searched-3{shared_zone_test_context.partition_id}",
+                                                                   start_from=list_zone_context.search_zone2["name"],
+                                                                   max_items=2,
+                                                                   status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(1))
-    assert_that(zones[0]["name"], is_("list-zones-test-searched-3."))
+    assert_that(zones[0]["name"], is_(list_zone_context.search_zone3["name"]))
 
     assert_that(result, is_not(has_key("nextId")))
     assert_that(result["maxItems"], is_(2))
-    assert_that(result["nameFilter"], is_("*test-searched-3"))
-    assert_that(result["startFrom"], is_("list-zones-test-searched-2."))
+    assert_that(result["nameFilter"], is_(f"*test-searched-3{shared_zone_test_context.partition_id}"))
+    assert_that(result["startFrom"], is_(list_zone_context.search_zone2["name"]))
+
 
 def test_list_zones_ignore_access_success(shared_zone_test_context):
     """
@@ -158,9 +170,9 @@ def test_list_zones_ignore_access_success_with_name_filter(shared_zone_test_cont
     """
     Test that we can retrieve a list of all zones with a name filter
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(name_filter="shared", ignore_access=True, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=shared_zone_test_context.shared_zone["name"].rstrip("."), ignore_access=True, status=200)
     retrieved = result["zones"]
 
     assert_that(result["ignoreAccess"], is_(True))
-    assert_that(retrieved, has_item(has_entry("name", "shared.")))
+    assert_that(retrieved, has_item(has_entry("name", shared_zone_test_context.shared_zone["name"])))
     assert_that(retrieved, has_item(has_entry("accessLevel", "NoAccess")))

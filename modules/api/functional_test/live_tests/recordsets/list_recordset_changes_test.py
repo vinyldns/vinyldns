@@ -11,7 +11,6 @@ def check_changes_response(response, recordChanges=False, nextId=False, startFro
     :param startFrom: the string for startFrom or false if doesnt exist
     :param maxItems: maxItems is defined as an Int by default so will always return an Int
     """
-
     assert_that(response, has_key("zoneId"))  # always defined as random string
     if recordChanges:
         assert_that(response["recordSetChanges"], is_not(has_length(0)))

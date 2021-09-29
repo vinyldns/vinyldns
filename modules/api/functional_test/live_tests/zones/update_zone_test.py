@@ -14,7 +14,7 @@ def test_update_zone_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time"
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
         acl_rule = {
             "accessLevel": "Read",
@@ -62,7 +62,6 @@ def test_update_zone_success(shared_zone_test_context):
 
         acl = uz["acl"]
         verify_acl_rule_is_present_once(acl_rule, acl)
-
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -112,11 +111,10 @@ def test_update_missing_zone_data(shared_zone_test_context):
     """
     Test that updating a zone without providing necessary data returns errors and fails the update
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time."
+        zone_name = f"one-time{shared_zone_test_context.partition_id}."
 
         zone = {
             "name": zone_name,
@@ -153,7 +151,6 @@ def test_update_missing_zone_data(shared_zone_test_context):
         # Check that the failed update didn't go through
         zone_get = client.get_zone(result_zone["id"])["zone"]
         assert_that(zone_get["name"], is_(zone_name))
-
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -167,7 +164,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time."
+        zone_name = f"one-time{shared_zone_test_context.partition_id}."
 
         zone = {
             "name": zone_name,
@@ -203,7 +200,6 @@ def test_update_invalid_zone_data(shared_zone_test_context):
         # Check that the failed update didn't go through
         zone_get = client.get_zone(result_zone["id"])["zone"]
         assert_that(zone_get["name"], is_(zone_name))
-
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -216,7 +212,7 @@ def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = {
-        "name": "one-time.",
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
         "email": "test@test.com",
         "id": "nothere",
         "connection": {
@@ -477,7 +473,7 @@ def test_delete_acl_group_rule_success(shared_zone_test_context):
 
     # delete the rule
     result = client.delete_zone_acl_rule_with_wait(shared_zone_test_context.system_test_zone["id"], acl_rule,
-                                                          status=202)
+                                                   status=202)
 
     # make sure that our acl is not on the zone
     zone = client.get_zone(result["zone"]["id"])["zone"]
@@ -510,7 +506,7 @@ def test_delete_acl_user_rule_success(shared_zone_test_context):
 
     # delete the rule
     result = client.delete_zone_acl_rule_with_wait(shared_zone_test_context.system_test_zone["id"], acl_rule,
-                                                          status=202)
+                                                   status=202)
 
     # make sure that our acl is not on the zone
     zone = client.get_zone(result["zone"]["id"])["zone"]
@@ -533,7 +529,7 @@ def test_delete_non_existent_acl_rule_success(shared_zone_test_context):
     }
     # delete the rule
     result = client.delete_zone_acl_rule_with_wait(shared_zone_test_context.system_test_zone["id"], acl_rule,
-                                                          status=202)
+                                                   status=202)
 
     # make sure that our acl is not on the zone
     zone = client.get_zone(result["zone"]["id"])["zone"]
@@ -579,7 +575,6 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
     Test that a user (who previously had permissions to view a zone via acl rules) can still view the zone once
     the acl rule is deleted
     """
-
     ok_client = shared_zone_test_context.ok_vinyldns_client  # ok adds and deletes acl rule
     dummy_client = shared_zone_test_context.dummy_vinyldns_client  # dummy should not be able to see ok_zone once acl rule is deleted
     ok_zone = ok_client.get_zone(shared_zone_test_context.ok_zone["id"])["zone"]
@@ -714,7 +709,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
     try:
         result = client.create_zone(
             {
-                "name": "one-time.",
+                "name": f"one-time{shared_zone_test_context.partition_id}.",
                 "email": "test@test.com",
                 "adminGroupId": shared_zone_test_context.dummy_group["id"],
                 "connection": {
@@ -839,21 +834,6 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
     error = shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=403)
     assert_that(error, contains_string("Not authorized to update zone shared status from false to true."))
 
-
-def test_toggle_test_flag(shared_zone_test_context):
-    """
-    Test the isTest flag is ignored in update requests
-    """
-    client = shared_zone_test_context.shared_zone_vinyldns_client
-    zone_update = copy.deepcopy(shared_zone_test_context.non_test_shared_zone)
-    zone_update["isTest"] = True
-
-    change = client.update_zone(zone_update, status=202)
-    client.wait_until_zone_change_status_synced(change)
-
-    assert_that(change["zone"]["isTest"], is_(False))
-
-
 @pytest.mark.serial
 def test_update_connection_info_success(shared_zone_test_context):
     """
@@ -891,6 +871,7 @@ def test_update_connection_info_success(shared_zone_test_context):
         if test_rs:
             delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)
             client.wait_until_recordset_change_status(delete_result, "Complete")
+
 
 @pytest.mark.serial
 def test_update_connection_info_invalid_backendid(shared_zone_test_context):

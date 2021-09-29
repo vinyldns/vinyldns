@@ -1,16 +1,17 @@
-from hamcrest import *
 from utils import *
+
 
 def test_get_batch_change_success(shared_zone_test_context):
     """
     Test successfully getting a batch change
     """
     client = shared_zone_test_context.ok_vinyldns_client
+    ip6_prefix = shared_zone_test_context.ip6_prefix
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json(generate_record_name("parent.com."), address="4.5.6.7"),
-            get_change_A_AAAA_json(generate_record_name("ok."), record_type="AAAA", address="fd69:27cc:fe91::60")
+            get_change_A_AAAA_json(generate_record_name(shared_zone_test_context.parent_zone["name"]), address="4.5.6.7"),
+            get_change_A_AAAA_json(generate_record_name(shared_zone_test_context.ok_zone["name"]), record_type="AAAA", address=f"{ip6_prefix}::60")
         ]
     }
     to_delete = []
@@ -37,7 +38,8 @@ def test_get_batch_change_success(shared_zone_test_context):
             try:
                 delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
                 client.wait_until_recordset_change_status(delete_result, "Complete")
-            except:
+            except Exception:
+                traceback.print_exc()
                 pass
 
 
@@ -47,10 +49,12 @@ def test_get_batch_change_with_record_owner_group_success(shared_zone_test_conte
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     group = shared_zone_test_context.shared_record_group
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
+
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("testing-get-batch-with-owner-group.shared.", address="1.1.1.1")
+            get_change_A_AAAA_json(f"testing-get-batch-with-owner-group.{shared_zone_name}", address="1.1.1.1")
         ],
         "ownerGroupId": group["id"]
     }
@@ -66,7 +70,6 @@ def test_get_batch_change_with_record_owner_group_success(shared_zone_test_conte
         assert_that(result, is_(completed_batch))
         assert_that(result["ownerGroupId"], is_(group["id"]))
         assert_that(result["ownerGroupName"], is_(group["name"]))
-
     finally:
         for result_rs in to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
@@ -79,16 +82,17 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
     with the ownerGroupName attribute set to None
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
     temp_group = {
         "name": "test-get-batch-record-owner-group2",
         "email": "test@test.com",
         "description": "for testing that a get batch change still works when record owner group is deleted",
-        "members": [ { "id": "sharedZoneUser"} ],
-        "admins": [ { "id": "sharedZoneUser"} ]
+        "members": [{"id": "sharedZoneUser"}],
+        "admins": [{"id": "sharedZoneUser"}]
     }
 
     rs_name = generate_record_name()
-    rs_fqdn = rs_name + ".shared."
+    rs_fqdn = f"{rs_name}.{shared_zone_name}"
     record_to_delete = []
     try:
 
@@ -124,7 +128,6 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
         assert_that(result, is_(completed_batch))
         assert_that(result["ownerGroupId"], is_(group_to_delete["id"]))
         assert_that(result, is_not(has_key("ownerGroupName")))
-
     finally:
         for result_rs in record_to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
@@ -148,11 +151,12 @@ def test_get_batch_change_with_unauthorized_user_fails(shared_zone_test_context)
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    ip6_prefix = shared_zone_test_context.ip6_prefix
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json(generate_record_name("parent.com."), address="4.5.6.7"),
-            get_change_A_AAAA_json(generate_record_name("ok."), record_type="AAAA", address="fd69:27cc:fe91::60")
+            get_change_A_AAAA_json(generate_record_name(shared_zone_test_context.parent_zone["name"]), address="4.5.6.7"),
+            get_change_A_AAAA_json(generate_record_name(shared_zone_test_context.ok_zone["name"]), record_type="AAAA", address=f"{ip6_prefix}::60")
         ]
     }
     to_delete = []
@@ -170,5 +174,6 @@ def test_get_batch_change_with_unauthorized_user_fails(shared_zone_test_context)
             try:
                 delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
                 client.wait_until_recordset_change_status(delete_result, "Complete")
-            except:
+            except Exception:
+                traceback.print_exc()
                 pass

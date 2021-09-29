@@ -1,9 +1,8 @@
-from utils import *
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from dns.resolver import *
-from vinyldns_context import VinylDNSTestContext
 from requests.compat import urljoin
+
+from vinyldns_context import VinylDNSTestContext
+from vinyldns_python import VinylDNSClient
 
 
 def test_request_fails_when_user_account_is_locked():
@@ -41,6 +40,7 @@ def test_request_fails_when_accessing_non_existent_route():
     _, data = client.make_request(url, "GET", client.headers, status=404)
 
     assert_that(data, is_("The requested path [/no-existo] does not exist."))
+
 
 def test_request_fails_with_unsupported_http_method_for_route():
     """

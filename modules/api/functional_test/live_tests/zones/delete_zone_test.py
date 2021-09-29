@@ -1,9 +1,5 @@
 import pytest
-import uuid
 
-from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from vinyldns_context import VinylDNSTestContext
 from utils import *
 
 
@@ -15,7 +11,7 @@ def test_delete_zone_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time"
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
         zone = {
             "name": zone_name,
@@ -43,7 +39,6 @@ def test_delete_zone_success(shared_zone_test_context):
 
         client.get_zone(result_zone["id"], status=404)
         result_zone = None
-
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -57,7 +52,7 @@ def test_delete_zone_twice(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time"
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
         zone = {
             "name": zone_name,
@@ -85,7 +80,6 @@ def test_delete_zone_twice(shared_zone_test_context):
 
         client.delete_zone(result_zone["id"], status=404)
         result_zone = None
-
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)

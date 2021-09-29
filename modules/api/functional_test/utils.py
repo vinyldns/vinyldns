@@ -1,4 +1,5 @@
 import json
+import traceback
 import uuid
 
 import dns.query
@@ -318,35 +319,35 @@ def remove_classless_acl_rules(test_context, rules):
 def clear_ok_acl_rules(test_context):
     zone = test_context.ok_zone
     zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
+    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_shared_zone_acl_rules(test_context):
     zone = test_context.shared_zone
     zone["acl"]["rules"] = []
-    update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=202)
+    update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=(202, 404))
     test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_ip4_acl_rules(test_context):
     zone = test_context.ip4_reverse_zone
     zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
+    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_ip6_acl_rules(test_context):
     zone = test_context.ip6_reverse_zone
     zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
+    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_classless_acl_rules(test_context):
     zone = test_context.classless_zone_delegation_zone
     zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
+    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
@@ -535,12 +536,13 @@ def clear_recordset_list(to_delete, client):
         try:
             delete_result = client.delete_recordset(result_rs["zone"]["id"], result_rs["recordSet"]["id"], status=202)
             delete_changes.append(delete_result)
-        except:
-            pass
+        except Exception:
+            traceback.print_exc()
     for change in delete_changes:
         try:
             client.wait_until_recordset_change_status(change, "Complete")
-        except:
+        except Exception:
+            traceback.print_exc()
             pass
 
 
@@ -550,12 +552,14 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
         try:
             delete_result = client.delete_recordset(tup[0], tup[1], status=202)
             delete_changes.append(delete_result)
-        except:
+        except Exception:
+            traceback.print_exc()
             pass
     for change in delete_changes:
         try:
             client.wait_until_recordset_change_status(change, "Complete")
-        except:
+        except Exception:
+            traceback.print_exc()
             pass
 
 

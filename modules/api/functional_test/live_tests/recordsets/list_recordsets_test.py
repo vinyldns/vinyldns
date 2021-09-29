@@ -1,14 +1,10 @@
 import pytest
-import sys
-from utils import *
 
-from hamcrest import *
-from vinyldns_python import VinylDNSClient
-from test_data import TestData
+from utils import *
 
 
 @pytest.fixture(scope="module")
-def rs_fixture(request, shared_zone_test_context):
+def rs_fixture(shared_zone_test_context):
     return shared_zone_test_context.list_records_context
 
 
@@ -35,7 +31,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     try:
         # create a record in the zone with an owner group ID
         new_rs = create_recordset(rs_zone,
-                                    "test-owned-recordset", "TXT", [{"text":"should-work"}],
+                                  "test-owned-recordset", "TXT", [{"text": "should-work"}],
                                   100,
                                   shared_group["id"])
 
@@ -50,7 +46,6 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
         assert_that(rs_from_list["name"], is_("test-owned-recordset"))
         assert_that(rs_from_list["ownerGroupId"], is_(shared_group["id"]))
         assert_that(rs_from_list["ownerGroupName"], is_(shared_group["name"]))
-
     finally:
         if result_rs:
             delete_result = client.delete_recordset(rs_zone["id"], result_rs["id"], status=202)
@@ -88,7 +83,7 @@ def test_list_recordsets_excess_page_size(rs_fixture):
     client = rs_fixture.client
     rs_zone = rs_fixture.zone
 
-    #page of 22 items
+    # page of 22 items
     list_results_page = client.list_recordsets_by_zone(rs_zone["id"], max_items=23, status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results_page, size=22, offset=0, max_items=23, next_id=False)
 
@@ -152,7 +147,6 @@ def test_list_recordsets_duplicate_names(rs_fixture):
 
         list_results = client.list_recordsets_by_zone(rs_zone["id"], status=200, start_from=list_results["nextId"], max_items=1)
         assert_that(list_results["recordSets"][0]["id"], is_(created[1]))
-
     finally:
         for recordset_id in created:
             client.delete_recordset(rs_zone["id"], recordset_id, status=202)
@@ -284,7 +278,8 @@ def test_list_recordsets_with_record_type_filter_valid_and_invalid_type(rs_fixtu
     list_results_records = list_results["recordSets"]
     assert_that(list_results_records, has_length(1))
     assert_that(list_results_records[0]["type"], contains_string("SOA"))
-    assert_that(list_results_records[0]["name"], contains_string("list-records."))
+    assert_that(list_results_records[0]["name"], contains_string(rs_fixture.zone["name"]))
+
 
 def test_list_recordsets_with_record_type_filter_invalid_type(rs_fixture):
     """
@@ -311,7 +306,7 @@ def test_list_recordsets_with_sort_descending(rs_fixture):
 
     list_results_records = list_results["recordSets"]
     assert_that(list_results_records[0]["type"], contains_string("NS"))
-    assert_that(list_results_records[0]["name"], contains_string("list-records."))
+    assert_that(list_results_records[0]["name"], contains_string(rs_fixture.zone["name"]))
     assert_that(list_results_records[21]["type"], contains_string("A"))
     assert_that(list_results_records[21]["name"], contains_string("0-A"))
 
@@ -330,7 +325,7 @@ def test_list_recordsets_with_invalid_sort(rs_fixture):
     assert_that(list_results_records[0]["type"], contains_string("A"))
     assert_that(list_results_records[0]["name"], contains_string("0-A"))
     assert_that(list_results_records[21]["type"], contains_string("SOA"))
-    assert_that(list_results_records[21]["name"], contains_string("list-records."))
+    assert_that(list_results_records[21]["name"], contains_string(rs_fixture.zone["name"]))
 
 
 def test_list_recordsets_no_authorization(rs_fixture):
@@ -376,7 +371,6 @@ def test_list_recordsets_with_acl(shared_zone_test_context):
             elif rs["name"] == rec3["name"]:
                 verify_recordset(rs, rec3)
                 assert_that(rs["accessLevel"], is_("NoAccess"))
-
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
         for rs in new_rs:

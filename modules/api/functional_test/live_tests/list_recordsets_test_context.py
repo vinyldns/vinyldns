@@ -9,6 +9,7 @@ class ListRecordSetsTestContext(object):
         self.zone = None
         self.all_records = []
         self.group = None
+
         get_zone = self.client.get_zone_by_name(f"list-records{partition_id}.", status=(200, 404))
         if get_zone and "zone" in get_zone:
             self.zone = get_zone["zone"]
@@ -17,7 +18,7 @@ class ListRecordSetsTestContext(object):
             if my_groups and "groups" in my_groups and len(my_groups["groups"]) > 0:
                 self.group = my_groups["groups"][0]
 
-    def build(self):
+    def setup(self):
         partition_id = self.partition_id
         group = {
             "name": f"list-records-group{partition_id}",

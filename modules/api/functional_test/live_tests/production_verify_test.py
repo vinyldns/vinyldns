@@ -56,5 +56,6 @@ def test_verify_production(shared_zone_test_context):
             try:
                 delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)
                 client.wait_until_recordset_deleted(delete_result["zoneId"], delete_result["id"])
-            except:
+            except Exception:
+                traceback.print_exc()
                 pass

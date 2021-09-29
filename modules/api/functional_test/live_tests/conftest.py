@@ -16,7 +16,7 @@ ctx_cache: MutableMapping[str, SharedZoneTestContext] = {}
 @pytest.fixture(scope="session")
 def shared_zone_test_context(tmp_path_factory, worker_id):
     if worker_id == "master":
-        partition_id = "1"
+        partition_id = "2"
     else:
         partition_id = str(int(worker_id.replace("gw", "")) + 1)
 

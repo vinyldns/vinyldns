@@ -33,6 +33,6 @@ key "vinyldns-sha512." {
 //include "/etc/bind/zones.rfc1918";
 
 include "/var/cache/bind/config/named.partition1.conf";
-//include "/var/cache/bind/config/named.partition2.conf";
-//include "/var/cache/bind/config/named.partition3.conf";
-//include "/var/cache/bind/config/named.partition4.conf";
+include "/var/cache/bind/config/named.partition2.conf";
+include "/var/cache/bind/config/named.partition3.conf";
+include "/var/cache/bind/config/named.partition4.conf";

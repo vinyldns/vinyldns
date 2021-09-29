@@ -105,6 +105,8 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
     for record owner group name
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
+
     temp_group = {
         "name": "test-list-summaries-deleted-owner-group",
         "email": "test@test.com",
@@ -121,7 +123,7 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
         batch_change_input = {
             "comments": '',
             "changes": [
-                get_change_A_AAAA_json("list-batch-with-deleted-owner-group.shared.", address="1.1.1.1")
+                get_change_A_AAAA_json(f"list-batch-with-deleted-owner-group.{shared_zone_name}", address="1.1.1.1")
             ],
             "ownerGroupId": group_to_delete["id"]
         }
@@ -151,7 +153,6 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
         under_test = under_test[0]
         assert_that(under_test["ownerGroupId"], is_(group_to_delete["id"]))
         assert_that(under_test, is_not(has_key("ownerGroupName")))
-
     finally:
         for result_rs in record_to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
@@ -166,11 +167,12 @@ def test_list_batch_change_summaries_with_ignore_access_true_only_shows_requesti
     client = shared_zone_test_context.shared_zone_vinyldns_client
     ok_client = shared_zone_test_context.ok_vinyldns_client
     group = shared_zone_test_context.shared_record_group
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
 
     ok_batch_change_input = {
         "comments": '',
         "changes": [
-            get_change_A_AAAA_json("ok-batch-with-owner-group.shared.", address="1.1.1.1")
+            get_change_A_AAAA_json(f"ok-batch-with-owner-group.{shared_zone_name}", address="1.1.1.1")
         ],
         "ownerGroupId": group["id"]
     }
@@ -188,7 +190,6 @@ def test_list_batch_change_summaries_with_ignore_access_true_only_shows_requesti
 
         ok_under_test = [item for item in ok_batch_change_summaries_result if (item["id"] == ok_completed_batch["id"])]
         assert_that(ok_under_test, has_length(1))
-
     finally:
         for result_rs in ok_record_to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)

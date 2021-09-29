@@ -5,7 +5,6 @@ def test_list_group_members_success(shared_zone_test_context):
     """
     Test that we can list all the members of a group
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -49,7 +48,6 @@ def test_list_group_members_success(shared_zone_test_context):
         assert_that(ok["email"], is_("test@test.com"))
         assert_that(ok["created"], is_not(none()))
         assert_that(ok["lockStatus"], is_("Unlocked"))
-
     finally:
         if saved_group:
             client.delete_group(saved_group["id"], status=(200, 404))
@@ -59,7 +57,6 @@ def test_list_group_members_not_found(shared_zone_test_context):
     """
     Tests that we can not list the members of a non-existent group
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
 
     client.list_members_group("not_found", status=404)
@@ -69,7 +66,6 @@ def test_list_group_members_start_from(shared_zone_test_context):
     """
     Test that we can list the members starting from a given user
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -124,7 +120,6 @@ def test_list_group_members_start_from_non_user(shared_zone_test_context):
     """
     Test that we can list the members starting from a non existent username
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -179,7 +174,6 @@ def test_list_group_members_max_item(shared_zone_test_context):
     """
     Test that we can chose the number of items to list
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -233,7 +227,6 @@ def test_list_group_members_max_item_default(shared_zone_test_context):
     """
     Test that the default for max_item is 100 items
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -286,13 +279,12 @@ def test_list_group_members_max_item_zero(shared_zone_test_context):
     """
     Test that the call fails when max_item is 0
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
         members = []
         for runner in range(0, 200):
-            members.append({"id":  "dummy{0:0>3}".format(runner)})
+            members.append({"id": "dummy{0:0>3}".format(runner)})
 
         new_group = {
             "name": "test-list-group-members-max-items-zero",
@@ -321,7 +313,6 @@ def test_list_group_members_max_item_over_1000(shared_zone_test_context):
     """
     Test that the call fails when max_item is over 1000
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -356,7 +347,6 @@ def test_list_group_members_next_id_correct(shared_zone_test_context):
     """
     Test that the correct next_id is returned
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -409,7 +399,6 @@ def test_list_group_members_next_id_exhausted(shared_zone_test_context):
     """
     Test that the next_id is null when the list is exhausted
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -461,7 +450,6 @@ def test_list_group_members_next_id_exhausted_two_pages(shared_zone_test_context
     """
     Test that the next_id is null when the list is exhausted over 2 pages
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -537,7 +525,6 @@ def test_list_group_members_unauthed(shared_zone_test_context):
     """
     Tests that we cant list members without access
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     saved_group = None

@@ -1,6 +1,8 @@
 import json
 import logging
 import time
+import traceback
+from json import JSONDecodeError
 from typing import Iterable
 from urllib.parse import urlparse, urlsplit, parse_qs, urljoin
 
@@ -112,8 +114,11 @@ class VinylDNSClient(object):
 
         try:
             return response.status_code, response.json()
-        except:
+        except JSONDecodeError:
             return response.status_code, response.text
+        except Exception:
+            traceback.print_exc()
+            raise
 
     def ping(self):
         """
@@ -169,7 +174,6 @@ class VinylDNSClient(object):
         :param group: A group dictionary that can be serialized to json
         :return: the content of the response, which should be a group json
         """
-
         url = urljoin(self.index_url, "/groups")
         response, data = self.make_request(url, "POST", self.headers, json.dumps(group), **kwargs)
 
@@ -181,7 +185,6 @@ class VinylDNSClient(object):
         :param group_id: Id of the group to get
         :return: the group json
         """
-
         url = urljoin(self.index_url, "/groups/" + group_id)
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
 
@@ -205,7 +208,6 @@ class VinylDNSClient(object):
         :param group: A group dictionary that can be serialized to json
         :return: the content of the response, which should be a group json
         """
-
         url = urljoin(self.index_url, "/groups/{0}".format(group_id))
         response, data = self.make_request(url, "PUT", self.headers, json.dumps(group), not_found_ok=True, **kwargs)
 
@@ -220,7 +222,6 @@ class VinylDNSClient(object):
         :param ignore_access: determines if groups should be retrieved based on requester's membership
         :return: the content of the response
         """
-
         args = []
         if group_name_filter:
             args.append("groupNameFilter={0}".format(group_name_filter))
@@ -242,7 +243,6 @@ class VinylDNSClient(object):
         :param group_name_filter: only returns groups whose names contain filter string
         :return: the content of the response
         """
-
         groups = []
         args = []
         if group_name_filter:
@@ -329,7 +329,6 @@ class VinylDNSClient(object):
         :param zone: the zone to be created
         :return: the content of the response
         """
-
         url = urljoin(self.index_url, "/zones")
         response, data = self.make_request(url, "POST", self.headers, json.dumps(zone), **kwargs)
 
@@ -695,6 +694,10 @@ class VinylDNSClient(object):
         """
         Waits until the zone change status is Synced
         """
+        # We can get a zone_change parameter from a 404 where the change is not a dict
+        if type(zone_change) == str:
+            return
+
         latest_change = zone_change
         retries = MAX_RETRIES
 
@@ -787,11 +790,8 @@ class VinylDNSClient(object):
         while change["status"] != expected_status and retries > 0:
             time.sleep(RETRY_WAIT)
             retries -= 1
-            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"], change["recordSet"]["id"],
-                                                      change["id"], status=(200, 404))
-            if "Unable to find record set change" in latest_change:
-                change = change
-            else:
+            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"], change["recordSet"]["id"], change["id"], status=(200, 404))
+            if type(latest_change) != str:
                 change = latest_change
 
         if change["status"] != expected_status:

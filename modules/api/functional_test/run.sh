@@ -9,5 +9,4 @@ if [ "$1" == "--update" ]; then
 fi
 
 PARAMS=("$@")
-./pytest.sh "${UPDATE_DEPS}" --suppress-no-test-exit-code -v live_tests -m "serial" --teardown=False "${PARAMS[@]}"
-./pytest.sh --suppress-no-test-exit-code -v live_tests -n 2 -m "not serial" --teardown=True "${PARAMS[@]}"
+./pytest.sh "${UPDATE_DEPS}" --suppress-no-test-exit-code -v live_tests "${PARAMS[@]}"

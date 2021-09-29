@@ -1,15 +1,10 @@
-import pytest
-import json
-
 from hamcrest import *
-from vinyldns_python import VinylDNSClient
 
 
 def test_get_group_success(shared_zone_test_context):
     """
     Tests that we can get a group that has been created
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -17,8 +12,8 @@ def test_get_group_success(shared_zone_test_context):
             "name": "test-get-group-success",
             "email": "test@test.com",
             "description": "this is a description",
-            "members": [ { "id": "ok"} ],
-            "admins": [ { "id": "ok"} ]
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -47,7 +42,6 @@ def test_get_deleted_group(shared_zone_test_context):
     """
     Tests getting a group that was already deleted
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -56,8 +50,8 @@ def test_get_deleted_group(shared_zone_test_context):
             "name": "test-get-deleted-group",
             "email": "test@test.com",
             "description": "this is a description",
-            "members": [ { "id": "ok"} ],
-            "admins": [ { "id": "ok"} ]
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -72,7 +66,6 @@ def test_get_group_unauthed(shared_zone_test_context):
     """
     Tests that we cant get a group were not in
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     saved_group = None
@@ -81,8 +74,8 @@ def test_get_group_unauthed(shared_zone_test_context):
             "name": "test-get-group-unauthed",
             "email": "test@test.com",
             "description": "this is a description",
-            "members": [ { "id": "ok"} ],
-            "admins": [ { "id": "ok"} ]
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
         }
         saved_group = client.create_group(new_group, status=200)
 

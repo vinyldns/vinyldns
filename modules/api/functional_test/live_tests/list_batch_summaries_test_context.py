@@ -3,7 +3,7 @@ from vinyldns_python import VinylDNSClient
 
 
 class ListBatchChangeSummariesTestContext:
-    to_delete: set = None
+    to_delete: set = set()
     completed_changes: list = []
     group: object = None
     is_setup: bool = False
@@ -13,7 +13,7 @@ class ListBatchChangeSummariesTestContext:
 
     def setup(self, shared_zone_test_context):
         self.completed_changes = []
-        self.to_delete = None
+        self.to_delete = set()
 
         acl_rule = generate_acl_rule("Write", userId="list-batch-summaries-id")
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
@@ -21,7 +21,7 @@ class ListBatchChangeSummariesTestContext:
         initial_db_check = self.client.list_batch_change_summaries(status=200)
         self.group = self.client.get_group("list-summaries-group", status=200)
 
-        ok_zone_name = shared_zone_test_context.ok_zone
+        ok_zone_name = shared_zone_test_context.ok_zone["name"]
         batch_change_input_one = {
             "comments": "first",
             "changes": [
@@ -49,7 +49,6 @@ class ListBatchChangeSummariesTestContext:
         self.completed_changes = []
 
         if len(initial_db_check["batchChanges"]) == 0:
-            print("\r\n!!! CREATING NEW SUMMARIES")
             # make some batch changes
             for batch_change_input in batch_change_inputs:
                 change = self.client.create_batch_change(batch_change_input, status=202)
@@ -70,7 +69,13 @@ class ListBatchChangeSummariesTestContext:
         self.to_delete = set(record_set_list)
         self.is_setup = True
 
-    def tear_down(self):
+    def tear_down(self, shared_zone_test_context):
+        for result_rs in self.to_delete:
+            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(result_rs[0], result_rs[1], status=(202, 404))
+            if type(delete_result) != str:
+                shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
+        self.to_delete.clear()
+        clear_ok_acl_rules(shared_zone_test_context)
         self.client.tear_down()
 
     def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False, max_items=100, approval_status=False):

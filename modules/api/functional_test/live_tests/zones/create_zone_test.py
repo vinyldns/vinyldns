@@ -1,37 +1,9 @@
 import copy
+from typing import List, Dict
 
 import pytest
 
 from utils import *
-
-records_in_dns = [
-    {"name": "one-time.",
-     "type": "SOA",
-     "records": [{"mname": "172.17.42.1.",
-                  "rname": "admin.test.com.",
-                  "retry": 3600,
-                  "refresh": 10800,
-                  "minimum": 38400,
-                  "expire": 604800,
-                  "serial": 1439234395}]},
-    {"name": "one-time.",
-     "type": "NS",
-     "records": [{"nsdname": "172.17.42.1."}]},
-    {"name": "jenkins",
-     "type": "A",
-     "records": [{"address": "10.1.1.1"}]},
-    {"name": "foo",
-     "type": "A",
-     "records": [{"address": "2.2.2.2"}]},
-    {"name": "test",
-     "type": "A",
-     "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
-    {"name": "one-time.",
-     "type": "A",
-     "records": [{"address": "5.5.5.5"}]},
-    {"name": "already-exists",
-     "type": "A",
-     "records": [{"address": "6.6.6.6"}]}]
 
 # Defined in docker bind9 conf file
 TSIG_KEYS = [
@@ -48,7 +20,7 @@ TSIG_KEYS = [
 def test_create_zone_with_tsigs(shared_zone_test_context, key_name, key_secret, key_alg):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}."
 
     zone = {
         "name": zone_name,
@@ -70,11 +42,10 @@ def test_create_zone_with_tsigs(shared_zone_test_context, key_name, key_secret, 
 
         # Check that it was internally stored correctly using GET
         zone_get = client.get_zone(zone["id"])["zone"]
-        assert_that(zone_get["name"], is_(zone_name + "."))
+        assert_that(zone_get["name"], is_(zone_name))
         assert_that("connection" in zone_get)
         assert_that(zone_get["connection"]["keyName"], is_(key_name))
         assert_that(zone_get["connection"]["algorithm"], is_(key_alg))
-
     finally:
         if "id" in zone:
             client.abandon_zones([zone["id"]], status=202)
@@ -88,7 +59,8 @@ def test_create_zone_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time "
+        # Include a space in the zone name to verify that it is trimmed and properly formatted
+        zone_name = f"one-time{shared_zone_test_context.partition_id} "
 
         zone = {
             "name": zone_name,
@@ -117,8 +89,7 @@ def test_create_zone_success(shared_zone_test_context):
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ["name", "type", "records"])
             small_rs["records"] = small_rs["records"]
-            assert_that(records_in_dns, has_item(small_rs))
-
+            assert_that(retrieve_dns_records(shared_zone_test_context), has_item(small_rs))
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -132,7 +103,7 @@ def test_create_zone_without_transfer_connection_leaves_it_empty(shared_zone_tes
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = "one-time"
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
         zone = {
             "name": zone_name,
@@ -216,7 +187,7 @@ def test_create_zone_with_connection_failure(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time."
+    zone_name = f"one-time{shared_zone_test_context.partition_id}."
     zone = {
         "name": zone_name,
         "email": "test@test.com",
@@ -259,7 +230,7 @@ def test_create_zone_returns_400_for_invalid_data(shared_zone_test_context):
 def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
     zone = {
         "name": zone_name,
@@ -284,7 +255,6 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
         assert_that(zone_get["name"], is_(zone_name + "."))
         assert_that("connection" not in zone_get)
         assert_that("transferConnection" not in zone_get)
-
     finally:
         if "id" in zone:
             client.abandon_zones([zone["id"]], status=202)
@@ -294,7 +264,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
 def test_zone_connection_only(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
     zone = {
         "name": zone_name,
@@ -344,7 +314,6 @@ def test_zone_connection_only(shared_zone_test_context):
         assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
         assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
         assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-
     finally:
         if "id" in zone:
             client.abandon_zones([zone["id"]], status=202)
@@ -354,7 +323,7 @@ def test_zone_connection_only(shared_zone_test_context):
 def test_zone_bad_connection(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
     zone = {
         "name": zone_name,
@@ -374,7 +343,7 @@ def test_zone_bad_connection(shared_zone_test_context):
 def test_zone_bad_transfer_connection(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
     zone = {
         "name": zone_name,
@@ -400,7 +369,7 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
 def test_zone_transfer_connection(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "one-time"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
     zone = {
         "name": zone_name,
@@ -450,7 +419,6 @@ def test_zone_transfer_connection(shared_zone_test_context):
         assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
         assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
         assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-
     finally:
         if "id" in zone:
             client.abandon_zones([zone["id"]], status=202)
@@ -462,7 +430,7 @@ def test_user_cannot_create_zone_with_nonmember_admin_group(shared_zone_test_con
     Test user cannot create a zone with an admin group they are not a member of
     """
     zone = {
-        "name": "one-time.",
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
         "email": "test@test.com",
         "adminGroupId": shared_zone_test_context.dummy_group["id"],
         "connection": {
@@ -487,7 +455,7 @@ def test_user_cannot_create_zone_with_failed_validations(shared_zone_test_contex
     Test that a user cannot create a zone that has invalid zone data
     """
     zone = {
-        "name": "invalid-zone.",
+        "name": f"invalid-zone{shared_zone_test_context.partition_id}.",
         "email": "test@test.com",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
@@ -532,3 +500,40 @@ def test_create_zone_bad_backend_id(shared_zone_test_context):
     }
     result = shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=400)
     assert_that(result, contains_string("Invalid backendId"))
+
+
+def retrieve_dns_records(shared_zone_test_context) -> List[Dict]:
+    """
+    Returns a representation of what is current configured in the one-time. zone
+    :param shared_zone_test_context: The test context
+    :return: An array of recordsets
+    """
+    partition_id = shared_zone_test_context.partition_id
+    return [
+        {"name": f"one-time{partition_id}.",
+         "type": "SOA",
+         "records": [{"mname": "172.17.42.1.",
+                      "rname": "admin.test.com.",
+                      "retry": 3600,
+                      "refresh": 10800,
+                      "minimum": 38400,
+                      "expire": 604800,
+                      "serial": 1439234395}]},
+        {"name": f"one-time{partition_id}.",
+         "type": "NS",
+         "records": [{"nsdname": "172.17.42.1."}]},
+        {"name": "jenkins",
+         "type": "A",
+         "records": [{"address": "10.1.1.1"}]},
+        {"name": "foo",
+         "type": "A",
+         "records": [{"address": "2.2.2.2"}]},
+        {"name": "test",
+         "type": "A",
+         "records": [{"address": "3.3.3.3"}, {"address": "4.4.4.4"}]},
+        {"name": f"one-time{partition_id}.",
+         "type": "A",
+         "records": [{"address": "5.5.5.5"}]},
+        {"name": "already-exists",
+         "type": "A",
+         "records": [{"address": "6.6.6.6"}]}]

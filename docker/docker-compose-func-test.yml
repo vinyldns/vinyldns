@@ -1,40 +1,6 @@
-version: "3.0"
+version: "3.5"
+
 services:
-  mysql:
-    image: "mysql:5.7"
-    env_file:
-      .env
-    container_name: "vinyldns-mysql"
-    ports:
-      - "19002:3306"
-    logging:
-      driver: none
-
-  bind9:
-    image: "vinyldns/bind9:0.0.4"
-    env_file:
-      .env
-    container_name: "vinyldns-bind9"
-    volumes:
-      - ./bind9/etc:/var/cache/bind/config
-      - ./bind9/zones:/var/cache/bind/zones
-    ports:
-      - "19001:53/tcp"
-      - "19001:53/udp"
-    logging:
-      driver: none
-
-  localstack:
-    image: localstack/localstack:0.10.4
-    container_name: "vinyldns-localstack"
-    ports:
-      - "19006:19006"
-      - "19007:19007"
-      - "19009:19009"
-    environment:
-      - SERVICES=sns:19006,sqs:19007,route53:19009
-      - START_WEB=0
-      - HOSTNAME_EXTERNAL=vinyldns-localstack
 
   # this file is copied into the target directory to get the jar!  won't run in place as is!
   api:
@@ -49,6 +15,54 @@ services:
       - mysql
       - bind9
       - localstack
+    networks:
+      vinyldns:
+        ipv4_address: 172.10.10.2
+
+  mysql:
+    image: "mysql:5.7"
+    env_file:
+      .env
+    container_name: "vinyldns-mysql"
+    ports:
+      - "19002:3306"
+    logging:
+      driver: none
+    networks:
+      vinyldns:
+        ipv4_address: 172.10.10.3
+
+  localstack:
+    image: localstack/localstack:0.10.4
+    container_name: "vinyldns-localstack"
+    ports:
+      - "19006:19006"
+      - "19007:19007"
+      - "19009:19009"
+    environment:
+      - SERVICES=sns:19006,sqs:19007,route53:19009
+      - START_WEB=0
+      - HOSTNAME_EXTERNAL=vinyldns-localstack
+    networks:
+      vinyldns:
+        ipv4_address: 172.10.10.4
+
+  bind9:
+    image: "vinyldns/bind9:0.0.4"
+    env_file:
+      .env
+    container_name: "vinyldns-bind9"
+    volumes:
+      - ./bind9/etc:/var/cache/bind/config
+      - ./bind9/zones:/var/cache/bind/zones
+    ports:
+      - "19001:53/tcp"
+      - "19001:53/udp"
+    logging:
+      driver: none
+    networks:
+      vinyldns:
+        ipv4_address: 172.10.10.10
 
   functest:
     build:
@@ -60,3 +74,14 @@ services:
     container_name: "vinyldns-functest"
     depends_on:
       - api
+    networks:
+      - vinyldns
+
+networks:
+  # Custom network so that we have some control over IP space and deterministic container IPs
+  vinyldns:
+    name: vinyldns
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.10.10.0/24

@@ -12,6 +12,6 @@ test                    IN  A   3.3.3.3
 test                    IN  A   4.4.4.4
 @                       IN  A   5.5.5.5
 already-exists          IN  A   6.6.6.6
-fqdn.sync-test.         IN  A   7.7.7.7
+fqdn.sync-test{partition}.         IN  A   7.7.7.7
 _sip._tcp               IN  SRV 10       60     5060 foo.sync-test.
 existing.dotted         IN  A   9.9.9.9

@@ -7,7 +7,6 @@ def test_update_group_success(shared_zone_test_context):
     """
     Tests that we can update a group that has been created
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -193,7 +192,6 @@ def test_update_group_adds_admins_as_members(shared_zone_test_context):
     """
     Tests that when we add an admin to a group the admin is also a member
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -241,7 +239,6 @@ def test_update_group_conflict(shared_zone_test_context):
     """
     Tests that we can not update a groups name to a name already in use
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     result = None
     conflict_group = None
@@ -287,7 +284,6 @@ def test_update_group_not_found(shared_zone_test_context):
     """
     Tests that we can not update a group that has not been created
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
 
     update_group = {
@@ -305,7 +301,6 @@ def test_update_group_deleted(shared_zone_test_context):
     """
     Tests that we can not update a group that has been deleted
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -338,7 +333,6 @@ def test_add_member_via_update_group_success(shared_zone_test_context):
     """
     Tests that we can add a member to a group via update successfully
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -372,7 +366,6 @@ def test_add_member_to_group_twice_via_update_group(shared_zone_test_context):
     """
     Tests that we can add a member to a group twice successfully via update group
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
     try:
@@ -407,7 +400,6 @@ def test_add_not_found_member_to_group_via_update_group(shared_zone_test_context
     """
     Tests that we can not add a non-existent member to a group via update group
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
@@ -440,7 +432,6 @@ def test_remove_member_via_update_group_success(shared_zone_test_context):
     """
     Tests that we can remove a member via update group successfully
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     saved_group = None
 
