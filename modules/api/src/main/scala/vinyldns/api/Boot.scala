@@ -150,10 +150,15 @@ object Boot extends App {
         backendResolver,
         vinyldnsConfig.crypto
       )
+      //limits configured in reference.conf paasing here
       val limits = LimitsConfig(
+        vinyldnsConfig.limitsconfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT,
         vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS,
         vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT,
-        vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT
+        vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT,
+        vinyldnsConfig.limitsconfig.RECORDSET_ROUTING_DEFAULT_MAX_ITEMS,
+        vinyldnsConfig.limitsconfig.ZONE_ROUTING_DEFAULT_MAX_ITEMS,
+        vinyldnsConfig.limitsconfig.ZONE_ROUTING_MAX_ITEMS_LIMIT
       )
       val healthService = new HealthService(
         messageQueue.healthCheck :: backendResolver.healthCheck(

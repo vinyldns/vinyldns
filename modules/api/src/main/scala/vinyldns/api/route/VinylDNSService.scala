@@ -85,13 +85,15 @@ class VinylDNSService(
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
-  val recordSetRoute: Route = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
+    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
+  val recordSetRoute: Route =
+    new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
     new MembershipRoute(membershipService, limits, vinylDNSAuthenticator).getRoutes
   val batchChangeRoute: Route =
     new BatchChangeRoute(
       batchChangeService,
+      limits,
       vinylDNSAuthenticator,
       vinyldnsConfig.manualReviewConfig
     ).getRoutes
