@@ -27,7 +27,7 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
-import vinyldns.api.config.VinylDNSConfig
+import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
 import vinyldns.api.domain.access.{AccessValidations, GlobalAcls}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
@@ -124,6 +124,7 @@ object Boot extends App {
         vinyldnsConfig.scheduledChangesConfig
       )
       val membershipService = MembershipService(repositories)
+
       val connectionValidator =
         new ZoneConnectionValidator(
           backendResolver,
@@ -148,6 +149,11 @@ object Boot extends App {
         recordAccessValidations,
         backendResolver,
         vinyldnsConfig.crypto
+      )
+      val limits = LimitsConfig(
+        vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS,
+        vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT,
+        vinyldnsConfig.limitsconfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT
       )
       val healthService = new HealthService(
         messageQueue.healthCheck :: backendResolver.healthCheck(
@@ -176,6 +182,7 @@ object Boot extends App {
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,
+        limits,
         processingSignal,
         zoneService,
         healthService,
