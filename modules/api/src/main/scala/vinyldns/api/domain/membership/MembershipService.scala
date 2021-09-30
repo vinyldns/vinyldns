@@ -258,7 +258,7 @@ class MembershipService(
         .map {
           case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
             GroupAlreadyExistsError(
-              GroupEmailAlreadyExists.format(existingGroup.name, emailId, existingGroup.email)
+              GroupEmailExistsErrorMsg.format(existingGroup.name, emailId, existingGroup.email)
             ).asLeft
           case _ =>
             ().asRight
@@ -298,7 +298,7 @@ class MembershipService(
           case Some(existingGroup)
               if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
             GroupAlreadyExistsError(
-              GroupEmailAlreadyExistsUpdate.format(existingGroup.name, emailId, existingGroup.email)
+              GroupEmailExistsUpdateErrorMsg.format(existingGroup.name, emailId, existingGroup.email)
             ).asLeft
           case _ =>
             ().asRight
