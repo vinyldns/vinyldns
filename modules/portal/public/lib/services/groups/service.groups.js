@@ -70,9 +70,17 @@ angular.module('service.groups', [])
             return $http.delete(url, {headers: utilityService.getCsrfHeader()});
         };
 
-        this.getGroups = function (ignoreAccess) {
+        this.getGroups = function (ignoreAccess, query) {
+            if (query == "") {
+                query = null;
+            }
+            var params = {
+                "maxItems": 1500,
+                "groupNameFilter": query,
+                "ignoreAccess": ignoreAccess
+            };
             var url = '/api/groups';
-            url = this.urlBuilder(url, { maxItems: 1500, ignoreAccess: ignoreAccess});
+            url = this.urlBuilder(url, params);
             return $http.get(url);
         };
 

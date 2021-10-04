@@ -6,8 +6,8 @@
 
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
-      <li><a href="/">Home</a></li>
-      <li class="active">Groups</li>
+        <li><a href="/">Home</a></li>
+        <li class="active">Groups</li>
     </ul>
     <!-- END BREADCRUMB -->
 
@@ -33,66 +33,84 @@
             <div class="panel-body tab-content">
                 <div class="tab-pane active" id="groups">
                     <div class="row">
-            <div class="col-md-12">
+                        <div class="col-md-12">
 
-                <!-- SIMPLE DATATABLE -->
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <div class="btn-group">
-                            <button id="open-group-modal-button" class="btn btn-default" ng-click="openModal($event);">
-                                <span class="fa fa-plus"></span> New Group
-                            </button>
-                            <button id="refresh-group-button" class="btn btn-default" ng-click="refresh();">
-                                <span class="fa fa-refresh"></span> Refresh
-                            </button>
-                        </div>
-                          <!-- TODO unhide after MVP
-                          <div class="pull-right" style="width: 200px;">
-                            <div class="input-group">
-                              <div class="input-group-addon"><span class="fa fa-search"></span></div>
-                              <input type="text" class="form-control" placeholder="Group Name"/>
+                            <!-- SIMPLE DATATABLE -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <div class="btn-group">
+                                        <button id="open-group-modal-button" class="btn btn-default" ng-click="openModal($event);">
+                                            <span class="fa fa-plus"></span> New Group
+                                        </button>
+                                        <button id="refresh-group-button" class="btn btn-default" ng-click="refresh();">
+                                            <span class="fa fa-refresh"></span> Refresh
+                                        </button>
+                                    </div>
+
+                                    <!-- TODO unhide after MVP
+                                    <div class="pull-right" style="width: 200px;">
+                                      <div class="input-group">
+                                        <div class="input-group-addon"><span class="fa fa-search"></span></div>
+                                        <input type="text" class="form-control" placeholder="Group Name"/>
+                                      </div>
+                                    </div> -->
+
+                                    <!-- SEARCH BOX -->
+                                    <div class="pull-right">
+                                        <form class="input-group" ng-submit="refresh()">
+                                            <div class="input-group">
+                                                <span class="input-group-btn">
+                                                    <button id="group-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                        <span class="fa fa-search"></span>
+                                                    </button>
+                                                </span>
+                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- END SEARCH BOX -->
+
+                                </div>
+                                <div id="group-list" class="panel-body">
+                                    <p ng-if="!groupsLoaded">Loading groups...</p>
+                                    <p ng-if="haveNoGroups(groups.items.length)">You don't have any groups yet.</p>
+                                    <p ng-if="searchCriteria(groups.items.length)">No groups match the search criteria.</p>
+                                    <table class="table datatable_simple" ng-if="groups.items.length">
+                                        <thead>
+                                        <tr>
+                                            <th>Group Name</th>
+                                            <th>Email</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr ng-repeat="group in groups.items | orderBy:'+name'">
+                                            <td class="wrap-long-text">
+                                                <a ng-if="canSeeGroup(group)" ng-href="/groups/{{group.id}}">{{group.name}}</a>
+                                                <span ng-if="!canSeeGroup(group)">{{group.name}}</span>
+                                            </td>
+                                            <td class="wrap-long-text">{{group.email}}</td>
+                                            <td class="wrap-long-text">{{group.description}}</td>
+                                            <td>
+                                                <div class="table-form-group">
+                                                    <a ng-if="canSeeGroup(group)" class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
+                                                        View</a>
+                                                    <a ng-if="groupAdmin(group)" class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
+                                                        Edit</a>
+                                                    <button ng-if="groupAdmin(group)" id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
+                                                        Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                          </div> -->
-                    </div>
-                    <div id="group-list" class="panel-body">
-                        <p ng-if="!groupsLoaded">Loading groups...</p>
-                        <p ng-if="!groups.items.length && groupsLoaded">You don't have any groups yet.</p>
-                        <table class="table datatable_simple" ng-if="groups.items.length">
-                            <thead>
-                                <tr>
-                                    <th>Group Name</th>
-                                    <th>Email</th>
-                                    <th>Description</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="group in groups.items | orderBy:'+name'">
-                                    <td class="wrap-long-text">
-                                        <a ng-if="canSeeGroup(group)" ng-href="/groups/{{group.id}}">{{group.name}}</a>
-                                        <span ng-if="!canSeeGroup(group)">{{group.name}}</span>
-                                    </td>
-                                    <td class="wrap-long-text">{{group.email}}</td>
-                                    <td class="wrap-long-text">{{group.description}}</td>
-                                    <td>
-                                        <div class="table-form-group">
-                                            <a ng-if="canSeeGroup(group)" class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
-                                            View</a>
-                                            <a ng-if="groupAdmin(group)" class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
-                                                Edit</a>
-                                            <button ng-if="groupAdmin(group)" id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
-                                            Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <!-- END SIMPLE DATATABLE -->
+                            <!-- END SIMPLE DATATABLE -->
 
-            </div>
-        </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -109,7 +127,7 @@
     <div class="modal-dialog modal-lg">
         <form class="form-horizontal" name="createGroupForm" ng-submit="createGroupForm.$valid &&
         createGroup(currentGroup.name, currentGroup.email, currentGroup.description);"
-        novalidate>
+              novalidate>
             <div class="modal-content" id="group-form">
                 <div class="modal-header">
                     <button type="button" class="close" ng-click="closeModal($evt);"><span aria-hidden="true">&times;</span><span class="sr-only">
@@ -119,19 +137,19 @@
                 <div class="modal-body">
                     <div class="panel-header">
                         <p>
-                        Groups simplify setup and access to resources in Vinyl.  A Group consists of one or more members,
-                        who are registered users of Vinyl.  Any member in the group can be designated as a Group Admin, which
-                        allows that member full administrative access to the group, including deleting the group.
+                            Groups simplify setup and access to resources in Vinyl.  A Group consists of one or more members,
+                            who are registered users of Vinyl.  Any member in the group can be designated as a Group Admin, which
+                            allows that member full administrative access to the group, including deleting the group.
                         </p>
                     </div>
                     <div class="panel-body">
                         <modal-element label="Name" invalid-when="createGroupForm.$submitted && createGroupForm.name.$invalid">
                             <input id="group-name"
-                                name="name"
-                                class="form-control"
-                                ng-model="currentGroup.name"
-                                type="text"
-                                required>
+                                   name="name"
+                                   class="form-control"
+                                   ng-model="currentGroup.name"
+                                   type="text"
+                                   required>
                             </input>
                             <span class="help-block">
                                 This should be a single word name used for the groups.  Use hyphens if needed, no spaces.
@@ -139,20 +157,20 @@
                         </modal-element>
                         <modal-element label="Email" invalid-when="createGroupForm.$submitted && createGroupForm.email.$invalid">
                             <input id="group-email"
-                                name="email"
-                                class="form-control"
-                                ng-model="currentGroup.email"
-                                type="text"
-                                required>
+                                   name="email"
+                                   class="form-control"
+                                   ng-model="currentGroup.email"
+                                   type="text"
+                                   required>
                             </input>
                             <span class="help-block">The email distribution list for the group.</span>
                         </modal-element>
                         <modal-element label="Description">
                             <input id="group-description"
-                                name="description"
-                                class="form-control"
-                                ng-model="currentGroup.description"
-                                type="text">
+                                   name="description"
+                                   class="form-control"
+                                   ng-model="currentGroup.description"
+                                   type="text">
                             </input>
                             <span class="help-block">
                               A short description of the group, if more info is needed other than the name.
