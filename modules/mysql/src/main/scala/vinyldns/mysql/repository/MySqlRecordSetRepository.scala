@@ -26,45 +26,46 @@ import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
-
+import java.security.MessageDigest
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
+
   import MySqlRecordSetRepository._
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE id = {id}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE id = {id}
     """.stripMargin
 
   private val COUNT_RECORDSETS_IN_ZONE =
     sql"""
-      |SELECT count(*)
-      |  FROM recordset
-      | WHERE zone_id = {zoneId}
+         |SELECT count(*)
+         |  FROM recordset
+         | WHERE zone_id = {zoneId}
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id, data_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ?, data_hash = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -81,10 +82,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val GET_RECORDSET_BY_OWNERID =
     sql"""
-      |SELECT id
-      |  FROM recordset
-      |WHERE owner_group_id = {ownerGroupId}
-      |LIMIT 1
+         |SELECT id
+         |  FROM recordset
+         |WHERE owner_group_id = {ownerGroupId}
+         |LIMIT 1
     """.stripMargin
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
@@ -107,6 +108,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             oldRs.zoneId,
             oldRs.name,
             fromRecordType(oldRs.typ),
+            oldRs.records,
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
@@ -132,9 +134,12 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.zoneId,
             i.recordSet.name,
             fromRecordType(i.recordSet.typ),
+            // i.recordSet.records.toString(), ToDo
+            // parseIP(i.recordSet.records.toString(), fromRecordType(i.recordSet.typ)), ToDo
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
-            i.recordSet.ownerGroupId
+            i.recordSet.ownerGroupId,
+            hashBytes(toPB(i.recordSet).toByteArray)
           )
         }
 
@@ -144,10 +149,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             u.zoneId,
             u.recordSet.name,
             fromRecordType(u.recordSet.typ),
+            //u.recordSet.records.toString(), ToDo
+            //parseIP(u.recordSet.records.toString(), fromRecordType(u.recordSet.typ)), ToDo
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
-            u.recordSet.id
+            u.recordSet.id,
+            hashBytes(toPB(u.recordSet).toByteArray)
           )
         }
 
@@ -169,6 +177,33 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }.as(changeSet)
     }
+
+  /** Work in progress */
+  /** Parse any IPv4 address or IPv6 address */
+  import java.util.regex.Pattern
+  import java.util.regex.Matcher
+
+  /** Parse IPv4 address */
+  def parseIP(ipstring: String, recordType: Int): String = {
+    var ipaddress: String = null
+    val IPADDRESS_PATTERN = {
+      "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
+    }
+    val pattern: Pattern = Pattern.compile(IPADDRESS_PATTERN)
+    val matcher: Matcher = pattern.matcher(ipstring)
+    if (matcher.find() & (recordType == 1 || recordType == 2 || recordType == 6))
+      ipaddress = matcher.group().mkString
+    else ipaddress = null
+    ipaddress
+  }
+
+  /** hexa for hash the rs BLOB */
+  def hexString(rs: Array[Byte]) =
+    rs.foldLeft("")((out, b) => f"$out%s${b & 0x0ff}%02x")
+
+  /**Hashing the record set blob. */
+  def hashBytes(rs: Array[Byte]) =
+    hexString(MessageDigest.getInstance("SHA-1").digest(rs))
 
   def listRecordSets(
       zoneId: Option[String],
