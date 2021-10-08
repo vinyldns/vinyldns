@@ -10,7 +10,7 @@ def test_create_group_success(shared_zone_test_context):
 
     try:
         new_group = {
-            "name": "test-create-group-success",
+            "name": f"test-create-group-success{shared_zone_test_context.partition_id}",
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],

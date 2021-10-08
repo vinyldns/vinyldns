@@ -4,9 +4,12 @@ import os
 import ssl
 import sys
 import traceback
+from collections import OrderedDict
+from typing import MutableMapping, List
 
 import _pytest.config
 import pytest
+from xdist.scheduler import LoadScopeScheduling
 
 from vinyldns_context import VinylDNSTestContext
 
@@ -26,7 +29,7 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
     Adds additional options that we can parse when we run the tests, stores them in the parser / py.test context
     """
     parser.addoption("--url", dest="url", action="store", default="http://localhost:9000", help="URL for application to root")
-    parser.addoption("--dns-ip", dest="dns_ip", action="store", default="127.0.0.1:19001", help="The ip address for the dns name server to update")
+    parser.addoption("--dns-ip", dest="dns_ip", action="store", default="127.0.0.1", help="The ip address for the dns name server to update")
     parser.addoption("--resolver-ip", dest="resolver_ip", action="store", help="The ip address for the dns server to use for the tests during resolution. This is usually the same as `--dns-ip`")
     parser.addoption("--dns-zone", dest="dns_zone", action="store", default="vinyldns.", help="The zone name that will be used for testing")
     parser.addoption("--dns-key-name", dest="dns_key_name", action="store", default="vinyldns.", help="The name of the key used to sign updates for the zone")
@@ -116,3 +119,41 @@ def retrieve_resolver(resolver_name: str) -> str:
             pytest.exit(1)
 
     return resolver_address
+
+class WorkerScheduler(LoadScopeScheduling):
+    worker_assignments: List[MutableMapping] = [{"name": "list_batch_change_summaries_test.py", "worker": 0}]
+
+    def _assign_work_unit(self, node):
+        """Assign a work unit to a node."""
+        assert self.workqueue
+
+        # Grab a unit of work
+        scope, work_unit = self.workqueue.popitem(last=False)
+
+        # Always run list_batch_change_summaries_test on the first worker
+        for assignment in WorkerScheduler.worker_assignments:
+            while assignment["name"] in scope:
+                self.run_work_on_node(self.nodes[assignment["worker"]], scope, work_unit)
+                scope, work_unit = self.workqueue.popitem(last=False)
+
+        self.run_work_on_node(node, scope, work_unit)
+
+    def run_work_on_node(self, node, scope, work_unit):
+        # Keep track of the assigned work
+        assigned_to_node = self.assigned_work.setdefault(node, default=OrderedDict())
+        assigned_to_node[scope] = work_unit
+        # Ask the node to execute the workload
+        worker_collection = self.registered_collections[node]
+        nodeids_indexes = [
+            worker_collection.index(nodeid)
+            for nodeid, completed in work_unit.items()
+            if not completed
+        ]
+        node.send_runtest_some(nodeids_indexes)
+
+    def _split_scope(self, nodeid):
+        return nodeid
+
+
+def pytest_xdist_make_scheduler(config, log):
+    return WorkerScheduler(config, log)

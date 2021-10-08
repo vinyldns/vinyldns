@@ -42,7 +42,7 @@ def test_delete_group_that_is_already_deleted(shared_zone_test_context):
 
     try:
         new_group = {
-            "name": "test-delete-group-already",
+            "name": f"test-delete-group-already{shared_zone_test_context.partition_id}",
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
@@ -76,7 +76,6 @@ def test_delete_admin_group(shared_zone_test_context):
         }
 
         result_group = client.create_group(new_group, status=200)
-        print(result_group)
 
         # Create zone with that group ID as admin
         zone = {

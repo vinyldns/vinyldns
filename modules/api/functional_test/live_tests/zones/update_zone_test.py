@@ -729,9 +729,6 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
         zone = result["zone"]
         client.wait_until_zone_active(result["zone"]["id"])
 
-        import json
-        print(json.dumps(zone, indent=3))
-
         new_joint_group = {
             "name": "new-ok-group",
             "email": "test@test.com",

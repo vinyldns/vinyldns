@@ -12,13 +12,15 @@ def test_list_zones_success(list_zone_context, shared_zone_test_context):
     """
     Test that we can retrieve a list of the user's zones
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*{shared_zone_test_context.partition_id}", status=200)
     retrieved = result["zones"]
 
     assert_that(retrieved, has_length(5))
     assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone1["name"])))
     assert_that(retrieved, has_item(has_entry("adminGroupName", list_zone_context.list_zones_group["name"])))
     assert_that(retrieved, has_item(has_entry("backendId", "func-test-backend")))
+
+    assert_that(result["nameFilter"], is_(f"*{shared_zone_test_context.partition_id}"))
 
 
 def test_list_zones_max_items_100(shared_zone_test_context):
@@ -56,7 +58,7 @@ def test_list_zones_no_search_first_page(list_zone_context, shared_zone_test_con
     """
     Test that the first page of listing zones returns correctly when no name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(max_items=3)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*{shared_zone_test_context.partition_id}", max_items=3)
     zones = result["zones"]
 
     assert_that(zones, has_length(3))
@@ -67,14 +69,18 @@ def test_list_zones_no_search_first_page(list_zone_context, shared_zone_test_con
     assert_that(result["nextId"], is_(list_zone_context.search_zone3["name"]))
     assert_that(result["maxItems"], is_(3))
     assert_that(result, is_not(has_key("startFrom")))
-    assert_that(result, is_not(has_key("nameFilter")))
+
+    assert_that(result["nameFilter"], is_(f"*{shared_zone_test_context.partition_id}"))
 
 
 def test_list_zones_no_search_second_page(list_zone_context, shared_zone_test_context):
     """
     Test that the second page of listing zones returns correctly when no name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(start_from=list_zone_context.search_zone2["name"], max_items=2, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*{shared_zone_test_context.partition_id}",
+                                                                   start_from=list_zone_context.search_zone2["name"],
+                                                                   max_items=2,
+                                                                   status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
@@ -84,14 +90,18 @@ def test_list_zones_no_search_second_page(list_zone_context, shared_zone_test_co
     assert_that(result["nextId"], is_(list_zone_context.non_search_zone1["name"]))
     assert_that(result["maxItems"], is_(2))
     assert_that(result["startFrom"], is_(list_zone_context.search_zone2["name"]))
-    assert_that(result, is_not(has_key("nameFilter")))
+
+    assert_that(result["nameFilter"], is_(f"*{shared_zone_test_context.partition_id}"))
 
 
 def test_list_zones_no_search_last_page(list_zone_context, shared_zone_test_context):
     """
     Test that the last page of listing zones returns correctly when no name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(start_from=list_zone_context.search_zone3["name"], max_items=4, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*{shared_zone_test_context.partition_id}",
+                                                                   start_from=list_zone_context.search_zone3["name"],
+                                                                   max_items=4,
+                                                                   status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
@@ -101,14 +111,14 @@ def test_list_zones_no_search_last_page(list_zone_context, shared_zone_test_cont
     assert_that(result, is_not(has_key("nextId")))
     assert_that(result["maxItems"], is_(4))
     assert_that(result["startFrom"], is_(list_zone_context.search_zone3["name"]))
-    assert_that(result, is_not(has_key("nameFilter")))
+    assert_that(result["nameFilter"], is_(f"*{shared_zone_test_context.partition_id}"))
 
 
 def test_list_zones_with_search_first_page(list_zone_context, shared_zone_test_context):
     """
     Test that the first page of listing zones returns correctly when a name filter is provided
     """
-    result = shared_zone_test_context.list_zones_client.list_zones(name_filter="*searched*", max_items=2, status=200)
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*searched*{shared_zone_test_context.partition_id}", max_items=2, status=200)
     zones = result["zones"]
 
     assert_that(zones, has_length(2))
@@ -117,7 +127,7 @@ def test_list_zones_with_search_first_page(list_zone_context, shared_zone_test_c
 
     assert_that(result["nextId"], is_(list_zone_context.search_zone2["name"]))
     assert_that(result["maxItems"], is_(2))
-    assert_that(result["nameFilter"], is_("*searched*"))
+    assert_that(result["nameFilter"], is_(f"*searched*{shared_zone_test_context.partition_id}"))
     assert_that(result, is_not(has_key("startFrom")))
 
 

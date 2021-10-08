@@ -5,6 +5,7 @@ from vinyldns_python import VinylDNSClient
 class ListZonesTestContext(object):
     def __init__(self, partition_id):
         self.partition_id = partition_id
+        self.setup_started = False
         self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "listZonesAccessKey", "listZonesSecretKey")
         self.search_zone1 = None
         self.search_zone2 = None
@@ -13,7 +14,12 @@ class ListZonesTestContext(object):
         self.non_search_zone2 = None
         self.list_zones_group = None
 
-    def build(self):
+    def setup(self):
+        if self.setup_started:
+            # Safeguard against reentrance
+            return
+        self.setup_started = True
+
         partition_id = self.partition_id
         group = {
             "name": f"list-zones-group{partition_id}",
@@ -84,6 +90,6 @@ class ListZonesTestContext(object):
             self.client.wait_until_zone_active(change["zone"]["id"])
 
     def tear_down(self):
-        clear_zones(self.client)
-        clear_groups(self.client)
+        self.client.clear_zones()
+        self.client.clear_groups()
         self.client.tear_down()

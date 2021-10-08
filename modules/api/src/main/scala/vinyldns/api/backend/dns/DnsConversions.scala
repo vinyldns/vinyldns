@@ -125,7 +125,7 @@ trait DnsConversions {
   /* Remove the additional record of the TSIG key from the message before generating the string */
   def obscuredDnsMessage(msg: DNS.Message): DNS.Message = {
     val clone = msg.clone.asInstanceOf[DNS.Message]
-    val sections = clone.getSectionArray(DNS.Section.ADDITIONAL)
+    val sections = clone.getSection(DNS.Section.ADDITIONAL).asScala
     if (sections != null && sections.nonEmpty) {
       sections.filter(_.getType == DNS.Type.TSIG).foreach { tsigRecord =>
         clone.removeRecord(tsigRecord, DNS.Section.ADDITIONAL)
@@ -231,7 +231,7 @@ trait DnsConversions {
 
   def fromCNAMERecord(r: DNS.CNAMERecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(CNAMEData(Fqdn(data.getAlias.toString)))
+      List(CNAMEData(Fqdn(data.getTarget.toString)))
     }
 
   def fromDSRecord(r: DNS.DSRecord, zoneName: DNS.Name, zoneId: String): RecordSet =

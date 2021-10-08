@@ -1,25 +1,30 @@
+from pathlib import Path
+
 from utils import *
 from vinyldns_python import VinylDNSClient
 
+# FIXME: this context is fragile as it depends on creating batch changes carefully created with a time delay.
 
 class ListBatchChangeSummariesTestContext:
-    to_delete: set = set()
-    completed_changes: list = []
-    group: object = None
-    is_setup: bool = False
 
-    def __init__(self):
+    def __init__(self, partition_id: str):
+        self.to_delete: set = set()
+        self.completed_changes: list = []
+        self.setup_started = False
+        self.partition_id = partition_id
         self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "listBatchSummariesAccessKey", "listBatchSummariesSecretKey")
 
-    def setup(self, shared_zone_test_context):
+    def setup(self, shared_zone_test_context, temp_directory: Path):
+        if self.setup_started:
+            # Safeguard against reentrance
+            return
+
+        self.setup_started = True
         self.completed_changes = []
         self.to_delete = set()
 
         acl_rule = generate_acl_rule("Write", userId="list-batch-summaries-id")
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
-
-        initial_db_check = self.client.list_batch_change_summaries(status=200)
-        self.group = self.client.get_group("list-summaries-group", status=200)
 
         ok_zone_name = shared_zone_test_context.ok_zone["name"]
         batch_change_input_one = {
@@ -48,26 +53,20 @@ class ListBatchChangeSummariesTestContext:
         record_set_list = []
         self.completed_changes = []
 
-        if len(initial_db_check["batchChanges"]) == 0:
-            # make some batch changes
-            for batch_change_input in batch_change_inputs:
-                change = self.client.create_batch_change(batch_change_input, status=202)
+        # make some batch changes
+        for batch_change_input in batch_change_inputs:
+            change = self.client.create_batch_change(batch_change_input, status=202)
 
-                if "Review" not in change["status"]:
-                    completed = self.client.wait_until_batch_change_completed(change)
-                    assert_that(completed["comments"], equal_to(batch_change_input["comments"]))
-                    record_set_list += [(change["zoneId"], change["recordSetId"]) for change in completed["changes"]]
+            if "Review" not in change["status"]:
+                completed = self.client.wait_until_batch_change_completed(change)
+                assert_that(completed["comments"], equal_to(batch_change_input["comments"]))
+                record_set_list += [(change["zoneId"], change["recordSetId"]) for change in completed["changes"]]
+                self.to_delete = set(record_set_list)
 
-                # sleep for consistent ordering of timestamps, must be at least one second apart
-                time.sleep(1)
+            # Sleep for consistent ordering of timestamps, must be at least one second apart
+            time.sleep(1.1)
 
-            self.completed_changes = self.client.list_batch_change_summaries(status=200)["batchChanges"]
-            assert_that(len(self.completed_changes), equal_to(len(batch_change_inputs)))
-        else:
-            print("\r\n!!! USING EXISTING SUMMARIES")
-            self.completed_changes = initial_db_check["batchChanges"]
-        self.to_delete = set(record_set_list)
-        self.is_setup = True
+        self.completed_changes = self.client.list_batch_change_summaries(status=200)["batchChanges"]
 
     def tear_down(self, shared_zone_test_context):
         for result_rs in self.to_delete:
@@ -76,6 +75,8 @@ class ListBatchChangeSummariesTestContext:
                 shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
         self.to_delete.clear()
         clear_ok_acl_rules(shared_zone_test_context)
+        self.client.clear_zones()
+        self.client.clear_groups()
         self.client.tear_down()
 
     def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False, max_items=100, approval_status=False):

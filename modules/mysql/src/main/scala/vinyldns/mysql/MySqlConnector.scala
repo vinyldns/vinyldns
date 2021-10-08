@@ -28,33 +28,38 @@ object MySqlConnector {
   private val logger = LoggerFactory.getLogger("MySqlConnector")
 
   def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] = {
-    val migrationConnectionSettings = MySqlDataSourceSettings(
-      "flywayConnectionPool",
-      config.driver,
-      config.migrationUrl,
-      config.user,
-      config.password,
-      minimumIdle = Some(3)
-    )
+    // We can skip migrations for h2, we'll use the test/ddl.sql for initializing
+    // that for testing
+    if (config.driver.contains("h2")) IO.unit
+    else {
+      val migrationConnectionSettings = MySqlDataSourceSettings(
+        "flywayConnectionPool",
+        config.driver,
+        config.migrationUrl,
+        config.user,
+        config.password,
+        minimumIdle = Some(3)
+      )
 
-    getDataSource(migrationConnectionSettings).map { migrationDataSource =>
-      logger.info("Running migrations to ready the databases")
+      getDataSource(migrationConnectionSettings).map { migrationDataSource =>
+        logger.info("Running migrations to ready the databases")
 
-      val migration = new Flyway()
-      migration.setDataSource(migrationDataSource)
-      // flyway changed the default schema table name in v5.0.0
-      // this allows to revert to an old naming convention if needed
-      config.migrationSchemaTable.foreach { tableName =>
-        migration.setTable(tableName)
+        val migration = new Flyway()
+        migration.setDataSource(migrationDataSource)
+        // flyway changed the default schema table name in v5.0.0
+        // this allows to revert to an old naming convention if needed
+        config.migrationSchemaTable.foreach { tableName =>
+          migration.setTable(tableName)
+        }
+
+        val placeholders = Map("dbName" -> config.name)
+        migration.setPlaceholders(placeholders.asJava)
+        migration.setSchemas(config.name)
+
+        // Runs flyway migrations
+        migration.migrate()
+        logger.info("migrations complete")
       }
-
-      val placeholders = Map("dbName" -> config.name)
-      migration.setPlaceholders(placeholders.asJava)
-      migration.setSchemas(config.name)
-
-      // Runs flyway migrations
-      migration.migrate()
-      logger.info("migrations complete")
     }
   }
 

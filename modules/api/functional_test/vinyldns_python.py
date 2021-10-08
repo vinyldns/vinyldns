@@ -28,7 +28,8 @@ class VinylDNSClient(object):
             "Accept": "application/json, text/plain",
             "Content-Type": "application/json"
         }
-
+        self.created_zones = []
+        self.created_groups = []
         self.signer = AwsSigV4RequestSigner(self.index_url, access_key, secret_key)
         self.session = self.requests_retry_session()
         self.session_not_found_ok = self.requests_retry_not_found_ok_session()
@@ -39,11 +40,18 @@ class VinylDNSClient(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.tear_down()
 
+    def clear_groups(self):
+        for group_id in self.created_groups:
+            self.delete_group(group_id)
+
+    def clear_zones(self):
+        self.abandon_zones(self.created_zones)
+
     def tear_down(self):
         self.session.close()
         self.session_not_found_ok.close()
 
-    def requests_retry_not_found_ok_session(self, retries=5, backoff_factor=0.4, status_forcelist=(500, 502, 504), session=None):
+    def requests_retry_not_found_ok_session(self, retries=20, backoff_factor=0.1, status_forcelist=(500, 502, 504), session=None):
         session = session or requests.Session()
         retry = Retry(
             total=retries,
@@ -57,7 +65,7 @@ class VinylDNSClient(object):
         session.mount("https://", adapter)
         return session
 
-    def requests_retry_session(self, retries=5, backoff_factor=0.4, status_forcelist=(500, 502, 504), session=None):
+    def requests_retry_session(self, retries=20, backoff_factor=0.1, status_forcelist=(500, 502, 504), session=None):
         session = session or requests.Session()
         retry = Retry(
             total=retries,
@@ -104,13 +112,9 @@ class VinylDNSClient(object):
 
         if status_code is not None:
             if isinstance(status_code, Iterable):
-                if response.status_code not in status_code:
-                    print(response.text)
-                assert_that(response.status_code, is_in(status_code))
+                assert_that(response.status_code, is_in(status_code), response.text)
             else:
-                if response.status_code != status_code:
-                    print(response.text)
-                assert_that(response.status_code, is_(status_code))
+                assert_that(response.status_code, is_(status_code), response.text)
 
         try:
             return response.status_code, response.json()
@@ -177,6 +181,9 @@ class VinylDNSClient(object):
         url = urljoin(self.index_url, "/groups")
         response, data = self.make_request(url, "POST", self.headers, json.dumps(group), **kwargs)
 
+        if type(data) != str and "id" in data:
+            self.created_groups.append(data["id"])
+
         return data
 
     def get_group(self, group_id, **kwargs):
@@ -213,7 +220,7 @@ class VinylDNSClient(object):
 
         return data
 
-    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=None, ignore_access=False, **kwargs):
+    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=200, ignore_access=False, **kwargs):
         """
         Retrieves my groups
         :param start_from: the start key of the page
@@ -332,6 +339,9 @@ class VinylDNSClient(object):
         url = urljoin(self.index_url, "/zones")
         response, data = self.make_request(url, "POST", self.headers, json.dumps(zone), **kwargs)
 
+        if type(data) != str and "zone" in data:
+            self.created_zones.append(data["zone"]["id"])
+
         return data
 
     def update_zone(self, zone, **kwargs):
@@ -361,6 +371,7 @@ class VinylDNSClient(object):
         :param zone_id: the id of the zone to be deleted
         :return: nothing, will fail if the status code was not expected
         """
+
         url = urljoin(self.index_url, "/zones/{0}".format(zone_id))
         response, data = self.make_request(url, "DELETE", self.headers, not_found_ok=True, **kwargs)
 
@@ -471,7 +482,6 @@ class VinylDNSClient(object):
 
         url = urljoin(self.index_url, "/zones/{0}/recordsets".format(recordset["zoneId"]))
         response, data = self.make_request(url, "POST", self.headers, json.dumps(recordset), **kwargs)
-
         return data
 
     def delete_recordset(self, zone_id, rs_id, **kwargs):
@@ -752,7 +762,7 @@ class VinylDNSClient(object):
         Waits a period of time for the record set creation to complete.
 
         :param zone_id: the id of the zone the record set lives in
-        :param record_set_id: the id of the recprdset that has been created.
+        :param record_set_id: the id of the recordset that has been created.
         :param kw: Additional parameters for the http request
         :return: True when the recordset creation is complete False if the timeout expires
         """
@@ -764,6 +774,7 @@ class VinylDNSClient(object):
             time.sleep(RETRY_WAIT)
             response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, status=(200, 404), **kwargs)
 
+        assert_that(response, equal_to(200), data)
         if response == 200:
             return data
 

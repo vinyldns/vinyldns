@@ -1,12 +1,11 @@
-import Resolvers._
-import Dependencies._
 import CompilerOptions._
+import Dependencies._
+import Resolvers._
 import com.typesafe.sbt.packager.docker._
-import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
-import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
-import ReleaseTransformations._
-import sbtrelease.Version
+import org.scalafmt.sbt.ScalafmtPlugin._
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
+import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 
 import scala.util.Try
 
@@ -22,16 +21,19 @@ lazy val sharedSettings = Seq(
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
-  scalacOptions in (Compile, doc) += "-no-link-warnings",
+  scalacOptions in(Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
-  wartremoverErrors ++= Seq(
-    Wart.EitherProjectionPartial,
-    Wart.IsInstanceOf,
-    Wart.JavaConversions,
-    Wart.Return,
-    Wart.LeakingSealed,
-    Wart.ExplicitImplicitTypes
-  ),
+  wartremoverErrors := (
+    if (getPropertyFlagOrDefault("build.lintOnCompile", true))
+      Seq(Wart.EitherProjectionPartial,
+        Wart.IsInstanceOf,
+        Wart.JavaConversions,
+        Wart.Return,
+        Wart.LeakingSealed,
+        Wart.ExplicitImplicitTypes
+      )
+    else Seq.empty
+    ),
 
   // scala format
   scalafmtOnCompile := getPropertyFlagOrDefault("build.scalafmtOnCompile", true),
@@ -72,7 +74,7 @@ lazy val apiAssemblySettings = Seq(
   mainClass in reStart := Some("vinyldns.api.Boot"),
   // there are some odd things from dnsjava including update.java and dig.java that we don't use
   assemblyMergeStrategy in assembly := {
-    case "update.class"| "dig.class" => MergeStrategy.discard
+    case "update.class" | "dig.class" => MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "index.js") => MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") => MergeStrategy.discard
     case x =>
@@ -158,11 +160,11 @@ lazy val portalPublishSettings = Seq(
   publishLocal := (publishLocal in Docker).value,
   publish := (publish in Docker).value,
   // for sbt-native-packager (docker) to exclude local.conf
-  mappings in Universal ~= ( _.filterNot {
+  mappings in Universal ~= (_.filterNot {
     case (file, _) => file.getName.equals("local.conf")
   }),
   // for local.conf to be excluded in jars
-  mappings in (Compile, packageBin) ~= ( _.filterNot {
+  mappings in(Compile, packageBin) ~= (_.filterNot {
     case (file, _) => file.getName.equals("local.conf")
   })
 )
@@ -216,8 +218,6 @@ lazy val coreBuildSettings = Seq(
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
-
-import xerial.sbt.Sonatype._
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -231,13 +231,6 @@ lazy val corePublishSettings = Seq(
       url("https://github.com/vinyldns/vinyldns"),
       "scm:git@github.com:vinyldns/vinyldns.git"
     )
-  ),
-  developers := List(
-    Developer(id="pauljamescleary", name="Paul James Cleary", email="pauljamescleary@gmail.com", url=url("https://github.com/pauljamescleary")),
-    Developer(id="rebstar6", name="Rebecca Star", email="rebstar6@gmail.com", url=url("https://github.com/rebstar6")),
-    Developer(id="nimaeskandary", name="Nima Eskandary", email="nimaesk1@gmail.com", url=url("https://github.com/nimaeskandary")),
-    Developer(id="mitruly", name="Michael Ly", email="michaeltrulyng@gmail.com", url=url("https://github.com/mitruly")),
-    Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
   ),
   sonatypeProfileName := "io.vinyldns"
 )
@@ -397,9 +390,9 @@ lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
     // create sonatypeReleaseCommand with releaseSonatype step
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
       "project core" ::
-      "publish" ::
-      "sonatypeRelease" ::
-      _
+        "publish" ::
+        "sonatypeRelease" ::
+        _
     }
 
     newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
@@ -428,7 +421,7 @@ lazy val initReleaseStage = Seq[ReleaseStep](
   setSonatypeReleaseSettings
 )
 
-lazy val finalReleaseStage = Seq[ReleaseStep] (
+lazy val finalReleaseStage = Seq[ReleaseStep](
   releaseStepCommand("project root"), // use version.sbt file from root
   commitReleaseVersion,
   setNextVersion,
@@ -440,8 +433,8 @@ def getPropertyFlagOrDefault(name: String, value: Boolean): Boolean =
 
 releaseProcess :=
   initReleaseStage ++
-  sonatypePublishStage ++
-  finalReleaseStage
+    sonatypePublishStage ++
+    finalReleaseStage
 
 // Let's do things in parallel!
 addCommandAlias("validate", "; root/clean; " +

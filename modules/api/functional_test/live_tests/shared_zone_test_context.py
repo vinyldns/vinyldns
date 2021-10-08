@@ -20,60 +20,10 @@ class SharedZoneTestContext(object):
     """
     _data_cache: MutableMapping[str, MutableMapping[str, Mapping]] = {}
 
-    @property
-    def ok_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_ok_zone")
-
-    @property
-    def shared_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_shared_zone")
-
-    @property
-    def history_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_history_zone")
-
-    @property
-    def dummy_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_dummy_zone")
-
-    @property
-    def ip6_reverse_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_ip6_reverse_zone")
-
-    @property
-    def ip6_16_nibble_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_ip6_16_nibble_zone")
-
-    @property
-    def ip4_reverse_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_ip4_reverse_zone")
-
-    @property
-    def classless_base_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_classless_base_zone")
-
-    @property
-    def classless_zone_delegation_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_classless_zone_delegation_zone")
-
-    @property
-    def system_test_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_system_test_zone")
-
-    @property
-    def parent_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_parent_zone")
-
-    @property
-    def ds_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_ds_zone")
-
-    @property
-    def requires_review_zone(self) -> Mapping:
-        return self.attempt_retrieve_value("_requires_review_zone")
 
     def __init__(self, partition_id: str):
         self.partition_id = partition_id
+        self.setup_started = False
         self.ok_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "okAccessKey", "okSecretKey")
         self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "dummyAccessKey", "dummySecretKey")
         self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "sharedZoneUserAccessKey", "sharedZoneUserSecretKey")
@@ -87,7 +37,7 @@ class SharedZoneTestContext(object):
         self.list_zones_client = self.list_zones.client
         self.list_records_context = ListRecordSetsTestContext(partition_id)
         self.list_groups_context = ListGroupsTestContext(partition_id)
-        self.list_batch_summaries_context = None
+        self.list_batch_summaries_context = ListBatchChangeSummariesTestContext(partition_id)
 
         self.dummy_group = None
         self.ok_group = None
@@ -96,25 +46,30 @@ class SharedZoneTestContext(object):
         self.group_activity_created = None
         self.group_activity_updated = None
 
-        self._history_zone = None
-        self._ok_zone = None
-        self._dummy_zone = None
-        self._ip6_reverse_zone = None
-        self._ip6_16_nibble_zone = None
-        self._ip4_reverse_zone = None
-        self._classless_base_zone = None
-        self._classless_zone_delegation_zone = None
-        self._system_test_zone = None
-        self._parent_zone = None
-        self._ds_zone = None
-        self._requires_review_zone = None
-        self._shared_zone = None
+        self.history_zone = None
+        self.ok_zone = None
+        self.dummy_zone = None
+        self.ip6_reverse_zone = None
+        self.ip6_16_nibble_zone = None
+        self.ip4_reverse_zone = None
+        self.classless_base_zone = None
+        self.classless_zone_delegation_zone = None
+        self.system_test_zone = None
+        self.parent_zone = None
+        self.ds_zone = None
+        self.requires_review_zone = None
+        self.shared_zone = None
 
         self.ip4_10_prefix = None
         self.ip4_classless_prefix = None
         self.ip6_prefix = None
 
     def setup(self):
+        if self.setup_started:
+            # Safeguard against reentrance
+            return
+        self.setup_started = True
+
         partition_id = self.partition_id
         try:
             ok_group = {
@@ -181,7 +136,11 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._history_zone = history_zone_change["zone"]
+            self.history_zone = history_zone_change["zone"]
+
+            # initialize history
+            self.history_client.wait_until_zone_active(history_zone_change["zone"]["id"])
+            self.init_history()
 
             ok_zone_change = self.ok_vinyldns_client.create_zone(
                 {
@@ -205,7 +164,7 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._ok_zone = ok_zone_change["zone"]
+            self.ok_zone = ok_zone_change["zone"]
 
             dummy_zone_change = self.dummy_vinyldns_client.create_zone(
                 {
@@ -229,7 +188,7 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._dummy_zone = dummy_zone_change["zone"]
+            self.dummy_zone = dummy_zone_change["zone"]
 
             self.ip6_prefix = f"fd69:27cc:fe9{partition_id}"
             ip6_reverse_zone_change = self.ok_vinyldns_client.create_zone(
@@ -255,7 +214,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202
             )
-            self._ip6_reverse_zone = ip6_reverse_zone_change["zone"]
+            self.ip6_reverse_zone = ip6_reverse_zone_change["zone"]
 
             ip6_16_nibble_zone_change = self.ok_vinyldns_client.create_zone(
                 {
@@ -267,7 +226,7 @@ class SharedZoneTestContext(object):
                     "backendId": "func-test-backend"
                 }, status=202
             )
-            self._ip6_16_nibble_zone = ip6_16_nibble_zone_change["zone"]
+            self.ip6_16_nibble_zone = ip6_16_nibble_zone_change["zone"]
 
             self.ip4_10_prefix = f"10.{partition_id}"
             ip4_reverse_zone_change = self.ok_vinyldns_client.create_zone(
@@ -293,7 +252,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202
             )
-            self._ip4_reverse_zone = ip4_reverse_zone_change["zone"]
+            self.ip4_reverse_zone = ip4_reverse_zone_change["zone"]
 
             self.ip4_classless_prefix = f"192.0.{partition_id}"
             classless_base_zone_change = self.ok_vinyldns_client.create_zone(
@@ -319,7 +278,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202
             )
-            self._classless_base_zone = classless_base_zone_change["zone"]
+            self.classless_base_zone = classless_base_zone_change["zone"]
 
             classless_zone_delegation_change = self.ok_vinyldns_client.create_zone(
                 {
@@ -344,7 +303,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202
             )
-            self._classless_zone_delegation_zone = classless_zone_delegation_change["zone"]
+            self.classless_zone_delegation_zone = classless_zone_delegation_change["zone"]
 
             system_test_zone_change = self.ok_vinyldns_client.create_zone(
                 {
@@ -369,7 +328,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202
             )
-            self._system_test_zone = system_test_zone_change["zone"]
+            self.system_test_zone = system_test_zone_change["zone"]
 
             # parent zone gives access to the dummy user, dummy user cannot manage ns records
             parent_zone_change = self.ok_vinyldns_client.create_zone(
@@ -403,7 +362,7 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._parent_zone = parent_zone_change["zone"]
+            self.parent_zone = parent_zone_change["zone"]
 
             # mimicking the spec example
             ds_zone_change = self.ok_vinyldns_client.create_zone(
@@ -428,7 +387,7 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._ds_zone = ds_zone_change["zone"]
+            self.ds_zone = ds_zone_change["zone"]
 
             # zone with name configured for manual review
             requires_review_zone_change = self.ok_vinyldns_client.create_zone(
@@ -440,7 +399,7 @@ class SharedZoneTestContext(object):
                     "isTest": True,
                     "backendId": "func-test-backend"
                 }, status=202)
-            self._requires_review_zone = requires_review_zone_change["zone"]
+            self.requires_review_zone = requires_review_zone_change["zone"]
 
             # Shared zone
             shared_zone_change = self.support_user_client.create_zone(
@@ -465,7 +424,7 @@ class SharedZoneTestContext(object):
                         "primaryServer": VinylDNSTestContext.name_server_ip
                     }
                 }, status=202)
-            self._shared_zone = shared_zone_change["zone"]
+            self.shared_zone = shared_zone_change["zone"]
 
             # wait until our zones are created
             self.ok_vinyldns_client.wait_until_zone_active(system_test_zone_change["zone"]["id"])
@@ -480,23 +439,13 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_active(parent_zone_change["zone"]["id"])
             self.ok_vinyldns_client.wait_until_zone_active(ds_zone_change["zone"]["id"])
             self.ok_vinyldns_client.wait_until_zone_active(requires_review_zone_change["zone"]["id"])
-            self.history_client.wait_until_zone_active(history_zone_change["zone"]["id"])
             self.shared_zone_vinyldns_client.wait_until_zone_active(shared_zone_change["zone"]["id"])
-
-            # validate all in there
-            zones = self.dummy_vinyldns_client.list_zones()["zones"]
-            assert_that(len(zones), is_(2))
-            zones = self.ok_vinyldns_client.list_zones()["zones"]
-            assert_that(len(zones), is_(11))
-
-            # initialize history
-            self.init_history()
 
             # initialize group activity
             self.init_group_activity()
 
             # initialize list zones, only do this when constructing the whole!
-            self.list_zones.build()
+            self.list_zones.setup()
 
             # note: there are no state to load, the tests only need the client
             self.list_zones_client = self.list_zones.client
@@ -505,9 +454,7 @@ class SharedZoneTestContext(object):
             self.list_records_context.setup()
 
             # build the list of groups
-            self.list_groups_context.build()
-
-            self.list_batch_summaries_context = ListBatchChangeSummariesTestContext()
+            self.list_groups_context.setup()
         except Exception:
             # Cleanup if setup fails
             self.tear_down()
@@ -519,7 +466,7 @@ class SharedZoneTestContext(object):
         # change the zone nine times to we have update events in zone change history,
         # ten total changes including creation
         for i in range(2, 11):
-            zone_update = copy.deepcopy(self._history_zone)
+            zone_update = copy.deepcopy(self.history_zone)
             zone_update["connection"]["key"] = VinylDNSTestContext.dns_key
             zone_update["transferConnection"]["key"] = VinylDNSTestContext.dns_key
             zone_update["email"] = "i.changed.this.{0}.times@history-test.com".format(i)
@@ -527,11 +474,11 @@ class SharedZoneTestContext(object):
 
         # create some record sets
         test_a = TestData.A.copy()
-        test_a["zoneId"] = self._history_zone["id"]
+        test_a["zoneId"] = self.history_zone["id"]
         test_aaaa = TestData.AAAA.copy()
-        test_aaaa["zoneId"] = self._history_zone["id"]
+        test_aaaa["zoneId"] = self.history_zone["id"]
         test_cname = TestData.CNAME.copy()
-        test_cname["zoneId"] = self._history_zone["id"]
+        test_cname["zoneId"] = self.history_zone["id"]
 
         a_record = self.history_client.create_recordset(test_a, status=202)["recordSet"]
         aaaa_record = self.history_client.create_recordset(test_aaaa, status=202)["recordSet"]
@@ -574,13 +521,7 @@ class SharedZoneTestContext(object):
     def init_group_activity(self):
         client = self.ok_vinyldns_client
 
-        group_name = "test-list-group-activity-max-item-success"
-
-        # cleanup existing group if it's already in there
-        groups = client.list_all_my_groups()
-        existing = [grp for grp in groups if grp["name"] == group_name]
-        for grp in existing:
-            client.delete_group(grp["id"], status=200)
+        group_name = f"test-list-group-activity-max-item-success{self.partition_id}"
 
         members = [{"id": "ok"}]
         new_group = {
@@ -625,12 +566,11 @@ class SharedZoneTestContext(object):
             if self.list_groups_context:
                 self.list_groups_context.tear_down()
 
-            clear_zones(self.dummy_vinyldns_client)
-            clear_zones(self.ok_vinyldns_client)
-            clear_zones(self.history_client)
-            clear_groups(self.dummy_vinyldns_client, "global-acl-group-id")
-            clear_groups(self.ok_vinyldns_client, "global-acl-group-id")
-            clear_groups(self.history_client)
+            for client in self.clients:
+                client.clear_zones()
+
+            for client in self.clients:
+                client.clear_groups()
 
             # Close all clients
             for client in self.clients:
@@ -649,29 +589,3 @@ class SharedZoneTestContext(object):
             time.sleep(.05)
             retries -= 1
         assert_that(success, is_(True))
-
-    def attempt_retrieve_value(self, attribute_name: str) -> Mapping:
-        """
-        Attempts to retrieve the data for the attribute given by `attribute_name`
-        :param attribute_name: The name of the attribute for which to attempt to retrieve the value
-        :return: The value of the attribute given by `attribute_name`
-        """
-        if not VinylDNSTestContext.enable_safety_check:
-            # Just return the real data
-            return getattr(self, attribute_name)
-
-        # Get the real data, stored on this instance
-        real_data = getattr(self, attribute_name)
-
-        # If we don't have a cache of the original value, make a copy and cache it
-        if self._data_cache.get(attribute_name) is None:
-            self._data_cache[attribute_name] = {"caller": "", "data": copy.deepcopy(real_data)}
-        else:
-            print("last caller: " + str(self._data_cache[attribute_name]["caller"]))
-            assert_that(real_data, has_entries(self._data_cache[attribute_name]["data"]))
-
-        # Set last known caller to print if our assertion fails
-        self._data_cache[attribute_name]["caller"] = inspect.stack()[2][3]
-
-        # Return the data
-        return self._data_cache[attribute_name]["data"]

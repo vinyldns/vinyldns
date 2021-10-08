@@ -101,7 +101,6 @@ def dns_do_command(zone, record_name, record_type, command, ttl=0, rdata=""):
 
     (name_server, name_server_port) = dns_server_port(zone)
     fqdn = record_name + "." + zone["name"]
-    print("updating " + fqdn + " to have data " + rdata)
     update = dns.update.Update(zone["name"], keyring=keyring)
 
     if command == "add":
@@ -198,9 +197,6 @@ def parse_record(record_string):
     # for each record, we have exactly 4 fields in order: 1 record name; 2 TTL; 3 DCLASS; 4 TYPE; 5 RDATA
     parts = record_string.split(" ")
 
-    print("record parts")
-    print(str(parts))
-
     # any parts over 4 have to be kept together
     offset = record_string.find(parts[3]) + len(parts[3]) + 1
     length = len(record_string) - offset
@@ -214,8 +210,6 @@ def parse_record(record_string):
         "rdata": record_data
     }
 
-    print("parsed record:")
-    print(str(record))
     return record
 
 
@@ -318,37 +312,42 @@ def remove_classless_acl_rules(test_context, rules):
 
 def clear_ok_acl_rules(test_context):
     zone = test_context.ok_zone
-    zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
-    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+    if zone is not None and "acl" in zone and "rules" in zone["acl"]:
+        zone["acl"]["rules"] = []
+        update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
+        test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_shared_zone_acl_rules(test_context):
     zone = test_context.shared_zone
-    zone["acl"]["rules"] = []
-    update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=(202, 404))
-    test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+    if zone is not None and "acl" in zone and "rules" in zone["acl"]:
+        zone["acl"]["rules"] = []
+        update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=(202, 404))
+        test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_ip4_acl_rules(test_context):
     zone = test_context.ip4_reverse_zone
-    zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
-    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+    if zone is not None and "acl" in zone and "rules" in zone["acl"]:
+        zone["acl"]["rules"] = []
+        update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
+        test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_ip6_acl_rules(test_context):
     zone = test_context.ip6_reverse_zone
-    zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
-    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+    if zone is not None and "acl" in zone and "rules" in zone["acl"]:
+        zone["acl"]["rules"] = []
+        update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
+        test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def clear_classless_acl_rules(test_context):
     zone = test_context.classless_zone_delegation_zone
-    zone["acl"]["rules"] = []
-    update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
-    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+    if zone is not None and "acl" in zone and "rules" in zone["acl"]:
+        zone["acl"]["rules"] = []
+        update_change = test_context.ok_vinyldns_client.update_zone(zone, status=(202, 404))
+        test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 
 def seed_text_recordset(client, record_name, zone, records=[{"text": "someText"}]):
@@ -361,10 +360,7 @@ def seed_text_recordset(client, record_name, zone, records=[{"text": "someText"}
     }
     result = client.create_recordset(new_rs, status=202)
     result_rs = result["recordSet"]
-    if client.wait_until_recordset_exists(result_rs["zoneId"], result_rs["id"]):
-        print("\r\n!!! record set exists !!!")
-    else:
-        print("\r\n!!! record set does not exist !!!")
+    client.wait_until_recordset_exists(result_rs["zoneId"], result_rs["id"])
 
     return result_rs
 
@@ -379,10 +375,7 @@ def seed_ptr_recordset(client, record_name, zone, records=[{"ptrdname": "foo.com
     }
     result = client.create_recordset(new_rs, status=202)
     result_rs = result["recordSet"]
-    if client.wait_until_recordset_exists(result_rs["zoneId"], result_rs["id"]):
-        print("\r\n!!! record set exists !!!")
-    else:
-        print("\r\n!!! record set does not exist !!!")
+    client.wait_until_recordset_exists(result_rs["zoneId"], result_rs["id"])
 
     return result_rs
 
@@ -536,14 +529,19 @@ def clear_recordset_list(to_delete, client):
         try:
             delete_result = client.delete_recordset(result_rs["zone"]["id"], result_rs["recordSet"]["id"], status=202)
             delete_changes.append(delete_result)
+        except AssertionError:
+            pass
         except Exception:
             traceback.print_exc()
+            raise
     for change in delete_changes:
         try:
             client.wait_until_recordset_change_status(change, "Complete")
+        except AssertionError:
+            pass
         except Exception:
             traceback.print_exc()
-            pass
+            raise
 
 
 def clear_zoneid_rsid_tuple_list(to_delete, client):
@@ -552,15 +550,19 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
         try:
             delete_result = client.delete_recordset(tup[0], tup[1], status=202)
             delete_changes.append(delete_result)
+        except AssertionError:
+            pass
         except Exception:
             traceback.print_exc()
-            pass
+            raise
     for change in delete_changes:
         try:
             client.wait_until_recordset_change_status(change, "Complete")
+        except AssertionError:
+            pass
         except Exception:
             traceback.print_exc()
-            pass
+            raise
 
 
 def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{"id": "ok"}],

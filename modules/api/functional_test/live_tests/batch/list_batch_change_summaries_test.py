@@ -5,10 +5,15 @@ from vinyldns_context import VinylDNSTestContext
 from vinyldns_python import VinylDNSClient
 
 
+# FIXME: this whole suite of tests is fragile as it relies on data ordered in a specific way
+#        and that data cannot be cleaned up via the API (batchrecordchanges). This causes problems
+#        with xdist and parallel execution. The xdist scheduler will only ever schedule this suite
+#        on the first worker (gw0).
+
 @pytest.fixture(scope="module")
-def list_fixture(shared_zone_test_context):
+def list_fixture(shared_zone_test_context, tmp_path_factory):
     ctx = shared_zone_test_context.list_batch_summaries_context
-    ctx.setup(shared_zone_test_context)
+    ctx.setup(shared_zone_test_context, tmp_path_factory.getbasetemp().parent)
     yield ctx
     ctx.tear_down(shared_zone_test_context)
 
@@ -20,7 +25,7 @@ def test_list_batch_change_summaries_success(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=3)
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=len(list_fixture.completed_changes))
 
 
 def test_list_batch_change_summaries_with_max_items(list_fixture):
@@ -40,7 +45,8 @@ def test_list_batch_change_summaries_with_start_from(list_fixture):
     client = list_fixture.client
     batch_change_summaries_result = client.list_batch_change_summaries(status=200, start_from=1)
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=2, start_from=1)
+    all_changes = list_fixture.completed_changes
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=len(all_changes) - 1, start_from=1)
 
 
 def test_list_batch_change_summaries_with_next_id(list_fixture):
@@ -49,13 +55,15 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
     Apply retrieved nextId to get second page of batch change summaries.
     """
     client = list_fixture.client
+
     batch_change_summaries_result = client.list_batch_change_summaries(status=200, start_from=1, max_items=1)
 
     list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=1, start_from=1, max_items=1, next_id=2)
 
     next_page_result = client.list_batch_change_summaries(status=200, start_from=batch_change_summaries_result["nextId"])
 
-    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result["nextId"])
+    all_changes = list_fixture.completed_changes
+    list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=len(all_changes) - int(batch_change_summaries_result["nextId"]), start_from=batch_change_summaries_result["nextId"])
 
 
 @pytest.mark.manual_batch_review

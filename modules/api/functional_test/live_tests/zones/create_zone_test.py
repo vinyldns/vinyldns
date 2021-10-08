@@ -245,8 +245,6 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
 
         # Check response from create
         assert_that(zone["name"], is_(zone_name + "."))
-        print("`connection` not in zone = " + "connection" not in zone)
-
         assert_that("connection" not in zone)
         assert_that("transferConnection" not in zone)
 

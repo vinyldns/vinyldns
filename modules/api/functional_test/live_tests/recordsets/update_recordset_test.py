@@ -149,7 +149,6 @@ def test_update_recordset_forward_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -193,7 +192,6 @@ def test_update_reverse_record_types(shared_zone_test_context, record_name, test
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -305,8 +303,7 @@ def test_update_recordset_replace_2_records_with_1_different_record(shared_zone_
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
-
+        
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -376,8 +373,7 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
-
+        
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -393,8 +389,6 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
 
         answers = dns_resolve(ok_zone, result_rs["name"], result_rs["type"])
         rdata_strings = rdata(answers)
-        print("GOT ANSWERS BACK FOR INITIAL CREATE:")
-        print(str(rdata_strings))
 
         # Update the record set, adding a new record to the existing one
         modified_records = [
@@ -426,8 +420,6 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
         answers = dns_resolve(ok_zone, result_rs["name"], result_rs["type"])
         rdata_strings = rdata(answers)
 
-        print("GOT BACK ANSWERS FOR UPDATE")
-        print(str(rdata_strings))
         assert_that(rdata_strings, has_length(2))
         assert_that("10.2.2.2", is_in(rdata_strings))
         assert_that("4.4.4.8", is_in(rdata_strings))
@@ -542,9 +534,7 @@ def test_update_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
 
         new_ptr_target = "www.vinyldns."
         new_rs = result_rs
-        print(new_rs)
         new_rs["records"][0]["ptrdname"] = new_ptr_target
-        print(new_rs)
         result = client.update_recordset(new_rs, status=202)
 
         result_rs = result["recordSet"]
@@ -552,7 +542,6 @@ def test_update_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
 
         verify_recordset(result_rs, new_rs)
 
-        print(result_rs)
         records = result_rs["records"]
         assert_that(records[0]["ptrdname"], is_(new_ptr_target))
 
@@ -594,9 +583,7 @@ def test_update_ipv6_ptr_recordset(shared_zone_test_context):
 
         new_ptr_target = "www.vinyldns."
         new_rs = result_rs
-        print(new_rs)
         new_rs["records"][0]["ptrdname"] = new_ptr_target
-        print(new_rs)
         result = client.update_recordset(new_rs, status=202)
 
         result_rs = result["recordSet"]
@@ -604,7 +591,6 @@ def test_update_ipv6_ptr_recordset(shared_zone_test_context):
 
         verify_recordset(result_rs, new_rs)
 
-        print(result_rs)
         records = result_rs["records"]
         assert_that(records[0]["ptrdname"], is_(new_ptr_target))
 
@@ -698,7 +684,6 @@ def test_at_update_recordset(shared_zone_test_context):
         }
 
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))

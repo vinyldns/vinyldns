@@ -84,7 +84,7 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
     client = shared_zone_test_context.shared_zone_vinyldns_client
     shared_zone_name = shared_zone_test_context.shared_zone["name"]
     temp_group = {
-        "name": "test-get-batch-record-owner-group2",
+        "name": f"test-get-batch-record-owner-group{shared_zone_test_context.partition_id}",
         "email": "test@test.com",
         "description": "for testing that a get batch change still works when record owner group is deleted",
         "members": [{"id": "sharedZoneUser"}],

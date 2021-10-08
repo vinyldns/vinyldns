@@ -13,16 +13,17 @@ def test_list_my_groups_no_parameters(list_my_groups_context):
     Test that we can get all the groups where a user is a member
     """
     results = list_my_groups_context.client.list_my_groups(status=200)
-
     assert_that(results, has_length(3))  # 3 fields
 
-    assert_that(results["groups"], has_length(50))
+    # Only count the groups with the group prefix
+    groups = [x for x in results["groups"] if x["name"].startswith(list_my_groups_context.group_prefix)]
+    assert_that(groups, has_length(50))
     assert_that(results, is_not(has_key("groupNameFilter")))
     assert_that(results, is_not(has_key("startFrom")))
     assert_that(results, is_not(has_key("nextId")))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
 
-    results["groups"] = sorted(results["groups"], key=lambda x: x["name"])
+    results["groups"] = sorted(groups, key=lambda x: x["name"])
 
     for i in range(0, 50):
         assert_that(results["groups"][i]["name"], is_("{0}-{1:0>3}".format(list_my_groups_context.group_prefix, i)))
@@ -37,7 +38,7 @@ def test_get_my_groups_using_old_account_auth(list_my_groups_context):
     assert_that(results, is_not(has_key("groupNameFilter")))
     assert_that(results, is_not(has_key("startFrom")))
     assert_that(results, is_not(has_key("nextId")))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
 
 
 def test_list_my_groups_max_items(list_my_groups_context):
@@ -101,7 +102,7 @@ def test_list_my_groups_filter_matches(list_my_groups_context):
     assert_that(results["groupNameFilter"], is_(f"{list_my_groups_context.group_prefix}-01"))
     assert_that(results, is_not(has_key("startFrom")))
     assert_that(results, is_not(has_key("nextId")))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
 
     results["groups"] = sorted(results["groups"], key=lambda x: x["name"])
 
@@ -133,15 +134,17 @@ def test_list_my_groups_with_ignore_access_true(list_my_groups_context):
     """
     results = list_my_groups_context.client.list_my_groups(ignore_access=True, status=200)
 
+    # Only count the groups with the group prefix
     assert_that(len(results["groups"]), greater_than(50))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
     assert_that(results["ignoreAccess"], is_(True))
 
     my_results = list_my_groups_context.client.list_my_groups(status=200)
-    my_results["groups"] = sorted(my_results["groups"], key=lambda x: x["name"])
+    my_groups = [x for x in my_results["groups"] if x["name"].startswith(list_my_groups_context.group_prefix)]
+    sorted_groups = sorted(my_groups, key=lambda x: x["name"])
 
     for i in range(0, 50):
-        assert_that(my_results["groups"][i]["name"], is_("{0}-{1:0>3}".format(list_my_groups_context.group_prefix, i)))
+        assert_that(sorted_groups[i]["name"], is_("{0}-{1:0>3}".format(list_my_groups_context.group_prefix, i)))
 
 
 def test_list_my_groups_as_support_user(list_my_groups_context):
@@ -151,7 +154,7 @@ def test_list_my_groups_as_support_user(list_my_groups_context):
     results = list_my_groups_context.support_user_client.list_my_groups(status=200)
 
     assert_that(len(results["groups"]), greater_than(50))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
     assert_that(results["ignoreAccess"], is_(False))
 
 
@@ -162,5 +165,5 @@ def test_list_my_groups_as_support_user_with_ignore_access_true(list_my_groups_c
     results = list_my_groups_context.support_user_client.list_my_groups(ignore_access=True, status=200)
 
     assert_that(len(results["groups"]), greater_than(50))
-    assert_that(results["maxItems"], is_(100))
+    assert_that(results["maxItems"], is_(200))
     assert_that(results["ignoreAccess"], is_(True))

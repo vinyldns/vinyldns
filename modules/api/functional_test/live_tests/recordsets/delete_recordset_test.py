@@ -18,7 +18,6 @@ def test_delete_recordset_forward_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -62,7 +61,6 @@ def test_delete_recordset_reverse_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -114,7 +112,6 @@ def test_delete_recordset_with_verify(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -250,7 +247,6 @@ def test_delete_ipv4_ptr_recordset(shared_zone_test_context):
         }
         result = client.create_recordset(orig_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
-        print("\r\n\r\n!!!recordset is active!  Deleting...")
 
         delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)
         client.wait_until_recordset_change_status(delete_result, "Complete")
@@ -289,7 +285,6 @@ def test_delete_ipv6_ptr_recordset(shared_zone_test_context):
         }
         result = client.create_recordset(orig_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
-        print("\r\n\r\n!!!recordset is active!  Deleting...")
 
         delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)
         client.wait_until_recordset_change_status(delete_result, "Complete")
@@ -344,8 +339,6 @@ def test_at_delete_recordset(shared_zone_test_context):
     }
     result = client.create_recordset(new_rs, status=202)
 
-    print(json.dumps(result, indent=3))
-
     assert_that(result["changeType"], is_("Create"))
     assert_that(result["status"], is_("Pending"))
     assert_that(result["created"], is_not(none()))
@@ -391,28 +384,21 @@ def test_delete_recordset_with_different_dns_data(shared_zone_test_context):
                 }
             ]
         }
-        print("\r\nCreating recordset in zone " + str(ok_zone) + "\r\n")
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         result_rs = result["recordSet"]
         result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
-        print("\r\n\r\n!!!recordset is active!  Verifying...")
 
         verify_recordset(result_rs, new_rs)
-        print("\r\n\r\n!!!recordset verified...")
 
         result_rs["records"][0]["address"] = "10.8.8.8"
         result = client.update_recordset(result_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
 
-        print("\r\n\r\n!!!verifying recordset in dns backend")
         answers = dns_resolve(ok_zone, result_rs["name"], result_rs["type"])
         assert_that(answers, has_length(1))
 
         response = dns_update(ok_zone, result_rs["name"], 300, result_rs["type"], "10.9.9.9")
-        print("\nSuccessfully updated the record, record is now out of sync\n")
-        print(str(response))
 
         # check you can delete
         delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)

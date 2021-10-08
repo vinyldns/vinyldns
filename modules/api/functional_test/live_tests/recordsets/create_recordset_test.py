@@ -26,7 +26,6 @@ def test_create_recordset_with_dns_verify(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -157,7 +156,6 @@ def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -193,7 +191,6 @@ def test_create_aaaa_recordset_with_shorthand_record(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -229,7 +226,6 @@ def test_create_aaaa_recordset_with_normal_record(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -392,7 +388,6 @@ def test_create_recordset_conflict_with_dns_different_type(shared_zone_test_cont
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1032,7 +1027,6 @@ def test_create_recordset_forward_record_types(shared_zone_test_context, record_
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -1064,7 +1058,6 @@ def test_reverse_create_recordset_reverse_record_types(shared_zone_test_context,
 
         result = client.create_recordset(new_rs, status=202)
         assert_that(result["status"], is_("Pending"))
-        print(str(result))
 
         result_rs = result["recordSet"]
         verify_recordset(result_rs, new_rs)
@@ -1183,7 +1176,6 @@ def test_create_ipv4_ptr_recordset_with_verify(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1269,7 +1261,6 @@ def test_create_ipv6_ptr_recordset(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1377,7 +1368,6 @@ def test_at_create_recordset(shared_zone_test_context):
         }
         result = client.create_recordset(new_rs, status=202)
 
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1428,7 +1418,6 @@ def test_create_record_with_escape_characters_in_record_data_succeeds(shared_zon
         }
         result = client.create_recordset(new_rs, status=202)
 
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1686,7 +1675,6 @@ def test_create_ipv4_ptr_recordset_with_verify_in_classless(shared_zone_test_con
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        print(str(result))
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))

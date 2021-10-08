@@ -5,6 +5,7 @@ from vinyldns_python import VinylDNSClient
 class ListRecordSetsTestContext(object):
     def __init__(self, partition_id: str):
         self.partition_id = partition_id
+        self.setup_started = False
         self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "listRecordsAccessKey", "listRecordsSecretKey")
         self.zone = None
         self.all_records = []
@@ -19,6 +20,11 @@ class ListRecordSetsTestContext(object):
                 self.group = my_groups["groups"][0]
 
     def setup(self):
+        if self.setup_started:
+            # Safeguard against reentrance
+            return
+        self.setup_started = True
+
         partition_id = self.partition_id
         group = {
             "name": f"list-records-group{partition_id}",
@@ -42,8 +48,8 @@ class ListRecordSetsTestContext(object):
         self.all_records = self.client.list_recordsets_by_zone(self.zone["id"])["recordSets"]
 
     def tear_down(self):
-        clear_zones(self.client)
-        clear_groups(self.client)
+        self.client.clear_zones()
+        self.client.clear_groups()
         self.client.tear_down()
 
     def check_recordsets_page_accuracy(self, list_results_page, size, offset, next_id=False, start_from=False, max_items=100, record_type_filter=False, name_sort="ASC"):

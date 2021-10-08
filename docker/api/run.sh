@@ -47,5 +47,5 @@ done
 
 echo "Starting up Vinyl..."
 sleep 2
-java -Djava.net.preferIPv4Stack=true -Dconfig.file=/app/docker.conf -Dakka.loglevel=INFO -Dlogback.configurationFile=test/logback.xml -jar /app/vinyldns-server.jar vinyldns.api.Boot
+java -Djava.net.preferIPv4Stack=true -Dconfig.file=/app/docker.conf -Dakka.loglevel=INFO -Dlogback.configurationFile=/app/logback.xml -jar /app/vinyldns-server.jar vinyldns.api.Boot
 
