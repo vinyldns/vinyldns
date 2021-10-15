@@ -1,7 +1,5 @@
-[![Join the chat at https://gitter.im/vinyldns](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns)
 ![Build](https://github.com/vinyldns/vinyldns/workflows/Continuous%20Integration/badge.svg)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2682/badge)](https://bestpractices.coreinfrastructure.org/projects/2682)
 [![License](https://img.shields.io/github/license/vinyldns/vinyldns)](https://github.com/vinyldns/vinyldns/blob/master/LICENSE)
 [![conduct](https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-blue.svg)](https://github.com/vinyldns/vinyldns/blob/master/CODE_OF_CONDUCT.md)
 
@@ -23,17 +21,16 @@ secure RESTful API, and integration with infrastructure automation tools like An
 It is designed to integrate with your existing DNS infrastructure, and provides extensibility to fit your installation.
 
 VinylDNS helps secure DNS management via:
-* AWS Sig4 signing of all messages to ensure that the message that was sent was not altered in transit
-* Throttling of DNS updates to rate limit concurrent updates against your DNS systems
-* Encrypting user secrets and TSIG keys at rest and in-transit
-* Recording every change made to DNS records and zones
+- AWS Sig4 signing of all messages to ensure that the message that was sent was not altered in transit
+- Throttling of DNS updates to rate limit concurrent updates against your DNS systems
+- Encrypting user secrets and TSIG keys at rest and in-transit
+- Recording every change made to DNS records and zones
 
 Integration is simple with first-class language support including:
-* java
-* ruby
-* python
-* go-lang
-* javascript
+- Java
+- Python
+- Go
+- JavaScript
 
 ## Table of Contents
 - [Quickstart](#quickstart)
@@ -59,7 +56,7 @@ There exist several clients at <https://github.com/vinyldns> that can be used to
 
 ## Things to try in the portal
 1. View the portal at <http://localhost:9001> in a web browser
-1. Login with the credentials ***professor*** and ***professor***
+1. Login with the credentials `testuser` and `testpassword`
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
 1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
 1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones>.  For a quick test, create a new zone named "ok" with an email of "test@test.com" and choose a group you created from the previous step. (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
@@ -79,7 +76,7 @@ TTL = 300, IP Addressess = 1.1.1.1`
 1. A similar `docker/.env.quickstart` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 ## Code of Conduct
-This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
+This project, and everyone participating in it, are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
 participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
 ## Developer Guide
@@ -89,15 +86,14 @@ See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up Viny
 See the [Contributing Guide](CONTRIBUTING.md).
 
 ## Contact
-- [Gitter](https://gitter.im/vinyldns)
 - If you have any security concerns please contact the maintainers directly vinyldns-core@googlegroups.com
 
 ## Maintainers and Contributors
 The current maintainers (people who can merge pull requests) are:
-- Paul Cleary
-- Ryan Emerle
-- Sriram Ramakrishnan
-- Jim Wakemen
+
+- Ryan Emerle ([@remerle](https://github.com/remerle))
+- Sriram Ramakrishnan ([@sramakr](https://github.com/sramakr))
+- Jim Wakemen ([@jwakemen](https://github.com/jwakemen))
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 

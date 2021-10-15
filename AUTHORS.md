@@ -22,6 +22,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Luke Cori
 - Jearvon Dharrie
 - Andrew Dunn
+- Ryan Emerle
 - David Grizzanti
 - Alejandro Guirao
 - Daniel Jin

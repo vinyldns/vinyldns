@@ -9,7 +9,7 @@ services:
       - "19002:3306"
 
   bind9:
-    image: "vinyldns/bind9:0.0.4"
+    image: "vinyldns/bind9:0.0.5"
     env_file:
       .env.quickstart
     container_name: "vinyldns-bind9"

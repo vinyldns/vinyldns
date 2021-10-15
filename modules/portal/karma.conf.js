@@ -39,7 +39,7 @@ module.exports = function(config) {
         // level of logging
         // possible values: LOG_DISABLE || LOG_ERROR || LOG_WARN || LOG_INFO || LOG_DEBUG
         logLevel: config.LOG_INFO,
-        
+
         plugins: [
             'karma-jasmine',
             'karma-chrome-launcher',
@@ -66,7 +66,13 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['ChromeHeadless'],
+        browsers: ['ChromeHeadlessNoSandbox'],
+        customLaunchers: {
+            ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox']
+            }
+        },
 
         // Continuous Integration mode
         // if true, it capture browsers, run tests and exit

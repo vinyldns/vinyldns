@@ -1,0 +1,15 @@
+**/.venv*
+**/.virtualenv
+**/target
+**/docs
+**/out
+**/.log
+**/.idea/
+**/.bsp
+**/*cache*
+**/*.png
+**/.git
+**/Dockerfile
+**/*.dockerignore
+**/.github
+**/_template

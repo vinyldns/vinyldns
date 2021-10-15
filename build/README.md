@@ -50,8 +50,6 @@ The build will generate several VinylDNS docker images that are used to deploy i
 
 - `vinyldns/api` - this is the heart of the VinylDNS system, the backend API
 - `vinyldns/portal` - the VinylDNS web UI
-- `vinyldns/test-bind9` - a DNS server that is configured to support running the functional tests
-- `vinyldns/test` - a container that will execute functional tests, and exit success or failure when the tests are complete
 
 ### vinyldns/api
 
@@ -80,25 +78,3 @@ it is set as part of the container build
 any production environments.  Typically, you will add your own `application.conf` file in here with your settings.
 - `/opt/docker/lib_extra/` - if you need to have additional jar files available to your VinylDNS instance.
 Rarely used, but if you want to bring your own message queue or database you can put the `jar` files there
-
-### vinyldns/test-bind9
-
-This pulls correct DNS configuration to run func tests.  You can largely disregard what is in here
-
-### vinyldns/test
-
-This is used to run functional tests against a vinyldns instance.  **This is very useful for verifying 
-your environment as part of doing an upgrade.**  By default, it will run against a local docker-compose setup.
-
-**Environment Variables**
-- `VINYLDNS_URL` - the url to the vinyldns you will test against
-- `DNS_IP` - the IP address to the `vinyldns/test-bind9` container that you will use for test purposes
-- `TEST_PATTERN` - the actual functional test you want to run.  *Important, set to empty string to run 
-ALL test; otherwise, omit the environment variable when you run to just run smoke tests*.
-
-**Example**
-
-This example will run all functional tests on the given VinylDNS url and DNS IP address
-`docker run -e VINYLDNS_URL="https://my.vinyldns.example.com" -e DNS_IP="1.2.3.4" -e TEST_PATTERN=""`
-
-

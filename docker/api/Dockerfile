@@ -10,7 +10,6 @@ RUN chmod a+x /app/run.sh
 COPY docker.conf /app/docker.conf
 
 EXPOSE 9000
-EXPOSE 2551
 
 # set the entry point for the container to start vinyl, specify the config resource
 ENTRYPOINT ["/app/run.sh"]

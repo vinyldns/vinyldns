@@ -32,3 +32,7 @@ tmp.out
 project/metals.sbt
 .bsp
 docker/data
+**/.virtualenv
+**/.venv*
+**/*cache*
+

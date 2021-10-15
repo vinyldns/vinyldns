@@ -107,15 +107,11 @@ if [ $DO_BUILD -eq 1 ]; then
   fi
 
   if [ $? -eq 0 ]; then
-    docker tag vinyldns/test-bind9:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test-bind9:$VINYLDNS_VERSION
-    docker tag vinyldns/test:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test:$VINYLDNS_VERSION
     docker tag vinyldns/api:$VINYLDNS_VERSION $REPOSITORY/vinyldns/api:$VINYLDNS_VERSION
     docker tag vinyldns/portal:$VINYLDNS_VERSION $REPOSITORY/vinyldns/portal:$VINYLDNS_VERSION
 
     if [ $TAG_LATEST -eq 1 ]; then
         echo "Tagging latest..."
-        docker tag vinyldns/test-bind9:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test-bind9:latest
-        docker tag vinyldns/test:$VINYLDNS_VERSION $REPOSITORY/vinyldns/test:latest
         docker tag vinyldns/api:$VINYLDNS_VERSION $REPOSITORY/vinyldns/api:latest
         docker tag vinyldns/portal:$VINYLDNS_VERSION $REPOSITORY/vinyldns/portal:latest
     fi
@@ -123,15 +119,11 @@ if [ $DO_BUILD -eq 1 ]; then
 fi
 
 if [ $DOCKER_PUSH -eq 1 ]; then
-  docker push $REPOSITORY/vinyldns/test-bind9:$VINYLDNS_VERSION
-  docker push $REPOSITORY/vinyldns/test:$VINYLDNS_VERSION
   docker push $REPOSITORY/vinyldns/api:$VINYLDNS_VERSION
   docker push $REPOSITORY/vinyldns/portal:$VINYLDNS_VERSION
 
   if [ $TAG_LATEST -eq 1 ]; then
     echo "Pushing latest..."
-    docker push $REPOSITORY/vinyldns/test-bind9:latest
-    docker push $REPOSITORY/vinyldns/test:latest
     docker push $REPOSITORY/vinyldns/api:latest
     docker push $REPOSITORY/vinyldns/portal:latest
   fi

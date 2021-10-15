@@ -34,13 +34,11 @@ if [ "$1" != "skip-tests" ]; then
   fi
 
   printf "\nrunning api func tests... \n"
-  "$DIR"/remove-vinyl-containers.sh
   if ! "$DIR"/func-test-api.sh
   then
       printf "\nerror: bin/func-test-api.sh failed \n"
       exit 1
   fi
-  "$DIR"/remove-vinyl-containers.sh
 
   printf "\nrunning portal func tests... \n"
   if ! "$DIR"/func-test-portal.sh

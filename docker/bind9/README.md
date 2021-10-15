@@ -18,6 +18,5 @@ When used in a container, or to run `named`, the files in this directory should 
 
 | Directory | Target |
 |:---|:---|
-| `etc/named.conf.local` | `/etc/bind/` |
-| `etc/named.partition*.conf` | `/var/bind/config/` |
+| `etc/named.conf.*` | `/etc/bind/` |
 | `zones/` | `/var/bind/` |

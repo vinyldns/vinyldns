@@ -27,7 +27,7 @@ object MySqlConnector {
 
   private val logger = LoggerFactory.getLogger("MySqlConnector")
 
-  def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] = {
+  def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] =
     // We can skip migrations for h2, we'll use the test/ddl.sql for initializing
     // that for testing
     if (config.driver.contains("h2")) IO.unit
@@ -61,7 +61,6 @@ object MySqlConnector {
         logger.info("migrations complete")
       }
     }
-  }
 
   def getDataSource(settings: MySqlDataSourceSettings): IO[HikariDataSource] = IO {
 

@@ -1,0 +1,29 @@
+# Build VinylDNS API if the JAR doesn't already exist
+FROM vinyldns/build:base-build as base-build
+ARG DOCKERFILE_PATH="test/api/functional"
+COPY "${DOCKERFILE_PATH}/vinyldns.*" /opt/vinyldns/
+COPY . /build/
+WORKDIR /build
+
+##  Run the build if we don't already have a vinyldns.jar
+RUN if [ ! -f /opt/vinyldns/vinyldns.jar ]; then \
+      env SBT_OPTS="-XX:+UseConcMarkSweepGC -Xmx4G -Xms1G" \
+      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
+      && cp modules/api/target/scala-2.12/vinyldns.jar /opt/vinyldns/; \
+    fi
+
+# Build the testing image, copying data from `vinyldns-api`
+FROM vinyldns/build:base-test
+SHELL ["/bin/bash","-c"]
+ARG DOCKERFILE_PATH
+COPY --from=base-build /opt/vinyldns /opt/vinyldns
+
+# Local bind server files
+COPY docker/bind9/etc/named.conf.* /etc/bind/
+COPY docker/bind9/zones/ /var/bind/
+RUN named-checkconf
+
+# Copy over the functional tests
+COPY  ${DOCKERFILE_PATH}/test /functional_test
+
+ENTRYPOINT ["/bin/bash", "-c", "/initialize.sh bind localstack vinyldns-api && /functional_test/run.sh \"$@\""]

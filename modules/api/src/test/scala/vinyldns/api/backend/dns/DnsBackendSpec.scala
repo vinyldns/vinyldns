@@ -101,7 +101,7 @@ class DnsBackendSpec
 
   override def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
-    doReturn(new Array[DNS.Record](0)).when(mockMessage).getSectionArray(DNS.Section.ADDITIONAL)
+    doReturn(new java.util.ArrayList[DNS.Record](0)).when(mockMessage).getSection(DNS.Section.ADDITIONAL)
     doReturn(DNS.Rcode.NOERROR).when(mockMessage).getRcode
     doReturn(mockMessage).when(mockResolver).send(messageCaptor.capture())
     doReturn(DNS.Lookup.SUCCESSFUL).when(mockDnsQuery).result
@@ -160,7 +160,7 @@ class DnsBackendSpec
       val conn = zoneConnection.copy(primaryServer = "dns.comcast.net:19001")
 
       val dnsConn = DnsBackend("test", conn, None, new NoOpCrypto())
-      val simpleResolver = dnsConn.resolver.asInstanceOf[DNS.SimpleResolver]
+      val simpleResolver = dnsConn.resolver
 
       val address = simpleResolver.getAddress
 
@@ -172,7 +172,7 @@ class DnsBackendSpec
       val conn = zoneConnection.copy(primaryServer = "dns.comcast.net")
 
       val dnsConn = DnsBackend("test", conn, None, new NoOpCrypto())
-      val simpleResolver = dnsConn.resolver.asInstanceOf[DNS.SimpleResolver]
+      val simpleResolver = dnsConn.resolver
 
       val address = simpleResolver.getAddress
 
@@ -267,14 +267,14 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val dnsRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val dnsRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       dnsRecord.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord.getTTL shouldBe testA.ttl
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -286,7 +286,7 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val rrset = sentMessage.getSectionRRsets(DNS.Section.UPDATE)(0)
+      val rrset = sentMessage.getSectionRRsets(DNS.Section.UPDATE).asScala.head
       rrset.getName.toString shouldBe "a-record.vinyldns."
       rrset.getTTL shouldBe testA.ttl
       rrset.getType shouldBe DNS.Type.A
@@ -298,7 +298,7 @@ class DnsBackendSpec
 
       records should contain theSameElementsAs expected
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -327,20 +327,20 @@ class DnsBackendSpec
       val sentMessage = messageCaptor.getValue
 
       // Update record issues a replace, the first section is an EmptyRecord containing the name and type to replace
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       emptyRecord.getName.toString shouldBe "updated-a-record.vinyldns."
       emptyRecord.getType shouldBe DNS.Type.A
       emptyRecord.getDClass shouldBe DNS.DClass.ANY
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val dnsRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala(1)
       dnsRecord.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord.getTTL shouldBe testA.ttl
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -353,20 +353,20 @@ class DnsBackendSpec
       val sentMessage = messageCaptor.getValue
 
       // Update record issues a replace, the first section is an EmptyRecord containing the name and type to replace
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       emptyRecord.getName.toString shouldBe "a-record.vinyldns."
       emptyRecord.getType shouldBe DNS.Type.A
       emptyRecord.getDClass shouldBe DNS.DClass.ANY
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val dnsRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala(1)
       dnsRecord.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord.getTTL shouldBe 300
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -378,7 +378,7 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE)
 
       emptyRecord shouldBe empty
       result shouldBe a[NoError]
@@ -393,13 +393,13 @@ class DnsBackendSpec
       val sentMessage = messageCaptor.getValue
 
       // Update record issues a replace, the first section is an EmptyRecord containing the name and type to replace
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       emptyRecord.getName.toString shouldBe "updated-a-record.vinyldns."
       emptyRecord.getType shouldBe DNS.Type.A
       emptyRecord.getDClass shouldBe DNS.DClass.ANY
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord1 = sentMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val dnsRecord1 = sentMessage.getSection(DNS.Section.UPDATE).asScala(1)
       dnsRecord1.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord1.getTTL shouldBe testA.ttl
       dnsRecord1.getType shouldBe DNS.Type.A
@@ -407,7 +407,7 @@ class DnsBackendSpec
       val dnsRecord1Data = dnsRecord1.asInstanceOf[DNS.ARecord].getAddress.getHostAddress
       List("1.1.1.1", "2.2.2.2") should contain(dnsRecord1Data)
 
-      val dnsRecord2 = sentMessage.getSectionArray(DNS.Section.UPDATE)(2)
+      val dnsRecord2 = sentMessage.getSection(DNS.Section.UPDATE).asScala(2)
       dnsRecord2.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord2.getTTL shouldBe testA.ttl
       dnsRecord2.getType shouldBe DNS.Type.A
@@ -415,7 +415,7 @@ class DnsBackendSpec
       val dnsRecord2Data = dnsRecord1.asInstanceOf[DNS.ARecord].getAddress.getHostAddress
       List("1.1.1.1", "2.2.2.2") should contain(dnsRecord2Data)
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -443,7 +443,7 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE)
 
       emptyRecord shouldBe empty
       result shouldBe a[NoError]
@@ -457,20 +457,20 @@ class DnsBackendSpec
       val sentMessage = messageCaptor.getValue
 
       // A NONE update is sent for each DNS record that is getting deleted
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       emptyRecord.getName.toString shouldBe "a-record.vinyldns."
       emptyRecord.getType shouldBe DNS.Type.A
       emptyRecord.getDClass shouldBe DNS.DClass.NONE
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val dnsRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala(1)
       dnsRecord.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord.getTTL shouldBe testA.ttl
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -482,7 +482,7 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val emptyRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)
+      val emptyRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala
 
       emptyRecord shouldBe empty
       result shouldBe a[NoError]
@@ -497,14 +497,14 @@ class DnsBackendSpec
       val sentMessage = messageCaptor.getValue
 
       // A NONE update is sent for each DNS record that is getting deleted
-      val deleteRecord1 = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val deleteRecord1 = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       deleteRecord1.getName.toString shouldBe "a-record.vinyldns."
       deleteRecord1.getType shouldBe DNS.Type.A
       deleteRecord1.getDClass shouldBe DNS.DClass.NONE
       val deleteRecord1Data = deleteRecord1.asInstanceOf[DNS.ARecord].getAddress.getHostAddress
       List("4.4.4.4", "3.3.3.3") should contain(deleteRecord1Data)
 
-      val deleteRecord2 = sentMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val deleteRecord2 = sentMessage.getSection(DNS.Section.UPDATE).asScala(1)
       deleteRecord2.getName.toString shouldBe "a-record.vinyldns."
       deleteRecord2.getType shouldBe DNS.Type.A
       deleteRecord2.getDClass shouldBe DNS.DClass.NONE
@@ -512,7 +512,7 @@ class DnsBackendSpec
       List("4.4.4.4", "3.3.3.3") should contain(deleteRecord2Data)
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord1 = sentMessage.getSectionArray(DNS.Section.UPDATE)(2)
+      val dnsRecord1 = sentMessage.getSection(DNS.Section.UPDATE).asScala(2)
       dnsRecord1.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord1.getTTL shouldBe testA.ttl
       dnsRecord1.getType shouldBe DNS.Type.A
@@ -520,7 +520,7 @@ class DnsBackendSpec
       val dnsRecord1Data = dnsRecord1.asInstanceOf[DNS.ARecord].getAddress.getHostAddress
       List("1.1.1.1", "2.2.2.2") should contain(dnsRecord1Data)
 
-      val dnsRecord2 = sentMessage.getSectionArray(DNS.Section.UPDATE)(3)
+      val dnsRecord2 = sentMessage.getSection(DNS.Section.UPDATE).asScala(3)
       dnsRecord2.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord2.getTTL shouldBe testA.ttl
       dnsRecord2.getType shouldBe DNS.Type.A
@@ -528,7 +528,7 @@ class DnsBackendSpec
       val dnsRecord2Data = dnsRecord1.asInstanceOf[DNS.ARecord].getAddress.getHostAddress
       List("1.1.1.1", "2.2.2.2") should contain(dnsRecord2Data)
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -556,14 +556,14 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val dnsRecord = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val dnsRecord = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       dnsRecord.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord.getTTL shouldBe 0
       dnsRecord.getDClass shouldBe DNS.DClass.ANY
       dnsRecord should not be a[DNS.ARecord]
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
@@ -575,14 +575,14 @@ class DnsBackendSpec
 
       val sentMessage = messageCaptor.getValue
 
-      val dnsRecord1 = sentMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val dnsRecord1 = sentMessage.getSection(DNS.Section.UPDATE).asScala.head
       dnsRecord1.getName.toString shouldBe "a-record.vinyldns."
       dnsRecord1.getType shouldBe DNS.Type.A
       dnsRecord1.getTTL shouldBe 0
       dnsRecord1.getDClass shouldBe DNS.DClass.ANY
       dnsRecord1 should not be a[DNS.ARecord]
 
-      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = sentMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
