@@ -38,12 +38,14 @@ object RecordSetChangeHandler {
   def apply(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository,
       batchChangeRepository: BatchChangeRepository
   )(implicit timer: Timer[IO]): (Backend, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
         recordChangeRepository,
+        recordSetDataRepository,
         batchChangeRepository,
         conn,
         recordSetChange
@@ -53,6 +55,7 @@ object RecordSetChangeHandler {
   def process(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository,
       batchChangeRepository: BatchChangeRepository,
       conn: Backend,
       recordSetChange: RecordSetChange
@@ -64,11 +67,13 @@ object RecordSetChangeHandler {
         conn,
         wildCardExists,
         recordSetRepository,
-        recordChangeRepository
+        recordChangeRepository,
+        recordSetDataRepository
       )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
       _ <- recordSetRepository.apply(changeSet)
       _ <- recordChangeRepository.save(changeSet)
+      _ <- recordSetDataRepository.save(changeSet)
       singleBatchChanges <- batchChangeRepository.getSingleChanges(
         recordSetChange.singleBatchChangeIds
       )
@@ -126,6 +131,7 @@ object RecordSetChangeHandler {
       change: RecordSetChange,
       conn: Backend,
       recordSetRepository: RecordSetRepository,
+      recordSetDataRepository: RecordSetDataRepository,
       recordChangeRepository: RecordChangeRepository,
       performSync: Boolean = false
   ): IO[ProcessingStatus] = {
@@ -175,7 +181,8 @@ object RecordSetChangeHandler {
               change,
               existingRecords,
               recordSetRepository,
-              recordChangeRepository
+              recordChangeRepository,
+              recordSetDataRepository
             )
             processingStatus <- getProcessingStatus(change, dnsBackendRRSet)
           } yield processingStatus
@@ -192,7 +199,8 @@ object RecordSetChangeHandler {
       conn: Backend,
       wildcardExists: Boolean,
       recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository
+      recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository
   )(
       implicit timer: Timer[IO]
   ): IO[ProcessorState] = {
@@ -216,26 +224,54 @@ object RecordSetChangeHandler {
       val toRun =
         if (wildcardExists || state.change.recordSet.typ == RecordType.NS) IO.pure(skip) else orElse
 
-      toRun.flatMap(fsm(_, conn, wildcardExists, recordSetRepository, recordChangeRepository))
+      toRun.flatMap(
+        fsm(
+          _,
+          conn,
+          wildcardExists,
+          recordSetRepository,
+          recordChangeRepository,
+          recordSetDataRepository
+        )
+      )
     }
 
     state match {
       case Pending(change) =>
         logger.info(s"CHANGE PENDING; ${getChangeLog(change)}")
         bypassValidation(Validated(change))(
-          orElse = validate(change, conn, recordSetRepository, recordChangeRepository)
+          orElse = validate(
+            change,
+            conn,
+            recordSetRepository,
+            recordChangeRepository,
+            recordSetDataRepository
+          )
         )
 
       case Validated(change) =>
         logger.info(s"CHANGE VALIDATED; ${getChangeLog(change)}")
         apply(change, conn).flatMap(
-          fsm(_, conn, wildcardExists, recordSetRepository, recordChangeRepository)
+          fsm(
+            _,
+            conn,
+            wildcardExists,
+            recordSetRepository,
+            recordChangeRepository,
+            recordSetDataRepository
+          )
         )
 
       case Applied(change) =>
         logger.info(s"CHANGE APPLIED; ${getChangeLog(change)}")
         bypassValidation(Verified(change.successful))(
-          orElse = verify(change, conn, recordSetRepository, recordChangeRepository)
+          orElse = verify(
+            change,
+            conn,
+            recordSetRepository,
+            recordChangeRepository,
+            recordSetDataRepository
+          )
         )
 
       case Verified(change) =>
@@ -257,7 +293,8 @@ object RecordSetChangeHandler {
       change: RecordSetChange,
       dnsBackendRRSet: List[RecordSet],
       recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository
+      recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository
   ): IO[List[RecordSet]] = {
 
     /*
@@ -270,7 +307,8 @@ object RecordSetChangeHandler {
         dnsBackendRRSet: Option[RecordSet],
         zone: Zone,
         recordSetRepository: RecordSetRepository,
-        recordChangeRepository: RecordChangeRepository
+        recordChangeRepository: RecordChangeRepository,
+        recordSetDataRepository: RecordSetDataRepository
     ): IO[Unit] = {
       val recordSetToSync = (storedRRSet, dnsBackendRRSet) match {
         case (Some(savedRs), None) if change.changeType == RecordSetChangeType.Create =>
@@ -289,6 +327,8 @@ object RecordSetChangeHandler {
           for {
             _ <- recordChangeRepository.save(changeSet)
             _ <- recordSetRepository.apply(changeSet)
+            _ <- recordSetDataRepository.save(changeSet)
+
           } yield ()
         }
         .getOrElse(IO.unit)
@@ -302,7 +342,8 @@ object RecordSetChangeHandler {
         dnsBackendRRSet.headOption,
         change.zone,
         recordSetRepository,
-        recordChangeRepository
+        recordChangeRepository,
+        recordSetDataRepository
       )
     } yield dnsBackendRRSet
   }
@@ -312,12 +353,14 @@ object RecordSetChangeHandler {
       change: RecordSetChange,
       conn: Backend,
       recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository
+      recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
       conn,
       recordSetRepository,
+      recordSetDataRepository,
       recordChangeRepository,
       true
     ).map {
@@ -352,12 +395,14 @@ object RecordSetChangeHandler {
       change: RecordSetChange,
       conn: Backend,
       recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository
+      recordChangeRepository: RecordChangeRepository,
+      recordSetDataRepository: RecordSetDataRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
       conn,
       recordSetRepository,
+      recordSetDataRepository,
       recordChangeRepository
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)

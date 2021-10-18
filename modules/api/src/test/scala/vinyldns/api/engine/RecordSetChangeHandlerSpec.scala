@@ -55,8 +55,11 @@ class RecordSetChangeHandlerSpec
   private val mockBackend = mock[Backend]
   private val mockRsRepo = mock[RecordSetRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
+  private val mockRsDataRepo = mock[RecordSetDataRepository]
+
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
+  private val rsDataRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
 
   private val batchRepo = new InMemoryBatchChangeRepository
 
@@ -108,10 +111,10 @@ class RecordSetChangeHandlerSpec
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
   private val underTest =
-    RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo)
+    RecordSetChangeHandler(mockRsRepo, mockChangeRepo, mockRsDataRepo, batchRepo)
 
   override protected def beforeEach(): Unit = {
-    reset(mockBackend, mockRsRepo, mockChangeRepo)
+    reset(mockBackend, mockRsRepo, mockChangeRepo, mockRsDataRepo)
     batchRepo.clear()
 
     // seed the linked batch change in the DB
@@ -129,6 +132,7 @@ class RecordSetChangeHandlerSpec
         .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -137,6 +141,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -169,6 +174,8 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -176,6 +183,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -214,6 +222,8 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -221,6 +231,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -260,6 +271,8 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -267,6 +280,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -304,6 +318,8 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -318,12 +334,14 @@ class RecordSetChangeHandlerSpec
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
 
       val test = underTest.apply(mockBackend, rsChange)
       test.unsafeRunSync()
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -359,6 +377,8 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -366,6 +386,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -409,6 +430,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
 
       val test = underTest.apply(mockBackend, rsChange)
       val res = test.unsafeRunSync()
@@ -417,6 +439,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -468,6 +491,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
 
       val test = underTest.apply(mockBackend, rsChange)
       val res = test.unsafeRunSync()
@@ -476,6 +500,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -526,6 +551,7 @@ class RecordSetChangeHandlerSpec
         .applyChange(rsChangeNs)
       doReturn(IO.pure(csNs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(csNs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(csNs)).when(mockRsDataRepo).save(any[ChangeSet])
 
       val test = underTest.apply(mockBackend, rsChangeNs)
       val res = test.unsafeRunSync()
@@ -534,6 +560,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -564,6 +591,8 @@ class RecordSetChangeHandlerSpec
         .when(mockBackend)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List(updateChange.recordSet)))
         .when(mockRsRepo)
@@ -574,6 +603,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       appliedCs.status shouldBe ChangeSetStatus.Complete
@@ -609,6 +639,8 @@ class RecordSetChangeHandlerSpec
         .when(mockBackend)
         .applyChange(updateChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
       doReturn(IO.pure(List(dnsBackendRs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
@@ -617,6 +649,7 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
       val changeSet = appliedCs.changes.head
@@ -649,6 +682,7 @@ class RecordSetChangeHandlerSpec
             rsChange,
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -668,6 +702,7 @@ class RecordSetChangeHandlerSpec
             rsChange,
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -682,6 +717,8 @@ class RecordSetChangeHandlerSpec
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val processorStatus =
@@ -690,6 +727,7 @@ class RecordSetChangeHandlerSpec
             rsChange,
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -697,6 +735,8 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
+
       verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
       processorStatus shouldBe a[ReadyToApply]
     }
@@ -718,6 +758,7 @@ class RecordSetChangeHandlerSpec
             syncedRsChange,
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -737,6 +778,7 @@ class RecordSetChangeHandlerSpec
             .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 300))),
           mockBackend,
           mockRsRepo,
+          mockRsDataRepo,
           mockChangeRepo,
           true
         )
@@ -757,6 +799,7 @@ class RecordSetChangeHandlerSpec
           rsChange.copy(changeType = RecordSetChangeType.Update),
           mockBackend,
           mockRsRepo,
+          mockRsDataRepo,
           mockChangeRepo,
           true
         )
@@ -771,6 +814,8 @@ class RecordSetChangeHandlerSpec
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty))
         .when(mockRsRepo)
         .getRecordSetsByName(cs.zoneId, rs.name)
@@ -782,6 +827,7 @@ class RecordSetChangeHandlerSpec
               .copy(changeType = RecordSetChangeType.Update, updates = Some(rs.copy(ttl = 100))),
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -789,6 +835,8 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
+
       verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
       processorStatus shouldBe a[ReadyToApply]
     }
@@ -806,6 +854,7 @@ class RecordSetChangeHandlerSpec
           rsChange.copy(changeType = RecordSetChangeType.Delete),
           mockBackend,
           mockRsRepo,
+          mockRsDataRepo,
           mockChangeRepo,
           true
         )
@@ -824,6 +873,7 @@ class RecordSetChangeHandlerSpec
           rsChange.copy(changeType = RecordSetChangeType.Delete),
           mockBackend,
           mockRsRepo,
+          mockRsDataRepo,
           mockChangeRepo,
           true
         )
@@ -838,6 +888,8 @@ class RecordSetChangeHandlerSpec
 
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsDataRepo).save(any[ChangeSet])
+
       doReturn(IO.pure(List.empty))
         .when(mockRsRepo)
         .getRecordSetsByName(cs.zoneId, rs.name)
@@ -849,6 +901,7 @@ class RecordSetChangeHandlerSpec
               .copy(changeType = RecordSetChangeType.Delete),
             mockBackend,
             mockRsRepo,
+            mockRsDataRepo,
             mockChangeRepo,
             true
           )
@@ -856,6 +909,8 @@ class RecordSetChangeHandlerSpec
 
       verify(mockRsRepo).apply(rsRepoCaptor.capture())
       verify(mockChangeRepo).save(changeRepoCaptor.capture())
+      verify(mockRsDataRepo).save(rsDataRepoCaptor.capture())
+
       verify(mockRsRepo).getRecordSetsByName(rsChange.zoneId, rs.name)
       processorStatus shouldBe a[ReadyToApply]
     }

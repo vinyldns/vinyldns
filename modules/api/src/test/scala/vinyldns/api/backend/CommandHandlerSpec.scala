@@ -30,7 +30,12 @@ import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.backend.dns.DnsBackend
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetChange,
+  RecordSetDataRepository,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
 import vinyldns.core.TestRecordSetData._
@@ -372,6 +377,7 @@ class CommandHandlerSpec
       val zoneRepo = mock[ZoneRepository]
       val zoneChangeRepo = mock[ZoneChangeRepository]
       val recordSetRepo = mock[RecordSetRepository]
+      val recordSetDataRepo = mock[RecordSetDataRepository]
       val recordChangeRepo = mock[RecordChangeRepository]
       val batchChangeRepo = mock[BatchChangeRepository]
 
@@ -405,6 +411,7 @@ class CommandHandlerSpec
             zoneChangeRepo,
             recordSetRepo,
             recordChangeRepo,
+            recordSetDataRepo,
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,

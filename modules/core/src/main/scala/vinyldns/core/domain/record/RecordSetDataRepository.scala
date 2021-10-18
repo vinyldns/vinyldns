@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package vinyldns.core.repository
+package vinyldns.core.domain.record
 
-trait Repository
+import cats.effect._
+import vinyldns.core.repository.Repository
 
-object RepositoryName extends Enumeration {
-  type RepositoryName = Value
-  val user, group, membership, groupChange, recordSet, recordChange, recordSetData, zoneChange,
-      zone, batchChange, userChange, task = Value
+trait RecordSetDataRepository extends Repository {
+
+  def save(changeSet: ChangeSet): IO[ChangeSet]
+
 }

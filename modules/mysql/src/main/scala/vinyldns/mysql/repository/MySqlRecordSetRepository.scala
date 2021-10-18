@@ -26,6 +26,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
+
 import java.security.MessageDigest
 import scala.util.Try
 
@@ -134,8 +135,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.zoneId,
             i.recordSet.name,
             fromRecordType(i.recordSet.typ),
-            // i.recordSet.records.toString(), ToDo
-            // parseIP(i.recordSet.records.toString(), fromRecordType(i.recordSet.typ)), ToDo
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
             i.recordSet.ownerGroupId,
@@ -149,13 +148,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             u.zoneId,
             u.recordSet.name,
             fromRecordType(u.recordSet.typ),
-            //u.recordSet.records.toString(), ToDo
-            //parseIP(u.recordSet.records.toString(), fromRecordType(u.recordSet.typ)), ToDo
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
-            u.recordSet.id,
-            hashBytes(toPB(u.recordSet).toByteArray)
+            hashBytes(toPB(u.recordSet).toByteArray),
+            u.recordSet.id
           )
         }
 
@@ -177,25 +174,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }.as(changeSet)
     }
-
-  /** Work in progress */
-  /** Parse any IPv4 address or IPv6 address */
-  import java.util.regex.Pattern
-  import java.util.regex.Matcher
-
-  /** Parse IPv4 address */
-  def parseIP(ipstring: String, recordType: Int): String = {
-    var ipaddress: String = null
-    val IPADDRESS_PATTERN = {
-      "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
-    }
-    val pattern: Pattern = Pattern.compile(IPADDRESS_PATTERN)
-    val matcher: Matcher = pattern.matcher(ipstring)
-    if (matcher.find() & (recordType == 1 || recordType == 2 || recordType == 6))
-      ipaddress = matcher.group().mkString
-    else ipaddress = null
-    ipaddress
-  }
 
   /** hexa for hash the rs BLOB */
   def hexString(rs: Array[Byte]) =

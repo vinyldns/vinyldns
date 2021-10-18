@@ -49,6 +49,7 @@ class ZoneSyncHandlerSpec
   private val mockVinylDNSLoader = mock[VinylDNSZoneViewLoader]
   private val recordSetRepo = mock[RecordSetRepository]
   private val recordChangeRepo = mock[RecordChangeRepository]
+  private val recordSetDataRepo = mock[RecordSetDataRepository]
   private val zoneRepo = mock[ZoneRepository]
   private val zoneChangeRepo = mock[ZoneChangeRepository]
 
@@ -152,26 +153,29 @@ class ZoneSyncHandlerSpec
   private val zoneSync = ZoneSyncHandler(
     recordSetRepo,
     recordChangeRepo,
+    recordSetDataRepo,
     zoneChangeRepo,
     zoneRepo,
     mockBackendResolver,
     10000,
-    (_, _) => mockVinylDNSLoader
+    (_, _, _) => mockVinylDNSLoader
   )
 
   private val runSync = ZoneSyncHandler.runSync(
     recordSetRepo,
     recordChangeRepo,
+    recordSetDataRepo,
     testZoneChange,
     mockBackendResolver,
     10000,
-    (_, _) => mockVinylDNSLoader
+    (_, _, _) => mockVinylDNSLoader
   )
 
   override def beforeEach(): Unit = {
     reset(
       recordSetRepo,
       recordChangeRepo,
+      recordSetDataRepo,
       zoneRepo,
       zoneChangeRepo,
       mockDNSLoader,
@@ -193,6 +197,7 @@ class ZoneSyncHandlerSpec
       )
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[ChangeSet])
     doReturn(IO(testChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+    doReturn(IO(testChangeSet)).when(recordSetDataRepo).save(any[ChangeSet])
     doReturn(IO(testZoneChange)).when(zoneChangeRepo).save(any[ZoneChange])
     doReturn(IO(testZone)).when(zoneRepo).save(any[Zone])
 
@@ -340,10 +345,11 @@ class ZoneSyncHandlerSpec
         .runSync(
           recordSetRepo,
           recordChangeRepo,
+          recordSetDataRepo,
           testZoneChange,
           mockBackendResolver,
           10000,
-          (_, _) => mockVinylDNSLoader
+          (_, _, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
 
@@ -358,10 +364,11 @@ class ZoneSyncHandlerSpec
         .runSync(
           recordSetRepo,
           recordChangeRepo,
+          recordSetDataRepo,
           testZoneChange,
           mockBackendResolver,
           10000,
-          (_, _) => mockVinylDNSLoader
+          (_, _ , _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
 
@@ -372,14 +379,16 @@ class ZoneSyncHandlerSpec
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
       val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
       val repoCaptor = ArgumentCaptor.forClass(classOf[RecordSetRepository])
+      val repoDataCaptor = ArgumentCaptor.forClass(classOf[RecordSetDataRepository])
 
-      val vinyldnsLoader = mock[(Zone, RecordSetRepository) => VinylDNSZoneViewLoader]
-      doReturn(mockVinylDNSLoader).when(vinyldnsLoader).apply(any[Zone], any[RecordSetRepository])
+      val vinyldnsLoader = mock[(Zone, RecordSetRepository,RecordSetDataRepository) => VinylDNSZoneViewLoader]
+      doReturn(mockVinylDNSLoader).when(vinyldnsLoader).apply(any[Zone], any[RecordSetRepository] ,any[RecordSetDataRepository])
 
       ZoneSyncHandler
         .runSync(
           recordSetRepo,
           recordChangeRepo,
+          recordSetDataRepo,
           testZoneChange,
           mockBackendResolver,
           10000,
@@ -387,7 +396,7 @@ class ZoneSyncHandlerSpec
         )
         .unsafeRunSync()
 
-      verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture())
+      verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture(), repoDataCaptor.capture())
       val req = zoneCaptor.getValue
       req shouldBe testZone.copy(status = ZoneStatus.Syncing)
     }
@@ -407,6 +416,17 @@ class ZoneSyncHandlerSpec
       verify(recordChangeRepo).save(captor.capture())
       val req = captor.getValue
       anonymize(req) shouldBe anonymize(testChangeSet)
+
+    }
+    "save the record changes to the recordSetDataRepo" in {
+      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
+      val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
+      runSync.unsafeRunSync()
+
+      verify(recordSetDataRepo).save(captor.capture())
+      val req = captor.getValue
+      anonymize(req) shouldBe anonymize(testChangeSet)
+
     }
 
     "save the record sets to the recordSetRepo" in {
@@ -444,6 +464,8 @@ class ZoneSyncHandlerSpec
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
       doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
       doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+      doReturn(IO(correctChangeSet)).when(recordSetDataRepo).save(any[ChangeSet])
+
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
       runSync.unsafeRunSync()
@@ -466,6 +488,7 @@ class ZoneSyncHandlerSpec
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
       doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
       doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+      doReturn(IO(correctChangeSet)).when(recordSetDataRepo).save(any[ChangeSet])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
       val zoneChange = ZoneChange(testReverseZone, testReverseZone.account, ZoneChangeType.Sync)
@@ -474,10 +497,11 @@ class ZoneSyncHandlerSpec
         .runSync(
           recordSetRepo,
           recordChangeRepo,
+          recordSetDataRepo,
           zoneChange,
           mockBackendResolver,
           10000,
-          (_, _) => mockVinylDNSLoader
+          (_, _, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
 

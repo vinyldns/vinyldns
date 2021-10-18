@@ -102,6 +102,7 @@ object Boot extends App {
           repositories.zoneChangeRepository,
           repositories.recordSetRepository,
           repositories.recordChangeRepository,
+          repositories.recordSetDataRepository,
           repositories.batchChangeRepository,
           notifiers,
           backendResolver,
