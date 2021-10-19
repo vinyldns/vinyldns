@@ -177,17 +177,27 @@ class MySqlRecordSetDataRepository
       recordType: String
   ): String = {
     var ipAddress: String = null
-    val IPADDRESS_PATTERN = {
+    val IPADDRESS_IPV4_PATTERN = {
       "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
+    }
+    val IPADDRESS_IPV6_PATTERN = {
+      "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
     }
 
     /**
     parse ip address from the recordset data
       */
-    val pattern: Pattern = Pattern.compile(IPADDRESS_PATTERN)
-    val matcher: Matcher = pattern.matcher(ipString)
-    if (matcher.find() && (recordType == "A" || recordType == "AAAA" || recordType == "PTR")) {
-      ipAddress = matcher.group().mkString
+    val patternipv4: Pattern = Pattern.compile(IPADDRESS_IPV4_PATTERN)
+    val patternipv6: Pattern = Pattern.compile(IPADDRESS_IPV6_PATTERN)
+    val matcheripv4: Matcher = patternipv4.matcher(ipString)
+    val matcheripv6: Matcher = patternipv6.matcher(ipString)
+
+    if (matcheripv4.find() && (recordType == "A" || recordType == "AAAA" || recordType == "PTR")) {
+      ipAddress = matcheripv4.group().mkString
+    } else if (matcheripv6
+        .find() && (recordType == "A" || recordType == "AAAA" || recordType == "PTR")) {
+      ipAddress = matcheripv6.group().mkString
+      println(ipAddress)
     } else ipAddress = null
     ipAddress
   }
