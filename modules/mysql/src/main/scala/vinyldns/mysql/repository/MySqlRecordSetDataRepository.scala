@@ -197,7 +197,6 @@ class MySqlRecordSetDataRepository
     } else if (matcheripv6
         .find() && (recordType == "A" || recordType == "AAAA" || recordType == "PTR")) {
       ipAddress = matcheripv6.group().mkString
-      println(ipAddress)
     } else ipAddress = null
     ipAddress
   }
