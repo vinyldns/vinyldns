@@ -368,7 +368,7 @@ class ZoneSyncHandlerSpec
           testZoneChange,
           mockBackendResolver,
           10000,
-          (_, _ , _) => mockVinylDNSLoader
+          (_, _, _) => mockVinylDNSLoader
         )
         .unsafeRunSync()
 
@@ -381,8 +381,11 @@ class ZoneSyncHandlerSpec
       val repoCaptor = ArgumentCaptor.forClass(classOf[RecordSetRepository])
       val repoDataCaptor = ArgumentCaptor.forClass(classOf[RecordSetDataRepository])
 
-      val vinyldnsLoader = mock[(Zone, RecordSetRepository,RecordSetDataRepository) => VinylDNSZoneViewLoader]
-      doReturn(mockVinylDNSLoader).when(vinyldnsLoader).apply(any[Zone], any[RecordSetRepository] ,any[RecordSetDataRepository])
+      val vinyldnsLoader =
+        mock[(Zone, RecordSetRepository, RecordSetDataRepository) => VinylDNSZoneViewLoader]
+      doReturn(mockVinylDNSLoader)
+        .when(vinyldnsLoader)
+        .apply(any[Zone], any[RecordSetRepository], any[RecordSetDataRepository])
 
       ZoneSyncHandler
         .runSync(
@@ -396,7 +399,11 @@ class ZoneSyncHandlerSpec
         )
         .unsafeRunSync()
 
-      verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture(), repoDataCaptor.capture())
+      verify(vinyldnsLoader).apply(
+        zoneCaptor.capture(),
+        repoCaptor.capture(),
+        repoDataCaptor.capture()
+      )
       val req = zoneCaptor.getValue
       req shouldBe testZone.copy(status = ZoneStatus.Syncing)
     }

@@ -39,6 +39,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       groupChange,
       recordSet,
       recordChange,
+      recordSetData,
       zoneChange,
       zone,
       batchChange,

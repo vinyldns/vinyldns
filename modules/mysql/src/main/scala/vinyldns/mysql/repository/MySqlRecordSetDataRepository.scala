@@ -24,10 +24,6 @@ import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.mysql.repository.MySqlRecordSetRepository.toFQDN
-
-import java.util.UUID
-
-//import java.util.UUID
 import java.util.regex.{Matcher, Pattern}
 
 class MySqlRecordSetDataRepository
@@ -36,10 +32,7 @@ class MySqlRecordSetDataRepository
     with ProtobufConversions {
 
   private val INSERT_RECORDSETDATA =
-    sql"INSERT IGNORE INTO recordset_data(id, recordset_id, zone_id, fqdn, type, record_data, ip) VALUES ({id}, {recordset_id}, {zone_id}, {fqdn}, {type},{record_data}, {ip})"
-
-  private val UPDATE_RECORDSETDATA =
-    sql"UPDATE recordset_data SET  zone_id = {zone_id}, fqdn = {fqdn}, type = {type}, record_data = {record_data},ip = {ip} WHERE  recordset_id = {recordset_id}"
+    sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, fqdn, reverse_fqdn, type, record_data, ip) VALUES ({recordset_id}, {zone_id}, {FDQN}, {reverseFDQN}, {type},{record_data}, {ip})"
 
   private val DELETE_RECORDSETDATA =
     sql"DELETE FROM recordset_data WHERE recordset_id = ?"
@@ -71,11 +64,11 @@ class MySqlRecordSetDataRepository
             i.recordSet.id,
             i.recordSet.zoneId,
             toFQDN(i.zone.name, i.recordSet.name),
+            toFQDN(i.zone.name, i.recordSet.name).reverse,
             "insert"
           )
         )
       }
-      // val updates: Seq[Seq[Any]] =
       completeUpdates.map { u =>
         Seq[Any](
           RsData(
@@ -84,6 +77,7 @@ class MySqlRecordSetDataRepository
             u.recordSet.id,
             u.recordSet.zoneId,
             toFQDN(u.zone.name, u.recordSet.name),
+            toFQDN(u.zone.name, u.recordSet.name).reverse,
             "update"
           )
         )
@@ -92,14 +86,6 @@ class MySqlRecordSetDataRepository
 
       IO {
         DB.localTx { implicit s =>
-         /** this part is not require since we are not inserting rs data on grouped, hence it comment */
-
-          /* inserts.grouped(1000).foreach { group =>
-            INSERT_RECORDSETDATA.batch(group: _*).apply()
-          }*/
-          /*(updates ++ reversionUpdates).grouped(1000).foreach { group =>
-            UPDATE_RECORDSETDATA.batch(group: _*).apply()
-          }*/
           deletes.grouped(1000).foreach { group =>
             DELETE_RECORDSETDATA.batch(group: _*).apply()
           }
@@ -130,7 +116,34 @@ class MySqlRecordSetDataRepository
       recordID: String,
       zoneId: String,
       FQDN: String,
+      reverseFDQN: String,
       rs: String
+  ): Unit =
+    rs match {
+
+      /**
+    insert the rsdata first, as if recordset are created
+        */
+      case "insert" => rsDataSave(recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
+      case "update" =>
+        /**
+      for update delete the rsdata first, as if recordset are updated
+          */
+        DB.localTx { implicit s =>
+          DELETE_RECORDSETDATA
+            .bind(recordID)
+            .update()
+            .apply()
+        }
+        rsDataSave(recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
+    }
+  def rsDataSave(
+      recordData: String,
+      recordType: String,
+      recordID: String,
+      zoneId: String,
+      FQDN: String,
+      reverseFDQN: String
   ): Unit = {
     var parseIp: String = null
     var records: String = null
@@ -138,45 +151,23 @@ class MySqlRecordSetDataRepository
       parseIp = parseIP(ipString, recordType)
       records = recordData.replace("List(", "")
       records = records.replace(")", "")
-      val recordDataID: String = UUID.randomUUID().toString
 
-      rs match {
-        /**
-      insert all rsdata as if recordset are creates
-       */
-        case "insert" =>
-          DB.localTx { implicit s =>
-            INSERT_RECORDSETDATA
-              .bindByName(
-                'id -> recordDataID,
-                'recordset_id -> recordID,
-                'zone_id -> zoneId,
-                'fqdn -> FQDN,
-                'type -> recordType,
-                'record_data -> records,
-                'ip -> parseIp
-              )
-              .update()
-              .apply()
-          }
-        /**
-        Update all rsdata as if recordset are updated
+      /**
+      insert the rsdata first, as if recordset are created/updated
         */
-        case "update" =>
-          DB.localTx { implicit s =>
-            UPDATE_RECORDSETDATA
-              .bindByName(
-                'zone_id -> zoneId,
-                'fqdn -> FQDN,
-                'type -> recordType,
-                'record_data -> records,
-                'ip -> parseIp,
-                //    'id -> recordDataID,
-                'recordset_id -> recordID
-              )
-              .update()
-              .apply()
-          }
+      DB.localTx { implicit s =>
+        INSERT_RECORDSETDATA
+          .bindByName(
+            'recordset_id -> recordID,
+            'zone_id -> zoneId,
+            'FDQN -> FQDN,
+            'reverseFDQN -> reverseFDQN,
+            'type -> recordType,
+            'record_data -> records,
+            'ip -> parseIp
+          )
+          .update()
+          .apply()
       }
     }
   }
@@ -189,9 +180,10 @@ class MySqlRecordSetDataRepository
     val IPADDRESS_PATTERN = {
       "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
     }
+
     /**
     parse ip address from the recordset data
-     */
+      */
     val pattern: Pattern = Pattern.compile(IPADDRESS_PATTERN)
     val matcher: Matcher = pattern.matcher(ipString)
     if (matcher.find() && (recordType == "A" || recordType == "AAAA" || recordType == "PTR")) {
