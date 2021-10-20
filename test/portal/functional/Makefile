@@ -16,9 +16,9 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
 endif
 ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
-  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  WITH_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   # ...and turn them into do-nothing targets
-  $(eval $(RUN_ARGS):;@:)
+  $(eval $(WITH_ARGS):;@:)
 endif
 
 
@@ -35,8 +35,8 @@ build:
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(IMAGE_NAME) -- $(RUN_ARGS)
+	docker run -it --rm $(IMAGE_NAME) -- $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) -- $(RUN_ARGS)
+	docker run -it --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)

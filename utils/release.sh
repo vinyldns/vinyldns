@@ -36,21 +36,21 @@ if [ "$1" != "skip-tests" ]; then
   printf "\nrunning api func tests... \n"
   if ! "$DIR"/func-test-api.sh
   then
-      printf "\nerror: bin/func-test-api.sh failed \n"
+      printf "\nerror: utils/func-test-api.sh failed \n"
       exit 1
   fi
 
   printf "\nrunning portal func tests... \n"
   if ! "$DIR"/func-test-portal.sh
   then
-      printf "\nerror: bin/func-test-portal.sh failed \n"
+      printf "\nerror: utils/func-test-portal.sh failed \n"
       exit 1
   fi
 
   printf "\nrunning verify... \n"
   if ! "$DIR"/verify.sh
   then
-      printf "\nerror: bin/verify.sh failed \n"
+      printf "\nerror: utils/verify.sh failed \n"
       exit 1
   fi
 fi

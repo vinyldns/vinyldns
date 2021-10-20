@@ -47,7 +47,7 @@ lazy val sharedSettings = Seq(
 lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
-  fork in IntegrationTest := false,
+  fork in IntegrationTest := true,
   testOptions in Test += Tests.Argument("-oDNCXEPQRMIK", "-l", "SkipCI"),
   logBuffered in Test := false,
   // Hide stack traces in tests
@@ -67,13 +67,11 @@ lazy val apiSettings = Seq(
 )
 
 lazy val apiAssemblySettings = Seq(
-  assemblyJarName in assembly := "vinyldns.jar",
+  assemblyOutputPath in assembly := file("assembly/vinyldns.jar"),
   test in assembly := {},
   mainClass in assembly := Some("vinyldns.api.Boot"),
   mainClass in reStart := Some("vinyldns.api.Boot"),
-  // there are some odd things from dnsjava including update.java and dig.java that we don't use
   assemblyMergeStrategy in assembly := {
-    case "update.class" | "dig.class" => MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "index.js") =>
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
@@ -153,6 +151,7 @@ lazy val coreBuildSettings = Seq(
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
+
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -266,11 +265,11 @@ lazy val portal = (project in file("modules/portal"))
     },
     checkJsHeaders := {
       import scala.sys.process._
-      "./bin/add-license-headers.sh -d=modules/portal/public/lib -f=js -c" !
+      "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js -c" !
     },
     createJsHeaders := {
       import scala.sys.process._
-      "./bin/add-license-headers.sh -d=modules/portal/public/lib -f=js" !
+      "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js" !
     },
     // change the name of the output to portal.zip
     packageName in Universal := "portal"

@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: ['*']
   push:
-    branches: ['master']
+    branches: ['master','main']
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -140,4 +140,4 @@ jobs:
           path: ~/.sbt
           key: ${{ runner.os }}-sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Func tests
-        run: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
+        run: ./utils/func-test-portal.sh && ./utils/func-test-api.sh

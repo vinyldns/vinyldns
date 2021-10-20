@@ -7,6 +7,6 @@ npm install -f
 
 npm install grunt -g -f
 grunt default
-$DIR/../../bin/add-license-headers.sh -d=$DIR/public/lib -f=js
+$DIR/../../utils/add-license-headers.sh -d=$DIR/public/lib -f=js
 
 cd -

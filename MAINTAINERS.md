@@ -79,7 +79,7 @@ running the release
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Make sure you're logged in to Docker with `docker login`
-1. Run `bin/release.sh` _Note: the arg "skip-tests" will skip unit, integration and functional testing before a release_
+1. Run `utils/release.sh` _Note: the arg "skip-tests" will skip unit, integration and functional testing before a release_
 1. You will be asked to confirm the version which originally comes from `version.sbt`. _NOTE: if the version ends with 
 `SNAPSHOT`, then the docker latest tag won't be applied and the core module will only be published to the sonatype
 staging repo._

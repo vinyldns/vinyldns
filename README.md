@@ -48,9 +48,9 @@ To start up a local instance of VinylDNS on your machine with docker:
 1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
-1. Run `./bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001`
+1. Run `./utils/quickstart-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001`
 1. See [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for how to load a test DNS zone
-1. To stop the local setup, run `./bin/remove-vinyl-containers.sh`.
+1. To stop the local setup, run `./utils/clean-vinyldns-containers.sh`.
 
 There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the endpoint `http://localhost:9000`
 
@@ -72,7 +72,7 @@ TTL = 300, IP Addressess = 1.1.1.1`
 1. Upon connecting to a zone for the first time, a zone sync is executed to provide VinylDNS a copy of the records in the zone
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
-1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the `bin/.env` file before execution.
+1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the `utils/.env` file before execution.
 1. A similar `docker/.env.quickstart` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 ## Code of Conduct

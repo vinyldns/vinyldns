@@ -1,0 +1,45 @@
+version: "3.5"
+
+services:
+  ldap:
+    container_name: "vinyldns-ldap"
+    image: rroemhild/test-openldap
+    ports:
+      - "19004:389"
+
+  integration:
+    container_name: "vinyldns-api-integration"
+    hostname: "vinyldns-integration"
+    image: "vinyldns-api-integration"
+    build:
+      context: ../
+      dockerfile: test/api/integration/Dockerfile
+    environment:
+      RUN_SERVICES: "all tail-logs"
+    env_file:
+      .env
+    ports:
+      - "9000:9000"
+      - "19001-19003:19001-19003/tcp"
+      - "19001:19001/udp"
+
+  portal:
+    container_name: "vinyldns-portal"
+    image: "vinyldns/portal:${VINYLDNS_VERSION}"
+    build:
+      context: ..
+      dockerfile: ""
+    env_file:
+      .env
+    ports:
+      - "${PORTAL_PORT}:${PORTAL_PORT}"
+    volumes:
+      - ./portal/application.ini:/opt/docker/conf/application.ini
+      - ./portal/application.conf:/opt/docker/conf/application.conf
+    depends_on:
+      - integration
+      - ldap
+
+networks:
+  default:
+    name: "vinyldns_net"

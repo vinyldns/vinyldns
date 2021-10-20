@@ -31,8 +31,8 @@ tmp.out
 .vscode
 project/metals.sbt
 .bsp
-docker/data
+quickstart/data
 **/.virtualenv
 **/.venv*
 **/*cache*
-
+**/assembly/

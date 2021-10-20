@@ -22,6 +22,7 @@ import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 object MySqlConnector {
 
@@ -44,20 +45,21 @@ object MySqlConnector {
       getDataSource(migrationConnectionSettings).map { migrationDataSource =>
         logger.info("Running migrations to ready the databases")
 
-        val migration = new Flyway()
-        migration.setDataSource(migrationDataSource)
+        val placeholders = Map("dbName" -> config.name)
+        val migration = Flyway
+          .configure()
+          .dataSource(migrationDataSource)
+          .placeholders(placeholders.asJava)
+          .schemas(config.name)
+
         // flyway changed the default schema table name in v5.0.0
         // this allows to revert to an old naming convention if needed
         config.migrationSchemaTable.foreach { tableName =>
-          migration.setTable(tableName)
+          migration.table(tableName)
         }
 
-        val placeholders = Map("dbName" -> config.name)
-        migration.setPlaceholders(placeholders.asJava)
-        migration.setSchemas(config.name)
-
         // Runs flyway migrations
-        migration.migrate()
+        migration.load().migrate()
         logger.info("migrations complete")
       }
     }
@@ -85,6 +87,20 @@ object MySqlConnector {
       case (k, v) => dsConfig.addDataSourceProperty(k, v)
     }
 
-    new HikariDataSource(dsConfig)
+    def retry[T](times: Int, delayMs: Int)(op: => T) =
+      Iterator
+        .range(0, times)
+        .map(_ => Try(op))
+        .flatMap {
+          case Success(t) => Some(t)
+          case Failure(_) =>
+            logger.warn("failed to startup database connection, retrying..")
+            Thread.sleep(delayMs)
+            None
+        }
+        .toSeq
+        .head
+
+    retry(60, 1000) { new HikariDataSource(dsConfig) }
   }
 }

@@ -17,9 +17,9 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
 endif
 ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
-  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  WITH_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   # ...and turn them into do-nothing targets
-  $(eval $(RUN_ARGS):;@:)
+  $(eval $(WITH_ARGS):;@:)
 endif
 
 
@@ -38,8 +38,8 @@ build:
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19003:19003 -p 19002:19002 -p 19001:19001/tcp -p 19001:19001/udp $(IMAGE_NAME) -- $(RUN_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) -- $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19003:19003 -p 19002:19002 -p 19001:19001/tcp -p 19001:19001/udp -v "$$(pwd)/test:/functional_test" $(IMAGE_NAME) -- $(RUN_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$$(pwd)/test:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)

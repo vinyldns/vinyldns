@@ -1,7 +1,6 @@
 SHELL=bash
-IMAGE_NAME=vinyldns-api-integration
+IMAGE_NAME=vinyldns/portal
 ROOT_DIR:=$(shell dirname $(realpath  $(lastword $(MAKEFILE_LIST))))
-RELATIVE_ROOT_DIR:=$(shell realpath --relative-to=../../.. $(ROOT_DIR))
 
 # Check that the required version of make is being used
 REQ_MAKE_VER:=3.82
@@ -24,28 +23,21 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run run-local
+.PHONY: all build run
 
 all: build run
 
 build:
 	@set -euo pipefail
-	cd ../../..
+	cd ../..
 	docker build -t $(IMAGE_NAME) --build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9001:9001 $(IMAGE_NAME) -- $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
-	docker run -td --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
-
-stop-bg:
-	@set -euo pipefail
-	docker stop $(IMAGE_NAME) &> /dev/null || true
-
-run-local:
-	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker rm $(IMAGE_NAME) &> /dev/null || true
+	docker run -td --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -p 9001:9001 $(IMAGE_NAME) -- /bin/bash

@@ -7,9 +7,9 @@
 **/.idea/
 **/.bsp
 **/*cache*
-**/*.png
 **/.git
 **/Dockerfile
 **/*.dockerignore
 **/.github
 **/_template
+img/

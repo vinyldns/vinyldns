@@ -1,14 +1,15 @@
 FROM vinyldns/build:base-build-portal as builder
+ARG VINYLDNS_VERSION="0.0.0-local-dev"
 
-ARG BRANCH=master
-ARG VINYLDNS_VERSION
+COPY . /vinyldns
 
-RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+WORKDIR /vinyldns
+RUN cp /build/node_modules.tar.xz /vinyldns/modules/portal && \
+    cd /vinyldns/modules/portal && tar Jxvf node_modules.tar.xz && \
+    cd /vinyldns
 
-# The default jvmopts are huge, meant for running everything, use a paired down version
-COPY .jvmopts /vinyldns
-
-RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
+RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; preparePortal"
+RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; universal:packageZipTarball"
 
 FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
 
@@ -22,7 +23,6 @@ RUN mkdir -p /opt && \
     mkdir -p /opt/docker/lib_extra
 
 # This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ARG VINYLDNS_VERSION
 ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
 
 # Mount the volume for config file and lib extras

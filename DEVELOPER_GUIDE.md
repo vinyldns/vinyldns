@@ -7,19 +7,31 @@
 - [Running VinylDNS Locally](#running-vinyldns-locally)
 - [Testing](#testing)
 
-## Developer Requirements
+## Developer Requirements (Local)
 
-- Scala 2.12
-- sbt 1+
 - Java 8 (at least u162)
-- Python 2.7
-- virtualenv
-- Docker
-- curl
-- npm
-- grunt
+- Scala 2.12
+- sbt 1.4+
 
-Make sure that you have the requirements installed before proceeding.
+
+- curl
+- docker
+- docker-compose
+- GNU Make 3.82+
+- grunt
+- npm
+- Python 3.5+
+
+## Developer Requirements (Docker)
+
+Since almost everything can be run with Docker and GNU Make, if you don't want to setup a local development environment,
+then you simply need:
+
+- `Docker` v19.03+ _(earlier versions may work fine)_
+- `Docker Compose` v2.0+ _(earlier versions may work fine)_
+- `GNU Make` v3.82+
+- `Bash` 3.2+
+    - Basic utilities: `awk`, `sed`, `curl`, `grep`, etc may be needed for scripts
 
 ## Project Layout
 
@@ -135,10 +147,12 @@ README. However, VinylDNS can also be run in the foreground.
 ### Starting the API Server
 
 Before starting the API service, you can start the dependencies for local development:
+
 ```
 cd test/api/integration
 make build && make run-bg
 ```
+
 This will start a container running in the background with necessary prerequisites.
 
 Once the prerequisites are running, you can start up sbt by running `sbt` from the root directory.
@@ -147,16 +161,21 @@ Once the prerequisites are running, you can start up sbt by running `sbt` from t
 * `reStart` to start up the API server
 * Wait until you see the message `VINYLDNS SERVER STARTED SUCCESSFULLY` before working with the server
 * To stop the VinylDNS server, run `reStop` from the api project
-* To stop the dependent Docker containers, change to the root project `project root`, then run `dockerComposeStop` from
-  the API project
+* To stop the dependent Docker containers: `utils/clean-vinyldns-containers.sh`
 
 See the [API Configuration Guide](https://www.vinyldns.io/operator/config-api) for information regarding API
 configuration.
 
 ### Starting the Portal
 
-To run the portal locally, you _first_ have to start up the VinylDNS API Server (see instructions above). Once that is
-done, in the same `sbt` session or a different one, go to `project portal` and then execute `;preparePortal; run`.
+To run the portal locally, you _first_ have to start up the VinylDNS API Server:
+
+```
+utils/quickstart-vinyldns.sh
+```
+
+Once that is done, in the same `sbt` session or a different one, go to `project portal` and then
+execute `;preparePortal; run`.
 
 See the [Portal Configuration Guide](https://www.vinyldns.io/operator/config-portal) for information regarding portal
 configuration.
@@ -220,7 +239,7 @@ You can run all unit and integration tests for the api and portal by running `sb
 When adding new features, you will often need to write new functional tests that black box / regression test the API.
 
 - The API functional tests are written in Python and live under `test/api/functional`.
-The Portal functional tests are written in JavaScript and live under `test/portal/functional`.
+- The Portal functional tests are written in JavaScript and live under `test/portal/functional`.
 
 #### Running Functional Tests
 
@@ -229,6 +248,7 @@ To run functional tests you can simply execute the following command:
 ```
 make build && make run
 ```
+
 During iterative test development, you can use `make run-local` which will mount the current functional tests in the
 container, allowing for easier test development.
 
@@ -236,12 +256,10 @@ Additionally, you can pass `--interactive` to `make run` or `make run-local` to 
 From there you can run tests with the `/functional_test/run.sh` command. This allows for finer-grained control over the
 test execution process as well as easier inspection of logs.
 
-
 ##### API Functional Tests
+
 You can run a specific test by name by running `make run -- -k <name of test function>`. Any arguments after
 `make run --` will be passed to the test runner [`test/api/functional/run.sh`](test/api/functional/run.sh).
-
-
 
 #### Setup
 

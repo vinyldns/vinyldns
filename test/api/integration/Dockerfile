@@ -6,7 +6,8 @@ COPY . /build/
 WORKDIR /build
 
 ##  Run the build if we don't already have a vinyldns.jar
-RUN if [ ! -f /opt/vinyldns/vinyldns.jar ]; then \
+RUN if [ -f assembly/vinyldns.jar ]; then cp assembly/vinyldns.jar /opt/vinyldns; fi && \
+    if [ ! -f /opt/vinyldns/vinyldns.jar ]; then \
       env SBT_OPTS="-XX:+UseConcMarkSweepGC -Xmx4G -Xms1G" \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
       && cp modules/api/target/scala-2.12/vinyldns.jar /opt/vinyldns/; \
@@ -26,3 +27,5 @@ WORKDIR /build
 COPY docker/bind9/etc/named.conf.* /etc/bind/
 COPY docker/bind9/zones/ /var/bind/
 RUN named-checkconf
+
+ENV RUN_SERVICES="all"
