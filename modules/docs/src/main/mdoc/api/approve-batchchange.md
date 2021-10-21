@@ -29,7 +29,7 @@ reviewComment | string        | no          | Optional approval explanation. |
 
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
     "reviewComment": "Comments are optional."
 }

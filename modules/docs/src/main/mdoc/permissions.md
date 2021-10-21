@@ -81,7 +81,7 @@ Shared Zones **still have restrictions**.  It wouldn't be safe to allow _anyone_
 
 In addition to shared zones, you can configure which record types you allow broad access to.  Certain record types like `NS` maybe sensitive to be "world writable".  You can configure the allowable record types via config as shown below:
 
-```
+```yaml
 shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
 ```
 
@@ -96,7 +96,7 @@ The use case that fits here is when
 
 Global ACL rules are _configured_ in VinylDNS (i.e. they are config file entries not available in the UI yet).  The configuration entry is `global-acl-rules`.  An example entry follows
 
-```
+```yaml
 global-acl-rules = [
     {
         group-ids: ['global-acl-group-id'],
@@ -125,7 +125,7 @@ To turn on manual review, set the `manual-batch-review-enabled = true` in your a
 
 In addition, you can specify certain zones that are **ALWAYS** manually reviewed.  Even with **Shared Zones** turned on, you can require manual inspection to certain FQDNs.  This is also done via configuration.  The following snippet shows the configuration for zones that are **ALWAYS** manually reviewed:
 
-```
+```yaml
   manual-review-domains = {
     domain-list = [".*imporant.biz.com"]
     ip-list = ["1.2.3.4"]

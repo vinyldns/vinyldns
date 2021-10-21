@@ -34,10 +34,8 @@ lazy val sharedSettings = Seq(
       )
     else Seq.empty
   ),
-
   // scala format
   scalafmtOnCompile := getPropertyFlagOrDefault("build.scalafmtOnCompile", false),
-
   // coverage options
   coverageMinimum := 85,
   coverageFailOnMinimum := true,
@@ -286,7 +284,7 @@ lazy val docSettings = Seq(
   micrositeHomepage := "https://vinyldns.io",
   micrositeDocumentationUrl := "/api",
   micrositeDocumentationLabelDescription := "API Documentation",
-  micrositeHighlightLanguages ++= Seq("json"),
+  micrositeHighlightLanguages ++= Seq("json", "yaml", "bnf", "plaintext"),
   micrositeGitterChannel := false,
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
