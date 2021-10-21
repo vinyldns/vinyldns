@@ -48,7 +48,7 @@ changeType    | string        | The type change, either Create, Update, or Delet
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "maxItems": 100,
   "changes": [

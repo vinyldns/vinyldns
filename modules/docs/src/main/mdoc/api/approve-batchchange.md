@@ -69,7 +69,7 @@ reviewTimestamp | date-time  | The timestamp (UTC) of when the batch change was 
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "userId": "vinyl",
     "userName": "vinyl201",

@@ -26,7 +26,7 @@ in the DNS backend.
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
 
-```
+```json
 [
    {
       "changeType": "Add",
@@ -46,7 +46,7 @@ in the DNS backend.
          "cname": "test.example.com."
       },
       "errors": [
-         "Record with name "duplicate.example.com." is not unique in the batch change. CNAME record cannot use duplicate name."
+         "Record with name \"duplicate.example.com.\" is not unique in the batch change. CNAME record cannot use duplicate name."
       ]
    },
    {
@@ -60,7 +60,7 @@ in the DNS backend.
    },
    {
       "changeType": "Add",
-      "inputName": "bad-ttl-and-invalid-name$.sample.com.”,
+      "inputName": "bad-ttl-and-invalid-name$.sample.com.",
       "type": "A",
       "ttl": 29,
       "record": {
@@ -143,7 +143,7 @@ Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone ex
 Given an inputName, VinylDNS will determine the record and zone name for the requested change. For most records, the record
 names are the same as the zone name (apex), or split at at the first '.', so the inputName 'rname.zone.name.com' will be split
 into record name 'rname' and zone name 'zone.name.com' (or 'rname.zone.name.com' for both the record and zone name if it's an apex record).
-For PTR records, there is logic to determine the appropriate reverse zone from the given IP address.
+For `PTR` records, there is logic to determine the appropriate reverse zone from the given IP address.
 
 If this logic cannot find a matching zone in VinylDNS, you will see this error.
 In that case, you need to connect to the zone in VinylDNS.
@@ -350,7 +350,7 @@ CNAME conflict: CNAME record names must be unique. Existing record with name "<n
 
 ##### Details:
 
-A CNAME record with the given name already exists. CNAME records must have unique names.
+A `CNAME` record with the given name already exists. `CNAME` records must have unique names.
 
 
 #### User Is Not Authorized <a id="UserIsNotAuthorized"></a>
@@ -445,7 +445,7 @@ CNAME cannot be the same name as zone "<zone_name>".
 
 ##### Details:
 
-CNAME records cannot be `@` or the same name as the zone.
+`CNAME` records cannot be `@` or the same name as the zone.
 
 
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
@@ -505,7 +505,7 @@ If there are issues with the JSON provided in a batch change request, errors wil
 
 ##### EXAMPLE ERROR MESSAGES:
 
-```
+```json
 {
    "errors": [
       "Missing BatchChangeInput.changes"
@@ -522,7 +522,7 @@ If there are issues with the JSON provided in a batch change request, errors wil
 
 {
    "errors": [
-      “Invalid RecordType”
+      "Invalid RecordType""
    ]
 }
 ```

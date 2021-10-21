@@ -281,13 +281,13 @@ lazy val docSettings = Seq(
   micrositeGithubOwner := "vinyldns",
   micrositeGithubRepo := "vinyldns",
   micrositeName := "VinylDNS",
-  micrositeDescription := "DNS Governance",
+  micrositeDescription := "DNS Automation and Governance",
   micrositeAuthor := "VinylDNS",
-  micrositeHomepage := "http://vinyldns.io",
+  micrositeHomepage := "https://vinyldns.io",
   micrositeDocumentationUrl := "/api",
-  micrositeGitterChannelUrl := "vinyldns/Lobby",
-  micrositeTwitterCreator := "@vinyldns",
   micrositeDocumentationLabelDescription := "API Documentation",
+  micrositeHighlightLanguages ++= Seq("json"),
+  micrositeGitterChannel := false,
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
@@ -300,8 +300,6 @@ lazy val docSettings = Seq(
   ghpagesNoJekyll := false,
   fork in mdoc := true,
   mdocIn := (sourceDirectory in Compile).value / "mdoc",
-  micrositeCssDirectory := (resourceDirectory in Compile).value / "microsite" / "css",
-  micrositeCompilingDocsTool := WithMdoc,
   micrositeFavicons := Seq(
     MicrositeFavicon("favicon16x16.png", "16x16"),
     MicrositeFavicon("favicon32x32.png", "32x32")
@@ -313,7 +311,7 @@ lazy val docSettings = Seq(
     )
   ),
   micrositeFooterText := None,
-  micrositeHighlightTheme := "atom-one-light",
+  micrositeHighlightTheme := "hybrid",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 

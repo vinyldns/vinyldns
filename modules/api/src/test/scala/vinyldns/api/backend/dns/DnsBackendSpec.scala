@@ -16,8 +16,6 @@
 
 package vinyldns.api.backend.dns
 
-import java.net.{InetAddress, SocketAddress}
-
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
@@ -36,6 +34,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
+import java.net.{InetAddress, SocketAddress}
 import scala.collection.JavaConverters._
 
 class DnsBackendSpec
@@ -93,7 +92,9 @@ class DnsBackendSpec
     ): Either[Throwable, DnsQuery] =
       name match {
         case "try-again" =>
-          Right(new DnsQuery(new Lookup("try-again.vinyldns.", 0, 0), new Name(testZone.name)))
+          val lookup = new Lookup("try-again.vinyldns.", 0, 0)
+          lookup.setResolver(mockResolver)
+          Right(new DnsQuery(lookup, new Name(testZone.name)))
         case _ => Right(mockDnsQuery)
       }
   }
@@ -101,7 +102,9 @@ class DnsBackendSpec
 
   override def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
-    doReturn(new java.util.ArrayList[DNS.Record](0)).when(mockMessage).getSection(DNS.Section.ADDITIONAL)
+    doReturn(new java.util.ArrayList[DNS.Record](0))
+      .when(mockMessage)
+      .getSection(DNS.Section.ADDITIONAL)
     doReturn(DNS.Rcode.NOERROR).when(mockMessage).getRcode
     doReturn(mockMessage).when(mockResolver).send(messageCaptor.capture())
     doReturn(DNS.Lookup.SUCCESSFUL).when(mockDnsQuery).result
@@ -608,6 +611,12 @@ class DnsBackendSpec
   "runQuery" should {
     "return an error if receiving TRY_AGAIN from lookup error" in {
       val rsc = addRsChange(rs = testA.copy(name = "try-again"))
+
+      val tryAgainMessage = mock[DNS.Message]
+      val mockHeader = mock[DNS.Header]
+      doReturn(mockHeader).when(tryAgainMessage).getHeader
+      doReturn(DNS.Rcode.NOTIMP).when(mockHeader).getRcode
+      doReturn(tryAgainMessage).when(mockResolver).send(any[DNS.Message])
 
       underTest
         .resolve(rsc.recordSet.name, rsc.zone.name, rsc.recordSet.typ)

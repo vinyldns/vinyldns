@@ -18,7 +18,7 @@ There are a few existing tools for working with the VinylDNS API.
 
 ## Integrations
 
-- [external-dns](https://github.com/kubernetes-incubator/external-dns) - DNS provider-agnostic syncronization of Cloud Foundry and Kubernetes resources, including VinylDNS
+- [external-dns](https://github.com/kubernetes-incubator/external-dns) - DNS provider-agnostic synchronization of Cloud Foundry and Kubernetes resources, including VinylDNS
 
 ## Coming Soon
 - [vinyldns-ansible](https://github.com/vinyldns/vinyldns-ansible) - Ansible integration with VinylDNS
