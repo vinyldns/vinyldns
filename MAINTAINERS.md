@@ -62,7 +62,7 @@ note you will have to generate a strong passphrase and save it in some password 
     password=ignored-must-use-pinentry
     ```
 
-1. Add credenial configuration to global sbt setting in `~/.sbt/1.0/credential.sbt` with the content
+1. Add credential configuration to global sbt setting in `~/.sbt/1.0/credential.sbt` with the content
 
     ```
     credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
@@ -70,14 +70,14 @@ note you will have to generate a strong passphrase and save it in some password 
 
 ## Release Process
 
-We are using sbt-release to run our release steps and auto-bump the version in `version.sbt`. The `bin/release.sh`
+We are using sbt-release to run our release steps and auto-bump the version in `version.sbt`. The `build/release.sh`
 script will first run functional tests, then kick off `sbt release`, which also runs unit and integration tests before
 running the release
 
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Make sure you're logged in to Docker with `docker login`
-1. Run `utils/release.sh` _Note: the arg "skip-tests" will skip unit, integration and functional testing before a release_
+1. Run `build/release.sh`
 1. You will be asked to confirm the version which originally comes from `version.sbt`. _NOTE: if the version ends with 
 `SNAPSHOT`, then the docker latest tag won't be applied and the core module will only be published to the sonatype
 staging repo._

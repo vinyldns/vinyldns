@@ -21,8 +21,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Import Content Trust Key
-        run: cd build/ && ./assemble_api.jar.sh && ./prepare_release.sh
+      - name: Build and Test
+        run: cd build/ && ./assemble_api_jar.sh && ./run_all_tests.sh
         shell: bash
 
       - name: Codecov
