@@ -1,0 +1,8 @@
+$ttl 38400
+list-zones-test-unfiltered-2.	IN	SOA	172.17.42.1. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+list-zones-test-unfiltered-2.           IN  NS  172.17.42.1.

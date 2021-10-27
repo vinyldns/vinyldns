@@ -1,0 +1,162 @@
+zone "vinyldns" {
+	type master;
+	file "/var/bind/default/vinyldns.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "old-vinyldns2" {
+	type master;
+	file "/var/bind/default/old-vinyldns2.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "old-vinyldns3" {
+	type master;
+	file "/var/bind/default/old-vinyldns3.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "dummy" {
+	type master;
+	file "/var/bind/default/dummy.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "ok" {
+	type master;
+	file "/var/bind/default/ok.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "shared" {
+	type master;
+	file "/var/bind/default/shared.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "non.test.shared" {
+  type master;
+  file "/var/bind/default/non.test.shared.hosts";
+  allow-update { key "vinyldns."; };
+  };
+
+zone "system-test" {
+	type master;
+	file "/var/bind/default/system-test.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "system-test-history" {
+	type master;
+	file "/var/bind/default/system-test-history.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "10.10.in-addr.arpa" {
+	type master;
+	file "/var/bind/default/10.10.in-addr.arpa";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "one-time" {
+	type master;
+	file "/var/bind/default/one-time.hosts";
+	allow-update { key "vinyldns."; key "vinyldns-sha1."; key "vinyldns-sha224."; key "vinyldns-sha256."; key "vinyldns-sha384."; key "vinyldns-sha512."; };
+	};
+
+zone "sync-test" {
+	type master;
+	file "/var/bind/default/sync-test.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "invalid-zone" {
+	type master;
+	file "/var/bind/default/invalid-zone.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-zones-test-searched-1{partition}" {
+	type master;
+	file "/var/bind/default/list-zones-test-searched-1.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-zones-test-searched-2{partition}" {
+	type master;
+	file "/var/bind/default/list-zones-test-searched-2.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-zones-test-searched-3{partition}" {
+	type master;
+	file "/var/bind/default/list-zones-test-searched-3.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-zones-test-unfiltered-1{partition}" {
+	type master;
+	file "/var/bind/default/list-zones-test-unfiltered-1.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-zones-test-unfiltered-2{partition}" {
+	type master;
+	file "/var/bind/default/list-zones-test-unfiltered-2.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "one-time-shared" {
+	type master;
+	file "/var/bind/default/one-time-shared.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "parent.com" {
+	type master;
+	file "/var/bind/default/parent.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "child.parent.com" {
+	type master;
+	file "/var/bind/default/child.parent.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "example.com" {
+	type master;
+	file "/var/bind/default/example.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "dskey.example.com" {
+	type master;
+	file "/var/bind/default/dskey.example.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "not.loaded" {
+	type master;
+	file "/var/bind/default/not.loaded.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "zone.requires.review" {
+	type master;
+	file "/var/bind/default/zone.requires.review.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "list-records" {
+	type master;
+	file "/var/bind/default/list-records.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "open" {
+	type master;
+	file "/var/bind/default/open.hosts";
+	allow-update { any; };
+	allow-transfer { any; };
+	};

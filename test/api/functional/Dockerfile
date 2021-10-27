@@ -20,11 +20,11 @@ ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
 
 # Local bind server files
-COPY docker/bind9/etc/named.conf.* /etc/bind/
-COPY docker/bind9/zones/ /var/bind/
+COPY quickstart/bind9/etc/named.conf.* /etc/bind/
+COPY quickstart/bind9/zones/ /var/bind/
 RUN named-checkconf
 
 # Copy over the functional tests
-COPY  ${DOCKERFILE_PATH}/test /functional_test
+COPY  modules/api/src/test/functional /functional_test
 
 ENTRYPOINT ["/bin/bash", "-c", "/initialize.sh bind localstack vinyldns-api && /functional_test/run.sh \"$@\""]

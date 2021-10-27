@@ -66,11 +66,9 @@ The API is the RESTful API for interacting with VinylDNS. The following technolo
 * [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) - Used primarily for REST and HTTP calls.
 * [FS2](https://functional-streams-for-scala.github.io/fs2/) - Used for backend change processing off of message queues.
   FS2 has back-pressure built in, and gives us tools like throttling and concurrency.
-* [Cats Effect](https://typelevel.org/cats-effect/) - We are currently migrating away from `Future` as our primary type
-  and towards cats effect IO. Hopefully, one day, all the things will be using IO.
+* [Cats Effect](https://typelevel.org/cats-effect/) - A replacement of `Future` with the `IO` monad
 * [Cats](https://typelevel.org/cats) - Used for functional programming.
-* [PureConfig](https://pureconfig.github.io/) - For loading configuration values. We are currently migrating to use
-  PureConfig everywhere. Not all the places use it yet.
+* [PureConfig](https://pureconfig.github.io/) - For loading configuration values.
 
 The API has the following dependencies:
 
@@ -137,7 +135,7 @@ settings for the microsite are also configured in `build.sbt` of the project roo
 #### Code Layout
 
 * `src/main/resources` - Microsite resources and configurations
-* `src/main/tut` - Content for microsite web pages
+* `src/main/mdoc` - Content for microsite web pages
 
 ## Running VinylDNS Locally
 
@@ -168,10 +166,11 @@ configuration.
 
 ### Starting the Portal
 
-To run the portal locally, you _first_ have to start up the VinylDNS API Server:
+To run the portal locally, you _first_ have to start up the VinylDNS API Server. This can be done by following the
+instructions for [Staring the API Server](#Starting the API Server) or by using the QuickStart:
 
 ```
-utils/quickstart-vinyldns.sh
+quickstart/quickstart-vinyldns.sh --api-only
 ```
 
 Once that is done, in the same `sbt` session or a different one, go to `project portal` and then
@@ -333,4 +332,4 @@ zone_id = shared_zone_test_context.ok_zone["id"]
 
 When functional tests are run, we spin up several Docker containers. One of the Docker containers is a Bind9 DNS server.
 If you need to add or modify the test DNS zone files, you can find them in
-`docker/bind9/zones`
+`quickstart/bind9/zones`

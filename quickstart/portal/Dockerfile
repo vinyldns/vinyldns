@@ -13,22 +13,22 @@ RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; un
 
 FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
 
-RUN apk add --update --no-cache netcat-openbsd bash
+RUN apk add --update --no-cache bash
 
 COPY --from=builder /vinyldns/modules/portal/target/universal/portal.tgz /
 
 RUN mkdir -p /opt && \
     tar -xzvf /portal.tgz && \
-    mv /portal /opt/docker && \
-    mkdir -p /opt/docker/lib_extra
+    mv /portal /opt/vinyldns && \
+    mkdir -p /opt/vinyldns/lib_extra
 
 # This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
 ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
 
 # Mount the volume for config file and lib extras
 # Note: These volume names are used in the build.sbt
-VOLUME ["/opt/docker/lib_extra/", "/opt/docker/conf"]
+VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf"]
 
-EXPOSE 9000
+EXPOSE 9001
 
-ENTRYPOINT ["/opt/docker/bin/portal"]
+ENTRYPOINT ["/opt/vinyldns/bin/portal"]

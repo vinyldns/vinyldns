@@ -1,5 +1,5 @@
 SHELL=bash
-IMAGE_NAME=vinyldns/portal
+IMAGE_NAME=vinyldns/portal:local-dev
 ROOT_DIR:=$(shell dirname $(realpath  $(lastword $(MAKEFILE_LIST))))
 
 # Check that the required version of make is being used
@@ -17,6 +17,9 @@ ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
   WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
+ifdef $(WITH_ARGS)
+	ARG_SEPARATOR=--
+endif
 
 %:
 	@:
@@ -30,11 +33,11 @@ all: build run
 build:
 	@set -euo pipefail
 	cd ../..
-	docker build -t $(IMAGE_NAME) --build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
+	docker build -t $(IMAGE_NAME) -f "$(ROOT_DIR)/Dockerfile" .
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9001:9001 $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9001:9001 $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail

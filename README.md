@@ -48,44 +48,76 @@ To start up a local instance of VinylDNS on your machine with docker:
 1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
-1. Run `./utils/quickstart-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001`
+1. Run `./quickstart/quickstart-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal
+   at `localhost:9001`
 1. See [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for how to load a test DNS zone
 1. To stop the local setup, run `./utils/clean-vinyldns-containers.sh`.
 
-There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the endpoint `http://localhost:9000`
+There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the
+endpoint `http://localhost:9000`
 
 ## Things to try in the portal
+
 1. View the portal at <http://localhost:9001> in a web browser
-1. Login with the credentials `testuser` and `testpassword`
-1. Navigate to the `groups` tab: <http://localhost:9001/groups>
-1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
-1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones>.  For a quick test, create a new zone named "ok" with an email of "test@test.com" and choose a group you created from the previous step. (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
-1. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the local docker DNS server 
-and VinylDNS automatically syncs records with the backend DNS server upon zone connection
-1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
-in the **Manage Zone** tab
-1. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
-TTL = 300, IP Addressess = 1.1.1.1`
-1. Click on the **Refresh** button under Records, you should see your new record created
+2. Login with the credentials `professor` and `professor`
+3. Navigate to the `groups` tab: <http://localhost:9001/groups>
+4. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the
+   group
+5. View zones you connected to in the `zones` tab: <http://localhost:9001/zones>. For a quick test, create a new zone
+   named `ok` with an email of `test@test.com` and choose a group you created from the previous step. (Note,
+   see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
+6. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the
+   local docker DNS server and VinylDNS automatically syncs records with the backend DNS server upon zone connection
+7. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
+   in the **Manage Zone** tab
+8. To try creating a DNS record, click on the **Create Record Set** button under
+   Records, `Record Type = A, Record Name = my-test-a, TTL = 300, IP Addressess = 1.1.1.1`
+9. Click on the **Refresh** button under Records, you should see your new record created
+
+### Verifying Your Changes
+
+VinylDNS will synchronize with the DNS backend. For the Quickstart this should be running on port `19001` on `localhost`.
+
+To verify your changes, you can use a DNS resolution utility like `dig`
+
+```bash
+$ dig @127.0.0.1 -p 19001 +short my-test-a.ok
+1.1.1.1
+```
+
+This tells `dig` to use `127.0.0.1` as the resolver on port `19001`. The `+short` just makes the output a bit less
+verbose. Finally, the record we're looking up is `my-test-a.ok`. You can see the returned output of `1.1.1.1` matches
+the record data we entered.
 
 ## Other things to note
-1. Upon connecting to a zone for the first time, a zone sync is executed to provide VinylDNS a copy of the records in the zone
-1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
-1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
-1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the `utils/.env` file before execution.
-1. A similar `docker/.env.quickstart` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
+
+1. Upon connecting to a zone for the first time, a zone sync is executed to provide VinylDNS a copy of the records in
+   the zone
+1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those
+   changes out
+1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy
+   of those records
+1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to
+   say `http://vinyldns.yourdomain.com:9000`, you can modify the `quickstart/.env` file before execution.
+1. Further configuration can be ac https://www.vinyldns.io/operator/config-portal
+   & https://www.vinyldns.io/operator/config-api
 
 ## Code of Conduct
-This project, and everyone participating in it, are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
-participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
+
+This project, and everyone participating in it, are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md). By
+participating, you agree to this Code. Please report any violations to the code of conduct to
+vinyldns-core@googlegroups.com.
 
 ## Developer Guide
+
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up VinylDNS locally.
 
 ## Contributing
+
 See the [Contributing Guide](CONTRIBUTING.md).
 
 ## Contact
+
 - If you have any security concerns please contact the maintainers directly vinyldns-core@googlegroups.com
 
 ## Maintainers and Contributors

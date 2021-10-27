@@ -10,19 +10,16 @@ function usage() {
 }
 
 function wait_for_url() {
-  URL=$1
-  DATA=""
-  RETRY="60"
-  echo "pinging $URL ..."
+  echo -n "Checking ${URL}..."
+  RETRY="$TIMEOUT"
   while [ "$RETRY" -gt 0 ]; do
-    DATA=$(curl -I -s "${URL}" -o /dev/null -w "%{http_code}")
-    if [ $? -eq 0 ]; then
+    if curl -I -s "${URL}" -o /dev/null -w "%{http_code}" &>/dev/null || false; then
       echo "Succeeded in connecting to ${URL}!"
       break
     else
-      echo "Retrying" >&2
+      echo -n "."
 
-      let RETRY-=1
+      ((RETRY -= 1))
       sleep 1
 
       if [ "$RETRY" -eq 0 ]; then
@@ -58,7 +55,7 @@ else
 fi
 
 # Actually starts up our docker images
-docker-compose -f $CURDIR/docker/docker-compose.yml up --no-build -d api portal
+docker-compose -f "${CURDIR}/docker/docker-compose.yml" up --no-build -d api portal
 
 # Waits for the URL to be available
 wait_for_url "http://localhost:9001"
@@ -68,6 +65,6 @@ if [ $? -eq 0 ]; then
   exit 0
 else
   echo "VinylDNS startup failed!"
-  $CURDIR/stop.sh
+  "${CURDIR}/stop.sh"
   exit 1
 fi

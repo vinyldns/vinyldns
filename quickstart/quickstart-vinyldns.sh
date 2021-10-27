@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+#####################################################################################################
+# Starts up the api, portal, and dependent services via
+# docker-compose. The api will be available on localhost:9000 and the
+# portal will be on localhost:9001
+#
+# Relevant overrides can be found in .env
+#####################################################################################################
+set -eo pipefail
+
+DIR=$( cd "$(dirname "$0")" || exit ; pwd -P )
+source "${DIR}/../utils/includes/terminal_colors.sh"
+
+function usage() {
+  echo -e "usage: quickstart-vinyldns.sh [OPTIONS]"
+  echo -e "Starts up a local VinylDNS installation using Docker Compose"
+  echo
+  echo -e "options:"
+  echo -e "\t-a, --api-only     do not start up the VinylDNS Portal"
+  echo -e "\t-b, --build        force a rebuild of the Docker images with the local code"
+  echo -e "\t-r, --reset        reset any the running containers"
+  echo -e "\t-s, --service      specify the service to run"
+  echo -e "\t-t, --timeout      the time to wait (in seconds) for the portal and API to start (default: 60)"
+  echo -e "\t-u, --update       remove the local quickstart images to force a re-pull from docker hub"
+  echo -e "\t-v, --version-tag  specify Docker image tag version (default: latest)"
+  echo
+  echo -e "\t-h, --help         show this help"
+}
+
+function wait_for_url() {
+  echo -n "Waiting for ${F_BLUE}$1${F_RESET} at ${URL}.."
+  RETRY="$TIMEOUT"
+  while [ "$RETRY" -ge 0 ]; do
+    echo -n "."
+    if curl -I -s "${URL}" -o /dev/null -w "%{http_code}" &>/dev/null || false; then
+      echo "${F_GREEN}OK${F_RESET}"
+      break
+    else
+      ((RETRY -= 1))
+      sleep 1
+      if [[ $RETRY -eq 1 ]]; then
+        echo "${F_RED}FAILED${F_RESET}"
+        echo "${F_RED}Timeout waiting for ${F_BLUE}$1${F_RED} to be ready${F_RESET}"
+        exit 1
+      fi
+    fi
+  done
+}
+
+function wait_for_api() {
+  URL="$VINYLDNS_API_URL"
+  wait_for_url "VinylDNS API"
+}
+
+function wait_for_portal() {
+  # check if portal was skipped
+  if [ "$SERVICE" != "api" ]; then
+    URL="$VINYLDNS_PORTAL_URL"
+    wait_for_url "VinylDNS Portal"
+  fi
+}
+
+# Source customizable env files ('-a' causes all variables to be exported)
+set -a; source "${DIR}/.env"; set +a
+
+# Set defaults and parse args
+export VINYLDNS_VERSION=latest
+TIMEOUT=60
+DOCKER_COMPOSE_CONFIG="${DIR}/docker-compose.yml"
+SERVICE=""
+BUILD=""
+RESET_DOCKER=0
+UPDATE=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  -t | --timeout)
+    TIMEOUT="$2"
+    shift
+    shift
+    ;;
+  -a | --api-only)
+    SERVICE="api"
+    shift
+    ;;
+  -s | --service)
+    SERVICE="$2"
+    shift
+    shift
+    ;;
+  -u | --update)
+    UPDATE=1
+    shift
+    ;;
+  -b | --build)
+    BUILD="--build"
+    shift
+    ;;
+  -r | --reset)
+    RESET_DOCKER=1
+    shift
+    ;;
+  -v | --version-tag)
+    export VINYLDNS_VERSION=$2
+    shift
+    shift
+    ;;
+  *)
+    usage
+    exit
+    ;;
+  esac
+done
+
+if [[ $RESET_DOCKER -eq 1 ]]; then
+  "${DIR}/../utils/clean-vinyldns-containers.sh"
+fi
+
+export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
+  VINYLDNS_IMAGE_VERSION="local-dev"
+fi
+
+# Update images if requested
+if [[ $UPDATE -eq 1 ]]; then
+  echo "${F_YELLOW}Removing local docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  "${DIR}/../utils/clean-vinyldns-containers.sh"
+  docker rmi "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}"
+  docker rmi "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
+  docker rmi "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
+fi
+
+if [ -n "${BUILD}" ]; then
+  echo "Building containers and starting VinylDNS (${VINYLDNS_IMAGE_VERSION}) in the background..."
+else
+  echo "Starting VinylDNS (${VINYLDNS_IMAGE_VERSION}) the background..."
+fi
+docker-compose -f "${DOCKER_COMPOSE_CONFIG}" up ${BUILD} -d ${SERVICE} || (echo -e "${F_RED}Sorry, there was an error starting VinylDNS :-(\nTry resetting any existing containers with:\n\t${F_RESET}'$0 --reset'"; exit 1)
+
+echo
+wait_for_api
+wait_for_portal
+echo
+
+if [ "${SERVICE}" != "api" ]; then
+  echo "${F_GREEN}VinylDNS started. You can connect to the portal via ${F_RESET}${VINYLDNS_PORTAL_URL}"
+else
+  echo "${F_GREEN}VinylDNS API started. You can connect to the API via ${F_RESET}${VINYLDNS_API_URL}"
+fi
+echo "${F_GREEN}To clean up the running containers:${F_RESET}"
+echo "    $0 --reset"

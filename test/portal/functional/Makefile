@@ -20,7 +20,9 @@ ifeq ($(EXTRACT_ARGS),true)
   # ...and turn them into do-nothing targets
   $(eval $(WITH_ARGS):;@:)
 endif
-
+ifdef WITH_ARGS
+	ARG_SEPARATOR=--
+endif
 
 .ONESHELL:
 
@@ -39,4 +41,4 @@ run:
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)

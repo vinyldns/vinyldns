@@ -13,7 +13,7 @@ endif
 # Extract arguments for `make run`
 EXTRACT_ARGS=true
 ifeq (run,$(firstword $(MAKECMDGOALS)))
-	EXTRACT_ARGS=true
+  EXTRACT_ARGS=true
 endif
 ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
@@ -21,7 +21,9 @@ ifeq ($(EXTRACT_ARGS),true)
   # ...and turn them into do-nothing targets
   $(eval $(WITH_ARGS):;@:)
 endif
-
+ifdef WITH_ARGS
+  ARG_SEPARATOR=--
+endif
 
 .ONESHELL:
 
@@ -31,15 +33,13 @@ all: build run
 
 build:
 	@set -euo pipefail
-	trap 'if [ -f "$(ROOT_DIR)/vinyldns.jar" ]; then rm $(ROOT_DIR)/vinyldns.jar;	fi' EXIT
 	cd ../../..
-	if [ -f modules/api/target/scala-2.12/vinyldns.jar ]; then cp modules/api/target/scala-2.12/vinyldns.jar $(ROOT_DIR)/vinyldns.jar; fi
 	docker build -t $(IMAGE_NAME) $(DOCKER_PARAMS)--build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$$(pwd)/test:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)

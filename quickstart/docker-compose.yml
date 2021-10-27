@@ -3,41 +3,61 @@ version: "3.5"
 services:
   ldap:
     container_name: "vinyldns-ldap"
-    image: rroemhild/test-openldap
+    image: vinyldns/build:openldap
     ports:
-      - "19004:389"
+      - "19004:19004"
 
   integration:
     container_name: "vinyldns-api-integration"
-    hostname: "vinyldns-integration"
-    image: "vinyldns-api-integration"
+    hostname: &integration_hostname "vinyldns-integration"
+    image: "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
       dockerfile: test/api/integration/Dockerfile
+      args:
+        VINYLDNS_VERSION: "${VINYLDNS_VERSION}"
     environment:
-      RUN_SERVICES: "all tail-logs"
+      RUN_SERVICES: "deps-only tail-logs"
+      LOCALSTACK_EXT_HOSTNAME: *integration_hostname
+    env_file:
+      .env
+    ports:
+      - "19001-19003:19001-19003/tcp"
+      - "19001:19001/udp"
+
+  api:
+    container_name: "vinyldns-api"
+    image: "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
+    build:
+      context: ../
+      dockerfile: quickstart/api/Dockerfile
+      args:
+        VINYLDNS_VERSION: "${VINYLDNS_VERSION}"
+        DOCKER_FILE_PATH: "quickstart/api"
+    volumes:
+      - ./api/application.conf:/opt/vinyldns/conf/vinyldns.conf
     env_file:
       .env
     ports:
       - "9000:9000"
-      - "19001-19003:19001-19003/tcp"
-      - "19001:19001/udp"
+    depends_on:
+      - integration
 
   portal:
     container_name: "vinyldns-portal"
-    image: "vinyldns/portal:${VINYLDNS_VERSION}"
+    image: "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
     build:
-      context: ..
-      dockerfile: ""
+      context: ../
+      dockerfile: quickstart/portal/Dockerfile
     env_file:
       .env
     ports:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     volumes:
-      - ./portal/application.ini:/opt/docker/conf/application.ini
-      - ./portal/application.conf:/opt/docker/conf/application.conf
+      - ./portal/application.ini:/opt/vinyldns/conf/application.ini
+      - ./portal/application.conf:/opt/vinyldns/conf/application.conf
     depends_on:
-      - integration
+      - api
       - ldap
 
 networks:

@@ -19,14 +19,12 @@ the [vinyldns organization](https://hub.docker.com/u/vinyldns/dashboard/). Namel
 
 * vinyldns/api: images for vinyldns core api engine 
 * vinyldns/portal: images for vinyldns web client
-* vinyldns/bind9: images for local DNS server used for testing 
 
 The offline root key and repository keys are managed by the core maintainer team. The keys managed are:
 
 * root key: also known as the offline key, used to create the separate repository signing keys
 * api key: used to sign tagged images in vinyldns/api
 * portal key: used to sign tagged images in vinyldns/portal
-* bind9 key: used to sign tagged images in the vinyldns/bind9
 
 These keys are named in a <hash>.key format, e.g. 5526ecd15bd413e08718e66c440d17a28968d5cd2922b59a17510da802ca6572.key,
 do not change the names of the keys. 

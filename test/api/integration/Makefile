@@ -18,6 +18,9 @@ ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
   WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
+ifdef WITH_ARGS
+	ARG_SEPARATOR=--
+endif
 
 %:
 	@:
@@ -35,7 +38,7 @@ build:
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail

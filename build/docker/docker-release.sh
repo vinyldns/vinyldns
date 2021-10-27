@@ -95,7 +95,7 @@ export VINYLDNS_VERSION=$VINYLDNS_VERSION
 echo "VINYLDNS VERSION BEING RELEASED IS $VINYLDNS_VERSION"
 
 if [ $DO_BUILD -eq 1 ]; then
-  docker-compose -f $CURDIR/docker/docker-compose.yml build \
+  docker-compose -f "${CURDIR}/docker-compose.yml" build \
     --no-cache \
     --parallel \
     --build-arg VINYLDNS_VERSION="${VINYLDNS_VERSION}" \
@@ -103,7 +103,7 @@ if [ $DO_BUILD -eq 1 ]; then
 
   if [ $? -eq 0 ]; then
     # Runs smoke tests to make sure the new images are sound
-    docker-compose -f $CURDIR/docker/docker-compose.yml --log-level ERROR up --exit-code-from functest
+    docker-compose -f "${CURDIR}/docker-compose.yml" --log-level ERROR up --exit-code-from functest
   fi
 
   if [ $? -eq 0 ]; then
