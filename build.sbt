@@ -3,7 +3,6 @@ import Dependencies._
 import Resolvers._
 import microsites._
 import org.scalafmt.sbt.ScalafmtPlugin._
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 
 import scala.util.Try
@@ -165,8 +164,7 @@ lazy val corePublishSettings = Seq(
       url("https://github.com/vinyldns/vinyldns"),
       "scm:git@github.com:vinyldns/vinyldns.git"
     )
-  ),
-  sonatypeProfileName := "io.vinyldns"
+  )
 )
 
 lazy val core = (project in file("modules/core"))
@@ -317,69 +315,10 @@ lazy val docs = (project in file("modules/docs"))
   .enablePlugins(MicrositesPlugin, MdocPlugin)
   .settings(docSettings)
 
-// release stages
 
-lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
-  // sonatype publish target, and sonatype release steps, are different if version is SNAPSHOT
-  val extracted = Project.extract(oldState)
-  val v = extracted.get(Keys.version)
-  val snap = v.endsWith("SNAPSHOT")
-  if (!snap) {
-    val publishToSettings =
-      Some("releases".at("https://oss.sonatype.org/" + "service/local/staging/deploy/maven2"))
-    val newState =
-      extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
-
-    // create sonatypeReleaseCommand with releaseSonatype step
-    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
-      "project core" ::
-        "publish" ::
-        "sonatypeRelease" ::
-        _
-    }
-
-    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
-  } else {
-    val publishToSettings =
-      Some("snapshots".at("https://oss.sonatype.org/" + "content/repositories/snapshots"))
-    val newState =
-      extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
-
-    // create sonatypeReleaseCommand without releaseSonatype step
-    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
-      "project core" ::
-        "publish" ::
-        _
-    }
-
-    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
-  }
-})
-
-lazy val sonatypePublishStage = Seq[ReleaseStep](
-  releaseStepCommandAndRemaining(";sonatypeReleaseCommand")
-)
-
-lazy val initReleaseStage = Seq[ReleaseStep](
-  inquireVersions, // have a developer confirm versions
-  setReleaseVersion,
-  setSonatypeReleaseSettings
-)
-
-lazy val finalReleaseStage = Seq[ReleaseStep](
-  releaseStepCommand("project root"), // use version.sbt file from root
-  commitReleaseVersion,
-  setNextVersion,
-  commitNextVersion
-)
 
 def getPropertyFlagOrDefault(name: String, value: Boolean): Boolean =
   sys.props.get(name).flatMap(propValue => Try(propValue.toBoolean).toOption).getOrElse(value)
-
-releaseProcess :=
-  initReleaseStage ++
-    sonatypePublishStage ++
-    finalReleaseStage
 
 // Let's do things in parallel!
 addCommandAlias(

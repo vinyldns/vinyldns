@@ -11,75 +11,15 @@ on:
 jobs:
   site:
     name: Publish Site
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.12.10]
-        java: [adopt@1.11]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v10
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-        with:
-          java-version: ${{ matrix.java }}
 
-      - name: Cache ivy2
-        uses: actions/cache@v1
-        with:
-          path: ~/.ivy2/cache
-          key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (generic)
-        uses: actions/cache@v1
-        with:
-          path: ~/.coursier/cache/v1
-          key: ${{ runner.os }}-generic-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (linux)
-        if: contains(runner.os, 'linux')
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (macOS)
-        if: contains(runner.os, 'macos')
-        uses: actions/cache@v1
-        with:
-          path: ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (windows)
-        if: contains(runner.os, 'windows')
-        uses: actions/cache@v1
-        with:
-          path: ~/AppData/Local/Coursier/Cache/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache sbt
-        uses: actions/cache@v1
-        with:
-          path: ~/.sbt
-          key: ${{ runner.os }}-sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Set up Ruby
-        uses: actions/setup-ruby@v1
-        with:
-          ruby-version: 2.6
-
-      - name: Install dependencies
-        run: >
-          sudo apt install libxslt-dev &&
-          gem install sass jekyll:4.0.0
-
-      - run: sbt ++${{ matrix.scala }} ";project docs; publishMicrosite";
+      - run: "build/publish_docs.sh";
         env:
           SBT_MICROSITES_PUBLISH_TOKEN: ${{ secrets.VINYLDNS_MICROSITE }}
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
