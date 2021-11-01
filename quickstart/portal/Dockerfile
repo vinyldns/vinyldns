@@ -5,7 +5,7 @@ COPY . /vinyldns
 
 WORKDIR /vinyldns
 RUN cp /build/node_modules.tar.xz /vinyldns/modules/portal && \
-    cd /vinyldns/modules/portal && tar Jxvf node_modules.tar.xz && \
+    cd /vinyldns/modules/portal && tar Jxf node_modules.tar.xz && \
     cd /vinyldns
 
 RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; preparePortal"
@@ -18,7 +18,7 @@ RUN apk add --update --no-cache bash
 COPY --from=builder /vinyldns/modules/portal/target/universal/portal.tgz /
 
 RUN mkdir -p /opt && \
-    tar -xzvf /portal.tgz && \
+    tar -xzf /portal.tgz && \
     mv /portal /opt/vinyldns && \
     mkdir -p /opt/vinyldns/lib_extra
 

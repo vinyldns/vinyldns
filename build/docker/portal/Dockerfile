@@ -1,34 +1,37 @@
 FROM vinyldns/build:base-build-portal as builder
-
-ARG BRANCH=master
 ARG VINYLDNS_VERSION
 
-RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+COPY . /vinyldns
 
-# The default jvmopts are huge, meant for running everything, use a paired down version
-COPY .jvmopts /vinyldns
+WORKDIR /vinyldns
+RUN cp /build/node_modules.tar.xz /vinyldns/modules/portal && \
+    cd /vinyldns/modules/portal && tar Jxf node_modules.tar.xz && \
+    cd /vinyldns
 
-RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
+RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; preparePortal"
+RUN sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; universal:packageZipTarball"
 
 FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
+ARG DOCKER_FILE_PATH
+ARG VINYLDNS_VERSION
 
-RUN apk add --update --no-cache netcat-openbsd bash
-
+RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false)
 COPY --from=builder /vinyldns/modules/portal/target/universal/portal.tgz /
 
-RUN mkdir -p /opt && \
-    tar -xzvf /portal.tgz && \
-    mv /portal /opt/docker && \
-    mkdir -p /opt/docker/lib_extra
+RUN apk add --update --no-cache bash && \
+    mkdir -p /opt/vinyldns/lib_extra && \
+    tar -xzf /portal.tgz && \
+    rm /portal.tgz && \
+    mv /portal/* /opt/vinyldns && \
+    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/conf/version
 
-# This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ARG VINYLDNS_VERSION
-ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
+COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf/
 
-# Mount the volume for config file and lib extras
-# Note: These volume names are used in the build.sbt
-VOLUME ["/opt/docker/lib_extra/", "/opt/docker/conf"]
+VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 
-EXPOSE 9000
+EXPOSE 9001
 
-ENTRYPOINT ["/opt/docker/bin/portal"]
+ENTRYPOINT ["/bin/bash","-c", "java -Dvinyldns.version=$(cat /opt/vinyldns/conf/version) \
+                                -Dconfig.file=/opt/vinyldns/conf/application.conf \
+                                -cp /opt/vinyldns/conf:/opt/vinyldns/lib/*:/opt/vinyldns/lib_extra/* \
+                                play.core.server.ProdServerStart"]

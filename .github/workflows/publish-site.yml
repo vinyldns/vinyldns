@@ -5,8 +5,7 @@ name: Microsite
 
 on:
   push:
-    branches:
-      - master
+    branches: [ 'master', 'main' ]
 
 jobs:
   site:
