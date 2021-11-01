@@ -38,12 +38,14 @@ build:
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
-	docker run -td --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
+	test -t 1 && USE_TTY="-t"
+	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
 
 stop-bg:
 	@set -euo pipefail
@@ -51,4 +53,5 @@ stop-bg:
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)

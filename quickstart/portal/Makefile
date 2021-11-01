@@ -39,11 +39,13 @@ build:
 run:
 	@set -euo pipefail
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
-	docker run -it --rm $(DOCKER_PARAMS) --network vinyldns_net -p 9001:9001 $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) --network vinyldns_net -p 9001:9001 $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
 	docker rm $(IMAGE_NAME) &> /dev/null || true
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
-	docker run -td --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) --network vinyldns_net -p 9001:9001 $(IMAGE_NAME) -- /bin/bash
+	test -t 1 && USE_TTY="-t"
+	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) --network vinyldns_net -p 9001:9001 $(IMAGE_NAME) -- /bin/bash

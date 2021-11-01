@@ -45,4 +45,4 @@ if [[ $UPDATE_DOCKER -eq 1 ]]; then
 fi
 
 echo "Building VinylDNS API jar file"
-docker run -it --rm -e RUN_SERVICES=none -v "${DIR}/..:/build" vinyldns/build:base-test-integration -- sbt 'api/assembly'
+docker run -i --rm -e RUN_SERVICES=none -v "${DIR}/..:/build" vinyldns/build:base-test-integration -- sbt 'api/assembly'

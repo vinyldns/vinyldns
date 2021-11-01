@@ -37,8 +37,10 @@ build:
 
 run:
 	@set -euo pipefail
-	docker run -it --rm $(IMAGE_NAME) -- $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm $(IMAGE_NAME) -- $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
-	docker run -it --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)

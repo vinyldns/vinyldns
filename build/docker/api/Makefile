@@ -40,7 +40,8 @@ build:
 run:
 	@set -euo pipefail
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
-	docker run -it --rm --env-file "$(ROOT_DIR)/../.env" --network vinyldns_net $(DOCKER_PARAMS) -v "$$(pwd)/:/opt/vinyldns/conf/" -p 9000:9000 $(IMAGE_NAME):$(IMAGE_TAG) $(ARG_SEPARATOR) $(WITH_ARGS)
+	test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm --env-file "$(ROOT_DIR)/../.env" --network vinyldns_net $(DOCKER_PARAMS) -v "$$(pwd)/:/opt/vinyldns/conf/" -p 9000:9000 $(IMAGE_NAME):$(IMAGE_TAG) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 publish: build
 	@set -euo pipefail
