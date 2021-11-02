@@ -14,18 +14,7 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-            'javascripts/moment.min.js',
-            'gentelella/vendors/jquery/dist/jquery.min.js',
-            'gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
-            'gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js',
-            'javascripts/angular.min.js',
-            'test_frameworks/*.js',
-            'lib/services/**/*.js',
-            'lib/controllers/**/*.js',
-            'lib/directives/**/*.js',
-            'lib/batch-change/batch-change.module.js',
-            'lib/*.js',
-            'lib/batch-change/*.js',
+            '*.js',
             //fixtures
             {pattern: 'mocks/*.json', watched: true, served: true, included: false}
         ],

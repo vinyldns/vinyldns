@@ -10,7 +10,7 @@ ifneq ($(REQ_MAKE_VER),$(firstword $(sort $(MAKE_VERSION) $(REQ_MAKE_VER))))
 endif
 
 # Extract arguments for `make run`
-EXTRACT_ARGS=true
+EXTRACT_ARGS=false
 ifeq (run,$(firstword $(MAKECMDGOALS)))
 	EXTRACT_ARGS=true
 endif
@@ -18,8 +18,8 @@ ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
   WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifdef WITH_ARGS
-	ARG_SEPARATOR=--
+ifneq ($(WITH_ARGS),)
+  ARG_SEPARATOR=--
 endif
 
 %:
@@ -38,13 +38,13 @@ build:
 
 run:
 	@set -euo pipefail
-	test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
-	test -t 1 && USE_TTY="-t"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
 
 stop-bg:
@@ -53,5 +53,5 @@ stop-bg:
 
 run-local:
 	@set -euo pipefail
-	test -t 1 && USE_TTY="-t"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)

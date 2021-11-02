@@ -10,7 +10,7 @@ ifneq ($(REQ_MAKE_VER),$(firstword $(sort $(MAKE_VERSION) $(REQ_MAKE_VER))))
 endif
 
 # Extract arguments for `make run`
-EXTRACT_ARGS=true
+EXTRACT_ARGS=false
 ifeq (run,$(firstword $(MAKECMDGOALS)))
 	EXTRACT_ARGS=true
 endif
@@ -18,8 +18,8 @@ ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
   WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifdef $(WITH_ARGS)
-	ARG_SEPARATOR=--
+ifneq ($(WITH_ARGS),)
+  ARG_SEPARATOR=--
 endif
 
 %:
@@ -44,8 +44,8 @@ build:
 run:
 	@set -euo pipefail
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
-	test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm --network vinyldns_net --env-file "$(ROOT_DIR)/../.env" $(DOCKER_PARAMS) -v "$$(pwd)/application.conf:/opt/vinyldns/conf/application.conf" -p 9001:9001 $(IMAGE_NAME):$(IMAGE_TAG) $(ARG_SEPARATOR) $(WITH_ARGS)
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm --network vinyldns_net --env-file "$(ROOT_DIR)/../.env" $(DOCKER_PARAMS) -v "$$(pwd)/application.conf:/opt/vinyldns/conf/application.conf" -v "$$(pwd)/logback.xml:/opt/vinyldns/conf/logback.xml" -p 9001:9001 $(IMAGE_NAME):$(IMAGE_TAG) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 publish: build
 	@set -euo pipefail

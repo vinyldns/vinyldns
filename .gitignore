@@ -35,4 +35,4 @@ quickstart/data
 **/.virtualenv
 **/.venv*
 **/*cache*
-**/assembly/
+**/artifacts/

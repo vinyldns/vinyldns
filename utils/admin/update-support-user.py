@@ -5,8 +5,12 @@ import sys
 import os
 
 # arguments
+if len(sys.argv) != 3:
+    print("USAGE: update-support-user.py <username> <True|False>")
+    exit(1)
+
 user_name = sys.argv[1]
-make_support = sys.argv[2][0].upper()=='T' if len(sys.argv) >= 2 else None
+make_support = sys.argv[2][0].upper() == 'T'
 
 # environment variables to connect to database
 db_user = os.environ.get('DB_USER')

@@ -16,7 +16,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "2.4.4"
+  lazy val fs2V = "2.4.5"
   lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(
@@ -71,7 +71,7 @@ object Dependencies {
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
-    "co.fs2"                    %% "fs2-core"                       % "2.3.0",
+    "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
     "javax.activation"          %  "activation"                     % "1.1.1",
   )

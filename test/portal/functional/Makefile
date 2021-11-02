@@ -10,19 +10,20 @@ ifneq ($(REQ_MAKE_VER),$(firstword $(sort $(MAKE_VERSION) $(REQ_MAKE_VER))))
 endif
 
 # Extract arguments for `make run`
-EXTRACT_ARGS=true
+EXTRACT_ARGS=false
 ifeq (run,$(firstword $(MAKECMDGOALS)))
 	EXTRACT_ARGS=true
 endif
 ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
-  WITH_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(WITH_ARGS):;@:)
+  WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifdef WITH_ARGS
-	ARG_SEPARATOR=--
+ifneq ($(WITH_ARGS),)
+  ARG_SEPARATOR=--
 endif
+
+%:
+	@:
 
 .ONESHELL:
 
@@ -37,10 +38,10 @@ build:
 
 run:
 	@set -euo pipefail
-	test -t 1 && USE_TTY="-t"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --rm $(IMAGE_NAME) -- $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
-	test -t 1 && USE_TTY="-t"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)

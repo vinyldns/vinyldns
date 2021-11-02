@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# This script will build the vinyldns.jar file using Docker. The file will
-# be placed in the configured location (currently `assembly/` off of the root)
+# This script will build the vinyldns-api.jar file using Docker. The file will
+# be placed in the configured location (currently `artifacts/` off of the root)
 #
 set -euo pipefail
 
@@ -11,7 +11,7 @@ DIR=$(
 )
 
 usage() {
-  echo "USAGE: assemble_jar.sh [options]"
+  echo "USAGE: assemble_api.sh [options]"
   echo -e "\t-n, --no-clean         do no perform a clean before assembling the jar"
   echo -e "\t-u, --update           update the underlying docker image"
 }
@@ -37,6 +37,7 @@ done
 
 if ! [[ $SKIP_CLEAN -eq 1 ]]; then
   "${DIR}/deep_clean.sh"
+  rm "${DIR}/../artifacts/vinyldns-api.jar" &> /dev/null || true
 fi
 
 if [[ $UPDATE_DOCKER -eq 1 ]]; then
@@ -44,5 +45,5 @@ if [[ $UPDATE_DOCKER -eq 1 ]]; then
     docker pull vinyldns/build:base-test-integration
 fi
 
-echo "Building VinylDNS API jar file"
+echo "Building VinylDNS API artifact"
 docker run -i --rm -e RUN_SERVICES=none -v "${DIR}/..:/build" vinyldns/build:base-test-integration -- sbt 'api/assembly'

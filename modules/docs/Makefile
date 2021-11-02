@@ -30,5 +30,5 @@ all: run
 run:
 	@set -euo pipefail
 	cd ../..
-	test -t 1 && USE_TTY="-t"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --rm -p "4000:4000" -v "$$(pwd):/build" vinyldns/build:base-build-docs /bin/bash

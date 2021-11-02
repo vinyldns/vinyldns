@@ -4,8 +4,8 @@ DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
 source "${DIR}/../utils/includes/terminal_colors.sh"
 
-if [ ! -d "${DIR}/../assembly" ] || [ ! -f "${DIR}/../assembly/vinyldns.jar" ]; then
-  echo -e "${F_YELLOW}Warning:${F_RESET} you might want to run 'build/assemble_api_jar.sh' first to improve performance"
+if [ ! -d "${DIR}/../artifacts" ] || [ ! -f "${DIR}/../artifacts/vinyldns-api.jar" ]; then
+  echo -e "${F_YELLOW}Warning:${F_RESET} you might want to run 'build/assemble_api.sh' first to improve performance"
 fi
 
 echo "Running unit and integration tests..."

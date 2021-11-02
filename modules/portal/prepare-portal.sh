@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-DIR=$( cd $(dirname $0) ; pwd -P )
+set -euo pipefail
+DIR=$( cd "$(dirname "$0")" ; pwd -P )
 
-cd $DIR
+cd "${DIR}"
 
-npm install -f
-
+npm install -f --no-audit --no-fund
 npm install grunt -g -f
-grunt default
-$DIR/../../utils/add-license-headers.sh -d=$DIR/public/lib -f=js
 
-cd -
+grunt default

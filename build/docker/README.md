@@ -60,9 +60,9 @@ The default build for vinyldns api assumes an **ALL MYSQL** installation.
 it is set as part of the container build
 
 **Volumes**
-- `/opt/docker/conf/` - if you need to have your own application config file.  This is **MANDATORY** for
+- `/opt/vinyldns/conf/` - if you need to have your own application config file.  This is **MANDATORY** for
 any production environments.  Typically, you will add your own `application.conf` file in here with your settings.
-- `/opt/docker/lib_extra/` - if you need to have additional jar files available to your VinylDNS instance.
+- `/opt/vinyldns/lib_extra/` - if you need to have additional jar files available to your VinylDNS instance.
 Rarely used, but if you want to bring your own message queue or database you can put the `jar` files there
 
 ### vinyldns/portal
@@ -74,7 +74,7 @@ The default build for vinyldns portal assumes an **ALL MYSQL** installation.
 it is set as part of the container build
 
 **Volumes**
-- `/opt/docker/conf/` - if you need to have your own application config file.  This is **MANDATORY** for
+- `/opt/vinyldns/conf/` - if you need to have your own application config file.  This is **MANDATORY** for
 any production environments.  Typically, you will add your own `application.conf` file in here with your settings.
-- `/opt/docker/lib_extra/` - if you need to have additional jar files available to your VinylDNS instance.
+- `/opt/vinyldns/lib_extra/` - if you need to have additional jar files available to your VinylDNS instance.
 Rarely used, but if you want to bring your own message queue or database you can put the `jar` files there

@@ -51,6 +51,7 @@ function wait_for_url() {
     fi
   done
 }
+
 function is_running() {
   if (docker ps --format "{{.Image}}" | grep -q "$1"); then
     return 0
@@ -77,8 +78,14 @@ set -a
 source "${DIR}/.env"
 set +a
 
-# Set defaults and parse args
+# The version of VinylDNS docker image to run
 export VINYLDNS_VERSION=latest
+# The base/starting version of VinylDNS docker build image to use (vinyldns/build:<version>)
+export VINYLDNS_BASE_VERSION=latest
+# The version of the images to build
+export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+
+# Defaults
 TIMEOUT=60
 DOCKER_COMPOSE_CONFIG="${DIR}/docker-compose.yml"
 SERVICE=""
@@ -124,6 +131,8 @@ while [[ $# -gt 0 ]]; do
     ;;
   -v | --version-tag)
     export VINYLDNS_VERSION=$2
+    export VINYLDNS_BASE_VERSION=${VINYLDNS_VERSION}
+    export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
     shift
     shift
     ;;
@@ -142,18 +151,22 @@ if [[ $RESET_DOCKER -eq 1 ]] || [[ $CLEAN -eq 1 ]]; then
   fi
 fi
 
-export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
-if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
-  VINYLDNS_IMAGE_VERSION="local-dev"
-fi
-
 # Update images if requested
 if [[ $UPDATE -eq 1 ]]; then
-  echo "${F_YELLOW}Removing local docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  echo "${F_YELLOW}Removing any local docker containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
   "${DIR}/../utils/clean-vinyldns-containers.sh"
-  docker rmi "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}"
-  docker rmi "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
-  docker rmi "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
+
+  echo "${F_YELLOW}Removing any local docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  docker rmi "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
+  docker rmi "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
+  docker rmi "vinyldns/api:${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
+  echo "${F_GREEN}Removed all local docker images and containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+fi
+
+
+if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
+  VINYLDNS_IMAGE_VERSION="local-dev"
+  export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
 fi
 
 if [ -n "${BUILD}" ]; then
@@ -162,14 +175,16 @@ else
   echo "Starting VinylDNS (${VINYLDNS_IMAGE_VERSION}) the background..."
 fi
 docker-compose -f "${DOCKER_COMPOSE_CONFIG}" up ${BUILD} -d ${SERVICE} || (
-  echo -e "${F_RED}Sorry, there was an error starting VinylDNS :-(\nTry resetting any existing containers with:\n\t${F_RESET}'$0 --reset'"
-  exit 1
+  echo -e "${F_RED}Sorry, there was an error starting VinylDNS :-(\nTry resetting any existing containers with:\n\t${F_RESET}'$0 --reset'"; \
+  exit 1; \
 )
 
-echo
-wait_for_api
-wait_for_portal
-echo
+if is_running "vinyldns/portal" || is_running "vinyldns/api"; then
+  echo
+  wait_for_api
+  wait_for_portal
+  echo
+fi
 
 if is_running "vinyldns/portal"; then
   echo "${F_GREEN}VinylDNS started! You can connect to the portal via ${F_RESET}${VINYLDNS_PORTAL_URL}"

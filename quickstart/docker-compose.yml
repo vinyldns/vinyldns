@@ -15,7 +15,7 @@ services:
       context: ../
       dockerfile: test/api/integration/Dockerfile
       args:
-        VINYLDNS_VERSION: "${VINYLDNS_VERSION}"
+        VINYLDNS_BASE_VERSION: "${VINYLDNS_BASE_VERSION}"
     environment:
       RUN_SERVICES: "deps-only tail-logs"
       LOCALSTACK_EXT_HOSTNAME: *integration_hostname
@@ -30,12 +30,12 @@ services:
     image: "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
-      dockerfile: quickstart/api/Dockerfile
+      dockerfile: build/docker/api/Dockerfile
       args:
-        VINYLDNS_VERSION: "${VINYLDNS_VERSION}"
-        DOCKER_FILE_PATH: "quickstart/api"
+        VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
+        DOCKER_FILE_PATH: "../build/docker/api"
     volumes:
-      - ./api/application.conf:/opt/vinyldns/conf/vinyldns.conf
+      - ../build/docker/api/application.conf:/opt/vinyldns/conf/vinyldns.conf
     env_file:
       .env
     ports:
@@ -48,14 +48,16 @@ services:
     image: "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
-      dockerfile: quickstart/portal/Dockerfile
+      dockerfile: build/docker/portal/Dockerfile
+      args:
+        DOCKER_FILE_PATH: "../build/docker/portal"
+        VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
     env_file:
       .env
     ports:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     volumes:
-      - ./portal/application.ini:/opt/vinyldns/conf/application.ini
-      - ./portal/application.conf:/opt/vinyldns/conf/application.conf
+      - ../build/docker/portal/application.conf:/opt/vinyldns/conf/application.conf
     depends_on:
       - api
       - ldap

@@ -2,6 +2,10 @@ logLevel := Level.Warn
 
 resolvers += "Flyway" at "https://flywaydb.org/repo"
 
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.18")
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "1.1.0")
+
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
 
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")

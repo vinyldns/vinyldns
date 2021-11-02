@@ -1,6 +1,7 @@
+ARG VINYLDNS_BASE_VERSION=latest
+
 # Build VinylDNS API if the JAR doesn't already exist
-ARG VINYLDNS_VERSION=latest
-FROM vinyldns/build:base-build-${VINYLDNS_VERSION} as base-build
+FROM vinyldns/build:base-build as base-build
 ARG DOCKERFILE_PATH="test/api/integration"
 COPY "${DOCKERFILE_PATH}/vinyldns.*" /opt/vinyldns/
 COPY . /build/
@@ -14,8 +15,8 @@ RUN if [ -f assembly/vinyldns.jar ]; then cp assembly/vinyldns.jar /opt/vinyldns
       && cp assembly/vinyldns.jar /opt/vinyldns/; \
     fi
 
-# Build the testing image, copying data from `vinyldns-api`
-FROM vinyldns/build:base-test-integration-${VINYLDNS_VERSION}
+# Build the testing image, copying data from `base-build`
+FROM vinyldns/build:base-test-integration-${VINYLDNS_BASE_VERSION}
 SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns

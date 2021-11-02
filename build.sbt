@@ -1,13 +1,11 @@
 import CompilerOptions._
 import Dependencies._
-import Resolvers._
 import microsites._
 import org.scalafmt.sbt.ScalafmtPlugin._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 
+import scala.language.postfixOps
 import scala.util.Try
-
-resolvers ++= additionalResolvers
 
 lazy val IntegrationTest = config("it").extend(Test)
 
@@ -18,6 +16,7 @@ lazy val sharedSettings = Seq(
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+  maintainer :=  "VinylDNS Maintainers <vinyldns-core@googlegroups.com>",
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
   scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
@@ -64,7 +63,7 @@ lazy val apiSettings = Seq(
 )
 
 lazy val apiAssemblySettings = Seq(
-  assemblyOutputPath in assembly := file("assembly/vinyldns.jar"),
+  assemblyOutputPath in assembly := file("artifacts/vinyldns-api.jar"),
   test in assembly := {},
   mainClass in assembly := Some("vinyldns.api.Boot"),
   mainClass in reStart := Some("vinyldns.api.Boot"),
@@ -79,45 +78,11 @@ lazy val apiAssemblySettings = Seq(
   }
 )
 
-lazy val noPublishSettings = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false
-)
-
-lazy val apiPublishSettings = Seq(
-  publishArtifact := false,
-  publishLocal := (publishLocal in Docker).value,
-  publish := (publish in Docker).value
-)
-
-lazy val portalPublishSettings = Seq(
-  publishArtifact := false,
-  publishLocal := (publishLocal in Docker).value,
-  publish := (publish in Docker).value,
-  // for sbt-native-packager (docker) to exclude local.conf
-  mappings in Universal ~= (_.filterNot {
-    case (file, _) => file.getName.equals("local.conf")
-  }),
-  // for local.conf to be excluded in jars
-  mappings in (Compile, packageBin) ~= (_.filterNot {
-    case (file, _) => file.getName.equals("local.conf")
-  })
-)
-
-lazy val pbSettings = Seq(
-  PB.targets in Compile := Seq(
-    PB.gens.java("2.6.1") -> (sourceManaged in Compile).value
-  ),
-  PB.protocVersion := "-v261"
-)
-
 lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   apiSettings ++
   sharedSettings ++
   apiAssemblySettings ++
-  testSettings ++
-  apiPublishSettings
+  testSettings
 
 lazy val api = (project in file("modules/api"))
   .enablePlugins(JavaAppPackaging, AutomateHeaderPlugin)
@@ -146,8 +111,10 @@ lazy val coreBuildSettings = Seq(
   name := "core",
   // do not use unused params as NoOpCrypto ignores its constructor, we should provide a way
   // to write a crypto plugin so that we fall back to a noarg constructor
-  scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
-) ++ pbSettings
+  scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params"),
+  PB.targets in Compile := Seq(PB.gens.java("2.6.1") -> (sourceManaged in Compile).value),
+  PB.protocVersion := "-v261"
+)
 
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
@@ -156,7 +123,6 @@ lazy val corePublishSettings = Seq(
     false
   },
   autoAPIMappings := true,
-  publish in Docker := {},
   mainClass := None,
   homepage := Some(url("https://vinyldns.io")),
   scmInfo := Some(
@@ -233,42 +199,47 @@ val checkJsHeaders =
 val createJsHeaders =
   TaskKey[Unit]("createJsHeaders", "Runs script to prepend APL 2.0 license headers to files")
 
+lazy val portalSettings = Seq(
+  libraryDependencies ++= portalDependencies,
+  routesGenerator := InjectedRoutesGenerator,
+  coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
+  javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
+  // ads the version when working locally with sbt run
+  PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
+  // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
+  // directory and lay down any dependencies that are required when deploying
+  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "lib_extra/*"),
+  mainClass in reStart := None,
+  // we need to filter out unused for the portal as the play framework needs a lot of unused things
+  scalacOptions ~= { opts =>
+    opts.filterNot(p => p.contains("unused"))
+  },
+  // runs our prepare portal process
+  preparePortal := {
+    import scala.sys.process._
+    "./modules/portal/prepare-portal.sh" !
+  },
+  checkJsHeaders := {
+    import scala.sys.process._
+    "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js -c" !
+  },
+  createJsHeaders := {
+    import scala.sys.process._
+    "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js" !
+  },
+
+  // Change the path of the output to artifacts/vinyldns-portal.zip
+  target in Universal := file("artifacts/"),
+  packageName in Universal := "vinyldns-portal"
+)
+
 lazy val portal = (project in file("modules/portal"))
   .enablePlugins(PlayScala, AutomateHeaderPlugin)
   .settings(sharedSettings)
   .settings(testSettings)
-  .settings(portalPublishSettings)
+  .settings(portalSettings)
   .settings(
     name := "portal",
-    libraryDependencies ++= portalDependencies,
-    routesGenerator := InjectedRoutesGenerator,
-    coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
-    javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    // ads the version when working locally with sbt run
-    PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
-    // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
-    // directory and lay down any dependencies that are required when deploying
-    scriptClasspath in bashScriptDefines ~= (cp => cp :+ "lib_extra/*"),
-    mainClass in reStart := None,
-    // we need to filter out unused for the portal as the play framework needs a lot of unused things
-    scalacOptions ~= { opts =>
-      opts.filterNot(p => p.contains("unused"))
-    },
-    // runs our prepare portal process
-    preparePortal := {
-      import scala.sys.process._
-      "./modules/portal/prepare-portal.sh" !
-    },
-    checkJsHeaders := {
-      import scala.sys.process._
-      "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js -c" !
-    },
-    createJsHeaders := {
-      import scala.sys.process._
-      "./utils/add-license-headers.sh -d=modules/portal/public/lib -f=js" !
-    },
-    // change the name of the output to portal.zip
-    packageName in Universal := "portal"
   )
   .dependsOn(mysql)
 

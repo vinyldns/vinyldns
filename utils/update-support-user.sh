@@ -90,14 +90,6 @@ then
 fi
 
 # Copy the proto definition to the Docker context and build
-cp "${VINYL_ROOT}/modules/core/src/main/protobuf/VinylDNSProto.proto" "${WORK_DIR}/admin"
-docker build -t vinyldns/admin "${WORK_DIR}/admin"
-rm "${WORK_DIR}/admin/VinylDNSProto.proto"
-
-docker run -it --rm \
-    -e "DB_USER=$DB_USER" \
-    -e "DB_PASS=$DB_PASS" \
-    -e "DB_HOST=$DB_HOST" \
-    -e "DB_NAME=$DB_NAME" \
-    -e "DB_PORT=$DB_PORT" \
-    vinyldns/admin:latest /app/update-support-user.py "$VINYL_USER" "$MAKE_SUPPORT"
+cd admin
+make build
+make run DOCKER_PARAMS="-e \"DB_USER=$DB_USER\" -e \"DB_PASS=$DB_PASS\" -e \"DB_HOST=$DB_HOST\" -e \"DB_NAME=$DB_NAME\" -e \"DB_PORT=$DB_PORT\"" WITH_ARGS="\"$VINYL_USER\" \"$MAKE_SUPPORT\""
