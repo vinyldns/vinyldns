@@ -9,8 +9,14 @@ CREATE TABLE recordset_data (
   reverse_fqdn VARCHAR(255) NOT NULL,
   type VARCHAR(25) NOT NULL,
   record_data VARCHAR(4096) NOT NULL,
-  ip VARBINARY(64),
-  INDEX zone_id_type_fdqn_ip_rsid_rfdqn_index (zone_id, type, fqdn, ip, recordset_id, reverse_fqdn),
-  FULLTEXT INDEX fulltext_fdqn_recorddata_index(fqdn, record_data)
+  ip VARBINARY(16),
+  INDEX recordset_data_zone_id_index(zone_id),
+  INDEX recordset_data_type_index(type),
+  INDEX recordset_data_fqdn_index(fqdn),
+  INDEX recordset_data_ip_index(ip),
+  INDEX recordset_data_recordset_id_index(recordset_id),
+  INDEX recordset_data_reverse_fqdn_index(reverse_fqdn),
+  FULLTEXT INDEX recordset_data_fdqn_fulltext_index(fqdn),
+  FULLTEXT INDEX recordset_data_record_data_fulltex_index(record_data)
 );
 

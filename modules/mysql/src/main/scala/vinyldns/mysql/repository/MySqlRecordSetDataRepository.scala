@@ -19,7 +19,6 @@ package vinyldns.mysql.repository
 import cats.effect.IO
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -59,8 +58,8 @@ class MySqlRecordSetDataRepository
       (completeCreates ++ pendingChanges).map { i =>
         Seq[Any](
           RsData(
-            i.recordSet.records.toString(),
-            fromRecordType(i.recordSet.typ),
+            i.recordSet.records.toString,
+            i.recordSet.typ.toString,
             i.recordSet.id,
             i.recordSet.zoneId,
             toFQDN(i.zone.name, i.recordSet.name),
@@ -72,8 +71,8 @@ class MySqlRecordSetDataRepository
       completeUpdates.map { u =>
         Seq[Any](
           RsData(
-            u.recordSet.records.toString(),
-            fromRecordType(u.recordSet.typ),
+            u.recordSet.records.toString,
+            u.recordSet.typ.toString,
             u.recordSet.id,
             u.recordSet.zoneId,
             toFQDN(u.zone.name, u.recordSet.name),
@@ -200,23 +199,5 @@ class MySqlRecordSetDataRepository
     } else ipAddress = null
     ipAddress
   }
-
-  def fromRecordType(typ: RecordType): String =
-    typ match {
-      case RecordType.A => "A"
-      case RecordType.AAAA => "AAAA"
-      case RecordType.CNAME => "CNAME"
-      case RecordType.MX => "MX"
-      case RecordType.NS => "NS"
-      case RecordType.PTR => "PTR"
-      case RecordType.SPF => "SPF"
-      case RecordType.SRV => "SRV"
-      case RecordType.SSHFP => "SSHFP"
-      case RecordType.TXT => "TXT"
-      case RecordType.SOA => "SOA"
-      case RecordType.DS => "DS"
-      case RecordType.NAPTR => "NAPTR"
-      case RecordType.UNKNOWN => "UNKNOWN"
-    }
 
 }

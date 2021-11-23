@@ -27,7 +27,6 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-import java.security.MessageDigest
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -63,10 +62,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id, data_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ?, data_hash = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -137,8 +136,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
-            i.recordSet.ownerGroupId,
-            hashBytes(toPB(i.recordSet).toByteArray)
+            i.recordSet.ownerGroupId
           )
         }
 
@@ -151,7 +149,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
-            hashBytes(toPB(u.recordSet).toByteArray),
             u.recordSet.id
           )
         }
@@ -174,14 +171,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }.as(changeSet)
     }
-
-  /** hexa for hash the rs BLOB */
-  def hexString(rs: Array[Byte]) =
-    rs.foldLeft("")((out, b) => f"$out%s${b & 0x0ff}%02x")
-
-  /**Hashing the record set blob. */
-  def hashBytes(rs: Array[Byte]) =
-    hexString(MessageDigest.getInstance("SHA-1").digest(rs))
 
   def listRecordSets(
       zoneId: Option[String],
