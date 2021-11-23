@@ -25,8 +25,10 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
+import vinyldns.mysql.repository.MySqlRecordSetRepository.hashString
 import vinyldns.proto.VinylDNSProto
 
+import java.security.MessageDigest
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -61,10 +63,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id, data_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ?, data_hash = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -134,7 +136,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
-            i.recordSet.ownerGroupId
+            i.recordSet.ownerGroupId,
+            hashString(toPB(i.recordSet).toString)
           )
         }
 
@@ -147,6 +150,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
+            hashString(toPB(u.recordSet).toString),
             u.recordSet.id
           )
         }
@@ -413,6 +417,16 @@ object MySqlRecordSetRepository extends ProtobufConversions {
     if (absoluteRecordSetName.equals(absoluteZoneName)) absoluteZoneName
     else absoluteRecordSetName + absoluteZoneName
   }
+
+  /** hexa for hash the rs */
+  def hexString(rs: Array[Byte]) =
+    rs.foldLeft("")((out, b) => f"$out%s${b & 0x0ff}%02x")
+
+  /**Hashing the record set. */
+  def hashString(s: String) = hashBytes(s.getBytes("UTF-8"))
+
+  def hashBytes(rs: Array[Byte]) =
+    hexString(MessageDigest.getInstance("SHA-1").digest(rs))
 
   case class PagingKey(recordName: String, recordType: Int)
 
