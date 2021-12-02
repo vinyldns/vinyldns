@@ -206,6 +206,8 @@
                                 change[headers[j]] = {"cname": rowContent[j].trim()}
                             } else if (change["type"] == "PTR") {
                                 change[headers[j]] = {"ptrdname": rowContent[j].trim()}
+                            } else if (change["type"] == "TXT") {
+                                change[headers[j]] = {"text": rowContent[j].trim()}
                             }
                         } else {
                             change[headers[j]] = rowContent[j].trim()
