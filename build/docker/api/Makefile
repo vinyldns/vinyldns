@@ -35,7 +35,8 @@ artifact:
 	@set -euo pipefail
 	cd ../../..
 	docker build $(BUILD_ARGS) --target base-build --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t "vinyldns:api-artifact" -f "$(ROOT_DIR)/Dockerfile" .
-	docker run -it --rm -v "$$(pwd)/:/output" vinyldns:api-artifact /bin/bash -c "cp /build/artifacts/*.jar /output/artifacts"
+	USE_TTY="" && test -t 1 && USE_TTY="-t"
+	docker run -i $${USE_TTY} --rm -v "$$(pwd)/:/output" vinyldns:api-artifact /bin/bash -c "cp /build/artifacts/*.jar /output/artifacts"
 
 build:
 	@set -euo pipefail
