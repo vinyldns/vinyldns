@@ -1,16 +1,16 @@
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
 ARG DOCKERFILE_PATH="test/api/functional"
-COPY "${DOCKERFILE_PATH}/vinyldns.*" /opt/vinyldns/
+COPY "${DOCKERFILE_PATH}/application.conf" /opt/vinyldns/conf/
 COPY . /build/
 WORKDIR /build
 
-##  Run the build if we don't already have a vinyldns.jar
-RUN if [ -f assembly/vinyldns.jar ]; then cp assembly/vinyldns.jar /opt/vinyldns; fi && \
-    if [ ! -f /opt/vinyldns/vinyldns.jar ]; then \
+##  Run the build if we don't already have a vinyldns-api.jar
+RUN if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns; fi && \
+    if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
       env SBT_OPTS="-XX:+UseConcMarkSweepGC -Xmx4G -Xms1G" \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
-      && cp modules/api/target/scala-2.12/vinyldns.jar /opt/vinyldns/; \
+      && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
 # Build the testing image, copying data from `vinyldns-api`

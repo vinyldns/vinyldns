@@ -3,13 +3,13 @@ FROM vinyldns/build:base-build as base-build
 COPY . /build/
 WORKDIR /build
 
-##  Run the build if we don't already have a vinyldns.jar
+##  Run the build if we don't already have a vinyldns-api.jar
 RUN mkdir -p /opt/vinyldns/conf && \
     if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns/; fi && \
-    if [ ! -f /opt/vinyldns/vinyldns.jar ]; then \
+    if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
       env SBT_OPTS="-XX:+UseConcMarkSweepGC -Xmx4G -Xms1G" \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
-      && cp assembly/vinyldns.jar /opt/vinyldns/; \
+      && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
 FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
@@ -36,4 +36,4 @@ ENTRYPOINT ["/bin/bash", "-c", "java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/con
                                 -Dlogback.configurationFile=/opt/vinyldns/conf/logback.xml \
                                 -Dvinyldns.version=$(cat /opt/vinyldns/version) \
                                 -cp /opt/vinyldns/lib_extra/* \
-                                -jar /opt/vinyldns/vinyldns.jar" ]
+                                -jar /opt/vinyldns/vinyldns-api.jar" ]

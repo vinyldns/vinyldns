@@ -102,8 +102,8 @@ class TestData:
         "records": [
             {
                 "algorithm": 1,
-                "type": 2,
-                "fingerprint": "fp"
+                "type": 1,
+                "fingerprint": "123456789ABCDEF67890123456789ABCDEF67890"
             }
         ]
     }

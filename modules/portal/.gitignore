@@ -10,6 +10,7 @@ release.version
 private
 .bloop
 .metals
+run.sh
 
 public/js/*
 !public/js/custom.js

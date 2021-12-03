@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import mysql.connector
-import VinylDNSProto_pb2
-import sys
 import os
+import sys
+
+import VinylDNSProto_pb2
+import mysql.connector
 
 # arguments
 if len(sys.argv) != 3:
@@ -27,7 +28,7 @@ update = "UPDATE user SET data = %(pb)s WHERE user_name = %(user_name)s"
 cursor = cnx.cursor(dictionary=True)
 
 try:
-    cursor.execute(query, { 'user_name': user_name })
+    cursor.execute(query, {'user_name': user_name})
     user = VinylDNSProto_pb2.User()
     for row in cursor:
         user_raw = row['data']
@@ -46,7 +47,7 @@ try:
     if make_support is not None:
         print("Updating {}, Support = {}".format(user_name, make_support))
         user.isSupport = make_support
-        cursor.execute(update, { 'pb': user.SerializeToString(), 'user_name': user_name })
+        cursor.execute(update, {'pb': user.SerializeToString(), 'user_name': user_name})
         cnx.commit()
     else:
         print("Skipping making support as no make support value provided")

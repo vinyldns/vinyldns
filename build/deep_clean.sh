@@ -10,7 +10,6 @@ DIR=$(
 
 echo "Performing deep clean"
 find "${DIR}/.." -type d -name target -o -name assembly | while read -r p; do if [ -d "$p" ]; then
-  echo -n "Removing $p.."
-  rm -r "$p" || (echo -e "\e[93mError deleting $p, you may need to be root\e[0m"; exit 1)
-  echo "done."
+  echo -n "Removing $(realpath --relative-to="$DIR" "$p").." && \
+  { { rm -rf "$p" &> /dev/null  && echo "done."; } || { echo -e "\e[93mERROR\e[0m: you may need to be root"; exit 1; } }
 fi; done

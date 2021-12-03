@@ -12,16 +12,16 @@ DIR=$(
 
 usage() {
   echo "USAGE: assemble_api.sh [options]"
-  echo -e "\t-n, --no-clean         do no perform a clean before assembling the jar"
+  echo -e "\t-n, --no-cache         do not use cache when building the artifact"
   echo -e "\t-u, --update           update the underlying docker image"
 }
 
-SKIP_CLEAN=0
+NO_CACHE=0
 UPDATE_DOCKER=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --no-clean | -n)
-    SKIP_CLEAN=1
+  --no-cache | -n)
+    NO_CACHE=1
     shift
     ;;
   --update | -u)
@@ -35,15 +35,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if ! [[ $SKIP_CLEAN -eq 1 ]]; then
-  "${DIR}/deep_clean.sh"
-  rm "${DIR}/../artifacts/vinyldns-api.jar" &> /dev/null || true
+if [[ $NO_CACHE -eq 1 ]]; then
+  rm -rf "${DIR}/../artifacts/vinyldns-api.jar" &> /dev/null || true
+  docker rmi vinyldns:api-artifact &> /dev/null || true
 fi
 
 if [[ $UPDATE_DOCKER -eq 1 ]]; then
-    echo "Pulling latest version of 'vinyldns/build:base-test-integration'"
-    docker pull vinyldns/build:base-test-integration
+    echo "Pulling latest version of 'vinyldns/build:base-build'"
+    docker pull vinyldns/build:base-build
 fi
 
 echo "Building VinylDNS API artifact"
-docker run -i --rm -e RUN_SERVICES=none -v "${DIR}/..:/build" vinyldns/build:base-test-integration -- sbt 'api/assembly'
+make -C "${DIR}/docker/api" artifact

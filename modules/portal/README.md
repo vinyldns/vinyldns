@@ -4,7 +4,7 @@ Supplies a UI for and offers authentication into VinylDNS.
 
 # Running Unit Tests
 
-First, startup sbt: `sbt`.
+First, startup sbt: `build/sbt.sh`.
 
 Next, you can run all tests by simply running `test`, or you can run an individual test by running `test-only *MySpec`
 

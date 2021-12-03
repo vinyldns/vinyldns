@@ -9,7 +9,7 @@ RUN mkdir -p /vinyldns/python && \
     protoc --proto_path=/vinyldns --python_out=/vinyldns/python /vinyldns/VinylDNSProto.proto
 
 
-FROM python:3.7-alpine
+FROM vinyldns/build:base-build
 ARG DOCKERFILE_PATH
 WORKDIR /app
 RUN pip install mysql-connector-python==8.0.27

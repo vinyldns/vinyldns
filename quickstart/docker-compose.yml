@@ -1,12 +1,15 @@
 version: "3.5"
 
 services:
+
+  # LDAP container hosting example users
   ldap:
     container_name: "vinyldns-ldap"
     image: vinyldns/build:openldap
     ports:
       - "19004:19004"
 
+  # Integration image hosting r53, sns, sqs, bind, and mysql
   integration:
     container_name: "vinyldns-api-integration"
     hostname: &integration_hostname "vinyldns-integration"
@@ -25,6 +28,7 @@ services:
       - "19001-19003:19001-19003/tcp"
       - "19001:19001/udp"
 
+  # The VinylDNS API
   api:
     container_name: "vinyldns-api"
     image: "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
@@ -35,7 +39,7 @@ services:
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
         DOCKER_FILE_PATH: "../build/docker/api"
     volumes:
-      - ../build/docker/api/application.conf:/opt/vinyldns/conf/vinyldns.conf
+      - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
     env_file:
       .env
     ports:
@@ -43,6 +47,7 @@ services:
     depends_on:
       - integration
 
+  # The VinylDNS portal
   portal:
     container_name: "vinyldns-portal"
     image: "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
@@ -62,6 +67,7 @@ services:
       - api
       - ldap
 
+# Custom network so that we don't interfere with the host system
 networks:
   default:
     name: "vinyldns_net"

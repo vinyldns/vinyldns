@@ -206,59 +206,77 @@ You should now be able to see the zone in the portal at localhost:9001 when logg
 
 ### Unit Tests
 
-1. First, start up your Scala build tool: `sbt`. Running *clean* immediately after starting is recommended.
-1. (Optionally) Go to the project you want to work on, for example `project api` for the API; `project portal` for the
+1. First, start up your Scala build tool: `build/sbt.sh` (or `sbt` if running outside of Docker).
+2. (Optionally) Go to the project you want to work on, for example `project api` for the API; `project portal` for the
    portal.
-1. Run _all_ unit tests by just running `test`.
-1. Run an individual unit test by running `testOnly *MySpec`.
-1. If you are working on a unit test and production code at the same time, use `~` (e.g., `~testOnly *MySpec`) to
+3. Run _all_ unit tests by just running `test`.
+4. Run a single unit test suite by running `testOnly *MySpec`.
+5. Run a single unit by filtering the test name using the `-z` argument `testOnly *MySpec -- -z "some text from test"`.
+    - [More information on commandline arguments](https://www.scalatest.org/user_guide/using_the_runner)
+6. If you are working on a unit test and production code at the same time, use `~` (e.g., `~testOnly *MySpec`) to
    automatically background compile for you!
 
 ### Integration Tests
 
-Integration tests are used to test integration with _real_ dependent services. We use Docker to spin up those backend
-services for integration test development.
+Integration tests are used to test integration with dependent services. We use Docker to spin up those backend services
+for integration test development.
 
-1. Type `dockerComposeUp` to start up dependent background services
+1. Type `quickstart/quickstart-vinyldns.sh --reset --deps-only` to start up dependent background services
+1. Run sbt (`build/sbt.sh` or `sbt` locally)
 1. Go to the target module in sbt, example: `project api`
 1. Run all integration tests by typing `it:test`.
 1. Run an individual integration test by typing `it:testOnly *MyIntegrationSpec`
 1. You can background compile as well if working on a single spec by using `~it:testOnly *MyIntegrationSpec`
-1. You must stop (`dockerComposeStop`) and start (`dockerComposeUp`) the dependent services from the root
-   project (`project root`) before you rerun the tests.
+1. You must restart the dependent services (`quickstart/quickstart-vinyldns.sh --reset --deps-only`) before you rerun
+   the tests.
 1. For the mysql module, you may need to wait up to 30 seconds after starting the services before running the tests for
    setup to complete.
 
 #### Running both
 
-You can run all unit and integration tests for the api and portal by running `sbt verify`
+You can run all unit and integration tests for the api and portal by running `build/verify.sh`
 
 ### Functional Tests
 
 When adding new features, you will often need to write new functional tests that black box / regression test the API.
 
-- The API functional tests are written in Python and live under `test/api/functional`.
-- The Portal functional tests are written in JavaScript and live under `test/portal/functional`.
+- The API functional tests are written in Python and live under `modules/api/src/test/functional`.
+- The Portal functional tests are written in JavaScript and live under `modules/portal/test`.
 
 #### Running Functional Tests
 
-To run functional tests you can simply execute the following command:
+To run functional tests you can simply execute the following commands:
 
 ```
+build/func-test-api.sh
+build/func-test-portal.sh
+```
+
+These command will run the API functional tests and portal functional tests respectively.
+
+##### API Functional Tests
+
+To run functional tests you can simply execute `build/func-test-api.sh`, but if you'd like finer-grained control, you
+can work with the `Makefile` in `test/api/functional`:
+
+```
+cd test/api/functional
 make build && make run
 ```
 
-During iterative test development, you can use `make run-local` which will mount the current functional tests in the
-container, allowing for easier test development.
+During iterative test development, you can use `make run-local` which will bind-mount the current functional tests in
+the container, allowing for easier test development.
 
 Additionally, you can pass `--interactive` to `make run` or `make run-local` to drop to a shell inside the container.
 From there you can run tests with the `/functional_test/run.sh` command. This allows for finer-grained control over the
 test execution process as well as easier inspection of logs.
 
-##### API Functional Tests
-
 You can run a specific test by name by running `make run -- -k <name of test function>`. Any arguments after
 `make run --` will be passed to the test runner [`test/api/functional/run.sh`](test/api/functional/run.sh).
+
+Finally, you can execute `make run-deps-bg` to all of the dependencies for the functional test, but not run the tests.
+This is useful if, for example, you want to use an interactive debugger on your local machine, but host all of the
+VinylDNS API dependencies in Docker.
 
 #### Setup
 
@@ -269,15 +287,16 @@ We also use [PyHamcrest](https://pyhamcrest.readthedocs.io/en/release-1.8/) for 
 tests. Please browse that documentation as well so that you are familiar with the different matchers for PyHamcrest.
 There aren't a lot, so it should be quick.
 
-In the `test/api/functional` directory are a few important files for you to be familiar with:
+In the `modules/api/src/test/functional` directory are a few important files for you to be familiar with:
 
-* `vinyl_client.py` - this provides the interface to the VinylDNS API. It handles signing the request for you, as well
+* `vinyl_python.py` - this provides the interface to the VinylDNS API. It handles signing the request for you, as well
   as building and executing the requests, and giving you back valid responses. For all new API endpoints, there should
   be a corresponding function in the vinyl_client
 * `utils.py` - provides general use functions that can be used anywhere in your tests. Feel free to contribute new
   functions here when you see repetition in the code
 
-In the `test/api/functional/tests` directory, we have directories / modules for different areas of the application.
+In the `modules/api/src/test/functional/tests` directory, we have directories / modules for different areas of the
+application.
 
 * `batch` - for managing batch updates
 * `internal` - for internal endpoints (not intended for public consumption)

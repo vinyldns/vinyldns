@@ -18,16 +18,13 @@ ifeq ($(EXTRACT_ARGS),true)
   # use the rest as arguments for "run"
   WITH_ARGS ?= $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifneq ($(WITH_ARGS),)
-  ARG_SEPARATOR=--
-endif
 
 %:
 	@:
 
 .ONESHELL:
 
-.PHONY: all build run run-local
+.PHONY: all build run run-local clean-containers
 
 all: build run
 
@@ -39,9 +36,13 @@ build:
 run:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm $(IMAGE_NAME) $(WITH_ARGS)
 
 run-local:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm -v "$$(pwd)/../../../modules/portal:/functional_test" $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm -v "$$(pwd)/../../../modules/portal:/functional_test" -v "$$(pwd)/run.sh:/functional_test/run.sh" $(IMAGE_NAME) $(WITH_ARGS)
+
+clean-containers:
+	@set -euo pipefail
+	"$(ROOT_DIR)/../../../utils/clean-vinyldns-containers.sh"

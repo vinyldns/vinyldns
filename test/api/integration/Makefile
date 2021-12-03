@@ -27,14 +27,14 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run run-local
+.PHONY: all build run run-local run-bg stop-bg clean-containers
 
 all: build run
 
 build:
 	@set -euo pipefail
 	cd ../../..
-	docker build -t $(IMAGE_NAME) --build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
+	docker build -t $(IMAGE_NAME) $(DOCKER_PARAMS) --build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
 
 run:
 	@set -euo pipefail
@@ -54,4 +54,8 @@ stop-bg:
 run-local:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+
+clean-containers:
+	@set -euo pipefail
+	"$(ROOT_DIR)/../../../utils/clean-vinyldns-containers.sh"

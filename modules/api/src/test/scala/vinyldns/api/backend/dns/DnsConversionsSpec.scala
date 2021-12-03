@@ -172,7 +172,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SSHFPData(1, 2, "fingerprint"))
+    List(SSHFPData(2, 1, "123456789ABCDEF67890123456789ABCDEF67890"))
   )
   private val testTXT = RecordSet(
     testZone.id,

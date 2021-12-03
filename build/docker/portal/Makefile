@@ -35,6 +35,12 @@ all: build run
 
 all: build run
 
+artifact:
+	@set -euo pipefail
+	cd ../../..
+	docker build $(BUILD_ARGS) --target base-build --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t "vinyldns:portal-artifact" -f "$(ROOT_DIR)/Dockerfile" .
+	docker run -it --rm -v "$$(pwd)/:/output" vinyldns:portal-artifact /bin/bash -c "cp /build/artifacts/*.zip /output/artifacts/"
+
 build:
 	@set -euo pipefail
 	cd ../../..
