@@ -1,5 +1,6 @@
 ---
-layout: docs title:  "Setup the Portal Server"
+layout: docs 
+title:  "Setup the Portal Server"
 section: "operator_menu"
 ---
 
