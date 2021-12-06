@@ -14,7 +14,7 @@ You must setup an SQS queue before you can start working with VinylDNS.  An [AWS
 provides the information you need to setup your queue.
 
 ## Setting up AWS SQS
-As opposed to DynamoDB and MySQL where everything is created when the application starts up, the SQS queue needs to be setup by hand.
+As opposed to MySQL where everything is created when the application starts up, the SQS queue needs to be setup by hand.
 This section goes through those settings that are required.
 
 The traffic with AWS SQS is rather low.  Presently, Comcast operates multiple SQS queues across multiple environments (dev, staging, prod),

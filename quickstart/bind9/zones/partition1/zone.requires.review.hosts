@@ -1,0 +1,11 @@
+$ttl 38400
+zone.requires.review1.	IN	SOA	172.17.42.1. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+zone.requires.review1.  IN  NS  172.17.42.1.
+@                     IN  A   1.1.1.1
+delete-test-batch     IN  A   2.2.2.2
+update-test-batch     IN  A   3.3.3.3

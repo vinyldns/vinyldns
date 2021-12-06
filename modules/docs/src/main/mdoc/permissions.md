@@ -6,7 +6,7 @@ position: 6
 
 # VinylDNS Permissions Guide
 
-Vinyldns is about making DNS self-service _safe_.  There are a number of ways that you can govern access to your DNS infrastucture, from extremely restrictive, to extremely lax, and anywhere in between.
+Vinyldns is about making DNS self-service _safe_.  There are a number of ways that you can govern access to your DNS infrastructure, from extremely restrictive, to extremely lax, and anywhere in between.
 
 This guide attempts to explain the various options available for governing access to your VinylDNS installation.
 
@@ -49,7 +49,7 @@ The original way to govern access is via Zone Ownership and Zone ACLs.  When con
 
 _Zone Owners_ have full rights on a zone.  They can manage the zone, abandon it, change connection information, and assign ACLs.
 
-A `Zone ACL Rule` is a record level control that allows VinylDNS users who are **not** Zone Owners privileges to perform certain actions in the zone.  For example, you can **grant access to A, AAAA, CNAME records in Zone foo.baz.com to user Josh**
+A `Zone ACL Rule` is a record level control that allows VinylDNS users who are **not** Zone Owners privileges to perform certain actions in the zone.  For example, you can **grant access to `A`, `AAAA`, `CNAME` records in Zone foo.baz.com to user Josh**
 
 ACL rules provide an extremely flexible way to grant access to DNS records.  Each ACL Rule consists of the following:
 
@@ -81,7 +81,7 @@ Shared Zones **still have restrictions**.  It wouldn't be safe to allow _anyone_
 
 In addition to shared zones, you can configure which record types you allow broad access to.  Certain record types like `NS` maybe sensitive to be "world writable".  You can configure the allowable record types via config as shown below:
 
-```
+```yaml
 shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
 ```
 
@@ -96,7 +96,7 @@ The use case that fits here is when
 
 Global ACL rules are _configured_ in VinylDNS (i.e. they are config file entries not available in the UI yet).  The configuration entry is `global-acl-rules`.  An example entry follows
 
-```
+```yaml
 global-acl-rules = [
     {
         group-ids: ['global-acl-group-id'],
@@ -125,7 +125,7 @@ To turn on manual review, set the `manual-batch-review-enabled = true` in your a
 
 In addition, you can specify certain zones that are **ALWAYS** manually reviewed.  Even with **Shared Zones** turned on, you can require manual inspection to certain FQDNs.  This is also done via configuration.  The following snippet shows the configuration for zones that are **ALWAYS** manually reviewed:
 
-```
+```yaml
   manual-review-domains = {
     domain-list = [".*imporant.biz.com"]
     ip-list = ["1.2.3.4"]

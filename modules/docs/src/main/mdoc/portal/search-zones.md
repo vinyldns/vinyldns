@@ -19,6 +19,6 @@ Search `test*` returns: test.com., test.net.
 Search `*example` returns: example.com., another.example.com.
 Search `*e*` returns: another.example.com., example.com., test.com., test.net., xyz.efg.
 
-[![Seach zones My Zones tab](../img/portal/search-zones-my-zones.png){:.screenshot}](../img/portal/search-zones-my-zones.png)
+[![Search zones My Zones tab](../img/portal/search-zones-my-zones.png){:.screenshot}](../img/portal/search-zones-my-zones.png)
 
 [![Search zones All Zones tab](../img/portal/search-zones-all-zones.png){:.screenshot}](../img/portal/search-zones-all-zones.png)

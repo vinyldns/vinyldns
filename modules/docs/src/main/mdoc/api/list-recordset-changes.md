@@ -44,7 +44,7 @@ status        | string        | The status of the change (Pending, Complete, Fai
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "recordSetChanges": [
       {
