@@ -1,10 +1,7 @@
-# Generates the microsite on push to master
-# Relies on the SBT_MICROSITES_PUBLISH_TOKEN secret to be setup
-# as a Github secret
 name: Microsite
 
 on:
-  push:
+  workflow_dispatch:
     branches: [ 'master', 'main' ]
 
 jobs:
