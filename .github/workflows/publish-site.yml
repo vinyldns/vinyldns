@@ -1,6 +1,4 @@
 # Generates the microsite on push to master
-# Relies on the SBT_MICROSITES_PUBLISH_TOKEN secret to be setup
-# as a Github secret
 name: Microsite
 
 on:
@@ -17,8 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-
-      - run: "build/publish_docs.sh";
+      - run: "build/publish_docs.sh"
         env:
           SBT_MICROSITES_PUBLISH_TOKEN: ${{ secrets.VINYLDNS_MICROSITE }}
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
