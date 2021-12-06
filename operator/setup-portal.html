@@ -1,0 +1,45 @@
+<h1 id="setup-the-portal-server">Setup the Portal Server</h1>
+
+<p>The Portal Server is the web UI for VinylDNS. To setup the Portal server, follow these steps:</p>
+
+<ol>
+  <li><a href="setup-api.html">Setup API Server</a></li>
+  <li><a href="setup-ldap.html">Setup LDAP</a></li>
+  <li><a href="config-portal.html">Configure Portal Server</a></li>
+  <li><a href="#using-the-portal-docker-image">Using the Portal Docker Image</a></li>
+</ol>
+
+<p>Once you have you pre-requisites ready, review the <a href="config-portal.html">Portal Configuration Guide</a> for how to build out
+your configuration file.</p>
+
+<h1 id="using-the-portal-docker-image">Using the Portal Docker Image</h1>
+
+<p>The Portal server is provided as a <a href="https://hub.docker.com/r/vinyldns/portal/">VinylDNS Portal Image</a>.</p>
+
+<p>The API server is <em>stateless</em>, allowing you to run multiple instances in multiple data centers for high-availability
+purposes.</p>
+
+<h2 id="volume-mounts">Volume mounts</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">/opt/vinyldns/lib_extra</code> - place here additional jar files that need to be loaded into the classpath when the
+application starts up. This is used for ���plugins��� that are proprietary or not part of the standard build. All jar
+files here will be placed on the class path.</li>
+  <li><code class="language-plaintext highlighter-rouge">/opt/vinyldns/conf/application.conf</code> - to override default configuration settings. Follow
+the <a href="config-portal.html">Portal Configuration Guide</a></li>
+</ul>
+
+<h2 id="configuring-a-custom-java-truststore">Configuring a custom Java trustStore</h2>
+
+<p>To add a custom Java trustStore for LDAP certs, add the trustStore to <code class="language-plaintext highlighter-rouge">/opt/vinyldns/conf/trustStore.jks</code>. Then
+add <code class="language-plaintext highlighter-rouge">-Djavax.net.ssl.trustStore=/opt/vinyldns/conf/trustStore.jks</code> to the <code class="language-plaintext highlighter-rouge">JVM_OPTS</code> environment variable for the
+container.</p>
+
+<p>Example:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -e JVM_OPTS="-Djavax.net.ssl.trustStore=/opt/vinyldns/conf/trustStore.jks" ...
+</code></pre></div></div>
+
+<h2 id="additional-jvm-parameters">Additional JVM parameters</h2>
+
+<p>Additional JVM parameters can be added to the <code class="language-plaintext highlighter-rouge">JVM_OPTS</code> environment variable</p>
