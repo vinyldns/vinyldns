@@ -24,7 +24,7 @@ records       | array of record data | yes  | record data for recordset, see [Re
 ownerGroupId  | string        | no          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
   "name": "foo",
   "type": "A",
@@ -66,7 +66,7 @@ singleBatchChangeIds |  array of SingleBatchChange Id objects  | If the recordse
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zone": {
     "name": "vinyl.",

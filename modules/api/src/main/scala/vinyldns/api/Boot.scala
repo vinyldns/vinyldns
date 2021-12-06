@@ -228,5 +228,7 @@ object Boot extends App {
     case Left(startupFailure) =>
       logger.error(s"VINYLDNS SERVER UNABLE TO START $startupFailure")
       startupFailure.printStackTrace()
+      // It doesn't do us much good to keep the application running if it failed to start.
+      sys.exit(1)
   }
 }

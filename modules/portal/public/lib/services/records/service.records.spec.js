@@ -101,16 +101,16 @@ describe('Service: recordsService', function () {
             "name": 'recordName',
             "type": 'SSHFP',
             "ttl": '300',
-            "sshfpItems": [{algorithm: '1', type: '1', fingerprint: 'foo'},
-                {algorithm: '2', type: '1', fingerprint: 'bar'}]
+            "sshfpItems": [{algorithm: '1', type: '1', fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: '2', type: '1', fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'}]
         };
         expectedRecord = {
             "id": 'recordId',
             "name": 'recordName',
             "type": 'SSHFP',
             "ttl": 300,
-            "records": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}]
+            "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'}]
         };
 
         var actualRecord = this.recordsService.toVinylRecord(sentRecord);
@@ -123,8 +123,8 @@ describe('Service: recordsService', function () {
             "name": 'recordName',
             "type": 'SSHFP',
             "ttl": 300,
-            "records": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}]
+            "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}]
         };
 
         displayRecord = {
@@ -133,8 +133,8 @@ describe('Service: recordsService', function () {
             "type": 'SSHFP',
             "ttl": 300,
             "records": undefined,
-            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}],
+            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true
@@ -150,8 +150,8 @@ describe('Service: recordsService', function () {
             "name": 'recordName.with.dot',
             "type": 'SSHFP',
             "ttl": 300,
-            "records": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}]
+            "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}]
         };
 
         displayRecord = {
@@ -160,8 +160,8 @@ describe('Service: recordsService', function () {
             "type": 'SSHFP',
             "ttl": 300,
             "records": undefined,
-            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}],
+            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "onlyFour": true,
             "isDotted": true,
             "canBeEdited": true
@@ -177,8 +177,8 @@ describe('Service: recordsService', function () {
             "name": 'apex.with.dot',
             "type": 'SSHFP',
             "ttl": 300,
-            "records": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}]
+            "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}]
         };
 
         displayRecord = {
@@ -187,8 +187,8 @@ describe('Service: recordsService', function () {
             "type": 'SSHFP',
             "ttl": 300,
             "records": undefined,
-            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}],
+            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true
@@ -229,8 +229,8 @@ describe('Service: recordsService', function () {
             "name": 'apex.with.dot',
             "type": 'SSHFP',
             "ttl": 300,
-            "records": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}]
+            "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}]
         };
 
         displayRecord = {
@@ -239,8 +239,8 @@ describe('Service: recordsService', function () {
             "type": 'SSHFP',
             "ttl": 300,
             "records": undefined,
-            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: 'foo'},
-                {algorithm: 2, type: 1, fingerprint: 'bar'}],
+            "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
+                {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true

@@ -16,25 +16,23 @@
 
 package vinyldns.api.notifier.sns
 
+import cats.effect.IO
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.sns.AmazonSNSClientBuilder
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 import com.typesafe.config.{Config, ConfigFactory}
-import vinyldns.core.notifier._
-import vinyldns.api.MySqlApiIntegrationSpec
-import vinyldns.mysql.MySqlIntegrationSpec
+import org.joda.time.DateTime
+import org.json4s.DefaultFormats
+import org.json4s.jackson.JsonMethods._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.AData
-import org.joda.time.DateTime
+import vinyldns.api.MySqlApiIntegrationSpec
 import vinyldns.core.TestMembershipData._
-import cats.effect.IO
-import com.amazonaws.services.sns.AmazonSNSClientBuilder
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder
-import org.json4s.jackson.JsonMethods._
-import org.json4s.DefaultFormats
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.auth.AWSStaticCredentialsProvider
+import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.{AData, RecordType}
+import vinyldns.core.notifier._
+import vinyldns.mysql.MySqlIntegrationSpec
 
 class SnsNotifierIntegrationSpec
     extends MySqlApiIntegrationSpec
@@ -93,7 +91,7 @@ class SnsNotifierIntegrationSpec
       val sqs = AmazonSQSClientBuilder
         .standard()
         .withEndpointConfiguration(
-          new EndpointConfiguration("http://127.0.0.1:19007", "us-east-1")
+          new EndpointConfiguration("http://127.0.0.1:19003", "us-east-1")
         )
         .withCredentials(credentialsProvider)
         .build()
@@ -105,6 +103,7 @@ class SnsNotifierIntegrationSpec
         notifier <- new SnsNotifierProvider()
           .load(NotifierConfig("", snsConfig), userRepository)
         _ <- notifier.notify(Notification(batchChange))
+        _ <- IO { Thread.sleep(100) }
         messages <- IO { sqs.receiveMessage(queueUrl).getMessages }
         _ <- IO {
           sns.deleteTopic(topic)

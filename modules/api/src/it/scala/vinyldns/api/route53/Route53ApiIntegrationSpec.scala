@@ -56,7 +56,7 @@ class Route53ApiIntegrationSpec
           "test",
           Some("access"),
           Some("secret"),
-          "http://127.0.0.1:19009",
+          "http://127.0.0.1:19003",
           "us-east-1"
         )
       )

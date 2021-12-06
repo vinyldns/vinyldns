@@ -1,14 +1,16 @@
 # Authors
 
-This project would not be possible without the generous contributions of many people.
-Thank you! If you have contributed in any way, but do not see your name here, please open a PR to add yourself (in alphabetical order by last name)!
+This project would not be possible without the generous contributions of many people. Thank you! If you have contributed
+in any way, but do not see your name here, please open a PR to add yourself (in alphabetical order by last name)!
 
 ## DNS SMEs
+
 - Joe Crowe
 - David Back
 - Hong Ye
 
 ## Contributors
+
 - Mike Ball
 - Tommy Barker
 - Robert Barrimond
@@ -17,11 +19,13 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Maulon Byron
 - Shirlette Chambers
 - Varsha Chandrashekar
+- Paul Cleary
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
 - Jearvon Dharrie
 - Andrew Dunn
+- Ryan Emerle
 - David Grizzanti
 - Alejandro Guirao
 - Daniel Jin
@@ -29,6 +33,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Krista Khare
 - Patrick Lee
 - Sheree Liu
+- Michael Ly
 - Deepak Mohanakrishnan
 - Jon Moore
 - Palash Nigam
@@ -40,6 +45,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Timo Schmid
 - Trent Schmidt
 - Ghafar Shah
+- Rebecca Star
 - Jess Stodola
 - Juan Valencia
 - Anastasia Vishnyakova
@@ -47,3 +53,4 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Fei Wan
 - Andrew Wang
 - Peter Willis
+- Britney Wright

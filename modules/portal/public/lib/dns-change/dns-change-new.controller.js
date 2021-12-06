@@ -56,7 +56,6 @@
             };
 
             $scope.confirmSubmit = function(form) {
-                console.log(form.$error)
                 if(form.$invalid){
                     form.$setSubmitted();
                     $scope.formStatus = "pendingSubmit";
@@ -93,7 +92,6 @@
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
                             var recordDataEmpty = true;
                             for (var attr in entry.record) {
-                                console.log(entry.record[attr])
                                 if (entry.record[attr] != undefined && entry.record[attr].toString().length > 0) {
                                     recordDataEmpty = false
                                 }

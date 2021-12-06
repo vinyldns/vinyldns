@@ -1,0 +1,10 @@
+$ttl 38400
+1.10.in-addr.arpa.	IN	SOA	172.17.42.1. admin.vinyldns.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+1.10.in-addr.arpa.	IN	NS	172.17.42.1.
+24.0			IN	PTR	www.vinyl.
+25.0			IN	PTR	mail.vinyl.

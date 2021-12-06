@@ -1,11 +1,10 @@
-# Much copied from sbt-github-actions, modified to support running e2e tests
 name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['*']
+    branches: [ '*' ]
   push:
-    branches: ['master']
+    branches: [ 'master','main' ]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -13,131 +12,20 @@ env:
 jobs:
   build:
     name: Build and Test
+    runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'ci skip')"
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.12.10]
-        java: [adopt@1.11]
-    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v10
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-        with:
-          java-version: ${{ matrix.java }}
-
-      - name: Cache ivy2
-        uses: actions/cache@v1
-        with:
-          path: ~/.ivy2/cache
-          key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (generic)
-        uses: actions/cache@v1
-        with:
-          path: ~/.coursier/cache/v1
-          key: ${{ runner.os }}-generic-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (linux)
-        if: contains(runner.os, 'linux')
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (macOS)
-        if: contains(runner.os, 'macos')
-        uses: actions/cache@v1
-        with:
-          path: ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (windows)
-        if: contains(runner.os, 'windows')
-        uses: actions/cache@v1
-        with:
-          path: ~/AppData/Local/Coursier/Cache/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache sbt
-        uses: actions/cache@v1
-        with:
-          path: ~/.sbt
-          key: ${{ runner.os }}-sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - run: sbt ++${{ matrix.scala }} validate verify
+      - name: Build and Test
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
+        shell: bash
 
       - name: Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
         with:
-          fail_ci_if_error: true # optional (default = false)
-
-  func:
-    name: Func Test
-    if: "!contains(github.event.head_commit.message, 'ci skip')"
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.12.10]
-        java: [adopt@1.11]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout current branch (full)
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v10
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-        with:
-          java-version: ${{ matrix.java }}
-
-      - name: Cache ivy2
-        uses: actions/cache@v1
-        with:
-          path: ~/.ivy2/cache
-          key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (generic)
-        uses: actions/cache@v1
-        with:
-          path: ~/.coursier/cache/v1
-          key: ${{ runner.os }}-generic-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (linux)
-        if: contains(runner.os, 'linux')
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (macOS)
-        if: contains(runner.os, 'macos')
-        uses: actions/cache@v1
-        with:
-          path: ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache coursier (windows)
-        if: contains(runner.os, 'windows')
-        uses: actions/cache@v1
-        with:
-          path: ~/AppData/Local/Coursier/Cache/v1
-          key: ${{ runner.os }}-sbt-coursier-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-
-      - name: Cache sbt
-        uses: actions/cache@v1
-        with:
-          path: ~/.sbt
-          key: ${{ runner.os }}-sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-      - name: Func tests
-        run: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
+          fail_ci_if_error: true

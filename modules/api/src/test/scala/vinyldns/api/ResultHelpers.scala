@@ -35,13 +35,13 @@ trait ResultHelpers {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  def await[T](f: => IO[_], duration: FiniteDuration = 1.second): T =
+  def await[T](f: => IO[_], duration: FiniteDuration = 60.seconds): T =
     awaitResultOf[T](f.map(_.asInstanceOf[T]).attempt, duration).toOption.get
 
   // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[T](
       f: => IO[Either[Throwable, T]],
-      duration: FiniteDuration = 1.second
+      duration: FiniteDuration = 60.seconds
   ): Either[Throwable, T] = {
 
     val timeOut = IO.sleep(duration) *> IO(
@@ -55,7 +55,7 @@ trait ResultHelpers {
   }
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[T](f: => IO[Either[Throwable, T]], duration: FiniteDuration = 1.second): T =
+  def rightResultOf[T](f: => IO[Either[Throwable, T]], duration: FiniteDuration = 60.seconds): T =
     awaitResultOf[T](f, duration) match {
       case Right(result) => result
       case Left(error) => throw error
@@ -64,7 +64,7 @@ trait ResultHelpers {
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
   def leftResultOf[T](
       f: => IO[Either[Throwable, T]],
-      duration: FiniteDuration = 1.second
+      duration: FiniteDuration = 60.seconds
   ): Throwable = awaitResultOf(f, duration).swap.toOption.get
 
   def leftValue[T](t: Either[Throwable, T]): Throwable = t.swap.toOption.get
