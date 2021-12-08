@@ -147,13 +147,6 @@ class SqsMessageQueueIntegrationSpec
       result shouldBe empty
     }
 
-    "succeed when attempting to remove item from empty queue" in {
-      queue
-        .remove(SqsMessage(MessageId("does-not-exist"), rsAddChange))
-        .attempt
-        .unsafeRunSync() should beRight(())
-    }
-
     "succeed when attempting to remove item from queue" in {
       queue.send(rsAddChange).unsafeRunSync()
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()

@@ -1,0 +1,9 @@
+$ttl 38400
+$ORIGIN child.parent.com3.
+@	IN	SOA	ns1.parent.com3. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+@                IN  NS  ns1.parent.com3.

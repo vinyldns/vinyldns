@@ -1,0 +1,10 @@
+$TTL 1h
+$ORIGIN example.com2.
+@	IN	SOA	ns1.parent.com2. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+example.com2.      IN   NS  172.17.42.1.
+dskey             IN   NS  172.17.42.1.
