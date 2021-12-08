@@ -41,7 +41,7 @@ accessLevel   | string      | Access level of the user requesting the zone. Curr
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
-```
+```json
 {
   "status": "Active",
   "updated": "2016-12-16T15:27:28Z",
@@ -122,7 +122,7 @@ The priority of ACL Rules in descending precedence: <br>
 For conflicting rules, the rule that is more specific will take precedence. For example, if the account *jdoe201* was given Read access to all records in a zone
 through the rule:
 
-```
+```json
 {
   "userId": "<uuid>",
   "accessLevel": "Read",
@@ -131,7 +131,7 @@ through the rule:
 
 and then Write access to only A records through the rule:
 
-```
+```json
 {
   "userId": "<uuid>",
   "accessLevel": "Write",
@@ -141,7 +141,7 @@ and then Write access to only A records through the rule:
 
 and then Delete access to only A records that matched the expression \*dev\* through the rule:
 
-```
+```json
 {
   "userId": "<uuid>",
   "accessLevel": "Delete",
@@ -154,10 +154,10 @@ then the rule with the recordMask will take precedence and give Delete access to
 take precedence and give Write access to all other A records, and the more broad rule will give Read access to all other record types in the zone
 
 #### ZONE ACL RULE EXAMPLES <a id="zone-acl-rule-example"></a>
-**Grant read/write/delete access to www.* records of type A, AAAA, CNAME to one user**
-Under this rule, the user specified will be able to view, create, edit, and delete records in the zone that match the expression `www.*` and are of type A, AAAA, or CNAME.
+**Grant read/write/delete access to www.* records of type `A`, `AAAA`, `CNAME` to one user**
+Under this rule, the user specified will be able to view, create, edit, and delete records in the zone that match the expression `www.*` and are of type `A`, `AAAA`, or `CNAME`.
 
-```
+```json
 {
   "recordMask": "www.*",
   "accessLevel": "Delete",
@@ -166,18 +166,18 @@ Under this rule, the user specified will be able to view, create, edit, and dele
 }
 ```
 
-**Grant read only access to all VinylDNS users to A, AAAA, CNAME records**
+**Grant read only access to all VinylDNS users to `A`, `AAAA`, `CNAME` records**
 
-```
+```json
 {
   "accessLevel": "Read",
   "recordTypes": ["A", "AAAA", "CNAME"]
 }
 ```
 
-**Grant read/write/delete access to records of type A, AAAA, CNAME to one group***
+**Grant read/write/delete access to records of type `A`, `AAAA`, `CNAME` to one group***
 
-```
+```json
 {
   "accessLevel": "Delete",
   "groupId": "<uuid>",
@@ -187,48 +187,48 @@ Under this rule, the user specified will be able to view, create, edit, and dele
 
 ### PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a>
 ACL rules can be applied to specific record types and can include record masks to further narrow down which records they
-apply to. These record masks apply to record names, but because PTR record names are part their reverse zone ip, the use of regular
+apply to. These record masks apply to record names, but because `PTR` record names are part their reverse zone ip, the use of regular
 expressions for record masks are not supported.
 <br><br>
-Instead PTR record masks must be CIDR rules, which will denote a range of IP addresses that the rule will apply to.
+Instead `PTR` record masks must be CIDR rules, which will denote a range of IP addresses that the rule will apply to.
 While more information and useful CIDR rule utility tools can be found online, CIDR rules describe how many bits of an ip address' binary representation
 must be the same for a match.
 
 ### PTR ACL RULES WITH CIDR MASKS EXAMPLE <a id="ptr-acl-rule-example"></a>
 The ACL Rule
 
-```
+```json
 {
-    recordTypes: ["PTR"],
-    accessLevel: "Read"
+    "recordTypes": ["PTR"],
+    "accessLevel": "Read"
 }
 ```
 
-Will give Read permissions to PTR Record Sets to all users in VinylDNS
+Will give Read permissions to `PTR` Record Sets to all users in VinylDNS
 <br><br>
 The **IPv4** ACL Rule
 
-```
+```json
 {
-    recordTypes: ["PTR"],
-    accessLevel: "Read",
-    recordMask: "100.100.100.100/16"
+    "recordTypes": ["PTR"],
+    "accessLevel": "Read",
+    "recordMask": "100.100.100.100/16"
 }
 ```
 
-Will give Read permissions to PTR Record Sets 100.100.000.000 to 100.100.255.255, as 16 bits is half of an IPv4 address
+Will give Read permissions to `PTR` Record Sets 100.100.000.000 to 100.100.255.255, as 16 bits is half of an IPv4 address
 <br><br>
 The **IPv6** ACL Rule
 
-```
+```json
 {
-    recordTypes: ["PTR"],
-    accessLevel: "Read",
-    recordMask: "1000:1000:1000:1000:1000:1000:1000:1000/64"
+    "recordTypes": ["PTR"],
+    "accessLevel": "Read",
+    "recordMask": "1000:1000:1000:1000:1000:1000:1000:1000/64"
 }
 ```
 
-Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
+Will give Read permissions to `PTR` Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
 
 #### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
 In order for VinylDNS to make updates in DNS, it needs key information for every zone. There are 3 ways to specify that key information; ask your VinylDNS admin which is appropriate for your zone based on the configuration of the service:
@@ -250,7 +250,7 @@ key           | string      | The TSIG secret key used to sign requests when com
 
 #### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
 
-```
+```json
 {
   "primaryServer": "127.0.0.1:5301",
   "keyName": "vinyl.",

@@ -40,7 +40,7 @@ status        | string        | The status of the zone change |
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "status": "Pending",
   "zone": {

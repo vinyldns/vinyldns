@@ -73,7 +73,7 @@ class ZoneConnectionValidatorSpec
         List(new Regex("some.test.ns.")),
         10000
       ) {
-    override val opTimeout: FiniteDuration = 10.milliseconds
+    override val opTimeout: FiniteDuration = 60.seconds
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
     override def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
       Right(())

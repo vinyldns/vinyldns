@@ -42,7 +42,7 @@ ownerGroupName   | string        | Name of assigned owner group, if found |
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "type": "A",
   "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",

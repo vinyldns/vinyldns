@@ -21,7 +21,7 @@ VinylDNS helps secure DNS management via:
 * Recording every change made to DNS records and zones
 
 Integration is simple with first-class language support including:
-* java
-* ruby
-* python
-* go-lang
+* Java
+* JavaScript
+* Python
+* Go

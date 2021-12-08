@@ -1,0 +1,17 @@
+**/.venv*
+**/.virtualenv
+**/target
+**/docs
+**/out
+**/.log
+**/.idea/
+**/.bsp
+**/*cache*
+**/.git
+**/Dockerfile
+**/*.dockerignore
+**/.github
+**/_template
+img/
+**/.env
+modules/portal/node_modules/

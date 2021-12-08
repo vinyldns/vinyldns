@@ -20,7 +20,7 @@ Batch change is an alternative to submitting individual [RecordSet](recordset-mo
 
 -   The ability to accept multiple changes in a single API call.
 -   The ability to include records of multiple record types across multiple zones.
--   Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
+-   Input names are entered as fully-qualified domain names (or IP addresses for `PTR` records), so users don't have to think in record/zone context.
 -   All record validations are processed simultaneously. [Fatal errors](batchchange-errors.html#fatal-errors) for any
 change in the batch will result in a **400** response and none will be applied.
 -   Support for [manual review](../operator/config-api.html#additional-configuration-settings) if enabled in your VinylDNS instance.
@@ -35,7 +35,7 @@ A batch change consists of multiple single changes which can be a combination of
 To update an existing record, you must delete the record first and add the record again with the updated changes.
 
 Batch changes are also susceptible to the following restrictions:
--   Current supported record types for batch change are: **A**, **AAAA**, **CNAME**, and **PTR**.
+-   Current supported record types for batch change are: `A`, `AAAA`, `CNAME`, and `PTR`.
 -   Batch change requests must contain at least one change.
 -   The maximum number of single changes within a batch change depends on the instance of VinylDNS. Contact your VinylDNS administrators to find the batch change limit for your instance.
 -   Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** access.
@@ -74,7 +74,7 @@ name          | type          | description |
  ------------ | :------------ | :---------- |
 changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**.  [See more details](#changetype-values) about behavior of `changeType` interaction. |
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
-type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+type          | RecordType    | Type of DNS record, supported records for batch changes are currently: `A`, `AAAA`, `CNAME`, and `PTR`. |
 ttl           | long          | The time-to-live in seconds. |
 record        | [RecordData](recordset-model.html#record-data)    | The data added for this record, which varies by record type. |
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
@@ -94,7 +94,7 @@ name          | type          | description |
  ------------ | :------------ | :---------- |
 changeType    | ChangeInputType | Type of change input. Can either be an **Add** or **DeleteRecordSet**.  [See more details](#changetype-values) about behavior of `changeType` interaction. |
 inputName     | string        | The fully-qualified domain name of the record which was provided in the create batch request. |
-type          | RecordType    | Type of DNS record, supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+type          | RecordType    | Type of DNS record, supported records for batch changes are currently: `A`, `AAAA`, `CNAME`, and `PTR`. |
 record        | [RecordData](recordset-model.html#record-data)    | Optional. The data deleted for this record, which varies by record type.  If not provided, the entire DNS recordset was deleted. | 
 status        | SingleChangeStatus | Status for this change. Can be one of: **Pending**, **Complete**, **Failed**, **NeedsReview** or **Rejected**. |
 recordName    | string        | The name of the record. Record names for the apex will be match the zone name (including terminating dot). |
@@ -124,7 +124,7 @@ There are two valid `changeType`s for a `SingleChange`: **Add** and **DeleteReco
 
 Successful batch change response example with a [SingleAddChange](#singleaddchange-attributes) and a [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes). 
 
-```
+```json
 {
     "userId": "vinyl", 
     "userName": "vinyl201", 
