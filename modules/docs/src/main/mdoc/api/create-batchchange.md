@@ -8,7 +8,7 @@ section: "api"
 
 Creates a batch change with [SingleAddChanges](batchchange-model.html#singleaddchange-attributes) and/or [SingleDeleteRRSetChanges](batchchange-model.html#singledeleterrsetchange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds.
                                                                                                 
-Current supported record types for creating a batch change are: **A**, **AAAA**, **CNAME**, **MX**, **PTR**, **TXT**. A batch must contain at least one change and no more than 20 changes.
+Current supported record types for creating a batch change are: `A`, `AAAA`, `CNAME`, `MX`, `PTR`, `TXT`. A batch must contain at least one change and no more than 20 changes.
 Supported record types for records in shared zones may vary. Contact your VinylDNS administrators to find the allowed record types.
 This does not apply to zone administrators or users with specific ACL access rules.
 
@@ -33,8 +33,8 @@ allowManualReview | boolean   | no          | Optional override to control wheth
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 changeType    | ChangeInputType | yes       | Type of change input. Must be set to **Add** for *AddChangeInput*. |
-inputName     | string        | yes         | The fully qualified domain name of the record being added. For **PTR**, the input name is a valid IPv4 or IPv6 address. |
-type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+inputName     | string        | yes         | The fully qualified domain name of the record being added. For `PTR`, the input name is a valid IPv4 or IPv6 address. |
+type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: `A`, `AAAA`, `CNAME`, and `PTR`. |
 ttl           | long          | no          | The time-to-live in seconds. The minimum and maximum values are 30 and 2147483647, respectively. If excluded, this will be set to the system default for new adds, or the existing TTL for updates |
 record        | [RecordData](recordset-model.html#record-data) | yes         | The data for the record. |
 
@@ -44,12 +44,12 @@ name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecordSet** for *DeleteChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being deleted. |
-type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: `A`, `AAAA`, `CNAME`, and `PTR`. |
 record        | [RecordData](recordset-model.html#record-data) | no         | The data for the record. If specified, only this DNS entry for the existing DNS recordset will be deleted; if unspecified, the entire DNS recordset will be deleted. |
 
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
     "comments": "this is optional",
     "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
@@ -98,7 +98,7 @@ record        | [RecordData](recordset-model.html#record-data) | no         | Th
 }
 ```
 
-The first two items in the changes list are SingleAddChanges of an **A** record and a **PTR** record. Note that for the **PTR** record, the *inputName* is a valid IP address. The third item is a delete of a **CNAME** record. The last two items represent an update (delete & add) of an **AAAA** record with the fully qualified domain name "update.another.example.com.". 
+The first two items in the changes list are SingleAddChanges of an `A` record and a `PTR` record. Note that for the `PTR` record, the *inputName* is a valid IP address. The third item is a delete of a `CNAME` record. The last two items represent an update (delete & add) of an `AAAA` record with the fully qualified domain name "update.another.example.com.". 
 
 
 #### HTTP RESPONSE TYPES
@@ -121,7 +121,7 @@ On success, the response from create batch change includes the fields the user i
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "userId": "vinyl", 
     "userName": "vinyl201", 

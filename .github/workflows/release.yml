@@ -1,0 +1,52 @@
+name: VinylDNS Release
+
+on:
+  workflow_dispatch:
+    branches: [ 'master', 'main' ]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  create-gh-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build and Test
+        id: build
+        run: cd build/ && \
+          ./assemble_api.sh && \
+          ./assemble_portal.sh && \
+          ./run_all_tests.sh && \
+          cd .. && \
+          echo "::set-output name=vinyldns_version::$(awk -F'"' '{print $2}' ./version.sbt)"
+        shell: bash
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.build.outputs.vinyldns_version }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          files: artifacts/*
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Import Content Trust Key
+        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}

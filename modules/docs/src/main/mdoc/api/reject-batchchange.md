@@ -7,7 +7,7 @@ section: "api"
 # Reject Batch Change
 
 Manually rejects a batch change in pending review status given the batch change ID, resulting in immediate failure. Only
-system administrators (ie. support or super user) can manually review a batch change.
+system administrators (i.e., support or super user) can manually review a batch change.
 
 Note: If [manual review is disabled](../operator/config-api.html#manual-review) in the VinylDNS instance,
 users trying to access this endpoint will encounter a **404 Not Found** response since it will not exist. 
@@ -27,7 +27,7 @@ reviewComment | string        | no          | Optional rejection explanation. |
 
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
     "reviewComment": "Comments are optional."
 }
@@ -64,7 +64,7 @@ reviewTimestamp | date-time  | The timestamp (UTC) of when the batch change was 
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "userId": "vinyl", 
     "userName": "vinyl201", 

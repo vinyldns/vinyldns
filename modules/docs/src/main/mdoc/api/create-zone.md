@@ -18,7 +18,7 @@ if no info is provided the default VinylDNS connections will be used
 **zone fields**  - adminGroupId, name, and email are required - refer to [zone model](zone-model.html) |
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
   "adminGroupId": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae",
   "name": "dummy.",
@@ -49,7 +49,7 @@ id            | string        | The ID of the change.  This is not the ID of the
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "status": "Pending",
   "zone": {
