@@ -51,7 +51,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
               "vinyldns.",
               "vinyldns.",
               "nzisn+4G2ldMn0q1CV3vsg==",
-              "127.0.0.1:19001"
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           ),
           transferConnection =
@@ -84,7 +84,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
               "vinyldns.",
               "vinyldns.",
               "nzisn+4G2ldMn0q1CV3vsg==",
-              "127.0.0.1:19001"
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           ),
           transferConnection = Some(
@@ -92,7 +92,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
               "vinyldns.",
               "vinyldns.",
               "nzisn+4G2ldMn0q1CV3vsg==",
-              "127.0.0.1:19001"
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           )
         )
