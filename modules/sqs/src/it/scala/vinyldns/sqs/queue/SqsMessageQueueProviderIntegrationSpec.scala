@@ -36,7 +36,7 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    max-retries = 100
           |
           |    settings {
-          |      service-endpoint = "http://localhost:19007/"
+          |      service-endpoint = "http://localhost:19003/"
           |      queue-name = "queue-name"
           |    }
           |    """.stripMargin)
@@ -59,8 +59,8 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    settings {
           |      access-key = "x"
           |      secret-key = "x"
-          |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19007/"
+          |      signing-region = "us-east-1"
+          |      service-endpoint = "http://localhost:19003/"
           |      queue-name = "new-queue"
           |    }
           |    """.stripMargin)
@@ -86,8 +86,8 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    settings {
           |      access-key = "x"
           |      secret-key = "x"
-          |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19007/"
+          |      signing-region = "us-east-1"
+          |      service-endpoint = "http://localhost:19003/"
           |      queue-name = "bad*queue*name"
           |    }
           |    """.stripMargin)
@@ -108,8 +108,8 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    settings {
           |      access-key = "x"
           |      secret-key = "x"
-          |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19007/"
+          |      signing-region = "us-east-1"
+          |      service-endpoint = "http://localhost:19003/"
           |      queue-name = "queue.fifo"
           |    }
           |    """.stripMargin)
@@ -131,8 +131,8 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
           |    settings {
           |      access-key = "x"
           |      secret-key = "x"
-          |      signing-region = "x"
-          |      service-endpoint = "http://localhost:19007/"
+          |      signing-region = "us-east-1"
+          |      service-endpoint = "http://localhost:19003/"
           |      queue-name = "new-queue"
           |    }
           |    """.stripMargin)

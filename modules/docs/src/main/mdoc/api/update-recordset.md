@@ -28,7 +28,7 @@ ownerGroupId  | string        | sometimes*          | Record ownership assignmen
 *Note: If a recordset has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value
  
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
   "id": "dd9c1120-0594-4e61-982e-8ddcbc8b2d21",
   "name": "already-exists",
@@ -72,7 +72,7 @@ singleBatchChangeIds |  array of SingleBatchChange ID objects  | If the recordse
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zone": {
     "name": "vinyl.",

@@ -17,11 +17,11 @@
 package vinyldns.api.backend.dns
 
 import java.net.SocketAddress
-
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
+import org.xbill.DNS.Name
 import vinyldns.api.domain.zone.ZoneTooLargeError
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
@@ -166,7 +166,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
     lookup.setResolver(resolver)
-    lookup.setSearchPath(Array.empty[String])
+    lookup.setSearchPath(List(Name.empty).asJava)
     lookup.setCache(null)
 
     Right(new DnsQuery(lookup, zoneDnsName(zoneName)))
@@ -283,6 +283,7 @@ object DnsBackend {
     val (host, port) = parseHostAndPort(conn.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)
+    resolver.setTCP(true)
     tsig.foreach(resolver.setTSIGKey)
     resolver
   }

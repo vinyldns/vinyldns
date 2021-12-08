@@ -28,7 +28,7 @@ admins        | Array of Users | refer to [membership model](membership-model.ht
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "admins": [
     {

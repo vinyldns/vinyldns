@@ -67,7 +67,7 @@ angular.module('controller.zones', [])
     });
 
     $scope.canAccessGroup = function(groupId) {
-        return $scope.myGroupIds.indexOf(groupId) > -1;
+         return $scope.myGroupIds !== "undefined" &&  $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     $scope.canAccessZone = function(accessLevel) {

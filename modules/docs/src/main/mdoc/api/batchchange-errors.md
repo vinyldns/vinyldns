@@ -26,7 +26,7 @@ in the DNS backend.
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
 
-```
+```json
 [
    {
       "changeType": "Add",
@@ -46,7 +46,7 @@ in the DNS backend.
          "cname": "test.example.com."
       },
       "errors": [
-         "Record with name "duplicate.example.com." is not unique in the batch change. CNAME record cannot use duplicate name."
+         "Record with name \"duplicate.example.com.\" is not unique in the batch change. CNAME record cannot use duplicate name."
       ]
    },
    {
@@ -60,7 +60,7 @@ in the DNS backend.
    },
    {
       "changeType": "Add",
-      "inputName": "bad-ttl-and-invalid-name$.sample.com.”,
+      "inputName": "bad-ttl-and-invalid-name$.sample.com.",
       "type": "A",
       "ttl": 29,
       "record": {
@@ -127,14 +127,14 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Missing Owner Group Id](#MissingOwnerGroupId)
 - [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 - [High Value Domain](#HighValueDomain)
-- [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
+- [CNAME Cannot be the Same Name as Zone Name](#CnameApexError)
 
 ### Non-Fatal Errors <a id="non-fatal-errors"></a>
 #### Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:
 
-```
+```plaintext
 Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
 ```
 
@@ -143,7 +143,7 @@ Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone ex
 Given an inputName, VinylDNS will determine the record and zone name for the requested change. For most records, the record
 names are the same as the zone name (apex), or split at at the first '.', so the inputName 'rname.zone.name.com' will be split
 into record name 'rname' and zone name 'zone.name.com' (or 'rname.zone.name.com' for both the record and zone name if it's an apex record).
-For PTR records, there is logic to determine the appropriate reverse zone from the given IP address.
+For `PTR` records, there is logic to determine the appropriate reverse zone from the given IP address.
 
 If this logic cannot find a matching zone in VinylDNS, you will see this error.
 In that case, you need to connect to the zone in VinylDNS.
@@ -155,7 +155,7 @@ this error could indicate that a zone needs to be created outside of VinylDNS an
 
 ##### Error Message:
 
-```
+```plaintext
 Record set with name <input> requires manual review.
 ```
 
@@ -168,7 +168,7 @@ Based on a [configurable list](../operator/config-api.html#manual-review-domains
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid domain name: "<input>", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminate with a dot.
 ```
 
@@ -180,7 +180,7 @@ They must also be absolute, which means they end with a dot.
 
 Syntax:
 
-```
+```bnf
 <domain> ::= <subdomain> | " "
 
 <subdomain> ::= <label> | <subdomain> "." <label>
@@ -208,7 +208,7 @@ More info can be found at:
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid length: "<input>", length needs to be between <minLengthInclusive> and <maxLengthInclusive> characters.
 ```
 
@@ -221,7 +221,7 @@ The length of the input did not fit in the range in \[minLengthInclusive, maxLen
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid record type: "<input>", valid record types include <valid record types>.
 ```
 
@@ -234,7 +234,7 @@ The record type input must match one of the valid record types. Not all DNS reco
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid IPv4 address: "<input>"
 ```
 
@@ -255,7 +255,7 @@ Examples:
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid IPv6 address: "<input>".
 ```
 
@@ -277,7 +277,7 @@ Examples:
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid IP address: "<input>".
 ```
 
@@ -290,7 +290,7 @@ The IP address input is not a valid IPv4 or IPv6 address.
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid TTL: "<input>", must be a number between 30 and 2147483647.
 ```
 
@@ -303,7 +303,7 @@ Time-to-live must be a number in the range \[30, 2147483647].
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid Batch Record Type: "<input>", valid record types for batch changes include <valid record types>.
 ```
 
@@ -316,7 +316,7 @@ The DNS record type is not currently supported for batch changes.
 
 ##### Error Message:
 
-```
+```plaintext
 Record "<input>" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.
 ```
 
@@ -330,7 +330,7 @@ A record with the given name already exists, and cannot be duplicated for the gi
 
 ##### Error Message:
 
-```
+```plaintext
 Record "<input>" Does Not Exist: cannot delete a record that does not exist.
 ```
 
@@ -344,20 +344,20 @@ If the record exists in DNS, then you should [sync the zone](sync-zone.html) for
 
 ##### Error Message:
 
-```
+```plaintext
 CNAME conflict: CNAME record names must be unique. Existing record with name "<name>" and type "<type>" conflicts with this record.
 ```
 
 ##### Details:
 
-A CNAME record with the given name already exists. CNAME records must have unique names.
+A `CNAME` record with the given name already exists. `CNAME` records must have unique names.
 
 
 #### User Is Not Authorized <a id="UserIsNotAuthorized"></a>
 
 ##### Error Message:
 
-```
+```plaintext
 User "<user>" is not authorized.
 ```
 
@@ -370,7 +370,7 @@ User must either be in the admin group for the zone being changed, or have an AC
 
 ##### Error Message:
 
-```
+```plaintext
 Record "<name>" Name Not Unique In Batch Change: cannot have multiple "<type>" records with the same name.
 ```
 
@@ -384,7 +384,7 @@ illegally input two or more records with the same name and one of these types.
 
 ##### Error Message:
 
-```
+```plaintext
 Invalid Record Type In Reverse Zone: record with name "<name>" and type "<type>" is not allowed in a reverse zone.
 ```
 
@@ -397,7 +397,7 @@ Not all record types are allowed in a DNS reverse zone. The given type is not su
 
 ##### Error Message:
 
-```
+```plaintext
 Zone "<zone name>" is a shared zone, so owner group ID must be specified for record "<record name>".
 ```
 
@@ -410,7 +410,7 @@ You are trying to create a new record or update an existing unowned record in a 
 
 ##### Error Message:
 
-```
+```plaintext
 User "<user name>" must be a member of group "<group ID>" to apply this group to batch changes.
 ```
 
@@ -424,7 +424,7 @@ You must be a member of the group you are assigning for record ownership in the 
 
 ##### Error Message:
 
-```
+```plaintext
 Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
 ```
 
@@ -439,13 +439,13 @@ You should reach out to your VinylDNS administrators for more information.
 
 ##### Error Message:
 
-```
+```plaintext
 CNAME cannot be the same name as zone "<zone_name>".
 ```
 
 ##### Details:
 
-CNAME records cannot be `@` or the same name as the zone.
+`CNAME` records cannot be `@` or the same name as the zone.
 
 
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
@@ -468,7 +468,7 @@ There are a series of different error messages that can be returned with this er
 
 ##### EXAMPLE ERROR MESSAGES:
 
-```
+```plaintext
 Batch change contained no changes. Batch change must have at least one change, up to a maximum of <limit> changes.
 
 Cannot request more than <limit> changes in a single batch change request
@@ -488,7 +488,7 @@ Code          | description |
 
 ##### ERROR MESSAGE:
 
-```
+```plaintext
 Batch change with id <id> cannot be found
 ```
 
@@ -505,7 +505,7 @@ If there are issues with the JSON provided in a batch change request, errors wil
 
 ##### EXAMPLE ERROR MESSAGES:
 
-```
+```json
 {
    "errors": [
       "Missing BatchChangeInput.changes"
@@ -522,7 +522,7 @@ If there are issues with the JSON provided in a batch change request, errors wil
 
 {
    "errors": [
-      “Invalid RecordType”
+      "Invalid RecordType""
    ]
 }
 ```

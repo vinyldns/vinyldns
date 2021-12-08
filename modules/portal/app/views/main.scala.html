@@ -4,7 +4,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-            <!-- META SECTION -->
+        <!-- META SECTION -->
         <title>@pageHeader | VinylDNS</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -12,16 +12,14 @@
         <meta name="google" content="notranslate" />
         <meta id="csrf" content="@CSRF.getToken.value" />
         <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon" />
-            <!-- END META SECTION -->
+        <!-- END META SECTION -->
 
-            <!-- CSS INCLUDE -->
-        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/vendors/bootstrap/dist/css/bootstrap.min.css"/>
-        <link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/font-awesome/css/font-awesome.css">
-        <link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/animate.css/animate.css">
-        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/build/css/custom.css"/>
+        <!-- CSS INCLUDE -->
+        <link rel="stylesheet" type="text/css" id="theme" href="/public/css/bootstrap.min.css"/>
+        <link rel="stylesheet" type="text/css" href="/public/css/font-awesome.min.css">
+        <link rel="stylesheet" type="text/css" href="/public/css/ui.css" />
         <link rel="stylesheet" type="text/css" id="custom" href="/public/css/theme-overrides.css"/>
         <link rel="stylesheet" type="text/css" id="custom" href="/public/css/vinyldns.css"/>
-        <link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/bootstrap-daterangepicker/daterangepicker.css" />
         <!-- EOF CSS INCLUDE -->
     </head>
 
@@ -97,8 +95,7 @@
                 @header(rootAccountName)(request)
                 @pageContent
 
-                <footer/><p class="main-footer-text text-right">VinylDNS (version @{meta.version})</p></footer>
-
+                <footer><p class="main-footer-text text-right">VinylDNS (version @{meta.version})</p></footer>
             </div>
             <!-- END PAGE CONTAINER -->
 
@@ -142,65 +139,22 @@
                     </div>
                     <div class="modal-footer">
                         <span class="text-danger">Are you sure you want to regenerate your credentials?&nbsp;</span>
-                        <button class="btn btn-danger pull-right" ng-click="regenerateCredentials()">Yes</a>
+                        <button class="btn btn-danger pull-right" ng-click="regenerateCredentials()">Yes</button>
                         <button class="btn btn-primary" data-dismiss="modal">No</button>
                     </div>
                 </div>
             </div>
         </div>
-        </div>
 
-        <!-- CREDS BOX -->
 
-            <!-- START SCRIPTS -->
-            <!-- START INJECTED DEPENDENCIES -->
-            <!-- injector:js -->
-            <script src="/public/javascripts/moment.min.js"></script>
-            <script src="/public/gentelella/vendors/jquery/dist/jquery.min.js"></script>
-            <script src="/public/gentelella/vendors/bootstrap/dist/js/bootstrap.min.js"></script>
-            <script src="/public/gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
-            <script src="/public/javascripts/angular.min.js"></script>
-            <script src="/public/lib/dns-change/dns-change.module.js"></script>
-            <script src="/public/lib/recordset/recordset.module.js"></script>
-            <script src="/public/lib/controllers/controller.groups.js"></script>
-            <script src="/public/lib/controllers/controller.manageZones.js"></script>
-            <script src="/public/lib/controllers/controller.membership.js"></script>
-            <script src="/public/lib/controllers/controller.records.js"></script>
-            <script src="/public/lib/controllers/controller.zones.js"></script>
-            <script src="/public/lib/controllers/controllers.js"></script>
-            <script src="/public/lib/directives/directives.js"></script>
-            <script src="/public/lib/directives/directives.modals.body.js"></script>
-            <script src="/public/lib/directives/directives.modals.element.js"></script>
-            <script src="/public/lib/directives/directives.modals.footer.js"></script>
-            <script src="/public/lib/directives/directives.modals.invalid.js"></script>
-            <script src="/public/lib/directives/directives.modals.js"></script>
-            <script src="/public/lib/directives/directives.modals.modal.js"></script>
-            <script src="/public/lib/directives/directives.modals.record.js"></script>
-            <script src="/public/lib/directives/directives.modals.zoneconnection.js"></script>
-            <script src="/public/lib/directives/directives.notices.js"></script>
-            <script src="/public/lib/directives/directives.notifications.js"></script>
-            <script src="/public/lib/directives/directives.validations.js"></script>
-            <script src="/public/lib/directives/directives.validations.zones.js"></script>
-            <script src="/public/lib/dns-change/dns-change-detail.controller.js"></script>
-            <script src="/public/lib/dns-change/dns-change-new.controller.js"></script>
-            <script src="/public/lib/dns-change/dns-change.directive.js"></script>
-            <script src="/public/lib/dns-change/dns-change.service.js"></script>
-            <script src="/public/lib/dns-change/dns-changes.controller.js"></script>
-            <script src="/public/lib/oidc-finish.js"></script>
-            <script src="/public/lib/recordset/recordset-detail.controller.js"></script>
-            <script src="/public/lib/recordset/recordsets.controller.js"></script>
-            <script src="/public/lib/services/groups/service.groups.js"></script>
-            <script src="/public/lib/services/paging/service.paging.js"></script>
-            <script src="/public/lib/services/profile/service.profile.js"></script>
-            <script src="/public/lib/services/records/service.records.js"></script>
-            <script src="/public/lib/services/services.js"></script>
-            <script src="/public/lib/services/utility/service.utility.js"></script>
-            <script src="/public/lib/services/zones/service.zones.js"></script>
-            <script src="/public/app.js"></script>
-            <script src="/public/gentelella/build/js/custom.js"></script>
-            <script src="/public/js/custom.js"></script>
-            <!-- endinjector -->
-            <!-- END INJECTED DEPENDENCIES -->
+        <script src="/public/js/moment.min.js"></script>
+        <script src="/public/js/jquery.min.js"></script>
+        <script src="/public/js/bootstrap.min.js"></script>
+        <script src="/public/js/angular.min.js"></script>
+        <script src="/public/js/ui.js"></script>
+        <script src="/public/js/vinyldns.js"></script>
+        <script src="/public/app.js"></script>
+        <script src="/public/js/custom.js"></script>
 
         @pagePlugins
 

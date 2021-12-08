@@ -314,7 +314,7 @@ class CommandHandlerSpec
 
       // verify our interactions
       verify(mq, atLeastOnce()).receive(count)
-      verify(mockRecordChangeProcessor)
+      verify(mockRecordChangeProcessor, atLeastOnce())
         .apply(any[DnsBackend], mockito.Matchers.eq(pendingCreateAAAA))
       verify(mq).remove(cmd)
     }

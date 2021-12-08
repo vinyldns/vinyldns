@@ -37,7 +37,6 @@
                 function success(response) {
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
-                    console.log($scope.records);
                 }
 
                 return recordsService
@@ -57,7 +56,6 @@
                 });
 
             function handleError(error, type) {
-                console.log(error);
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);
                 $scope.processing = false;

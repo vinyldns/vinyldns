@@ -1,0 +1,15 @@
+$ttl 38400
+dummy{partition}.	IN	SOA	172.17.42.1. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+dummy{partition}.           IN  NS  172.17.42.1.
+jenkins          IN  A   10.1.1.1
+foo              IN  A   2.2.2.2
+test             IN  A   3.3.3.3
+test             IN  A   4.4.4.4
+@                IN  A   5.5.5.5
+already-exists   IN  A   6.6.6.6
+non-approved-delegation IN NS 7.7.7.7

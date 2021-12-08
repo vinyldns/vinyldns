@@ -27,7 +27,7 @@ admins        | Array of User ID objects    | yes         | Set of User IDs that
 
 #### EXAMPLE HTTP REQUEST
 
-```
+```json
 {
   "id": "6f8afcda-7529-4cad-9f2d-76903f4b1aca",
   "name": "some-group",
@@ -76,7 +76,7 @@ admins        | Array of User Id objects        | Ids of admins of the group |
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "id": "6f8afcda-7529-4cad-9f2d-76903f4b1aca",
   "name": "some-group",
