@@ -172,7 +172,7 @@ class DnsConversionsSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(SSHFPData(1, 2, "fingerprint"))
+    List(SSHFPData(2, 1, "123456789ABCDEF67890123456789ABCDEF67890"))
   )
   private val testTXT = RecordSet(
     testZone.id,
@@ -288,7 +288,7 @@ class DnsConversionsSpec
 
   override protected def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
-    doReturn(new Array[DNS.Record](0)).when(mockMessage).getSectionArray(DNS.Section.ADDITIONAL)
+    doReturn(new java.util.ArrayList[DNS.Record]()).when(mockMessage).getSection(DNS.Section.ADDITIONAL)
   }
 
   "Collapsing multiple records to record sets" should {
@@ -572,47 +572,47 @@ class DnsConversionsSpec
   "Converting to an update message" should {
     "work for an Add message" in {
       val dnsMessage = toAddRecordMessage(rrset(testDnsA), testZoneName).right.value
-      val dnsRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val dnsRecord = dnsMessage.getSection(DNS.Section.UPDATE).asScala.head
       dnsRecord.getName.toString shouldBe "a-record."
       dnsRecord.getTTL shouldBe testA.ttl
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
     }
     "work for an Update message" in {
       val dnsMessage =
         toUpdateRecordMessage(rrset(testDnsA), rrset(testDnsAReplace), testZoneName).right.value
       // Update record issues a replace, the first section is an EmptyRecord containing the name and type to replace
-      val emptyRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val emptyRecord = dnsMessage.getSection(DNS.Section.UPDATE).asScala.head
       emptyRecord.getName.toString shouldBe "a-record-2."
       emptyRecord.getType shouldBe DNS.Type.A
       emptyRecord.getDClass shouldBe DNS.DClass.ANY
 
       // The second section in the replace is the data that is being passed in, this is different than an add
-      val dnsRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(1)
+      val dnsRecord = dnsMessage.getSection(DNS.Section.UPDATE).asScala(1)
       dnsRecord.getName.toString shouldBe "a-record."
       dnsRecord.getTTL shouldBe testA.ttl
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord shouldBe a[DNS.ARecord]
       dnsRecord.asInstanceOf[DNS.ARecord].getAddress.getHostAddress shouldBe "10.1.1.1"
 
-      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
     }
     "work for a Delete message" in {
       val dnsMessage = toDeleteRecordMessage(rrset(testDnsA), testZoneName).right.value
 
-      val dnsRecord = dnsMessage.getSectionArray(DNS.Section.UPDATE)(0)
+      val dnsRecord = dnsMessage.getSection(DNS.Section.UPDATE).asScala.head
       dnsRecord.getName.toString shouldBe "a-record."
       dnsRecord.getType shouldBe DNS.Type.A
       dnsRecord.getTTL shouldBe 0
       dnsRecord.getDClass shouldBe DNS.DClass.ANY
       dnsRecord should not be a[DNS.ARecord]
 
-      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE)(0)
+      val zoneRRset = dnsMessage.getSectionRRsets(DNS.Section.ZONE).asScala.head
       zoneRRset.getName.toString shouldBe "vinyldns."
     }
   }

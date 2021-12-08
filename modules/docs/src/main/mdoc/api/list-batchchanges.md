@@ -60,7 +60,7 @@ approvalStatus | BatchChangeApprovalStatus      | Whether the batch change is cu
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "batchChanges": [
         {

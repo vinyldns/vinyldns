@@ -22,41 +22,47 @@ import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 object MySqlConnector {
 
   private val logger = LoggerFactory.getLogger("MySqlConnector")
 
-  def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] = {
-    val migrationConnectionSettings = MySqlDataSourceSettings(
-      "flywayConnectionPool",
-      config.driver,
-      config.migrationUrl,
-      config.user,
-      config.password,
-      minimumIdle = Some(3)
-    )
+  def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] =
+    // We can skip migrations for h2, we'll use the test/ddl.sql for initializing
+    // that for testing
+    if (config.driver.contains("h2")) IO.unit
+    else {
+      val migrationConnectionSettings = MySqlDataSourceSettings(
+        "flywayConnectionPool",
+        config.driver,
+        config.migrationUrl,
+        config.user,
+        config.password,
+        minimumIdle = Some(3)
+      )
 
-    getDataSource(migrationConnectionSettings).map { migrationDataSource =>
-      logger.info("Running migrations to ready the databases")
+      getDataSource(migrationConnectionSettings).map { migrationDataSource =>
+        logger.info("Running migrations to ready the databases")
 
-      val migration = new Flyway()
-      migration.setDataSource(migrationDataSource)
-      // flyway changed the default schema table name in v5.0.0
-      // this allows to revert to an old naming convention if needed
-      config.migrationSchemaTable.foreach { tableName =>
-        migration.setTable(tableName)
+        val placeholders = Map("dbName" -> config.name)
+        val migration = Flyway
+          .configure()
+          .dataSource(migrationDataSource)
+          .placeholders(placeholders.asJava)
+          .schemas(config.name)
+
+        // flyway changed the default schema table name in v5.0.0
+        // this allows to revert to an old naming convention if needed
+        config.migrationSchemaTable.foreach { tableName =>
+          migration.table(tableName)
+        }
+
+        // Runs flyway migrations
+        migration.load().migrate()
+        logger.info("migrations complete")
       }
-
-      val placeholders = Map("dbName" -> config.name)
-      migration.setPlaceholders(placeholders.asJava)
-      migration.setSchemas(config.name)
-
-      // Runs flyway migrations
-      migration.migrate()
-      logger.info("migrations complete")
     }
-  }
 
   def getDataSource(settings: MySqlDataSourceSettings): IO[HikariDataSource] = IO {
 
@@ -81,6 +87,20 @@ object MySqlConnector {
       case (k, v) => dsConfig.addDataSourceProperty(k, v)
     }
 
-    new HikariDataSource(dsConfig)
+    def retry[T](times: Int, delayMs: Int)(op: => T) =
+      Iterator
+        .range(0, times)
+        .map(_ => Try(op))
+        .flatMap {
+          case Success(t) => Some(t)
+          case Failure(_) =>
+            logger.warn("failed to startup database connection, retrying..")
+            Thread.sleep(delayMs)
+            None
+        }
+        .toSeq
+        .head
+
+    retry(60, 1000) { new HikariDataSource(dsConfig) }
   }
 }

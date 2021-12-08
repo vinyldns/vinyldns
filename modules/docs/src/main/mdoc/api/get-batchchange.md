@@ -50,7 +50,7 @@ cancelledTimestamp | date-time | Optional timestamp (UTC) if the batch change wa
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "userId": "vinyl", 
     "userName": "vinyl201", 

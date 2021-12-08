@@ -1,0 +1,38 @@
+$ttl 38400
+list-records4.	IN	SOA	172.17.42.1. admin.test.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+list-records4.              IN  NS  172.17.42.1.
+00-test-list-recordsets-0-A    IN  A   10.1.1.1
+00-test-list-recordsets-0-A    IN  A   10.2.2.2
+00-test-list-recordsets-0-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-1-A    IN  A   10.1.1.1
+00-test-list-recordsets-1-A    IN  A   10.2.2.2
+00-test-list-recordsets-1-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-2-A    IN  A   10.1.1.1
+00-test-list-recordsets-2-A    IN  A   10.2.2.2
+00-test-list-recordsets-2-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-3-A    IN  A   10.1.1.1
+00-test-list-recordsets-3-A    IN  A   10.2.2.2
+00-test-list-recordsets-3-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-4-A    IN  A   10.1.1.1
+00-test-list-recordsets-4-A    IN  A   10.2.2.2
+00-test-list-recordsets-4-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-5-A    IN  A   10.1.1.1
+00-test-list-recordsets-5-A    IN  A   10.2.2.2
+00-test-list-recordsets-5-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-6-A    IN  A   10.1.1.1
+00-test-list-recordsets-6-A    IN  A   10.2.2.2
+00-test-list-recordsets-6-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-7-A    IN  A   10.1.1.1
+00-test-list-recordsets-7-A    IN  A   10.2.2.2
+00-test-list-recordsets-7-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-8-A    IN  A   10.1.1.1
+00-test-list-recordsets-8-A    IN  A   10.2.2.2
+00-test-list-recordsets-8-CNAME    IN  CNAME   cname1.
+00-test-list-recordsets-9-A    IN  A   10.1.1.1
+00-test-list-recordsets-9-A    IN  A   10.2.2.2
+00-test-list-recordsets-9-CNAME    IN  CNAME   cname1.

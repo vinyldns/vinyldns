@@ -303,7 +303,7 @@ vinyldns {
     name = "vinyldns."
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
-    primaryServer = "vinyldns-bind9"
+    primaryServer = "localhost:19001"
     algorithm = "HMAC-MD5"
   }
 }
@@ -609,7 +609,7 @@ vinyldns {
     name = "vinyldns."
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
-    primaryServer = "vinyldns-bind9"
+    primaryServer = "localhost:19001"
     algorithm = "HMAC-MD5"
   }
 
@@ -618,7 +618,7 @@ vinyldns {
     name = "vinyldns."
     keyName = "vinyldns."
     key = "nzisn+4G2ldMn0q1CV3vsg=="
-    primaryServer = "vinyldns-bind9"
+    primaryServer = "localhost:19001"
     algorithm = "HMAC-MD5"
   }
 

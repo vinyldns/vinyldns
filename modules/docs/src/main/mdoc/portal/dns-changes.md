@@ -8,7 +8,7 @@ section: "portal_menu"
 DNS Changes is an alternative to submitting individual RecordSet changes and provides the following:
 
 * The ability to include records of multiple record types across multiple zones.
-* Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
+* Input names are entered as fully-qualified domain names (or IP addresses for `PTR` records), so users don't have to think in record/zone context.
 
 **Note**: DNS Change is portal-only terminology. The API equivalent is [batch change](../api/batchchange-model.html).
 
@@ -17,8 +17,8 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 * <span class="important">**NEW**</span> **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.
 
 #### Supported record types
-* Current supported record types for DNS change are: **A**, **AAAA**, **CNAME**, **PTR**, **TXT**, and **MX**.
-* Additionally, there are **A+PTR** and **AAAA+PTR** types that will be processed as separate A (or AAAA) and PTR changes in the VinylDNS backend. Deletes for **A+PTR** and **AAAA+PTR** require Input Name and Record Data.
+* Current supported record types for DNS change are: `A`, `AAAA`, `CNAME`, `PTR`, `TXT`, and `MX`.
+* Additionally, there are `A+PTR` and `AAAA+PTR` types that will be processed as separate `A` (or `AAAA`) and `PTR` changes in the VinylDNS backend. Deletes for `A+PTR` and `AAAA+PTR` require Input Name and Record Data.
 * Supported record types for records in shared zones may vary.
 Contact your VinylDNS administrators to find the allowed record types.
 This does not apply to zone administrators or users with specific ACL access rules.
