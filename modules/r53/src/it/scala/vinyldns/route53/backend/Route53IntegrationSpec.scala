@@ -52,7 +52,7 @@ class Route53IntegrationSpec
           "test",
           Option("access"),
           Option("secret"),
-          "http://127.0.0.1:19009",
+          "http://127.0.0.1:19003",
           "us-east-1"
         )
       )

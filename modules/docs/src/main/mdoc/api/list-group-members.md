@@ -38,7 +38,7 @@ maxItems      | integer       | maxItems sent in request, default is 100 |
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "members": [
     {

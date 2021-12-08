@@ -5,11 +5,7 @@ section: "operator_menu"
 ---
 
 # Setup MySQL
-Our instance of VinylDNS currently stores some tables in MySQL, though all tables and a queue implementation are available in MySQL. Note
-that the `batch_change` and `zone` tables are _only_ available in MySQL. 
-
-The motivation to split databases was due to the query limitations available in AWS DynamoDB.  Currently, the following tables are present in
-our instance:
+Our instance of VinylDNS currently stores data in MySQL.
 
 * `zone` - holds zones
 * `zone_access` - holds user or group identifiers that have access to zones
