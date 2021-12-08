@@ -45,7 +45,7 @@ nameSort            | string  | name sort order sent in request
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "recordSets": [
     {

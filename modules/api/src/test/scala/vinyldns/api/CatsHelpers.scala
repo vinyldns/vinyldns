@@ -32,7 +32,7 @@ trait CatsHelpers {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  def await[E, T](f: => IO[T], duration: FiniteDuration = 1.second): T = {
+  def await[E, T](f: => IO[T], duration: FiniteDuration = 60.seconds): T = {
     val i: IO[Either[E, T]] = f.attempt.map {
       case Right(ok) => Right(ok.asInstanceOf[T])
       case Left(e) => Left(e.asInstanceOf[E])
@@ -43,18 +43,18 @@ trait CatsHelpers {
   // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[E, T](
       f: => IO[Either[E, T]],
-      duration: FiniteDuration = 1.second
+      duration: FiniteDuration = 60.seconds
   ): Either[E, T] = {
     val timeOut = IO.sleep(duration) *> IO(new RuntimeException("Timed out waiting for result"))
     IO.race(timeOut, f).unsafeRunSync().toOption.get
   }
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): T =
+  def rightResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 60.seconds): T =
     rightValue(awaitResultOf[E, T](f, duration))
 
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
-  def leftResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): E =
+  def leftResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 60.seconds): E =
     leftValue(awaitResultOf(f, duration))
 
   def leftValue[E, T](t: Either[E, T]): E = t match {

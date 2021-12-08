@@ -59,7 +59,7 @@ class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
         config.tsigUsage
       )
       val testZone = Zone(
-        "open.",
+        "open1.",
         "test@test.com",
         connection = Some(testConnection)
       )
