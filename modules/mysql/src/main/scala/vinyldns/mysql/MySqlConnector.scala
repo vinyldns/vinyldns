@@ -29,8 +29,8 @@ object MySqlConnector {
   private val logger = LoggerFactory.getLogger("MySqlConnector")
 
   def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] =
-    // We can skip migrations for h2, we'll use the test/ddl.sql for initializing
-    // that for testing
+  // We can skip migrations for h2, we'll use the test/ddl.sql for initializing
+  // that for testing
     if (config.driver.contains("h2")) IO.unit
     else {
       val migrationConnectionSettings = MySqlDataSourceSettings(
@@ -90,14 +90,21 @@ object MySqlConnector {
     def retry[T](times: Int, delayMs: Int)(op: => T) =
       Iterator
         .range(0, times)
-        .map(_ => Try(op))
-        .flatMap {
-          case Success(t) => Some(t)
-          case Failure(_) =>
-            logger.warn("failed to startup database connection, retrying..")
-            Thread.sleep(delayMs)
-            None
-        }
+        .map(index => (index, Try(op)))
+        .flatMap(x => {
+          val (currentIndex, result) = x
+          result match {
+            case Success(t) => Some(t)
+            case Failure(e) =>
+              logger.warn("failed to startup database connection, retrying..")
+              // Hard abort if we exhaust retries
+              if (currentIndex >= times - 1) {
+                throw e
+              }
+              Thread.sleep(delayMs)
+              None
+          }
+        })
         .toSeq
         .head
 

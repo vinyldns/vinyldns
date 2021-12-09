@@ -3,14 +3,9 @@
 This project would not be possible without the generous contributions of many people. Thank you! If you have contributed
 in any way, but do not see your name here, please open a PR to add yourself (in alphabetical order by last name)!
 
-## DNS SMEs
-
-- Joe Crowe
-- David Back
-- Hong Ye
-
 ## Contributors
 
+- David Back
 - Mike Ball
 - Tommy Barker
 - Robert Barrimond
@@ -23,6 +18,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
+- Joe Crowe
 - Jearvon Dharrie
 - Andrew Dunn
 - Ryan Emerle
@@ -54,3 +50,4 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Andrew Wang
 - Peter Willis
 - Britney Wright
+- Hong Ye

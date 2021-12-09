@@ -27,12 +27,6 @@ The offline root key and repository keys are managed by the core maintainer team
 * api key: used to sign tagged images in vinyldns/api
 * portal key: used to sign tagged images in vinyldns/portal
 
-These keys are named in a <hash>.key format, e.g. 5526ecd15bd413e08718e66c440d17a28968d5cd2922b59a17510da802ca6572.key,
-do not change the names of the keys.
-
-Docker expects these keys to be saved in `~/.docker/trust/private`. Each key is encrypted with a passphrase, that you
-must have available when pushing an image.
-
 ## Release Process
 
 The release process is automated by GitHub Actions.

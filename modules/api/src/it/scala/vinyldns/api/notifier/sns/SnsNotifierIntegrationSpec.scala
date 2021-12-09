@@ -16,7 +16,7 @@
 
 package vinyldns.api.notifier.sns
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sns.AmazonSNSClientBuilder
@@ -26,6 +26,7 @@ import org.joda.time.DateTime
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.api.MySqlApiIntegrationSpec
 import vinyldns.core.TestMembershipData._
@@ -34,8 +35,10 @@ import vinyldns.core.domain.record.{AData, RecordType}
 import vinyldns.core.notifier._
 import vinyldns.mysql.MySqlIntegrationSpec
 
+import scala.concurrent.ExecutionContext
+
 class SnsNotifierIntegrationSpec
-    extends MySqlApiIntegrationSpec
+  extends MySqlApiIntegrationSpec
     with MySqlIntegrationSpec
     with Matchers
     with AnyWordSpecLike {
@@ -43,7 +46,7 @@ class SnsNotifierIntegrationSpec
   import vinyldns.api.domain.DomainValidations._
 
   implicit val formats = DefaultFormats
-
+  implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   val snsConfig: Config = ConfigFactory.load().getConfig("vinyldns.sns.settings")
 
   "Sns Notifier" should {
@@ -91,20 +94,28 @@ class SnsNotifierIntegrationSpec
       val sqs = AmazonSQSClientBuilder
         .standard()
         .withEndpointConfiguration(
-          new EndpointConfiguration("http://127.0.0.1:19003", "us-east-1")
+          new EndpointConfiguration(sys.env.getOrElse("SNS_SERVICE_ENDPOINT", "http://127.0.0.1:19003"), "us-east-1")
         )
         .withCredentials(credentialsProvider)
         .build()
 
       val program = for {
-        queueUrl <- IO { sqs.createQueue("batchChanges").getQueueUrl }
-        topic <- IO { sns.createTopic("batchChanges").getTopicArn }
-        _ <- IO { sns.subscribe(topic, "sqs", queueUrl) }
+        queueUrl <- IO {
+          sqs.createQueue("batchChanges").getQueueUrl
+        }
+        topic <- IO {
+          sns.createTopic("batchChanges").getTopicArn
+        }
+        _ <- IO {
+          sns.subscribe(topic, "sqs", queueUrl)
+        }
         notifier <- new SnsNotifierProvider()
           .load(NotifierConfig("", snsConfig), userRepository)
         _ <- notifier.notify(Notification(batchChange))
-        _ <- IO { Thread.sleep(100) }
-        messages <- IO { sqs.receiveMessage(queueUrl).getMessages }
+        _ <- IO.sleep(1.seconds)
+        messages <- IO {
+          sqs.receiveMessage(queueUrl).getMessages
+        }
         _ <- IO {
           sns.deleteTopic(topic)
           sqs.deleteQueue(queueUrl)
