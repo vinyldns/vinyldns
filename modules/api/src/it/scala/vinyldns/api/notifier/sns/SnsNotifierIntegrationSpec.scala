@@ -38,7 +38,7 @@ import vinyldns.mysql.MySqlIntegrationSpec
 import scala.concurrent.ExecutionContext
 
 class SnsNotifierIntegrationSpec
-    extends MySqlApiIntegrationSpec
+  extends MySqlApiIntegrationSpec
     with MySqlIntegrationSpec
     with Matchers
     with AnyWordSpecLike {
@@ -94,20 +94,28 @@ class SnsNotifierIntegrationSpec
       val sqs = AmazonSQSClientBuilder
         .standard()
         .withEndpointConfiguration(
-          new EndpointConfiguration(sys.env.getOrElse("SNS_SERVICE_ENDPOINT","http://vinyldns-integration:19003"), "us-east-1")
+          new EndpointConfiguration(sys.env.getOrElse("SNS_SERVICE_ENDPOINT", "http://127.0.0.1:19003"), "us-east-1")
         )
         .withCredentials(credentialsProvider)
         .build()
 
       val program = for {
-        queueUrl <- IO { sqs.createQueue("batchChanges").getQueueUrl }
-        topic <- IO { sns.createTopic("batchChanges").getTopicArn }
-        _ <- IO { sns.subscribe(topic, "sqs", queueUrl) }
+        queueUrl <- IO {
+          sqs.createQueue("batchChanges").getQueueUrl
+        }
+        topic <- IO {
+          sns.createTopic("batchChanges").getTopicArn
+        }
+        _ <- IO {
+          sns.subscribe(topic, "sqs", queueUrl)
+        }
         notifier <- new SnsNotifierProvider()
           .load(NotifierConfig("", snsConfig), userRepository)
         _ <- notifier.notify(Notification(batchChange))
         _ <- IO.sleep(1.seconds)
-        messages <- IO { sqs.receiveMessage(queueUrl).getMessages }
+        messages <- IO {
+          sqs.receiveMessage(queueUrl).getMessages
+        }
         _ <- IO {
           sns.deleteTopic(topic)
           sqs.deleteQueue(queueUrl)
