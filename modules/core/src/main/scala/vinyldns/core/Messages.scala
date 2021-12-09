@@ -42,7 +42,7 @@ object Messages {
     "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group.".orConfig
 
   val GroupEmailExistsUpdateErrorMsg: String =
-    "Cannot update group. A group, %s, is already associated with the email address %s.".orConfig
+    "Cannot update group. A group, %s, is already associated with the email address %s. Visit FAQ for more information.".orConfig
 
   val UserNotFoundErrorMsg: String = "User with ID %s was not found".orConfig
 
