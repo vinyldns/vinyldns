@@ -251,7 +251,7 @@ portal.vinyldns.backend.url = "http://vinyldns-api:9000"
 portal.test_login = false
 
 # configuration for the users and groups store
-data-stores = ["dynamodb", "mysql"]
+data-stores = ["mysql"]
 
 mysql {
   class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
@@ -283,37 +283,6 @@ mysql {
     }
   }
 }
-
-dynamodb {
-  class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
-  
-  settings {
-    key = "x"
-    secret = "x"
-    endpoint = "http://vinyldns-dynamodb:8000"
-    region = "us-east-1"
-  }
-  
-  repositories {
-    user-change {
-      table-name = "userChangeTest"
-      provisioned-reads = 30
-      provisioned-writes = 20
-    }
-  }
-
-LDAP {
-  user="test"
-  password="test"
-  domain="test"
-
-  searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]
-
-  context {
-    initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"
-    securityAuthentication = "simple"
-    providerUrl = "ldaps://somedomain.com:9999"
-  }
 
 }
 
