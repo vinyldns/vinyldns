@@ -22,8 +22,8 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Test
-        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
         shell: bash
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
       - name: Codecov
         uses: codecov/codecov-action@v2

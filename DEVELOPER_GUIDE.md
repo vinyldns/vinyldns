@@ -2,10 +2,28 @@
 
 ## Table of Contents
 
-- [Developer Requirements](#developer-requirements)
+- [Developer Requirements (Local)](#developer-requirements-local)
+- [Developer Requirements (Docker)](#developer-requirements-docker)
 - [Project Layout](#project-layout)
+    * [Core](#core)
+    * [API](#api)
+    * [Portal](#portal)
+    * [Documentation](#documentation)
 - [Running VinylDNS Locally](#running-vinyldns-locally)
+    * [Starting the API Server](#starting-the-api-server)
+    * [Starting the Portal](#starting-the-portal)
 - [Testing](#testing)
+    * [Unit Tests](#unit-tests)
+    * [Integration Tests](#integration-tests)
+        + [Running both](#running-both)
+    * [Functional Tests](#functional-tests)
+        + [Running Functional Tests](#running-functional-tests)
+            - [API Functional Tests](#api-functional-tests)
+        + [Setup](#setup)
+            - [Functional Test Context](#functional-test-context)
+            - [Partitioning](#partitioning)
+            - [Really Important Test Context Rules!](#really-important-test-context-rules)
+            - [Managing Test Zone Files](#managing-test-zone-files)
 
 ## Developer Requirements (Local)
 
@@ -41,14 +59,14 @@ its components.
 The main codebase is a multi-module Scala project with multiple sub-modules. To start working with the project, from the
 root directory run `sbt`. Most of the code can be found in the `modules` directory. The following modules are present:
 
-* `root` - this is the parent project, if you run tasks here, it will run against all sub-modules
-* [`core`](#core): core modules that are used by both the API and portal, such as cryptography implementations.
-* [`api`](#api): the API is the main engine for all of VinylDNS. This is the most active area of the codebase, as
+- `root` - this is the parent project, if you run tasks here, it will run against all sub-modules
+- [`core`](#core): core modules that are used by both the API and portal, such as cryptography implementations.
+- [`api`](#api): the API is the main engine for all of VinylDNS. This is the most active area of the codebase, as
   everything else typically just funnels through the API.
-* [`portal`](#portal): The portal is a user interface wrapper around the API. Most of the business rules, logic, and
+- [`portal`](#portal): The portal is a user interface wrapper around the API. Most of the business rules, logic, and
   processing can be found in the API. The
   _only_ features in the portal not found in the API are creation of users and user authentication.
-* [`docs`](#documentation): documentation for VinylDNS.
+- [`docs`](#documentation): documentation for VinylDNS.
 
 ### Core
 
@@ -56,76 +74,76 @@ Code that is used across multiple modules in the VinylDNS ecosystem live in `cor
 
 #### Code Layout
 
-* `src/main` - the main source code
-* `src/test` - unit tests
+- `src/main` - the main source code
+- `src/test` - unit tests
 
 ### API
 
 The API is the RESTful API for interacting with VinylDNS. The following technologies are used:
 
-* [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) - Used primarily for REST and HTTP calls.
-* [FS2](https://functional-streams-for-scala.github.io/fs2/) - Used for backend change processing off of message queues.
+- [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) - Used primarily for REST and HTTP calls.
+- [FS2](https://functional-streams-for-scala.github.io/fs2/) - Used for backend change processing off of message queues.
   FS2 has back-pressure built in, and gives us tools like throttling and concurrency.
-* [Cats Effect](https://typelevel.org/cats-effect/) - A replacement of `Future` with the `IO` monad
-* [Cats](https://typelevel.org/cats) - Used for functional programming.
-* [PureConfig](https://pureconfig.github.io/) - For loading configuration values.
+- [Cats Effect](https://typelevel.org/cats-effect/) - A replacement of `Future` with the `IO` monad
+- [Cats](https://typelevel.org/cats) - Used for functional programming.
+- [PureConfig](https://pureconfig.github.io/) - For loading configuration values.
 
 The API has the following dependencies:
 
-* MySQL - the SQL database that houses the data
-* SQS - for managing concurrent updates and enabling high-availability
-* Bind9 - for testing integration with a real DNS system
+- MySQL - the SQL database that houses the data
+- SQS - for managing concurrent updates and enabling high-availability
+- Bind9 - for testing integration with a real DNS system
 
 #### Code Layout
 
 The API code can be found in `modules/api`.
 
-* `src/it` - integration tests
-* `src/main` - the main source code
-* `src/test` - unit tests
-* `src/universal` - items that are packaged in the Docker image for the VinylDNS API
+- `src/it` - integration tests
+- `src/main` - the main source code
+- `src/test` - unit tests
+- `src/universal` - items that are packaged in the Docker image for the VinylDNS API
 
 The package structure for the source code follows:
 
-* `vinyldns.api.domain` - contains the core front-end logic. This includes things like the application services,
+- `vinyldns.api.domain` - contains the core front-end logic. This includes things like the application services,
   repository interfaces, domain model, validations, and business rules.
-* `vinyldns.api.engine` - the back-end processing engine. This is where we process commands including record changes,
+- `vinyldns.api.engine` - the back-end processing engine. This is where we process commands including record changes,
   zone changes, and zone syncs.
-* `vinyldns.api.protobuf` - marshalling and unmarshalling to and from protobuf to types in our system
-* `vinyldns.api.repository` - repository implementations live here
-* `vinyldns.api.route` - HTTP endpoints
+- `vinyldns.api.protobuf` - marshalling and unmarshalling to and from protobuf to types in our system
+- `vinyldns.api.repository` - repository implementations live here
+- `vinyldns.api.route` - HTTP endpoints
 
 ### Portal
 
 The project is built using:
 
-* [Play Framework](https://www.playframework.com/documentation/2.6.x/Home)
-* [AngularJS](https://angularjs.org/)
+- [Play Framework](https://www.playframework.com/documentation/2.6.x/Home)
+- [AngularJS](https://angularjs.org/)
 
 The portal is _mostly_ a shim around the API. Most actions in the user interface are translated into API calls.
 
 The features that the Portal provides that are not in the API include:
 
-* Authentication against LDAP
-* Creation of users - when a user logs in for the first time, VinylDNS automatically creates a user and new credentials
+- Authentication against LDAP
+- Creation of users - when a user logs in for the first time, VinylDNS automatically creates a user and new credentials
   for them in the database with their LDAP information.
 
 #### Code Layout
 
 The portal code can be found in `modules/portal`.
 
-* `app` - source code for portal back-end
-    * `models` - data structures that are used by the portal
-    * `views` - HTML templates for each web page
-    * `controllers` - logic for updating data
-* `conf` - configurations and endpoint routes
-* `public` - source code for portal front-end
-    * `css` - stylesheets
-    * `images` - images, including icons, used in the portal
-    * `js` - scripts
-    * `mocks` - mock JSON used in Grunt tests
-    * `templates` - modal templates
-* `test` - unit tests for portal back-end
+- `app` - source code for portal back-end
+    - `models` - data structures that are used by the portal
+    - `views` - HTML templates for each web page
+    - `controllers` - logic for updating data
+- `conf` - configurations and endpoint routes
+- `public` - source code for portal front-end
+    - `css` - stylesheets
+    - `images` - images, including icons, used in the portal
+    - `js` - scripts
+    - `mocks` - mock JSON used in Grunt tests
+    - `templates` - modal templates
+- `test` - unit tests for portal back-end
 
 ### Documentation
 
@@ -134,8 +152,8 @@ settings for the microsite are also configured in `build.sbt` of the project roo
 
 #### Code Layout
 
-* `src/main/resources` - Microsite resources and configurations
-* `src/main/mdoc` - Content for microsite web pages
+- `src/main/resources` - Microsite resources and configurations
+- `src/main/mdoc` - Content for microsite web pages
 
 ## Running VinylDNS Locally
 
@@ -146,20 +164,19 @@ README. However, VinylDNS can also be run in the foreground.
 
 Before starting the API service, you can start the dependencies for local development:
 
-```
-cd test/api/integration
-make build && make run-bg
+```shell
+quickstart/quickstart-vinyldns.sh --deps-only
 ```
 
 This will start a container running in the background with necessary prerequisites.
 
 Once the prerequisites are running, you can start up sbt by running `sbt` from the root directory.
 
-* `project api` to change the sbt project to the API
-* `reStart` to start up the API server
-* Wait until you see the message `VINYLDNS SERVER STARTED SUCCESSFULLY` before working with the server
-* To stop the VinylDNS server, run `reStop` from the api project
-* To stop the dependent Docker containers: `utils/clean-vinyldns-containers.sh`
+- `project api` to change the sbt project to the API
+- `reStart` to start up the API server
+- Wait until you see the message `VINYLDNS SERVER STARTED SUCCESSFULLY` before working with the server
+- To stop the VinylDNS server, run `reStop` from the api project
+- To stop the dependent Docker containers: `utils/clean-vinyldns-containers.sh`
 
 See the [API Configuration Guide](https://www.vinyldns.io/operator/config-api) for information regarding API
 configuration.
@@ -167,9 +184,9 @@ configuration.
 ### Starting the Portal
 
 To run the portal locally, you _first_ have to start up the VinylDNS API Server. This can be done by following the
-instructions for [Staring the API Server](#Starting the API Server) or by using the QuickStart:
+instructions for [Staring the API Server](#starting-the-api-server) or by using the QuickStart:
 
-```
+```shell
 quickstart/quickstart-vinyldns.sh --api-only
 ```
 
@@ -178,29 +195,6 @@ execute `;preparePortal; run`.
 
 See the [Portal Configuration Guide](https://www.vinyldns.io/operator/config-portal) for information regarding portal
 configuration.
-
-### Loading test data
-
-Normally the portal can be used for all VinylDNS requests. Test users are locked down to only have access to test zones,
-which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need
-to use an alternative client and set `isTest=true` on the zone being connected to.
-
-Use the vinyldns-js client (Note, you need Node installed):
-
-```
-git clone https://github.com/vinyldns/vinyldns-js.git
-cd vinyldns-js
-npm install
-export VINYLDNS_API_SERVER=http://localhost:9000
-export VINYLDNS_ACCESS_KEY_ID=testUserAccessKey
-export VINYLDNS_SECRET_ACCESS_KEY=testUserSecretKey
-npm run repl
-> var groupId;
-> vinyl.createGroup({"name": "test-group", "email":"test@test.com", members: [{id: "testuser"}], admins: [{id: "testuser"}]}).then(res => {groupId = res.id}).catch(err => {console.log(err)});
-> vinyl.createZone ({name: "ok.", isTest: true, adminGroupId: groupId, email: "test@test.com"}).then(res => { console.log(res) }).catch(err => { console.log(err) })
-
-You should now be able to see the zone in the portal at localhost:9001 when logged in as username=testuser password=testpassword
-```
 
 ## Testing
 
@@ -247,7 +241,7 @@ When adding new features, you will often need to write new functional tests that
 
 To run functional tests you can simply execute the following commands:
 
-```
+```shell
 build/func-test-api.sh
 build/func-test-portal.sh
 ```
@@ -259,9 +253,9 @@ These command will run the API functional tests and portal functional tests resp
 To run functional tests you can simply execute `build/func-test-api.sh`, but if you'd like finer-grained control, you
 can work with the `Makefile` in `test/api/functional`:
 
-```
-cd test/api/functional
-make build && make run
+```shell
+# Build and then run the function test container
+make -C test/api/functional build run
 ```
 
 During iterative test development, you can use `make run-local` which will bind-mount the current functional tests in
@@ -289,20 +283,20 @@ There aren't a lot, so it should be quick.
 
 In the `modules/api/src/test/functional` directory are a few important files for you to be familiar with:
 
-* `vinyl_python.py` - this provides the interface to the VinylDNS API. It handles signing the request for you, as well
+- `vinyl_python.py` - this provides the interface to the VinylDNS API. It handles signing the request for you, as well
   as building and executing the requests, and giving you back valid responses. For all new API endpoints, there should
   be a corresponding function in the vinyl_client
-* `utils.py` - provides general use functions that can be used anywhere in your tests. Feel free to contribute new
+- `utils.py` - provides general use functions that can be used anywhere in your tests. Feel free to contribute new
   functions here when you see repetition in the code
 
 In the `modules/api/src/test/functional/tests` directory, we have directories / modules for different areas of the
 application.
 
-* `batch` - for managing batch updates
-* `internal` - for internal endpoints (not intended for public consumption)
-* `membership` - for managing groups and users
-* `recordsets` - for managing record sets
-* `zones` - for managing zones
+- `batch` - for managing batch updates
+- `internal` - for internal endpoints (not intended for public consumption)
+- `membership` - for managing groups and users
+- `recordsets` - for managing record sets
+- `zones` - for managing zones
 
 ##### Functional Test Context
 

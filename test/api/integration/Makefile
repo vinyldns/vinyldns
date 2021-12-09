@@ -38,14 +38,16 @@ build:
 
 run:
 	@set -euo pipefail
+	docker network create --driver bridge vinyldns_net &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
+	docker network create --driver bridge vinyldns_net &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
+	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm --network vinyldns_net $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
 
 stop-bg:
 	@set -euo pipefail
@@ -53,8 +55,9 @@ stop-bg:
 
 run-local:
 	@set -euo pipefail
+	docker network create --driver bridge vinyldns_net &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
 
 clean-containers:
 	@set -euo pipefail

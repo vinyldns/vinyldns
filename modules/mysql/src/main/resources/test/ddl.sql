@@ -6,7 +6,7 @@
 -- Ex: "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'"
 --
 
-CREATE TABLE batch_change
+CREATE TABLE IF NOT EXISTS batch_change
 (
     id                  char(36)      not null primary key,
     user_id             char(36)      not null,
@@ -22,16 +22,16 @@ CREATE TABLE batch_change
     cancelled_timestamp datetime      null
 );
 
-create index batch_change_approval_status_index
+CREATE INDEX IF NOT EXISTS batch_change_approval_status_index
     on batch_change (approval_status);
 
-create index batch_change_user_id_created_time_index
+CREATE INDEX IF NOT EXISTS batch_change_user_id_created_time_index
     on batch_change (user_id, created_time);
 
-create index batch_change_user_id_index
+CREATE INDEX IF NOT EXISTS batch_change_user_id_index
     on batch_change (user_id);
 
-create table group_change
+CREATE TABLE IF NOT EXISTS group_change
 (
     id                char(36)   not null primary key,
     group_id          char(36)   not null,
@@ -39,10 +39,10 @@ create table group_change
     data              blob       not null
 );
 
-create index group_change_group_id_index
+CREATE INDEX IF NOT EXISTS group_change_group_id_index
     on group_change (group_id);
 
-create table `groups`
+CREATE TABLE IF NOT EXISTS `groups`
 (
     id                char(36)     not null primary key,
     name              varchar(256) not null,
@@ -52,10 +52,10 @@ create table `groups`
     email             varchar(256) not null
 );
 
-create index groups_name_index
+CREATE INDEX IF NOT EXISTS groups_name_index
     on `groups` (name);
 
-create table membership
+CREATE TABLE IF NOT EXISTS membership
 (
     user_id  char(36)   not null,
     group_id char(36)   not null,
@@ -63,7 +63,7 @@ create table membership
     primary key (user_id, group_id)
 );
 
-create table message_queue
+CREATE TABLE IF NOT EXISTS message_queue
 (
     id              char(36)      not null primary key,
     message_type    tinyint       null,
@@ -75,16 +75,16 @@ create table message_queue
     attempts        int default 0 not null
 );
 
-create index message_queue_inflight_index
+CREATE INDEX IF NOT EXISTS message_queue_inflight_index
     on message_queue (in_flight);
 
-create index message_queue_timeout_index
+CREATE INDEX IF NOT EXISTS message_queue_timeout_index
     on message_queue (timeout_seconds);
 
-create index message_queue_updated_index
+CREATE INDEX IF NOT EXISTS message_queue_updated_index
     on message_queue (updated);
 
-create table record_change
+CREATE TABLE IF NOT EXISTS record_change
 (
     id      char(36)   not null primary key,
     zone_id char(36)   not null,
@@ -93,13 +93,13 @@ create table record_change
     data    blob       not null
 );
 
-create index record_change_created_index
+CREATE INDEX IF NOT EXISTS record_change_created_index
     on record_change (created);
 
-create index record_change_zone_id_index
+CREATE INDEX IF NOT EXISTS record_change_zone_id_index
     on record_change (zone_id);
 
-create table recordset
+CREATE TABLE IF NOT EXISTS recordset
 (
     id             char(36)     not null primary key,
     zone_id        char(36)     not null,
@@ -112,16 +112,16 @@ create table recordset
     unique (zone_id, name, type)
 );
 
-create index recordset_fqdn_index
+CREATE INDEX IF NOT EXISTS recordset_fqdn_index
     on recordset (fqdn);
 
-create index recordset_owner_group_id_index
+CREATE INDEX IF NOT EXISTS recordset_owner_group_id_index
     on recordset (owner_group_id);
 
-create index recordset_type_index
+CREATE INDEX IF NOT EXISTS recordset_type_index
     on recordset (type);
 
-create table single_change
+CREATE TABLE IF NOT EXISTS single_change
 (
     id                   char(36)     not null primary key,
     seq_num              smallint     not null,
@@ -138,13 +138,13 @@ create table single_change
     on delete cascade
 );
 
-create index single_change_batch_change_id_index
+CREATE INDEX IF NOT EXISTS single_change_batch_change_id_index
     on single_change (batch_change_id);
 
-create index single_change_record_set_change_id_index
+CREATE INDEX IF NOT EXISTS single_change_record_set_change_id_index
     on single_change (record_set_change_id);
 
-create table stats
+CREATE TABLE IF NOT EXISTS stats
 (
     id      bigint auto_increment primary key,
     name    varchar(255) not null,
@@ -152,13 +152,13 @@ create table stats
     created datetime     not null
 );
 
-create index stats_name_created_index
+CREATE INDEX IF NOT EXISTS stats_name_created_index
     on stats (name, created);
 
-create index stats_name_index
+CREATE INDEX IF NOT EXISTS stats_name_index
     on stats (name);
 
-create table task
+CREATE TABLE IF NOT EXISTS task
 (
     name      varchar(255) not null primary key,
     in_flight bit          not null,
@@ -166,7 +166,7 @@ create table task
     updated   datetime     null
 );
 
-create table user
+CREATE TABLE IF NOT EXISTS user
 (
     id         char(36)     not null primary key,
     user_name  varchar(256) not null,
@@ -174,13 +174,13 @@ create table user
     data       blob         not null
 );
 
-create index user_access_key_index
+CREATE INDEX IF NOT EXISTS user_access_key_index
     on user (access_key);
 
-create index user_user_name_index
+CREATE INDEX IF NOT EXISTS user_user_name_index
     on user (user_name);
 
-create table user_change
+CREATE TABLE IF NOT EXISTS user_change
 (
     change_id         char(36)   not null primary key,
     user_id           char(36)   not null,
@@ -188,7 +188,7 @@ create table user_change
     created_timestamp bigint(13) not null
 );
 
-create table zone
+CREATE TABLE IF NOT EXISTS zone
 (
     id             char(36)     not null primary key,
     name           varchar(256) not null,
@@ -198,13 +198,13 @@ create table zone
     unique (name)
 );
 
-create index zone_admin_group_id_index
+CREATE INDEX IF NOT EXISTS zone_admin_group_id_index
     on zone (admin_group_id);
 
-create index zone_name_index
+CREATE INDEX IF NOT EXISTS zone_name_index
     on zone (name);
 
-create table zone_access
+CREATE TABLE IF NOT EXISTS zone_access
 (
     accessor_id char(36) not null,
     zone_id     char(36) not null,
@@ -214,13 +214,13 @@ create table zone_access
     on delete cascade
 );
 
-create index zone_access_accessor_id_index
+CREATE INDEX IF NOT EXISTS zone_access_accessor_id_index
     on zone_access (accessor_id);
 
-create index zone_access_zone_id_index
+CREATE INDEX IF NOT EXISTS zone_access_zone_id_index
     on zone_access (zone_id);
 
-create table zone_change
+CREATE TABLE IF NOT EXISTS zone_change
 (
     change_id         char(36)   not null primary key,
     zone_id           char(36)   not null,
@@ -228,11 +228,13 @@ create table zone_change
     created_timestamp bigint(13) not null
 );
 
-create index zone_change_created_timestamp_index
+CREATE INDEX IF NOT EXISTS zone_change_created_timestamp_index
     on zone_change (created_timestamp);
 
-create index zone_change_zone_id_index
+CREATE INDEX IF NOT EXISTS zone_change_zone_id_index
     on zone_change (zone_id);
+
+DELETE FROM task WHERE name = 'user_sync';
 
 INSERT IGNORE INTO task(name, in_flight, created, updated)
 VALUES ('user_sync', 0, NOW(), NULL);
