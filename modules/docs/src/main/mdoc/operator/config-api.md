@@ -52,7 +52,7 @@ snippet...
     access-key = ${AWS_ACCESS_KEY}
     secret-key = ${AWS_SECRET_ACCESS_KEY}
     signing-region = ${SQS_REGION}
-    service-endpoint = ${SQS_ENDPOINT}
+    service-endpoint = ${SQS_SERVICE_ENDPOINT}
     queue-name = ${SQS_QUEUE_NAME}
   }
 ```

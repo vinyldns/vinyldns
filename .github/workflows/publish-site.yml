@@ -15,6 +15,7 @@ jobs:
           fetch-depth: 0
 
       - run: "build/publish_docs.sh"
+        shell: bash
         env:
           SBT_MICROSITES_PUBLISH_TOKEN: ${{ secrets.VINYLDNS_MICROSITE }}
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
