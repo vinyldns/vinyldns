@@ -1,10 +1,9 @@
 ![Build](https://github.com/vinyldns/vinyldns/workflows/Continuous%20Integration/badge.svg)
-[![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 [![License](https://img.shields.io/github/license/vinyldns/vinyldns)](https://github.com/vinyldns/vinyldns/blob/master/LICENSE)
 [![conduct](https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-blue.svg)](https://github.com/vinyldns/vinyldns/blob/master/CODE_OF_CONDUCT.md)
 
 <p align="left">
-  <a href="http://www.vinyldns.io/">
+  <a href="https://www.vinyldns.io/">
     <img
       alt="VinylDNS"
       src="img/vinyldns_optimized.svg"
@@ -38,6 +37,9 @@ Integration is simple with first-class language support including:
 ## Table of Contents
 
 - [Quickstart](#quickstart)
+- [Things to Try in the Portal](#things-to-try-in-the-portal)
+  - [Verifying Your Changes](#verifying-your-changes)
+  - [Other things to note](#other-things-to-note)
 - [Code of Conduct](#code-of-conduct)
 - [Developer Guide](#developer-guide)
 - [Contributing](#contributing)
@@ -56,29 +58,32 @@ VinylDNS on your machine with docker:
 1. Navigate to repo: `cd vinyldns`
 1. Run `./quickstart/quickstart-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal
    at `localhost:9001`
-1. See [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for how to load a test DNS zone
+1. See [Things to Try in the Portal](#things-to-try-in-the-portal) for getting familiar with the Portal
 1. To stop the local setup, run `./utils/clean-vinyldns-containers.sh`.
 
 There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the
 endpoint `http://localhost:9000`
 
-## Things to try in the portal
+## Things to Try in the Portal
 
 1. View the portal at <http://localhost:9001> in a web browser
 2. Login with the credentials `professor` and `professor`
 3. Navigate to the `groups` tab: <http://localhost:9001/groups>
 4. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the
    group
-5. View zones you connected to in the `zones` tab: <http://localhost:9001/zones>. For a quick test, create a new zone
-   named `ok` with an email of `test@test.com` and choose a group you created from the previous step. (Note,
-   see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
-6. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the
+5. Connect a zone by going to the `zones` tab: <http://localhost:9001/zones>. 
+   1. Click the `-> Connect` button 
+   2. For `Zone Name` enter `ok` with an email of `test@test.com` 
+   3. For `Admin Group`, choose a group you created from the previous step
+   4. Leave everything else as-is and click the `Connect` button at the bottom of the form
+6. A new zone `ok` should appear in your `My Zones` tab _(you may need to refresh your browser)_
+7. You will see that some records are preloaded in the zone already, this is because these records are preloaded in the
    local docker DNS server and VinylDNS automatically syncs records with the backend DNS server upon zone connection
-7. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
+8. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
    in the **Manage Zone** tab
-8. To try creating a DNS record, click on the **Create Record Set** button under
+9. To try creating a DNS record, click on the **Create Record Set** button under
    Records, `Record Type = A, Record Name = my-test-a, TTL = 300, IP Addressess = 1.1.1.1`
-9. Click on the **Refresh** button under Records, you should see your new record created
+10. Click on the **Refresh** button under Records, you should see your new record created
 
 ### Verifying Your Changes
 
@@ -96,7 +101,7 @@ This tells `dig` to use `127.0.0.1` as the resolver on port `19001`. The `+short
 verbose. Finally, the record we're looking up is `my-test-a.ok`. You can see the returned output of `1.1.1.1` matches
 the record data we entered.
 
-## Other things to note
+### Other things to note
 
 1. Upon connecting to a zone for the first time, a zone sync is executed to provide VinylDNS a copy of the records in
    the zone
