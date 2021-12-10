@@ -187,6 +187,39 @@ def test_create_group_duplicate(shared_zone_test_context):
             client.delete_group(result["id"], status=(200, 404))
 
 
+def test_create_group_email_conflict(shared_zone_test_context):
+    """
+    Tests that we can not create a group with an email already in use when email configuration is set true
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    conflict_group = None
+    try:
+        new_group = {
+            'name': 'test_create_group_conflict',
+            'email': 'test_create_conflict@test.com',
+            'description': 'this is a description',
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
+        }
+        conflict_group = client.create_group(new_group, status=200)
+        assert_that(conflict_group['email'], is_(new_group['email']))
+
+        other_group = {
+            'name': 'the_other_group',
+            'email': 'test_create_conflict@test.com',
+            'description': 'this is a description',
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
+        }
+        # Status code will be 409 if unique email configuration was enabled in reference.conf file else it'll be 200
+        client.create_group(other_group, status=(200, 409))
+
+    finally:
+        if conflict_group:
+            client.delete_group(conflict_group['id'], status=(200, 404))
+
+
 def test_create_group_no_members(shared_zone_test_context):
     """
     Tests that creating a group that has no members adds current user as a member and an admin

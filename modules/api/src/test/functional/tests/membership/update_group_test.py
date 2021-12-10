@@ -280,6 +280,53 @@ def test_update_group_conflict(shared_zone_test_context):
             client.delete_group(conflict_group["id"], status=(200, 404))
 
 
+def test_update_group_email_conflict(shared_zone_test_context):
+    """
+    Tests that we can not update a groups email to an email already in use when unique email configuration is set true
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    result = None
+    conflict_group = None
+    try:
+        new_group = {
+            'name': 'test_update_group_email_conflict',
+            'email': 'test_update_conflict@test.com',
+            'description': 'this is a description',
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
+        }
+        conflict_group = client.create_group(new_group, status=200)
+        assert_that(conflict_group['email'], is_(new_group['email']))
+
+        other_group = {
+            'name': 'other_group',
+            'email': 'test_other_email@test.com',
+            'description': 'this is a description',
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
+        }
+        result = client.create_group(other_group, status=200)
+        assert_that(result['email'], is_(other_group['email']))
+
+        # change the email id of the other_group to the first group (conflict)
+        update_group = {
+            'id': result['id'],
+            'name': 'other_group',
+            'email': 'test_update_conflict@test.com',
+            'description': 'this is a description',
+            'members': [{'id': 'ok'}],
+            'admins': [{'id': 'ok'}]
+        }
+        # Status code will be 409 if unique email configuration was enabled in reference.conf file else it'll be 200
+        client.update_group(update_group['id'], update_group, status=(200, 409))
+    finally:
+        if result:
+            client.delete_group(result['id'], status=(200, 404))
+        if conflict_group:
+            client.delete_group(conflict_group['id'], status=(200, 404))
+
+
 def test_update_group_not_found(shared_zone_test_context):
     """
     Tests that we can not update a group that has not been created
