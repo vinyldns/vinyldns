@@ -5,6 +5,7 @@ import org.scalafmt.sbt.ScalafmtPlugin._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 
 import scala.language.postfixOps
+import scala.sys.env
 import scala.util.Try
 
 lazy val IntegrationTest = config("it").extend(Test)
@@ -16,9 +17,9 @@ lazy val sharedSettings = Seq(
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-  maintainer :=  "VinylDNS Maintainers <vinyldns-core@googlegroups.com>",
+  maintainer := "VinylDNS Maintainers <vinyldns-core@googlegroups.com>",
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
-  scalacOptions in (Compile, doc) += "-no-link-warnings",
+  scalacOptions in(Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
   wartremoverErrors := (
     if (getPropertyFlagOrDefault("build.lintOnCompile", true))
@@ -31,13 +32,13 @@ lazy val sharedSettings = Seq(
         Wart.ExplicitImplicitTypes
       )
     else Seq.empty
-  ),
+    ),
   // scala format
   scalafmtOnCompile := getPropertyFlagOrDefault("build.scalafmtOnCompile", false),
   // coverage options
   coverageMinimum := 85,
   coverageFailOnMinimum := true,
-  coverageHighlighting := true
+  coverageHighlighting := true,
 )
 
 lazy val testSettings = Seq(
@@ -285,7 +286,6 @@ lazy val docSettings = Seq(
 lazy val docs = (project in file("modules/docs"))
   .enablePlugins(MicrositesPlugin, MdocPlugin)
   .settings(docSettings)
-
 
 
 def getPropertyFlagOrDefault(name: String, value: Boolean): Boolean =

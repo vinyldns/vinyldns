@@ -16,15 +16,18 @@
 
 package vinyldns.api.config
 
+import cats.effect.{ContextShift, IO}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import vinyldns.api.backend.dns.DnsBackendProviderConfig
 import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.RepositoryName._
 
 class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   private val underTest: VinylDNSConfig = VinylDNSConfig.load().unsafeRunSync()
+  private implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   "VinylDNSConfig" should {
     "load the rest config" in {
@@ -63,27 +66,19 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
       notifierConfigs.head.settings.getString("value").shouldBe("test")
     }
 
-    "load default keys" in {
-      val defaultConn =
-        ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
-
-      underTest.configuredDnsConnections.defaultZoneConnection
-        .decrypted(underTest.crypto) shouldBe
-        defaultConn
-      underTest.configuredDnsConnections.defaultTransferConnection
-        .decrypted(underTest.crypto) shouldBe
-        defaultConn
-    }
     "load specified backends" in {
-      val zc = ZoneConnection("zoneconn.", "vinyldns.", "test-key", "127.0.0.1:19001")
-      val tc = zc.copy(name = "transferconn.")
+      val zc = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001"))
+      val tc = zc.copy()
 
-      val backends = underTest.configuredDnsConnections.dnsBackends
+      val backends = underTest.backendConfigs.backendProviders
       backends.length shouldBe 1
 
-      backends.head.id shouldBe "test"
-      backends.head.zoneConnection.decrypted(underTest.crypto) shouldBe zc
-      backends.head.transferConnection.decrypted(underTest.crypto) shouldBe tc
+      val config = DnsBackendProviderConfig.load(backends.head.settings).unsafeRunSync()
+      config.backends.length shouldBe 2
+
+      config.backends.head.id shouldBe "default"
+      config.backends.head.zoneConnection.decrypted(underTest.crypto) shouldBe zc
+      config.backends.head.transferConnection.get.decrypted(underTest.crypto) shouldBe tc
     }
   }
 }
