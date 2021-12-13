@@ -502,7 +502,25 @@ v6-discovery-nibble-boundaries {
   min = 5
   max = 20
 }
+```
 
+### Enforce Unique Email Address
+Configuration setting that determines whether multiple groups can have the same email address or not. VinylDNS can be 
+configured to disallow multiple groups with the same email address. We have found that supporting multiple groups with 
+the same email address to be confusing to many users when there are ownership questions in the future. Therefore, we 
+strongly recommend that VinylDNS deployments utilize this feature. If you wish to use this feature, you can set 
+`vinyldns.groups.enforce-unique-email-address = true`
+
+By default, `enforce-unique-email-address` is set to `false`
+
+```yaml
+  # configure groups whether to enforce unique email address or not
+  membership {
+      groups {
+        # set true to enforce unique email address for every groups
+        enforce-unique-email-address = false
+      }
+  }
 ```
 
 ### Full Example Config
@@ -511,6 +529,14 @@ v6-discovery-nibble-boundaries {
 # setup for all of the services.  Provide your own application.conf on the docker mount with your
 # own settings
 vinyldns {
+
+  # configure groups whether to enforce unique email address or not
+  membership {
+      groups {
+          # set true to enforce unique email address for every groups
+          enforce-unique-email-address = false
+      }
+  }
 
   queue {
     class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"

@@ -22,7 +22,7 @@ case class GroupConfig(enforceUniqueEmailId: Boolean)
 
 object GroupConfig {
   implicit val configReader: ConfigReader[GroupConfig] =
-    ConfigReader.forProduct1[GroupConfig, Boolean]("enforce-unique-email-id") {
+    ConfigReader.forProduct1[GroupConfig, Boolean]("enforce-unique-email-address") {
       case (email) => GroupConfig(email)
     }
 }

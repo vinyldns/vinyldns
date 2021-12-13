@@ -94,4 +94,4 @@ Refer to [API Authentication](api/auth-mechanism.html).
 VinylDNS can be configured to disallow multiple groups with the same email address. We have found that
 supporting multiple groups with the same email address to be confusing to many users when there are ownership questions
 in the future. Therefore, we strongly recommend that VinylDNS deployments utilize this feature. If you wish to use this feature,
-you can set "vinyldns.groups.enforce-unique-email-id = true" in the configuration.
+you can set `vinyldns.groups.enforce-unique-email-address = true` in the [API configuration](operator/config-api.md#enforce-unique-email-address).
