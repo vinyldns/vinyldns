@@ -19,7 +19,7 @@ position: 6
 8. [How do I get API credentials?](#8)
 9. [How are requests authenticated to the VinylDNS API?](#9)
 10. [How to change email configuration for groups?](#10)
-11. [How to configure messages displayed to the users](#11)
+11. [How to configure messages displayed to the users?](#11)
 
 
 ### 1. Can I create a zone in VinylDNS? <a id="1"></a>
@@ -104,7 +104,7 @@ The messages displayed to the users can be configured in VinylDNS. We can config
 ```yaml
 # Configure Messages. Override existing messages with new messages. Refer Messages.scala file for existing messages
 # Have a look on placeholders while making changes, else you may face errors
-  # Place the existing message present at Messages.scala file in 'text' and the new message in 'override-text'
+# Place the existing message present at Messages.scala file in 'text' and the new message in 'override-text'
   messages = [
       {
           text = "Search must contain at least two letters or numbers to perform a RecordSet Search."
