@@ -56,7 +56,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
          | WHERE name = ?
        """.stripMargin
 
-  private final val GET_GROUP_BY_EMAILID =
+  private final val GET_GROUP_BY_EMAIL_ADDRESS =
     sql"""
          |SELECT data
          |  FROM groups
@@ -162,13 +162,13 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
       }
     }
 
-  def getGroupByEmailId(groupEmailId: String): IO[Option[Group]] =
-    monitor("repo.Group.getGroupByEmailId") {
+  def getGroupByEmailAddress(groupEmailAddress: String): IO[Option[Group]] =
+    monitor("repo.Group.getGroupByEmailAddress") {
       IO {
-        logger.info(s"Getting group with email: $groupEmailId")
+        logger.info(s"Getting group with email: $groupEmailAddress")
         DB.readOnly { implicit s =>
-          GET_GROUP_BY_EMAILID
-            .bind(groupEmailId)
+          GET_GROUP_BY_EMAIL_ADDRESS
+            .bind(groupEmailAddress)
             .map(toGroup(1))
             .first()
             .apply()

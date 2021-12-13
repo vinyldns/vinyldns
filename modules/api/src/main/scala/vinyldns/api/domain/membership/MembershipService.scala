@@ -251,14 +251,14 @@ class MembershipService(
       }
       .toResult
 
-  def groupWithSameEmailIdDoesNotExist(emailId: String, enforceUniqueEmailId: Boolean): Result[Unit] =
+  def groupWithSameEmailIdDoesNotExist(emailAddress: String, enforceUniqueEmailId: Boolean): Result[Unit] =
     if (enforceUniqueEmailId) {
       groupRepo
-        .getGroupByEmailId(emailId)
+        .getGroupByEmailAddress(emailAddress)
         .map {
           case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
             GroupAlreadyExistsError(
-              GroupEmailExistsErrorMsg.format(existingGroup.name, emailId, existingGroup.email)
+              GroupEmailExistsErrorMsg.format(existingGroup.name, emailAddress, existingGroup.email)
             ).asLeft
           case _ =>
             ().asRight
@@ -290,15 +290,15 @@ class MembershipService(
       }
       .toResult
 
-  def differentGroupWithSameEmailIdDoesNotExist(emailId: String, groupId: String, enforceUniqueEmailId: Boolean): Result[Unit] =
+  def differentGroupWithSameEmailIdDoesNotExist(emailAddress: String, groupId: String, enforceUniqueEmailId: Boolean): Result[Unit] =
     if (enforceUniqueEmailId) {
       groupRepo
-        .getGroupByEmailId(emailId)
+        .getGroupByEmailAddress(emailAddress)
         .map {
           case Some(existingGroup)
               if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
             GroupAlreadyExistsError(
-              GroupEmailExistsUpdateErrorMsg.format(existingGroup.name, emailId, existingGroup.email)
+              GroupEmailExistsUpdateErrorMsg.format(existingGroup.name, emailAddress, existingGroup.email)
             ).asLeft
           case _ =>
             ().asRight
