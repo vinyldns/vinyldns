@@ -15,7 +15,7 @@ def test_delete_zone_success(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -56,7 +56,7 @@ def test_delete_zone_twice(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",

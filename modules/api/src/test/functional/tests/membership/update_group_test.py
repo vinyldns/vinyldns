@@ -370,7 +370,7 @@ def test_update_group_deleted(shared_zone_test_context):
         update_group = {
             "id": saved_group["id"],
             "name": "test-update-group-deleted-updated",
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "description": "this is a new description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]

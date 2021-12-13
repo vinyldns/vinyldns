@@ -26,7 +26,7 @@ def test_update_zone_success(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -118,7 +118,7 @@ def test_update_missing_zone_data(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -168,7 +168,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -190,7 +190,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
         update_zone = {
             "id": result_zone["id"],
             "name": result_zone["name"],
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "adminGroupId": True
         }
 
@@ -213,7 +213,7 @@ def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = {
         "name": f"one-time{shared_zone_test_context.partition_id}.",
-        "email": "create_unique_email_address()",
+        "email": create_unique_email_address(),
         "id": "nothere",
         "connection": {
             "name": "old-shared.",
@@ -710,7 +710,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
         result = client.create_zone(
             {
                 "name": f"one-time{shared_zone_test_context.partition_id}.",
-                "email": "create_unique_email_address()",
+                "email": create_unique_email_address(),
                 "adminGroupId": shared_zone_test_context.dummy_group["id"],
                 "connection": {
                     "name": "vinyldns.",
@@ -731,7 +731,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
 
         new_joint_group = {
             "name": "new-ok-group",
-            "email": "create_unique_email_address()",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
@@ -812,7 +812,7 @@ def test_update_zone_no_authorization(shared_zone_test_context):
     zone = {
         "id": "12345",
         "name": str(uuid.uuid4()),
-        "email": "create_unique_email_address()",
+        "email": create_unique_email_address(),
     }
 
     client.update_zone(zone, sign_request=False, status=401)
