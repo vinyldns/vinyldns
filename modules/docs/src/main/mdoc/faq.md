@@ -19,6 +19,7 @@ position: 6
 8. [How do I get API credentials?](#8)
 9. [How are requests authenticated to the VinylDNS API?](#9)
 10. [How to change email configuration for groups?](#10)
+11. [How to configure messages displayed to the users](#11)
 
 
 ### 1. Can I create a zone in VinylDNS? <a id="1"></a>
@@ -95,3 +96,19 @@ VinylDNS can be configured to disallow multiple groups with the same email addre
 supporting multiple groups with the same email address to be confusing to many users when there are ownership questions
 in the future. Therefore, we strongly recommend that VinylDNS deployments utilize this feature. If you wish to use this feature,
 you can set `vinyldns.groups.enforce-unique-email-address = true` in the [API configuration](operator/config-api.md#enforce-unique-email-address).
+
+### 11. How to configure messages displayed to the users? <a id="11"></a>
+The messages displayed to the users can be configured in VinylDNS. We can configure messages from `reference.conf` file present in
+`core/src/main/resources` directory as follows:
+
+```yaml
+# Configure Messages. Override existing messages with new messages. Refer Messages.scala file for existing messages
+# Have a look on placeholders while making changes, else you may face errors
+# Place the existing message present at Messages.scala file in 'text' and the new message in 'override-text'
+messages = [
+  {
+    text = "Search must contain at least two letters or numbers to perform a RecordSet Search."
+    override-text = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
+  }
+]
+```

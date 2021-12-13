@@ -1,6 +1,6 @@
 from utils import *
 from vinyldns_python import VinylDNSClient
-
+from utils import create_unique_email_address
 
 class ListRecordSetsTestContext(object):
     def __init__(self, partition_id: str):
@@ -28,7 +28,7 @@ class ListRecordSetsTestContext(object):
         partition_id = self.partition_id
         group = {
             "name": f"list-records-group{partition_id}",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "list-records-user"}],
             "admins": [{"id": "list-records-user"}]
@@ -37,7 +37,7 @@ class ListRecordSetsTestContext(object):
         zone_change = self.client.create_zone(
             {
                 "name": f"list-records{partition_id}.",
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "shared": False,
                 "adminGroupId": self.group["id"],
                 "isTest": True,

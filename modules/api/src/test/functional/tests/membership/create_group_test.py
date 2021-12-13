@@ -1,4 +1,6 @@
+import pytest
 from hamcrest import *
+from utils import create_unique_email_address
 
 
 def test_create_group_success(shared_zone_test_context):
@@ -11,7 +13,7 @@ def test_create_group_success(shared_zone_test_context):
     try:
         new_group = {
             "name": f"test-create-group-success{shared_zone_test_context.partition_id}",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -43,7 +45,7 @@ def test_creator_is_an_admin(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-create-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": []
@@ -72,7 +74,7 @@ def test_create_group_without_name(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     new_group = {
-        "email": "test@test.com",
+        "email": create_unique_email_address(),
         "description": "this is a description",
         "members": [{"id": "ok"}],
         "admins": [{"id": "ok"}]
@@ -124,7 +126,7 @@ def test_create_group_without_members_or_admins(shared_zone_test_context):
 
     new_group = {
         "name": "some-group-name",
-        "email": "test@test.com",
+        "email": create_unique_email_address(),
         "description": "this is a description"
     }
     errors = client.create_group(new_group, status=400)["errors"]
@@ -145,7 +147,7 @@ def test_create_group_adds_admins_as_members(shared_zone_test_context):
 
         new_group = {
             "name": "test-create-group-add-admins-as-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [],
             "admins": [{"id": "ok"}]
@@ -174,7 +176,7 @@ def test_create_group_duplicate(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-create-group-duplicate",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -187,34 +189,36 @@ def test_create_group_duplicate(shared_zone_test_context):
             client.delete_group(result["id"], status=(200, 404))
 
 
+# `xfail` is used to avoid traceback, as we expect the test to fail when unique-email config was set true which is
+# the purpose of this test.
+@pytest.mark.xfail(reason="Fails when unique-email config was set true, else will pass the test.")
 def test_create_group_email_conflict(shared_zone_test_context):
     """
-    Tests that we can not create a group with an email already in use when email configuration is set true
+    Tests that we cannot create a group with an email already in use, when unique email configuration is set true
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     conflict_group = None
     try:
         new_group = {
-            'name': 'test_create_group_conflict',
-            'email': 'test_create_conflict@test.com',
+            'name': 'test_create_group_email_conflict',
+            'email': create_unique_email_address(),
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
         }
         conflict_group = client.create_group(new_group, status=200)
         assert_that(conflict_group['email'], is_(new_group['email']))
-
+        old_email = conflict_group['email']
         other_group = {
-            'name': 'the_other_group',
-            'email': 'test_create_conflict@test.com',
+            'name': 'create_other_group',
+            'email': old_email,
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
         }
-        # Status code will be 409 if unique email configuration was enabled in reference.conf file else it'll be 200
-        client.create_group(other_group, status=(200, 409))
-
+        # Status code will be 409 and test fails if unique email configuration was enabled in reference.conf,
+        # else it'll be 200
+        client.create_group(other_group, status=200)
     finally:
         if conflict_group:
             client.delete_group(conflict_group['id'], status=(200, 404))
@@ -230,7 +234,7 @@ def test_create_group_no_members(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-create-group-no-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [],
             "admins": []
@@ -254,7 +258,7 @@ def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-create-group-add-admins-to-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "dummy"}]

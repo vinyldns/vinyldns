@@ -20,7 +20,7 @@ def test_sync_zone_success(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": create_unique_email_address(),
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "isTest": True,
         "connection": {

@@ -24,7 +24,7 @@ def test_create_zone_with_tsigs(shared_zone_test_context, key_name, key_secret, 
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": key_name,
@@ -64,7 +64,7 @@ def test_create_zone_success(shared_zone_test_context):
 
         zone = {
             "name": zone_name,
-            "email": "test@test.com",
+            "email": "create_unique_email_address()",
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "backendId": "func-test-backend"
         }
@@ -107,7 +107,7 @@ def test_create_zone_without_transfer_connection_leaves_it_empty(shared_zone_tes
 
         zone = {
             "name": zone_name,
-            "email": "test@test.com",
+            "email": "create_unique_email_address()",
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -141,7 +141,7 @@ def test_create_zone_fails_no_authorization(shared_zone_test_context):
 
     zone = {
         "name": str(uuid.uuid4()),
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
     }
     client.create_zone(zone, sign_request=False, status=401)
 
@@ -171,7 +171,7 @@ def test_create_invalid_zone_data(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "shared": "invalid_value",
         "adminGroupId": "admin-group-id"
     }
@@ -190,7 +190,7 @@ def test_create_zone_with_connection_failure(shared_zone_test_context):
     zone_name = f"one-time{shared_zone_test_context.partition_id}."
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "connection": {
             "name": zone_name,
             "keyName": zone_name,
@@ -234,7 +234,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"]
     }
 
@@ -266,7 +266,7 @@ def test_zone_connection_only(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": "vinyldns.",
@@ -325,7 +325,7 @@ def test_zone_bad_connection(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
@@ -345,7 +345,7 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
@@ -371,7 +371,7 @@ def test_zone_transfer_connection(shared_zone_test_context):
 
     zone = {
         "name": zone_name,
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
@@ -429,7 +429,7 @@ def test_user_cannot_create_zone_with_nonmember_admin_group(shared_zone_test_con
     """
     zone = {
         "name": f"one-time{shared_zone_test_context.partition_id}.",
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.dummy_group["id"],
         "connection": {
             "name": "vinyldns.",
@@ -454,7 +454,7 @@ def test_user_cannot_create_zone_with_failed_validations(shared_zone_test_contex
     """
     zone = {
         "name": f"invalid-zone{shared_zone_test_context.partition_id}.",
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": "vinyldns.",
@@ -492,7 +492,7 @@ def test_create_zone_bad_backend_id(shared_zone_test_context):
     """
     zone = {
         "name": "test-create-zone-bad-backend-id",
-        "email": "test@test.com",
+        "email": "create_unique_email_address()",
         "adminGroupId": shared_zone_test_context.ok_group["id"],
         "backendId": "does-not-exist-id"
     }

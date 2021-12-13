@@ -1,6 +1,7 @@
+import pytest
 import time
-
 from hamcrest import *
+from utils import create_unique_email_address
 
 
 def test_update_group_success(shared_zone_test_context):
@@ -13,7 +14,7 @@ def test_update_group_success(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -34,7 +35,7 @@ def test_update_group_success(shared_zone_test_context):
         update_group = {
             "id": group["id"],
             "name": "updated-name",
-            "email": "update@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a new description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -63,7 +64,7 @@ def test_update_group_without_name(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-without-name",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -74,7 +75,7 @@ def test_update_group_without_name(shared_zone_test_context):
 
         update_group = {
             "id": result["id"],
-            "email": "update@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a new description"
         }
 
@@ -94,7 +95,7 @@ def test_update_group_without_email(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-without-email",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -126,7 +127,7 @@ def test_updating_group_without_name_or_email(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-without-name-and-email",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -162,7 +163,7 @@ def test_updating_group_without_members_or_admins(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-without-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -174,7 +175,7 @@ def test_updating_group_without_members_or_admins(shared_zone_test_context):
         update_group = {
             "id": result["id"],
             "name": "test-update-without-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
         }
         errors = client.update_group(update_group["id"], update_group, status=400)["errors"]
@@ -198,7 +199,7 @@ def test_update_group_adds_admins_as_members(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-group-admins-as-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -217,7 +218,7 @@ def test_update_group_adds_admins_as_members(shared_zone_test_context):
         update_group = {
             "id": group["id"],
             "name": "test-update-group-admins-as-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}, {"id": "dummy"}]
@@ -245,7 +246,7 @@ def test_update_group_conflict(shared_zone_test_context):
     try:
         new_group = {
             "name": "test_update_group_conflict",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -255,7 +256,7 @@ def test_update_group_conflict(shared_zone_test_context):
 
         other_group = {
             "name": "change_me",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -267,7 +268,7 @@ def test_update_group_conflict(shared_zone_test_context):
         update_group = {
             "id": result["id"],
             "name": "test_update_group_conflict",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -280,9 +281,12 @@ def test_update_group_conflict(shared_zone_test_context):
             client.delete_group(conflict_group["id"], status=(200, 404))
 
 
+# `xfail` is used to avoid traceback, as we expect the test to fail when unique-email config was set true which is
+# the purpose of this test.
+@pytest.mark.xfail(reason="Fails when unique-email config was set true, else will pass the test.")
 def test_update_group_email_conflict(shared_zone_test_context):
     """
-    Tests that we can not update a groups email to an email already in use when unique email configuration is set true
+    Tests that we cannot update a groups email to an email already in use, when unique email configuration is set true
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -291,17 +295,17 @@ def test_update_group_email_conflict(shared_zone_test_context):
     try:
         new_group = {
             'name': 'test_update_group_email_conflict',
-            'email': 'test_update_conflict@test.com',
+            'email': create_unique_email_address(),
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
         }
         conflict_group = client.create_group(new_group, status=200)
         assert_that(conflict_group['email'], is_(new_group['email']))
-
+        old_email = conflict_group['email']
         other_group = {
             'name': 'other_group',
-            'email': 'test_other_email@test.com',
+            'email': create_unique_email_address(),
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
@@ -313,13 +317,14 @@ def test_update_group_email_conflict(shared_zone_test_context):
         update_group = {
             'id': result['id'],
             'name': 'other_group',
-            'email': 'test_update_conflict@test.com',
+            'email': old_email,
             'description': 'this is a description',
             'members': [{'id': 'ok'}],
             'admins': [{'id': 'ok'}]
         }
-        # Status code will be 409 if unique email configuration was enabled in reference.conf file else it'll be 200
-        client.update_group(update_group['id'], update_group, status=(200, 409))
+        # Status code will be 409 and test fails if unique email configuration was enabled in reference.conf,
+        # else it'll be 200
+        client.update_group(update_group['id'], update_group, status=200)
     finally:
         if result:
             client.delete_group(result['id'], status=(200, 404))
@@ -336,7 +341,7 @@ def test_update_group_not_found(shared_zone_test_context):
     update_group = {
         "id": "test-update-group-not-found",
         "name": "test-update-group-not-found",
-        "email": "update@test.com",
+        "email": create_unique_email_address(),
         "description": "this is a new description",
         "members": [{"id": "ok"}],
         "admins": [{"id": "ok"}]
@@ -354,7 +359,7 @@ def test_update_group_deleted(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-group-deleted",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -365,7 +370,7 @@ def test_update_group_deleted(shared_zone_test_context):
         update_group = {
             "id": saved_group["id"],
             "name": "test-update-group-deleted-updated",
-            "email": "update@test.com",
+            "email": "create_unique_email_address()",
             "description": "this is a new description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -385,7 +390,7 @@ def test_add_member_via_update_group_success(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-add-member-to-via-update-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
@@ -394,7 +399,7 @@ def test_add_member_via_update_group_success(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-add-member-to-via-update-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
         }
@@ -418,7 +423,7 @@ def test_add_member_to_group_twice_via_update_group(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-add-member-to-group-twice-success-via-update-group",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
@@ -427,7 +432,7 @@ def test_add_member_to_group_twice_via_update_group(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-add-member-to-group-twice-success-via-update-group",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
         }
@@ -453,7 +458,7 @@ def test_add_not_found_member_to_group_via_update_group(shared_zone_test_context
     try:
         new_group = {
             "name": "test-add-not-found-member-to-group-via-update-group",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
@@ -464,7 +469,7 @@ def test_add_not_found_member_to_group_via_update_group(shared_zone_test_context
         updated_group = {
             "id": saved_group["id"],
             "name": "test-add-not-found-member-to-group-via-update-group",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "not_found"}],
             "admins": [{"id": "ok"}]
         }
@@ -485,7 +490,7 @@ def test_remove_member_via_update_group_success(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-remove-member-via-update-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
         }
@@ -495,7 +500,7 @@ def test_remove_member_via_update_group_success(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-remove-member-via-update-group-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
@@ -518,7 +523,7 @@ def test_remove_member_and_admin(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-remove-member-and-admin",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}, {"id": "dummy"}]
         }
@@ -528,7 +533,7 @@ def test_remove_member_and_admin(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-remove-member-and-admin",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
@@ -553,7 +558,7 @@ def test_remove_member_but_not_admin_keeps_member(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-remove-member-not-admin-keeps-member",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}, {"id": "dummy"}]
         }
@@ -563,7 +568,7 @@ def test_remove_member_but_not_admin_keeps_member(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-remove-member-not-admin-keeps-member",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}, {"id": "dummy"}]
         }
@@ -590,7 +595,7 @@ def test_remove_admin_keeps_member(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-remove-admin-keeps-member",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}, {"id": "dummy"}]
         }
@@ -600,7 +605,7 @@ def test_remove_admin_keeps_member(shared_zone_test_context):
         updated_group = {
             "id": saved_group["id"],
             "name": "test-remove-admin-keeps-member",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
         }
@@ -624,10 +629,11 @@ def test_update_group_not_authorized(shared_zone_test_context):
     """
     ok_client = shared_zone_test_context.ok_vinyldns_client
     not_admin_client = shared_zone_test_context.dummy_vinyldns_client
+    saved_group = None
     try:
         new_group = {
             "name": "test-update-group-not-authorized",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -637,7 +643,7 @@ def test_update_group_not_authorized(shared_zone_test_context):
         update_group = {
             "id": saved_group["id"],
             "name": "updated-name",
-            "email": "update@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a new description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
@@ -659,7 +665,7 @@ def test_update_group_adds_admins_to_member_list(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-update-group-add-admins-to-members",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]

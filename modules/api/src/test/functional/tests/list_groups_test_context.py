@@ -19,7 +19,7 @@ class ListGroupsTestContext(object):
             for index in range(0, 50):
                 new_group = {
                     "name": "{0}-{1:0>3}".format(self.group_prefix, index),
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "members": [{"id": "list-group-user"}],
                     "admins": [{"id": "list-group-user"}]
                 }

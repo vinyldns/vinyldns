@@ -39,7 +39,7 @@ object TestDataLoader {
     secretKey = "testUserSecretKey",
     firstName = Some("Test"),
     lastName = Some("User"),
-    email = Some("test@test.com"),
+    email = Some("testuser@test.com"),
     isTest = true
   )
   final val okUser = User(
@@ -50,7 +50,7 @@ object TestDataLoader {
     secretKey = "okSecretKey",
     firstName = Some("ok"),
     lastName = Some("ok"),
-    email = Some("test@test.com"),
+    email = Some("okuser@test.com"),
     isTest = true
   )
   final val dummyUser = User(
@@ -69,7 +69,7 @@ object TestDataLoader {
     secretKey = "sharedZoneUserSecretKey",
     firstName = Some("sharedZoneUser"),
     lastName = Some("sharedZoneUser"),
-    email = Some("test@test.com"),
+    email = Some("shareduser@test.com"),
     isTest = true
   )
   final val lockedUser = User(
@@ -102,7 +102,7 @@ object TestDataLoader {
     secretKey = "listGroupSecretKey",
     firstName = Some("list-group"),
     lastName = Some("list-group"),
-    email = Some("test@test.com"),
+    email = Some("listgroupuser@test.com"),
     isTest = true
   )
 
@@ -114,7 +114,7 @@ object TestDataLoader {
     secretKey = "listZonesSecretKey",
     firstName = Some("list-zones"),
     lastName = Some("list-zones"),
-    email = Some("test@test.com"),
+    email = Some("listzonesuser@test.com"),
     isTest = true
   )
 
@@ -138,7 +138,7 @@ object TestDataLoader {
     secretKey = "listRecordsSecretKey",
     firstName = Some("list-records"),
     lastName = Some("list-records"),
-    email = Some("test@test.com"),
+    email = Some("listrecordsuser@test.com"),
     isTest = true
   )
 
@@ -150,7 +150,7 @@ object TestDataLoader {
     secretKey = "listBatchSummariesSecretKey",
     firstName = Some("list-batch-summaries"),
     lastName = Some("list-batch-summaries"),
-    email = Some("test@test.com"),
+    email = Some("batchsummaries@test.com"),
     isTest = true
   )
 
@@ -170,7 +170,7 @@ object TestDataLoader {
     secretKey = "listZeroSummariesSecretKey",
     firstName = Some("list-zero-summaries"),
     lastName = Some("list-zero-summaries"),
-    email = Some("test@test.com"),
+    email = Some("zerosummaries@test.com"),
     isTest = true
   )
 
@@ -182,7 +182,7 @@ object TestDataLoader {
     secretKey = "supportUserSecretKey",
     firstName = Some("support-user"),
     lastName = Some("support-user"),
-    email = Some("test@test.com"),
+    email = Some("testsupport@test.com"),
     isSupport = true,
     isTest = true
   )
@@ -190,14 +190,14 @@ object TestDataLoader {
   final val sharedZoneGroup = Group(
     name = "testSharedZoneGroup",
     id = "shared-zone-group",
-    email = "email",
+    email = "groupemail@test.com",
     memberIds = Set(sharedZoneUser.id),
     adminUserIds = Set(sharedZoneUser.id)
   )
 
   final val sharedZone = Zone(
     name = "shared.",
-    email = "email",
+    email = "zoneemail@test.com",
     adminGroupId = sharedZoneGroup.id,
     shared = true,
     isTest = true
@@ -206,7 +206,7 @@ object TestDataLoader {
   final val globalACLGroup = Group(
     name = "globalACLGroup",
     id = "global-acl-group-id",
-    email = "email",
+    email = "globalemail@test.com",
     memberIds = Set(okUser.id, dummyUser.id),
     adminUserIds = Set(okUser.id, dummyUser.id)
   )
@@ -214,7 +214,7 @@ object TestDataLoader {
   final val anotherGlobalACLGroup = Group(
     name = "globalACLGroup",
     id = "another-global-acl-group",
-    email = "email",
+    email = "anotheremail@test.com",
     memberIds = Set(testUser.id),
     adminUserIds = Set(testUser.id)
   )
@@ -222,7 +222,7 @@ object TestDataLoader {
   final val duGroup = Group(
     name = "duGroup",
     id = "duGroup-id",
-    email = "test@test.com",
+    email = "dugroup@test.com",
     memberIds = listOfDummyUsers.map(_.id).toSet + testUser.id,
     adminUserIds = listOfDummyUsers.map(_.id).toSet + testUser.id
   )
@@ -231,17 +231,17 @@ object TestDataLoader {
   // All other test zones should be flagged as test
   final val nonTestSharedZone = Zone(
     name = "non.test.shared.",
-    email = "email",
+    email = "nonsharedemail@test.com",
     adminGroupId = sharedZoneGroup.id,
     shared = true
   )
 
   def loadTestData(
-      userRepo: UserRepository,
-      groupRepo: GroupRepository,
-      zoneRepo: ZoneRepository,
-      membershipRepo: MembershipRepository
-  ): IO[Unit] =
+                    userRepo: UserRepository,
+                    groupRepo: GroupRepository,
+                    zoneRepo: ZoneRepository,
+                    membershipRepo: MembershipRepository
+                  ): IO[Unit] =
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
@@ -252,8 +252,8 @@ object TestDataLoader {
       existingShared <- zoneRepo.getZonesByFilters(Set(nonTestSharedZone.name, sharedZone.name))
       toDelete = existingShared.collect {
         case test
-            if test.isTest ||
-              (test.name == nonTestSharedZone.name && test.adminGroupId == nonTestSharedZone.adminGroupId) =>
+          if test.isTest ||
+            (test.name == nonTestSharedZone.name && test.adminGroupId == nonTestSharedZone.adminGroupId) =>
           test.copy(status = ZoneStatus.Deleted)
       }.toList
       _ <- if (toDelete.length > 2) {

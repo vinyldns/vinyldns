@@ -1,5 +1,5 @@
 import pytest
-
+from utils import create_unique_email_address
 from hamcrest import *
 
 
@@ -159,7 +159,7 @@ def test_get_group_changes_unauthed(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-list-group-admins-unauthed-2",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }

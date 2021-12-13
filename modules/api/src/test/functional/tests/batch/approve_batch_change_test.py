@@ -38,7 +38,7 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         # need to create the zone so the change can succeed
         zone = {
             "name": f"not.loaded{partition_id}.",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "backendId": "func-test-backend",
             "shared": True

@@ -1,4 +1,5 @@
 from hamcrest import *
+from utils import create_unique_email_address
 
 
 def test_list_group_members_success(shared_zone_test_context):
@@ -11,11 +12,10 @@ def test_list_group_members_success(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-list-group-members-success",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}, {"id": "dummy"}],
             "admins": [{"id": "ok"}]
         }
-
         members = ["dummy", "ok"]
         saved_group = client.create_group(new_group, status=200)
         result = client.get_group(saved_group["id"], status=200)
@@ -45,7 +45,7 @@ def test_list_group_members_success(shared_zone_test_context):
         assert_that(ok["isAdmin"], is_(True))
         assert_that(ok["firstName"], is_("ok"))
         assert_that(ok["lastName"], is_("ok"))
-        assert_that(ok["email"], is_("test@test.com"))
+        assert_that(ok["email"], is_("okuser@test.com"))
         assert_that(ok["created"], is_not(none()))
         assert_that(ok["lockStatus"], is_("Unlocked"))
     finally:
@@ -76,7 +76,7 @@ def test_list_group_members_start_from(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-start-from",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -130,7 +130,7 @@ def test_list_group_members_start_from_non_user(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-start-from-nonexistent",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -183,7 +183,7 @@ def test_list_group_members_max_item(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-max-items",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -236,7 +236,7 @@ def test_list_group_members_max_item_default(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-max-items-default",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -288,7 +288,7 @@ def test_list_group_members_max_item_zero(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-max-items-zero",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -322,7 +322,7 @@ def test_list_group_members_max_item_over_1000(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-max-items-over-limit",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -356,7 +356,7 @@ def test_list_group_members_next_id_correct(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-next-id",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -408,7 +408,7 @@ def test_list_group_members_next_id_exhausted(shared_zone_test_context):
 
         new_group = {
             "name": "test-list-group-members-next-id-exhausted",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -460,7 +460,7 @@ def test_list_group_members_next_id_exhausted_two_pages(shared_zone_test_context
 
         new_group = {
             "name": "test-list-group-members-next-id-exhausted-two-pages",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -531,7 +531,7 @@ def test_list_group_members_unauthed(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-list-group-members-unauthed",
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }

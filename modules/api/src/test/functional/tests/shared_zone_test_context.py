@@ -75,7 +75,7 @@ class SharedZoneTestContext(object):
         try:
             ok_group = {
                 "name": f"ok-group{partition_id}",
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "description": "this is a description",
                 "members": [{"id": "ok"}, {"id": "support-user-id"}],
                 "admins": [{"id": "ok"}]
@@ -87,7 +87,7 @@ class SharedZoneTestContext(object):
 
             dummy_group = {
                 "name": f"dummy-group{partition_id}",
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "description": "this is a description",
                 "members": [{"id": "dummy"}],
                 "admins": [{"id": "dummy"}]
@@ -98,7 +98,7 @@ class SharedZoneTestContext(object):
 
             shared_record_group = {
                 "name": f"record-ownergroup{partition_id}",
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "description": "this is a description",
                 "members": [{"id": "sharedZoneUser"}, {"id": "ok"}, {"id": "support-user-id"}],
                 "admins": [{"id": "sharedZoneUser"}, {"id": "ok"}]
@@ -107,7 +107,7 @@ class SharedZoneTestContext(object):
 
             history_group = {
                 "name": f"history-group{partition_id}",
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "description": "this is a description",
                 "members": [{"id": "history-id"}],
                 "admins": [{"id": "history-id"}]
@@ -146,7 +146,7 @@ class SharedZoneTestContext(object):
             ok_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"ok{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -170,7 +170,7 @@ class SharedZoneTestContext(object):
             dummy_zone_change = self.dummy_vinyldns_client.create_zone(
                 {
                     "name": f"dummy{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
@@ -195,7 +195,7 @@ class SharedZoneTestContext(object):
             ip6_reverse_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -220,7 +220,7 @@ class SharedZoneTestContext(object):
             ip6_16_nibble_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"0.0.0.1.{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -233,7 +233,7 @@ class SharedZoneTestContext(object):
             ip4_reverse_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"{partition_id}.10.in-addr.arpa.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -259,7 +259,7 @@ class SharedZoneTestContext(object):
             classless_base_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"{partition_id}.0.192.in-addr.arpa.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -284,7 +284,7 @@ class SharedZoneTestContext(object):
             classless_zone_delegation_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"192/30.{partition_id}.0.192.in-addr.arpa.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -309,7 +309,7 @@ class SharedZoneTestContext(object):
             system_test_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"system-test{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -335,7 +335,7 @@ class SharedZoneTestContext(object):
             parent_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"parent.com{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -369,7 +369,7 @@ class SharedZoneTestContext(object):
             ds_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"example.com{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -394,7 +394,7 @@ class SharedZoneTestContext(object):
             requires_review_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     "name": f"zone.requires.review{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
@@ -406,7 +406,7 @@ class SharedZoneTestContext(object):
             shared_zone_change = self.support_user_client.create_zone(
                 {
                     "name": f"shared{partition_id}.",
-                    "email": "test@test.com",
+                    "email": create_unique_email_address(),
                     "shared": True,
                     "adminGroupId": self.shared_record_group["id"],
                     "isTest": True,
@@ -527,7 +527,7 @@ class SharedZoneTestContext(object):
         members = [{"id": "ok"}]
         new_group = {
             "name": group_name,
-            "email": "test@test.com",
+            "email": create_unique_email_address(),
             "members": members,
             "admins": [{"id": "ok"}]
         }
@@ -541,7 +541,7 @@ class SharedZoneTestContext(object):
             update_groups.append({
                 "id": created_group["id"],
                 "name": group_name,
-                "email": "test@test.com",
+                "email": create_unique_email_address(),
                 "members": members,
                 "admins": [{"id": "ok"}]
             })

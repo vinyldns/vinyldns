@@ -1,7 +1,8 @@
 import json
 import traceback
 import uuid
-
+import random
+import string
 import dns.query
 import dns.tsigkeyring
 import dns.update
@@ -9,6 +10,15 @@ from dns.resolver import *
 from hamcrest import *
 
 from vinyldns_context import VinylDNSTestContext
+
+
+def create_unique_email_address():
+    # different domains so that we can avoid having conflict
+    domains = ["test.com", "dummy.com", "trial.com"]
+    # letter from a-z to be used in email creation
+    letters = string.ascii_lowercase[:26]
+    # creates an unique email address of length '10' from random letters and a random domain
+    return ''.join(random.choice(letters) for i in range(10)) + '@' + random.choice(domains)
 
 
 def verify_recordset(actual, expected):
@@ -34,7 +44,7 @@ def gen_zone():
     """
     return {
         "name": str(uuid.uuid4()) + ".",
-        "email": "test@test.com",
+        "email": create_unique_email_address(),
         "adminGroupId": "test-group-id"
     }
 
@@ -388,7 +398,8 @@ def clear_zones(client):
     zones = client.list_zones()["zones"]
     if len(zones) > 0:
         # we only want to delete zones that the ok user "owns"
-        zones_to_delete = [x for x in zones if (x["adminGroupId"] in group_ids or x["account"] in group_ids) and x["accessLevel"] == "Delete"]
+        zones_to_delete = [x for x in zones if (x["adminGroupId"] in group_ids or x["account"] in group_ids) and x[
+            "accessLevel"] == "Delete"]
         zone_ids_to_delete = [x["id"] for x in zones_to_delete]
         if len(zone_ids_to_delete) > 0:
             client.abandon_zones(zone_ids_to_delete)
@@ -565,7 +576,8 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
             raise
 
 
-def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{"id": "ok"}],
+def get_group_json(group_name, email=create_unique_email_address(), description="this is a description",
+                   members=[{"id": "ok"}],
                    admins=[{"id": "ok"}]):
     return {
         "name": group_name,

@@ -117,7 +117,7 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
 
     temp_group = {
         "name": "test-list-summaries-deleted-owner-group",
-        "email": "test@test.com",
+        "email": create_unique_email_address(),
         "description": "for testing that list summaries still works when record owner group is deleted",
         "members": [{"id": "sharedZoneUser"}],
         "admins": [{"id": "sharedZoneUser"}]
