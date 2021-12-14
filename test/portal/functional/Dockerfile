@@ -7,7 +7,7 @@ COPY modules/portal /functional_test
 COPY $DOCKERFILE_PATH/run.sh /functional_test
 RUN cp /build/node_modules.tar.xz /functional_test && \
     cd /functional_test &&  \
-    tar Jxvf node_modules.tar.xz && \
+    tar Jxf node_modules.tar.xz && \
     rm -rf node_modules.tar.xz
 
 ENTRYPOINT ["./run.sh"]
