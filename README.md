@@ -44,7 +44,6 @@ Integration is simple with first-class language support including:
 * [Code of Conduct](#code-of-conduct)
 * [Developer Guide](#developer-guide)
 * [Contributing](#contributing)
-* [Contact](#contact)
 * [Maintainers and Contributors](#maintainers-and-contributors)
 * [Credits](#credits)
 
@@ -132,8 +131,7 @@ the record data we entered.
 ## Code of Conduct
 
 This project, and everyone participating in it, are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md). By
-participating, you agree to this Code. Please report any violations to the code of conduct to
-[vinyldns-core@googlegroups.com](mailto:vinyldns-core@googlegroups.com).
+participating, you agree to this Code.
 
 ## Developer Guide
 
@@ -142,11 +140,6 @@ See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up Viny
 ## Contributing
 
 See the [Contributing Guide](CONTRIBUTING.md).
-
-## Contact
-
-- If you have any security concerns please contact the maintainers
-  directly [vinyldns-core@googlegroups.com](mailto:vinyldns-core@googlegroups.com)
 
 ## Maintainers and Contributors
 
