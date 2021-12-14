@@ -31,6 +31,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
@@ -49,10 +50,12 @@ class MembershipRoutingSpec
     with BeforeAndAfterEach {
 
   val membershipService: MembershipService = mock[MembershipService]
+  val testLimitConfig: LimitsConfig =
+    LimitsConfig(100,100,1000,1500,100,100,100)
   val okAuthRoute: Route =
-    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new MembershipRoute(membershipService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth)).getRoutes
   val superUserRoute: Route =
-    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
+    new MembershipRoute(membershipService,testLimitConfig, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
   var membershipRoute: Route = _
 
   override protected def beforeEach(): Unit = {
