@@ -28,6 +28,9 @@ class MySqlUserChangeRepository
     extends UserChangeRepository
     with Monitored
     with ProtobufConversions {
+
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlUserChangeRepository])
 
   private final val PUT_USER_CHANGE =
@@ -53,7 +56,7 @@ class MySqlUserChangeRepository
         DB.readOnly { implicit s =>
           GET_USER_CHANGE_BY_ID
             .bind(changeId)
-            .map(toUserChange(1))
+            .map(toUserChange(DataColumnIndex))
             .first()
             .apply()
         }

@@ -43,6 +43,8 @@ class MySqlBatchChangeRepository
     with BatchChangeProtobufConversions
     with Monitored {
 
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlBatchChangeRepository])
 
   private final val PUT_BATCH_CHANGE =
@@ -175,7 +177,7 @@ class MySqlBatchChangeRepository
         .map { batchMeta =>
           val changes = GET_SINGLE_CHANGES_BY_BCID
             .bind(batchMeta.id)
-            .map(extractSingleChange(1))
+            .map(extractSingleChange(DataColumnIndex))
             .list()
             .apply()
           batchMeta.copy(changes = changes)
@@ -211,7 +213,7 @@ class MySqlBatchChangeRepository
                  | WHERE sc.id IN ($singleChangeIds)
                  | ORDER BY sc.seq_num ASC
            """.stripMargin
-              .map(extractSingleChange(1))
+              .map(extractSingleChange(DataColumnIndex))
               .list()
               .apply()
           }
@@ -395,7 +397,7 @@ class MySqlBatchChangeRepository
         DB.readOnly { implicit s =>
           GET_SINGLE_CHANGES_BY_BCID
             .bind(bcId)
-            .map(extractSingleChange(1))
+            .map(extractSingleChange(DataColumnIndex))
             .list()
             .apply()
         }

@@ -24,6 +24,9 @@ import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.core.route.Monitored
 
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
+
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
 
   private final val SAVE_MEMBERS =
@@ -101,7 +104,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
         DB.readOnly { implicit s =>
           GET_GROUPS_FOR_USER
             .bind(userId)
-            .map(_.string(1))
+            .map(_.string(DataColumnIndex))
             .list()
             .apply()
             .toSet
@@ -127,7 +130,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
 
         SQL(query)
           .bindByName(conditions: _*)
-          .map(_.string(1))
+          .map(_.string(DataColumnIndex))
           .list()
           .apply()
           .toSet

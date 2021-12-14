@@ -28,6 +28,8 @@ import vinyldns.proto.VinylDNSProto
 class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions with Monitored {
   import MySqlGroupRepository._
 
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlGroupRepository])
 
   private final val PUT_GROUP =
@@ -120,7 +122,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
         DB.readOnly { implicit s =>
           GET_GROUP_BY_ID
             .bind(groupId)
-            .map(toGroup(1))
+            .map(toGroup(DataColumnIndex))
             .first()
             .apply()
         }
@@ -140,7 +142,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
             val query = BASE_GET_GROUPS_BY_IDS + inClause
             SQL(query)
               .bind(groupIdList: _*)
-              .map(toGroup(1))
+              .map(toGroup(DataColumnIndex))
               .list()
               .apply()
           }.toSet
@@ -155,7 +157,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
         DB.readOnly { implicit s =>
           GET_GROUP_BY_NAME
             .bind(groupName)
-            .map(toGroup(1))
+            .map(toGroup(DataColumnIndex))
             .first()
             .apply()
         }
@@ -169,7 +171,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
         DB.readOnly { implicit s =>
           GET_GROUP_BY_EMAIL_ADDRESS
             .bind(groupEmailAddress)
-            .map(toGroup(1))
+            .map(toGroup(DataColumnIndex))
             .first()
             .apply()
         }
@@ -182,7 +184,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
         logger.info(s"Getting all groups")
         DB.readOnly { implicit s =>
           GET_ALL_GROUPS
-            .map(toGroup(1))
+            .map(toGroup(DataColumnIndex))
             .list()
             .apply()
         }.toSet

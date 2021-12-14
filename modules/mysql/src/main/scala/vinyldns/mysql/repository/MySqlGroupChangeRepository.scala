@@ -27,6 +27,8 @@ import vinyldns.proto.VinylDNSProto
 class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
   import MySqlGroupChangeRepository._
 
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlGroupChangeRepository])
 
   private final val PUT_GROUP_CHANGE =
@@ -91,7 +93,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
         DB.readOnly { implicit s =>
           GET_GROUP_CHANGE
             .bind(groupChangeId)
-            .map(toGroupChange(1))
+            .map(toGroupChange(DataColumnIndex))
             .first()
             .apply()
         }
@@ -118,7 +120,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
                 .bindByName('groupId -> groupId, 'maxItems -> maxItems)
           }
           val queryResult = query
-            .map(toGroupChange(1))
+            .map(toGroupChange(DataColumnIndex))
             .list()
             .apply()
 

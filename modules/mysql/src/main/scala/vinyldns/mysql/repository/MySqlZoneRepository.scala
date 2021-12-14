@@ -34,6 +34,7 @@ import scala.concurrent.duration._
 
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
+  private final val DataColumnIndex = 1
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
   private final val MAX_ACCESSORS = 30
   private final val INITIAL_RETRY_DELAY = 1.millis
@@ -142,7 +143,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.getZone") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONE.bind(zoneId).map(extractZone(1)).first().apply()
+          GET_ZONE.bind(zoneId).map(extractZone(DataColumnIndex)).first().apply()
         }
       }
     }
@@ -157,7 +158,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     }
 
   private def getZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[Zone] =
-    GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
+    GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(DataColumnIndex)).first().apply()
 
   private def getZonesByNamesGroup(zoneNames: List[String]): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.getZonesByNames") {
@@ -168,7 +169,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             BASE_GET_ZONES_SQL +
               s"""WHERE name in ($questionMarks)""".stripMargin
           ).bind(zoneNames: _*)
-            .map(extractZone(1))
+            .map(extractZone(DataColumnIndex))
             .list()
             .apply()
         }
@@ -199,7 +200,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             SQL(
               BASE_GET_ZONES_SQL + s"""WHERE id in ($questionMarks)""".stripMargin
             ).bind(zoneIdsList: _*)
-              .map(extractZone(1))
+              .map(extractZone(DataColumnIndex))
               .list()
               .apply()
           }.toSet
@@ -223,7 +224,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             SQL(
               BASE_GET_ZONES_SQL +
                 " WHERE " + whereClause
-            ).bind(zn: _*).map(extractZone(1)).list().apply()
+            ).bind(zn: _*).map(extractZone(DataColumnIndex)).list().apply()
           }.toSet
         }
       }
@@ -270,7 +271,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
           val results: List[Zone] = SQL(query)
             .bind(accessors: _*)
-            .map(extractZone(1))
+            .map(extractZone(DataColumnIndex))
             .list()
             .apply()
 
@@ -295,7 +296,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.getZonesByAdminGroupId") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(1)).list().apply()
+          GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(DataColumnIndex)).list().apply()
         }
       }
     }
@@ -306,7 +307,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
         DB.readOnly { implicit s =>
           GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID
             .bind(groupId)
-            .map(_.string(1))
+            .map(_.string(DataColumnIndex))
             .single
             .apply()
         }

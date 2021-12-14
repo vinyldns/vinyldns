@@ -31,6 +31,8 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     with Monitored
     with ProtobufConversions {
 
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlUserRepository])
 
   private final val PUT_USER =
@@ -73,7 +75,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
         DB.readOnly { implicit s =>
           GET_USER_BY_ID
             .bind(userId)
-            .map(toUser(1))
+            .map(toUser(DataColumnIndex))
             .first()
             .apply()
         }
@@ -102,7 +104,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             val query = sb.toString
             SQL(query)
               .bind(userIds.toList: _*)
-              .map(toUser(1))
+              .map(toUser(DataColumnIndex))
               .list()
               .apply()
           }
@@ -123,7 +125,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       IO {
         DB.readOnly { implicit s =>
           SQL(BASE_GET_USERS)
-            .map(toUser(1))
+            .map(toUser(DataColumnIndex))
             .list()
             .apply()
         }
@@ -137,7 +139,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
         DB.readOnly { implicit s =>
           GET_USER_BY_ACCESS_KEY
             .bind(accessKey)
-            .map(toUser(1))
+            .map(toUser(DataColumnIndex))
             .first()
             .apply()
         }
@@ -151,7 +153,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
         DB.readOnly { implicit s =>
           GET_USER_BY_USER_NAME
             .bind(userName)
-            .map(toUser(1))
+            .map(toUser(DataColumnIndex))
             .first()
             .apply()
         }

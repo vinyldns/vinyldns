@@ -141,6 +141,8 @@ object MySqlRecordChangeRepository extends ProtobufConversions {
     case RecordSetChangeType.Update => 3
   }
 
+  private final val DataColumnIndex = 1
+
   def toRecordSetChange(ws: WrappedResultSet): RecordSetChange =
-    fromPB(VinylDNSProto.RecordSetChange.parseFrom(ws.bytes(1)))
+    fromPB(VinylDNSProto.RecordSetChange.parseFrom(ws.bytes(DataColumnIndex)))
 }

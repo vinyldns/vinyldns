@@ -45,7 +45,7 @@ def test_list_group_members_success(shared_zone_test_context):
         assert_that(ok["isAdmin"], is_(True))
         assert_that(ok["firstName"], is_("ok"))
         assert_that(ok["lastName"], is_("ok"))
-        assert_that(ok["email"], is_("okuser@test.com"))
+        assert_that(ok["email"], is_("test@test.com"))
         assert_that(ok["created"], is_not(none()))
         assert_that(ok["lockStatus"], is_("Unlocked"))
     finally:

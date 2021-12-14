@@ -29,6 +29,9 @@ class MySqlZoneChangeRepository
     extends ZoneChangeRepository
     with ProtobufConversions
     with Monitored {
+
+  private final val DataColumnIndex = 1
+
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneChangeRepository])
 
   private final val PUT_ZONE_CHANGE =
@@ -84,7 +87,7 @@ class MySqlZoneChangeRepository
               'startFrom -> startValue,
               'maxItems -> (maxItems + 1)
             )
-            .map(extractZoneChange(1))
+            .map(extractZoneChange(DataColumnIndex))
             .list()
             .apply()
           val maxQueries = queryResult.take(maxItems)

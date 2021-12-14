@@ -32,6 +32,8 @@ import scala.util.Try
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   import MySqlRecordSetRepository._
 
+  private final val DataColumnIndex = 1
+
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
       |SELECT data, fqdn
@@ -305,7 +307,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // so we have to default to 0.  it is literally impossible to not return a value
           COUNT_RECORDSETS_IN_ZONE
             .bindByName('zoneId -> zoneId)
-            .map(_.int(1))
+            .map(_.int(DataColumnIndex))
             .single
             .apply()
             .getOrElse(0)
@@ -352,7 +354,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         DB.readOnly { implicit s =>
           GET_RECORDSET_BY_OWNERID
             .bindByName('ownerGroupId -> ownerGroupId)
-            .map(_.string(1))
+            .map(_.string(DataColumnIndex))
             .single
             .apply()
         }
