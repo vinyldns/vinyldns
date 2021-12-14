@@ -11,7 +11,6 @@ on:
   push:
     branches: [ 'master','main' ]
   workflow_dispatch:
-    branches: [ 'master', 'main' ]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -24,17 +23,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
       - name: Build and Test
-        id: build
-        shell: bash
-        run: cd build/ && \
-          ./assemble_api.sh && \
-          ./run_all_tests.sh
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
   docker-release-api:
     name: Release API vNext Image
