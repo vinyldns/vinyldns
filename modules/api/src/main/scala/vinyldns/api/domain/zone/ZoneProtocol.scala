@@ -302,6 +302,8 @@ case class RecentSyncError(msg: String) extends Throwable(msg)
 
 case class ConnectionFailed(zone: Zone, message: String) extends Throwable(message)
 
+case class RecordSetValidation(msg: String) extends Throwable(msg)
+
 case class ZoneValidationFailed(zone: Zone, errors: List[String], message: String)
     extends Throwable(message)
 
