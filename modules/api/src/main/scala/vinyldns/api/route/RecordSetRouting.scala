@@ -82,6 +82,7 @@ class RecordSetRoute(
     case PendingUpdateError(msg) => complete(StatusCodes.Conflict, msg)
     case RecordSetChangeNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupError(msg) => complete(StatusCodes.UnprocessableEntity, msg)
+    case RecordSetValidation(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
