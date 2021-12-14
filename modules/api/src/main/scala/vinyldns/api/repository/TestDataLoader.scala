@@ -39,7 +39,7 @@ object TestDataLoader {
     secretKey = "testUserSecretKey",
     firstName = Some("Test"),
     lastName = Some("User"),
-    email = Some("testuser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
   final val okUser = User(
@@ -50,7 +50,7 @@ object TestDataLoader {
     secretKey = "okSecretKey",
     firstName = Some("ok"),
     lastName = Some("ok"),
-    email = Some("okuser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
   final val dummyUser = User(
@@ -69,7 +69,7 @@ object TestDataLoader {
     secretKey = "sharedZoneUserSecretKey",
     firstName = Some("sharedZoneUser"),
     lastName = Some("sharedZoneUser"),
-    email = Some("shareduser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
   final val lockedUser = User(
@@ -102,7 +102,7 @@ object TestDataLoader {
     secretKey = "listGroupSecretKey",
     firstName = Some("list-group"),
     lastName = Some("list-group"),
-    email = Some("listgroupuser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
 
@@ -114,7 +114,7 @@ object TestDataLoader {
     secretKey = "listZonesSecretKey",
     firstName = Some("list-zones"),
     lastName = Some("list-zones"),
-    email = Some("listzonesuser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
 
@@ -138,7 +138,7 @@ object TestDataLoader {
     secretKey = "listRecordsSecretKey",
     firstName = Some("list-records"),
     lastName = Some("list-records"),
-    email = Some("listrecordsuser@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
 
@@ -150,7 +150,7 @@ object TestDataLoader {
     secretKey = "listBatchSummariesSecretKey",
     firstName = Some("list-batch-summaries"),
     lastName = Some("list-batch-summaries"),
-    email = Some("batchsummaries@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
 
@@ -170,7 +170,7 @@ object TestDataLoader {
     secretKey = "listZeroSummariesSecretKey",
     firstName = Some("list-zero-summaries"),
     lastName = Some("list-zero-summaries"),
-    email = Some("zerosummaries@test.com"),
+    email = Some("test@test.com"),
     isTest = true
   )
 
@@ -182,7 +182,7 @@ object TestDataLoader {
     secretKey = "supportUserSecretKey",
     firstName = Some("support-user"),
     lastName = Some("support-user"),
-    email = Some("testsupport@test.com"),
+    email = Some("test@test.com"),
     isSupport = true,
     isTest = true
   )

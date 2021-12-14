@@ -25,7 +25,6 @@ final case class Message(text: String, overrideText: String)
 final case class MessagesConfig(messages: List[Message])
 
 object MessagesConfig {
-
-  val messages: Either[ConfigReaderFailures, MessagesConfig] =
-    ConfigSource.default.load[MessagesConfig].map(x => x)
+  val appConfigSource: ConfigObjectSource = ConfigSource.resources("reference.conf")
+  val messages: Either[ConfigReaderFailures, MessagesConfig] = appConfigSource.at("vinyldns").load[MessagesConfig].map(x => x)
 }

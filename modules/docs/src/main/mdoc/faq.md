@@ -98,25 +98,5 @@ in the future. Therefore, we strongly recommend that VinylDNS deployments utiliz
 you can set `vinyldns.groups.enforce-unique-email-address = true` in the [API configuration](operator/config-api.md#enforce-unique-email-address).
 
 ### 11. How to configure messages displayed to the users? <a id="11"></a>
-The messages displayed to the users can be configured in VinylDNS. We can configure messages from `reference.conf` file present in
-`core/src/main/resources` directory as follows:
-
-```yaml
-# Configure Messages. Override existing messages with new messages. Refer Messages.scala file for existing messages
-# Have a look on placeholders while making changes, else you may face errors
-# Place the existing message present at Messages.scala file in 'text' and the new message in 'override-text'
-  messages = [
-      {
-          text = "Search must contain at least two letters or numbers to perform a RecordSet Search."
-          override-text = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
-      },
-      {
-          text = "NS data must absolute"
-          override-text = "NS data must be a positive integer"
-      },
-      {
-          text = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group."
-          override-text = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group. Visit FAQ for more information."
-      }
-]
-```
+The messages displayed to the users can be configured in VinylDNS. Refer [API configuration](operator/config-api.md#configure-messages) for details regarding 
+the configuration.
