@@ -36,16 +36,17 @@ Integration is simple with first-class language support including:
 
 ## Table of Contents
 
-- [Quickstart](#quickstart)
-- [Things to Try in the Portal](#things-to-try-in-the-portal)
-  - [Verifying Your Changes](#verifying-your-changes)
-  - [Other things to note](#other-things-to-note)
-- [Code of Conduct](#code-of-conduct)
-- [Developer Guide](#developer-guide)
-- [Contributing](#contributing)
-- [Contact](#contact)
-- [Maintainers and Contributors](#maintainers-and-contributors)
-- [Credits](#credits)
+* [Quickstart](#quickstart)
+    - [Quickstart Optimization](#quickstart-optimization)
+* [Things to Try in the Portal](#things-to-try-in-the-portal)
+    + [Verifying Your Changes](#verifying-your-changes)
+    + [Other things to note](#other-things-to-note)
+* [Code of Conduct](#code-of-conduct)
+* [Developer Guide](#developer-guide)
+* [Contributing](#contributing)
+* [Contact](#contact)
+* [Maintainers and Contributors](#maintainers-and-contributors)
+* [Credits](#credits)
 
 ## Quickstart
 
@@ -62,7 +63,21 @@ VinylDNS on your machine with docker:
 1. To stop the local setup, run `./utils/clean-vinyldns-containers.sh`.
 
 There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the
-endpoint `http://localhost:9000`
+endpoint `http://localhost:9000`.
+
+#### Quickstart Optimization
+
+If you are experimenting with Quickstart, you may encounter a delay each time you run it. This is because the API and
+Portal are rebuilt every time you launch Quickstart. If you'd like to cache the builds of the API and Portal, you may
+want to first run:
+
+| Script                     | Description                                                                  |
+|----------------------------|------------------------------------------------------------------------------|
+| `build/assemble_api.sh`    | This will create the API `jar` file which will then be used by Quickstart    |
+| `build/assemble_portal.sh` | This will create the Portal `zip` file which will then be used by Quickstart |
+
+Once these scripts are run, the artifacts are placed into the `artifacts/` directory and will be reused for each
+Quickstart launch. If you'd like to regenerate the artifacts, simply delete them and rerun the scripts above.
 
 ## Things to Try in the Portal
 
@@ -71,11 +86,11 @@ endpoint `http://localhost:9000`
 3. Navigate to the `groups` tab: <http://localhost:9001/groups>
 4. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the
    group
-5. Connect a zone by going to the `zones` tab: <http://localhost:9001/zones>. 
-   1. Click the `-> Connect` button 
-   2. For `Zone Name` enter `ok` with an email of `test@test.com` 
-   3. For `Admin Group`, choose a group you created from the previous step
-   4. Leave everything else as-is and click the `Connect` button at the bottom of the form
+5. Connect a zone by going to the `zones` tab: <http://localhost:9001/zones>.
+    1. Click the `-> Connect` button
+    2. For `Zone Name` enter `ok` with an email of `test@test.com`
+    3. For `Admin Group`, choose a group you created from the previous step
+    4. Leave everything else as-is and click the `Connect` button at the bottom of the form
 6. A new zone `ok` should appear in your `My Zones` tab _(you may need to refresh your browser)_
 7. You will see that some records are preloaded in the zone already, this is because these records are preloaded in the
    local docker DNS server and VinylDNS automatically syncs records with the backend DNS server upon zone connection
@@ -130,7 +145,8 @@ See the [Contributing Guide](CONTRIBUTING.md).
 
 ## Contact
 
-- If you have any security concerns please contact the maintainers directly [vinyldns-core@googlegroups.com](mailto:vinyldns-core@googlegroups.com)
+- If you have any security concerns please contact the maintainers
+  directly [vinyldns-core@googlegroups.com](mailto:vinyldns-core@googlegroups.com)
 
 ## Maintainers and Contributors
 
@@ -153,14 +169,14 @@ Given the Apache 2.0 license of VinylDNS, we specifically want to call out the f
 corresponding licenses shown below.
 
 - [logback-classic](https://github.com/qos-ch/logback)
-  - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
+    - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
 - [logback-core](https://github.com/qos-ch/logback)
-  - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
+    - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
 - [h2 database](http://h2database.com)
-  - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
+    - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
 - [pureconfig](https://github.com/pureconfig/pureconfig)
-  - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
+    - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
 - [pureconfig-macros](https://github.com/pureconfig/pureconfig)
-  - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
-- [junit](https://junit.org/junit4/) 
-  - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
+    - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
+- [junit](https://junit.org/junit4/)
+    - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)

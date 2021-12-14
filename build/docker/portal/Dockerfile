@@ -20,13 +20,12 @@ RUN mkdir -p /opt/vinyldns/conf && \
        rm -rf /opt/vinyldns/vinyldns-portal*; \
     fi
 
-FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
+FROM openjdk:11-slim
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
 RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
     test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
-    apk add --update --no-cache bash && \
     mkdir -p /opt/vinyldns/lib_extra && \
     echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
 

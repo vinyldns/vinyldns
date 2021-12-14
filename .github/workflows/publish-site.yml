@@ -1,4 +1,11 @@
 name: Microsite
+concurrency:
+  cancel-in-progress: true
+  group: "publish-site"
+
+defaults:
+  run:
+    shell: bash
 
 on:
   workflow_dispatch:
@@ -15,7 +22,6 @@ jobs:
           fetch-depth: 0
 
       - run: "build/publish_docs.sh"
-        shell: bash
         env:
           SBT_MICROSITES_PUBLISH_TOKEN: ${{ secrets.VINYLDNS_MICROSITE }}
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
