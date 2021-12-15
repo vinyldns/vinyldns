@@ -87,7 +87,7 @@ jobs:
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
-          ref: v${{ steps.get-version.outputs.vinyldns_version }}
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
@@ -122,7 +122,7 @@ jobs:
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
-          ref: v${{ steps.get-version.outputs.vinyldns_version }}
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
