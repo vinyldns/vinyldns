@@ -1,4 +1,4 @@
-name: VinylDNS Official Docker Release
+name: VinylDNS Official Release
 concurrency:
   cancel-in-progress: true
   group: "release"
@@ -9,7 +9,6 @@ defaults:
 
 on:
   workflow_dispatch:
-    branches: [ 'master', 'main' ]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
