@@ -30,7 +30,6 @@ import vinyldns.proto.VinylDNSProto
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
-
   import MySqlRecordSetRepository._
 
   private val FIND_BY_ZONEID_NAME_TYPE =
@@ -108,7 +107,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             oldRs.zoneId,
             oldRs.name,
             fromRecordType(oldRs.typ),
-            oldRs.records,
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
@@ -173,14 +171,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def listRecordSets(
-      zoneId: Option[String],
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults] =
+                      zoneId: Option[String],
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: Option[String],
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupFilter: Option[String],
+                      nameSort: NameSort
+                    ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
