@@ -504,6 +504,22 @@ v6-discovery-nibble-boundaries {
 }
 
 ```
+### Limits Config
+
+Limits for batchchange routing, membership routing , recordset routing , zone routing
+
+```  api {
+    limits {
+      batchchange-routing-max-items-limit = 100
+      membership-routing-default-max-items = 100
+      membership-routing-max-items-limit = 1000
+      membership-routing-max-groups-list-limit = 1500
+      recordset-routing-default-max-items= 100
+      zone-routing-default-max-items = 100
+      zone-routing-max-items-limit = 100
+    }
+  }
+```
 
 ### Full Example Config
 ```yaml
