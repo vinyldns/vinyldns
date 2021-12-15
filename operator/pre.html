@@ -1,0 +1,91 @@
+<h1 id="vinyldns-pre-requisites">VinylDNS Pre-requisites</h1>
+
+<p>VinylDNS has the following external requirements that need to be setup so that VinylDNS can operate. Those include:</p>
+
+<ol>
+  <li><a href="#dns">DNS</a> - your DNS servers VinylDNS will interact with</li>
+  <li><a href="#database">Database</a> - the database houses all of VinylDNS information including history, records, zones, and users</li>
+  <li><a href="#message-queues">Message Queue</a> - the message queue supports high-availability and throttling of commands to DNS
+backend servers</li>
+  <li><a href="#ldap">LDAP</a> - ldap supports both authentication as well as the source of truth for users that are managed inside
+the VinylDNS database</li>
+</ol>
+
+<h2 id="dns">DNS</h2>
+
+<p>VinylDNS is <strong>not a DNS</strong>, rather it integrates with your existing DNS installations to enable DNS self-service and
+streamline DNS operations.</p>
+
+<p>VinylDNS communicates to your DNS via:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">DDNS</code> - DDNS is used for all record updates</li>
+  <li><code class="language-plaintext highlighter-rouge">AXFR</code> - Zone Transfers are used to load DNS records into the VinylDNS database.</li>
+</ul>
+
+<p>VinylDNS communicates to your DNS using “connections”. A connection allows you to specify:</p>
+
+<ol>
+  <li>The TSIG key name</li>
+  <li>The TSIG key secret</li>
+  <li>The server (and optionally port) to communicate to DNS with</li>
+</ol>
+
+<p>There are <strong>2</strong> connections, one for DDNS and another for zone transfers. This allows you to use a different DNS server
+/ key for zone transfers.</p>
+
+<p>Connections (DDNS and Transfer) can be setup</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">per zone</code> - every zone can override the global default by specifying its own connections.</li>
+  <li><code class="language-plaintext highlighter-rouge">global default</code> - assuming you are managing a primary system, you
+can <a href="config-api.html#default-zone-connections">configure default zone connections</a>. When no zone connection is
+specified on a zone, the global defaults will be used.</li>
+</ul>
+
+<h2 id="message-queues">Message Queues</h2>
+
+<p>Most operations that take place in VinylDNS use a message queue. These operations require high-availability,
+fault-tolerance with retry, and throttling. The message queue supports these characteristics in VinylDNS.</p>
+
+<p>Some operations do not use the message queue, these include user and group changes as they do not carry the same
+fault-tolerance and throttling requirements.</p>
+
+<h2 id="message-queue-types">Message Queue Types</h2>
+
+<h3 id="aws-sqs">AWS SQS</h3>
+
+<p>Our VinylDNS instance uses AWS SQS to fulfill its message queue service needs. SQS has the following characteristics:</p>
+
+<ol>
+  <li>High-Availability</li>
+  <li>Retry - in the event that a message cannot be processed, or if a node fails midstream processing, it will be
+automatically made available for another node to process</li>
+  <li>Back-pressure - SQS is a <em>pull based</em> system, meaning that if VinylDNS is currently busy, new messages will not be
+pulled for processing. As soon as a node becomes available, the message will be pulled. This is much preferable to
+a <em>push</em> based system, where bottlenecks in processing could cause an increase in heap pressure in the API nodes
+themselves.</li>
+  <li>Price - SQS is very reasonably priced. Comcast operates multiple message queues for different environments (dev,
+staging, prod, etc). The price to use SQS is in the single digit dollars per month. VinylDNS can be tuned to run
+exclusively in the <em>free tier</em>.</li>
+</ol>
+
+<p>Review the <a href="setup-sqs.html">Setup AWS SQS Guide</a> for more information.</p>
+
+<h3 id="mysql">MySQL</h3>
+
+<p>VinylDNS has also implemented a message queue using MySQL, which incorporates the features that we currently utilize
+through AWS SQS such as changing visibility timeout and re-queuing operations.</p>
+
+<p>Review the <a href="setup-mysql.html">Setup MySQL Guide</a> for more information.</p>
+
+<h2 id="ldap">LDAP</h2>
+
+<p>VinylDNS uses LDAP in order to authenticate users in the <strong>Portal</strong>. LDAP is <strong>not</strong> used in the API, instead the API
+uses its own user and group database for authentication.</p>
+
+<p>When a user first logs into VinylDNS, their user information (first name, last name, user name, email) will be pulled
+from LDAP, and stored in the <code class="language-plaintext highlighter-rouge">UserRepository</code>. Credentials will also be generated for the user and stored encrypted in
+the <code class="language-plaintext highlighter-rouge">UserRepository</code>.</p>
+
+<p>Review the <a href="setup-ldap.html">Setup LDAP Guide</a> for more information</p>
