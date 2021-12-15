@@ -7,18 +7,17 @@ WORKDIR /build
 RUN mkdir -p /opt/vinyldns/conf && \
     if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns/; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
-      env SBT_OPTS="-XX:+UseConcMarkSweepGC -Xmx4G -Xms1G" \
+      env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
-FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
+FROM openjdk:11-slim
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
 RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
     test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
-    apk add --update --no-cache bash && \
     mkdir -p /opt/vinyldns/lib_extra && \
     echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
 

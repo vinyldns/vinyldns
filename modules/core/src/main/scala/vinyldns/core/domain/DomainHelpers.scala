@@ -16,6 +16,8 @@
 
 package vinyldns.core.domain
 
+import scala.util.matching.Regex
+
 object DomainHelpers {
 
   def ensureTrailingDot(str: String): String = if (str.endsWith(".")) str else s"$str."
@@ -26,6 +28,15 @@ object DomainHelpers {
     } else {
       name
     }
+
+  def noConsecutiveDots(rData: String): Boolean = {
+    val validFQDNRegex: Regex = """(\.\.)""".r
+    val matchWithRegex = validFQDNRegex.findFirstIn(rData)
+    matchWithRegex match {
+      case Some(_) => false // has consecutive dots
+      case None => true // has no consecutive dots
+    }
+  }
 
   def removeWhitespace(str: String): String = str.replaceAll("\\s", "")
 }

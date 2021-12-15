@@ -1,4 +1,11 @@
 name: Continuous Integration
+concurrency:
+  cancel-in-progress: false
+  group: "build-test"
+
+defaults:
+  run:
+    shell: bash
 
 on:
   pull_request:
@@ -22,7 +29,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Test
-        shell: bash
         run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
       - name: Codecov

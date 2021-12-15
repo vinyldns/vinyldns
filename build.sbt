@@ -17,7 +17,7 @@ lazy val sharedSettings = Seq(
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-  maintainer := "VinylDNS Maintainers <vinyldns-core@googlegroups.com>",
+  maintainer := "VinylDNS Maintainers",
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
   scalacOptions in(Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
