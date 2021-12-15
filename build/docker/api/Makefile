@@ -27,7 +27,7 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run publish
+.PHONY: all artifact build run publish build-vnext publish-vnext
 
 all: build run
 
@@ -55,3 +55,13 @@ publish: build
 	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):$(IMAGE_TAG)
 	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):latest
 
+build-vnext:
+	@set -euo pipefail
+	cd ../../..
+	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="vnext" -t $(IMAGE_NAME):vnext -f "$(ROOT_DIR)/Dockerfile" .
+	docker tag $(IMAGE_NAME):vnext "$(IMAGE_NAME):vnext-$$(date -u  +"%Y%m%d")"
+
+publish-vnext: build-vnext
+	@set -euo pipefail
+	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):vnext
+	DOCKER_CONTENT_TRUST=1 docker push "$(IMAGE_NAME):vnext-$$(date -u  +"%Y%m%d")"
