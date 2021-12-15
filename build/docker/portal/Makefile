@@ -59,7 +59,7 @@ build-vnext:
 	@set -euo pipefail
 	cd ../../..
 	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="vnext" -t $(IMAGE_NAME):vnext -f "$(ROOT_DIR)/Dockerfile" .
-	docker tag $(IMAGE_NAME):$(IMAGE_TAG) "$(IMAGE_NAME):vnext-$$(date -u  +'%Y%m%d')"
+	docker tag $(IMAGE_NAME):vnext"$(IMAGE_NAME):vnext-$$(date -u  +'%Y%m%d')"
 
 publish-vnext: build-vnext
 	@set -euo pipefail
