@@ -1,7 +1,4 @@
-name: Continuous Integration
-concurrency:
-  cancel-in-progress: false
-  group: "build-test"
+name: Verify and Test
 
 defaults:
   run:
