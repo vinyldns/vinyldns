@@ -112,6 +112,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
+            hashString(toPB(oldRs).toString),
             oldRs.id
           )
         }
