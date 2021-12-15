@@ -14,7 +14,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-
   verify:
     name: Verify Release
     runs-on: ubuntu-latest
@@ -27,10 +26,7 @@ jobs:
 
       - name: Build and Test
         id: build
-        run: cd build/ && \
-          ./assemble_api.sh && \
-          ./run_all_tests.sh
-
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
   create-gh-release:
     name: Create GitHub Release
