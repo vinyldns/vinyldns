@@ -241,12 +241,12 @@ Note that if both a backend ID and specific connection keys are included on a zo
 
 Zone Connection specifies the connection information to the backend DNS server.
 
-field        | type        | description |
------------- | :---------- | :---------- |
-primaryServer | string      | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed. |
-keyName       | string      | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
-name          | string      | A user identifier for the connection.
-key           | string      | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective. |
+| field         | type   | description                                                                                                                                                                                                                                                  |
+|---------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| primaryServer | string | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed.                                                                                                                   |
+| keyName       | string | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
+| name          | string | A user identifier for the connection.                                                                                                                                                                                                                        |
+| key           | string | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective.                                   |
 
 #### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
 
@@ -261,4 +261,10 @@ key           | string      | The TSIG secret key used to sign requests when com
 
 ### SHARED ZONES <a id="shared-zones"></a>
 
-Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with relevant ACL rules can modify or delete the record. The [batch change API endpoint](create-batchchange.html) and [batch change area of the portal](../portal/batch-changes.html) are where users can create new records in shared zones, modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access is no longer applicable.
+Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of
+records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in
+those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with
+relevant ACL rules can modify or delete the record. The [batch change API endpoint](create-batchchange.html)
+and [DNS change area of the portal](../portal/dns-changes.html) are where users can create new records in shared zones,
+modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access
+is no longer applicable.

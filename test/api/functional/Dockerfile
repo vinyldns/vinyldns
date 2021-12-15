@@ -27,4 +27,4 @@ RUN named-checkconf
 # Copy over the functional tests
 COPY  modules/api/src/test/functional /functional_test
 
-ENTRYPOINT ["/bin/bash", "-c", "/initialize.sh bind localstack vinyldns-api && /functional_test/run.sh \"$@\""]
+ENTRYPOINT ["/bin/bash", "-c", "/initialize.sh bind localstack vinyldns-api mysql && /functional_test/run.sh \"$@\""]
