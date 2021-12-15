@@ -1,5 +1,6 @@
 ---
-layout: docs title: "API Configuration Guide"
+layout: docs
+title: "API Configuration Guide"
 section: "operator_menu"
 ---
 
