@@ -14,6 +14,10 @@ on:
         description: 'Verify First?'
         required: true
         default: 'true'
+      create-gh-release:
+        description: 'Create a GitHub Release?'
+        required: true
+        default: 'true'
       publish-images:
         description: 'Publish Docker Images?'
         required: true
@@ -28,7 +32,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
+        if: github.event.inputs.verify-first == 'true'
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -42,11 +47,12 @@ jobs:
     name: Create GitHub Release
     needs: verify
     runs-on: ubuntu-latest
+    if: github.event.inputs.create-gh-release == 'true'
     permissions: 
       contents: write
       
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -64,8 +70,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
-          draft: true
-          prerelease: true
           generate_release_notes: true
           files: artifacts/*
 
@@ -76,9 +80,14 @@ jobs:
     if: github.event.inputs.publish-images == 'true'
 
     steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+        
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
+          ref: v${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
@@ -93,6 +102,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
+      # This will publish the latest release
       - name: Publish API Docker Image
         run: make -C build/docker/api publish
         env:
@@ -105,9 +115,14 @@ jobs:
     if: github.event.inputs.publish-images == 'true'
 
     steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+        
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
+          ref: v${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
@@ -122,6 +137,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
+      # This will publish the latest release
       - name: Publish Portal Docker Image
         run: make -C build/docker/portal publish
         env:
