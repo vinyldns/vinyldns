@@ -1,15 +1,16 @@
-name: VinylDNS Official Docker Release
+name: VinylDNS Release vNext
 concurrency:
   cancel-in-progress: true
-  group: "release"
+  group: "release-vnext"
 
 defaults:
   run:
     shell: bash
 
 on:
+  push:
+    branches: [ 'master','main' ]
   workflow_dispatch:
-    branches: [ 'master', 'main' ]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -18,53 +19,21 @@ jobs:
 
   verify:
     name: Verify Release
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
       - name: Build and Test
-        id: build
-        run: cd build/ && \
-          ./assemble_api.sh && \
-          ./run_all_tests.sh
-
-
-  create-gh-release:
-    name: Create GitHub Release
-    needs: verify
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout current branch (full)
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Build Artifacts
-        id: build
-        run: cd build/ && ./assemble_api.sh && ./assemble_portal.sh
-
-      - name: Get Version
-        id: get-version
-        run: echo "::set-output name=vinyldns_version::$(awk -F'"' '{print $2}' ./version.sbt)"
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
-          draft: true
-          prerelease: true
-          generate_release_notes: true
-          files: artifacts/*
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
   docker-release-api:
-    name: Release API Docker Image
-    needs: [ verify, create-gh-release ]
+    name: Release API vNext Image
+    needs: [ verify ]
     runs-on: ubuntu-latest
 
     steps:
@@ -86,13 +55,13 @@ jobs:
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
       - name: Publish API Docker Image
-        run: make -C build/docker/api publish
+        run: make -C build/docker/api publish-vnext
         env:
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
   docker-release-portal:
-    name: Release Portal Docker Image
-    needs: [ verify, create-gh-release ]
+    name: Release Portal vNext Image
+    needs: [ verify ]
     runs-on: ubuntu-latest
 
     steps:
@@ -114,6 +83,6 @@ jobs:
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
       - name: Publish Portal Docker Image
-        run: make -C build/docker/portal publish
+        run: make -C build/docker/portal publish-vnext
         env:
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
