@@ -22,12 +22,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.api.domain.zone.{
-  InvalidGroupError,
-  InvalidRequest,
-  PendingUpdateError,
-  RecordSetAlreadyExists
-}
+import vinyldns.api.domain.zone.{InvalidGroupError, InvalidRequest, PendingUpdateError, RecordSetAlreadyExists, RecordSetValidation}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.TestRecordSetData._
@@ -445,6 +440,15 @@ class RecordSetValidationsSpec
         val error =
           leftValue(cnameValidations(cname.copy(name = okZone.name), List(), okZone, Some(cname)))
         error shouldBe an[InvalidRequest]
+      }
+      "return an RecordSetValidation error if recordset data contain more than one sequential '.'" in {
+        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record..zone")))), List(), okZone))
+        error shouldBe an[RecordSetValidation]
+      }
+      "return ok if recordset data does not contain sequential '.'" in {
+        cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record.zone")))), List(), okZone) should be(
+          right
+        )
       }
     }
 

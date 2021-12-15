@@ -23,9 +23,8 @@ The following are a set of guidelines for contributing to VinylDNS and its assoc
   
 ## Code of Conduct
 
-This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md). By
-participating, you agree to this Code. Please report any violations to the code of conduct to
-[vinyldns-core@googlegroups.com](mailto:vinyldns-core@googlegroups.com).
+This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](https://github.com/vinyldns/vinyldns/blob/master/CODE_OF_CONDUCT.md). By
+participating, you agree to this Code.
 
 ## Issues
 

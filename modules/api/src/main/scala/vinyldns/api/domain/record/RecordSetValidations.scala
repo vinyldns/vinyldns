@@ -141,6 +141,17 @@ object RecordSetValidations {
       )
     }
 
+    // cname recordset data cannot contain more than one sequential '.'
+    val RDataWithConsecutiveDots = {
+      ensuring(
+        RecordSetValidation(
+          s"RecordSet Data cannot contain consecutive 'dot' character. RData: '${newRecordSet.records.head.toString}'"
+        )
+      )(
+        noConsecutiveDots(newRecordSet.records.head.toString)
+      )
+    }
+
     for {
       _ <- isNotOrigin(
         newRecordSet,
@@ -148,6 +159,7 @@ object RecordSetValidations {
         InvalidCnameErrorMsg
       )
       _ <- noRecordWithName
+      _ <- RDataWithConsecutiveDots
       _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
     } yield ()
 
