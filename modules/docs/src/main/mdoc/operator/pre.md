@@ -1,6 +1,5 @@
 ---
-layout: docs 
-title:  "Pre-requisites"
+layout: docs title:  "Pre-requisites"
 section: "operator_menu"
 ---
 
@@ -41,44 +40,6 @@ Connections (DDNS and Transfer) can be setup
   can [configure default zone connections](config-api.html#default-zone-connections). When no zone connection is
   specified on a zone, the global defaults will be used.
 
-## Database
-
-[database]: #database
-
-The VinylDNS database has a `NoSQL` / non-relational design to it. Instead of having a heavily normalized set of SQL
-tables that surface in the system, VinylDNS relies on `Repositories` where each `Repository` is independent of each one
-another. This allows implementers to best map each `Repository` into the data-store of choice.
-
-As `Repositories` are independent, there are no "transactions" that span repositories. Each `Repository` implementation
-can choose to use transactions if it maps to multiple tables within itself.
-
-There are **links** across repositories, for example the `RecordSet.id` would be referenced in
-a `RecordSetChangeRepository`.
-
-The following are the repositories presently used by VinylDNS:
-
-* `RecordSetRepository` - Instead of individual DNS records, VinylDNS works at the `RRSet`. The unique key for RecordSet
-  is the `record name` + `record type`
-* `RecordChangeRepository` - The history of all changes to all records in VinylDNS. In general, some kind of pruning
-  strategy should be implemented otherwise this could get quite large
-* `ZoneRepository` - DNS Zones and managing access to zones
-* `ZoneChangeRepository` - The history of all changes made to _zones_ in VinylDNS. Zone changes can including syncs,
-  updating ACL rules, changing zone ownership, etc.
-* `GroupRepository` - VinylDNS Groups
-* `UserRepository` - VinylDNS Users. These users are typically created the first time the user logs into the portal. The
-  user information will be pulled from LDAP, and inserted into the VinylDNS UserRepository
-* `MembershipRepository` - Holds a link from users to groups
-* `GroupChangeRepository` - Holds changes to groups and membership
-* `BatchChangeRepository` - VinylDNS allows users to submit multiple record changes _across_ DNS zones at the same time
-  within a `Batch`
-  The `BatchChangeRepository` holds the batch itself and all individual changes that executed in the batch.
-* `UserChangeRepository` - Holds changes to users. Currently only used in the portal.
-
-## Database Types
-
-### MySQL
-
-Review the [Setup MySQL Guide](setup-mysql.html) for more information.
 
 ## Message Queues
 
