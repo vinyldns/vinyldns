@@ -139,7 +139,7 @@ information on how to run and edit the documentation page.
 
 #### Style Guides
 
-* For Scala code we use [Scalastyle](https://www.scalastyle.org/). The configs are `scalastyle-config.xml` and
+* For Scala code we use [Scalastyle](http://www.scalastyle.org/). The configs are `scalastyle-config.xml` and
   `scalastyle-test-config.xml` for source code and test code respectively
     * We have it set to fail builds if the styling rules are not followed. For example, one of our rules is that all
       lines must be <= 120 characters, and a build will fail if that is violated.
@@ -210,4 +210,4 @@ A pull request must satisfy our [pull request requirements](#pull-request-requir
 Afterwards, if a Pull Request is approved, a maintainer of the project will merge it. If you are a maintainer, you can
 merge your Pull Request once you have the approval of at least 2 other maintainers.
 
-> Note: The first time you make a Pull Request, add yourself to the authors list [here](AUTHORS.md) as part of the Pull Request
+> Note: The first time you make a Pull Request, add yourself to the authors list [here](https://github.com/vinyldns/vinyldns/blob/master/AUTHORS.md) as part of the Pull Request

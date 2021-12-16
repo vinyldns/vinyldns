@@ -12,7 +12,7 @@ services:
   # Integration image hosting r53, sns, sqs, bind, and mysql
   integration:
     container_name: "vinyldns-api-integration"
-    hostname: &integration_hostname "vinyldns-integration"
+    hostname: "vinyldns-integration"
     image: "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
@@ -21,7 +21,7 @@ services:
         VINYLDNS_BASE_VERSION: "${VINYLDNS_BASE_VERSION}"
     environment:
       RUN_SERVICES: "deps-only tail-logs"
-      LOCALSTACK_EXT_HOSTNAME: *integration_hostname
+      LOCALSTACK_EXT_HOSTNAME: "${LOCALSTACK_EXT_HOSTNAME:-vinyldns-integration}"
     env_file:
       .env
     ports:

@@ -1,4 +1,4 @@
-name: VinylDNS Official Docker Release
+name: VinylDNS Official Release
 concurrency:
   cancel-in-progress: true
   group: "release"
@@ -9,37 +9,50 @@ defaults:
 
 on:
   workflow_dispatch:
-    branches: [ 'master', 'main' ]
-
+    inputs:
+      verify-first:
+        description: 'Verify First?'
+        required: true
+        default: 'true'
+      create-gh-release:
+        description: 'Create a GitHub Release?'
+        required: true
+        default: 'true'
+      publish-images:
+        description: 'Publish Docker Images?'
+        required: true
+        default: 'true'
+        
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-
   verify:
     name: Verify Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
+        if: github.event.inputs.verify-first == 'true'
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Build and Test
-        id: build
-        run: cd build/ && \
-          ./assemble_api.sh && \
-          ./run_all_tests.sh
-
+      - name: Run Tests
+        id: verify
+        if: github.event.inputs.verify-first == 'true'
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
   create-gh-release:
     name: Create GitHub Release
     needs: verify
     runs-on: ubuntu-latest
-
+    if: github.event.inputs.create-gh-release == 'true'
+    permissions: 
+      contents: write
+      
     steps:
-      - name: Checkout current branch (full)
+      - name: Checkout current branch
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -57,8 +70,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
-          draft: true
-          prerelease: true
           generate_release_notes: true
           files: artifacts/*
 
@@ -66,11 +77,17 @@ jobs:
     name: Release API Docker Image
     needs: [ verify, create-gh-release ]
     runs-on: ubuntu-latest
+    if: github.event.inputs.publish-images == 'true'
 
     steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+        
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
@@ -85,6 +102,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
+      # This will publish the latest release
       - name: Publish API Docker Image
         run: make -C build/docker/api publish
         env:
@@ -94,11 +112,17 @@ jobs:
     name: Release Portal Docker Image
     needs: [ verify, create-gh-release ]
     runs-on: ubuntu-latest
+    if: github.event.inputs.publish-images == 'true'
 
     steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+        
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
           fetch-depth: 0
 
       - name: Login to Docker Hub
@@ -113,6 +137,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
+      # This will publish the latest release
       - name: Publish Portal Docker Image
         run: make -C build/docker/portal publish
         env:
