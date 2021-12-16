@@ -21,9 +21,9 @@ function usage() {
   echo -e "options:"
   echo -e "\t-a, --api-only     do not start up the VinylDNS Portal"
   echo -e "\t-b, --build        force a rebuild of the Docker images with the local code"
-  echo -e "\t-c, --clean        stops all VinylDNS containers"
+  echo -e "\t-c, --clean        stops all VinylDNS containers and exits"
   echo -e "\t-d, --deps-only    only start up the dependencies, not the API or Portal"
-  echo -e "\t-r, --reset        reset any the running containers"
+  echo -e "\t-r, --reset        stops any the running containers before starting new containers"
   echo -e "\t-s, --service      specify the service to run"
   echo -e "\t-t, --timeout      the time to wait (in seconds) for the Portal and API to start (default: 60)"
   echo -e "\t-u, --update       remove the local quickstart images to force a re-pull from Docker Hub"
@@ -33,7 +33,7 @@ function usage() {
 }
 
 function wait_for_url() {
-  echo -n "Waiting for ${F_BLUE}$1${F_RESET} at ${URL}.."
+  echo -n "Waiting for ${F_BLUE}$1${F_RESET} at ${URL} .."
   RETRY="$TIMEOUT"
   while [ "$RETRY" -ge 0 ]; do
     echo -n "."
@@ -101,6 +101,7 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -d | --deps-only)
+    export LOCALSTACK_EXT_HOSTNAME="localhost"
     SERVICE="integration ldap"
     shift
     ;;
@@ -153,14 +154,12 @@ fi
 
 # Update images if requested
 if [[ $UPDATE -eq 1 ]]; then
-  echo "${F_YELLOW}Removing any local docker containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
-  "${DIR}/../utils/clean-vinyldns-containers.sh"
+  echo "${F_YELLOW}Removing any running VinylDNS docker containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  "${DIR}/../utils/clean-vinyldns-containers.sh"  &> /dev/null || true
 
-  echo "${F_YELLOW}Removing any local docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
-  docker rmi "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
-  docker rmi "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
-  docker rmi "vinyldns/api:${VINYLDNS_IMAGE_VERSION}" &> /dev/null || true
-  echo "${F_GREEN}Removed all local docker images and containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  echo "${F_YELLOW}Removing any local VinylDNS Docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  docker images -a |grep vinyldns | grep "${VINYLDNS_IMAGE_VERSION}" | awk '{print $3}' | xarg docker rmi &> /dev/null || true
+  echo "${F_GREEN}Successfully removed all local VinylDNS Docker images and running containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
 fi
 
 
