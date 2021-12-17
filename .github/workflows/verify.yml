@@ -1,4 +1,8 @@
-name: Continuous Integration
+name: Verify and Test
+
+defaults:
+  run:
+    shell: bash
 
 on:
   pull_request:
@@ -11,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: Build and Test
+    name: Run Tests
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'ci skip')"
 
@@ -22,7 +26,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Test
-        shell: bash
         run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
       - name: Codecov

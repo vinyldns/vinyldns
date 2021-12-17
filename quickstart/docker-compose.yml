@@ -1,4 +1,4 @@
-version: "3.5"
+version: "3.8"
 
 services:
 
@@ -12,7 +12,7 @@ services:
   # Integration image hosting r53, sns, sqs, bind, and mysql
   integration:
     container_name: "vinyldns-api-integration"
-    hostname: &integration_hostname "vinyldns-integration"
+    hostname: "vinyldns-integration"
     image: "vinyldns/build:base-test-integration-${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
@@ -21,7 +21,7 @@ services:
         VINYLDNS_BASE_VERSION: "${VINYLDNS_BASE_VERSION}"
     environment:
       RUN_SERVICES: "deps-only tail-logs"
-      LOCALSTACK_EXT_HOSTNAME: *integration_hostname
+      LOCALSTACK_EXT_HOSTNAME: "${LOCALSTACK_EXT_HOSTNAME:-vinyldns-integration}"
     env_file:
       .env
     ports:
@@ -31,13 +31,14 @@ services:
   # The VinylDNS API
   api:
     container_name: "vinyldns-api"
+    oom_kill_disable: true
     image: "vinyldns/api:${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
       dockerfile: build/docker/api/Dockerfile
       args:
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
-        DOCKER_FILE_PATH: "../build/docker/api"
+        DOCKER_FILE_PATH: "build/docker/api"
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
     env_file:
@@ -50,12 +51,13 @@ services:
   # The VinylDNS portal
   portal:
     container_name: "vinyldns-portal"
+    oom_kill_disable: true
     image: "vinyldns/portal:${VINYLDNS_IMAGE_VERSION}"
     build:
       context: ../
       dockerfile: build/docker/portal/Dockerfile
       args:
-        DOCKER_FILE_PATH: "../build/docker/portal"
+        DOCKER_FILE_PATH: "build/docker/portal"
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
     env_file:
       .env

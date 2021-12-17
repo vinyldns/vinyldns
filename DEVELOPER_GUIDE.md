@@ -27,7 +27,7 @@
 
 ## Developer Requirements (Local)
 
-- Java 8 (at least u162)
+- Java 8+
 - Scala 2.12
 - sbt 1.4+
 
