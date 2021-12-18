@@ -42,7 +42,7 @@ import vinyldns.core.logging.RequestTracing
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object VinylDNS {
 
@@ -157,14 +157,24 @@ class VinylDNS @Inject() (
           logger.info(
             s"LoginId [$loginId] complete: --LOGIN-- user [${user.userName}] logged in with id ${user.id}"
           )
-          Redirect("/index").withSession(ID_TOKEN -> token.toString)
+
+          val redirectLocation =
+            Try {
+              new String(java.util.Base64.getDecoder.decode(loginId.split(":").last))
+            } match {
+              case Success(x) => x
+              case Failure(_) => "/index"
+            }
+
+          Redirect(redirectLocation).withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
           logger.error(s"LoginId [$loginId] failed with error: $err")
           InternalServerError(
-            views.html.systemMessage("""
-              |There was an issue when logging in.
-              |<a href="/index">Please try again by clicking this link.</a>
-              |If the issue persists, contact your VinylDNS Administrators
+            views.html.systemMessage(
+              """
+                |There was an issue when logging in.
+                |<a href="/index">Please try again by clicking this link.</a>
+                |If the issue persists, contact your VinylDNS Administrators
             """.stripMargin)
           ).withNewSession
       }

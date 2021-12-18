@@ -105,10 +105,10 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     processor
   }
 
-  def getCodeCall: Uri = {
+  def getCodeCall(requestURI: String): Uri = {
     val nonce = new Nonce()
     val loginId = UUID.randomUUID().toString
-    val redirectUri = s"${oidcInfo.redirectUri}/callback/$loginId"
+    val redirectUri = s"${oidcInfo.redirectUri}/callback/${loginId}:${java.util.Base64.getEncoder.encodeToString(requestURI.getBytes)}"
 
     val query = Query(
       "client_id" -> oidcInfo.clientId,
@@ -247,7 +247,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
       implicit executionContext: ExecutionContext
   ): EitherT[IO, ErrorResponse, JWTClaimsSet] =
     EitherT {
-      val redirectUriString = s"${oidcInfo.redirectUri}/callback/$loginId"
+      val redirectUriString = s"${oidcInfo.redirectUri}/callback/${loginId}"
       val redirectUri = new URI(redirectUriString)
       val codeGrant = new AuthorizationCodeGrant(code, redirectUri)
       val request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant)
