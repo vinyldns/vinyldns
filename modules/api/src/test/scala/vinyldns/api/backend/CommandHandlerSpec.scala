@@ -417,7 +417,8 @@ class CommandHandlerSpec
       }
 
       // sleep to allow the flow to run once
-      Thread.sleep(200)
+      // TODO: arbitrary sleep statements lead to non-deterministic tests - find a more reliable mechanism
+      Thread.sleep(1000)
 
       // shutoff processing on the flow
       stop.set(true).unsafeRunSync()

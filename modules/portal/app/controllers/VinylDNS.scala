@@ -53,6 +53,7 @@ object VinylDNS {
   object Alerts {
     private val TYPE = "alertType"
     private val MSG = "alertMessage"
+
     def error(msg: String): Flash = Flash(Map(TYPE -> "danger", MSG -> msg))
 
     def fromFlash(flash: Flash): Option[Alert] =
@@ -162,7 +163,7 @@ class VinylDNS @Inject() (
             Try {
               new String(java.util.Base64.getDecoder.decode(loginId.split(":").last))
             } match {
-              case Success(x) => x
+              case Success(x) => if (x.nonEmpty) x else "/index"
               case Failure(_) => "/index"
             }
 

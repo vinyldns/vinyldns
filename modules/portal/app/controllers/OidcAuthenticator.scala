@@ -105,7 +105,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     processor
   }
 
-  def getCodeCall(requestURI: String): Uri = {
+  def getCodeCall(requestURI: String = ""): Uri = {
     val nonce = new Nonce()
     val loginId = UUID.randomUUID().toString
     val redirectUri = s"${oidcInfo.redirectUri}/callback/${loginId}:${java.util.Base64.getEncoder.encodeToString(requestURI.getBytes)}"
