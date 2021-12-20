@@ -20,18 +20,14 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
+import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 import vinyldns.core.route.Monitored
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
-}
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeStatus, ZoneRepository}
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
@@ -143,23 +139,38 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
-            // we want to make sure we write to both the change repo and record set repo
-            // at the same time as this can take a while
-            val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-              recordChangeRepository.save(changeSet)
-            )
-            val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-              recordSetRepository.apply(changeSet)
-            )
+            // connection starts
+            val db = DB(ConnectionPool.borrow())
+            try {
 
-            // join together the results of saving both the record changes as well as the record sets
-            for {
-              _ <- saveRecordChanges
-              _ <- saveRecordSets
-            } yield zoneChange.copy(
-              zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-              status = ZoneChangeStatus.Synced
-            )
+              // Transaction begins
+              db.begin()
+              // we want to make sure we write to both the change repo and record set repo
+              // at the same time as this can take a while
+              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
+                recordChangeRepository.save(changeSet)
+              )
+              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
+                recordSetRepository.apply(changeSet)
+              )
+              db.commit() // commit a transaction
+
+              // join together the results of saving both the record changes as well as the record sets
+              for {
+                _ <- saveRecordChanges
+                _ <- saveRecordSets
+              } yield zoneChange.copy(
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                status = ZoneChangeStatus.Synced
+              )
+            } catch {
+              // Rollback changes
+              case e: Exception =>
+                db.rollbackIfActive() // no exceptions can be thrown
+                throw e
+            } finally {
+              db.close() // close the connection
+            }
           }
         }
       }
