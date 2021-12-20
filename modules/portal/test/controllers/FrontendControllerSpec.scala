@@ -45,7 +45,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val enabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   enabledOidcAuthenticator.oidcEnabled.returns(true)
-  enabledOidcAuthenticator.getCodeCall().returns(Uri("http://test.com"))
+  enabledOidcAuthenticator.getCodeCall(anyString).returns(Uri("http://test.com"))
   enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
