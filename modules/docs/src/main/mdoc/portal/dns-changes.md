@@ -14,7 +14,7 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 
 #### Access
 * Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name *or* delete of single entry of multi-record DNS record set, zone and record type combination) requires **Write** or **Delete** access.
-* <span class="important">**NEW**</span> **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.
+* **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.
 
 #### Supported record types
 * Current supported record types for DNS change are: `A`, `AAAA`, `CNAME`, `PTR`, `TXT`, and `MX`.
@@ -53,4 +53,4 @@ This does not apply to zone administrators or users with specific ACL access rul
 ### Review a DNS Change
 You can review your submitted DNS Change requests by selecting the linked DNS Change ID or View button for the DNS Change on the main page of the DNS Changes section in the portal.
 
-[![List of DNS Change requests screenshot](../img/portal/dns-change-list-annotated.png){: .screenshot}](../img/portal/dns-change-annotated.png)
+[![List of DNS Change requests screenshot](../img/portal/dns-change-list-annotated.png){: .screenshot}](../img/portal/dns-change-list-annotated.png)

@@ -1,6 +1,6 @@
-![Build](https://github.com/vinyldns/vinyldns/workflows/Continuous%20Integration/badge.svg)
-[![License](https://img.shields.io/github/license/vinyldns/vinyldns)](https://github.com/vinyldns/vinyldns/blob/master/LICENSE)
-[![conduct](https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-blue.svg)](https://github.com/vinyldns/vinyldns/blob/master/CODE_OF_CONDUCT.md)
+[![VinylDNS Release](https://img.shields.io/github/v/release/vinyldns/vinyldns?label=latest%20release&logo=github)](https://github.com/vinyldns/vinyldns/releases/latest)
+[![VinylDNS API Docker Image](https://img.shields.io/docker/v/vinyldns/api?color=brightgreen&label=API%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/api/tags?page=1&ordering=last_updated)
+[![VinylDNS Portal Docker Image](https://img.shields.io/docker/v/vinyldns/portal?color=brightgreen&label=Portal%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/portal/tags?page=1&ordering=last_updated)
 
 <p align="left">
   <a href="https://www.vinyldns.io/">

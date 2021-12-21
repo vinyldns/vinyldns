@@ -24,11 +24,13 @@ jobs:
 
     steps:
       - name: Checkout current branch
+        if: github.event_name != 'push' # We only need to verify if this is manually triggered
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
       - name: Build and Test
+        if: github.event_name != 'push' # We only need to verify if this is manually triggered
         run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
   docker-release-api:

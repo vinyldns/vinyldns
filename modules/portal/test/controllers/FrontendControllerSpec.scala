@@ -45,7 +45,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val enabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   enabledOidcAuthenticator.oidcEnabled.returns(true)
-  enabledOidcAuthenticator.getCodeCall.returns(Uri("http://test.com"))
+  enabledOidcAuthenticator.getCodeCall(anyString).returns(Uri("http://test.com"))
   enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
@@ -84,7 +84,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.index()(FakeRequest(GET, "/"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/")
       }
       "render the index page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -100,7 +100,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "redirect to the login page when a user is not logged in" in new WithApplication(app) {
           val result = underTest.index()(FakeRequest(GET, "/index"))
           status(result) must equalTo(SEE_OTHER)
-          headers(result) must contain("Location" -> "/login")
+          headers(result) must contain("Location" -> "/login?target=/index")
         }
         "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
@@ -124,7 +124,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "redirect to the login page when a user is not logged in" in new WithApplication(app) {
           val result = oidcUnderTest.index()(FakeRequest(GET, "/index").withCSRFToken)
           status(result) must equalTo(SEE_OTHER)
-          headers(result) must contain("Location" -> "/login")
+          headers(result) must contain("Location" -> "/login?target=/index")
         }
         "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
@@ -144,7 +144,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewAllGroups()(FakeRequest(GET, "/groups"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/groups")
       }
       "render the groups view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -168,7 +168,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewGroup("some-id")(FakeRequest(GET, "/groups/some-id"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/groups/some-id")
       }
       "render the groups view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -192,7 +192,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewAllZones()(FakeRequest(GET, "/zones"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/zones")
       }
       "render the zone view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -216,7 +216,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewZone("some-id")(FakeRequest(GET, "/zones/some-id"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/zones/some-id")
       }
       "render the zones view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -336,7 +336,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewAllBatchChanges()(FakeRequest(GET, "/dnschanges"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/dnschanges")
       }
       "render the batch changes view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -362,7 +362,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewBatchChange("some-id")(FakeRequest(GET, "/dnschanges/some-id"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/dnschanges/some-id")
       }
       "render the DNS change view page when the user is logged in" in new WithApplication(app) {
         val result =
@@ -390,7 +390,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewNewBatchChange()(FakeRequest(GET, "/dnschanges/new"))
         status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+        headers(result) must contain("Location" -> "/login?target=/dnschanges/new")
       }
       "render the new batch change view page when the user is logged in" in new WithApplication(app) {
         val result =
