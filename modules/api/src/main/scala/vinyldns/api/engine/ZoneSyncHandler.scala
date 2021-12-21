@@ -153,7 +153,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
                 recordSetRepository.apply(changeSet)
               )
-              db.commit() // commit a transaction
+              IO(db.commit()) // commit a transaction
 
               // join together the results of saving both the record changes as well as the record sets
               for {
@@ -166,7 +166,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             } catch {
               // Rollback changes
               case e: Exception =>
-                db.rollbackIfActive() // no exceptions can be thrown
+                IO(db.rollbackIfActive()) // no exceptions can be thrown
                 throw e
             } finally {
               db.close() // close the connection

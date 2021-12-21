@@ -130,7 +130,7 @@ class ZoneSyncHandlerSpec
                 recordSetRepository.apply(changeSet)
               )
               if(exceptionNumber == 2) throw new Exception("SaveRecordSets failed!")
-              db.commit() // commit a transaction
+              IO(db.commit()) // commit a transaction
 
               // join together the results of saving both the record changes as well as the record sets
               for {
@@ -143,7 +143,7 @@ class ZoneSyncHandlerSpec
             } catch {
               // Rollback changes
               case e: Exception =>
-                db.rollbackIfActive() // no exceptions can be thrown
+                IO(db.rollbackIfActive()) // no exceptions can be thrown
                 throw new Exception(e.getMessage + " Rollback completed successfully!")
             } finally {
               db.close() // close the connection
