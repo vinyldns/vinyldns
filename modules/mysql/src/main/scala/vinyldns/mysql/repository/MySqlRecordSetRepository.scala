@@ -25,7 +25,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
-import vinyldns.mysql.repository.MySqlRecordSetRepository.hashString
+import org.apache.commons.codec.binary.Hex
 import vinyldns.proto.VinylDNSProto
 
 import java.security.MessageDigest
@@ -419,15 +419,12 @@ object MySqlRecordSetRepository extends ProtobufConversions {
     else absoluteRecordSetName + absoluteZoneName
   }
 
-  /** hexa for hash the rs */
-  def hexString(rs: Array[Byte]) =
-    rs.foldLeft("")((out, b) => f"$out%s${b & 0x0ff}%02x")
-
   /**Hashing the record set. */
   def hashString(s: String) = hashBytes(s.getBytes("UTF-8"))
 
-  def hashBytes(rs: Array[Byte]) =
-    hexString(MessageDigest.getInstance("SHA-1").digest(rs))
+  def hashBytes(rs: Array[Byte]) = hexString(MessageDigest.getInstance("SHA-1").digest(rs))
+
+  def hexString(bytes: Array[Byte]): String = String.valueOf(Hex.encodeHex(bytes))
 
   case class PagingKey(recordName: String, recordType: Int)
 
