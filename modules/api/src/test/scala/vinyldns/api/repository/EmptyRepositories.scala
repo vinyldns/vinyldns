@@ -44,7 +44,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
     IO.pure(List())
 
-  def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
+  def apply(changeSet: ChangeSet)(implicit session: scalikejdbc.DBSession): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
       zoneId: Option[String],

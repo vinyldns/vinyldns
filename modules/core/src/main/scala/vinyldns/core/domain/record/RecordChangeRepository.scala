@@ -17,11 +17,12 @@
 package vinyldns.core.domain.record
 
 import cats.effect._
+import scalikejdbc._
 import vinyldns.core.repository.Repository
 
 trait RecordChangeRepository extends Repository {
 
-  def save(changeSet: ChangeSet): IO[ChangeSet]
+  def save(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet]
 
   def listRecordSetChanges(
       zoneId: String,

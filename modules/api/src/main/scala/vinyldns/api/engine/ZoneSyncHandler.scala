@@ -20,7 +20,7 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import scalikejdbc.{ConnectionPool, DB}
+import scalikejdbc._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.backend.BackendResolver
@@ -31,6 +31,7 @@ import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeSt
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
+  private val db: DB = DB(ConnectionPool.borrow())
   private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
@@ -138,13 +139,10 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
-
-            // connection starts
-            val db = DB(ConnectionPool.borrow())
-            try {
-
-              // Transaction begins
-              db.begin()
+            // Begin the transaction
+            db.beginIfNotYet()
+            // Execute the statements within the transaction
+            db withinTx { implicit session =>
               // we want to make sure we write to both the change repo and record set repo
               // at the same time as this can take a while
               val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
@@ -153,8 +151,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
                 recordSetRepository.apply(changeSet)
               )
-              IO(db.commit()) // commit a transaction
-
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
@@ -163,13 +159,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced
               )
-            } catch {
-              // Rollback changes
-              case e: Exception =>
-                IO(db.rollbackIfActive()) // no exceptions can be thrown
-                throw e
-            } finally {
-              db.close() // close the connection
             }
           }
         }
@@ -181,11 +170,18 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
             e
           )
+          // If any one of the two statements got exception, rollback and close the connection
+          db.rollbackIfActive()
+          db.close()
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
             status = ZoneChangeStatus.Failed
           )
-        case Right(ok) => ok
+        case Right(ok) =>
+          // If both executed without any exceptions, commit and close the connection
+          db.commit()
+          db.close()
+          ok
       }
 }
