@@ -18,22 +18,11 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{
-  ChangeSet,
-  ListRecordSetResults,
-  NameSort,
-  RecordSet,
-  RecordSetRepository
-}
+import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, NameSort, RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
-import vinyldns.core.domain.membership.{
-  Group,
-  GroupRepository,
-  ListUsersResults,
-  User,
-  UserRepository
-}
+import scalikejdbc._
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
@@ -44,7 +33,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
     IO.pure(List())
 
-  def apply(changeSet: ChangeSet)(implicit session: scalikejdbc.DBSession): IO[ChangeSet] = IO.pure(changeSet)
+  def apply(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
       zoneId: Option[String],

@@ -31,7 +31,6 @@ import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeSt
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
-  private val db: DB = DB(ConnectionPool.borrow())
   private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
@@ -139,6 +138,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
+            val db: DB = DB(ConnectionPool.borrow())
             // Begin the transaction
             db.beginIfNotYet()
             // Execute the statements within the transaction
@@ -153,8 +153,22 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               )
               // join together the results of saving both the record changes as well as the record sets
               for {
-                _ <- saveRecordChanges
-                _ <- saveRecordSets
+                _ <- saveRecordChanges.attempt.map {
+                  case Left(_: Throwable) =>
+                    db.rollbackIfActive() // Rollback any changes made if there's exception
+                    db.close() // Close the connection
+                  case Right(ok) =>
+                    ok
+                }
+                _ <- saveRecordSets.attempt.map {
+                  case Left(_: Throwable) =>
+                    db.rollbackIfActive() // Rollback any changes made if there's exception
+                    db.close() // Close the connection
+                  case Right(ok) =>
+                    db.commit() // Commit the changes to both repositories if there's no exception
+                    db.close() // Close the connection
+                    ok
+                }
               } yield zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced
@@ -170,18 +184,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
             e
           )
-          // If any one of the two statements got exception, rollback and close the connection
-          db.rollbackIfActive()
-          db.close()
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
             status = ZoneChangeStatus.Failed
           )
-        case Right(ok) =>
-          // If both executed without any exceptions, commit and close the connection
-          db.commit()
-          db.close()
-          ok
+        case Right(ok) => ok
       }
 }

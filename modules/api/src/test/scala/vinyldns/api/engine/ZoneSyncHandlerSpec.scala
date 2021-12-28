@@ -25,11 +25,9 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
-import vinyldns.api.engine.ZoneSyncHandler.{monitor, time}
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -37,8 +35,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
-import cats.syntax.all._
-import org.slf4j.{Logger, LoggerFactory}
+import scalikejdbc.{AutoSession, ConnectionPool}
 
 class ZoneSyncHandlerSpec
   extends AnyWordSpec
@@ -46,126 +43,6 @@ class ZoneSyncHandlerSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with VinylDNSTestHelpers {
-
-  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
-
-  // Function to test transaction by raising exception. Clone of runSync function
-  def zoneTestRunSync(
-                       recordSetRepository: RecordSetRepository,
-                       recordChangeRepository: RecordChangeRepository,
-                       zoneChange: ZoneChange,
-                       backendResolver: BackendResolver,
-                       maxZoneSize: Int,
-                       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
-                       VinylDNSZoneViewLoader.apply,
-                       exceptionNumber: Int = 0
-                     ): IO[ZoneChange] =
-    monitor("zone.sync") {
-      time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
-        val zone = zoneChange.zone
-        val dnsLoader = DnsZoneViewLoader(zone, backendResolver.resolve(zone), maxZoneSize)
-        val dnsView =
-          time(
-            s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
-          )(dnsLoader.load())
-        val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
-          vinyldnsLoader(zone, recordSetRepository).load()
-        )
-        val recordSetChanges = (dnsView, vinyldnsView).parTupled.map {
-          case (dnsZoneView, vinylDnsZoneView) => vinylDnsZoneView.diff(dnsZoneView)
-        }
-
-        recordSetChanges.flatMap { allChanges =>
-          val changesWithUserIds = allChanges.map(_.withUserId(zoneChange.userId))
-
-          if (changesWithUserIds.isEmpty) {
-            logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; changeCount=0; zoneChange='${zoneChange.id}'"
-            )
-            IO.pure(
-              zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                status = ZoneChangeStatus.Synced
-              )
-            )
-          } else {
-            changesWithUserIds
-              .filter { chg =>
-                chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
-                  chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT &&
-                  chg.recordSet.typ != RecordType.NAPTR
-              }
-              .map(_.recordSet.name)
-              .grouped(1000)
-              .foreach { dottedGroup =>
-                val dottedGroupString = dottedGroup.mkString(", ")
-                logger.info(
-                  s"Zone sync for zoneName='${zone.name}'; zoneId='${zone.id}'; " +
-                    s"zoneChange='${zoneChange.id}' includes the following ${dottedGroup.length} " +
-                    s"dotted host records: [$dottedGroupString]"
-                )
-              }
-
-            logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; " +
-                s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
-            )
-            val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
-
-            // connection starts
-            val db = DB(ConnectionPool.borrow())
-            try {
-
-              // Transaction begins
-              db.begin()
-              // we want to make sure we write to both the change repo and record set repo
-              // at the same time as this can take a while
-              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-                recordChangeRepository.save(changeSet)
-              )
-              if(exceptionNumber == 1) throw new Exception("SaveRecordChanges failed!")
-              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-                recordSetRepository.apply(changeSet)
-              )
-              if(exceptionNumber == 2) throw new Exception("SaveRecordSets failed!")
-              IO(db.commit()) // commit a transaction
-
-              // join together the results of saving both the record changes as well as the record sets
-              for {
-                _ <- saveRecordChanges
-                _ <- saveRecordSets
-              } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                status = ZoneChangeStatus.Synced
-              )
-            } catch {
-              // Rollback changes
-              case e: Exception =>
-                IO(db.rollbackIfActive()) // no exceptions can be thrown
-                throw new Exception(e.getMessage + " Rollback completed successfully!")
-            } finally {
-              db.close() // close the connection
-            }
-          }
-        }
-      }
-    }.attempt
-      .map {
-        case Left(e: Throwable) =>
-          logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e
-          )
-          // We want to just move back to an active status, do not update latest sync
-          zoneChange.copy(
-            zone = zoneChange.zone.copy(status = ZoneStatus.Active),
-            status = ZoneChangeStatus.Failed,
-            systemMessage = Some(e.getMessage) // check the exception occurred
-          )
-        case Right(ok) => ok
-      }
 
   private val mockBackend = mock[Backend]
   private val mockBackendResolver = mock[BackendResolver]
@@ -315,8 +192,8 @@ class ZoneSyncHandlerSpec
         any[Option[String]],
         any[NameSort]
       )
-    doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[ChangeSet])
-    doReturn(IO(testChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+    doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[ChangeSet])(any[AutoSession])
+    doReturn(IO(testChangeSet)).when(recordChangeRepo).save(any[ChangeSet])(any[AutoSession])
     doReturn(IO(testZoneChange)).when(zoneChangeRepo).save(any[ZoneChange])
     doReturn(IO(testZone)).when(zoneRepo).save(any[Zone])
 
@@ -327,9 +204,10 @@ class ZoneSyncHandlerSpec
       .loadZone(any[Zone], any[Int])
   }
 
+  // Add connection to run test and check transaction
+  ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
+
   "ZoneSyncHandler" should {
-    // Add connection to run test and check transaction
-    ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
     "process successful zone sync" in {
       doReturn(IO.pure(Right(testZoneChange)))
         .when(zoneRepo)
@@ -530,7 +408,7 @@ class ZoneSyncHandlerSpec
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       runSync.unsafeRunSync()
 
-      verify(recordChangeRepo).save(captor.capture())
+      verify(recordChangeRepo).save(captor.capture())(any[AutoSession])
       val req = captor.getValue
       anonymize(req) shouldBe anonymize(testChangeSet)
     }
@@ -540,7 +418,7 @@ class ZoneSyncHandlerSpec
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       runSync.unsafeRunSync()
 
-      verify(recordSetRepo).apply(captor.capture())
+      verify(recordSetRepo).apply(captor.capture())(any[AutoSession])
       val req = captor.getValue
       anonymize(req) shouldBe anonymize(testChangeSet)
     }
@@ -568,8 +446,8 @@ class ZoneSyncHandlerSpec
         .when(testVinylDNSView)
         .diff(any[ZoneView])
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
-      doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
-      doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+      doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())(any[AutoSession])
+      doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])(any[AutoSession])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
       runSync.unsafeRunSync()
@@ -590,8 +468,8 @@ class ZoneSyncHandlerSpec
 
       doReturn(changes).when(testVinylDNSView).diff(any[ZoneView])
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
-      doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
-      doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
+      doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())(any[AutoSession])
+      doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])(any[AutoSession])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
       val zoneChange = ZoneChange(testReverseZone, testReverseZone.account, ZoneChangeType.Sync)
@@ -617,47 +495,6 @@ class ZoneSyncHandlerSpec
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
       val result = runSync.unsafeRunSync()
 
-      result.status shouldBe ZoneChangeStatus.Failed
-      result.zone.status shouldBe ZoneStatus.Active
-      result.zone.latestSync shouldBe testZoneChange.zone.latestSync
-    }
-
-    "verify transaction by not saving changes to database when exception occurs while saving to RecordChangeRepo" in {
-      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
-      val result = zoneTestRunSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        mockBackendResolver,
-        10000,
-        (_, _) => mockVinylDNSLoader,
-        1
-      ).unsafeRunSync() // set exceptionNumber = 1 to raise an exception when saving record changes to recordChangeRepo
-
-      // Does not save changes to both recordChangeRepo and recordSetRepo as it rollbacks changes made when exception occurred
-      // Transaction saves either both record changes and record sets or saves none to database
-      result.systemMessage.get shouldBe "SaveRecordChanges failed! Rollback completed successfully!"
-      result.status shouldBe ZoneChangeStatus.Failed
-      result.zone.status shouldBe ZoneStatus.Active
-      result.zone.latestSync shouldBe testZoneChange.zone.latestSync
-    }
-
-    "verify transaction by not saving changes to database when exception occurs while saving to RecordSetRepo" in {
-      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
-
-      val result = zoneTestRunSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        mockBackendResolver,
-        10000,
-        (_, _) => mockVinylDNSLoader,
-        2
-      ).unsafeRunSync() // set exceptionNumber = 2 to raise an exception when saving record sets to recordSetRepo
-
-      // Does not save changes to both recordChangeRepo and recordSetRepo as it rollbacks changes made when exception occurred
-      // Transaction saves either both record changes and record sets or saves none to database
-      result.systemMessage.get shouldBe "SaveRecordSets failed! Rollback completed successfully!"
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync shouldBe testZoneChange.zone.latestSync
