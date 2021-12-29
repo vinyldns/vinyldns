@@ -154,16 +154,17 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges.attempt.map {
-                  case Left(_: Throwable) =>
+                  case Left(error: Throwable) =>
                     db.rollbackIfActive() // Rollback any changes made if there's exception
                     db.close() // Close the connection
-                  case Right(ok) =>
-                    ok
+                    throw error
+                  case Right(ok) => ok
                 }
                 _ <- saveRecordSets.attempt.map {
-                  case Left(_: Throwable) =>
+                  case Left(error: Throwable) =>
                     db.rollbackIfActive() // Rollback any changes made if there's exception
                     db.close() // Close the connection
+                    throw error
                   case Right(ok) =>
                     db.commit() // Commit the changes to both repositories if there's no exception
                     db.close() // Close the connection
