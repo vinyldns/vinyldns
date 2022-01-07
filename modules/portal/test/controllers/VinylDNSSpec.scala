@@ -573,17 +573,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
-    ".oidcCallback" should {
-      "redirect to set session view" in new WithApplication(app) {
-        val response = vinyldnsPortal
-          .oidcCallback("id")
-          .apply(FakeRequest("GET", "id?query=q"))
-
-        status(response) mustEqual 200
-        contentAsString(response) must contain("/public/lib/oidc-finish.js")
-      }
-    }
-
     ".newGroup" should {
       tag("slow")
       "return the group description on create - status ok (200)" in new WithApplication(app) {
@@ -1298,11 +1287,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, components, crypto)
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
+          FakeRequest(GET, "/download-creds-file/credsfile.csv")
         )
 
         status(result) mustEqual 303
-        redirectLocation(result) must beSome("/login")
+        redirectLocation(result) must beSome("/login?target=/download-creds-file/credsfile.csv")
         flash(result).get("alertType") must beSome("danger")
         flash(result).get("alertMessage") must beSome(
           "You are not logged in. Please login to continue."

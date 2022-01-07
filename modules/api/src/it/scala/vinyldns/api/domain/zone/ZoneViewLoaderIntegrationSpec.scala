@@ -35,7 +35,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
 
   "ZoneViewLoader" should {
     "return a ZoneView upon success" in {
-      val zone = Zone("vinyldns.", "test@test.com")
+      val zone = Zone("vinyldns1.", "test@test.com")
       DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
         .load()
         .unsafeRunSync() shouldBe a[ZoneView]
@@ -44,14 +44,14 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
     "return a failure if the transfer connection is bad" in {
       assertThrows[IllegalArgumentException] {
         val zone = Zone(
-          "vinyldns.",
+          "vinyldns1.",
           "bad@transfer.connection",
           connection = Some(
             ZoneConnection(
               "vinyldns.",
               "vinyldns.",
               "nzisn+4G2ldMn0q1CV3vsg==",
-              "127.0.0.1:19001"
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           ),
           transferConnection =
@@ -77,14 +77,22 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
     "return a failure if the zone is larger than the max zone size" in {
       assertThrows[ZoneTooLargeError] {
         val zone = Zone(
-          "vinyldns.",
+          "vinyldns1.",
           "test@test.com",
           connection = Some(
             ZoneConnection(
               "vinyldns.",
               "vinyldns.",
               "nzisn+4G2ldMn0q1CV3vsg==",
-              "127.0.0.1:19001"
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
+            )
+          ),
+          transferConnection = Some(
+            ZoneConnection(
+              "vinyldns.",
+              "vinyldns.",
+              "nzisn+4G2ldMn0q1CV3vsg==",
+              sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           )
         )

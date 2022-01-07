@@ -34,7 +34,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
   implicit val executionContext: ExecutionContext
 
-  def notLoggedInResult: Future[Result]
+  def notLoggedInResult(requestURI: String): Future[Result]
 
   def cantFindAccountResult(un: String): Future[Result]
 
@@ -62,7 +62,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
     userName match {
       case None =>
         logger.info("User is not logged in or token expired; redirecting to login screen")
-        notLoggedInResult
+        notLoggedInResult(request.uri)
 
       case Some(un) =>
         // user name in session, let's get it from the repo

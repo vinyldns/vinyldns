@@ -549,7 +549,7 @@ describe('BatchChange', function(){
                 expect(this.scope.change.cname).toBeUndefined();
                 expect(form.cname.$valid).toBe(false);
             });
-        }
+        });
 
     describe('Directive: IPv4 validation', function(){
         var form;

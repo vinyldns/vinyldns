@@ -1,31 +1,38 @@
-FROM hseeberger/scala-sbt:11.0.8_1.3.13_2.11.12 as builder
+# Build VinylDNS API if the JAR doesn't already exist
+FROM vinyldns/build:base-build as base-build
+COPY . /build/
+WORKDIR /build
 
-ARG BRANCH=master
+##  Run the build if we don't already have a vinyldns-api.jar
+RUN mkdir -p /opt/vinyldns/conf && \
+    if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns/; fi && \
+    if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
+      env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
+      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
+      && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
+    fi
+
+FROM openjdk:11-slim
+ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
-RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
+    test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
+    mkdir -p /opt/vinyldns/lib_extra && \
+    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
 
-# The default jvmopts are huge, meant for running everything, use a paired down version
-COPY .jvmopts /vinyldns
-
-RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" api/stage
-
-FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
-
-RUN apk add --update --no-cache netcat-openbsd bash
-
-COPY --from=builder /vinyldns/modules/api/target/universal/stage /opt/docker
-
-# This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ARG VINYLDNS_VERSION
-ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
-
-RUN mkdir -p /opt/docker/lib_extra
+COPY --from=base-build /opt/vinyldns /opt/vinyldns
+COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf
+COPY ${DOCKER_FILE_PATH}/logback.xml /opt/vinyldns/conf
 
 # Mount the volume for config file and lib extras
-# Note: These volume names are used in the build.sbt
-VOLUME ["/opt/docker/lib_extra/", "/opt/docker/conf"]
+VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 
 EXPOSE 9000
 
-ENTRYPOINT ["/opt/docker/bin/api"]
+ENV JVM_OPTS=""
+ENTRYPOINT ["/bin/bash", "-c", "java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/conf/application.conf \
+                                -Dlogback.configurationFile=/opt/vinyldns/conf/logback.xml \
+                                -Dvinyldns.version=$(cat /opt/vinyldns/version) \
+                                -cp /opt/vinyldns/lib_extra/* \
+                                -jar /opt/vinyldns/vinyldns-api.jar" ]

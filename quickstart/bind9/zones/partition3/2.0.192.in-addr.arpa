@@ -1,0 +1,15 @@
+$ttl 38400
+3.0.192.in-addr.arpa.	IN	SOA	172.17.42.1. admin.vinyldns.com. (
+			1439234395
+			10800
+			3600
+			604800
+			38400 )
+3.0.192.in-addr.arpa.	IN	NS	172.17.42.1.
+192/30                  IN  NS  172.17.42.1.
+192         IN  CNAME 192.192/30.2.0.192.in-addr.arpa.
+193			IN	CNAME 193.192/30.2.0.192.in-addr.arpa.
+194			IN	CNAME 194.192/30.2.0.192.in-addr.arpa.
+195         IN  CNAME 195.192/30.2.0.192.in-addr.arpa.
+253         IN  PTR   high.value.domain.ip4.
+255         IN  PTR   needs.review.domain.ip4

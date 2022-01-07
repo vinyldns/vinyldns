@@ -39,7 +39,7 @@ import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 
 class Route53ApiIntegrationSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with ScalaFutures
     with Matchers
     with MockitoSugar
@@ -49,6 +49,7 @@ class Route53ApiIntegrationSpec
     with MySqlApiIntegrationSpec {
 
   private val testZone = Zone("example.com.", "test@test.com", backendId = Some("test"))
+
   private def testConnection: Route53Backend =
     Route53Backend
       .load(
@@ -56,7 +57,7 @@ class Route53ApiIntegrationSpec
           "test",
           Some("access"),
           Some("secret"),
-          "http://127.0.0.1:19009",
+          sys.env.getOrElse("R53_SERVICE_ENDPOINT", "http://localhost:19003"),
           "us-east-1"
         )
       )

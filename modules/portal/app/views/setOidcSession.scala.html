@@ -1,17 +1,25 @@
 @(setSessionUrl: String)(implicit requestHeader: RequestHeader)
 <!DOCTYPE html>
 <html lang="en" class="body-full-height">
-<head>
-    <!-- META SECTION -->
+  <head>
+      <!-- META SECTION -->
     <title>Login</title>
     <meta name="google" content="notranslate" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta id="oidc" content="@setSessionUrl" />
-    <!-- END META SECTION -->
-</head>
+      <!-- END META SECTION -->
+  </head>
+  <body>
     <a href="@{setSessionUrl}">Finishing login, if not redirected, click this link</a>
-    <script src="/public/lib/oidc-finish.js"></script>
-</body>
+    <script>
+      window.setTimeout(function() {
+        let element = document.getElementById('oidc');
+        if (element != null) {
+          window.location = element.getAttribute('content');
+        }
+      }, 0);
+    </script>
+  </body>
 </html>

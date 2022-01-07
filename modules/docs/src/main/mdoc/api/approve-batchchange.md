@@ -29,7 +29,7 @@ reviewComment | string        | no          | Optional approval explanation. |
 
 
 #### EXAMPLE HTTP REQUEST
-```
+```json
 {
     "reviewComment": "Comments are optional."
 }
@@ -69,7 +69,7 @@ reviewTimestamp | date-time  | The timestamp (UTC) of when the batch change was 
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
     "userId": "vinyl",
     "userName": "vinyl201",

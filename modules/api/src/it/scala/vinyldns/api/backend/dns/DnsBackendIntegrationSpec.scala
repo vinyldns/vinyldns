@@ -34,15 +34,16 @@ import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
 class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
 
   private val testConnection = ZoneConnection(
-    "test",
-    "test",
+    "vinyldns.",
+    "vinyldns.",
     "nzisn+4G2ldMn0q1CV3vsg==",
-    "127.0.0.1:19001",
+    sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001"),
     Algorithm.HMAC_MD5
   )
 
   "DNSBackend" should {
     "connect to a zone without a tsig key for transfer or update" in {
+
       val config =
         DnsBackendConfig(
           "test",
@@ -59,7 +60,7 @@ class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
         config.tsigUsage
       )
       val testZone = Zone(
-        "open.",
+        "open1.",
         "test@test.com",
         connection = Some(testConnection)
       )
