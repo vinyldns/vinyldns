@@ -1,28 +1,16 @@
 ---
-name: Bug report
+name: Bug Report
 about: Create a report to help us improve
+title: ''
+labels: status/needs-label
+assignees: ''
 
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+Please provide as much detail as you can. Here are some important details:
 
-**VinylDNS Version**
-
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Stack trace or error log output**
-
-**Additional context**
-Add any other context about the problem here.
+1. A description of the bug (expected behavior vs actual behavior)
+2. The VinylDNS version which contains the bug
+3. Any steps to reproduce (if we can't reproduce it, we can't fix it!)
+4. Any other helpful information (stack trace, log messages, screenshots, etc)

@@ -1,44 +1,46 @@
-FROM hseeberger/scala-sbt:11.0.8_1.3.13_2.11.12 as builder
+FROM vinyldns/build:base-build-portal as base-build
+ARG VINYLDNS_VERSION
+COPY . /build
+WORKDIR /build
 
-ARG BRANCH=master
+RUN mkdir -p /opt/vinyldns/conf && \
+    if [ -f artifacts/vinyldns-portal.zip ]; then \
+      unzip artifacts/vinyldns-portal.zip -d /opt/vinyldns && \
+      mv /opt/vinyldns/vinyldns-portal/{lib,share,conf} /opt/vinyldns && \
+      rm -rf /opt/vinyldns/vinyldns-portal*; \
+     fi && \
+     if [ ! -f /opt/vinyldns/lib/vinyldns.portal*.jar ]; then \
+       cp /build/node_modules.tar.xz /build/modules/portal && \
+       cd /build/modules/portal && tar Jxf node_modules.tar.xz && \
+       cd /build && \
+       modules/portal/prepare-portal.sh && \
+       sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"; project portal; dist" && \
+       unzip artifacts/vinyldns-portal.zip -d /opt/vinyldns && \
+       mv /opt/vinyldns/vinyldns-portal/{lib,share,conf} /opt/vinyldns && \
+       rm -rf /opt/vinyldns/vinyldns-portal*; \
+    fi
+
+FROM openjdk:11-slim
+ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
-RUN git clone -b ${BRANCH} --single-branch --depth 1 https://github.com/vinyldns/vinyldns.git /vinyldns
+RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
+    test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
+    mkdir -p /opt/vinyldns/lib_extra && \
+    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
 
-# The default jvmopts are huge, meant for running everything, use a paired down version
-COPY .jvmopts /vinyldns
+COPY --from=base-build /opt/vinyldns /opt/vinyldns
+COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf
+COPY ${DOCKER_FILE_PATH}/logback.xml /opt/vinyldns/conf
 
-# Needed for preparePortal
-RUN apt-get update \
-    && apt-get install -y \
-    apt-transport-https \
-    curl \
-    gnupg \
-    && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g grunt-cli
 
-RUN cd /vinyldns ; sbt "set version in ThisBuild := \"${VINYLDNS_VERSION}\"" portal/preparePortal universal:packageZipTarball
+VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 
-FROM adoptopenjdk/openjdk11:jdk-11.0.8_10-alpine
+EXPOSE 9001
 
-RUN apk add --update --no-cache netcat-openbsd bash
-
-COPY --from=builder /vinyldns/modules/portal/target/universal/portal.tgz /
-
-RUN mkdir -p /opt && \
-    tar -xzvf /portal.tgz && \
-    mv /portal /opt/docker && \
-    mkdir -p /opt/docker/lib_extra
-
-# This will set the vinyldns version, make sure to have this in config... version = ${?VINYLDNS_VERSION}
-ARG VINYLDNS_VERSION
-ENV VINYLDNS_VERSION=$VINYLDNS_VERSION
-
-# Mount the volume for config file and lib extras
-# Note: These volume names are used in the build.sbt
-VOLUME ["/opt/docker/lib_extra/", "/opt/docker/conf"]
-
-EXPOSE 9000
-
-ENTRYPOINT ["/opt/docker/bin/portal"]
+ENV JVM_OPTS=""
+ENTRYPOINT ["/bin/bash","-c", "java ${JVM_OPTS} -Dvinyldns.version=$(cat /opt/vinyldns/version) \
+                               -Dlogback.configurationFile=/opt/vinyldns/conf/logback.xml \
+                               -Dconfig.file=/opt/vinyldns/conf/application.conf \
+                               -cp /opt/vinyldns/conf:/opt/vinyldns/lib/*:/opt/vinyldns/lib_extra/* \
+                               play.core.server.ProdServerStart"]

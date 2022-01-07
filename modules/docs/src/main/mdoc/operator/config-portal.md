@@ -18,12 +18,9 @@ The portal configuration is much smaller than the API Server.
 - [Full Example Config](#full-example-config)
 
 ## Database Configuration
-VinylDNS supports both DynamoDB and MySQL backends (see [API Database Configuration](config-api.html#database-configuration)).
+VinylDNS supports a MySQL backend (see [API Database Configuration](config-api.html#database-configuration)).
 
-If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb.html) first to get the values you need to configure here.
-
-If using MySQL, follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
-
+Follow the [MySQL Setup Guide](setup-mysql.html) first to get the values you need to configure here.
 
 The Portal uses the following tables:
 
@@ -37,7 +34,7 @@ the same values in both configs:
 vinyldns {
 
   # this list should include only the datastores being used by your portal instance (user and userChange repo)
-  data-stores = ["dynamodb", "mysql"]
+  data-stores = ["mysql"]
   
   mysql {
     
@@ -99,39 +96,6 @@ vinyldns {
       # all repositories with config sections here will be enabled in mysql
       user {
       # no additional settings for repositories enabled in mysql
-      }
-    }
-  }
-  
-  dynamodb {
-      
-    # this is the path to the DynamoDB provider. This should not be edited
-    # from the default in reference.conf
-    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
-    
-    settings {
-      # AWS_ACCESS_KEY, credential needed to access the SQS queue
-      key = "x"
-    
-      # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
-      secret = "x"
-    
-      # DynamoDB url for the region you are running in, this example is in us-east-1
-      endpoint = "https://dynamodb.us-east-1.amazonaws.com"
-      
-      # DynamoDB region
-      region = "us-east-1"
-    }
-    
-    repositories {
-      # all repositories with config sections here will be enabled in dynamodb
-      user-change {
-        # Name of the table where user changes are saved
-        table-name = "userChangeTest"
-        # Provisioned throughput for reads
-        provisioned-reads = 30
-        # Provisioned throughput for writes
-        provisioned-writes = 20
       }
     }
   }
@@ -216,7 +180,7 @@ links = [
     title = "API Documentation"
 
     # the hyperlink address being linked to
-    href = "http://vinyldns.io"
+    href = "https://vinyldns.io"
 
     # a fa icon to display
     icon = "fa fa-file-text-o"
@@ -230,7 +194,7 @@ links = [
 The play secret must be set to a secret value, and should be an environment variable
 
 ```yaml
-# See http://www.playframework.com/documentation/latest/ApplicationSecret for more details.
+# See https://www.playframework.com/documentation/latest/ApplicationSecret for more details.
 play.http.secret.key = "vinyldnsportal-change-this-for-production"
 ```
 
@@ -277,7 +241,7 @@ Allows users to schedule changes to be run sometime in the future
 #
 # This must be changed for production, but we recommend not changing it in this file.
 #
-# See http://www.playframework.com/documentation/latest/ApplicationSecret for more details.
+# See https://www.playframework.com/documentation/latest/ApplicationSecret for more details.
 play.http.secret.key = "vinyldnsportal-change-this-for-production"
 
 # The application languages
@@ -287,7 +251,7 @@ portal.vinyldns.backend.url = "http://vinyldns-api:9000"
 portal.test_login = false
 
 # configuration for the users and groups store
-data-stores = ["dynamodb", "mysql"]
+data-stores = ["mysql"]
 
 mysql {
   class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
@@ -320,37 +284,6 @@ mysql {
   }
 }
 
-dynamodb {
-  class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
-  
-  settings {
-    key = "x"
-    secret = "x"
-    endpoint = "http://vinyldns-dynamodb:8000"
-    region = "us-east-1"
-  }
-  
-  repositories {
-    user-change {
-      table-name = "userChangeTest"
-      provisioned-reads = 30
-      provisioned-writes = 20
-    }
-  }
-
-LDAP {
-  user="test"
-  password="test"
-  domain="test"
-
-  searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]
-
-  context {
-    initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"
-    securityAuthentication = "simple"
-    providerUrl = "ldaps://somedomain.com:9999"
-  }
-
 }
 
 play.filters.enabled += "play.filters.csrf.CSRFFilter"
@@ -374,7 +307,7 @@ links = [
     displayOnSidebar = true
     displayOnLoginScreen = true
     title = "API Documentation"
-    href = "http://vinyldns.io"
+    href = "https://vinyldns.io"
     icon = "fa fa-file-text-o"
   }
 ]

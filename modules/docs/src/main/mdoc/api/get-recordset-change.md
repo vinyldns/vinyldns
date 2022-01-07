@@ -37,7 +37,7 @@ singleBatchChangeIds |  array of SingleBatchChange ID objects  | If the recordse
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zone": {
     "name": "vinyl.",

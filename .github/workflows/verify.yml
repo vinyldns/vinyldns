@@ -1,0 +1,35 @@
+name: Verify and Test
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  pull_request:
+    branches: [ '*' ]
+  push:
+    branches: [ 'master','main' ]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  build:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build and Test
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
+
+      - name: Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

@@ -1,0 +1,90 @@
+name: VinylDNS Release vNext
+concurrency:
+  cancel-in-progress: true
+  group: "release-vnext"
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    branches: [ 'master','main' ]
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+
+  verify:
+    name: Verify Release
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch
+        if: github.event_name != 'push' # We only need to verify if this is manually triggered
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build and Test
+        if: github.event_name != 'push' # We only need to verify if this is manually triggered
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
+
+  docker-release-api:
+    name: Release API vNext Image
+    needs: [ verify ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Import Content Trust Key
+        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+      - name: Publish API Docker Image
+        run: make -C build/docker/api publish-vnext
+        env:
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+  docker-release-portal:
+    name: Release Portal vNext Image
+    needs: [ verify ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Import Content Trust Key
+        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+      - name: Publish Portal Docker Image
+        run: make -C build/docker/portal publish-vnext
+        env:
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}

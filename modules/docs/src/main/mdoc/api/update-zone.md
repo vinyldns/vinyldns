@@ -18,7 +18,7 @@ Updates an existing zone that has already been connected to.  Used to update the
 
 #### EXAMPLE HTTP REQUEST
 
-```
+```json
 {
   "name": "vinyl.",
   "email": "update@update.com",
@@ -63,7 +63,7 @@ status        | string        | The status of the zone change
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zone": {
     "name": "vinyl.",

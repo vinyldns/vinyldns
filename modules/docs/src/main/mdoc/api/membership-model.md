@@ -41,7 +41,7 @@ the group, deleting users from the group, toggling other users' admin statuses (
 
 #### GROUP EXAMPLE <a id="group-example"></a>
 
-```
+```json
 {
   "id": "dc4c7c79-5bbc-41bf-992e-8d6c4ec574c6",
   "name": "some-group",
@@ -80,7 +80,7 @@ To get your access and secret keys, log into the VinylDNS portal and then with t
 
 #### USER EXAMPLE <a id="user-example"></a>
 
-```
+```json
 {
   "userName": "jdoe201",
   "firstName": "John",

@@ -16,7 +16,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val fs2V = "2.4.4"
+  lazy val fs2V = "2.4.5"
   lazy val ficusV = "1.4.3"
 
   lazy val apiDependencies = Seq(
@@ -30,10 +30,10 @@ object Dependencies {
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
-    "dnsjava"                   %  "dnsjava"                        % "2.1.8",
+    "dnsjava"                   %  "dnsjava"                        % "3.4.2",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
-    "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
+    "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
@@ -71,17 +71,18 @@ object Dependencies {
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
-    "co.fs2"                    %% "fs2-core"                       % "2.3.0",
+    "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
-    "javax.activation"          %  "activation"                     % "1.1.1"
+    "javax.activation"          %  "activation"                     % "1.1.1",
   )
 
   lazy val mysqlDependencies = Seq(
-    "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
+    "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
-    "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
+    "com.h2database"            %  "h2"                             % "1.4.200",
   )
 
   lazy val sqsDependencies = Seq(
@@ -122,7 +123,7 @@ object Dependencies {
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
-    "de.leanovate.play-mockws"  %% "play-mockws" % "2.7.1"          % "test",
+    "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
     "com.iheart"                %% "ficus"                          % ficusV
   )
 }

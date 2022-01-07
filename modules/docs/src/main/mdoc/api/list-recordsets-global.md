@@ -45,7 +45,7 @@ nameSort      | string  | name sort order sent in request
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "recordSets": [
     {
@@ -66,7 +66,7 @@ nameSort      | string  | name sort order sent in request
       "zoneName": "example.com.",
       "zoneShared": true
     }
-  ]
+  ],
   "maxItems": 100,
   "recordNameFilter": "foo*",
   "recordTypeFilter": [
