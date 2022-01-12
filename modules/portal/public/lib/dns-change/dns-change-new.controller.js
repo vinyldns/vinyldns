@@ -182,10 +182,23 @@
                   });
                 }
 
+                function decode(str) {
+                    // regex from:
+                    // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
+                    // matches[0] is full match text with delimiter if any
+                    // matches[1] is delimiter (usually ',')
+                    // matches[2] is quoted field or undefined, internal quotes are doubled by convention
+                    // matches[3] is standard field or undefined
+                    // one of [2] or [3] will be undefined
+                    const regex = /(,|\r?\n|\r|^)(?:"([^"]*(?:""[^"]*)*)"|([^,\r\n]*))/gi;
+                    const matches = [...str.matchAll(regex)];
+                    return matches.map(match => match[2] !== undefined ? match[2].replace(/""/g, '"') : match[3]);
+                }
+
                 function parseRow(row) {
                     var change = {};
                     var headers = ["changeType", "type", "inputName", "ttl", "record"];
-                    var rowContent = row.split(",");
+                    var rowContent = decode(row);
                     for (var j = 0; j < rowContent.length; j++) {
                         if (headers[j] == "changeType") {
                             if (rowContent[j].match(/add/i)) {
