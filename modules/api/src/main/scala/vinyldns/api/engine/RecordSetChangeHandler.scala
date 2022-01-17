@@ -60,7 +60,7 @@ object RecordSetChangeHandler {
      conn: Backend,
      recordSetChange: RecordSetChange
    )(implicit timer: Timer[IO]): IO[RecordSetChange] =
-    executeWithinTransaction { db: DB =>
+    executeWithinTransaction { db: DB => {
       for {
         wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
 
@@ -91,11 +91,17 @@ object RecordSetChangeHandler {
         )
         singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
         _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
-      } yield {
+      } yield completedState.change
+    }.attempt.map {
+      case Left(e: Throwable) =>
+        db.rollbackIfActive() //Roll back the changes if error occurs
+        db.close() //DB Connection Close
+        throw e
+      case Right(ok) =>
         db.commit() //commit the changes
         db.close() //DB Connection Close
-        completedState.change
-      }
+        ok
+    }
     }
 
   def updateBatchStatuses(
@@ -308,14 +314,21 @@ object RecordSetChangeHandler {
       recordSetToSync
         .map { rsc =>
           val changeSet = ChangeSet(rsc)
-          executeWithinTransaction { db: DB =>
+          executeWithinTransaction { db: DB => {
             for {
-              _ <- recordChangeRepository.save(db,changeSet)
-              _ <- recordSetRepository.apply(db,changeSet)
-            } yield {
+              _ <- recordChangeRepository.save(db, changeSet)
+              _ <- recordSetRepository.apply(db, changeSet)
+            } yield ()
+          }.attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //DB Connection Close
+              throw e
+            case Right(ok) =>
               db.commit() //commit the changes
-              db.close()  //DB Connection Close
-            }
+              db.close() //DB Connection Close
+              ok
+          }
           }
         }
         .getOrElse(IO.unit)

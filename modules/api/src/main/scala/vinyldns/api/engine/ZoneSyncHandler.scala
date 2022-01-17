@@ -86,7 +86,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       execution(db)
     } catch {
       case error: Throwable =>
-        db.close() //DB Connection Close
         throw error
     }
   }
@@ -154,22 +153,32 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             // we want to make sure we write to both the change repo and record set repo
             // at the same time as this can take a while
             executeWithinTransaction { db: DB =>
-              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-                recordChangeRepository.save(db, changeSet)
-              )
-              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-                recordSetRepository.apply(db, changeSet)
-              )
-              for {
-                _ <- saveRecordChanges
-                _ <- saveRecordSets
-              } yield {
-                db.commit() //commit the changes
-                db.close() //DB Connection Close
-                zoneChange.copy(
-                  zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                  status = ZoneChangeStatus.Synced
+              // keep the connection open
+              {
+                val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
+                  recordChangeRepository.save(db, changeSet)
                 )
+                val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
+                  recordSetRepository.apply(db,changeSet)
+                )
+                for {
+                  _ <- saveRecordChanges
+                  _ <- saveRecordSets
+                } yield {
+                  zoneChange.copy(
+                    zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                    status = ZoneChangeStatus.Synced
+                  )
+                }
+              }.attempt.map {
+                case Left(e: Throwable) =>
+                  db.rollbackIfActive() //Roll back the changes if error occurs
+                  db.close() //DB Connection Close
+                  throw e
+                case Right(ok) =>
+                  db.commit() //commit the changes
+                  db.close() //DB Connection Close
+                  ok
               }
             }
           }
