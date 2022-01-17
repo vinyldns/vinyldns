@@ -17,14 +17,14 @@
 package vinyldns.core.domain.record
 
 import cats.effect._
-import scalikejdbc._
+import scalikejdbc.DB
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
 trait RecordSetRepository extends Repository {
 
-  def apply(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet]
+  def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet]
 
   def listRecordSets(
       zoneId: Option[String],

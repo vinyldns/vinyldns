@@ -78,6 +78,19 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
         zoneChangeRepository.save(zoneChange)
     }
 
+  def executeWithinTransaction[A](execution: DB => A): A = {
+    val db=DB(ConnectionPool.borrow())
+    db.beginIfNotYet() // keep the connection open
+    db.autoClose(false)
+    try {
+      execution(db)
+    } catch {
+      case error: Throwable =>
+        db.close() //DB Connection Close
+        throw error
+    }
+  }
+
   def runSync(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
@@ -138,42 +151,26 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
-            val db: DB = DB(ConnectionPool.borrow())
-            // Begin the transaction
-            db.beginIfNotYet()
-            // Execute the statements within the transaction
-            db withinTx { implicit session =>
-              // we want to make sure we write to both the change repo and record set repo
-              // at the same time as this can take a while
+            // we want to make sure we write to both the change repo and record set repo
+            // at the same time as this can take a while
+            executeWithinTransaction { db: DB =>
               val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-                recordChangeRepository.save(changeSet)
+                recordChangeRepository.save(db, changeSet)
               )
               val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-                recordSetRepository.apply(changeSet)
+                recordSetRepository.apply(db, changeSet)
               )
-              // join together the results of saving both the record changes as well as the record sets
               for {
-                _ <- saveRecordChanges.attempt.map {
-                  case Left(error: Throwable) =>
-                    db.rollbackIfActive() // Rollback any changes made if there's exception
-                    db.close() // Close the connection
-                    throw error
-                  case Right(ok) => ok
-                }
-                _ <- saveRecordSets.attempt.map {
-                  case Left(error: Throwable) =>
-                    db.rollbackIfActive() // Rollback any changes made if there's exception
-                    db.close() // Close the connection
-                    throw error
-                  case Right(ok) =>
-                    db.commit() // Commit the changes to both repositories if there's no exception
-                    db.close() // Close the connection
-                    ok
-                }
-              } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                status = ZoneChangeStatus.Synced
-              )
+                _ <- saveRecordChanges
+                _ <- saveRecordSets
+              } yield {
+                db.commit() //commit the changes
+                db.close() //DB Connection Close
+                zoneChange.copy(
+                  zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                  status = ZoneChangeStatus.Synced
+                )
+              }
             }
           }
         }

@@ -33,7 +33,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
     IO.pure(List())
 
-  def apply(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet] = IO.pure(changeSet)
+  def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
       zoneId: Option[String],

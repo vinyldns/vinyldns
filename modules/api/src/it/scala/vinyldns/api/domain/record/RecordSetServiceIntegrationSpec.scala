@@ -25,11 +25,13 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpec
+import scalikejdbc.DB
 import vinyldns.api._
 import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
@@ -271,7 +273,9 @@ class RecordSetServiceIntegrationSpec
         conflictRecords.map(makeAddChange(_, zoneTestNameConflicts)) ++
         zoneRecords.map(makeAddChange(_, zone))
     )
-    recordSetRepo.apply(changes).unsafeRunSync()
+    executeWithinTransaction { db: DB =>
+      recordSetRepo.apply(db, changes).unsafeRunSync()
+    }
 
     testRecordSetService = new RecordSetService(
       zoneRepo,

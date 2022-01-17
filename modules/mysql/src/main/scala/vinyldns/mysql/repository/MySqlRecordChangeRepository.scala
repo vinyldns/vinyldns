@@ -63,39 +63,10 @@ class MySqlRecordChangeRepository
     * We have the same issue with changes as record sets, namely we may have to save millions of them
     * We do not need to distinguish between create, update, delete so this is simpler
     */
-  def save(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet] =
+  def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
-
-      // Match session to find whether the method is running independently or being called by a transaction outside
-      session match {
-        // If the session is AutoSession, that means the method is running independently outside of a transaction
-        // We have to wrap the database change with `localTx` to maintain atomicity when called independently
-        case AutoSession =>
-          IO {
-            DB.localTx { implicit session =>
-              changeSet.changes
-                .grouped(1000)
-                .map { changes =>
-                  changes.map { change =>
-                    Seq(
-                      change.id,
-                      change.zoneId,
-                      change.created.getMillis,
-                      fromChangeType(change.changeType),
-                      toPB(change).toByteArray
-                    )
-                  }
-                }
-                .foreach { group =>
-                  INSERT_CHANGES.batch(group: _*).apply()
-                }
-            }
-          }.as(changeSet)
-
-        // If other sessions, that means the method is called from a transaction outside
-        // We don't have to wrap the database change with `localTx` as it's already wrapped in a transaction outside
-        case _ =>
-          IO {
+      IO {
+        db.withinTx { implicit session =>
           changeSet.changes
             .grouped(1000)
             .map { changes =>
@@ -112,8 +83,8 @@ class MySqlRecordChangeRepository
             .foreach { group =>
               INSERT_CHANGES.batch(group: _*).apply()
             }
-        }.as(changeSet)
-      }
+        }
+      }.as(changeSet)
     }
 
   def listRecordSetChanges(

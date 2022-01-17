@@ -89,7 +89,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
 
-  def apply(changeSet: ChangeSet)(implicit session: DBSession = AutoSession): IO[ChangeSet] =
+  def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
 
       // identify failed changes
@@ -152,32 +152,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
-
-      // Match session to find whether the method is running independently or being called by a transaction outside
-      session match {
-        // If the session is AutoSession, that means the function is running independently outside of a transaction
-        // We have to wrap the database change with `localTx` to maintain atomicity when called independently
-        case AutoSession =>
-          IO {
-            DB.localTx { implicit session =>
-              // sql batch groups should preferably be smaller rather than larger for performance purposes
-              // to reduce contention on the table.  1000 worked well in performance tests
-              inserts.grouped(1000).foreach { group =>
-                INSERT_RECORDSET.batch(group: _*).apply()
-              }
-              (updates ++ reversionUpdates).grouped(1000).foreach { group =>
-                UPDATE_RECORDSET.batch(group: _*).apply()
-              }
-              (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
-                DELETE_RECORDSET.batch(group: _*).apply()
-              }
-            }
-        }.as(changeSet)
-
-        // If other sessions, that means the method is called from a transaction outside
-        // We don't have to wrap the database change with `localTx` as it's already wrapped in a transaction outside
-        case _ =>
-          IO {
+        IO {
+          db.withinTx { implicit session =>
             // sql batch groups should preferably be smaller rather than larger for performance purposes
             // to reduce contention on the table.  1000 worked well in performance tests
             inserts.grouped(1000).foreach { group =>
@@ -189,8 +165,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
               DELETE_RECORDSET.batch(group: _*).apply()
             }
-          }.as(changeSet)
-      }
+          }
+      }.as(changeSet)
     }
 
   def listRecordSets(

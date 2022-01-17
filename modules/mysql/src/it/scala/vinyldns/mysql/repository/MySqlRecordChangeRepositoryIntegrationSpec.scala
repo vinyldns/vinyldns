@@ -23,12 +23,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc._
-import vinyldns.core.domain.record.{
-  ChangeSet,
-  RecordChangeRepository,
-  RecordSetChange,
-  RecordSetChangeType
-}
+import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 
@@ -65,28 +60,49 @@ class MySqlRecordChangeRepositoryIntegrationSpec
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
 
+  def executeWithinTransaction[A](execution: DB => A): A = {
+    val db=DB(ConnectionPool.borrow())
+    db.beginIfNotYet() // keep the connection open
+    db.autoClose(false)
+    try {
+      execution(db)
+    } catch {
+      case error: Throwable =>
+        db.rollbackIfActive() //Roll back the changes if error occurs
+        db.close() //DB Connection Close
+        throw error
+    }
+  }
+
   "saving record changes" should {
     "save a batch of inserts" in {
       val inserts = generateInserts(okZone, 1000)
-      repo.save(ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
+      executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
+      }
       repo.getRecordSetChange(okZone.id, inserts(0).id).unsafeRunSync() shouldBe inserts.headOption
     }
     "saves record updates" in {
       val updates = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Update))
-      repo.save(ChangeSet(updates)).attempt.unsafeRunSync() shouldBe right
+      executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(updates)).attempt.unsafeRunSync() shouldBe right
+      }
       repo.getRecordSetChange(okZone.id, updates(0).id).unsafeRunSync() shouldBe updates.headOption
     }
     "saves record deletes" in {
       val deletes = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Delete))
-      repo.save(ChangeSet(deletes)).attempt.unsafeRunSync() shouldBe right
+      executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(deletes)).attempt.unsafeRunSync() shouldBe right
+      }
       repo.getRecordSetChange(okZone.id, deletes(0).id).unsafeRunSync() shouldBe deletes.headOption
     }
   }
   "list record changes" should {
     "return successfully without start from" in {
       val inserts = generateInserts(okZone, 10)
-      repo.save(ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
-
+      executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
+      }
       val result = repo.listRecordSetChanges(okZone.id, None, 5).unsafeRunSync()
       result.nextId shouldBe defined
       result.maxItems shouldBe 5
@@ -102,8 +118,9 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       // expect to be sorted by created descending so reverse that
       val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
 
-      repo.save(ChangeSet(timeSpaced)).attempt.unsafeRunSync() shouldBe right
-
+      executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(timeSpaced)).attempt.unsafeRunSync() shouldBe right
+      }
       val page1 = repo.listRecordSetChanges(okZone.id, None, 2).unsafeRunSync()
       page1.nextId shouldBe Some(expectedOrder(1).created.getMillis.toString)
       page1.maxItems shouldBe 2
