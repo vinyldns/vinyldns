@@ -62,14 +62,14 @@ class MySqlRecordChangeRepositoryIntegrationSpec
 
   def executeWithinTransaction[A](execution: DB => A): A = {
     val db=DB(ConnectionPool.borrow())
-    db.beginIfNotYet() // keep the connection open
-    db.autoClose(false)
+    db.beginIfNotYet() //Begin the transaction
+    db.autoClose(false) //Keep the connection open
     try {
       execution(db)
     } catch {
       case error: Throwable =>
         db.rollbackIfActive() //Roll back the changes if error occurs
-        db.close() //DB Connection Close
+        db.close() //Close DB Connection
         throw error
     }
   }
@@ -78,21 +78,48 @@ class MySqlRecordChangeRepositoryIntegrationSpec
     "save a batch of inserts" in {
       val inserts = generateInserts(okZone, 1000)
       executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
+        repo.save(db, ChangeSet(inserts)).attempt.map{
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
       repo.getRecordSetChange(okZone.id, inserts(0).id).unsafeRunSync() shouldBe inserts.headOption
     }
     "saves record updates" in {
       val updates = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Update))
       executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(updates)).attempt.unsafeRunSync() shouldBe right
+        repo.save(db, ChangeSet(updates)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
       repo.getRecordSetChange(okZone.id, updates(0).id).unsafeRunSync() shouldBe updates.headOption
     }
     "saves record deletes" in {
       val deletes = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Delete))
       executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(deletes)).attempt.unsafeRunSync() shouldBe right
+        repo.save(db, ChangeSet(deletes)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
       repo.getRecordSetChange(okZone.id, deletes(0).id).unsafeRunSync() shouldBe deletes.headOption
     }
@@ -101,7 +128,16 @@ class MySqlRecordChangeRepositoryIntegrationSpec
     "return successfully without start from" in {
       val inserts = generateInserts(okZone, 10)
       executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(inserts)).attempt.unsafeRunSync() shouldBe right
+        repo.save(db, ChangeSet(inserts)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
       val result = repo.listRecordSetChanges(okZone.id, None, 5).unsafeRunSync()
       result.nextId shouldBe defined
@@ -119,7 +155,16 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
 
       executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(timeSpaced)).attempt.unsafeRunSync() shouldBe right
+        repo.save(db, ChangeSet(timeSpaced)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
       val page1 = repo.listRecordSetChanges(okZone.id, None, 2).unsafeRunSync()
       page1.nextId shouldBe Some(expectedOrder(1).created.getMillis.toString)

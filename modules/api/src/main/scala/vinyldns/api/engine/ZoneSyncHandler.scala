@@ -80,8 +80,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
 
   def executeWithinTransaction[A](execution: DB => A): A = {
     val db=DB(ConnectionPool.borrow())
-    db.beginIfNotYet() // keep the connection open
-    db.autoClose(false)
+    db.beginIfNotYet() //Begin the transaction
+    db.autoClose(false) //Keep the connection open
     try {
       execution(db)
     } catch {
@@ -153,7 +153,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             // we want to make sure we write to both the change repo and record set repo
             // at the same time as this can take a while
             executeWithinTransaction { db: DB =>
-              // keep the connection open
               {
                 val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
                   recordChangeRepository.save(db, changeSet)
@@ -173,11 +172,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               }.attempt.map {
                 case Left(e: Throwable) =>
                   db.rollbackIfActive() //Roll back the changes if error occurs
-                  db.close() //DB Connection Close
+                  db.close() //Close DB Connection
                   throw e
                 case Right(ok) =>
-                  db.commit() //commit the changes
-                  db.close() //DB Connection Close
+                  db.commit() //Commit the changes
+                  db.close() //Close DB Connection
                   ok
               }
             }

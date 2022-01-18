@@ -63,14 +63,12 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
   def executeWithinTransaction[A](execution: DB => A): A = {
     val db=DB(ConnectionPool.borrow())
-    db.beginIfNotYet() // keep the connection open
-    db.autoClose(false)
+    db.beginIfNotYet() //Begin the transaction
+    db.autoClose(false) //Keep the connection open
     try {
       execution(db)
     } catch {
       case error: Throwable =>
-        db.rollbackIfActive() //Roll back the changes if error occurs
-        db.close() //DB Connection Close
         throw error
     }
   }
@@ -79,7 +77,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
     val pendingChanges = generateInserts(zone, count, word)
     val bigPendingChangeSet = ChangeSet(pendingChanges)
     executeWithinTransaction { db: DB =>
-      repo.apply(db, bigPendingChangeSet).unsafeRunSync()
+      repo.apply(db, bigPendingChangeSet).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) =>
+          db.commit() //Commit the changes
+          db.close() //Close DB Connection
+          ok
+      }.unsafeRunSync()
     }
     pendingChanges
   }
@@ -87,7 +94,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
   def insert(changes: List[RecordSetChange]): Unit = {
     val bigPendingChangeSet = ChangeSet(changes)
     executeWithinTransaction { db: DB =>
-      repo.apply(db, bigPendingChangeSet).unsafeRunSync()
+      repo.apply(db, bigPendingChangeSet).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) =>
+          db.commit() //Commit the changes
+          db.close() //Close DB Connection
+          ok
+      }.unsafeRunSync()
     }
     ()
   }
@@ -107,7 +123,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val deleteChange = makePendingTestDeleteChange(existing(1))
         .copy(status = RecordSetChangeStatus.Failed)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, ChangeSet(Seq(addChange, updateChange, deleteChange))).unsafeRunSync()
+        repo.apply(db, ChangeSet(Seq(addChange, updateChange, deleteChange))).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
       }
       repo.getRecordSet(rsOk.id).unsafeRunSync() shouldBe None
       repo.getRecordSet(existing.head.id).unsafeRunSync() shouldBe Some(
@@ -165,14 +190,33 @@ class MySqlRecordSetRepositoryIntegrationSpec
         status = RecordSetChangeStatus.Pending
       )
       executeWithinTransaction { db: DB =>
-        repo.apply(db, ChangeSet(existingPending)).unsafeRunSync()
+        repo.apply(db, ChangeSet(existingPending)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
         repo.getRecordSet(failedChange.recordSet.id).unsafeRunSync() shouldBe
           Some(
             existingPending.recordSet
               .copy(fqdn = Some(s"""${failedChange.recordSet.name}.${okZone.name}"""))
           )
-
-        repo.apply(db, ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
+      }
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(Seq(successfulChange, pendingChange, failedChange))).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
       }
 
       // success and pending changes have records saved
@@ -221,10 +265,25 @@ class MySqlRecordSetRepositoryIntegrationSpec
         )
       val oldChangeSet = ChangeSet(oldAddChanges)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
+        repo.apply(db, oldChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) => ok
+        }.unsafeRunSync() shouldBe oldChangeSet
 
         // apply updates
-        repo.apply(db, updateChangeSet).unsafeRunSync() shouldBe updateChangeSet
+        repo.apply(db, updateChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync() shouldBe updateChangeSet
       }
 
       // ensure that success and pending updates store the new recordsets
@@ -276,10 +335,25 @@ class MySqlRecordSetRepositoryIntegrationSpec
         )
       val oldChangeSet = ChangeSet(oldAddChanges)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
+        repo.apply(db, oldChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) => ok
+        }.unsafeRunSync() shouldBe oldChangeSet
 
         // apply deletes
-        repo.apply(db, deleteChangeSet).unsafeRunSync() shouldBe deleteChangeSet
+        repo.apply(db, deleteChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync() shouldBe deleteChangeSet
       }
       // ensure that successful change deletes the recordset
       repo
@@ -308,15 +382,36 @@ class MySqlRecordSetRepositoryIntegrationSpec
       )
       executeWithinTransaction { db: DB =>
         val dbCalls = for {
-          _ <- repo.apply(db, ChangeSet(addChange))
+          _ <- repo.apply(db, ChangeSet(addChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
           get <- repo.getRecordSet(testRecord.id)
-          _ <- repo.apply(db, ChangeSet(deleteChange))
-          finalGet <- repo.getRecordSet(testRecord.id)
-        } yield (get, finalGet)
-
-
-        val (get, finalGet) = dbCalls.unsafeRunSync()
+        } yield get
+        val get = dbCalls.unsafeRunSync()
         get shouldBe Some(recordSetWithFQDN(testRecord, okZone))
+      }
+      executeWithinTransaction { db: DB =>
+        val anotherDbCall = for{
+          _ <- repo.apply(db, ChangeSet(deleteChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
+          finalGet <- repo.getRecordSet(testRecord.id)
+        } yield finalGet
+        val finalGet = anotherDbCall.unsafeRunSync()
         finalGet shouldBe None
       }
     }
@@ -324,8 +419,23 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val pendingChanges = generateInserts(okZone, 1000)
       val bigPendingChangeSet = ChangeSet(pendingChanges)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, bigPendingChangeSet).unsafeRunSync()
-        repo.apply(db, bigPendingChangeSet).attempt.unsafeRunSync() shouldBe right
+        repo.apply(db, bigPendingChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) => ok
+        }.unsafeRunSync()
+        repo.apply(db, bigPendingChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            Right(ok)
+        }.unsafeRunSync() shouldBe right
       }
     }
     "work for multiple inserts" in {
@@ -333,7 +443,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       val bigPendingChangeSet = ChangeSet(pendingChanges)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, bigPendingChangeSet).unsafeRunSync()
+        repo.apply(db, bigPendingChangeSet).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
       }
       // let's make sure we have all 1000 records
       val recordCount = repo.getRecordSetCount(okZone.id).unsafeRunSync()
@@ -360,7 +479,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       // exercise the entire change set
       val cs = ChangeSet(deletes ++ updates ++ inserts)
       executeWithinTransaction { db: DB =>
-        repo.apply(db, cs).unsafeRunSync()
+        repo.apply(db, cs).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
       }
       // make sure the deletes are gone
       repo.getRecordSet(deletes(0).recordSet.id).unsafeRunSync() shouldBe None
@@ -384,7 +512,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val testRecord = addChange.recordSet
       executeWithinTransaction { db: DB =>
         val dbCalls = for {
-          _ <- repo.apply(db, ChangeSet(addChange))
+          _ <- repo.apply(db, ChangeSet(addChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
           get <- repo.getRecordSet(testRecord.id)
         } yield get
 
@@ -403,14 +540,36 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val updateChange = makeCompleteTestUpdateChange(testRecord, updatedRecordSet, okZone)
       executeWithinTransaction { db: DB =>
         val dbCalls = for {
-          _ <- repo.apply(db, ChangeSet(addChange))
+          _ <- repo.apply(db, ChangeSet(addChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
           get <- repo.getRecordSet(testRecord.id)
-          _ <- repo.apply(db, ChangeSet(updateChange))
-          finalGet <- repo.getRecordSet(testRecord.id)
-        } yield (get, finalGet)
-
-        val (get, finalGet) = dbCalls.unsafeRunSync()
+        } yield get
+        val get = dbCalls.unsafeRunSync()
         get shouldBe Some(recordSetWithFQDN(testRecord, okZone))
+      }
+      executeWithinTransaction { db: DB =>
+        val anotherDbCall = for {
+          _ <- repo.apply(db, ChangeSet(updateChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
+          finalGet <- repo.getRecordSet(testRecord.id)
+        } yield finalGet
+        val finalGet = anotherDbCall.unsafeRunSync()
         finalGet.flatMap(_.ownerGroupId) shouldBe Some("someOwner")
       }
       //Update the owner-group-id to None to check if its null in the db
@@ -422,7 +581,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       executeWithinTransaction { db: DB =>
         val updateToNone = for {
-          _ <- repo.apply(db, ChangeSet(updateChangeNone))
+          _ <- repo.apply(db, ChangeSet(updateChangeNone)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
           finalGet <- repo.getRecordSet(updateChangeNone.id)
         } yield finalGet
 
@@ -699,7 +867,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       val expected = changes.map(r => recordSetWithFQDN(r.recordSet, okZone))
       executeWithinTransaction { db: DB =>
-        repo.apply(db, ChangeSet(changes)).unsafeRunSync()
+        repo.apply(db, ChangeSet(changes)).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        }.unsafeRunSync()
       }
       val results = repo.getRecordSetsByName(okZone.id, "foo").unsafeRunSync()
       results should contain theSameElementsAs expected
@@ -779,7 +956,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val testRecord = addChange.recordSet
       executeWithinTransaction { db: DB =>
         val dbCalls = for {
-          _ <- repo.apply(db, ChangeSet(addChange))
+          _ <- repo.apply(db, ChangeSet(addChange)).attempt.map {
+            case Left(e: Throwable) =>
+              db.rollbackIfActive() //Roll back the changes if error occurs
+              db.close() //Close DB Connection
+              throw e
+            case Right(ok) =>
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
+              ok
+          }
           get <- repo.getRecordSet(testRecord.id)
         } yield get
 

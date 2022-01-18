@@ -274,7 +274,16 @@ class RecordSetServiceIntegrationSpec
         zoneRecords.map(makeAddChange(_, zone))
     )
     executeWithinTransaction { db: DB =>
-      recordSetRepo.apply(db, changes).unsafeRunSync()
+      recordSetRepo.apply(db, changes).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) =>
+          db.commit() //Commit the changes
+          db.close() //Close DB Connection
+          ok
+      }.unsafeRunSync()
     }
 
     testRecordSetService = new RecordSetService(

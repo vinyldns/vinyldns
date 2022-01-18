@@ -75,14 +75,14 @@ object RecordSetChangeHandler {
         _ <- recordSetRepository.apply(db, changeSet).attempt.map {
           case Left(error: Throwable) =>
             db.rollbackIfActive() //Roll back the changes if error occurs
-            db.close() //DB Connection Close
+            db.close() //Close DB Connection
             throw error
           case Right(ok) => ok
         }
         _ <- recordChangeRepository.save(db, changeSet).attempt.map {
           case Left(error: Throwable) =>
             db.rollbackIfActive() //Roll back the changes if error occurs
-            db.close() //DB Connection Close
+            db.close() //Close DB Connection
             throw error
           case Right(ok) => ok
         }
@@ -95,11 +95,11 @@ object RecordSetChangeHandler {
     }.attempt.map {
       case Left(e: Throwable) =>
         db.rollbackIfActive() //Roll back the changes if error occurs
-        db.close() //DB Connection Close
+        db.close() //Close DB Connection
         throw e
       case Right(ok) =>
-        db.commit() //commit the changes
-        db.close() //DB Connection Close
+        db.commit() //Commit the changes
+        db.close() //Close DB Connection
         ok
     }
     }
@@ -322,11 +322,11 @@ object RecordSetChangeHandler {
           }.attempt.map {
             case Left(e: Throwable) =>
               db.rollbackIfActive() //Roll back the changes if error occurs
-              db.close() //DB Connection Close
+              db.close() //Close DB Connection
               throw e
             case Right(ok) =>
-              db.commit() //commit the changes
-              db.close() //DB Connection Close
+              db.commit() //Commit the changes
+              db.close() //Close DB Connection
               ok
           }
           }

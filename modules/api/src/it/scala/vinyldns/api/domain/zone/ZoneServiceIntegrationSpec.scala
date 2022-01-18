@@ -107,9 +107,30 @@ class ZoneServiceIntegrationSpec
     waitForSuccess(zoneRepo.save(okZone))
     // Seeding records in DB
     executeWithinTransaction { db: DB =>
-      waitForSuccess(recordSetRepo.apply(db, changeSetSOA))
-      waitForSuccess(recordSetRepo.apply(db, changeSetNS))
-      waitForSuccess(recordSetRepo.apply(db, changeSetA))
+      waitForSuccess(recordSetRepo.apply(db, changeSetSOA).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) => ok
+      })
+      waitForSuccess(recordSetRepo.apply(db, changeSetNS).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) => ok
+      })
+      waitForSuccess(recordSetRepo.apply(db, changeSetA).attempt.map {
+        case Left(e: Throwable) =>
+          db.rollbackIfActive() //Roll back the changes if error occurs
+          db.close() //Close DB Connection
+          throw e
+        case Right(ok) =>
+          db.commit() //Commit the changes
+          db.close() //Close DB Connection
+          ok
+      })
     }
     doReturn(NonEmptyList.one("func-test-backend")).when(mockBackendResolver).ids
 
@@ -146,7 +167,16 @@ class ZoneServiceIntegrationSpec
     "accept a DeleteZone" in {
       val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, okZone))
       executeWithinTransaction { db: DB =>
-        waitForSuccess(recordSetRepo.apply(db, removeARecord))
+        waitForSuccess(recordSetRepo.apply(db, removeARecord).attempt.map {
+          case Left(e: Throwable) =>
+            db.rollbackIfActive() //Roll back the changes if error occurs
+            db.close() //Close DB Connection
+            throw e
+          case Right(ok) =>
+            db.commit() //Commit the changes
+            db.close() //Close DB Connection
+            ok
+        })
       }
       val result =
         testZoneService
