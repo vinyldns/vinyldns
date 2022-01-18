@@ -72,20 +72,8 @@ object RecordSetChangeHandler {
           recordChangeRepository
         )
         changeSet = ChangeSet(completedState.change).complete(completedState.change)
-        _ <- recordSetRepository.apply(db, changeSet).attempt.map {
-          case Left(error: Throwable) =>
-            db.rollbackIfActive() //Roll back the changes if error occurs
-            db.close() //Close DB Connection
-            throw error
-          case Right(ok) => ok
-        }
-        _ <- recordChangeRepository.save(db, changeSet).attempt.map {
-          case Left(error: Throwable) =>
-            db.rollbackIfActive() //Roll back the changes if error occurs
-            db.close() //Close DB Connection
-            throw error
-          case Right(ok) => ok
-        }
+        _ <- recordSetRepository.apply(db, changeSet)
+        _ <- recordChangeRepository.save(db, changeSet)
         singleBatchChanges <- batchChangeRepository.getSingleChanges(
           recordSetChange.singleBatchChangeIds
         )
