@@ -36,7 +36,7 @@ import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
-import scalikejdbc.DB
+import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 
 class RecordSetChangeHandlerSpec
@@ -118,7 +118,8 @@ class RecordSetChangeHandlerSpec
       .getRecordSets(anyString, anyString, any(classOf[RecordType]))
 
   }
-
+  // Add connection to run tests
+  ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
   "Handling Pending Changes" should {
     "complete the change successfully if already applied" in {
       doReturn(IO.pure(List(rs)))
