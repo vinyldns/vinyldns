@@ -69,8 +69,7 @@ object RecordSetChangeHandler extends TransactionProvider {
         recordChangeRepository
       )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- saveRecordset(recordSetRepository, changeSet)
-      _ <- saveRecordsetChange( recordChangeRepository, changeSet)
+      _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
       singleBatchChanges <- batchChangeRepository.getSingleChanges(
         recordSetChange.singleBatchChangeIds
       )
@@ -78,20 +77,16 @@ object RecordSetChangeHandler extends TransactionProvider {
       _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
     } yield completedState.change
 
-  def saveRecordset(
-     recordSetRepository: RecordSetRepository,
-     changeSet: ChangeSet
-  ): IO[ChangeSet] =
+  def saveChangeSet(
+   recordSetRepository: RecordSetRepository,
+   recordChangeRepository: RecordChangeRepository,
+   changeSet: ChangeSet
+  ): IO[Unit] =
     executeWithinTransaction { db: DB =>
-      recordSetRepository.apply(db, changeSet)
-    }
-
-  def saveRecordsetChange(
-     recordChangeRepository: RecordChangeRepository,
-     changeSet: ChangeSet
-  ): IO[ChangeSet] =
-    executeWithinTransaction { db: DB =>
-      recordChangeRepository.save(db, changeSet)
+      for {
+       _ <-  recordSetRepository.apply(db, changeSet)
+       _ <-  recordChangeRepository.save(db, changeSet)
+      } yield ()
     }
 
   def updateBatchStatuses(
@@ -305,8 +300,7 @@ object RecordSetChangeHandler extends TransactionProvider {
         .map { rsc =>
           val changeSet = ChangeSet(rsc)
           for {
-            _ <- saveRecordset(recordSetRepository, changeSet)
-            _ <- saveRecordsetChange(recordChangeRepository, changeSet)
+            _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
           } yield ()
         }
         .getOrElse(IO.unit)
