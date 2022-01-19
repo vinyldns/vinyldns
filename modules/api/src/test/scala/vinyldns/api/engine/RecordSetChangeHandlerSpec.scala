@@ -38,6 +38,7 @@ import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
 import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
+import vinyldns.mysql.TransactionProvider
 
 class RecordSetChangeHandlerSpec
   extends AnyWordSpec
@@ -45,7 +46,8 @@ class RecordSetChangeHandlerSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with CatsHelpers
-    with EitherValues {
+    with EitherValues
+    with TransactionProvider {
 
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private val mockBackend = mock[Backend]
@@ -125,8 +127,8 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(List(rs)))
         .when(mockBackend)
         .resolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[DB], any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[DB], any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[DB],any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[DB],any[ChangeSet])
       doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)
@@ -256,7 +258,7 @@ class RecordSetChangeHandlerSpec
 
       doReturn(IO.pure(BackendResponse.NoError("test"))).when(mockBackend).applyChange(rsChange)
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[DB], any[ChangeSet])
-      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[DB],any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[DB], any[ChangeSet])
       doReturn(IO.pure(List.empty)).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
 
       val test = underTest.apply(mockBackend, rsChange)

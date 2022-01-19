@@ -31,7 +31,7 @@ import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
-import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
+import vinyldns.mysql.TransactionProvider
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
@@ -50,7 +50,8 @@ class RecordSetServiceIntegrationSpec
     with Matchers
     with MySqlApiIntegrationSpec
     with BeforeAndAfterEach
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with TransactionProvider {
 
   private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
@@ -274,17 +275,8 @@ class RecordSetServiceIntegrationSpec
         zoneRecords.map(makeAddChange(_, zone))
     )
     executeWithinTransaction { db: DB =>
-      recordSetRepo.apply(db, changes).attempt.map {
-        case Left(e: Throwable) =>
-          db.rollbackIfActive() //Roll back the changes if error occurs
-          db.close() //Close DB Connection
-          throw e
-        case Right(ok) =>
-          db.commit() //Commit the changes
-          db.close() //Close DB Connection
-          ok
-      }.unsafeRunSync()
-    }
+        recordSetRepo.apply(db, changes)
+    }.unsafeRunSync()
 
     testRecordSetService = new RecordSetService(
       zoneRepo,

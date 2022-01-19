@@ -27,9 +27,9 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
-import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
+import vinyldns.mysql.TransactionProvider
 
-object RecordSetChangeHandler {
+object RecordSetChangeHandler extends TransactionProvider {
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.engine.RecordSetChangeHandler")
   private implicit val cs: ContextShift[IO] =
@@ -52,44 +52,39 @@ object RecordSetChangeHandler {
       )
     }
 
-
   def process(
      recordSetRepository: RecordSetRepository,
      recordChangeRepository: RecordChangeRepository,
      batchChangeRepository: BatchChangeRepository,
      conn: Backend,
      recordSetChange: RecordSetChange
-   )(implicit timer: Timer[IO]): IO[RecordSetChange] =
-    executeWithinTransaction { db: DB => {
-      for {
-        wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
+  )(implicit timer: Timer[IO]): IO[RecordSetChange] =
+    for {
+      wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
+      completedState <- fsm(
+        Pending(recordSetChange),
+        conn,
+        wildCardExists,
+        recordSetRepository,
+        recordChangeRepository
+      )
+      changeSet = ChangeSet(completedState.change).complete(completedState.change)
+      _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
+      singleBatchChanges <- batchChangeRepository.getSingleChanges(
+        recordSetChange.singleBatchChangeIds
+      )
+      singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
+      _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
+    } yield completedState.change
 
-        completedState <- fsm(
-          Pending(recordSetChange),
-          conn,
-          wildCardExists,
-          recordSetRepository,
-          recordChangeRepository
-        )
-        changeSet = ChangeSet(completedState.change).complete(completedState.change)
-        _ <- recordSetRepository.apply(db, changeSet)
-        _ <- recordChangeRepository.save(db, changeSet)
-        singleBatchChanges <- batchChangeRepository.getSingleChanges(
-          recordSetChange.singleBatchChangeIds
-        )
-        singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
-        _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
-      } yield completedState.change
-    }.attempt.map {
-      case Left(e: Throwable) =>
-        db.rollbackIfActive() //Roll back the changes if error occurs
-        db.close() //Close DB Connection
-        throw e
-      case Right(ok) =>
-        db.commit() //Commit the changes
-        db.close() //Close DB Connection
-        ok
-    }
+  def saveChangeSet(
+   recordSetRepository: RecordSetRepository,
+   recordChangeRepository: RecordChangeRepository,
+   changeSet: ChangeSet
+  ) =
+    executeWithinTransaction { db: DB =>
+      recordSetRepository.apply(db, changeSet)
+      recordChangeRepository.save(db, changeSet)
     }
 
   def updateBatchStatuses(
@@ -302,22 +297,9 @@ object RecordSetChangeHandler {
       recordSetToSync
         .map { rsc =>
           val changeSet = ChangeSet(rsc)
-          executeWithinTransaction { db: DB => {
-            for {
-              _ <- recordChangeRepository.save(db, changeSet)
-              _ <- recordSetRepository.apply(db, changeSet)
-            } yield ()
-          }.attempt.map {
-            case Left(e: Throwable) =>
-              db.rollbackIfActive() //Roll back the changes if error occurs
-              db.close() //Close DB Connection
-              throw e
-            case Right(ok) =>
-              db.commit() //Commit the changes
-              db.close() //Close DB Connection
-              ok
-          }
-          }
+          for {
+            _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
+          } yield ()
         }
         .getOrElse(IO.unit)
     }

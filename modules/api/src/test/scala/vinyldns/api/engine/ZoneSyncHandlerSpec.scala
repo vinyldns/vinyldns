@@ -38,14 +38,16 @@ import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.engine.ZoneSyncHandler.{executeWithinTransaction, monitor, time}
+import vinyldns.api.engine.ZoneSyncHandler.{monitor, time}
+import vinyldns.mysql.TransactionProvider
 
 class ZoneSyncHandlerSpec
   extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
-    with VinylDNSTestHelpers {
+    with VinylDNSTestHelpers
+    with TransactionProvider {
 
   private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
   private implicit val cs: ContextShift[IO] =
@@ -53,14 +55,14 @@ class ZoneSyncHandlerSpec
 
   // Copy of runSync to verify the working of transaction and rollback while exception occurs
   def testRunSyncFunc(
-                       recordSetRepository: RecordSetRepository,
-                       recordChangeRepository: RecordChangeRepository,
-                       zoneChange: ZoneChange,
-                       backendResolver: BackendResolver,
-                       maxZoneSize: Int,
-                       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
-                       VinylDNSZoneViewLoader.apply
-                     ): IO[ZoneChange] =
+     recordSetRepository: RecordSetRepository,
+     recordChangeRepository: RecordChangeRepository,
+     zoneChange: ZoneChange,
+     backendResolver: BackendResolver,
+     maxZoneSize: Int,
+     vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
+     VinylDNSZoneViewLoader.apply
+  ): IO[ZoneChange] =
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
@@ -112,41 +114,29 @@ class ZoneSyncHandlerSpec
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
-            // we want to make sure we write to both the change repo and record set repo
-            // at the same time as this can take a while
+
             executeWithinTransaction { db: DB =>
-              {
-                val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-                  recordChangeRepository.save(db, changeSet)
-                )
-                val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-                  recordSetRepository.apply(db,changeSet)
-                )
-                for {
-                  _ <- saveRecordChanges
-                  _ <- saveRecordSets
-                } yield {
-                  zoneChange.copy(
-                    zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                    status = ZoneChangeStatus.Synced
-                  )
-                }
-              }.attempt.map {
-                case Left(e: Throwable) =>
-                  db.rollbackIfActive() //Roll back the changes if error occurs
-                  db.close() //Close DB Connection
-                  throw new Exception("Changes Rolled back. " + e.getMessage)
-                case Right(ok) =>
-                  db.commit() //Commit the changes
-                  db.close() //Close DB Connection
-                  ok
-              }
+              // we want to make sure we write to both the change repo and record set repo
+              // at the same time as this can take a while
+              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
+                recordChangeRepository.save(db, changeSet)
+              )
+              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
+                recordSetRepository.apply(db, changeSet)
+              )
+
+              // join together the results of saving both the record changes as well as the record sets
+              for {
+                _ <- saveRecordChanges
+                _ <- saveRecordSets
+              } yield zoneChange.copy(
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                status = ZoneChangeStatus.Synced
+              )
             }
           }
         }
-      }
-    }.attempt
-      .map {
+      }.attempt.map {
         case Left(e: Throwable) =>
           logger.error(
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
@@ -156,10 +146,11 @@ class ZoneSyncHandlerSpec
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
             status = ZoneChangeStatus.Failed,
-            systemMessage = Some(e.getMessage)
+            systemMessage = Some("Changes Rolled back. " + e.getMessage)
           )
         case Right(ok) => ok
       }
+    }
 
 
   private val mockBackend = mock[Backend]

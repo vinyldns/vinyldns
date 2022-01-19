@@ -20,16 +20,16 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import scalikejdbc._
+import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneStatus}
+import vinyldns.core.domain.zone._
 import vinyldns.core.route.Monitored
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeStatus, ZoneRepository}
+import vinyldns.mysql.TransactionProvider
 
-object ZoneSyncHandler extends DnsConversions with Monitored {
+object ZoneSyncHandler extends DnsConversions with Monitored with TransactionProvider {
 
   private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
   private implicit val cs: ContextShift[IO] =
@@ -77,18 +77,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       case Right(_) =>
         zoneChangeRepository.save(zoneChange)
     }
-
-  def executeWithinTransaction[A](execution: DB => A): A = {
-    val db=DB(ConnectionPool.borrow())
-    db.beginIfNotYet() //Begin the transaction
-    db.autoClose(false) //Keep the connection open
-    try {
-      execution(db)
-    } catch {
-      case error: Throwable =>
-        throw error
-    }
-  }
 
   def runSync(
       recordSetRepository: RecordSetRepository,
@@ -150,41 +138,29 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
-            // we want to make sure we write to both the change repo and record set repo
-            // at the same time as this can take a while
+
             executeWithinTransaction { db: DB =>
-              {
-                val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
-                  recordChangeRepository.save(db, changeSet)
-                )
-                val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
-                  recordSetRepository.apply(db,changeSet)
-                )
-                for {
-                  _ <- saveRecordChanges
-                  _ <- saveRecordSets
-                } yield {
-                  zoneChange.copy(
-                    zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
-                    status = ZoneChangeStatus.Synced
-                  )
-                }
-              }.attempt.map {
-                case Left(e: Throwable) =>
-                  db.rollbackIfActive() //Roll back the changes if error occurs
-                  db.close() //Close DB Connection
-                  throw e
-                case Right(ok) =>
-                  db.commit() //Commit the changes
-                  db.close() //Close DB Connection
-                  ok
-              }
+              // we want to make sure we write to both the change repo and record set repo
+              // at the same time as this can take a while
+              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
+                recordChangeRepository.save(db, changeSet)
+              )
+              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
+                recordSetRepository.apply(db, changeSet)
+              )
+
+              // join together the results of saving both the record changes as well as the record sets
+              for {
+                _ <- saveRecordChanges
+                _ <- saveRecordSets
+              } yield zoneChange.copy(
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                status = ZoneChangeStatus.Synced
+              )
             }
           }
         }
-      }
-    }.attempt
-      .map {
+      }.attempt.map {
         case Left(e: Throwable) =>
           logger.error(
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
@@ -197,4 +173,5 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
           )
         case Right(ok) => ok
       }
+    }
 }

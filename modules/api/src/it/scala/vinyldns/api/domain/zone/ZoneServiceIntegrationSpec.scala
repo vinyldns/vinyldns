@@ -30,7 +30,7 @@ import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
-import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
+import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
@@ -54,7 +54,8 @@ class ZoneServiceIntegrationSpec
     with ResultHelpers
     with MySqlApiIntegrationSpec
     with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with TransactionProvider {
 
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -107,30 +108,11 @@ class ZoneServiceIntegrationSpec
     waitForSuccess(zoneRepo.save(okZone))
     // Seeding records in DB
     executeWithinTransaction { db: DB =>
-      waitForSuccess(recordSetRepo.apply(db, changeSetSOA).attempt.map {
-        case Left(e: Throwable) =>
-          db.rollbackIfActive() //Roll back the changes if error occurs
-          db.close() //Close DB Connection
-          throw e
-        case Right(ok) => ok
-      })
-      waitForSuccess(recordSetRepo.apply(db, changeSetNS).attempt.map {
-        case Left(e: Throwable) =>
-          db.rollbackIfActive() //Roll back the changes if error occurs
-          db.close() //Close DB Connection
-          throw e
-        case Right(ok) => ok
-      })
-      waitForSuccess(recordSetRepo.apply(db, changeSetA).attempt.map {
-        case Left(e: Throwable) =>
-          db.rollbackIfActive() //Roll back the changes if error occurs
-          db.close() //Close DB Connection
-          throw e
-        case Right(ok) =>
-          db.commit() //Commit the changes
-          db.close() //Close DB Connection
-          ok
-      })
+      IO {
+        waitForSuccess(recordSetRepo.apply(db, changeSetSOA))
+        waitForSuccess(recordSetRepo.apply(db, changeSetNS))
+        waitForSuccess(recordSetRepo.apply(db, changeSetA))
+      }
     }
     doReturn(NonEmptyList.one("func-test-backend")).when(mockBackendResolver).ids
 
@@ -167,16 +149,9 @@ class ZoneServiceIntegrationSpec
     "accept a DeleteZone" in {
       val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, okZone))
       executeWithinTransaction { db: DB =>
-        waitForSuccess(recordSetRepo.apply(db, removeARecord).attempt.map {
-          case Left(e: Throwable) =>
-            db.rollbackIfActive() //Roll back the changes if error occurs
-            db.close() //Close DB Connection
-            throw e
-          case Right(ok) =>
-            db.commit() //Commit the changes
-            db.close() //Close DB Connection
-            ok
-        })
+        IO {
+          waitForSuccess(recordSetRepo.apply(db, removeARecord))
+        }
       }
       val result =
         testZoneService
