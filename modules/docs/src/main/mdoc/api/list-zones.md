@@ -41,7 +41,7 @@ ignoreAccess       | boolean  | The ignoreAccess parameter that was sent in the 
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zones": [
     {

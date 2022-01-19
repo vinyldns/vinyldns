@@ -17,8 +17,8 @@
 package vinyldns.api.backend.dns
 
 import java.net.InetAddress
-
 import cats.syntax.either._
+import org.apache.commons.codec.binary.Hex
 import org.joda.time.DateTime
 import org.xbill.DNS
 import scodec.bits.ByteVector
@@ -37,9 +37,9 @@ trait DnsConversions {
   import DomainHelpers._
 
   /**
-    * record names are either relative to the zone name or
-    * if the record name is '@' the zone name is used
-    */
+   * record names are either relative to the zone name or
+   * if the record name is '@' the zone name is used
+   */
   def relativize(r: DNS.Name, zoneName: DNS.Name): String =
     if (r.equals(zoneName))
       zoneName.toString
@@ -125,7 +125,7 @@ trait DnsConversions {
   /* Remove the additional record of the TSIG key from the message before generating the string */
   def obscuredDnsMessage(msg: DNS.Message): DNS.Message = {
     val clone = msg.clone.asInstanceOf[DNS.Message]
-    val sections = clone.getSectionArray(DNS.Section.ADDITIONAL)
+    val sections = clone.getSection(DNS.Section.ADDITIONAL).asScala
     if (sections != null && sections.nonEmpty) {
       sections.filter(_.getType == DNS.Type.TSIG).foreach { tsigRecord =>
         clone.removeRecord(tsigRecord, DNS.Section.ADDITIONAL)
@@ -170,15 +170,15 @@ trait DnsConversions {
     }
 
   /**
-    * Converts the list of raw DNS records to a list of record sets.
-    *
-    * Will join / combine DNS.Records that belong in the same record set.
-    */
+   * Converts the list of raw DNS records to a list of record sets.
+   *
+   * Will join / combine DNS.Records that belong in the same record set.
+   */
   def toFlattenedRecordSets(
-      records: List[DNS.Record],
-      zoneName: DNS.Name,
-      zoneId: String = "unknown"
-  ): List[RecordSet] = {
+                             records: List[DNS.Record],
+                             zoneName: DNS.Name,
+                             zoneId: String = "unknown"
+                           ): List[RecordSet] = {
 
     /* Combines record sets into a list of one or Nil in case there are no record sets in the list provided */
     def combineRecordSets(lst: List[RecordSet]): RecordSet =
@@ -195,7 +195,7 @@ trait DnsConversions {
   // Do a "relativize" using the zoneName, this removes the zone name from the record itself
   // For example "test-01.vinyldns." becomes "test-01"...this is necessary as we want to run comparisons upstream
   def fromDnsRecord[A <: DNS.Record](r: A, zoneName: DNS.Name, zoneId: String)(
-      f: A => List[RecordData]
+    f: A => List[RecordData]
   ): RecordSet =
     record.RecordSet(
       zoneId = zoneId,
@@ -231,7 +231,7 @@ trait DnsConversions {
 
   def fromCNAMERecord(r: DNS.CNAMERecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(CNAMEData(Fqdn(data.getAlias.toString)))
+      List(CNAMEData(Fqdn(data.getTarget.toString)))
     }
 
   def fromDSRecord(r: DNS.DSRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -302,7 +302,7 @@ trait DnsConversions {
 
   def fromSSHFPRecord(r: DNS.SSHFPRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(SSHFPData(data.getAlgorithm, data.getDigestType, new String(data.getFingerPrint)))
+      List(SSHFPData(data.getAlgorithm, data.getDigestType, Hex.encodeHexString(data.getFingerPrint).toUpperCase))
     }
 
   def fromTXTRecord(r: DNS.TXTRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -390,7 +390,7 @@ trait DnsConversions {
           )
 
         case SSHFPData(algorithm, typ, fingerprint) =>
-          new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, fingerprint.getBytes)
+          new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, Hex.decodeHex(fingerprint.toCharArray()))
 
         case SPFData(text) =>
           new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, text)
@@ -432,10 +432,10 @@ trait DnsConversions {
   }
 
   def toUpdateRecordMessage(
-      r: DNS.RRset,
-      old: DNS.RRset,
-      zoneName: String
-  ): Either[Throwable, DNS.Update] = {
+                             r: DNS.RRset,
+                             old: DNS.RRset,
+                             zoneName: String
+                           ): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
 
     if (!r.getName.equals(old.getName) || r.getTTL != old.getTTL) { // Name or TTL has changed

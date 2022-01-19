@@ -44,7 +44,7 @@ class LegacyApiAction @Inject() (
   override val logger = LoggerFactory.getLogger(classOf[LegacyApiAction])
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  def notLoggedInResult: Future[Result] =
+  def notLoggedInResult(requestURI: String): Future[Result] =
     Future.successful(
       Unauthorized("You are not logged in. Please login to continue.").withHeaders(cacheHeaders: _*)
     )

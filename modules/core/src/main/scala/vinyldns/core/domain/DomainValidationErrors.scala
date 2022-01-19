@@ -19,6 +19,7 @@ package vinyldns.core.domain
 import vinyldns.core.domain.batch.OwnerType.OwnerType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.Messages._
 
 // $COVERAGE-OFF$
 sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
@@ -134,9 +135,12 @@ final case class UserIsNotAuthorizedError(
     ownerGroupName: Option[String] = None
 ) extends DomainValidationError {
   def message: String =
-    s"""User "$userName" is not authorized. Contact ${ownerType.toString.toLowerCase} owner group:
-       |${ownerGroupName.getOrElse(ownerGroupId)} at ${contactEmail.getOrElse("")}.""".stripMargin
-      .replaceAll("\n", " ")
+    NotAuthorizedErrorMsg.format(
+      userName,
+      ownerType.toString.toLowerCase,
+      ownerGroupName.getOrElse(ownerGroupId),
+      contactEmail.getOrElse("")
+    )
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)

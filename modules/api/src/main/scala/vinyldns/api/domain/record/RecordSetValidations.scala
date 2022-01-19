@@ -28,6 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.Messages._
 
 import scala.util.matching.Regex
 
@@ -153,6 +154,17 @@ object RecordSetValidations {
       )
     }
 
+    // cname recordset data cannot contain more than one sequential '.'
+    val RDataWithConsecutiveDots = {
+      ensuring(
+        RecordSetValidation(
+          s"RecordSet Data cannot contain consecutive 'dot' character. RData: '${newRecordSet.records.head.toString}'"
+        )
+      )(
+        noConsecutiveDots(newRecordSet.records.head.toString)
+      )
+    }
+
     for {
       _ <- isNotOrigin(
         newRecordSet,
@@ -160,6 +172,7 @@ object RecordSetValidations {
         "CNAME RecordSet cannot have name '@' because it points to zone origin"
       )
       _ <- noRecordWithName
+      _ <- RDataWithConsecutiveDots
       _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
     } yield ()
 
@@ -316,7 +329,7 @@ object RecordSetValidations {
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest("recordNameFilter must contain at least two letters or numbers.")
+      InvalidRequest(RecordNameFilterError)
     ) {
       val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
       searchRegex.findFirstIn(recordNameFilter).isDefined

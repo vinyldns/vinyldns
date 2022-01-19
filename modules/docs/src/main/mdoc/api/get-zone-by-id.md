@@ -29,7 +29,7 @@ zone          | map          | refer to [zone model](zone-model.html) |
 
 #### EXAMPLE RESPONSE
 
-```
+```json
 {
   "zone": {
     "status": "Active",

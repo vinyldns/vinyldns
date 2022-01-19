@@ -56,7 +56,6 @@
             };
 
             $scope.confirmSubmit = function(form) {
-                console.log(form.$error)
                 if(form.$invalid){
                     form.$setSubmitted();
                     $scope.formStatus = "pendingSubmit";
@@ -93,7 +92,6 @@
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
                             var recordDataEmpty = true;
                             for (var attr in entry.record) {
-                                console.log(entry.record[attr])
                                 if (entry.record[attr] != undefined && entry.record[attr].toString().length > 0) {
                                     recordDataEmpty = false
                                 }
@@ -177,17 +175,30 @@
                             $scope.$apply()
                             resolve($scope.newBatch.changes.length);
                           } else {
-                            reject("Import failed. Not a valid file.");
+                            reject("Import failed. Not a valid file. File should be of ‘.csv’ type.");
                           }
                       }
                       reader.readAsText(file);
                   });
                 }
 
+                function decode(str) {
+                    // regex from:
+                    // https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
+                    // matches[0] is full match text with delimiter if any
+                    // matches[1] is delimiter (usually ',')
+                    // matches[2] is quoted field or undefined, internal quotes are doubled by convention
+                    // matches[3] is standard field or undefined
+                    // one of [2] or [3] will be undefined
+                    const regex = /(,|\r?\n|\r|^)(?:"([^"]*(?:""[^"]*)*)"|([^,\r\n]*))/gi;
+                    const matches = [...str.matchAll(regex)];
+                    return matches.map(match => match[2] !== undefined ? match[2].replace(/""/g, '"') : match[3]);
+                }
+
                 function parseRow(row) {
                     var change = {};
                     var headers = ["changeType", "type", "inputName", "ttl", "record"];
-                    var rowContent = row.split(",");
+                    var rowContent = decode(row);
                     for (var j = 0; j < rowContent.length; j++) {
                         if (headers[j] == "changeType") {
                             if (rowContent[j].match(/add/i)) {
@@ -206,6 +217,8 @@
                                 change[headers[j]] = {"cname": rowContent[j].trim()}
                             } else if (change["type"] == "PTR") {
                                 change[headers[j]] = {"ptrdname": rowContent[j].trim()}
+                            } else if (change["type"] == "TXT") {
+                                change[headers[j]] = {"text": rowContent[j].trim()}
                             }
                         } else {
                             change[headers[j]] = rowContent[j].trim()
