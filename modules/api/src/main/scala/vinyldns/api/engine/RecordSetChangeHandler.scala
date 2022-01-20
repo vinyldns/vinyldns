@@ -69,23 +69,28 @@ object RecordSetChangeHandler extends TransactionProvider {
         recordChangeRepository
       )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
-      singleBatchChanges <- batchChangeRepository.getSingleChanges(
-        recordSetChange.singleBatchChangeIds
-      )
-      singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
-      _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
+      _ <- saveChangeSet(recordSetRepository, recordChangeRepository, batchChangeRepository, recordSetChange, completedState, changeSet)
     } yield completedState.change
 
   def saveChangeSet(
    recordSetRepository: RecordSetRepository,
    recordChangeRepository: RecordChangeRepository,
+   batchChangeRepository: BatchChangeRepository,
+   recordSetChange: RecordSetChange,
+   completedState: ProcessorState,
    changeSet: ChangeSet
   ): IO[Unit] =
     executeWithinTransaction { db: DB =>
       for {
        _ <-  recordSetRepository.apply(db, changeSet)
        _ <-  recordChangeRepository.save(db, changeSet)
+       // Update single changes within this transaction to rollback the changes made to recordset and record change repo
+       // when exception occurs while updating single changes
+       singleBatchChanges <- batchChangeRepository.getSingleChanges(
+         recordSetChange.singleBatchChangeIds
+       )
+       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
+       _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
       } yield ()
     }
 
@@ -299,9 +304,12 @@ object RecordSetChangeHandler extends TransactionProvider {
       recordSetToSync
         .map { rsc =>
           val changeSet = ChangeSet(rsc)
-          for {
-            _ <- saveChangeSet(recordSetRepository, recordChangeRepository, changeSet)
-          } yield ()
+          executeWithinTransaction { db: DB =>
+            for {
+              _ <-  recordSetRepository.apply(db, changeSet)
+              _ <-  recordChangeRepository.save(db, changeSet)
+            } yield ()
+          }
         }
         .getOrElse(IO.unit)
     }
