@@ -18,10 +18,11 @@ package vinyldns.core.domain.membership
 
 import cats.effect._
 import org.joda.time.DateTime
+import scalikejdbc.DB
 import vinyldns.core.repository.Repository
 
 trait GroupChangeRepository extends Repository {
-  def save(groupChange: GroupChange): IO[GroupChange]
+  def save(db: DB, groupChange: GroupChange): IO[GroupChange]
 
   def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
   def getGroupChanges(

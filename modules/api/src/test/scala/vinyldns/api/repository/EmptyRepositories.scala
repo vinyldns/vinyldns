@@ -18,22 +18,11 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{
-  ChangeSet,
-  ListRecordSetResults,
-  NameSort,
-  RecordSet,
-  RecordSetRepository
-}
+import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, NameSort, RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
-import vinyldns.core.domain.membership.{
-  Group,
-  GroupRepository,
-  ListUsersResults,
-  User,
-  UserRepository
-}
+import scalikejdbc.DB
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
@@ -99,7 +88,7 @@ trait EmptyZoneRepo extends ZoneRepository {
 
 trait EmptyGroupRepo extends GroupRepository {
 
-  def save(group: Group): IO[Group] = IO.pure(group)
+  def save(db: DB, group: Group): IO[Group] = IO.pure(group)
 
   def delete(group: Group): IO[Group] = IO.pure(group)
 
