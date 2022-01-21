@@ -174,6 +174,7 @@ Once the prerequisites are running, you can start up sbt by running `sbt` from t
 
 - `project api` to change the sbt project to the API
 - `reStart` to start up the API server
+  - To enable interactive debugging, you can run `set Revolver.enableDebugging(port = 5020, suspend = true)` before running `reStart` 
 - Wait until you see the message `VINYLDNS SERVER STARTED SUCCESSFULLY` before working with the server
 - To stop the VinylDNS server, run `reStop` from the api project
 - To stop the dependent Docker containers: `utils/clean-vinyldns-containers.sh`
