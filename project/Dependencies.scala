@@ -73,7 +73,9 @@ object Dependencies {
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
-    "javax.activation"          %  "activation"                     % "1.1.1"
+    "javax.activation"          %  "activation"                     % "1.1.1",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV
   )
 
   lazy val mysqlDependencies = Seq(

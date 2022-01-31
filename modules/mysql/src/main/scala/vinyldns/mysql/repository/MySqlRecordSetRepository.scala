@@ -91,7 +91,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
 
-  def apply(changeSet: ChangeSet): IO[ChangeSet] =
+  def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
 
       // identify failed changes
@@ -157,21 +157,20 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
-
-      IO {
-        DB.localTx { implicit s =>
-          // sql batch groups should preferably be smaller rather than larger for performance purposes
-          // to reduce contention on the table.  1000 worked well in performance tests
-          inserts.grouped(1000).foreach { group =>
-            INSERT_RECORDSET.batch(group: _*).apply()
+        IO {
+          db.withinTx { implicit session =>
+            // sql batch groups should preferably be smaller rather than larger for performance purposes
+            // to reduce contention on the table.  1000 worked well in performance tests
+            inserts.grouped(1000).foreach { group =>
+              INSERT_RECORDSET.batch(group: _*).apply()
+            }
+            (updates ++ reversionUpdates).grouped(1000).foreach { group =>
+              UPDATE_RECORDSET.batch(group: _*).apply()
+            }
+            (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
+              DELETE_RECORDSET.batch(group: _*).apply()
+            }
           }
-          (updates ++ reversionUpdates).grouped(1000).foreach { group =>
-            UPDATE_RECORDSET.batch(group: _*).apply()
-          }
-          (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
-            DELETE_RECORDSET.batch(group: _*).apply()
-          }
-        }
       }.as(changeSet)
     }
 
