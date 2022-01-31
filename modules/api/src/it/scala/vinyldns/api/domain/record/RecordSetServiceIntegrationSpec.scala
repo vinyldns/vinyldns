@@ -282,7 +282,9 @@ class RecordSetServiceIntegrationSpec
         conflictRecords.map(makeAddChange(_, zoneTestNameConflicts)) ++
         zoneRecords.map(makeAddChange(_, zone))
     )
-    recordSetRepo.apply(changes).unsafeRunSync()
+    executeWithinTransaction { db: DB =>
+        recordSetRepo.apply(db, changes)
+    }.unsafeRunSync()
 
     testRecordSetService = new RecordSetService(
       zoneRepo,

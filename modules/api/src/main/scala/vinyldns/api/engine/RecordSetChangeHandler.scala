@@ -19,6 +19,7 @@ package vinyldns.api.engine
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
+import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
@@ -26,8 +27,9 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
+import vinyldns.mysql.TransactionProvider
 
-object RecordSetChangeHandler {
+object RecordSetChangeHandler extends TransactionProvider {
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.engine.RecordSetChangeHandler")
   private implicit val cs: ContextShift[IO] =
@@ -51,11 +53,11 @@ object RecordSetChangeHandler {
     }
 
   def process(
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      batchChangeRepository: BatchChangeRepository,
-      conn: Backend,
-      recordSetChange: RecordSetChange
+     recordSetRepository: RecordSetRepository,
+     recordChangeRepository: RecordChangeRepository,
+     batchChangeRepository: BatchChangeRepository,
+     conn: Backend,
+     recordSetChange: RecordSetChange
   )(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
@@ -67,14 +69,30 @@ object RecordSetChangeHandler {
         recordChangeRepository
       )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- recordSetRepository.apply(changeSet)
-      _ <- recordChangeRepository.save(changeSet)
-      singleBatchChanges <- batchChangeRepository.getSingleChanges(
-        recordSetChange.singleBatchChangeIds
-      )
-      singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
-      _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
+      _ <- saveChangeSet(recordSetRepository, recordChangeRepository, batchChangeRepository, recordSetChange, completedState, changeSet)
     } yield completedState.change
+
+  def saveChangeSet(
+   recordSetRepository: RecordSetRepository,
+   recordChangeRepository: RecordChangeRepository,
+   batchChangeRepository: BatchChangeRepository,
+   recordSetChange: RecordSetChange,
+   completedState: ProcessorState,
+   changeSet: ChangeSet
+  ): IO[Unit] =
+    executeWithinTransaction { db: DB =>
+      for {
+       _ <-  recordSetRepository.apply(db, changeSet)
+       _ <-  recordChangeRepository.save(db, changeSet)
+       // Update single changes within this transaction to rollback the changes made to recordset and record change repo
+       // when exception occurs while updating single changes
+       singleBatchChanges <- batchChangeRepository.getSingleChanges(
+         recordSetChange.singleBatchChangeIds
+       )
+       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
+       _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
+      } yield ()
+    }
 
   def updateBatchStatuses(
       singleChanges: List[SingleChange],
@@ -286,10 +304,12 @@ object RecordSetChangeHandler {
       recordSetToSync
         .map { rsc =>
           val changeSet = ChangeSet(rsc)
-          for {
-            _ <- recordChangeRepository.save(changeSet)
-            _ <- recordSetRepository.apply(changeSet)
-          } yield ()
+          executeWithinTransaction { db: DB =>
+            for {
+              _ <-  recordSetRepository.apply(db, changeSet)
+              _ <-  recordChangeRepository.save(db, changeSet)
+            } yield ()
+          }
         }
         .getOrElse(IO.unit)
     }
