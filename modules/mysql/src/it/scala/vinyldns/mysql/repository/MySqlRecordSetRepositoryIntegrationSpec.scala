@@ -16,7 +16,6 @@
 
 package vinyldns.mysql.repository
 import java.util.UUID
-
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
@@ -28,13 +27,15 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
+import vinyldns.mysql.TransactionProvider
 
 class MySqlRecordSetRepositoryIntegrationSpec
     extends AnyWordSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Matchers
-    with EitherMatchers {
+    with EitherMatchers
+    with TransactionProvider {
 
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
@@ -65,13 +66,17 @@ class MySqlRecordSetRepositoryIntegrationSpec
   def insert(zone: Zone, count: Int, word: String = "insert"): List[RecordSetChange] = {
     val pendingChanges = generateInserts(zone, count, word)
     val bigPendingChangeSet = ChangeSet(pendingChanges)
-    repo.apply(bigPendingChangeSet).unsafeRunSync()
+    executeWithinTransaction { db: DB =>
+      repo.apply(db, bigPendingChangeSet)
+    }.unsafeRunSync()
     pendingChanges
   }
 
   def insert(changes: List[RecordSetChange]): Unit = {
     val bigPendingChangeSet = ChangeSet(changes)
-    repo.apply(bigPendingChangeSet).unsafeRunSync()
+    executeWithinTransaction { db: DB =>
+      repo.apply(db, bigPendingChangeSet)
+    }.unsafeRunSync()
     ()
   }
 
@@ -89,8 +94,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
           .copy(status = RecordSetChangeStatus.Failed)
       val deleteChange = makePendingTestDeleteChange(existing(1))
         .copy(status = RecordSetChangeStatus.Failed)
-
-      repo.apply(ChangeSet(Seq(addChange, updateChange, deleteChange))).unsafeRunSync()
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(Seq(addChange, updateChange, deleteChange)))
+      }
       repo.getRecordSet(rsOk.id).unsafeRunSync() shouldBe None
       repo.getRecordSet(existing.head.id).unsafeRunSync() shouldBe Some(
         recordSetWithFQDN(existing.head, okZone)
@@ -146,14 +152,17 @@ class MySqlRecordSetRepositoryIntegrationSpec
         recordSet = recordForFailed.copy(status = RecordSetStatus.Pending),
         status = RecordSetChangeStatus.Pending
       )
-      repo.apply(ChangeSet(existingPending)).unsafeRunSync()
-      repo.getRecordSet(failedChange.recordSet.id).unsafeRunSync() shouldBe
-        Some(
-          existingPending.recordSet
-            .copy(fqdn = Some(s"""${failedChange.recordSet.name}.${okZone.name}"""))
-        )
-
-      repo.apply(ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(existingPending))
+      }.attempt.unsafeRunSync()
+        repo.getRecordSet(failedChange.recordSet.id).unsafeRunSync() shouldBe
+          Some(
+            existingPending.recordSet
+              .copy(fqdn = Some(s"""${failedChange.recordSet.name}.${okZone.name}"""))
+          )
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(Seq(successfulChange, pendingChange, failedChange)))
+      }.attempt.unsafeRunSync()
 
       // success and pending changes have records saved
       repo
@@ -200,10 +209,15 @@ class MySqlRecordSetRepositoryIntegrationSpec
           _.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete)
         )
       val oldChangeSet = ChangeSet(oldAddChanges)
-      repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
-
-      // apply updates
-      repo.apply(updateChangeSet).unsafeRunSync() shouldBe updateChangeSet
+      val saveRecSets = executeWithinTransaction { db: DB =>
+        repo.apply(db, oldChangeSet)
+      }
+      saveRecSets.unsafeRunSync() shouldBe oldChangeSet
+      val applyRecSets = executeWithinTransaction { db: DB =>
+        // apply updates
+        repo.apply(db, updateChangeSet)
+      }
+      applyRecSets.unsafeRunSync() shouldBe updateChangeSet
 
       // ensure that success and pending updates store the new recordsets
       repo
@@ -253,11 +267,15 @@ class MySqlRecordSetRepositoryIntegrationSpec
           _.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete)
         )
       val oldChangeSet = ChangeSet(oldAddChanges)
-      repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
-
-      // apply deletes
-      repo.apply(deleteChangeSet).unsafeRunSync() shouldBe deleteChangeSet
-
+      val saveRecSets = executeWithinTransaction { db: DB =>
+        repo.apply(db, oldChangeSet)
+      }
+      saveRecSets.unsafeRunSync() shouldBe oldChangeSet
+      val applyRecSets = executeWithinTransaction { db: DB =>
+        // apply deletes
+        repo.apply(db, deleteChangeSet)
+      }
+      applyRecSets.unsafeRunSync() shouldBe deleteChangeSet
       // ensure that successful change deletes the recordset
       repo
         .getRecordSet(successfulDelete.recordSet.id)
@@ -283,30 +301,33 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val deleteChange = makePendingTestDeleteChange(testRecord, okZone).copy(
         status = RecordSetChangeStatus.Complete
       )
-
-      val dbCalls = for {
-        _ <- repo.apply(ChangeSet(addChange))
-        get <- repo.getRecordSet(testRecord.id)
-        _ <- repo.apply(ChangeSet(deleteChange))
-        finalGet <- repo.getRecordSet(testRecord.id)
-      } yield (get, finalGet)
-
-      val (get, finalGet) = dbCalls.unsafeRunSync()
-      get shouldBe Some(recordSetWithFQDN(testRecord, okZone))
-      finalGet shouldBe None
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(addChange))
+      }.attempt.unsafeRunSync()
+      val getRecSets = repo.getRecordSet(testRecord.id).unsafeRunSync()
+      getRecSets shouldBe Some(recordSetWithFQDN(testRecord, okZone))
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(deleteChange))
+      }.attempt.unsafeRunSync()
+      val applyRecSets = repo.getRecordSet(testRecord.id).unsafeRunSync()
+      applyRecSets shouldBe None
     }
     "be idempotent for inserts" in {
       val pendingChanges = generateInserts(okZone, 1000)
       val bigPendingChangeSet = ChangeSet(pendingChanges)
-      repo.apply(bigPendingChangeSet).unsafeRunSync()
-      repo.apply(bigPendingChangeSet).attempt.unsafeRunSync() shouldBe right
+      val saveRecSets = executeWithinTransaction { db: DB =>
+        repo.apply(db, bigPendingChangeSet)
+        repo.apply(db, bigPendingChangeSet)
+      }
+      saveRecSets.attempt.unsafeRunSync() shouldBe right
     }
     "work for multiple inserts" in {
       val pendingChanges = generateInserts(okZone, 20)
 
       val bigPendingChangeSet = ChangeSet(pendingChanges)
-      repo.apply(bigPendingChangeSet).unsafeRunSync()
-
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, bigPendingChangeSet)
+      }.attempt.unsafeRunSync()
       // let's make sure we have all 1000 records
       val recordCount = repo.getRecordSetCount(okZone.id).unsafeRunSync()
       recordCount shouldBe 20
@@ -331,8 +352,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       // exercise the entire change set
       val cs = ChangeSet(deletes ++ updates ++ inserts)
-      repo.apply(cs).unsafeRunSync()
-
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, cs)
+      }.attempt.unsafeRunSync()
       // make sure the deletes are gone
       repo.getRecordSet(deletes(0).recordSet.id).unsafeRunSync() shouldBe None
       repo.getRecordSet(deletes(1).recordSet.id).unsafeRunSync() shouldBe None
@@ -353,13 +375,11 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       val addChange = makeTestAddChange(ds.copy(ownerGroupId = Some("someOwner")), okZone)
       val testRecord = addChange.recordSet
-      val dbCalls = for {
-        _ <- repo.apply(ChangeSet(addChange))
-        get <- repo.getRecordSet(testRecord.id)
-      } yield get
-
-      val get = dbCalls.unsafeRunSync()
-      get shouldBe Some(recordSetWithFQDN(testRecord, okZone))
+      executeWithinTransaction { db: DB =>
+       repo.apply(db, ChangeSet(addChange))
+      }.attempt.unsafeRunSync()
+      val saveRecSets = repo.getRecordSet(testRecord.id).unsafeRunSync()
+      saveRecSets shouldBe Some(recordSetWithFQDN(testRecord, okZone))
     }
 
     "works when updating ownerGroupId" in {
@@ -370,18 +390,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val updatedRecordSet =
         testRecord.copy(name = "updated-name", ownerGroupId = Some("someOwner"))
       val updateChange = makeCompleteTestUpdateChange(testRecord, updatedRecordSet, okZone)
-
-      val dbCalls = for {
-        _ <- repo.apply(ChangeSet(addChange))
-        get <- repo.getRecordSet(testRecord.id)
-        _ <- repo.apply(ChangeSet(updateChange))
-        finalGet <- repo.getRecordSet(testRecord.id)
-      } yield (get, finalGet)
-
-      val (get, finalGet) = dbCalls.unsafeRunSync()
-      get shouldBe Some(recordSetWithFQDN(testRecord, okZone))
-      finalGet.flatMap(_.ownerGroupId) shouldBe Some("someOwner")
-
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(addChange))
+      }.attempt.unsafeRunSync()
+      val dbCall = repo.getRecordSet(testRecord.id).unsafeRunSync()
+      dbCall shouldBe Some(recordSetWithFQDN(testRecord, okZone))
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(updateChange))
+      }.attempt.unsafeRunSync()
+      val anotherDbCall = repo.getRecordSet(testRecord.id).unsafeRunSync()
+      anotherDbCall.map(_.ownerGroupId.get) shouldBe Some("someOwner")
       //Update the owner-group-id to None to check if its null in the db
       val updateChangeNone = makeCompleteTestUpdateChange(
         updatedRecordSet,
@@ -389,13 +407,11 @@ class MySqlRecordSetRepositoryIntegrationSpec
         okZone
       )
 
-      val updateToNone = for {
-        _ <- repo.apply(ChangeSet(updateChangeNone))
-        finalGet <- repo.getRecordSet(updateChangeNone.id)
-      } yield finalGet
-
-      val finalUpdated = updateToNone.unsafeRunSync()
-      finalUpdated.flatMap(_.ownerGroupId) shouldBe None
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(updateChangeNone))
+      }.attempt.unsafeRunSync()
+      val saveRecSets = repo.getRecordSet(updateChangeNone.id).unsafeRunSync()
+      saveRecSets.map(_.ownerGroupId) shouldBe None
     }
   }
   "list record sets" should {
@@ -665,7 +681,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
       )
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       val expected = changes.map(r => recordSetWithFQDN(r.recordSet, okZone))
-      repo.apply(ChangeSet(changes)).unsafeRunSync()
+      executeWithinTransaction { db: DB =>
+        repo.apply(db, ChangeSet(changes))
+      }.attempt.unsafeRunSync()
       val results = repo.getRecordSetsByName(okZone.id, "foo").unsafeRunSync()
       results should contain theSameElementsAs expected
     }
@@ -742,12 +760,12 @@ class MySqlRecordSetRepositoryIntegrationSpec
     "return id for the first recordSet owned by the ownerGroupId" in {
       val addChange = makeTestAddChange(ds.copy(ownerGroupId = Some("someOwner")), okZone)
       val testRecord = addChange.recordSet
-      val dbCalls = for {
-        _ <- repo.apply(ChangeSet(addChange))
-        get <- repo.getRecordSet(testRecord.id)
-      } yield get
-
-      dbCalls.unsafeRunSync()
+      executeWithinTransaction { db: DB =>
+        for {
+          _ <- repo.apply(db, ChangeSet(addChange))
+          get <- repo.getRecordSet(testRecord.id)
+        } yield get
+      }.attempt.unsafeRunSync()
 
       val result = repo.getFirstOwnedRecordByGroup("someOwner").unsafeRunSync()
       result shouldBe Some(testRecord.id)

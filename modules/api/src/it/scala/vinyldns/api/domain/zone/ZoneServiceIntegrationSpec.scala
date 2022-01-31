@@ -26,9 +26,11 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.TestZoneData.okZone
@@ -52,7 +54,8 @@ class ZoneServiceIntegrationSpec
     with ResultHelpers
     with MySqlApiIntegrationSpec
     with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with TransactionProvider {
 
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -104,10 +107,13 @@ class ZoneServiceIntegrationSpec
 
     waitForSuccess(zoneRepo.save(okZone))
     // Seeding records in DB
-    waitForSuccess(recordSetRepo.apply(changeSetSOA))
-    waitForSuccess(recordSetRepo.apply(changeSetNS))
-    waitForSuccess(recordSetRepo.apply(changeSetA))
-
+    executeWithinTransaction { db: DB =>
+      IO {
+        waitForSuccess(recordSetRepo.apply(db, changeSetSOA))
+        waitForSuccess(recordSetRepo.apply(db, changeSetNS))
+        waitForSuccess(recordSetRepo.apply(db, changeSetA))
+      }
+    }
     doReturn(NonEmptyList.one("func-test-backend")).when(mockBackendResolver).ids
 
     testZoneService = new ZoneService(
@@ -142,8 +148,11 @@ class ZoneServiceIntegrationSpec
     }
     "accept a DeleteZone" in {
       val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, okZone))
-      waitForSuccess(recordSetRepo.apply(removeARecord))
-
+      executeWithinTransaction { db: DB =>
+        IO {
+          waitForSuccess(recordSetRepo.apply(db, removeARecord))
+        }
+      }
       val result =
         testZoneService
           .deleteZone(okZone.id, okAuth)
