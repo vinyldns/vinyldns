@@ -101,7 +101,6 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -d | --deps-only)
-    export LOCALSTACK_EXT_HOSTNAME="localhost"
     SERVICE="integration ldap"
     shift
     ;;
