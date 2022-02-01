@@ -24,6 +24,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.groupsLoaded = false;
     $scope.alerts = [];
     $scope.ignoreAccess = false;
+    $scope.hasGroups = false; // Re-assigned each time groups are fetched without a query
+    $scope.query = "";
 
     function handleError(error, type) {
         var alert = utilityService.failure(error, type);
@@ -118,6 +120,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             //update groups
             $scope.groups.items = result.groups;
             $scope.groupsLoaded = true;
+            if (!$scope.query.length) {
+                $scope.hasGroups = response.data.groups.length > 0;
+            }
             return result;
         }
         getGroups($scope.ignoreAccess)
@@ -147,11 +152,31 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             return response.data;
         }
         return groupsService
-            .getGroups($scope.ignoreAccess)
+            .getGroups($scope.ignoreAccess, $scope.query)
             .then(success)
             .catch(function (error){
                 handleError(error, 'groupsService::getGroups-failure');
         });
+    }
+
+    // Return true if there are no groups created by the user
+    $scope.haveNoGroups = function(groupLength){
+        if(!$scope.hasGroups && !groupLength && $scope.groupsLoaded && $scope.query.length == ""){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    // Return true if no groups are found related to the search query
+    $scope.searchCriteria = function(groupLength){
+        if($scope.groupsLoaded && !groupLength && $scope.query.length != ""){
+            return true
+        }
+        else{
+            return false
+        }
     }
 
     $scope.editGroup = function (groupInfo) {
