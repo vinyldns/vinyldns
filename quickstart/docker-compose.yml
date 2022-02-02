@@ -21,7 +21,6 @@ services:
         VINYLDNS_BASE_VERSION: "${VINYLDNS_BASE_VERSION}"
     environment:
       RUN_SERVICES: "deps-only tail-logs"
-      LOCALSTACK_EXT_HOSTNAME: "${LOCALSTACK_EXT_HOSTNAME:-vinyldns-integration}"
     env_file:
       .env
     ports:
@@ -42,7 +41,7 @@ services:
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
     env_file:
-      .env
+      - .env
     ports:
       - "9000:9000"
     depends_on:
@@ -66,7 +65,6 @@ services:
     volumes:
       - ../build/docker/portal/application.conf:/opt/vinyldns/conf/application.conf
     depends_on:
-      - api
       - ldap
 
 # Custom network so that we don't interfere with the host system

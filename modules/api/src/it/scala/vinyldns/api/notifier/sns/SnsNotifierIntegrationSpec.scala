@@ -85,16 +85,17 @@ class SnsNotifierIntegrationSpec
       val sns = AmazonSNSClientBuilder.standard
         .withEndpointConfiguration(
           new EndpointConfiguration(
-            snsConfig.getString("service-endpoint"),
+            sys.env.getOrElse("SNS_SERVICE_ENDPOINT", snsConfig.getString("service-endpoint")),
             snsConfig.getString("signing-region")
           )
         )
         .withCredentials(credentialsProvider)
         .build()
+
       val sqs = AmazonSQSClientBuilder
         .standard()
         .withEndpointConfiguration(
-          new EndpointConfiguration(sys.env.getOrElse("SNS_SERVICE_ENDPOINT", "http://127.0.0.1:19003"), "us-east-1")
+          new EndpointConfiguration(sys.env.getOrElse("SQS_SERVICE_ENDPOINT", "http://127.0.0.1:19003"), "us-east-1")
         )
         .withCredentials(credentialsProvider)
         .build()
