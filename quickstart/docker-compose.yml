@@ -65,7 +65,6 @@ services:
     volumes:
       - ../build/docker/portal/application.conf:/opt/vinyldns/conf/application.conf
     depends_on:
-      - api
       - ldap
 
 # Custom network so that we don't interfere with the host system
