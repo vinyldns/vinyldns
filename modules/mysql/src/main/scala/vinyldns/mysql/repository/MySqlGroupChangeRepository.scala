@@ -61,14 +61,14 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
       | LIMIT {maxItems}
     """.stripMargin
 
-  def save(groupChange: GroupChange): IO[GroupChange] =
+  def save(db: DB, groupChange: GroupChange): IO[GroupChange] =
     monitor("repo.GroupChange.save") {
       IO {
         logger.info(
           s"Saving group change with (group_change_id, group_id): " +
             s"(${groupChange.id}, ${groupChange.newGroup.id})"
         )
-        DB.localTx { implicit s =>
+        db.withinTx { implicit s =>
           PUT_GROUP_CHANGE
             .bindByName(
               'id -> groupChange.id,

@@ -17,13 +17,13 @@
 package vinyldns.api.repository
 
 import java.util.UUID
-
 import cats.effect.IO
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository}
 import vinyldns.core.TestMembershipData._
@@ -33,12 +33,14 @@ class TestDataLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar {
   val userRepo: UserRepository = mock[UserRepository]
   doReturn(IO.pure(okUser)).when(userRepo).save(any[User])
   val groupRepo: GroupRepository = mock[GroupRepository]
-  doReturn(IO.pure(okGroup)).when(groupRepo).save(any[Group])
+  doReturn(IO.pure(okGroup)).when(groupRepo).save(any[DB], any[Group])
   val membershipRepo: MembershipRepository = mock[MembershipRepository]
   doReturn(IO.pure(Set()))
     .when(membershipRepo)
-    .saveMembers(any[String], any[Set[String]], anyBoolean)
+    .saveMembers(any[DB], any[String], any[Set[String]], anyBoolean)
 
+  // Add connection to run tests
+  ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
   "loadTestData" should {
     "succeed if filtered appropriately" in {
       val zoneRepo = mock[ZoneRepository]

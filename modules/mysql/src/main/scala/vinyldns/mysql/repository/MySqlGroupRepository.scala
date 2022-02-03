@@ -69,11 +69,11 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
       | WHERE id
     """.stripMargin
 
-  def save(group: Group): IO[Group] =
+  def save(db: DB, group: Group): IO[Group] =
     monitor("repo.Group.save") {
       IO {
         logger.info(s"Saving group with (id, name): (${group.id}, ${group.name})")
-        DB.localTx { implicit s =>
+        db.withinTx { implicit s =>
           PUT_GROUP
             .bindByName(
               'id -> group.id,
