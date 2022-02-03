@@ -20,11 +20,13 @@ import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
+import scalikejdbc.DB
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
+import vinyldns.mysql.TransactionProvider
 
 // $COVERAGE-OFF$
-object TestDataLoader {
+object TestDataLoader extends TransactionProvider {
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
@@ -237,11 +239,39 @@ object TestDataLoader {
   )
 
   def loadTestData(
-      userRepo: UserRepository,
-      groupRepo: GroupRepository,
-      zoneRepo: ZoneRepository,
-      membershipRepo: MembershipRepository
-  ): IO[Unit] =
+    userRepo: UserRepository,
+    groupRepo: GroupRepository,
+    zoneRepo: ZoneRepository,
+    membershipRepo: MembershipRepository
+  ): IO[Unit] = {
+
+    def saveMembersData(
+     groupId: String,
+     memberUserIds: Set[String],
+     isAdmin: Boolean
+    ): IO[Unit] = {
+      executeWithinTransaction { db: DB =>
+        for {
+          _ <- membershipRepo.saveMembers(
+            db: DB,
+            groupId = groupId,
+            memberUserIds = memberUserIds,
+            isAdmin = isAdmin
+          )
+        } yield ()
+      }
+    }
+
+    def saveGroupData(
+     group: Group
+    ): IO[Unit] = {
+      executeWithinTransaction { db: DB =>
+        for {
+          _ <- groupRepo.save(db, group)
+        } yield ()
+      }
+    }
+
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
@@ -267,32 +297,32 @@ object TestDataLoader {
         IO.unit
       }
       _ <- toDelete.map(zoneRepo.save).parSequence
-      _ <- groupRepo.save(sharedZoneGroup)
-      _ <- groupRepo.save(globalACLGroup)
-      _ <- groupRepo.save(anotherGlobalACLGroup)
-      _ <- groupRepo.save(duGroup)
-      _ <- groupRepo.save(listBatchChangeSummariesGroup)
-      _ <- membershipRepo.saveMembers(
+      _ <- saveGroupData(sharedZoneGroup)
+      _ <- saveGroupData(globalACLGroup)
+      _ <- saveGroupData(anotherGlobalACLGroup)
+      _ <- saveGroupData(duGroup)
+      _ <- saveGroupData(listBatchChangeSummariesGroup)
+      _ <- saveMembersData(
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id),
         isAdmin = true
       )
-      _ <- membershipRepo.saveMembers(
+      _ <- saveMembersData(
         groupId = "global-acl-group-id",
         memberUserIds = Set(okUser.id, dummyUser.id),
         isAdmin = true
       )
-      _ <- membershipRepo.saveMembers(
+      _ <- saveMembersData(
         groupId = "another-global-acl-group",
         memberUserIds = Set(testUser.id),
         isAdmin = true
       )
-      _ <- membershipRepo.saveMembers(
+      _ <- saveMembersData(
         groupId = duGroup.id,
         memberUserIds = duGroup.memberIds,
         isAdmin = true
       )
-      _ <- membershipRepo.saveMembers(
+      _ <- saveMembersData(
         groupId = listBatchChangeSummariesGroup.id,
         memberUserIds = listBatchChangeSummariesGroup.memberIds,
         isAdmin = true
@@ -300,5 +330,6 @@ object TestDataLoader {
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()
+  }
 }
 // $COVERAGE-ON$

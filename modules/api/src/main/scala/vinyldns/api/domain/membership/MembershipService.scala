@@ -16,7 +16,9 @@
 
 package vinyldns.api.domain.membership
 
+import cats.effect.IO
 import cats.implicits._
+import scalikejdbc.DB
 import vinyldns.api.Interfaces._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -25,6 +27,7 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
   def apply(dataAccessor: ApiDataAccessor): MembershipService =
@@ -45,7 +48,7 @@ class MembershipService(
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository
-) extends MembershipServiceAlgebra {
+) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
 
@@ -57,15 +60,7 @@ class MembershipService(
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
-      _ <- groupChangeRepo.save(GroupChange.forAdd(newGroup, authPrincipal)).toResult[GroupChange]
-      _ <- groupRepo.save(newGroup).toResult[Group]
-      // save admin and non-admin members separately
-      _ <- membershipRepo
-        .saveMembers(newGroup.id, adminMembers, isAdmin = true)
-        .toResult[Set[String]]
-      _ <- membershipRepo
-        .saveMembers(newGroup.id, nonAdminMembers, isAdmin = false)
-        .toResult[Set[String]]
+      _ <- createGroupData(GroupChange.forAdd(newGroup, authPrincipal), newGroup, adminMembers, nonAdminMembers).toResult[Unit]
     } yield newGroup
   }
 
@@ -90,18 +85,7 @@ class MembershipService(
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- usersExist(addedNonAdmins)
       _ <- differentGroupWithSameNameDoesNotExist(newGroup.name, existingGroup.id)
-      _ <- groupChangeRepo
-        .save(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal))
-        .toResult[GroupChange]
-      _ <- groupRepo.save(newGroup).toResult[Group]
-      // save admin and non-admin members separately
-      _ <- membershipRepo
-        .saveMembers(existingGroup.id, addedAdmins, isAdmin = true)
-        .toResult[Set[String]]
-      _ <- membershipRepo
-        .saveMembers(existingGroup.id, addedNonAdmins, isAdmin = false)
-        .toResult[Set[String]]
-      _ <- membershipRepo.removeMembers(existingGroup.id, removedMembers).toResult[Set[String]]
+      _ <- updateGroupData(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal), newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
     } yield newGroup
 
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
@@ -111,15 +95,63 @@ class MembershipService(
       _ <- isNotZoneAdmin(existingGroup)
       _ <- isNotRecordOwnerGroup(existingGroup)
       _ <- isNotInZoneAclRule(existingGroup)
-      _ <- groupChangeRepo
-        .save(GroupChange.forDelete(existingGroup, authPrincipal))
-        .toResult[GroupChange]
-      _ <- membershipRepo
-        .removeMembers(existingGroup.id, existingGroup.memberIds)
-        .toResult[Set[String]]
-      deletedGroup = existingGroup.copy(status = GroupStatus.Deleted)
-      _ <- groupRepo.delete(deletedGroup).toResult[Group]
+      deletedGroup <- deleteGroupData(GroupChange.forDelete(existingGroup, authPrincipal), existingGroup).toResult[Group]
     } yield deletedGroup
+
+  def createGroupData(
+   groupChangeData: GroupChange,
+   newGroup: Group,
+   adminMembers: Set[String],
+   nonAdminMembers: Set[String]
+  ): IO[Unit] =
+    executeWithinTransaction { db: DB =>
+      for {
+        _ <- groupChangeRepo.save(db, groupChangeData)
+        _ <- groupRepo.save(db, newGroup)
+        // save admin and non-admin members separately
+        _ <- membershipRepo
+          .saveMembers(db, newGroup.id, adminMembers, isAdmin = true)
+        _ <- membershipRepo
+          .saveMembers(db, newGroup.id, nonAdminMembers, isAdmin = false)
+      } yield ()
+    }
+
+  def updateGroupData(
+   groupChangeData: GroupChange,
+   newGroup: Group,
+   existingGroup: Group,
+   addedAdmins: Set[String],
+   addedNonAdmins: Set[String],
+   removedMembers: Set[String]
+  ): IO[Unit] =
+    executeWithinTransaction { db: DB =>
+      for {
+        _ <- groupChangeRepo
+          .save(db, groupChangeData)
+        _ <- groupRepo.save(db, newGroup)
+        // save admin and non-admin members separately
+        _ <- membershipRepo
+          .saveMembers(db, existingGroup.id, addedAdmins, isAdmin = true)
+        _ <- membershipRepo
+          .saveMembers(db, existingGroup.id, addedNonAdmins, isAdmin = false)
+        _ <- membershipRepo.removeMembers(db, existingGroup.id, removedMembers)
+      } yield ()
+    }
+
+  def deleteGroupData(
+   groupChangeData: GroupChange,
+   existingGroup: Group,
+  ): IO[Group] =
+    executeWithinTransaction { db: DB =>
+      for {
+        _ <- groupChangeRepo
+          .save(db, groupChangeData)
+        _ <- membershipRepo
+          .removeMembers(db, existingGroup.id, existingGroup.memberIds)
+        deletedGroup = existingGroup.copy(status = GroupStatus.Deleted)
+        _ <- groupRepo.delete(deletedGroup)
+      } yield deletedGroup
+    }
 
   def getGroup(id: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {

@@ -17,13 +17,14 @@
 package vinyldns.core.domain.membership
 
 import cats.effect._
+import scalikejdbc.DB
 import vinyldns.core.repository.Repository
 
 trait MembershipRepository extends Repository {
 
-  def saveMembers(groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]]
+  def saveMembers(db: DB, groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]]
 
-  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
+  def removeMembers(db: DB, groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 
   def getGroupsForUser(userId: String): IO[Set[String]]
 }

@@ -43,7 +43,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 
 class RecordSetServiceIntegrationSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with ResultHelpers
     with EitherMatchers
     with MockitoSugar
@@ -244,7 +244,15 @@ class RecordSetServiceIntegrationSpec
     clearZoneRepo()
     clearGroupRepo()
 
-    List(group, group2, sharedGroup).traverse(g => groupRepo.save(g).void).unsafeRunSync()
+    def saveGroupData(
+     groupRepo: GroupRepository,
+     group: Group
+    ): IO[Group] =
+      executeWithinTransaction { db: DB =>
+        groupRepo.save(db, group)
+      }
+
+    List(group, group2, sharedGroup).traverse(g => saveGroupData(groupRepo, g).void).unsafeRunSync()
     List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
       .traverse(
         z => zoneRepo.save(z)
