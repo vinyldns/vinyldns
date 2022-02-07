@@ -22,7 +22,7 @@ on:
         description: 'Publish Docker Images?'
         required: true
         default: 'true'
-        
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -48,9 +48,9 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     if: github.event.inputs.create-gh-release == 'true'
-    permissions: 
+    permissions:
       contents: write
-      
+
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2
@@ -67,7 +67,7 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v0.1.14
         with:
           tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
           generate_release_notes: true
@@ -83,7 +83,7 @@ jobs:
       - name: Get Version
         id: get-version
         run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
-        
+
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:
@@ -118,7 +118,7 @@ jobs:
       - name: Get Version
         id: get-version
         run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
-        
+
       - name: Checkout current branch (full)
         uses: actions/checkout@v2
         with:

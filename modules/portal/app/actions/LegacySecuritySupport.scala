@@ -45,10 +45,10 @@ class LegacySecuritySupport @Inject() (
     implicit request =>
       if (oidcAuthenticator.oidcEnabled) {
         request.session.get(VinylDNS.ID_TOKEN) match {
-          case Some(_) => Redirect("/index")
+          case Some(_) => Redirect(request.getQueryString("target").getOrElse("/index"))
           case None =>
             logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
-            Redirect(oidcAuthenticator.getCodeCall.toString, 302)
+            Redirect(oidcAuthenticator.getCodeCall(request.uri).toString, 302)
         }
       } else {
         request.session.get("username") match {

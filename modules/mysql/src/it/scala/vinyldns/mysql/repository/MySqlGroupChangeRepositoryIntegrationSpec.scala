@@ -16,20 +16,22 @@
 
 package vinyldns.mysql.repository
 
+import cats.effect.IO
 import org.joda.time.DateTime
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
-import vinyldns.mysql.TestMySqlInstance
+import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import org.joda.time.DateTime
 
 class MySqlGroupChangeRepositoryIntegrationSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
-    with Matchers {
+    with Matchers
+    with TransactionProvider {
 
   private val repo: GroupChangeRepository = TestMySqlInstance.groupChangeRepository
 
@@ -56,21 +58,29 @@ class MySqlGroupChangeRepositoryIntegrationSpec
     )
   }
 
+  def saveGroupChangeData(
+                           repo: GroupChangeRepository,
+                           groupChange: GroupChange
+                         ): IO[GroupChange] =
+    executeWithinTransaction { db: DB =>
+      repo.save(db, groupChange)
+    }
+
   "MySqlGroupChangeRepository.save" should {
     "successfully save a group change" in {
       val groupChange = generateGroupChanges("group-1", 1).head
-      repo.save(groupChange).unsafeRunSync() shouldBe groupChange
+      saveGroupChangeData(repo, groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
     }
 
     "on duplicate key update a group change" in {
       val groupChange = generateGroupChanges("group-1", 1).head
-      repo.save(groupChange).unsafeRunSync() shouldBe groupChange
+      saveGroupChangeData(repo, groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
 
       val groupChangeUpdate =
         groupChange.copy(created = DateTime.now().plusSeconds(10000), userId = "updated")
-      repo.save(groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
+      saveGroupChangeData(repo, groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
       repo.getGroupChange(groupChangeUpdate.id).unsafeRunSync() shouldBe Some(groupChangeUpdate)
     }
   }
@@ -78,14 +88,14 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   "MySqlGroupChangeRepository.getGroupChange" should {
     "get a group change if it exists" in {
       val groupChanges = generateGroupChanges("group-1", 10)
-      groupChanges.map(repo.save(_).unsafeRunSync())
+      groupChanges.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       repo.getGroupChange(groupChanges.head.id).unsafeRunSync() shouldBe Some(groupChanges.head)
     }
 
     "return None if group change doesn't exist" in {
       val groupChanges = generateGroupChanges("group-1", 10)
-      groupChanges.map(repo.save(_).unsafeRunSync())
+      groupChanges.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       repo.getGroupChange("no-existo").unsafeRunSync() shouldBe None
     }
@@ -95,7 +105,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
     "don't return lastEvaluatedTimeStamp if page size < maxItems" in {
       val groupId = "group-id-1"
       val changes = generateGroupChanges(groupId, 50)
-      changes.map(repo.save(_).unsafeRunSync())
+      changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val expectedChanges = changes
         .sortBy(_.created.getMillis)
@@ -109,7 +119,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
     "get group changes properly using a maxItems of 1" in {
       val groupId = "group-id-1"
       val changes = generateGroupChanges(groupId, 50)
-      changes.map(repo.save(_).unsafeRunSync())
+      changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val changesSorted = changes
         .sortBy(_.created.getMillis)
@@ -128,7 +138,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
     "page group changes using a startFrom and maxItems" in {
       val groupId = "group-id-1"
       val changes = generateGroupChanges(groupId, 50)
-      changes.map(repo.save(_).unsafeRunSync())
+      changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val changesSorted = changes
         .sortBy(_.created.getMillis)

@@ -21,15 +21,17 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
-import vinyldns.mysql.TestMySqlInstance
+import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
+import cats.effect.IO
 
 class MySqlGroupRepositoryIntegrationSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
     with Inspectors
-    with OptionValues {
+    with OptionValues
+    with TransactionProvider {
 
   private val repo: GroupRepository = TestMySqlInstance.groupRepository
 
@@ -38,13 +40,21 @@ class MySqlGroupRepositoryIntegrationSpec
     Group(name = testName, email = "test@email.com")
   }
 
+  def saveGroupData(
+                     repo: GroupRepository,
+                     group: Group
+                   ): IO[Group] =
+    executeWithinTransaction { db: DB =>
+      repo.save(db, group)
+    }
+
   override protected def beforeAll(): Unit = {
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM groups")
     }
 
     for (group <- groups) {
-      repo.save(group).unsafeRunSync()
+      saveGroupData(repo, group).unsafeRunSync()
     }
   }
 
@@ -57,14 +67,14 @@ class MySqlGroupRepositoryIntegrationSpec
 
   "MySqlGroupRepository.save" should {
     "return user after save" in {
-      repo.save(groups.head).unsafeRunSync() shouldBe groups.head
+      saveGroupData(repo, groups.head).unsafeRunSync() shouldBe groups.head
     }
   }
 
   "MySqlGroupRepository.delete" should {
     "delete a group" in {
       val toBeDeleted = groups.head.copy(id = "to-be-deleted")
-      repo.save(toBeDeleted).unsafeRunSync() shouldBe toBeDeleted
+      saveGroupData(repo, toBeDeleted).unsafeRunSync() shouldBe toBeDeleted
       repo.getGroup(toBeDeleted.id).unsafeRunSync() shouldBe Some(toBeDeleted)
 
       val deleted = toBeDeleted.copy(status = GroupStatus.Deleted)

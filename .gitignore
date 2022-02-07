@@ -36,3 +36,4 @@ quickstart/data
 **/.venv*
 **/*cache*
 **/artifacts/
+**/.env.overrides

@@ -92,7 +92,7 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
   "OidcAuthenticator" should {
     "Initial code call" should {
       "properly generate the code call" in {
-        val codeCall = testOidcAuthenticator.getCodeCall
+        val codeCall = testOidcAuthenticator.getCodeCall("/abcd")
         val query = codeCall.queryString().get
 
         codeCall.toString must startWith("http://test.authorization.url")
