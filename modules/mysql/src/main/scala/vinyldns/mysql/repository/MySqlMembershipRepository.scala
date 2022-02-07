@@ -50,7 +50,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       groupId: String,
       isAdmin: Boolean
   ): Seq[Seq[(Symbol, Any)]] =
-    userIds.map { userId =>
+    userIds.sorted.map { userId =>
       Seq(
         'userId -> userId,
         'groupId -> groupId,
@@ -58,14 +58,14 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       )
     }
 
-  def saveMembers(groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
+  def saveMembers(db: DB, groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
     memberUserIds.toList match {
       case Nil => IO.pure(memberUserIds)
       case nonEmpty =>
         monitor("repo.Membership.addMembers") {
           IO {
             logger.info(s"Saving into group $groupId members $nonEmpty")
-            DB.localTx { implicit s =>
+            db.withinTx { implicit s =>
               SAVE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
               memberUserIds
             }
@@ -73,14 +73,14 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
         }
     }
 
-  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
+  def removeMembers(db: DB, groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
     memberUserIds.toList match {
       case Nil => IO.pure(memberUserIds)
       case nonEmpty =>
         monitor("repo.Membership.removeMembers") {
           IO {
             logger.info(s"Removing from group $groupId members $nonEmpty")
-            DB.localTx { implicit s =>
+            db.withinTx { implicit s =>
               val inClause = " AND user_id IN (" + nonEmpty.as("?").mkString(",") + ")"
               val query = BASE_REMOVE_MEMBERS + inClause
               SQL(query)

@@ -63,10 +63,10 @@ class MySqlRecordChangeRepository
     * We have the same issue with changes as record sets, namely we may have to save millions of them
     * We do not need to distinguish between create, update, delete so this is simpler
     */
-  def save(changeSet: ChangeSet): IO[ChangeSet] =
+  def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
       IO {
-        DB.localTx { implicit s =>
+        db.withinTx { implicit session =>
           changeSet.changes
             .grouped(1000)
             .map { changes =>

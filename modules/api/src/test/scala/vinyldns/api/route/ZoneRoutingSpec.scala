@@ -28,6 +28,7 @@ import org.scalatest.OneInstancePerTest
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -137,9 +138,11 @@ class ZoneRoutingSpec
       """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
     )
   )
+  val testLimitConfig: LimitsConfig =
+    LimitsConfig(100,100,1000,1500,100,100,100)
 
   val zoneRoute: Route =
-    new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
+    new ZoneRoute(TestZoneService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(

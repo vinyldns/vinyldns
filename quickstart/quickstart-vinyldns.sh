@@ -101,7 +101,6 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -d | --deps-only)
-    export LOCALSTACK_EXT_HOSTNAME="localhost"
     SERVICE="integration ldap"
     shift
     ;;
@@ -158,8 +157,9 @@ if [[ $UPDATE -eq 1 ]]; then
   "${DIR}/../utils/clean-vinyldns-containers.sh"  &> /dev/null || true
 
   echo "${F_YELLOW}Removing any local VinylDNS Docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
-  docker images -a |grep vinyldns | grep "${VINYLDNS_IMAGE_VERSION}" | awk '{print $3}' | xarg docker rmi &> /dev/null || true
+  docker images -a |grep vinyldns | grep "${VINYLDNS_IMAGE_VERSION}" | awk '{print $3}' | xargs docker rmi -f &> /dev/null || true
   echo "${F_GREEN}Successfully removed all local VinylDNS Docker images and running containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
+  echo "${F_LRED}You may need to re-run with the '--build' flag...${F_RESET}"
 fi
 
 

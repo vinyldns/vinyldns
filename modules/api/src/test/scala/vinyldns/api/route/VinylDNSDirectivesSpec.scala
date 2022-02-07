@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import java.io.IOException
-
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -29,6 +28,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
 import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.route.Monitor
@@ -53,8 +53,11 @@ class VinylDNSDirectivesSpec
 
   def logger: Logger = LoggerFactory.getLogger(classOf[VinylDNSDirectivesSpec])
 
+  val testLimitConfig: LimitsConfig =
+    LimitsConfig(100,100,1000,1500,100,100,100)
+
   val zoneRoute: Route =
-    new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
+    new ZoneRoute(mock[ZoneServiceAlgebra],testLimitConfig, mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
 
   val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
 

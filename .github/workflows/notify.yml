@@ -1,0 +1,58 @@
+name: Notify on Workflow Complete
+
+on:
+  workflow_run:
+    workflows: [Verify and Test, VinylDNS Official Release]
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@v1.2.0
+
+      - name: Send Slack Notification On Success
+        uses: slackapi/slack-github-action@v1.18.0
+        if: github.event.workflow_run.conclusion == 'success'
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action ${{ github.event.workflow.name }} completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":check_mark: GitHub Action `${{ github.event.workflow.name }}` completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack Notification on Failure
+        uses: slackapi/slack-github-action@v1.18.0
+        if: github.event.workflow_run.conclusion != 'success'
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action ${{ github.event.workflow.name }} FAILED!\nAction: ${{ github.event.workflow_run.html_url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: GitHub Action `${{ github.event.workflow.name }}` FAILED!\nAction: ${{ github.event.workflow_run.html_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

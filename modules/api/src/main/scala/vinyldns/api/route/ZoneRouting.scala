@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
@@ -31,6 +32,7 @@ case class ZoneRejected(zone: Zone, errors: List[String])
 
 class ZoneRoute(
     zoneService: ZoneServiceAlgebra,
+    limitsConfig: LimitsConfig,
     val vinylDNSAuthenticator: VinylDNSAuthenticator,
     crypto: CryptoAlgebra
 ) extends VinylDNSJsonProtocol
@@ -40,8 +42,8 @@ class ZoneRoute(
 
   def logger: Logger = LoggerFactory.getLogger(classOf[ZoneRoute])
 
-  final private val DEFAULT_MAX_ITEMS: Int = 100
-  final private val MAX_ITEMS_LIMIT: Int = 100
+  final private val DEFAULT_MAX_ITEMS: Int = limitsConfig.ZONE_ROUTING_DEFAULT_MAX_ITEMS
+  final private val MAX_ITEMS_LIMIT: Int = limitsConfig.ZONE_ROUTING_MAX_ITEMS_LIMIT
 
   // Timeout must be long enough to allow the cluster to form
   implicit val zoneCmdTimeout: Timeout = Timeout(10.seconds)

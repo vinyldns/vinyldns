@@ -25,8 +25,10 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
+import org.apache.commons.codec.binary.Hex
 import vinyldns.proto.VinylDNSProto
 
+import java.security.MessageDigest
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -61,10 +63,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id, data_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ?, data_hash = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -89,7 +91,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
 
-  def apply(changeSet: ChangeSet): IO[ChangeSet] =
+  def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
 
       // identify failed changes
@@ -110,6 +112,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
+            hashString(toPB(oldRs).toString),
             oldRs.id
           )
         }
@@ -134,7 +137,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
-            i.recordSet.ownerGroupId
+            i.recordSet.ownerGroupId,
+            hashString(toPB(i.recordSet).toString)
           )
         }
 
@@ -147,26 +151,26 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
+            hashString(toPB(u.recordSet).toString),
             u.recordSet.id
           )
         }
 
       val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
-
-      IO {
-        DB.localTx { implicit s =>
-          // sql batch groups should preferably be smaller rather than larger for performance purposes
-          // to reduce contention on the table.  1000 worked well in performance tests
-          inserts.grouped(1000).foreach { group =>
-            INSERT_RECORDSET.batch(group: _*).apply()
+        IO {
+          db.withinTx { implicit session =>
+            // sql batch groups should preferably be smaller rather than larger for performance purposes
+            // to reduce contention on the table.  1000 worked well in performance tests
+            inserts.grouped(1000).foreach { group =>
+              INSERT_RECORDSET.batch(group: _*).apply()
+            }
+            (updates ++ reversionUpdates).grouped(1000).foreach { group =>
+              UPDATE_RECORDSET.batch(group: _*).apply()
+            }
+            (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
+              DELETE_RECORDSET.batch(group: _*).apply()
+            }
           }
-          (updates ++ reversionUpdates).grouped(1000).foreach { group =>
-            UPDATE_RECORDSET.batch(group: _*).apply()
-          }
-          (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
-            DELETE_RECORDSET.batch(group: _*).apply()
-          }
-        }
       }.as(changeSet)
     }
 
@@ -413,6 +417,13 @@ object MySqlRecordSetRepository extends ProtobufConversions {
     if (absoluteRecordSetName.equals(absoluteZoneName)) absoluteZoneName
     else absoluteRecordSetName + absoluteZoneName
   }
+
+  /**Hashing the record set. */
+  def hashString(s: String) = hashBytes(s.getBytes("UTF-8"))
+
+  def hashBytes(rs: Array[Byte]) = hexString(MessageDigest.getInstance("SHA-1").digest(rs))
+
+  def hexString(bytes: Array[Byte]): String = String.valueOf(Hex.encodeHex(bytes))
 
   case class PagingKey(recordName: String, recordType: Int)
 
