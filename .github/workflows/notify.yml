@@ -15,7 +15,7 @@ jobs:
 
       - name: Send Slack Notification On Success
         uses: slackapi/slack-github-action@v1.18.0
-        if: github.event.workflow_run.conclusion == "success"
+        if: github.event.workflow_run.conclusion == 'success'
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -37,7 +37,7 @@ jobs:
 
       - name: Send Slack Notification on Failure
         uses: slackapi/slack-github-action@v1.18.0
-        if: github.event.workflow_run.conclusion != "success"
+        if: github.event.workflow_run.conclusion != 'success'
         with:
           # For posting a rich message using Block Kit
           payload: |
