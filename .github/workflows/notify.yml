@@ -10,6 +10,9 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@v1.2.0
+
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1.18.0
         with:
