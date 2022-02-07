@@ -2,6 +2,7 @@ name: Notify on Workflow Complete
 
 on:
   workflow_run:
+    workflows: [Verify and Test, VinylDNS Official Release]
     types:
       - completed
 
@@ -15,13 +16,13 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": "GitHub Action ${{ github.event.workflow.name }} result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}",
+              "text": "GitHub Action ${{ github.event.workflow.name }} complete! Result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "GitHub Action `${{ github.event.workflow.name }}` result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}"
+                    "text": "GitHub Action `${{ github.event.workflow.name }}` complete! Result: *${{ github.event.workflow_run.conclusion }}*\nAction: ${{ github.event.workflow_run.html_url }}"
                   }
                 }
               ]
