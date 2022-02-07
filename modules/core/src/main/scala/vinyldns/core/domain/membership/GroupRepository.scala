@@ -17,11 +17,12 @@
 package vinyldns.core.domain.membership
 
 import cats.effect._
+import scalikejdbc.DB
 import vinyldns.core.repository.Repository
 
 trait GroupRepository extends Repository {
 
-  def save(group: Group): IO[Group]
+  def save(db: DB, group: Group): IO[Group]
 
   def delete(group: Group): IO[Group]
 
