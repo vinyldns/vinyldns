@@ -1,0 +1,31 @@
+name: Notify on Workflow Complete
+
+on:
+  workflow_run:
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action ${{ github.event.workflow.name }} result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "GitHub Action `${{ github.event.workflow.name }}` result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
