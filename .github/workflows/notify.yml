@@ -13,19 +13,42 @@ jobs:
       - name: Dump context
         uses: crazy-max/ghaction-dump-context@v1.2.0
 
-      - name: Send Slack Notification
+      - name: Send Slack Notification On Success
         uses: slackapi/slack-github-action@v1.18.0
+        if: github.event.workflow_run.conclusion == "success"
         with:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": "GitHub Action ${{ github.event.workflow.name }} complete! Result: ${{ github.event.workflow_run.conclusion }}\nAction: ${{ github.event.workflow_run.html_url }}",
+              "text": "GitHub Action ${{ github.event.workflow.name }} completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "GitHub Action `${{ github.event.workflow.name }}` complete! Result: *${{ github.event.workflow_run.conclusion }}*\nAction: ${{ github.event.workflow_run.html_url }}"
+                    "text": ":check_mark: GitHub Action `${{ github.event.workflow.name }}` completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack Notification on Failure
+        uses: slackapi/slack-github-action@v1.18.0
+        if: github.event.workflow_run.conclusion != "success"
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "GitHub Action ${{ github.event.workflow.name }} FAILED!\nAction: ${{ github.event.workflow_run.html_url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: GitHub Action `${{ github.event.workflow.name }}` FAILED!\nAction: ${{ github.event.workflow_run.html_url }}"
                   }
                 }
               ]
