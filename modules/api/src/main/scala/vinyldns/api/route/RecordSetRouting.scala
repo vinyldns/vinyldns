@@ -22,6 +22,7 @@ import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -56,6 +57,7 @@ case class ListRecordSetsByZoneResponse(
 
 class RecordSetRoute(
     recordSetService: RecordSetServiceAlgebra,
+    limitsConfig: LimitsConfig,
     val vinylDNSAuthenticator: VinylDNSAuthenticator
 ) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[Throwable] {
@@ -64,7 +66,7 @@ class RecordSetRoute(
 
   def logger: Logger = LoggerFactory.getLogger(classOf[RecordSetRoute])
 
-  final private val DEFAULT_MAX_ITEMS: Int = 100
+  final private val DEFAULT_MAX_ITEMS: Int = limitsConfig.RECORDSET_ROUTING_DEFAULT_MAX_ITEMS
 
   // Timeout must be long enough to allow the cluster to form
   implicit val rsCmdTimeout: Timeout = Timeout(10.seconds)
