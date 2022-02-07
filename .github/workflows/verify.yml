@@ -33,26 +33,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-          
-      - name: Send Slack Notification
-        if: ${{ always() }}
-        id: slack
-        uses: slackapi/slack-github-action@v1.18.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": "GitHub Action ${{ github.workflow }} result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\nAction: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "GitHub Action `${{ github.workflow }}` result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}\nAction: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
