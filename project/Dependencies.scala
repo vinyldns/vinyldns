@@ -85,6 +85,8 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
     "com.h2database"            %  "h2"                             % "1.4.200",
+    "commons-codec"             %  "commons-codec"                  % "1.15"
+
   )
 
   lazy val sqsDependencies = Seq(
@@ -103,13 +105,17 @@ object Dependencies {
     "com.ironcorelabs"          %% "cats-scalatest"                 % "3.0.5",
     "org.mockito"               %  "mockito-core"                   % "1.10.19",
     "org.scalatestplus"         %% "scalatestplus-mockito"          % "1.0.0-M2",
-    "org.scalatestplus"         %% "scalatestplus-scalacheck"       % "3.1.0.0-RC2"
+    "org.scalatestplus"         %% "scalatestplus-scalacheck"       % "3.1.0.0-RC2",
+    "commons-codec"             %  "commons-codec"                  % "1.15"
+
   )
 
   lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
     "com.typesafe.akka"         %% "akka-stream-testkit"            % akkaV,
-    "junit"                     %  "junit"                          % "4.12"
+    "junit"                     %  "junit"                          % "4.12",
+    "commons-codec"             %  "commons-codec"                  % "1.15"
+
   )
 
   lazy val portalDependencies = Seq(
