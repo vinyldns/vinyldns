@@ -150,11 +150,15 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
               val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
                 recordSetRepository.apply(db, changeSet)
               )
+              val saveRecordSetDatas = time(s"zone.sync.saveRecordSetDatas; zoneName='${zone.name}'")(
+                recordSetDataRepository.save(db,changeSet)
+              )
 
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
                 _ <- saveRecordSets
+                _ <- saveRecordSetDatas
               } yield zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced

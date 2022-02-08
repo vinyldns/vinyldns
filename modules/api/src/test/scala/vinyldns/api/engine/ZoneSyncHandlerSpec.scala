@@ -57,10 +57,11 @@ class ZoneSyncHandlerSpec
   def testRunSyncFunc(
      recordSetRepository: RecordSetRepository,
      recordChangeRepository: RecordChangeRepository,
+     recordSetDataRepository: RecordSetDataRepository,
      zoneChange: ZoneChange,
      backendResolver: BackendResolver,
      maxZoneSize: Int,
-     vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
+     vinyldnsLoader: (Zone, RecordSetRepository,RecordSetDataRepository) => VinylDNSZoneViewLoader =
      VinylDNSZoneViewLoader.apply
   ): IO[ZoneChange] =
     monitor("zone.sync") {
@@ -72,7 +73,7 @@ class ZoneSyncHandlerSpec
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
           )(dnsLoader.load())
         val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
-          vinyldnsLoader(zone, recordSetRepository).load()
+          vinyldnsLoader(zone, recordSetRepository, recordSetDataRepository).load()
         )
         val recordSetChanges = (dnsView, vinyldnsView).parTupled.map {
           case (dnsZoneView, vinylDnsZoneView) => vinylDnsZoneView.diff(dnsZoneView)
@@ -125,10 +126,14 @@ class ZoneSyncHandlerSpec
                 recordSetRepository.apply(db, changeSet)
               )
 
+              val saveRecordSetDatas = time(s"zone.sync.saveRecordSetDatas; zoneName='${zone.name}'")(
+                recordSetDataRepository.save(db,changeSet)
+              )
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
                 _ <- saveRecordSets
+                _ <- saveRecordSetDatas
               } yield zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced
@@ -274,10 +279,11 @@ class ZoneSyncHandlerSpec
   private val testRunSync = testRunSyncFunc(
     recordSetRepo,
     recordChangeRepo,
+    recordSetDataRepo,
     testZoneChange,
     mockBackendResolver,
     10000,
-    (_, _) => mockVinylDNSLoader
+    (_, _, _) => mockVinylDNSLoader
   )
 
 
@@ -553,7 +559,7 @@ class ZoneSyncHandlerSpec
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       runSync.unsafeRunSync()
 
-      verify(recordSetDataRepo).save(captor.capture())
+      verify(recordSetDataRepo).save(any[DB], captor.capture())
       val req = captor.getValue
       anonymize(req) shouldBe anonymize(testChangeSet)
 

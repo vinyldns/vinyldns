@@ -217,7 +217,7 @@ object CommandHandler {
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
+      RecordSetChangeHandler(recordSetRepo, recordChangeRepo,recordSetDataRepo, batchChangeRepo )
     val zoneSyncHandler =
       ZoneSyncHandler(
         recordSetRepo,

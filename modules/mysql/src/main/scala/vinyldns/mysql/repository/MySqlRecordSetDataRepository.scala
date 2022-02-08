@@ -41,7 +41,7 @@ class MySqlRecordSetDataRepository
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
 
-  def save(changeSet: ChangeSet): IO[ChangeSet] =
+  def save(db: DB,changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSetData.save") {
       val byStatus = changeSet.changes.groupBy(_.status)
 
@@ -58,6 +58,7 @@ class MySqlRecordSetDataRepository
       (completeCreates ++ pendingChanges).map { i =>
         Seq[Any](
           RsData(
+            db,
             i.recordSet.records.toString,
             i.recordSet.typ.toString,
             i.recordSet.id,
@@ -71,6 +72,7 @@ class MySqlRecordSetDataRepository
       completeUpdates.map { u =>
         Seq[Any](
           RsData(
+            db,
             u.recordSet.records.toString,
             u.recordSet.typ.toString,
             u.recordSet.id,
@@ -84,7 +86,7 @@ class MySqlRecordSetDataRepository
       val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
 
       IO {
-        DB.localTx { implicit s =>
+        db.withinTx { implicit session =>
           deletes.grouped(1000).foreach { group =>
             DELETE_RECORDSETDATA.batch(group: _*).apply()
           }
@@ -110,6 +112,7 @@ class MySqlRecordSetDataRepository
     }
 
   def RsData(
+              db: DB,
       recordData: String,
       recordType: String,
       recordID: String,
@@ -123,20 +126,21 @@ class MySqlRecordSetDataRepository
       /**
     insert the rsdata first, as if recordset are created
         */
-      case "insert" => rsDataSave(recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
+      case "insert" => rsDataSave(db,recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
       case "update" =>
         /**
       for update delete the rsdata first, as if recordset are updated
           */
-        DB.localTx { implicit s =>
+        db.withinTx { implicit session =>
           DELETE_RECORDSETDATA
             .bind(recordID)
             .update()
             .apply()
         }
-        rsDataSave(recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
+        rsDataSave(db,recordData, recordType, recordID, zoneId, FQDN, reverseFDQN)
     }
   def rsDataSave(
+                  db: DB,
       recordData: String,
       recordType: String,
       recordID: String,
@@ -154,7 +158,8 @@ class MySqlRecordSetDataRepository
       /**
       insert the rsdata first, as if recordset are created/updated
         */
-      DB.localTx { implicit s =>
+      db.withinTx { implicit session =>
+      //DB.localTx { implicit s =>
         INSERT_RECORDSETDATA
           .bindByName(
             'recordset_id -> recordID,
