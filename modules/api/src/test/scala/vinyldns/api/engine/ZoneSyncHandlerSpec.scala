@@ -324,6 +324,8 @@ class ZoneSyncHandlerSpec
 
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[DB], any[ChangeSet])
     doReturn(IO(testChangeSet)).when(recordChangeRepo).save(any[DB], any[ChangeSet])
+    doReturn(IO(testChangeSet)).when(recordSetDataRepo).save(any[DB], any[ChangeSet])
+
     doReturn(IO(testZoneChange)).when(zoneChangeRepo).save(any[ZoneChange])
     doReturn(IO(testZone)).when(zoneRepo).save(any[Zone])
 
