@@ -54,24 +54,28 @@ class BatchChangeRoutingSpec()
   val batchChangeRoute: Route =
     new BatchChangeRoute(
       TestBatchChangeService,
+      VinylDNSTestHelpers.testLimitConfig,
       new TestVinylDNSAuthenticator(okAuth),
       VinylDNSTestHelpers.manualReviewConfig
     ).getRoutes
   val notAuthRoute: Route =
     new BatchChangeRoute(
       TestBatchChangeService,
+      VinylDNSTestHelpers.testLimitConfig,
       new TestVinylDNSAuthenticator(notAuth),
       VinylDNSTestHelpers.manualReviewConfig
     ).getRoutes
   val supportUserRoute: Route =
     new BatchChangeRoute(
       TestBatchChangeService,
+      VinylDNSTestHelpers.testLimitConfig,
       new TestVinylDNSAuthenticator(supportUserAuth),
       VinylDNSTestHelpers.manualReviewConfig
     ).getRoutes
   val superUserRoute: Route =
     new BatchChangeRoute(
       TestBatchChangeService,
+      VinylDNSTestHelpers.testLimitConfig,
       new TestVinylDNSAuthenticator(superUserAuth),
       VinylDNSTestHelpers.manualReviewConfig
     ).getRoutes

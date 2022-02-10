@@ -22,7 +22,7 @@ import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import org.json4s.MappingException
-import vinyldns.api.config.VinylDNSConfig
+import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
@@ -57,6 +57,7 @@ object VinylDNSService {
 // $COVERAGE-OFF$
 class VinylDNSService(
     val membershipService: MembershipServiceAlgebra,
+    val limits: LimitsConfig,
     val processingDisabled: SignallingRef[IO, Boolean],
     val zoneService: ZoneServiceAlgebra,
     val healthService: HealthService,
@@ -84,13 +85,15 @@ class VinylDNSService(
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
-  val recordSetRoute: Route = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
+    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
+  val recordSetRoute: Route =
+    new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
-    new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes
+    new MembershipRoute(membershipService, limits, vinylDNSAuthenticator).getRoutes
   val batchChangeRoute: Route =
     new BatchChangeRoute(
       batchChangeService,
+      limits,
       vinylDNSAuthenticator,
       vinyldnsConfig.manualReviewConfig
     ).getRoutes

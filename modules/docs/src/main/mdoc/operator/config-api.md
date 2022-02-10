@@ -636,7 +636,20 @@ v6-discovery-nibble-boundaries {
         }
      }
   }
-
+  
+  # limits for batchchange routing, membership routing , recordset routing , zone routing
+  api {
+  limits {
+  batchchange-routing-max-items-limit = 100
+  membership-routing-default-max-items = 100
+  membership-routing-max-items-limit = 1000
+  membership-routing-max-groups-list-limit = 1500
+  recordset-routing-default-max-items= 100
+  zone-routing-default-max-items = 100
+  zone-routing-max-items-limit = 100
+  }
+  }
+  
   # the DDNS connection information for the default dns backend
   defaultZoneConnection {
      name = "vinyldns."

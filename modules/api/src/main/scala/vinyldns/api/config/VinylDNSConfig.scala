@@ -37,6 +37,7 @@ import scala.reflect.ClassTag
 
 final case class VinylDNSConfig(
     serverConfig: ServerConfig,
+    limitsconfig: LimitsConfig,
     httpConfig: HttpConfig,
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
@@ -80,6 +81,7 @@ object VinylDNSConfig {
 
     for {
       config <- IO.delay(ConfigFactory.load())
+      limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits") //Added Limitsconfig to fetch data from the reference.config and pass to LimitsConfig.config
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
       backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
@@ -98,6 +100,7 @@ object VinylDNSConfig {
         .map(GlobalAcls.apply)
     } yield VinylDNSConfig(
       serverConfig,
+      limitsconfig,
       httpConfig,
       hvdConfig,
       manualReviewConfig,

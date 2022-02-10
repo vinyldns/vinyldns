@@ -59,7 +59,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       groupId: String,
       isAdmin: Boolean
   ): Seq[Seq[(Symbol, Any)]] =
-    userIds.map { userId =>
+    userIds.sorted.map { userId =>
       Seq(
         'userId -> userId,
         'groupId -> groupId,

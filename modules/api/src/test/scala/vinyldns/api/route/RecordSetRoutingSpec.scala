@@ -26,6 +26,7 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
+import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
@@ -638,8 +639,12 @@ class RecordSetRoutingSpec
   }
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
+
+  val testLimitConfig: LimitsConfig =
+    LimitsConfig(100,100,1000,1500,100,100,100)
+
   val recordSetRoute: Route =
-    new RecordSetRoute(recordSetService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new RecordSetRoute(recordSetService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth)).getRoutes
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))

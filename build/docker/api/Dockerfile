@@ -31,8 +31,9 @@ VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 EXPOSE 9000
 
 ENV JVM_OPTS=""
-ENTRYPOINT ["/bin/bash", "-c", "java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/conf/application.conf \
+ENV INIT_SCRIPT="/bin/true"
+ENTRYPOINT ["/bin/bash", "-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/conf/application.conf \
                                 -Dlogback.configurationFile=/opt/vinyldns/conf/logback.xml \
                                 -Dvinyldns.version=$(cat /opt/vinyldns/version) \
-                                -cp /opt/vinyldns/lib_extra/* \
-                                -jar /opt/vinyldns/vinyldns-api.jar" ]
+                                -cp /opt/vinyldns/lib_extra/*:/opt/vinyldns/vinyldns-api.jar \
+                                vinyldns.api.Boot" ]
