@@ -23,14 +23,23 @@ import scalikejdbc._
 import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.core.route.Monitored
 
+import java.sql.SQLException
+
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
 
   private final val SAVE_MEMBERS =
     sql"""
-        | INSERT INTO membership (user_id, group_id, is_admin)
-        |      VALUES ({userId}, {groupId}, {isAdmin})
-        | ON DUPLICATE KEY UPDATE is_admin = {isAdmin}
+         | INSERT INTO membership (user_id, group_id, is_admin)
+         |      VALUES ({userId}, {groupId}, {isAdmin})
+       """.stripMargin
+
+  // Replace "ON DUPLICATE KEY UPDATE" which is used before to prevent possible deadlock
+  private final val UPDATE_MEMBERS =
+    sql"""
+         | UPDATE membership
+         |      SET is_admin = {isAdmin}
+         |      WHERE user_id = {userId} AND group_id = {groupId}
        """.stripMargin
 
   private final val BASE_GET_USERS_FOR_GROUP =
@@ -66,7 +75,17 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
           IO {
             logger.info(s"Saving into group $groupId members $nonEmpty")
             db.withinTx { implicit s =>
-              SAVE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
+              try {
+                SAVE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
+              }
+              catch {
+                case ex: SQLException =>
+                  // Check for duplicate key exception and update the members if we get that exception
+                  // 1062 is Error Code for Duplicate key entry
+                  if(ex.getErrorCode == 1062){
+                    UPDATE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
+                  }
+              }
               memberUserIds
             }
           }
