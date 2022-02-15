@@ -28,6 +28,7 @@ import java.util.UUID
   */
 trait TransactionProvider {
   private val logger: Logger = LoggerFactory.getLogger("vinyldns.mysql.TransactionProvider")
+  val DEADLOCK_MAX_RETRIES: Int = 3
 
   /**
     * Synchronously executes the given `execution` function within a database transaction. Handles commit and rollback.
@@ -37,7 +38,7 @@ trait TransactionProvider {
     */
   def executeWithinTransaction[A](execution: DB => IO[A]): IO[A] = {
     IO {
-      retry(3) {
+      retry(DEADLOCK_MAX_RETRIES) {
         // Create a correlation ID for the database transaction
         val txId = UUID.randomUUID()
         val db = DB(ConnectionPool.borrow())
@@ -66,14 +67,28 @@ trait TransactionProvider {
       fn
     } catch {
       // Only retry transaction that has deadlock exception. Don't retry on any other exception.
-      case e: SQLException =>
-        // Error code 1213 or 1205 indicates deadlock and we must retry the transaction.
-        if (e.getErrorCode == 1213 || e.getErrorCode == 1205) {
-          logger.error(s"Encountered error executing function within a database transaction. Retrying again. Retry Count: $times")
-          if (times > 1) retry(times - 1)(fn)
-          else throw e
-        }
-        else throw e
+      case sqlException: SQLException =>
+        isDeadlock(fn, times, sqlException)
+    }
+  }
+
+  def isDeadlock[T](fn: => T, times: Int, sqlException: SQLException): T = {
+    // Error code 1213 or 1205 indicates deadlock and we must retry the transaction.
+    if (sqlException.getErrorCode == 1213 || sqlException.getErrorCode == 1205) {
+      if (times > 1) {
+        logger.warn(s"Encountered error executing function within a database transaction. Retrying again. Retry Count: $times")
+        retry(times - 1)(fn)
+      }
+      // Throw the exception when it doesn't resolve even after retrying.
+      else {
+        logger.error("Encountered error executing function within a database transaction.", sqlException)
+        throw sqlException
+      }
+    }
+    // Throw exceptions immediately without retrying if it's not a deadlock exception.
+    else {
+      logger.error("Encountered error executing function within a database transaction.", sqlException)
+      throw sqlException
     }
   }
 }

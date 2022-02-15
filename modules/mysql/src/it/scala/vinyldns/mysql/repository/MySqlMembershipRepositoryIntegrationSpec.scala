@@ -58,6 +58,14 @@ class MySqlMembershipRepositoryIntegrationSpec
         .apply()
     }
 
+  private def getAllMembershipData: List[(String, String, Boolean)] =
+    DB.localTx { implicit s =>
+      sql"SELECT user_id, group_id, is_admin FROM membership"
+        .map(res => Tuple3[String, String, Boolean](res.string(1), res.string(2), res.boolean(3)))
+        .list()
+        .apply()
+    }
+
   def saveMembersData(
                        repo: MySqlMembershipRepository,
                        groupId: String,
@@ -138,6 +146,29 @@ class MySqlMembershipRepositoryIntegrationSpec
       repo
         .getGroupsForUser(userIds.head)
         .unsafeRunSync() should contain theSameElementsAs expectedGroups
+    }
+
+    "update a member successfully if it's not a new member" in {
+      // Add a new member
+      val groupId = "group-id-1"
+      val userIdOne = Set("user-id-100")
+      val addResultOne = saveMembersData(repo, groupId, userIdOne, isAdmin = false).unsafeRunSync()
+      addResultOne should contain theSameElementsAs userIdOne
+
+      // Add another new member
+      val userIdTwo = Set("user-id-200")
+      val addResultTwo = saveMembersData(repo, groupId, userIdTwo, isAdmin = false).unsafeRunSync()
+      addResultTwo should contain theSameElementsAs userIdTwo
+
+      // Update (isAdmin = true) the member as the member is already present in the group
+      val userIdOneUpdate = Set("user-id-100")
+      val addResultOneUpdate = saveMembersData(repo, groupId, userIdOneUpdate, isAdmin = true).unsafeRunSync()
+      addResultOneUpdate should contain theSameElementsAs userIdOneUpdate
+
+      val originalResult = getAllMembershipData
+      // Expected result must contain the updated value for userIdOne: "isAdmin = true"
+      val expectedGetAllResult = List((userIdOne.head, groupId, true),(userIdTwo.head, groupId, false))
+      originalResult should contain theSameElementsAs expectedGetAllResult
     }
   }
 

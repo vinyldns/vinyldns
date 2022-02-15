@@ -23,10 +23,9 @@ import scalikejdbc._
 import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.core.route.Monitored
 
-import java.sql.SQLException
-
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
+  private final val COLUMN_INDEX = 1
 
   private final val SAVE_MEMBERS =
     sql"""
@@ -41,6 +40,9 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
          |      SET is_admin = {isAdmin}
          |      WHERE user_id = {userId} AND group_id = {groupId}
        """.stripMargin
+
+  private final val GET_EXISTING_USERS =
+    "SELECT user_id FROM membership WHERE group_id = ?"
 
   private final val BASE_GET_USERS_FOR_GROUP =
     "SELECT user_id FROM membership WHERE group_id = {groupId}"
@@ -73,19 +75,19 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       case nonEmpty =>
         monitor("repo.Membership.addMembers") {
           IO {
+            // Get existing users already present in the group
+            val existingMembers = getExistingMembers(groupId).toList
+            // Intersect is used to check if the users we are trying to add in the group is already present.
+            // If they already exist in the group, we update the users.
+            val updateMembers = existingMembers.intersect(nonEmpty)
+            // Diff is used to check if the users we are trying to add in the group is already present.
+            // If they don't exist in the group, we save the users.
+            val saveMembers = nonEmpty.diff(existingMembers)
             logger.info(s"Saving into group $groupId members $nonEmpty")
+
             db.withinTx { implicit s =>
-              try {
-                SAVE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
-              }
-              catch {
-                case ex: SQLException =>
-                  // Check for duplicate key exception and update the members if we get that exception
-                  // 1062 is Error Code for Duplicate key entry
-                  if(ex.getErrorCode == 1062){
-                    UPDATE_MEMBERS.batchByName(saveParams(nonEmpty, groupId, isAdmin): _*).apply()
-                  }
-              }
+              SAVE_MEMBERS.batchByName(saveParams(saveMembers, groupId, isAdmin): _*).apply()
+              UPDATE_MEMBERS.batchByName(saveParams(updateMembers, groupId, isAdmin): _*).apply()
               memberUserIds
             }
           }
@@ -113,6 +115,21 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
         }
     }
 
+  def getExistingMembers(groupId: String): Set[String] =
+    monitor("repo.Membership.getExistingUsers") {
+      IO {
+        logger.info(s"Getting existing users")
+        DB.readOnly { implicit s =>
+          SQL(GET_EXISTING_USERS)
+            .bind(groupId)
+            .map(_.string(COLUMN_INDEX))
+            .list()
+            .apply()
+            .toSet
+        }
+      }
+    }.unsafeRunSync()
+
   def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {
       IO {
@@ -120,7 +137,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
         DB.readOnly { implicit s =>
           GET_GROUPS_FOR_USER
             .bind(userId)
-            .map(_.string(1))
+            .map(_.string(COLUMN_INDEX))
             .list()
             .apply()
             .toSet
@@ -146,7 +163,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
 
         SQL(query)
           .bindByName(conditions: _*)
-          .map(_.string(1))
+          .map(_.string(COLUMN_INDEX))
           .list()
           .apply()
           .toSet
