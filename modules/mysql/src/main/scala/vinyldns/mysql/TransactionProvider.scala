@@ -28,7 +28,7 @@ import java.util.UUID
   */
 trait TransactionProvider {
   private val logger: Logger = LoggerFactory.getLogger("vinyldns.mysql.TransactionProvider")
-  val DEADLOCK_MAX_RETRIES: Int = 3
+  private val DEADLOCK_MAX_RETRIES: Int = 3
 
   /**
     * Synchronously executes the given `execution` function within a database transaction. Handles commit and rollback.
