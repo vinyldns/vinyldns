@@ -67,20 +67,26 @@ class MySqlMembershipRepositoryIntegrationSpec
     }
 
   def saveMembersData(
-                       repo: MySqlMembershipRepository,
-                       groupId: String,
-                       userIds: Set[String],
-                       isAdmin: Boolean
-                     ): IO[Set[String]] =
+     repo: MySqlMembershipRepository,
+     groupId: String,
+     userIds: Set[String],
+     isAdmin: Boolean
+  ): IO[Set[String]] =
     executeWithinTransaction { db: DB =>
       repo.saveMembers(db, groupId, userIds, isAdmin)
     }
 
+  def getMembers(
+     repo: MySqlMembershipRepository,
+     groupId: String,
+  ): Set[String] =
+      repo.getExistingMembers(groupId)
+
   def removeMembersData(
-                         repo: MySqlMembershipRepository,
-                         groupId: String,
-                         userIds: Set[String]
-                       ): IO[Set[String]] =
+     repo: MySqlMembershipRepository,
+     groupId: String,
+     userIds: Set[String]
+  ): IO[Set[String]] =
     executeWithinTransaction { db: DB =>
       repo.removeMembers(db, groupId, userIds)
     }
@@ -160,15 +166,14 @@ class MySqlMembershipRepositoryIntegrationSpec
       val addResultTwo = saveMembersData(repo, groupId, userIdTwo, isAdmin = false).unsafeRunSync()
       addResultTwo should contain theSameElementsAs userIdTwo
 
-      // Update (isAdmin = true) the member as the member is already present in the group
+      // Update (isAdmin = true) the member instead of insert, as the member is already present in the group
       val userIdOneUpdate = Set("user-id-100")
       val addResultOneUpdate = saveMembersData(repo, groupId, userIdOneUpdate, isAdmin = true).unsafeRunSync()
       addResultOneUpdate should contain theSameElementsAs userIdOneUpdate
 
-      val originalResult = getAllMembershipData
       // Expected result must contain the updated value for userIdOne: "isAdmin = true"
       val expectedGetAllResult = List((userIdOne.head, groupId, true),(userIdTwo.head, groupId, false))
-      originalResult should contain theSameElementsAs expectedGetAllResult
+      getAllMembershipData should contain theSameElementsAs expectedGetAllResult
     }
   }
 
@@ -265,4 +270,18 @@ class MySqlMembershipRepositoryIntegrationSpec
       nonAdminOnlyMembers shouldBe nonAdminIds
     }
   }
+
+  "MySqlMembershipRepo.getExistingMembers" should {
+    "get users present in the group based on group id" in {
+      val groupId = "group-id-1"
+      val userIds = Set("user-id-1", "user-id-2")
+      val addResult = saveMembersData(repo, groupId, userIds, isAdmin = false).unsafeRunSync()
+
+      addResult should contain theSameElementsAs userIds
+
+      val existingMembers = getMembers(repo, groupId)
+      existingMembers shouldBe Set("user-id-1", "user-id-2")
+    }
+  }
+
 }

@@ -31,7 +31,7 @@ class MySqlTransactionProviderItSpec
     with TransactionProvider {
 
   private val repo: MySqlMembershipRepository = TestMySqlInstance.membershipRepository
-  private val RETRIES = 3
+  private val NUMBER_OF_RETRIES = 3
 
   def clear(): Unit =
     DB.localTx { implicit s =>
@@ -62,18 +62,36 @@ class MySqlTransactionProviderItSpec
     }
   }
 
-  "retry should add a member successfully when there's no exception" in {
-    val groupId = "group-id-1"
-    val userIds = Set("user-id-1")
-    retry(RETRIES) {
-      val addResult = saveMembersData(repo, groupId, userIds, isAdmin = false).unsafeRunSync()
-      addResult should contain theSameElementsAs userIds
+  private def getAllMembershipData: List[(String, String, Boolean)] =
+    DB.localTx { implicit s =>
+      sql"SELECT user_id, group_id, is_admin FROM membership"
+        .map(res => Tuple3[String, String, Boolean](res.string(1), res.string(2), res.boolean(3)))
+        .list()
+        .apply()
     }
 
-    val getAllResult = getAllRecords
-    val expectedGetAllResult = Set(Tuple2(userIds.head, groupId))
+  "retry should update duplicate members successfully without any exception" in {
+    val groupId = "group-id-1"
+    val userIds = Set("user-id-100", "user-id-200", "user-id-100")
+    val addResult = retry(NUMBER_OF_RETRIES){
+      saveMembersData(repo, groupId, userIds, isAdmin = false).unsafeRunSync()
+    }
 
-    getAllResult should contain theSameElementsAs expectedGetAllResult
+    addResult should contain theSameElementsAs userIds
+
+    val expectedResult = userIds.map(Tuple2(_, groupId))
+    getAllRecords should contain theSameElementsAs expectedResult
+
+    // Update user
+    val userIdOne = Set("user-id-100")
+    val addResultOne = retry(NUMBER_OF_RETRIES) {
+      saveMembersData(repo, groupId, userIdOne, isAdmin = true).unsafeRunSync()
+    }
+    addResultOne should contain theSameElementsAs userIdOne
+
+    // Expected result must contain the updated value for userIdOne: "isAdmin = true"
+    val expectedGetAllResult = List(("user-id-100", groupId, true),("user-id-200", groupId, false))
+    getAllMembershipData should contain theSameElementsAs expectedGetAllResult
   }
 
 }
