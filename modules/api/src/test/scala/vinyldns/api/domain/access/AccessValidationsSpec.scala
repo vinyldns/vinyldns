@@ -18,7 +18,6 @@ package vinyldns.api.domain.access
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
@@ -751,14 +750,14 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Write
     }
 
-    "prioritize more restrictive user rules in a tie" in {
+    "prioritize less restrictive user rules in a tie" in {
       val zoneAcl = ZoneACL(Set(userReadAcl, userWriteAcl))
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
       val result =
         accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
-      result shouldBe AccessLevel.Read
+      result shouldBe AccessLevel.Write
     }
 
     "apply to specific record type" in {
