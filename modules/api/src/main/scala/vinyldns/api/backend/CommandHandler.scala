@@ -215,7 +215,7 @@ object CommandHandler {
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
-      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
+      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo, recordSetDataRepo)
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo,recordSetDataRepo, batchChangeRepo )
     val zoneSyncHandler =

@@ -95,8 +95,8 @@ class MySqlRecordSetDataRepository
 
     }
 
-  def deleteRecordSetsInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
-    monitor("repo.RecordSet.deleteRecordSetsInZone") {
+  def deleteRecordSetDatasInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
+    monitor("repo.RecordSet.deleteRecordSetDatasInZone") {
       IO {
         val numDeleted = db.withinTx { implicit session =>
         DELETE_RECORDSETDATAS_IN_ZONE

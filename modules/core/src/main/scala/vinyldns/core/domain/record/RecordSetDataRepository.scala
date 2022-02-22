@@ -24,4 +24,7 @@ trait RecordSetDataRepository extends Repository {
 
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
 
+  def deleteRecordSetDatasInZone(db: DB, zoneId: String, zoneName: String): IO[Unit]
+
+
 }
