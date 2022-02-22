@@ -42,8 +42,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       recordSetData,
       zoneChange,
       zone,
-      batchChange,
-      recordSetData
+      batchChange
     )
 
   def create(

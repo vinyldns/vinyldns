@@ -95,11 +95,11 @@ class MySqlRecordSetDataRepository
 
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
+  def deleteRecordSetsInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO {
-        val numDeleted = DB.localTx { implicit s =>
-          DELETE_RECORDSETDATAS_IN_ZONE
+        val numDeleted = db.withinTx { implicit session =>
+        DELETE_RECORDSETDATAS_IN_ZONE
             .bind(zoneId)
             .update()
             .apply()
@@ -159,7 +159,6 @@ class MySqlRecordSetDataRepository
       insert the rsdata first, as if recordset are created/updated
         */
       db.withinTx { implicit session =>
-      //DB.localTx { implicit s =>
         INSERT_RECORDSETDATA
           .bindByName(
             'recordset_id -> recordID,
