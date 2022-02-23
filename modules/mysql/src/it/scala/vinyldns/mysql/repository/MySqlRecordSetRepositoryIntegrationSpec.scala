@@ -784,8 +784,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 20
       repo.getRecordSetCount(abcZone.id).unsafeRunSync() shouldBe 10
-
-      repo.deleteRecordSetsInZone(okZone.id, okZone.name).unsafeRunSync() should not be a[Throwable]
+      executeWithinTransaction { db: DB =>
+        repo.deleteRecordSetsInZone(db, okZone.id, okZone.name)}.unsafeRunSync() should not be a[Throwable]
 
       repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 0
       repo.getRecordSetCount(abcZone.id).unsafeRunSync() shouldBe 10
@@ -793,7 +793,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
     "not fail if there is nothing to delete" in {
       repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 0
-      repo.deleteRecordSetsInZone(okZone.id, okZone.name).unsafeRunSync() should not be a[Throwable]
+      executeWithinTransaction { db: DB =>
+      repo.deleteRecordSetsInZone(db,okZone.id, okZone.name)}.unsafeRunSync() should not be a[Throwable]
     }
   }
 }
