@@ -43,8 +43,14 @@ class AccessValidationsSpec
     ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), groupId = None)
   private val userWriteAcl =
     ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), groupId = None)
+  private val userNoAccessAcl =
+    ACLRule(AccessLevel.NoAccess, userId = Some(okAuth.userId), groupId = None)
+  private val userDeleteAcl =
+    ACLRule(AccessLevel.Delete, userId = Some(okAuth.userId), groupId = None)
   private val groupReadAcl = ACLRule(AccessLevel.Read, userId = None, groupId = Some(okGroup.id))
   private val groupWriteAcl = ACLRule(AccessLevel.Write, userId = None, groupId = Some(okGroup.id))
+  private val groupDeleteAcl = ACLRule(AccessLevel.Delete, userId = None, groupId = Some(okGroup.id))
+  private val groupAclNone = ACLRule(AccessLevel.NoAccess, userId = None, groupId = Some(okGroup.id))
   private val allReadACL = ACLRule(AccessLevel.Read, userId = None, groupId = None)
 
   private val badUserWriteAcl = ACLRule(AccessLevel.Write, userId = Some("bad-id"), groupId = None)
@@ -740,8 +746,8 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Write
     }
 
-    "choose group over all-user" in {
-      val zoneAcl = ZoneACL(Set(groupWriteAcl, allReadACL))
+    "prioritize more permissive user rules in a tie" in {
+      val zoneAcl = ZoneACL(Set(userReadAcl, userWriteAcl))
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
@@ -750,8 +756,58 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Write
     }
 
-    "prioritize less restrictive user rules in a tie" in {
-      val zoneAcl = ZoneACL(Set(userReadAcl, userWriteAcl))
+    "prioritize user over group rules, regardless of permissiveness" in {
+      val zoneAcl = ZoneACL(Set(userReadAcl, groupWriteAcl))
+      val zone = Zone("name", "email", acl = zoneAcl)
+
+      val mockRecordSet = mock[RecordSet]
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
+      result shouldBe AccessLevel.Read
+    }
+
+    "prioritize NoAccess over other user rules" in {
+      val zoneAcl = ZoneACL(Set(userNoAccessAcl, userReadAcl))
+      val zone = Zone("name", "email", acl = zoneAcl)
+
+      val mockRecordSet = mock[RecordSet]
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
+      result shouldBe AccessLevel.NoAccess
+    }
+
+    "prioritize user over group rules, even when group rule is NoAccess" in {
+      val zoneAcl = ZoneACL(Set(userDeleteAcl, groupAclNone))
+      val zone = Zone("name", "email", acl = zoneAcl)
+
+      val mockRecordSet = mock[RecordSet]
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
+      result shouldBe AccessLevel.Delete
+    }
+
+    "prioritize user over group rules, and more permissive user rules in a tie" in {
+      val zoneAcl = ZoneACL(Set(userWriteAcl, userReadAcl, groupDeleteAcl))
+      val zone = Zone("name", "email", acl = zoneAcl)
+
+      val mockRecordSet = mock[RecordSet]
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
+      result shouldBe AccessLevel.Write
+    }
+
+    "prioritize user over group rules, and choose NoAccess over other rules" in {
+      val zoneAcl = ZoneACL(Set(userNoAccessAcl, userReadAcl, groupDeleteAcl))
+      val zone = Zone("name", "email", acl = zoneAcl)
+
+      val mockRecordSet = mock[RecordSet]
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
+      result shouldBe AccessLevel.NoAccess
+    }
+
+    "choose group over all-user" in {
+      val zoneAcl = ZoneACL(Set(groupWriteAcl, allReadACL))
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
