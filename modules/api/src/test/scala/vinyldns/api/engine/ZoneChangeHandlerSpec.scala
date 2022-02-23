@@ -76,10 +76,10 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
     doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    executeWithinTransaction { db: DB =>
     doReturn(IO.pure(()))
       .when(mockRecordSetRepo)
-      .deleteRecordSetsInZone(deleteChange.zone.id, deleteChange.zone.name)
-    executeWithinTransaction { db: DB =>
+      .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
     doReturn(IO.pure(()))
       .when(mockRecordSetDataRepo)
       .deleteRecordSetDatasInZone(db, deleteChange.zone.id, deleteChange.zone.name)}
@@ -98,10 +98,10 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
     doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    executeWithinTransaction { db: DB =>
     doReturn(IO.raiseError(new Throwable("error")))
       .when(mockRecordSetRepo)
-      .deleteRecordSetsInZone(deleteChange.zone.id, deleteChange.zone.name)
-    executeWithinTransaction { db: DB =>
+      .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
     doReturn(IO.raiseError(new Throwable("error")))
       .when(mockRecordSetDataRepo)
       .deleteRecordSetDatasInZone(db,deleteChange.zone.id, deleteChange.zone.name)}

@@ -363,11 +363,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
+  def deleteRecordSetsInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO {
-        val numDeleted = DB.localTx { implicit s =>
-          DELETE_RECORDSETS_IN_ZONE
+        val numDeleted = db.withinTx { implicit session =>
+        DELETE_RECORDSETS_IN_ZONE
             .bind(zoneId)
             .update()
             .apply()

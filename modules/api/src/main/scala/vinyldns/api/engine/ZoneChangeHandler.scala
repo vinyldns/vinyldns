@@ -44,7 +44,7 @@ object ZoneChangeHandler {
           executeWithinTransaction { db: DB =>
             for {
               _ <- recordSetRepository
-              .deleteRecordSetsInZone(zoneChange.zone.id, zoneChange.zone.name)
+              .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
               _ <- recordSetDataRepository
             .deleteRecordSetDatasInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
             yield ()
