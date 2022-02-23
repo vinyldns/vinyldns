@@ -40,11 +40,15 @@ object ZoneChangeHandler {
             )
           )
         case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-          recordSetRepository
-            .deleteRecordSetsInZone(zoneChange.zone.id, zoneChange.zone.name)
+
           executeWithinTransaction { db: DB =>
-          recordSetDataRepository
+            for {
+              _ <- recordSetRepository
+              .deleteRecordSetsInZone(zoneChange.zone.id, zoneChange.zone.name)
+              _ <- recordSetDataRepository
             .deleteRecordSetDatasInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
+            yield ()
+          }
             .attempt
             .flatMap { _ =>
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
