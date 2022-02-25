@@ -20,7 +20,7 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -206,19 +206,19 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                sqls"((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+                sqls"((name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name < ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
-                sqls"((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+                sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.DESC) =>
               pagingKey.as(
-                sqls"((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+                sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
               )
             case _ =>
               pagingKey.as(
-                sqls"((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+                sqls"((name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name > ${pagingKey.map(pk => pk.recordName)})"
               )
           }
 
@@ -232,7 +232,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           println("typeFilter: ", typeFilter)
 
           val ownerGroupFilter =
-            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = '$owner' ")
+            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
           println("OwnerGroupFilter: ", ownerGroupFilter)
 
@@ -241,7 +241,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           println("Opts: ",opts)
 
-          val qualifiers = sqls"ORDER BY fqdn ${nameSort.toString} "
+          val qualifiers = if (nameSort == ASC) {
+            sqls"ORDER BY fqdn ASC "
+          }
+          else {
+            sqls"ORDER BY fqdn DESC "
+          }
+
           val recordLimit = maxPlusOne match {
             case Some(limit) => sqls"LIMIT $limit"
             case None => sqls""
@@ -250,11 +256,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val finalQualifiers = qualifiers.append(recordLimit)
           println("Final Qualifiers: ", finalQualifiers)
-
-          val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
-            pagingKey.map(pk => 'startFromType -> pk.recordType)).toSeq
-
-          println("Params: ", params)
 
           // construct query
           val initialQuery = sqls"SELECT data, fqdn FROM recordset "
@@ -272,10 +273,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val finalQuery = appendQueries.append(finalQualifiers)
           println("Final Query: ",finalQuery)
-          println(finalQuery.parameters)
 
           val results = sql"$finalQuery"
-            .bindByName(params: _*)
             .map(toRecordSet)
             .list()
             .apply()
