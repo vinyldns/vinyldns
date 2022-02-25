@@ -197,8 +197,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case _ => None
           }
 
-          println("zoneAndNameFilters: ", zoneAndNameFilters)
-
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
           val pagingKey = PagingKey(startFrom)
 
@@ -222,24 +220,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               )
           }
 
-          println("SortBy: ", sortBy)
-
           val typeFilter = recordTypeFilter.map { t =>
             val list = t.map(fromRecordType).mkString(",")
             sqls"type IN ($list)"
           }
 
-          println("typeFilter: ", typeFilter)
-
           val ownerGroupFilter =
             recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
-          println("OwnerGroupFilter: ", ownerGroupFilter)
-
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
-
-          println("Opts: ",opts)
 
           val qualifiers = if (nameSort == ASC) {
             sqls"ORDER BY fqdn ASC "
@@ -252,10 +242,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case Some(limit) => sqls"LIMIT $limit"
             case None => sqls""
           }
-          println("Limit: ", recordLimit)
 
           val finalQualifiers = qualifiers.append(recordLimit)
-          println("Final Qualifiers: ", finalQualifiers)
 
           // construct query
           val initialQuery = sqls"SELECT data, fqdn FROM recordset "
@@ -266,13 +254,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             addWhere.append(setDelimiter)
           } else sqls""
 
-          println("Append Opts: ", appendOpts)
-
           val appendQueries = initialQuery.append(appendOpts)
-          println("Append Queries: ",appendQueries)
 
           val finalQuery = appendQueries.append(finalQualifiers)
-          println("Final Query: ",finalQuery)
 
           val results = sql"$finalQuery"
             .map(toRecordSet)
@@ -282,8 +266,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val newResults = if (maxPlusOne.contains(results.size)) {
             results.dropRight(1)
           } else {
-            println("Result:")
-            println(results)
             results
           }
 
