@@ -20,7 +20,7 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -191,9 +191,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(s"zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' ")
-            case (None, Some(fqdn)) => Some(s"fqdn LIKE '${fqdn.replace('*', '%')}' ")
-            case (Some(zId), None) => Some(s"zone_id = '$zId' ")
+              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
+            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
           }
 
@@ -204,50 +204,61 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                "((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+                sqls"((name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name < ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
-                "((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+                sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.DESC) =>
               pagingKey.as(
-                "((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+                sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
               )
             case _ =>
               pagingKey.as(
-                "((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+                sqls"((name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name > ${pagingKey.map(pk => pk.recordName)})"
               )
           }
 
           val typeFilter = recordTypeFilter.map { t =>
-            val list = t.map(fromRecordType).mkString(",")
-            s"type IN ($list)"
+            val list = t.map(fromRecordType)
+            sqls"type IN ($list)"
           }
 
           val ownerGroupFilter =
-            recordOwnerGroupFilter.map(owner => s"owner_group_id = '$owner' ")
+            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
-          val qualifiers = new StringBuilder()
-          qualifiers.append(s" ORDER BY fqdn ${nameSort.toString}, type ASC ")
-          maxPlusOne.foreach(limit => qualifiers.append(s"LIMIT $limit"))
+          val qualifiers = if (nameSort == ASC) {
+            sqls"ORDER BY fqdn ASC, type ASC "
+          }
+          else {
+            sqls"ORDER BY fqdn DESC, type ASC "
+          }
 
-          val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
-            pagingKey.map(pk => 'startFromType -> pk.recordType)).toSeq
+          val recordLimit = maxPlusOne match {
+            case Some(limit) => sqls"LIMIT $limit"
+            case None => sqls""
+          }
+
+          val finalQualifiers = qualifiers.append(recordLimit)
 
           // construct query
-          val query = new StringBuilder()
-          query.append("SELECT data, fqdn FROM recordset")
-          if (opts.nonEmpty) {
-            query.append(" WHERE ").append(opts.mkString(" AND "))
-          }
-          query.append(qualifiers)
+          val initialQuery = sqls"SELECT data, fqdn FROM recordset "
 
-          val results = SQL(query.toString())
-            .bindByName(params: _*)
+          val appendOpts = if (opts.nonEmpty){
+            val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+            val addWhere = sqls"WHERE"
+            addWhere.append(setDelimiter)
+          } else sqls""
+
+          val appendQueries = initialQuery.append(appendOpts)
+
+          val finalQuery = appendQueries.append(finalQualifiers)
+
+          val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
             .apply()
