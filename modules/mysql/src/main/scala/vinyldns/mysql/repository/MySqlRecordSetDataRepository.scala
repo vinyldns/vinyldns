@@ -295,7 +295,7 @@ class MySqlRecordSetDataRepository
               )
             }
           db.withinTx { implicit session =>
-            (reversionUpdates++updates).map{_ =>
+            (reversionUpdates++updates).foreach{_ =>
               UPDATE_RECORDSETDATA
               .bindByName(
                 'zone_id -> zoneId,
