@@ -36,10 +36,6 @@ class MySqlRecordSetDataRepository
 
   private val INSERT_RECORDSETDATA =
     sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, fqdn,  reverse_fqdn, type, record_data, ip, data) VALUES ({recordset_id}, {zone_id}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, {ip}, {data})"
-  //sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, fqdn,  reverse_fqdn, type, record_data, ip, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-
-  private val UPDATE_RECORDSETDATA =
-    sql"UPDATE recordset_data SET zone_id = {zone_id}, fqdn =  {fqdn}, reverse_fqdn = {reverse_fqdn}, type = {type}, record_data = {record_data}, ip = {ip}, data =  {data} WHERE recordset_id ={recordset_id}"
 
   private val DELETE_RECORDSETDATA =
     sql"DELETE FROM recordset_data WHERE recordset_id = ?"
@@ -94,17 +90,16 @@ class MySqlRecordSetDataRepository
     failedUpdatesOrDeletes.flatMap { change =>
       change.updates.map { oldRs =>
         Seq[Any](
-          rsDataSave(
+          RsData(
             db,
-            changeSet,
             oldRs.id,
             oldRs.zoneId,
             toFQDN(change.zone.name, oldRs.name),
             toFQDN(change.zone.name, oldRs.name).reverse,
             oldRs.typ.toString,
             oldRs.records.toString,
-            toPB(oldRs).toByteArray,
             "update",
+            toPB(oldRs).toByteArray,
           )
         )
       }
@@ -121,32 +116,30 @@ class MySqlRecordSetDataRepository
     // all pending changes are saved as if they are creates
       (completeCreates ++ pendingChanges).map { i =>
         Seq[Any](
-          rsDataSave(
+          RsData(
             db,
-            changeSet,
             i.recordSet.id,
             i.recordSet.records.toString,
             i.recordSet.typ.toString,
             i.recordSet.zoneId,
             toFQDN(i.zone.name, i.recordSet.name),
             toFQDN(i.zone.name, i.recordSet.name).reverse,
-            toPB(i.recordSet).toByteArray,
             "insert",
+            toPB(i.recordSet).toByteArray,
         ))
       }
      completeUpdates.map { u =>
       Seq[Any](
-        rsDataSave(
+        RsData(
           db,
-          changeSet,
           u.recordSet.id,
           u.recordSet.records.toString,
           u.recordSet.typ.toString,
           u.recordSet.zoneId,
           toFQDN(u.zone.name, u.recordSet.name),
           toFQDN(u.zone.name, u.recordSet.name).reverse,
-          toPB(u.recordSet).toByteArray,
           "update",
+          toPB(u.recordSet).toByteArray,
       )
       )
     }
@@ -177,7 +170,7 @@ class MySqlRecordSetDataRepository
       }
     }
 
- /* def RsData(
+  def RsData(
               db: DB,
               recordID: String,
               recordData: String,
@@ -187,31 +180,32 @@ class MySqlRecordSetDataRepository
               reverseFQDN: String,
               rs: String,
               data: Array[Byte]
-
             ): Unit =
     rs match {
-
       /**
        *  insert the rsdata first, as if recordset are created
        */
-      case "insert" => rsDataSave(db, rs, recordID, recordType, recordData, zoneId, FQDN, reverseFQDN, data)
-      case "update" =>rsDataSave(db, rs, recordID, recordType, recordData, zoneId, FQDN, reverseFQDN, data)
-
-    }*/
+      case "insert" => rsDataSave(db, recordID,recordData, recordType, zoneId, FQDN, reverseFQDN, data)
+      case "update" =>
+       db.withinTx { implicit session =>
+                DELETE_RECORDSETDATA
+                  .bind(recordID)
+                  .update()
+                  .apply()
+          }
+      rsDataSave(db, recordID,recordData, recordType, zoneId, FQDN, reverseFQDN, data)
+    }
 
   def rsDataSave(
                   db: DB,
-                  changeSet: ChangeSet,
                   recordId: String,
                   recordData: String,
                   recordType: String,
                   zoneId: String,
                   FQDN: String,
                   reverseFQDN: String,
-                  data: Array[Byte],
-                  rs: String
-
-  ): Unit = {
+                    data: Array[Byte]
+                ): Unit = {
     var parseIp: String = null
     var records: String = null
     for (ipString <- recordData.split(",").map(_.trim).toList) {
@@ -219,39 +213,11 @@ class MySqlRecordSetDataRepository
       records = recordData.replace("List(", "")
       records = records.replace(")", "")
 
-      val byStatus = changeSet.changes.groupBy(_.status)
-      val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
-      val (failedCreates, failedUpdatesOrDeletes) =
-        failedChanges.partition(_.changeType == RecordSetChangeType.Create)
-
-      failedCreates.map(d => Seq[Any](d.recordSet.id))
-      val completeChanges = byStatus.getOrElse(RecordSetChangeStatus.Complete, Seq())
-      val completeChangesByType = completeChanges.groupBy(_.changeType)
-      val completeCreates = completeChangesByType.getOrElse(RecordSetChangeType.Create, Seq())
-      val completeUpdates = completeChangesByType.getOrElse(RecordSetChangeType.Update, Seq())
-      completeChangesByType.getOrElse(RecordSetChangeType.Delete, Seq())
-
-      val pendingChanges = byStatus.getOrElse(RecordSetChangeStatus.Pending, Seq())
       /**
        *  insert the rsdata first, as if recordset are created/updated
        */
-      rs match {
-        case "insert" =>
-          val inserts: Seq[Seq[Any]] =
-            (completeCreates ++ pendingChanges).map { i =>
-              Seq[Any](
-                  i.recordSet.id,
-                  i.recordSet.records.toString,
-                  i.recordSet.typ.toString,
-                  i.recordSet.zoneId,
-                  toFQDN(i.zone.name, i.recordSet.name),
-                  toFQDN(i.zone.name, i.recordSet.name).reverse,
-                  toPB(i.recordSet).toByteArray
 
-              )
-            }
           db.withinTx { implicit session =>
-            inserts{
             INSERT_RECORDSETDATA
               .bindByName(
                 'recordset_id -> recordId,
@@ -265,54 +231,8 @@ class MySqlRecordSetDataRepository
               )
               .update()
               .apply()
-          }}
-        case "update" =>
-          val reversionUpdates = failedUpdatesOrDeletes.flatMap { change =>
-            change.updates.map { oldRs =>
-              Seq[Any](
-                  db,
-                  oldRs.id,
-                  oldRs.zoneId,
-                  toFQDN(change.zone.name, oldRs.name),
-                  toFQDN(change.zone.name, oldRs.name).reverse,
-                  oldRs.typ.toString,
-                  oldRs.records.toString,
-                  toPB(oldRs).toByteArray
-              )
-            }
-          }
-          val updates =
-            completeUpdates.map { u =>
-              Seq[Any](
-                  db,
-                  u.recordSet.id,
-                  u.recordSet.records.toString,
-                  u.recordSet.typ.toString,
-                  u.recordSet.zoneId,
-                  toFQDN(u.zone.name, u.recordSet.name),
-                  toFQDN(u.zone.name, u.recordSet.name).reverse,
-                  toPB(u.recordSet).toByteArray
-              )
-            }
-          db.withinTx { implicit session =>
-            (reversionUpdates++updates).foreach{_ =>
-              UPDATE_RECORDSETDATA
-              .bindByName(
-                'zone_id -> zoneId,
-                'fqdn -> FQDN,
-                'reverse_fqdn -> reverseFQDN,
-                'type -> recordType,
-                'record_data -> records,
-                'ip -> parseIp,
-                'data -> data,
-                'recordset_id -> recordId
-              )
-              .update()
-              .apply()
           }
       }}
-    }
-  }
 
   def getRecordSetDatas(zoneId: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDatas") {
