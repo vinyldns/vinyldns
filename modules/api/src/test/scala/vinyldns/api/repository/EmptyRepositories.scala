@@ -58,7 +58,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 
   def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] = IO.pure(None)
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] = IO(())
+  def deleteRecordSetsInZone(DB: DB, zoneId: String, zoneName: String): IO[Unit] = IO(())
 }
 
 trait EmptyZoneRepo extends ZoneRepository {

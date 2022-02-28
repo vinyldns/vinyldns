@@ -23,7 +23,11 @@ import vinyldns.core.domain.membership.{
   MembershipRepository,
   UserRepository
 }
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetDataRepository,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.DataAccessor
 
@@ -34,6 +38,7 @@ final case class ApiDataAccessor(
     groupChangeRepository: GroupChangeRepository,
     recordSetRepository: RecordSetRepository,
     recordChangeRepository: RecordChangeRepository,
+    recordSetDataRepository: RecordSetDataRepository,
     zoneChangeRepository: ZoneChangeRepository,
     zoneRepository: ZoneRepository,
     batchChangeRepository: BatchChangeRepository
