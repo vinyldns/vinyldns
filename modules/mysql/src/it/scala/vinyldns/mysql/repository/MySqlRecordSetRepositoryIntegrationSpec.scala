@@ -596,10 +596,10 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val existing = editedChanges.map(_.recordSet)
 
       val page1 = repo
-        .listRecordSets(Some(okZone.id), None, Some(2), None, None, None, NameSort.ASC)
+        .listRecordSets(Some(okZone.id), None, Some(3), None, None, None, NameSort.ASC)
         .unsafeRunSync()
       (page1.recordSets should contain).theSameElementsInOrderAs(
-        List(recordSetWithFQDN(existing.head, okZone), recordSetWithFQDN(existing(1), okZone))
+        List(recordSetWithFQDN(existing.head, okZone), recordSetWithFQDN(existing(1), okZone), recordSetWithFQDN(existing(2), okZone))
       )
       page1.nextId shouldBe Some(PagingKey.toNextId(page1.recordSets.last, true))
 

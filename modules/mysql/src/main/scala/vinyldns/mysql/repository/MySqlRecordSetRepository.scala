@@ -221,7 +221,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           }
 
           val typeFilter = recordTypeFilter.map { t =>
-            val list = t.map(fromRecordType).mkString(",")
+            val list = t.map(fromRecordType)
             sqls"type IN ($list)"
           }
 
@@ -232,10 +232,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
           val qualifiers = if (nameSort == ASC) {
-            sqls"ORDER BY fqdn ASC "
+            sqls"ORDER BY fqdn ASC, type ASC "
           }
           else {
-            sqls"ORDER BY fqdn DESC "
+            sqls"ORDER BY fqdn DESC, type ASC "
           }
 
           val recordLimit = maxPlusOne match {
