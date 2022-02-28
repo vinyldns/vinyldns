@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import cats.effect._
 import scalikejdbc.DB
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
 trait RecordSetDataRepository extends Repository {
@@ -26,5 +27,12 @@ trait RecordSetDataRepository extends Repository {
 
   def deleteRecordSetDatasInZone(db: DB, zoneId: String, zoneName: String): IO[Unit]
 
+  def getRecordSetDatas(zoneId: String , typ :RecordType): IO[List[RecordSet]]
+
+  def getRecordSetData(recordSetId: String): IO[Option[RecordSet]]
+
+  def getRecordSetDatasByFQDNs(names: Set[String]): IO[List[RecordSet]]
+
+  def getRecordSetDataCount(zoneId: String): IO[Int]
 
 }

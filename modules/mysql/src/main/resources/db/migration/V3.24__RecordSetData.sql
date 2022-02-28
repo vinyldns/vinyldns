@@ -10,6 +10,7 @@ CREATE TABLE recordset_data (
   type VARCHAR(25) NOT NULL,
   record_data VARCHAR(4096) NOT NULL,
   ip VARBINARY(16),
+  data BLOB NOT NULL,
   INDEX recordset_data_zone_id_index(zone_id),
   INDEX recordset_data_type_index(type),
   INDEX recordset_data_fqdn_index(fqdn),
