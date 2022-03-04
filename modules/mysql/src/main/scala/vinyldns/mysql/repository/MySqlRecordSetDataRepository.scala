@@ -82,11 +82,11 @@ class MySqlRecordSetDataRepository
 
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] = {
     val byStatus = changeSet.changes.groupBy(_.status)
-   val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
+    val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
     val (failedCreates, failedUpdatesOrDeletes) =
       failedChanges.partition(_.changeType == RecordSetChangeType.Create)
 
-   val reversionDeletes = failedCreates.map(d => Seq[Any](d.recordSet.id))
+    val reversionDeletes = failedCreates.map(d => Seq[Any](d.recordSet.id))
     failedUpdatesOrDeletes.flatMap { change =>
       change.updates.map { oldRs =>
         Seq[Any](
@@ -114,21 +114,21 @@ class MySqlRecordSetDataRepository
     val pendingChanges = byStatus.getOrElse(RecordSetChangeStatus.Pending, Seq())
 
     // all pending changes are saved as if they are creates
-      (completeCreates ++ pendingChanges).map { i =>
-        Seq[Any](
-          RsData(
-            db,
-            i.recordSet.id,
-            i.recordSet.records.toString,
-            i.recordSet.typ.toString,
-            i.recordSet.zoneId,
-            toFQDN(i.zone.name, i.recordSet.name),
-            toFQDN(i.zone.name, i.recordSet.name).reverse,
-            "insert",
-            toPB(i.recordSet).toByteArray,
+    (completeCreates ++ pendingChanges).map { i =>
+      Seq[Any](
+        RsData(
+          db,
+          i.recordSet.id,
+          i.recordSet.records.toString,
+          i.recordSet.typ.toString,
+          i.recordSet.zoneId,
+          toFQDN(i.zone.name, i.recordSet.name),
+          toFQDN(i.zone.name, i.recordSet.name).reverse,
+          "insert",
+          toPB(i.recordSet).toByteArray,
         ))
-      }
-     completeUpdates.map { u =>
+    }
+    completeUpdates.map { u =>
       Seq[Any](
         RsData(
           db,
@@ -140,13 +140,13 @@ class MySqlRecordSetDataRepository
           toFQDN(u.zone.name, u.recordSet.name).reverse,
           "update",
           toPB(u.recordSet).toByteArray,
-      )
+        )
       )
     }
-   val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
+    val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
     IO {
       db.withinTx { implicit session =>
-       (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
+        (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
           DELETE_RECORDSETDATA.batch(group: _*).apply()
         }
       }
@@ -183,17 +183,17 @@ class MySqlRecordSetDataRepository
             ): Unit =
     rs match {
       /**
-       *  insert the rsdata first, as if recordset are created
+       * insert the rsdata first, as if recordset are created
        */
-      case "insert" => rsDataSave(db, recordID,recordData, recordType, zoneId, FQDN, reverseFQDN, data)
+      case "insert" => rsDataSave(db, recordID, recordData, recordType, zoneId, FQDN, reverseFQDN, data)
       case "update" =>
-       db.withinTx { implicit session =>
-                DELETE_RECORDSETDATA
-                  .bind(recordID)
-                  .update()
-                  .apply()
-          }
-      rsDataSave(db, recordID,recordData, recordType, zoneId, FQDN, reverseFQDN, data)
+        db.withinTx { implicit session =>
+          DELETE_RECORDSETDATA
+            .bind(recordID)
+            .update()
+            .apply()
+        }
+        rsDataSave(db, recordID, recordData, recordType, zoneId, FQDN, reverseFQDN, data)
     }
 
   def rsDataSave(
@@ -204,37 +204,54 @@ class MySqlRecordSetDataRepository
                   zoneId: String,
                   FQDN: String,
                   reverseFQDN: String,
-                    data: Array[Byte]
+                  data: Array[Byte]
                 ): Unit = {
+
+    if (recordType == "DS" ) {
+        for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
+          insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)
+      }}
+     else{
+    for (ipString <- recordData.split(",").map(_.trim).toList) {
+      insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)
+    }
+}}
+  def insert(
+              db: DB,
+              recordId: String,
+              zoneId: String,
+              FQDN: String,
+              reverseFQDN: String,
+              recordType: String,
+              ipString: String,
+              data: Array[Byte]
+            ): Unit = {
     var parseIp: String = null
     var records: String = null
-    for (ipString <- recordData.split(",").map(_.trim).toList) {
-      parseIp = parseIP(ipString, recordType)
-      records = ipString.replace("List(", "")
-      records = records.replace(")", "")
-      records = record(records,recordType)
+    parseIp = parseIP(ipString, recordType)
+    records = ipString.replace("List(", "")
+    records = records.replace(")", "")
+    records = record(records, recordType)
 
-      /**
-       *  insert the rsdata first, as if recordset are created/updated
-       */
+  /**
+   * insert the rsdata first, as if recordset are created/updated
+   */
 
-          db.withinTx { implicit session =>
-            INSERT_RECORDSETDATA
-              .bindByName(
-                'recordset_id -> recordId,
-                'zone_id -> zoneId,
-                'fqdn -> FQDN,
-                'reverse_fqdn -> reverseFQDN,
-                'type -> recordType,
-                'record_data -> records,
-                'ip -> parseIp,
-                'data -> data
-              )
-              .update()
-              .apply()
-          }
-      }}
-
+  db.withinTx { implicit session =>
+    INSERT_RECORDSETDATA
+      .bindByName(
+        'recordset_id -> recordId,
+        'zone_id -> zoneId,
+        'fqdn -> FQDN,
+        'reverse_fqdn -> reverseFQDN,
+        'type -> recordType,
+        'record_data -> records,
+        'ip -> parseIp,
+        'data -> data
+      )
+      .update()
+      .apply()
+  }}
   def getRecordSetDatas(zoneId: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDatas") {
       IO {
@@ -358,11 +375,12 @@ class MySqlRecordSetDataRepository
         }
     else if (recordType == "DS" ){
       val rs=record.split(" ")
+      rs(5)=rs(5).replace("))","")
       records=
         "keyTag:".concat(rs(0)).
           concat(" algorithm:"+rs(1)).
           concat(" digestType:"+rs(2)).
-          concat(" digest:\""+rs(3)+"\"")
+          concat(" digest:\""+rs(5)+"\"")
     }
     else if (recordType == "MX" ){
       val rs=record.split(" ")
