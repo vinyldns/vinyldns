@@ -206,16 +206,13 @@ class MySqlRecordSetDataRepository
                   reverseFQDN: String,
                   data: Array[Byte]
                 ): Unit = {
+    recordType match {
+      case "DS" => for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
+          insert(db, recordId, zoneId, FQDN, reverseFQDN, recordType, ipString, data)}
+      case _ => for (ipString <- recordData.split(",").map(_.trim).toList) {
+      insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)}
+    }}
 
-    if (recordType == "DS" ) {
-        for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
-          insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)
-      }}
-     else{
-    for (ipString <- recordData.split(",").map(_.trim).toList) {
-      insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)
-    }
-}}
   def insert(
               db: DB,
               recordId: String,
@@ -252,6 +249,7 @@ class MySqlRecordSetDataRepository
       .update()
       .apply()
   }}
+
   def getRecordSetDatas(zoneId: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDatas") {
       IO {
@@ -356,81 +354,66 @@ class MySqlRecordSetDataRepository
                recordType: String
              ): String = {
     var records : String = null
-    if (recordType == "A" || recordType == "AAAA" ) {
-      records = "address:\"".concat(record+"\"")
-    }
-    else if (recordType == "CNAME") {
-      records = "cname:\"".concat(record+"\"")
-    }
-    else if (recordType == "SOA" ){
-      val rs=record.split(" ")
-      records=
-            "mname:\"".concat(rs(0)+"\"").
-              concat(" rname:\""+rs(1)+"\"").
-              concat(" serial:"+rs(2)).
-              concat(" refresh:"+rs(3)).
-              concat(" retry:"+rs(4)).
-              concat(" expire:"+rs(5)).
-              concat(" minimum:"+rs(6))
-        }
-    else if (recordType == "DS" ){
-      val rs=record.split(" ")
-      rs(5)=rs(5).replace("))","")
-      records=
-        "keyTag:".concat(rs(0)).
-          concat(" algorithm:"+rs(1)).
-          concat(" digestType:"+rs(2)).
-          concat(" digest:\""+rs(5)+"\"")
-    }
-    else if (recordType == "MX" ){
-      val rs=record.split(" ")
-      records=
-        "preference:".concat(rs(0)).
-          concat(" exchange:\""+rs(1)+"\"")
-    }
-    else if (recordType == "NS" ){
-      records= "nsdname:\"".concat(record+"\"")
-    }
-    else if (recordType == "PTR" ){
-      records= "ptrdname:\"".concat(record+"\"")
-    }
-    else if (recordType == "SPF" ){
-      records= "text:\"".concat(record+"\"")
-    }
-    else if (recordType == "SRV" ){
-      val rs=record.split(" ")
-      records=
-        "priority:".concat(rs(0)).
-          concat(" weight:"+rs(1)).
-          concat(" port:"+rs(2)).
-          concat(" target:\""+rs(3)+"\"")
-    }
-    else if (recordType == "NAPTR" ){
-      val rs=record.split(" ")
-      records=
-        "order:".concat(rs(0)).
-          concat(" preference:"+rs(1)).
-          concat(" flags:\""+rs(2)+"\"").
-          concat(" service:\""+rs(3)+"\"").
-          concat(" regexp:\""+rs(4)+"\"").
-          concat(" replacement:\""+rs(5)+"\"")
-    }
-    else if (recordType == "SSHFP" ){
-      val rs=record.split(" ")
-      records=
-        "algorithm:".concat(rs(0)).
-          concat(" typ:"+rs(1)).
-          concat(" fingerPrint:\""+rs(2)+"\"")
-    }
-    else if (recordType == "TXT" ){
-      records= "text:\"".concat(record+"\"")
-    }
-    else if (recordType == "UNKNOWN" ){
-      records= "UnknownRecordType:\"".concat(record+"\"")
-    }
-    else{
-      records="Null"
-    }
+    recordType match {
+      /**
+       * Append recordtypes to record data.
+       */
+      case "A"|"AAAA" =>   records = "address:\"".concat(record+"\"")
+      case "CNAME" =>  records = "cname:\"".concat(record+"\"")
+      case "SOA" => val rs=record.split(" ")
+        records=
+          "mname:\"".concat(rs(0)+"\"").
+            concat(" rname:\""+rs(1)+"\"").
+            concat(" serial:"+rs(2)).
+            concat(" refresh:"+rs(3)).
+            concat(" retry:"+rs(4)).
+            concat(" expire:"+rs(5)).
+            concat(" minimum:"+rs(6))
+      case "DS" => val rs=record.split(" ")
+        rs(5)=rs(5).replace("))","")
+        records=
+          "keyTag:".concat(rs(0)).
+            concat(" algorithm:"+rs(1)).
+            concat(" digestType:"+rs(2)).
+            concat(" digest:\""+rs(5)+"\"")
+      case "MX" => val rs=record.split(" ")
+        records=
+          "preference:".concat(rs(0)).
+            concat(" exchange:\""+rs(1)+"\"")
+      case "NS" =>  records= "nsdname:\"".concat(record+"\"")
+      case "PTR" => records= "ptrdname:\"".concat(record+"\"")
+      case "SPF" => records= "text:\"".concat(record+"\"")
+      case "SRV" => val rs=record.split(" ")
+        records=
+          "priority:".concat(rs(0)).
+            concat(" weight:"+rs(1)).
+            concat(" port:"+rs(2)).
+            concat(" target:\""+rs(3)+"\"")
+      case "NAPTR" => val rs=record.split(" ")
+        records=
+          "order:".concat(rs(0)).
+            concat(" preference:"+rs(1)).
+            concat(" flags:\""+rs(2)+"\"").
+            concat(" service:\""+rs(3)+"\"").
+            concat(" regexp:\""+rs(4)+"\"").
+            concat(" replacement:\""+rs(5)+"\"")
+      case "SSHFP" =>
+        val rs=record.split(" ")
+        records=
+          "algorithm:".concat(rs(0)).
+            concat(" typ:"+rs(1)).
+            concat(" fingerPrint:\""+rs(2)+"\"")
+      case "TXT" =>
+        val rs=record.split(" ")
+        records=
+          "order:".concat(rs(0)).
+            concat(" preference:"+rs(1)).
+            concat(" flags:\""+rs(2)+"\"").
+            concat(" service:\""+rs(3)+"\"").
+            concat(" regexp:\""+rs(4)+"\"").
+            concat(" replacement:\""+rs(5)+"\"")
+      case "UNKNOWN" => records= "UnknownRecordType:\"".concat(record+"\"")
+  }
     records
   }
 
