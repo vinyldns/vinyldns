@@ -403,16 +403,9 @@ class MySqlRecordSetDataRepository
           "algorithm:".concat(rs(0)).
             concat("  typ:"+rs(1)).
             concat("  fingerPrint:\""+rs(2)+"\"")
-      case "TXT" =>
-        val rs=record.split(" ")
-        records=
-          "order:".concat(rs(0)).
-            concat("  preference:"+rs(1)).
-            concat("  flags:\""+rs(2)+"\"").
-            concat("  service:\""+rs(3)+"\"").
-            concat("  regexp:\""+rs(4)+"\"").
-            concat("  replacement:\""+rs(5)+"\"")
+      case "TXT" => records= "text:\"".concat(record+"\"")
       case "UNKNOWN" => records= "UnknownRecordType:\"".concat(record+"\"")
+      case _ => records= "null"
   }
     records
   }
