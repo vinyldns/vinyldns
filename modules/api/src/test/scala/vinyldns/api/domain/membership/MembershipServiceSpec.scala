@@ -548,11 +548,13 @@ class MembershipServiceSpec
         val result: Group = rightResultOf(underTest.getGroup(okGroup.id, okAuth).value)
         result shouldBe okGroup
       }
-
+      //TODO
       "return an error if not authorized" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        val error = leftResultOf(underTest.getGroup(okGroup.id, dummyAuth).value)
-        error shouldBe a[NotAuthorizedError]
+//        val error = leftResultOf(underTest.getGroup(okGroup.id, dummyAuth).value)
+//        error shouldBe a[NotAuthorizedError]
+        val result: Group = rightResultOf(underTest.getGroup(okGroup.id, dummyAuth).value)
+        result shouldBe okGroup
       }
 
       "return an error if the group is not found" in {
@@ -740,12 +742,27 @@ class MembershipServiceSpec
         result.nextId shouldBe Some(listOfDummyGroupChanges(100).id)
         result.startFrom shouldBe None
       }
-      "return an error if the user is not authorized" in {
-        val error =
-          leftResultOf(underTest.getGroupActivity("notFound", None, 100, okAuth).value)
-        error shouldBe a[NotAuthorizedError]
-      }
+
+    "return group activity even if the user is not authorized" in {
+      val groupChangeRepoResponse = ListGroupChangesResults(
+        listOfDummyGroupChanges.take(100),
+        Some(listOfDummyGroupChanges(100).id)
+      )
+      doReturn(IO.pure(groupChangeRepoResponse))
+        .when(mockGroupChangeRepo)
+        .getGroupChanges(anyString, any[Option[String]], anyInt)
+
+      val expected: List[GroupChangeInfo] =
+        listOfDummyGroupChanges.map(GroupChangeInfo.apply).take(100)
+
+      val result: ListGroupChangesResponse =
+        rightResultOf(underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value)
+      result.changes should contain theSameElementsAs expected
+      result.maxItems shouldBe 100
+      result.nextId shouldBe Some(listOfDummyGroupChanges(100).id)
+      result.startFrom shouldBe None
     }
+  }
 
     "listAdmins" should {
       "return a list of admins" in {
@@ -764,10 +781,20 @@ class MembershipServiceSpec
         result.admins should contain theSameElementsAs expectedAdmins
       }
 
-      "return an error if the user is not authorized" in {
-        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        val error = leftResultOf(underTest.listAdmins("notFound", okAuth).value)
-        error shouldBe a[NotAuthorizedError]
+      "return a list of admins even if the user is not authorized" in {
+        val testGroup =
+          okGroup.copy(memberIds = Set(okUser.id), adminUserIds = Set(okUser.id))
+        val testListUsersResult = ListUsersResults(Seq(okUser), Some("1"))
+        val expectedAdmins = List(UserInfo(okUser))
+
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
+          .when(mockUserRepo)
+          .getUsers(testGroup.adminUserIds, None, None)
+
+        val result: ListAdminsResponse =
+          rightResultOf(underTest.listAdmins(testGroup.id, dummyAuth).value)
+        result.admins should contain theSameElementsAs expectedAdmins
       }
     }
 
@@ -820,10 +847,25 @@ class MembershipServiceSpec
         result.startFrom shouldBe None
       }
 
-      "return an error if the user is not authorized" in {
-        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        val error = leftResultOf(underTest.listMembers("notFound", None, 100, okAuth).value)
-        error shouldBe a[NotAuthorizedError]
+      "return a list of members even if the user is not a group member" in {
+        val testGroup =
+          okGroup.copy(memberIds = Set(okUser.id, dummyUser.id), adminUserIds = Set(okUser.id))
+        val testUsers = Seq(okUser, dummyUser)
+        val testListUsersResult = ListUsersResults(testUsers, Some("1"))
+        val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
+
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
+          .when(mockUserRepo)
+          .getUsers(testGroup.memberIds, None, Some(100))
+
+        val result: ListMembersResponse =
+          rightResultOf(underTest.listMembers(testGroup.id, None, 100, dummyAuth).value)
+
+        result.members should contain theSameElementsAs expectedMembers
+        result.nextId shouldBe testListUsersResult.lastEvaluatedId
+        result.maxItems shouldBe 100
+        result.startFrom shouldBe None
       }
     }
 
