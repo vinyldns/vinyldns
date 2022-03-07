@@ -359,6 +359,7 @@ class MySqlRecordSetDataRepository
       /**
        * Append record data with record names.
        */
+
       case "A"|"AAAA" =>   records = "address:\"".concat(record+"\"")
       case "CNAME" =>  records = "cname:\"".concat(record+"\"")
       case "SOA" => val rs=record.split(" ")
