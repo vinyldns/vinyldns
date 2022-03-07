@@ -355,8 +355,9 @@ class MySqlRecordSetDataRepository
              ): String = {
     var records : String = null
     recordType match {
+
       /**
-       * Append recordtypes to record data.
+       * Append record data with record names.
        */
       case "A"|"AAAA" =>   records = "address:\"".concat(record+"\"")
       case "CNAME" =>  records = "cname:\"".concat(record+"\"")
