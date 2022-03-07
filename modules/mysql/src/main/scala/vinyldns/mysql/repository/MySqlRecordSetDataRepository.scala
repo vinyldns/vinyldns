@@ -363,55 +363,55 @@ class MySqlRecordSetDataRepository
       case "SOA" => val rs=record.split(" ")
         records=
           "mname:\"".concat(rs(0)+"\"").
-            concat(" rname:\""+rs(1)+"\"").
-            concat(" serial:"+rs(2)).
-            concat(" refresh:"+rs(3)).
-            concat(" retry:"+rs(4)).
-            concat(" expire:"+rs(5)).
-            concat(" minimum:"+rs(6))
+            concat("  rname:\""+rs(1)+"\"").
+            concat("  serial:"+rs(2)).
+            concat("  refresh:"+rs(3)).
+            concat("  retry:"+rs(4)).
+            concat("  expire:"+rs(5)).
+            concat("  minimum:"+rs(6))
       case "DS" => val rs=record.split(" ")
         rs(5)=rs(5).replace("))","")
         records=
           "keyTag:".concat(rs(0)).
-            concat(" algorithm:"+rs(1)).
-            concat(" digestType:"+rs(2)).
-            concat(" digest:\""+rs(5)+"\"")
+            concat("  algorithm:"+rs(1)).
+            concat("  digestType:"+rs(2)).
+            concat("  digest:\""+rs(5)+"\"")
       case "MX" => val rs=record.split(" ")
         records=
           "preference:".concat(rs(0)).
-            concat(" exchange:\""+rs(1)+"\"")
-      case "NS" =>  records= "nsdname:\"".concat(record+"\"")
-      case "PTR" => records= "ptrdname:\"".concat(record+"\"")
-      case "SPF" => records= "text:\"".concat(record+"\"")
+            concat("  exchange:\""+rs(1)+"\"")
+      case "NS" =>  records= "  nsdname:\"".concat(record+"\"")
+      case "PTR" => records= "  ptrdname:\"".concat(record+"\"")
+      case "SPF" => records= "  text:\"".concat(record+"\"")
       case "SRV" => val rs=record.split(" ")
         records=
           "priority:".concat(rs(0)).
-            concat(" weight:"+rs(1)).
-            concat(" port:"+rs(2)).
-            concat(" target:\""+rs(3)+"\"")
+            concat("  weight:"+rs(1)).
+            concat("  port:"+rs(2)).
+            concat("  target:\""+rs(3)+"\"")
       case "NAPTR" => val rs=record.split(" ")
         records=
           "order:".concat(rs(0)).
-            concat(" preference:"+rs(1)).
-            concat(" flags:\""+rs(2)+"\"").
-            concat(" service:\""+rs(3)+"\"").
-            concat(" regexp:\""+rs(4)+"\"").
-            concat(" replacement:\""+rs(5)+"\"")
+            concat("  preference:"+rs(1)).
+            concat("  flags:\""+rs(2)+"\"").
+            concat("  service:\""+rs(3)+"\"").
+            concat("  regexp:\""+rs(4)+"\"").
+            concat("  replacement:\""+rs(5)+"\"")
       case "SSHFP" =>
         val rs=record.split(" ")
         records=
           "algorithm:".concat(rs(0)).
-            concat(" typ:"+rs(1)).
-            concat(" fingerPrint:\""+rs(2)+"\"")
+            concat("  typ:"+rs(1)).
+            concat("  fingerPrint:\""+rs(2)+"\"")
       case "TXT" =>
         val rs=record.split(" ")
         records=
           "order:".concat(rs(0)).
-            concat(" preference:"+rs(1)).
-            concat(" flags:\""+rs(2)+"\"").
-            concat(" service:\""+rs(3)+"\"").
-            concat(" regexp:\""+rs(4)+"\"").
-            concat(" replacement:\""+rs(5)+"\"")
+            concat("  preference:"+rs(1)).
+            concat("  flags:\""+rs(2)+"\"").
+            concat("  service:\""+rs(3)+"\"").
+            concat("  regexp:\""+rs(4)+"\"").
+            concat("  replacement:\""+rs(5)+"\"")
       case "UNKNOWN" => records= "UnknownRecordType:\"".concat(record+"\"")
   }
     records
