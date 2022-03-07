@@ -380,9 +380,9 @@ class MySqlRecordSetDataRepository
         records=
           "preference:".concat(rs(0)).
             concat("  exchange:\""+rs(1)+"\"")
-      case "NS" =>  records= "  nsdname:\"".concat(record+"\"")
-      case "PTR" => records= "  ptrdname:\"".concat(record+"\"")
-      case "SPF" => records= "  text:\"".concat(record+"\"")
+      case "NS" =>  records= "nsdname:\"".concat(record+"\"")
+      case "PTR" => records= "ptrdname:\"".concat(record+"\"")
+      case "SPF" => records= "text:\"".concat(record+"\"")
       case "SRV" => val rs=record.split(" ")
         records=
           "priority:".concat(rs(0)).
