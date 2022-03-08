@@ -17,7 +17,7 @@
 package vinyldns.core.repository
 
 import com.typesafe.config.Config
-import vinyldns.core.repository.RepositoryName.RepositoryName
+import vinyldns.core.repository.RepositoryName.{RepositoryName}
 
 final case class DataStoreConfig(
     className: String,
@@ -32,6 +32,7 @@ final case class RepositoriesConfig(
     groupChange: Option[Config],
     recordSet: Option[Config],
     recordChange: Option[Config],
+    recordSetData: Option[Config],
     zoneChange: Option[Config],
     zone: Option[Config],
     batchChange: Option[Config],
@@ -46,6 +47,7 @@ final case class RepositoriesConfig(
     groupChange.map(RepositoryName.groupChange -> _),
     recordSet.map(RepositoryName.recordSet -> _),
     recordChange.map(RepositoryName.recordChange -> _),
+    recordChange.map(RepositoryName.recordSetData -> _),
     zoneChange.map(RepositoryName.zoneChange -> _),
     zone.map(RepositoryName.zone -> _),
     batchChange.map(RepositoryName.batchChange -> _),

@@ -36,30 +36,30 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE id = {id}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE id = {id}
     """.stripMargin
 
   private val COUNT_RECORDSETS_IN_ZONE =
     sql"""
-      |SELECT count(*)
-      |  FROM recordset
-      | WHERE zone_id = {zoneId}
+         |SELECT count(*)
+         |  FROM recordset
+         | WHERE zone_id = {zoneId}
     """.stripMargin
 
   private val INSERT_RECORDSET =
@@ -83,10 +83,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val GET_RECORDSET_BY_OWNERID =
     sql"""
-      |SELECT id
-      |  FROM recordset
-      |WHERE owner_group_id = {ownerGroupId}
-      |LIMIT 1
+         |SELECT id
+         |  FROM recordset
+         |WHERE owner_group_id = {ownerGroupId}
+         |LIMIT 1
     """.stripMargin
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
@@ -175,14 +175,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def listRecordSets(
-      zoneId: Option[String],
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults] =
+                      zoneId: Option[String],
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: Option[String],
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupFilter: Option[String],
+                      nameSort: NameSort
+                    ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
@@ -374,11 +374,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
+  def deleteRecordSetsInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO {
-        val numDeleted = DB.localTx { implicit s =>
-          DELETE_RECORDSETS_IN_ZONE
+        val numDeleted = db.withinTx { implicit session =>
+        DELETE_RECORDSETS_IN_ZONE
             .bind(zoneId)
             .update()
             .apply()
