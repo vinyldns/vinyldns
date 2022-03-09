@@ -39,7 +39,7 @@ module.exports = function(grunt) {
           {expand: true, flatten: true, src: ['node_modules/font-awesome/css/font-awesome.min.css'], dest: 'public/css'},
 
           // We're picking just the resources we need from the gentelella UI framework and temporarily storing them in mapped/ui/
-          {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/jquery.{smartWizard,mCustomScrollbar.concat.min,dataTables.min,mousewheel.min}.js'},
+          {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/jquery.{smartWizard,dataTables.min,mousewheel.min}.js'},
           {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/bootstrap-daterangepicker/daterangepicker.js'},
           {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/build/css/custom.min.css'},
           {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/{daterangepicker,animate.min}.css'},
