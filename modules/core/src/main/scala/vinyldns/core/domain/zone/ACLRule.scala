@@ -21,7 +21,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 
 object AccessLevel extends Enumeration {
   type AccessLevel = Value
-  val NoAccess, Read, Write, Delete = Value
+  val NoAccess, Delete, Write, Read = Value
 }
 
 case class ACLRule(
