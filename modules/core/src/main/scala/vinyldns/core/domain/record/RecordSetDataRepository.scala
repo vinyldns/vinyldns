@@ -27,7 +27,7 @@ trait RecordSetDataRepository extends Repository {
 
   def deleteRecordSetDatasInZone(db: DB, zoneId: String, zoneName: String): IO[Unit]
 
-  def getRecordSetDatas(zoneId: String , typ :RecordType): IO[List[RecordSet]]
+  def getRecordSetDataList(zoneId: String , typ :RecordType): IO[List[RecordSet]]
 
   def getRecordSetData(recordSetId: String): IO[Option[RecordSet]]
 
