@@ -244,7 +244,7 @@ class MySqlRecordSetDataRepositoryIntegrationSpec
     "return a record set data when there is a match" in {
       val existing = insert(okZone, 1).map(_.recordSet)
       val results =
-        repo.getRecordSetDatas(okZone.id, existing.head.typ).unsafeRunSync()
+        repo.getRecordSetDataList(okZone.id, existing.head.typ).unsafeRunSync()
       results.headOption shouldBe Some(recordSetDataWithFQDN(existing.head, okZone))
     }
 }

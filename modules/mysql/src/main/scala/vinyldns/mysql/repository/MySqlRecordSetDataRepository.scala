@@ -208,12 +208,12 @@ class MySqlRecordSetDataRepository
                 ): Unit = {
     recordType match {
       case "DS" => for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
-          insert(db, recordId, zoneId, FQDN, reverseFQDN, recordType, ipString, data)}
+        insertRecordSetData(db, recordId, zoneId, FQDN, reverseFQDN, recordType, ipString, data)}
       case _ => for (ipString <- recordData.split(",").map(_.trim).toList) {
-      insert(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)}
+        insertRecordSetData(db,recordId,zoneId,FQDN,reverseFQDN,recordType,ipString,data)}
     }}
 
-  def insert(
+  def insertRecordSetData(
               db: DB,
               recordId: String,
               zoneId: String,
@@ -228,7 +228,7 @@ class MySqlRecordSetDataRepository
     parseIp = parseIP(ipString, recordType)
     records = ipString.replace("List(", "")
     records = records.replace(")", "")
-    records = record(records, recordType)
+    records = extractRecordSetDataString(records, recordType)
 
   /**
    * insert the rsdata first, as if recordset are created/updated
@@ -250,7 +250,7 @@ class MySqlRecordSetDataRepository
       .apply()
   }}
 
-  def getRecordSetDatas(zoneId: String, typ: RecordType): IO[List[RecordSet]] =
+  def getRecordSetDataList(zoneId: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDatas") {
       IO {
         DB.readOnly { implicit s =>
@@ -349,20 +349,20 @@ class MySqlRecordSetDataRepository
     ipAddress
   }
 
-  def record(
-              record: String,
+  def extractRecordSetDataString(
+               recordSetData: String,
                recordType: String
              ): String = {
     var records : String = null
     recordType match {
 
       /**
-       * Append record data with record names.
+       * Append the textual representation of the record data.
        */
 
-      case "A"|"AAAA" =>   records = "address:\"".concat(record+"\"")
-      case "CNAME" =>  records = "cname:\"".concat(record+"\"")
-      case "SOA" => val rs=record.split(" ")
+      case "A"|"AAAA" =>   records = "address:\"".concat(recordSetData+"\"")
+      case "CNAME" =>  records = "cname:\"".concat(recordSetData+"\"")
+      case "SOA" => val rs=recordSetData.split(" ")
         records=
           "mname:\"".concat(rs(0)+"\"").
             concat("  rname:\""+rs(1)+"\"").
@@ -371,27 +371,27 @@ class MySqlRecordSetDataRepository
             concat("  retry:"+rs(4)).
             concat("  expire:"+rs(5)).
             concat("  minimum:"+rs(6))
-      case "DS" => val rs=record.split(" ")
+      case "DS" => val rs=recordSetData.split(" ")
         rs(5)=rs(5).replace("))","")
         records=
           "keyTag:".concat(rs(0)).
             concat("  algorithm:"+rs(1)).
             concat("  digestType:"+rs(2)).
             concat("  digest:\""+rs(5)+"\"")
-      case "MX" => val rs=record.split(" ")
+      case "MX" => val rs=recordSetData.split(" ")
         records=
           "preference:".concat(rs(0)).
             concat("  exchange:\""+rs(1)+"\"")
-      case "NS" =>  records= "nsdname:\"".concat(record+"\"")
-      case "PTR" => records= "ptrdname:\"".concat(record+"\"")
-      case "SPF" => records= "text:\"".concat(record+"\"")
-      case "SRV" => val rs=record.split(" ")
+      case "NS" =>  records= "nsdname:\"".concat(recordSetData+"\"")
+      case "PTR" => records= "ptrdname:\"".concat(recordSetData+"\"")
+      case "SPF" => records= "text:\"".concat(recordSetData+"\"")
+      case "SRV" => val rs=recordSetData.split(" ")
         records=
           "priority:".concat(rs(0)).
             concat("  weight:"+rs(1)).
             concat("  port:"+rs(2)).
             concat("  target:\""+rs(3)+"\"")
-      case "NAPTR" => val rs=record.split(" ")
+      case "NAPTR" => val rs=recordSetData.split(" ")
         records=
           "order:".concat(rs(0)).
             concat("  preference:"+rs(1)).
@@ -400,13 +400,13 @@ class MySqlRecordSetDataRepository
             concat("  regexp:\""+rs(4)+"\"").
             concat("  replacement:\""+rs(5)+"\"")
       case "SSHFP" =>
-        val rs=record.split(" ")
+        val rs=recordSetData.split(" ")
         records=
           "algorithm:".concat(rs(0)).
             concat("  typ:"+rs(1)).
             concat("  fingerPrint:\""+rs(2)+"\"")
-      case "TXT" => records= "text:\"".concat(record+"\"")
-      case "UNKNOWN" => records= "UnknownRecordType:\"".concat(record+"\"")
+      case "TXT" => records= "text:\"".concat(recordSetData+"\"")
+      case "UNKNOWN" => records= "UnknownRecordType:\"".concat(recordSetData+"\"")
       case _ => records= "null"
   }
     records
