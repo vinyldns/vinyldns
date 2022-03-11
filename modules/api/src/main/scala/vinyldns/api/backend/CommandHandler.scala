@@ -28,7 +28,12 @@ import vinyldns.api.engine.{
 }
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetChange,
+  RecordSetDataRepository,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
@@ -202,6 +207,7 @@ object CommandHandler {
       zoneChangeRepo: ZoneChangeRepository,
       recordSetRepo: RecordSetRepository,
       recordChangeRepo: RecordChangeRepository,
+      recordSetDataRepo: RecordSetDataRepository,
       batchChangeRepo: BatchChangeRepository,
       notifiers: AllNotifiers,
       backendResolver: BackendResolver,
@@ -209,13 +215,14 @@ object CommandHandler {
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
-      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
+      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo, recordSetDataRepo)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
+      RecordSetChangeHandler(recordSetRepo, recordChangeRepo,recordSetDataRepo, batchChangeRepo )
     val zoneSyncHandler =
       ZoneSyncHandler(
         recordSetRepo,
         recordChangeRepo,
+        recordSetDataRepo,
         zoneChangeRepo,
         zoneRepo,
         backendResolver,

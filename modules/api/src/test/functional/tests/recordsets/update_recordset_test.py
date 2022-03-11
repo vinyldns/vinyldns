@@ -821,9 +821,9 @@ def test_user_rule_priority_over_group_acl_rule(shared_zone_test_context):
 
 
 @pytest.mark.serial
-def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
+def test_more_permissive_acl_rule_priority(shared_zone_test_context):
     """
-    Test more restrictive rule takes priority
+    Test more permissive rule takes priority
     """
     ok_zone = shared_zone_test_context.ok_zone
     client = shared_zone_test_context.ok_vinyldns_client
@@ -832,14 +832,14 @@ def test_more_restrictive_acl_rule_priority(shared_zone_test_context):
         read_rule = generate_acl_rule("Read", userId="dummy")
         write_rule = generate_acl_rule("Write", userId="dummy")
 
-        result_rs = seed_text_recordset(client, "test_more_restrictive_acl_rule_priority", ok_zone)
+        result_rs = seed_text_recordset(client, "test_more_permissive_acl_rule_priority", ok_zone)
         result_rs["ttl"] = result_rs["ttl"] + 1000
 
-        # add rules
+        # add rules 
         add_ok_acl_rules(shared_zone_test_context, [read_rule, write_rule])
 
-        # Dummy user cannot update record
-        shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=403)
+        # Dummy user can update record
+        shared_zone_test_context.dummy_vinyldns_client.update_recordset(result_rs, status=202)
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
         if result_rs:
