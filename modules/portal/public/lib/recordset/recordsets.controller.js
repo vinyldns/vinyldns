@@ -38,7 +38,6 @@
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
                 }
-
                 return recordsService
                     .listRecordSets(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.ownerGroupFilter)
                     .then(success)
@@ -86,13 +85,21 @@
                     newRecords.push(recordsService.toDisplayRecord(record, ''));
                 });
                 $scope.records = newRecords;
+                $("#loader").modal({
+                 backdrop: "static", //remove ability to close modal with click
+                 keyboard: false, //remove option to close with keyboard
+                 show: true //Display loader!
+                 });
                 if($scope.records.length > 0) {
+                  $("#ShowNoRec").modal("hide");
+                  $("#loader").modal("hide");
                   $("td.dataTables_empty").hide();
                 } else {
-                  $("td.dataTables_empty").show();
+                    $("#loader").modal("hide");
+                    $("td.dataTables_empty").show();
+                    $("#ShowNoRec").modal("show");
                 }
             };
-
 
             /**
              * Recordset paging
