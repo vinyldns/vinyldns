@@ -73,7 +73,14 @@
 
 <p>Depending on your organization, you may choose to exclusively use <em>Zone Ownership</em> for managing self-service.  This does come at a higher cost of administrative overhead than other options; however, it is the most restrictive and still very flexible.</p>
 
-<h1 id="shared-zone-ownership">Shared Zone Ownership</h1>
+<p>Users and groups can have multiple ACL entries associated with them. Permission conflicts are resolved via the following rules:</p>
+<ul>
+  <li>The <strong>MOST</strong> permissive rule is chosen in the case of a tie. For example, if a user has an ACL entry with a <code class="language-plaintext highlighter-rouge">Write</code> permission, and another with a <code class="language-plaintext highlighter-rouge">Read</code> permission, the <code class="language-plaintext highlighter-rouge">Write</code> permission will take precedence.</li>
+  <li><code class="language-plaintext highlighter-rouge">NoAccess</code> takes precedence over other permission levels. For example, if a user has three ACL rules, <code class="language-plaintext highlighter-rouge">Read</code>, <code class="language-plaintext highlighter-rouge">Write</code>, and <code class="language-plaintext highlighter-rouge">NoAccess</code>, <code class="language-plaintext highlighter-rouge">NoAccess</code> will take precedence.</li>
+  <li><code class="language-plaintext highlighter-rouge">User</code> rules take precedence over <code class="language-plaintext highlighter-rouge">group</code> rules. For example, if a user has an ACL entry with a <code class="language-plaintext highlighter-rouge">Read</code> permission, and a group ACL entry with a <code class="language-plaintext highlighter-rouge">Write</code> permission, the <code class="language-plaintext highlighter-rouge">Read</code> permission will take precedence, even though <code class="language-plaintext highlighter-rouge">Write</code> is more permissive.
+    <h1 id="shared-zone-ownership">Shared Zone Ownership</h1>
+  </li>
+</ul>
 
 <p>Shared Zones were introduced in order to alleviate the administrative burden of Zone Ownership for large organizations.  If you mark a zone as <code class="language-plaintext highlighter-rouge">Shared</code> (via the Manage Zone tab or API), you effectively grant anyone who can login to VinylDNS permissions to manage records in that DNS Zone.  Read this section closely, as it can be a little confusing.</p>
 
