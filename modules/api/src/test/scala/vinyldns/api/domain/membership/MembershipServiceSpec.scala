@@ -548,11 +548,8 @@ class MembershipServiceSpec
         val result: Group = rightResultOf(underTest.getGroup(okGroup.id, okAuth).value)
         result shouldBe okGroup
       }
-      //TODO
       "return an error if not authorized" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-//        val error = leftResultOf(underTest.getGroup(okGroup.id, dummyAuth).value)
-//        error shouldBe a[NotAuthorizedError]
         val result: Group = rightResultOf(underTest.getGroup(okGroup.id, dummyAuth).value)
         result shouldBe okGroup
       }
