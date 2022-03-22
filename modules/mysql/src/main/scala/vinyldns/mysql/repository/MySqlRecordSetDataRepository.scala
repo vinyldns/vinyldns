@@ -475,23 +475,6 @@ class MySqlRecordSetDataRepository
             results
           }
 
-          println(zoneAndNameFilters)
-          println(searchByZone)
-          println(pagingKey)
-          println(sortBy)
-          println(typeFilter)
-          println(ownerGroupFilter)
-          println(opts)
-          println(qualifiers)
-          println(recordLimit)
-          println(finalQualifiers)
-          println(initialQuery)
-          println(appendOpts)
-          println(appendQueries)
-          println(finalQuery)
-          println(results)
-          println(newResults)
-
           // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
 
