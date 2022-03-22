@@ -30,12 +30,22 @@ object NameSort extends Enumeration {
 }
 
 case class ListRecordSetResults(
-    recordSets: List[RecordSet] = List[RecordSet](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None,
-    recordTypeFilter: Option[Set[RecordType]] = None,
-    recordOwnerGroupFilter: Option[String] = None,
-    nameSort: NameSort
-)
+                                 recordSets: List[RecordSet] = List[RecordSet](),
+                                 nextId: Option[String] = None,
+                                 startFrom: Option[String] = None,
+                                 maxItems: Option[Int] = None,
+                                 recordNameFilter: Option[String] = None,
+                                 recordTypeFilter: Option[Set[RecordType]] = None,
+                                 recordOwnerGroupFilter: Option[String] = None,
+                                 nameSort: NameSort
+                               )
+case class ListRecordSetDataResults(
+                                     recordSets: List[RecordSet] = List[RecordSet](),
+                                     nextId: Option[String] = None,
+                                     startFrom: Option[String] = None,
+                                     maxItems: Option[Int] = None,
+                                     recordNameFilter: Option[String] = None,
+                                     recordTypeFilter: Option[Set[RecordType]] = None,
+                                     recordOwnerGroupFilter: Option[String] = None,
+                                     nameSort: NameSort
+                                   )

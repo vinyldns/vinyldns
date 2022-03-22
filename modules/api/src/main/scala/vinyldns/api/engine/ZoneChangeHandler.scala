@@ -46,7 +46,7 @@ object ZoneChangeHandler {
               _ <- recordSetRepository
               .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
               _ <- recordSetDataRepository
-            .deleteRecordSetDatasInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
+            .deleteRecordSetDataInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
             yield ()
           }
             .attempt

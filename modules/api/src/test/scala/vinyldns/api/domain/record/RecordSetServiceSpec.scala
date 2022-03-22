@@ -41,7 +41,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with EitherMatchers
     with Matchers
     with MockitoSugar
@@ -51,6 +51,7 @@ class RecordSetServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
   private val mockRecordRepo = mock[RecordSetRepository]
+  private val mockRecordDataRepo = mock[RecordSetDataRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMessageQueue = mock[MessageQueue]
@@ -72,6 +73,7 @@ class RecordSetServiceSpec
     mockZoneRepo,
     mockGroupRepo,
     mockRecordRepo,
+    mockRecordDataRepo,
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
@@ -88,6 +90,7 @@ class RecordSetServiceSpec
     mockZoneRepo,
     mockGroupRepo,
     mockRecordRepo,
+    mockRecordDataRepo,
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,

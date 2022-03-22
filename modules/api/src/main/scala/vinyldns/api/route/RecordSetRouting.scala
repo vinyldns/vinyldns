@@ -34,33 +34,44 @@ import scala.concurrent.duration._
 case class GetRecordSetResponse(recordSet: RecordSetInfo)
 
 case class ListGlobalRecordSetsResponse(
-    recordSets: List[RecordSetGlobalInfo],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
-    maxItems: Option[Int] = None,
-    recordNameFilter: String,
-    recordTypeFilter: Option[Set[RecordType]] = None,
-    recordOwnerGroupFilter: Option[String] = None,
-    nameSort: NameSort
-)
+                                         recordSets: List[RecordSetGlobalInfo],
+                                         startFrom: Option[String] = None,
+                                         nextId: Option[String] = None,
+                                         maxItems: Option[Int] = None,
+                                         recordNameFilter: String,
+                                         recordTypeFilter: Option[Set[RecordType]] = None,
+                                         recordOwnerGroupFilter: Option[String] = None,
+                                         nameSort: NameSort
+                                       )
+
+case class ListGlobalRecordSetDataResponse(
+                                            recordSets: List[RecordSetDataGlobalInfo],
+                                            startFrom: Option[String] = None,
+                                            nextId: Option[String] = None,
+                                            maxItems: Option[Int] = None,
+                                            recordNameFilter: String,
+                                            recordTypeFilter: Option[Set[RecordType]] = None,
+                                            recordOwnerGroupFilter: Option[String] = None,
+                                            nameSort: NameSort
+                                          )
 
 case class ListRecordSetsByZoneResponse(
-    recordSets: List[RecordSetListInfo],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
-    maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None,
-    recordTypeFilter: Option[Set[RecordType]] = None,
-    recordOwnerGroupFilter: Option[String] = None,
-    nameSort: NameSort
-)
+                                         recordSets: List[RecordSetListInfo],
+                                         startFrom: Option[String] = None,
+                                         nextId: Option[String] = None,
+                                         maxItems: Option[Int] = None,
+                                         recordNameFilter: Option[String] = None,
+                                         recordTypeFilter: Option[Set[RecordType]] = None,
+                                         recordOwnerGroupFilter: Option[String] = None,
+                                         nameSort: NameSort
+                                       )
 
 class RecordSetRoute(
-    recordSetService: RecordSetServiceAlgebra,
-    limitsConfig: LimitsConfig,
-    val vinylDNSAuthenticator: VinylDNSAuthenticator
-) extends VinylDNSJsonProtocol
-    with VinylDNSDirectives[Throwable] {
+                      recordSetService: RecordSetServiceAlgebra,
+                      limitsConfig: LimitsConfig,
+                      val vinylDNSAuthenticator: VinylDNSAuthenticator
+                    ) extends VinylDNSJsonProtocol
+  with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = recordSetRoute
 
@@ -103,12 +114,12 @@ class RecordSetRoute(
           "nameSort".as[String].?("ASC")
         ) {
           (
-              startFrom: Option[String],
-              maxItems: Int,
-              recordNameFilter: Option[String],
-              recordTypeFilter: Option[String],
-              recordOwnerGroupFilter: Option[String],
-              nameSort: String
+            startFrom: Option[String],
+            maxItems: Int,
+            recordNameFilter: Option[String],
+            recordTypeFilter: Option[String],
+            recordOwnerGroupFilter: Option[String],
+            nameSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -137,7 +148,7 @@ class RecordSetRoute(
       }
   } ~
     path("recordsets") {
-      (get & monitor("Endpoint.listRecordSets")) {
+      (get & monitor("Endpoint.listRecordSetData")) {
         parameters(
           "startFrom".?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
@@ -147,12 +158,12 @@ class RecordSetRoute(
           "nameSort".as[String].?("ASC")
         ) {
           (
-              startFrom: Option[String],
-              maxItems: Int,
-              recordNameFilter: String,
-              recordTypeFilter: Option[String],
-              recordOwnerGroupFilter: Option[String],
-              nameSort: String
+            startFrom: Option[String],
+            maxItems: Int,
+            recordNameFilter: String,
+            recordTypeFilter: Option[String],
+            recordOwnerGroupFilter: Option[String],
+            nameSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -162,7 +173,7 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSets(
+                    .listRecordSetData(
                       startFrom,
                       Some(maxItems),
                       recordNameFilter,

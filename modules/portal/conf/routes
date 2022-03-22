@@ -25,6 +25,7 @@ GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCred
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
 GET           /api/recordsets                    @controllers.VinylDNS.listRecordSets
+GET           /api/recordsets                    @controllers.VinylDNS.listRecordSetData
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds

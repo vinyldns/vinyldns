@@ -56,6 +56,8 @@ class RecordSetServiceIntegrationSpec
   private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
   private val recordSetRepo = recordSetRepository
+  private val recordSetDataRepo = recordSetDataRepository
+
   private val zoneRepo: ZoneRepository = zoneRepository
   private val groupRepo: GroupRepository = groupRepository
 
@@ -245,9 +247,9 @@ class RecordSetServiceIntegrationSpec
     clearGroupRepo()
 
     def saveGroupData(
-     groupRepo: GroupRepository,
-     group: Group
-    ): IO[Group] =
+                       groupRepo: GroupRepository,
+                       group: Group
+                     ): IO[Group] =
       executeWithinTransaction { db: DB =>
         groupRepo.save(db, group)
       }
@@ -283,13 +285,14 @@ class RecordSetServiceIntegrationSpec
         zoneRecords.map(makeAddChange(_, zone))
     )
     executeWithinTransaction { db: DB =>
-        recordSetRepo.apply(db, changes)
+      recordSetRepo.apply(db, changes)
     }.unsafeRunSync()
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
       groupRepo,
       recordSetRepo,
+      recordSetDataRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestMessageQueue,

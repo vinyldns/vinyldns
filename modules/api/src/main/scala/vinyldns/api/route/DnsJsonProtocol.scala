@@ -17,14 +17,13 @@
 package vinyldns.api.route
 
 import java.util.UUID
-
 import cats.data._
 import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
-import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
+import vinyldns.api.domain.zone.{RecordSetDataGlobalInfo, RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.Fqdn
@@ -43,6 +42,7 @@ trait DnsJsonProtocol extends JsonValidation {
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
+    RecordSetDataGlobalInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
@@ -83,7 +83,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "updates").optional[RecordSet],
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
-      ).mapN(RecordSetChange.apply)
+        ).mapN(RecordSetChange.apply)
   }
 
   case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
@@ -100,7 +100,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
         (js \ "backendId").optional[String]
-      ).mapN(CreateZoneInput.apply)
+        ).mapN(CreateZoneInput.apply)
   }
 
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
@@ -117,7 +117,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
         (js \ "backendId").optional[String]
-      ).mapN(UpdateZoneInput.apply)
+        ).mapN(UpdateZoneInput.apply)
   }
 
   case object AlgorithmSerializer extends ValidationSerializer[Algorithm] {
@@ -138,7 +138,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "key").required[String]("Missing ZoneConnection.key"),
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
-      ).mapN(ZoneConnection.apply)
+        ).mapN(ZoneConnection.apply)
   }
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
@@ -151,22 +151,22 @@ trait DnsJsonProtocol extends JsonValidation {
   // Adapted from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
   // As noted in comments, might fail in very unusual edge cases
   val ipv6Re =
-    """^(
-      #([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
-      #([0-9a-fA-F]{1,4}:){1,7}:|
-      #([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
-      #([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
-      #([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
-      #([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
-      #([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
-      #[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
-      #:((:[0-9a-fA-F]{1,4}){1,7}|:)|
-      #fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
-      #::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|
-      #(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
-      #([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|
-      #(2[0-4]|1{0,1}[0-9]){0,1}[0-9])
-      #)$""".stripMargin('#').replaceAll("\n", "").r
+  """^(
+    #([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
+    #([0-9a-fA-F]{1,4}:){1,7}:|
+    #([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
+    #([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
+    #([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
+    #([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
+    #([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
+    #[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
+    #:((:[0-9a-fA-F]{1,4}){1,7}|:)|
+    #fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
+    #::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|
+    #(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
+    #([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|
+    #(2[0-4]|1{0,1}[0-9]){0,1}[0-9])
+    #)$""".stripMargin('#').replaceAll("\n", "").r
 
   def ipv4Match(s: String): Boolean = ipv4Re.findFirstIn(s).isDefined
   def ipv6Match(s: String): Boolean = ipv6Re.findFirstIn(s).isDefined
@@ -203,7 +203,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "account").default[String]("system"),
         (js \ "ownerGroupId").optional[String],
         (js \ "fqdn").optional[String]
-      ).mapN(RecordSet.apply)
+        ).mapN(RecordSet.apply)
 
       // Put additional record set level checks below
       recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
@@ -234,7 +234,7 @@ trait DnsJsonProtocol extends JsonValidation {
       (
         RecordSetInfoSerializer.fromJson(js),
         (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId")
-      ).mapN(RecordSetListInfo.apply)
+        ).mapN(RecordSetListInfo.apply)
 
     override def toJson(rs: RecordSetListInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
@@ -281,9 +281,36 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "zoneName").required[String]("Missing Zone.name"),
         (js \ "zoneShared").required[Boolean]("Missing Zone.shared"),
         (js \ "ownerGroupName").optional[String]
-      ).mapN(RecordSetGlobalInfo.apply)
+        ).mapN(RecordSetGlobalInfo.apply)
 
     override def toJson(rs: RecordSetGlobalInfo): JValue =
+      ("type" -> Extraction.decompose(rs.typ)) ~
+        ("zoneId" -> rs.zoneId) ~
+        ("name" -> rs.name) ~
+        ("ttl" -> rs.ttl) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("updated" -> Extraction.decompose(rs.updated)) ~
+        ("records" -> Extraction.decompose(rs.records)) ~
+        ("id" -> rs.id) ~
+        ("account" -> rs.account) ~
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("fqdn" -> rs.fqdn) ~
+        ("zoneName" -> rs.zoneName) ~
+        ("zoneShared" -> rs.zoneShared)
+  }
+
+  case object RecordSetDataGlobalInfoSerializer extends ValidationSerializer[RecordSetDataGlobalInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetDataGlobalInfo] =
+      (
+        RecordSetSerializer.fromJson(js),
+        (js \ "zoneName").required[String]("Missing Zone.name"),
+        (js \ "zoneShared").required[Boolean]("Missing Zone.shared"),
+        (js \ "ownerGroupName").optional[String]
+        ).mapN(RecordSetDataGlobalInfo.apply)
+
+    override def toJson(rs: RecordSetDataGlobalInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
         ("zoneId" -> rs.zoneId) ~
         ("name" -> rs.name) ~
@@ -365,7 +392,7 @@ trait DnsJsonProtocol extends JsonValidation {
             "MX.exchange must be less than 255 characters" -> checkDomainNameLen
           )
           .map(Fqdn.apply)
-      ).mapN(MXData.apply)
+        ).mapN(MXData.apply)
   }
 
   case object NSSerializer extends ValidationSerializer[NSData] {
@@ -431,7 +458,7 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "SOA.minimum must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
           )
-      ).mapN(SOAData.apply)
+        ).mapN(SOAData.apply)
   }
 
   case object SPFSerializer extends ValidationSerializer[SPFData] {
@@ -468,7 +495,7 @@ trait DnsJsonProtocol extends JsonValidation {
             "SRV.target must be less than 255 characters" -> checkDomainNameLen
           )
           .map(Fqdn.apply)
-      ).mapN(SRVData.apply)
+        ).mapN(SRVData.apply)
   }
 
   case object NAPTRSerializer extends ValidationSerializer[NAPTRData] {
@@ -499,14 +526,14 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "NAPTR.regexp must be less than 255 characters" -> checkDomainNameLen
           ),
-        // should also check regex validity
+
         (js \ "replacement")
           .required[String]("Missing NAPTR.replacement")
           .check(
             "NAPTR.replacement must be less than 255 characters" -> checkDomainNameLen
           )
           .map(Fqdn.apply)
-      ).mapN(NAPTRData.apply)
+        ).mapN(NAPTRData.apply)
   }
 
   case object SSHFPSerializer extends ValidationSerializer[SSHFPData] {
@@ -523,7 +550,7 @@ trait DnsJsonProtocol extends JsonValidation {
             "SSHFP.type must be an unsigned 8 bit number" -> (i => i <= 255 && i >= 0)
           ),
         (js \ "fingerprint").required[String]("Missing SSHFP.fingerprint")
-      ).mapN(SSHFPData.apply)
+        ).mapN(SSHFPData.apply)
 
     // necessary because type != typ
     override def toJson(rr: SSHFPData): JValue =
@@ -561,7 +588,7 @@ trait DnsJsonProtocol extends JsonValidation {
             case Some(v) => v.validNel
             case None => "Could not convert digest to valid hex".invalidNel
           }
-      ).mapN(DSData.apply)
+        ).mapN(DSData.apply)
 
     override def toJson(rr: DSData): JValue =
       ("keytag" -> Extraction.decompose(rr.keyTag)) ~

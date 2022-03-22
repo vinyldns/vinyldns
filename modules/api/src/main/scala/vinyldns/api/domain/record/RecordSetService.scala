@@ -21,7 +21,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
+import vinyldns.api.route.{ListGlobalRecordSetDataResponse, ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
@@ -40,18 +40,19 @@ import scala.util.matching.Regex
 
 object RecordSetService {
   def apply(
-      dataAccessor: ApiDataAccessor,
-      messageQueue: MessageQueue,
-      accessValidation: AccessValidationsAlgebra,
-      backendResolver: BackendResolver,
-      validateRecordLookupAgainstDnsBackend: Boolean,
-      highValueDomainConfig: HighValueDomainConfig,
-      approvedNameServers: List[Regex]
-  ): RecordSetService =
+             dataAccessor: ApiDataAccessor,
+             messageQueue: MessageQueue,
+             accessValidation: AccessValidationsAlgebra,
+             backendResolver: BackendResolver,
+             validateRecordLookupAgainstDnsBackend: Boolean,
+             highValueDomainConfig: HighValueDomainConfig,
+             approvedNameServers: List[Regex]
+           ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
       dataAccessor.recordSetRepository,
+      dataAccessor.recordSetDataRepository,
       dataAccessor.recordChangeRepository,
       dataAccessor.userRepository,
       messageQueue,
@@ -64,18 +65,19 @@ object RecordSetService {
 }
 
 class RecordSetService(
-    zoneRepository: ZoneRepository,
-    groupRepository: GroupRepository,
-    recordSetRepository: RecordSetRepository,
-    recordChangeRepository: RecordChangeRepository,
-    userRepository: UserRepository,
-    messageQueue: MessageQueue,
-    accessValidation: AccessValidationsAlgebra,
-    backendResolver: BackendResolver,
-    validateRecordLookupAgainstDnsBackend: Boolean,
-    highValueDomainConfig: HighValueDomainConfig,
-    approvedNameServers: List[Regex]
-) extends RecordSetServiceAlgebra {
+                        zoneRepository: ZoneRepository,
+                        groupRepository: GroupRepository,
+                        recordSetRepository: RecordSetRepository,
+                        recordSetDataRepository: RecordSetDataRepository,
+                        recordChangeRepository: RecordChangeRepository,
+                        userRepository: UserRepository,
+                        messageQueue: MessageQueue,
+                        accessValidation: AccessValidationsAlgebra,
+                        backendResolver: BackendResolver,
+                        validateRecordLookupAgainstDnsBackend: Boolean,
+                        highValueDomainConfig: HighValueDomainConfig,
+                        approvedNameServers: List[Regex]
+                      ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
   import accessValidation._
@@ -149,10 +151,10 @@ class RecordSetService(
     } yield change
 
   def deleteRecordSet(
-      recordSetId: String,
-      zoneId: String,
-      auth: AuthPrincipal
-  ): Result[ZoneCommandResult] =
+                       recordSetId: String,
+                       zoneId: String,
+                       auth: AuthPrincipal
+                     ): Result[ZoneCommandResult] =
     for {
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId)
@@ -165,19 +167,19 @@ class RecordSetService(
     } yield change
 
   def getRecordSet(
-      recordSetId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo] =
+                    recordSetId: String,
+                    authPrincipal: AuthPrincipal
+                  ): Result[RecordSetInfo] =
     for {
       recordSet <- getRecordSet(recordSetId)
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
   def getRecordSetByZone(
-      recordSetId: String,
-      zoneId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo] =
+                          recordSetId: String,
+                          zoneId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId)
@@ -192,14 +194,14 @@ class RecordSetService(
     } yield RecordSetInfo(recordSet, groupName)
 
   def listRecordSets(
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: String,
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListGlobalRecordSetsResponse] =
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: String,
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupFilter: Option[String],
+                      nameSort: NameSort,
+                      authPrincipal: AuthPrincipal
+                    ): Result[ListGlobalRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
       formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
@@ -230,16 +232,55 @@ class RecordSetService(
       recordSetResults.nameSort
     )
 
+  def listRecordSetData(
+                         startFrom: Option[String],
+                         maxItems: Option[Int],
+                         recordNameFilter: String,
+                         recordTypeFilter: Option[Set[RecordType]],
+                         recordOwnerGroupFilter: Option[String],
+                         nameSort: NameSort,
+                         authPrincipal: AuthPrincipal
+                       ): Result[ListGlobalRecordSetDataResponse] =
+    for {
+      _ <- validRecordNameFilterLength(recordNameFilter).toResult
+      formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
+      recordSetDataResults <- recordSetDataRepository
+        .listRecordSetData(
+          None,
+          startFrom,
+          maxItems,
+          Some(formattedRecordNameFilter),
+          recordTypeFilter,
+          recordOwnerGroupFilter,
+          nameSort
+        )
+        .toResult[ListRecordSetDataResults]
+      rsOwnerGroupIds = recordSetDataResults.recordSets.flatMap(_.ownerGroupId).toSet
+      rsZoneIds = recordSetDataResults.recordSets.map(_.zoneId).toSet
+      rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
+      rsZones <- zoneRepository.getZones(rsZoneIds).toResult[Set[Zone]]
+      setsWithSupplementalInfo = getSupplementalrsDataInfo(recordSetDataResults.recordSets, rsGroups, rsZones)
+    } yield ListGlobalRecordSetDataResponse(
+      setsWithSupplementalInfo,
+      recordSetDataResults.startFrom,
+      recordSetDataResults.nextId,
+      recordSetDataResults.maxItems,
+      recordNameFilter,
+      recordSetDataResults.recordTypeFilter,
+      recordSetDataResults.recordOwnerGroupFilter,
+      recordSetDataResults.nameSort
+    )
+
   def listRecordSetsByZone(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetsByZoneResponse] =
+                            zoneId: String,
+                            startFrom: Option[String],
+                            maxItems: Option[Int],
+                            recordNameFilter: Option[String],
+                            recordTypeFilter: Option[Set[RecordType]],
+                            recordOwnerGroupFilter: Option[String],
+                            nameSort: NameSort,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetsByZoneResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -270,10 +311,10 @@ class RecordSetService(
     )
 
   def getRecordSetChange(
-      zoneId: String,
-      changeId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetChange] =
+                          zoneId: String,
+                          changeId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetChange] =
     for {
       zone <- getZone(zoneId)
       change <- recordChangeRepository
@@ -294,11 +335,11 @@ class RecordSetService(
     } yield change
 
   def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetChangesResponse] =
+                            zoneId: String,
+                            startFrom: Option[String] = None,
+                            maxItems: Int = 100,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetChangesResponse] =
     for {
       zone <- getZone(zoneId)
       _ <- canSeeZone(authPrincipal, zone).toResult
@@ -340,8 +381,8 @@ class RecordSetService(
       .toResult
 
   def buildRecordSetChangeInfo(
-      changes: List[RecordSetChange]
-  ): Result[List[RecordSetChangeInfo]] = {
+                                changes: List[RecordSetChange]
+                              ): Result[List[RecordSetChangeInfo]] = {
     val userIds = changes.map(_.userId).toSet
     for {
       users <- userRepository.getUsers(userIds, None, None).map(_.users).toResult[Seq[User]]
@@ -360,10 +401,10 @@ class RecordSetService(
     }
 
   def getSupplementalInfo(
-      recordsets: List[RecordSet],
-      groups: Set[Group],
-      zones: Set[Zone]
-  ): List[RecordSetGlobalInfo] =
+                           recordsets: List[RecordSet],
+                           groups: Set[Group],
+                           zones: Set[Zone]
+                         ): List[RecordSetGlobalInfo] =
     recordsets.map { rs =>
       val ownerGroupName =
         rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
@@ -372,6 +413,20 @@ class RecordSetService(
         case None => ("Unknown zone name", false)
       }
       RecordSetGlobalInfo(rs, zoneName, zoneShared, ownerGroupName)
+    }
+  def getSupplementalrsDataInfo(
+                                 recordsets: List[RecordSet],
+                                 groups: Set[Group],
+                                 zones: Set[Zone]
+                               ): List[RecordSetDataGlobalInfo] =
+    recordsets.map { rs =>
+      val ownerGroupName =
+        rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
+      val (zoneName, zoneShared) = zones.find(_.id == rs.zoneId) match {
+        case Some(zone) => (zone.name, zone.shared)
+        case None => ("Unknown zone name", false)
+      }
+      RecordSetDataGlobalInfo(rs, zoneName, zoneShared, ownerGroupName)
     }
 
   def getGroupName(groupId: Option[String]): Result[Option[String]] = {
@@ -391,14 +446,14 @@ class RecordSetService(
   }
 
   def recordSetDoesNotExist(
-      backendConnection: Zone => Backend,
-      zone: Zone,
-      recordSet: RecordSet,
-      validateRecordLookupAgainstDnsBackend: Boolean
-  ): Result[Unit] =
+                             backendConnection: Zone => Backend,
+                             zone: Zone,
+                             recordSet: RecordSet,
+                             validateRecordLookupAgainstDnsBackend: Boolean
+                           ): Result[Unit] =
     recordSetDoesNotExistInDatabase(recordSet, zone).value.flatMap {
       case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
-          if validateRecordLookupAgainstDnsBackend =>
+        if validateRecordLookupAgainstDnsBackend =>
         backendConnection(zone)
           .resolve(recordSet.name, zone.name, recordSet.typ)
           .attempt
@@ -412,16 +467,16 @@ class RecordSetService(
     }.toResult
 
   def isUniqueUpdate(
-      backendConnection: Zone => Backend,
-      newRecordSet: RecordSet,
-      existingRecordsWithName: List[RecordSet],
-      zone: Zone,
-      validateRecordLookupAgainstDnsBackend: Boolean
-  ): Result[Unit] =
+                      backendConnection: Zone => Backend,
+                      newRecordSet: RecordSet,
+                      existingRecordsWithName: List[RecordSet],
+                      zone: Zone,
+                      validateRecordLookupAgainstDnsBackend: Boolean
+                    ): Result[Unit] =
     RecordSetValidations
       .recordSetDoesNotExist(newRecordSet, existingRecordsWithName, zone) match {
       case Left(recordSetAlreadyExists: RecordSetAlreadyExists)
-          if validateRecordLookupAgainstDnsBackend =>
+        if validateRecordLookupAgainstDnsBackend =>
         backendConnection(zone)
           .resolve(newRecordSet.name, zone.name, newRecordSet.typ)
           .attempt

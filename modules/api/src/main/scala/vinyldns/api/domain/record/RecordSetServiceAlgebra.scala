@@ -20,7 +20,7 @@ import vinyldns.api.Interfaces.Result
 import vinyldns.api.domain.zone.RecordSetInfo
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneCommandResult
-import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
+import vinyldns.api.route.{ListGlobalRecordSetDataResponse, ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -31,54 +31,64 @@ trait RecordSetServiceAlgebra {
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteRecordSet(
-      recordSetId: String,
-      zoneId: String,
-      auth: AuthPrincipal
-  ): Result[ZoneCommandResult]
+                       recordSetId: String,
+                       zoneId: String,
+                       auth: AuthPrincipal
+                     ): Result[ZoneCommandResult]
 
   def getRecordSet(
-      recordSetId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo]
+                    recordSetId: String,
+                    authPrincipal: AuthPrincipal
+                  ): Result[RecordSetInfo]
 
   def getRecordSetByZone(
-      recordSetId: String,
-      zoneId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo]
+                          recordSetId: String,
+                          zoneId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetInfo]
 
   def listRecordSets(
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: String,
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupId: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListGlobalRecordSetsResponse]
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: String,
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupId: Option[String],
+                      nameSort: NameSort,
+                      authPrincipal: AuthPrincipal
+                    ): Result[ListGlobalRecordSetsResponse]
+
+  def listRecordSetData(
+                         startFrom: Option[String],
+                         maxItems: Option[Int],
+                         recordNameFilter: String,
+                         recordTypeFilter: Option[Set[RecordType]],
+                         recordOwnerGroupId: Option[String],
+                         nameSort: NameSort,
+                         authPrincipal: AuthPrincipal
+                       ): Result[ListGlobalRecordSetDataResponse]
 
   def listRecordSetsByZone(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupId: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetsByZoneResponse]
+                            zoneId: String,
+                            startFrom: Option[String],
+                            maxItems: Option[Int],
+                            recordNameFilter: Option[String],
+                            recordTypeFilter: Option[Set[RecordType]],
+                            recordOwnerGroupId: Option[String],
+                            nameSort: NameSort,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetsByZoneResponse]
 
   def getRecordSetChange(
-      zoneId: String,
-      changeId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetChange]
+                          zoneId: String,
+                          changeId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetChange]
 
   def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Int,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetChangesResponse]
+                            zoneId: String,
+                            startFrom: Option[String],
+                            maxItems: Int,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetChangesResponse]
 
 }

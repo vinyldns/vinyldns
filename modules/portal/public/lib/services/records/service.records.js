@@ -19,7 +19,7 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSets = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
+        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
             if (typeFilter == "") {
                 typeFilter = null;
             }

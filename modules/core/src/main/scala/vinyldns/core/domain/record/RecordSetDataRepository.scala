@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import cats.effect._
 import scalikejdbc.DB
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
@@ -25,14 +26,28 @@ trait RecordSetDataRepository extends Repository {
 
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
 
-  def deleteRecordSetDatasInZone(db: DB, zoneId: String, zoneName: String): IO[Unit]
+  def deleteRecordSetDataInZone(db: DB, zoneId: String, zoneName: String): IO[Unit]
 
-  def getRecordSetDataList(zoneId: String , typ :RecordType): IO[List[RecordSet]]
+  def getRecordSetDataList(zoneId: String , name: String, typ :RecordType): IO[List[RecordSet]]
 
   def getRecordSetData(recordSetId: String): IO[Option[RecordSet]]
 
-  def getRecordSetDatasByFQDNs(names: Set[String]): IO[List[RecordSet]]
+  def getRecordSetDataByName(zoneId: String, name: String): IO[List[RecordSet]]
+
+  def getRecordSetDataListByFQDNs(names: Set[String]): IO[List[RecordSet]]
 
   def getRecordSetDataCount(zoneId: String): IO[Int]
+
+  def getFirstOwnedRecordSetDataByGroup(ownerGroupId: String): IO[Option[String]]
+
+  def listRecordSetData(
+                         zoneId: Option[String],
+                         startFrom: Option[String],
+                         maxItems: Option[Int],
+                         recordNameFilter: Option[String],
+                         recordTypeFilter: Option[Set[RecordType]],
+                         recordOwnerGroupFilter: Option[String],
+                         nameSort: NameSort
+                       ): IO[ListRecordSetDataResults]
 
 }
