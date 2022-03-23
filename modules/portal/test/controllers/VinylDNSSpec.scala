@@ -1599,6 +1599,71 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+
+    ".listRecordSets" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+
+        val underTest = withClient(client)
+        val result =
+          underTest.listRecordSets()(
+            FakeRequest(GET, s"/recordsets")
+          )
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listRecordSets()(
+          FakeRequest(GET, s"recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
+    ".listRecordSetData" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+
+        val underTest = withClient(client)
+        val result =
+          underTest.listRecordSetData()(
+            FakeRequest(GET, s"recordsets")
+          )
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listRecordSetData()(
+          FakeRequest(GET, s"recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
     ".listRecordSetsByZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]

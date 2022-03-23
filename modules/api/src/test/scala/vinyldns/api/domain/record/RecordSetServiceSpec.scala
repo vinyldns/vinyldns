@@ -28,7 +28,7 @@ import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
+import vinyldns.api.route.{ListGlobalRecordSetDataResponse, ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
@@ -1038,6 +1038,79 @@ class RecordSetServiceSpec
       result shouldBe an[InvalidRequest]
     }
   }
+
+  "listRecordSetData" should {
+    "return the recordSetData" in {
+      doReturn(IO.pure(Set(okGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(Set(sharedZone.id))
+
+      doReturn(
+        IO.pure(
+          ListRecordSetDataResults(
+            List(sharedZoneRecord),
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = Some("owner group id")
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          zoneId = any[Option[String]],
+          startFrom = any[Option[String]],
+          maxItems = any[Option[Int]],
+          recordNameFilter = any[Option[String]],
+          recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          recordOwnerGroupFilter = any[Option[String]],
+          nameSort = any[NameSort.NameSort]
+        )
+
+      val result: ListGlobalRecordSetDataResponse = rightResultOf(
+        underTest
+          .listRecordSetData(
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = "aaaa*",
+            recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
+            nameSort = NameSort.ASC,
+            authPrincipal = sharedAuth
+          )
+          .value
+      )
+      result.recordSets shouldBe
+        List(
+          RecordSetDataGlobalInfo(
+            sharedZoneRecord,
+            sharedZone.name,
+            sharedZone.shared,
+            Some(okGroup.name)
+          )
+        )
+    }
+
+    "fail recordSetData if recordNameFilter is fewer than two characters" in {
+      val result = leftResultOf(
+        underTest
+          .listRecordSetData(
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = "a",
+            recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
+            nameSort = NameSort.ASC,
+            authPrincipal = okAuth
+          )
+          .value
+      )
+      result shouldBe an[InvalidRequest]
+    }
+  }
+
 
   "listRecordSetsByZone" should {
     "return the recordSets" in {
