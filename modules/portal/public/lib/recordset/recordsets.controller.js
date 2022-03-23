@@ -85,11 +85,6 @@
                     newRecords.push(recordsService.toDisplayRecord(record, ''));
                 });
                 $scope.records = newRecords;
-                $("#loader").modal({
-                 backdrop: "static", //remove ability to close modal with click
-                 keyboard: false, //remove option to close with keyboard
-                 show: true //Display loader!
-                 });
                 if($scope.records.length > 0) {
                   $("#ShowNoRec").modal("hide");
                   $("#loader").modal("hide");
@@ -98,6 +93,9 @@
                     $("#loader").modal("hide");
                     $("td.dataTables_empty").show();
                     $("#ShowNoRec").modal("show");
+                    setTimeout(function(){
+                    $("#ShowNoRec").modal("hide");
+                    }, 5000);
                 }
             };
 
