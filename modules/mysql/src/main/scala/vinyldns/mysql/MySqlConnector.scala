@@ -66,7 +66,7 @@ object MySqlConnector {
 
   def getDataSource(settings: MySqlDataSourceSettings): IO[HikariDataSource] = IO {
 
-    logger.error(s"Initializing data source with settings: $settings")
+    logger.info(s"Initializing data source with settings: $settings")
 
     val dsConfig = new HikariConfig()
 

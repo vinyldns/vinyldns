@@ -83,7 +83,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val dbConnectionSettings = MySqlDataSourceSettings(config, "mysqlDbPool")
 
     getDataSource(dbConnectionSettings).map { dataSource =>
-      logger.error("configuring connection pool")
+      logger.info("configuring connection pool")
 
       // pulled out of DBs.setupAll since we're no longer using the db. structure for config
       DBs.loadGlobalSettings()
@@ -93,7 +93,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
         new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
       )
 
-      logger.error("database init complete")
+      logger.info("database init complete")
     }
   }
 

@@ -21,4 +21,8 @@
     <root level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </root>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
 </configuration>
