@@ -237,7 +237,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
           logger.info(s"Received TRY_AGAIN from DNS lookup; converting error: ${query.error}")
           fromDnsRcodeToError(DNS.Rcode.value(query.error), query.error)
         } else {
-          logger.info(s"Unparseable error code returned from DNS: ${query.error}")
+          logger.warn(s"Unparseable error code returned from DNS: ${query.error}")
           Left(TryAgain(query.error))
         }
 

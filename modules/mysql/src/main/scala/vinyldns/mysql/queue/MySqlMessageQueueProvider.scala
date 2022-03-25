@@ -52,7 +52,7 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
     val queueConnectionSettings = MySqlDataSourceSettings(config, "mysqlQueuePool")
 
     getDataSource(queueConnectionSettings).map { dataSource =>
-      logger.info("configuring connection pool for queue")
+      logger.info("Configuring connection pool for queue")
 
       // note this is being called 2x in the case you use the mysql datastores and
       // loader. That should be ok
@@ -64,7 +64,7 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
         new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
       )
 
-      logger.info("queue connection pool init complete")
+      logger.info("Queue connection pool init complete")
     }
   }
 

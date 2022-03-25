@@ -60,7 +60,7 @@ object MySqlConnector {
 
         // Runs flyway migrations
         migration.load().migrate()
-        logger.info("migrations complete")
+        logger.info("Migrations complete")
       }
     }
 
@@ -96,7 +96,7 @@ object MySqlConnector {
           result match {
             case Success(t) => Some(t)
             case Failure(e) =>
-              logger.warn("failed to startup database connection, retrying..")
+              logger.warn("Failed to startup database connection, retrying..")
               // Hard abort if we exhaust retries
               if (currentIndex >= times - 1) {
                 throw e
