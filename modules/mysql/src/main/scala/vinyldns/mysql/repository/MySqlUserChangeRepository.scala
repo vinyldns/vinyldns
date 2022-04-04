@@ -48,7 +48,7 @@ class MySqlUserChangeRepository
 
   def get(changeId: String): IO[Option[UserChange]] =
     monitor("repo.UserChange.get") {
-      logger.info(s"Getting user change with id: $changeId")
+      logger.debug(s"Getting user change with id: $changeId")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_CHANGE_BY_ID
@@ -62,7 +62,7 @@ class MySqlUserChangeRepository
 
   def save(change: UserChange): IO[UserChange] =
     monitor("repo.UserChange.save") {
-      logger.info(s"Saving user change: $change")
+      logger.debug(s"Saving user change: $change")
       IO {
         DB.localTx { implicit s =>
           PUT_USER_CHANGE

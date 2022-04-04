@@ -27,7 +27,7 @@ object BackendLoader {
   def load(configs: List[BackendProviderConfig]): IO[List[BackendProvider]] = {
     def loadOne(config: BackendProviderConfig): IO[BackendProvider] =
       for {
-        _ <- IO(logger.error(s"Attempting to load backend ${config.className}"))
+        _ <- IO(logger.info(s"Attempting to load backend ${config.className}"))
         provider <- IO(
           Class
             .forName(config.className)

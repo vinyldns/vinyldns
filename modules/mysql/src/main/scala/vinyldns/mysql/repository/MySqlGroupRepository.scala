@@ -72,7 +72,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def save(db: DB, group: Group): IO[Group] =
     monitor("repo.Group.save") {
       IO {
-        logger.info(s"Saving group with (id, name): (${group.id}, ${group.name})")
+        logger.debug(s"Saving group with (id, name): (${group.id}, ${group.name})")
         db.withinTx { implicit s =>
           PUT_GROUP
             .bindByName(
@@ -94,7 +94,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def delete(group: Group): IO[Group] =
     monitor("repo.Group.delete") {
       IO {
-        logger.info(s"Deleting group with (id, name): (${group.id}, ${group.name})")
+        logger.debug(s"Deleting group with (id, name): (${group.id}, ${group.name})")
         DB.localTx { implicit s =>
           DELETE_GROUP
             .bind(group.id)
@@ -109,7 +109,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def getGroup(groupId: String): IO[Option[Group]] =
     monitor("repo.Group.getGroup") {
       IO {
-        logger.info(s"Getting group with id: $groupId")
+        logger.debug(s"Getting group with id: $groupId")
         DB.readOnly { implicit s =>
           GET_GROUP_BY_ID
             .bind(groupId)
@@ -123,7 +123,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def getGroups(groupIds: Set[String]): IO[Set[Group]] =
     monitor("repo.Group.getGroups") {
       IO {
-        logger.info(s"Getting group with ids: $groupIds")
+        logger.debug(s"Getting group with ids: $groupIds")
         if (groupIds.isEmpty)
           Set[Group]()
         else {
@@ -144,7 +144,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def getGroupByName(groupName: String): IO[Option[Group]] =
     monitor("repo.Group.getGroupByName") {
       IO {
-        logger.info(s"Getting group with name: $groupName")
+        logger.debug(s"Getting group with name: $groupName")
         DB.readOnly { implicit s =>
           GET_GROUP_BY_NAME
             .bind(groupName)
@@ -158,7 +158,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
   def getAllGroups(): IO[Set[Group]] =
     monitor("repo.Group.getAllGroups") {
       IO {
-        logger.info(s"Getting all groups")
+        logger.debug(s"Getting all groups")
         DB.readOnly { implicit s =>
           GET_ALL_GROUPS
             .map(toGroup(1))
