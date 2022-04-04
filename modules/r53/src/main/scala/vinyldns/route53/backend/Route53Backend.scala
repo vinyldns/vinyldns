@@ -140,7 +140,7 @@ class Route53Backend(
         typ: RecordSetChangeType,
         rs: ResourceRecordSet
     ): ChangeResourceRecordSetsRequest = {
-      logger.debug(s"applying change to zone, record set is $rs")
+      logger.debug(s"Applying change to zone, record set is $rs")
       new ChangeResourceRecordSetsRequest().withChangeBatch(
         new ChangeBatch().withChanges(
           new Change().withAction(changeAction(typ)).withResourceRecordSet(rs)
@@ -170,7 +170,7 @@ class Route53Backend(
         changeRequest(change.changeType, r53RecordSet).withHostedZoneId(hostedZoneId),
         client.changeResourceRecordSetsAsync
       ).map { response =>
-        logger.debug(s"applied record change $change, change result is ${response.getChangeInfo}")
+        logger.debug(s"Applied record change $change, change result is ${response.getChangeInfo}")
         BackendResponse.NoError(response.toString)
       }
     } yield result

@@ -83,7 +83,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val dbConnectionSettings = MySqlDataSourceSettings(config, "mysqlDbPool")
 
     getDataSource(dbConnectionSettings).map { dataSource =>
-      logger.error("configuring connection pool")
+      logger.info("Configuring connection pool")
 
       // pulled out of DBs.setupAll since we're no longer using the db. structure for config
       DBs.loadGlobalSettings()
@@ -93,13 +93,13 @@ class MySqlDataStoreProvider extends DataStoreProvider {
         new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
       )
 
-      logger.error("database init complete")
+      logger.info("Database init complete")
     }
   }
 
   private def shutdown(): IO[Unit] =
     IO(DBs.close())
-      .handleError(e => logger.error(s"exception occurred while shutting down", e))
+      .handleError(e => logger.error(s"Exception occurred while shutting down", e))
 
   private final val HEALTH_CHECK =
     sql"""

@@ -83,7 +83,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
             // Diff is used to check if the users we are trying to add in the group is already present.
             // If they don't exist in the group, we save the users.
             val saveMembers = nonEmpty.diff(existingMembers)
-            logger.info(s"Saving into group $groupId members $nonEmpty")
+            logger.debug(s"Saving into group $groupId members $nonEmpty")
 
             db.withinTx { implicit s =>
               SAVE_MEMBERS.batchByName(saveParams(saveMembers, groupId, isAdmin): _*).apply()
@@ -100,7 +100,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
       case nonEmpty =>
         monitor("repo.Membership.removeMembers") {
           IO {
-            logger.info(s"Removing from group $groupId members $nonEmpty")
+            logger.debug(s"Removing from group $groupId members $nonEmpty")
             db.withinTx { implicit s =>
               val inClause = " AND user_id IN (" + nonEmpty.as("?").mkString(",") + ")"
               val query = BASE_REMOVE_MEMBERS + inClause
@@ -118,7 +118,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
   def getExistingMembers(groupId: String): Set[String] =
     monitor("repo.Membership.getExistingUsers") {
       IO {
-        logger.info(s"Getting existing users")
+        logger.debug(s"Getting existing users")
         DB.readOnly { implicit s =>
           SQL(GET_EXISTING_USERS)
             .bind(groupId)
@@ -133,7 +133,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
   def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {
       IO {
-        logger.info(s"Getting groups for user $userId")
+        logger.debug(s"Getting groups for user $userId")
         DB.readOnly { implicit s =>
           GET_GROUPS_FOR_USER
             .bind(userId)
@@ -147,7 +147,7 @@ class MySqlMembershipRepository extends MembershipRepository with Monitored {
 
   def getUsersForGroup(groupId: String, isAdmin: Option[Boolean]): IO[Set[String]] =
     IO {
-      logger.info(s"Getting users for group $groupId")
+      logger.debug(s"Getting users for group $groupId")
       DB.readOnly { implicit s =>
         val baseConditions = Seq('groupId -> groupId)
 

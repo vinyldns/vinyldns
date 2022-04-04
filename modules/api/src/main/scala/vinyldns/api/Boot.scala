@@ -219,10 +219,10 @@ object Boot extends App {
         ()
       }
 
-      logger.error(
+      logger.info(
         s"STARTING VINYLDNS SERVER ON ${vinyldnsConfig.httpConfig.host}:${vinyldnsConfig.httpConfig.port}"
       )
-      logger.error(banner)
+      logger.info(banner)
 
       // Starts up our http server
       implicit val actorSystem: ActorSystem = system
@@ -237,7 +237,7 @@ object Boot extends App {
   // runApp gives us a Task, we actually have to run it!  Running it will yield a Future, which is our app!
   runApp().unsafeRunAsync {
     case Right(_) =>
-      logger.error("VINYLDNS SERVER STARTED SUCCESSFULLY!!")
+      logger.info("VINYLDNS SERVER STARTED SUCCESSFULLY!!")
     case Left(startupFailure) =>
       logger.error(s"VINYLDNS SERVER UNABLE TO START $startupFailure")
       startupFailure.printStackTrace()

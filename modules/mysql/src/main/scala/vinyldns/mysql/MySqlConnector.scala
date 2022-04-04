@@ -60,13 +60,13 @@ object MySqlConnector {
 
         // Runs flyway migrations
         migration.load().migrate()
-        logger.info("migrations complete")
+        logger.info("Migrations complete")
       }
     }
 
   def getDataSource(settings: MySqlDataSourceSettings): IO[HikariDataSource] = IO {
 
-    logger.error(s"Initializing data source with settings: $settings")
+    logger.info(s"Initializing data source with settings: $settings")
 
     val dsConfig = new HikariConfig()
 
@@ -96,7 +96,7 @@ object MySqlConnector {
           result match {
             case Success(t) => Some(t)
             case Failure(e) =>
-              logger.warn("failed to startup database connection, retrying..")
+              logger.warn("Failed to startup database connection, retrying..")
               // Hard abort if we exhaust retries
               if (currentIndex >= times - 1) {
                 throw e
