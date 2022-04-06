@@ -55,6 +55,7 @@ class MySqlConnectionConfigSpec extends AnyWordSpec with Matchers {
           |    url = "url"
           |    user = "some-user"
           |    password = "some-pass"
+          |    flyway-out-of-order = false
           |  }
           |  """.stripMargin)
 
