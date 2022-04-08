@@ -1,8 +1,9 @@
 <configuration>
     <!-- Test configuration, log to console so we can get the docker logs -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%d [test] %-5p | \(%logger{4}:%line\) | %msg %n %nopexception </pattern>
+        <encoder class="co.elastic.logging.logback.EcsEncoder">
+            <serviceName>vinyldns-core</serviceName>
+            <serviceNodeName>vinyldns-core</serviceNodeName>
         </encoder>
     </appender>
 

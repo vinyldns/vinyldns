@@ -64,7 +64,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
   def save(db: DB, groupChange: GroupChange): IO[GroupChange] =
     monitor("repo.GroupChange.save") {
       IO {
-        logger.info(
+        logger.debug(
           s"Saving group change with (group_change_id, group_id): " +
             s"(${groupChange.id}, ${groupChange.newGroup.id})"
         )
@@ -87,7 +87,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
   def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] =
     monitor("repo.GroupChange.getGroupChange") {
       IO {
-        logger.info(s"Getting group change with group_change_id: $groupChangeId")
+        logger.debug(s"Getting group change with group_change_id: $groupChangeId")
         DB.readOnly { implicit s =>
           GET_GROUP_CHANGE
             .bind(groupChangeId)
@@ -105,7 +105,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
   ): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
       IO {
-        logger.info(
+        logger.debug(
           s"Getting group changes with (groupId, startFrom, maxItems): ($groupId, $startFrom, $maxItems)"
         )
         DB.readOnly { implicit s =>
