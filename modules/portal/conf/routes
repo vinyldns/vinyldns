@@ -24,7 +24,6 @@ POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
-GET           /api/recordsets                    @controllers.VinylDNS.listRecordSets
 GET           /api/recordsets                    @controllers.VinylDNS.listRecordSetData
 
 GET           /api/zones                         @controllers.VinylDNS.getZones

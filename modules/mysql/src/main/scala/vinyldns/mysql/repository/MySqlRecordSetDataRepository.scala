@@ -36,7 +36,7 @@ class MySqlRecordSetDataRepository
     with ProtobufConversions {
 
   private val INSERT_RECORDSETDATA =
-    sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, zone_name, fqdn,  reverse_fqdn, type, record_data, ip, owner_group_id, data) VALUES ({recordset_id}, {zone_id}, {zone_name}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, {ip}, {owner_group_id}, {data})"
+    sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, record_name, fqdn,  reverse_fqdn, type, record_data, ip, owner_group_id, data) VALUES ({recordset_id}, {zone_id}, {record_name}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, {ip}, {owner_group_id}, {data})"
 
   private val DELETE_RECORDSETDATA =
     sql"DELETE FROM recordset_data WHERE recordset_id = ?"
@@ -62,14 +62,14 @@ class MySqlRecordSetDataRepository
     sql"""
          |SELECT data, fqdn
          |  FROM recordset_data
-         | WHERE zone_id = {zone_id} AND zone_name = {zone_name} AND type = {type}
+         | WHERE zone_id = {zone_id} AND record_name = {record_name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
          |SELECT data, fqdn
          |  FROM recordset_data
-         | WHERE zone_id = {zone_id} AND zone_name = {zone_name}
+         | WHERE zone_id = {zone_id} AND record_name = {record_name}
     """.stripMargin
 
 
@@ -199,7 +199,7 @@ class MySqlRecordSetDataRepository
               recordData: String,
               recordType: String,
               zoneId: String,
-              zoneName: String,
+              recordName: String,
               FQDN: String,
               reverseFQDN: String,
               ownerGroupId: Option[String],
@@ -208,9 +208,12 @@ class MySqlRecordSetDataRepository
             ): Unit =
     rs match {
       /**
-        * insert the rsdata first, as if recordset are created
+        * insert the rsdata, as if recordset are created
         */
-      case "insert" => rsDataSave(db, recordID, recordData, recordType, zoneId, zoneName, FQDN, reverseFQDN, ownerGroupId, data)
+      case "insert" => rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId, data)
+      /**
+        * delete and insert the rsdata,  as if recordset are updated.
+        */
       case "update" =>
         db.withinTx { implicit session =>
           DELETE_RECORDSETDATA
@@ -218,7 +221,7 @@ class MySqlRecordSetDataRepository
             .update()
             .apply()
         }
-        rsDataSave(db, recordID, recordData, recordType, zoneId, zoneName, FQDN, reverseFQDN, ownerGroupId, data)
+        rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId, data)
     }
 
   def rsDataSave(
@@ -227,7 +230,7 @@ class MySqlRecordSetDataRepository
                   recordData: String,
                   recordType: String,
                   zoneId: String,
-                  zoneName: String,
+                  recordName: String,
                   FQDN: String,
                   reverseFQDN: String,
                   ownerGroupId: Option[String],
@@ -235,16 +238,16 @@ class MySqlRecordSetDataRepository
                 ): Unit = {
     recordType match {
       case "DS" => for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
-        insertRecordSetData(db, recordId, zoneId, zoneName, FQDN, reverseFQDN, recordType, ipString, ownerGroupId, data)}
+        insertRecordSetData(db, recordId, zoneId, recordName, FQDN, reverseFQDN, recordType, ipString, ownerGroupId, data)}
       case _ => for (ipString <- recordData.split(",").map(_.trim).toList) {
-        insertRecordSetData(db,recordId,zoneId,zoneName,FQDN,reverseFQDN,recordType,ipString,ownerGroupId,data)}
+        insertRecordSetData(db,recordId,zoneId,recordName,FQDN,reverseFQDN,recordType,ipString,ownerGroupId,data)}
     }}
 
   def insertRecordSetData(
                            db: DB,
                            recordId: String,
                            zoneId: String,
-                           zoneName: String,
+                           recordName: String,
                            FQDN: String,
                            reverseFQDN: String,
                            recordType: String,
@@ -260,7 +263,7 @@ class MySqlRecordSetDataRepository
     records = extractRecordSetDataString(records, recordType)
 
     /**
-      * insert the rsdata first, as if recordset are created/updated
+      * insert the rsdata, as if recordset are created
       */
 
     db.withinTx { implicit session =>
@@ -268,7 +271,7 @@ class MySqlRecordSetDataRepository
         .bindByName(
           'recordset_id -> recordId,
           'zone_id -> zoneId,
-          'zone_name -> zoneName,
+          'record_name -> recordName,
           'fqdn -> FQDN,
           'reverse_fqdn -> reverseFQDN,
           'type -> recordType,
@@ -281,14 +284,21 @@ class MySqlRecordSetDataRepository
         .apply()
     }}
 
-  def getRecordSetDataList(zoneId: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] =
+  def getRecordSetDataList(zoneId: String, recordName: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataList") {
+
+      /**
+        * get recordset by zone id, record name and record type from recordset_data table.
+        * @params zone ID , record name and record type.
+        * @return data, fqdn from recordset_data table.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME_TYPE
             .bindByName(
               'zone_id -> zoneId,
-              'zone_name -> zoneName,
+              'record_name -> recordName,
               'type -> typ.toString )
             .map(toRecordSetData)
             .list()
@@ -300,6 +310,11 @@ class MySqlRecordSetDataRepository
   // Note: In MySql we do not need the zone id, since can hit the key directly
   def getRecordSetData(recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetData") {
+
+      /**
+        * @return this returns the record data from the recordset_data table by record ID.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ID.bindByName('recordset_id -> recordSetId).map(toRecordSetData).single().apply()
@@ -309,6 +324,11 @@ class MySqlRecordSetDataRepository
 
   def getRecordSetDataByIP(recordSetIP: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetData") {
+
+      /**
+        * @return this returns the list of record data from the recordset_data table by IP Address.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_IP.bindByName('ip -> recordSetIP).map(toRecordSetData).single().apply()
@@ -316,12 +336,17 @@ class MySqlRecordSetDataRepository
       }
     }
 
-  def getRecordSetDataByName(zoneId: String, zoneName: String): IO[List[RecordSet]] =
+  def getRecordSetDataByName(zoneId: String, recordName: String): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataByName") {
+
+      /**
+        * @return this returns the list of record data from the recordset_data table by Record Name.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME
-            .bindByName('zone_id -> zoneId, 'zone_name -> zoneName)
+            .bindByName('zone_id -> zoneId, 'record_name -> recordName)
             .map(toRecordSetData)
             .list()
             .apply()
@@ -331,6 +356,11 @@ class MySqlRecordSetDataRepository
 
   def getRecordSetDataListByFQDNs(names: Set[String]): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataListByFQDNs") {
+
+      /**
+        * @return this returns the list of record data from the recordset_data table by FQDNS.
+        */
+
       IO {
         if (names.isEmpty)
           List[RecordSet]()
@@ -351,6 +381,11 @@ class MySqlRecordSetDataRepository
 
   def getRecordSetDataCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetDataCount") {
+
+      /**
+        * @return this returns count of record data from the recordset_data table based on zone id.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           // this is a count query, so should always return a value.  However, scalikejdbc doesn't have this,
@@ -367,6 +402,11 @@ class MySqlRecordSetDataRepository
 
   def getFirstOwnedRecordSetDataByGroup(ownerGroupId: String): IO[Option[String]] =
     monitor("repo.RecordSet.getFirstOwnedRecordSetDataByGroup") {
+
+      /**
+        * @return this returns recordset_id from the recordset_data table by owner id.
+        */
+
       IO {
         DB.readOnly { implicit s =>
           GET_RECORDSETDATA_BY_OWNERID
@@ -388,6 +428,12 @@ class MySqlRecordSetDataRepository
                          nameSort: NameSort
                        ): IO[ListRecordSetDataResults] =
     monitor("repo.RecordSet.listRecordSetData") {
+
+      /**
+        * list the records from the recordset_data table
+        * @return this returns data and fqdn from the recordset_data table
+        */
+
       IO {
         DB.readOnly { implicit s =>
           val maxPlusOne = maxItems.map(_ + 1)
@@ -395,8 +441,7 @@ class MySqlRecordSetDataRepository
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND zone_name LIKE ${rName.replace('*', '%')} ")
-            //case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+              Some(sqls"zone_id = $zId AND record_name LIKE ${rName.replace('*', '%')} ")
             case (None, Some(fqdn)) =>  val reversefqdn = fqdn.reverse // reverse the fqdn.
               Some(sqls"reverse_fqdn LIKE ${reversefqdn.replace('*', '%')} ")
             case (Some(zId), None) => Some(sqls"zone_id = $zId ")
@@ -410,7 +455,7 @@ class MySqlRecordSetDataRepository
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                sqls"((zone_name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR zone_name < ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((record_name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR record_name < ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
@@ -422,7 +467,7 @@ class MySqlRecordSetDataRepository
               )
             case _ =>
               pagingKey.as(
-                sqls"((zone_name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR zone_name > ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((record_name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR record_name > ${pagingKey.map(pk => pk.recordName)})"
               )
           }
 
@@ -499,6 +544,14 @@ class MySqlRecordSetDataRepository
                ipString: String,
                recordType: String
              ): String = {
+
+    /**
+      * parseIP address from record data.
+      * @params ipstring is the record data from the record set.
+      * @params recordType is the type of record (eg A, AAAA, CNAME, etc) from the record set
+      * @return IP address
+      */
+
     var ipAddress: String = null
     val IPADDRESS_IPV4_PATTERN = {
       "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b"
