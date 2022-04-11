@@ -89,11 +89,10 @@ class MembershipValidationsSpec
         val supportAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, supportAuth) should be(right)
       }
-      "return an error when the user has no access and is not super" in {
+      "return true even when a user is not a member of the group or super" in {
         val user = User("some", "new", "user")
         val nonSuperAuth = AuthPrincipal(user, Seq())
-        val error = leftValue(canSeeGroup(okGroup.id, nonSuperAuth))
-        error shouldBe an[NotAuthorizedError]
+        canSeeGroup(okGroup.id, nonSuperAuth) should be(right)
       }
 
     }

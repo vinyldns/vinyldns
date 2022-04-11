@@ -523,7 +523,7 @@ def test_list_group_members_next_id_exhausted_two_pages(shared_zone_test_context
 
 def test_list_group_members_unauthed(shared_zone_test_context):
     """
-    Tests that we cant list members without access
+    Tests that non-group members can still list group members
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
@@ -537,7 +537,7 @@ def test_list_group_members_unauthed(shared_zone_test_context):
         }
         saved_group = client.create_group(new_group, status=200)
 
-        dummy_client.list_members_group(saved_group["id"], status=403)
+        dummy_client.list_members_group(saved_group["id"], status=200)
         client.list_members_group(saved_group["id"], status=200)
     finally:
         if saved_group:

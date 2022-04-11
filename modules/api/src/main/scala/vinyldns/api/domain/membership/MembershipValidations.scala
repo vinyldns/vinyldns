@@ -23,6 +23,8 @@ import vinyldns.core.domain.membership.Group
 
 object MembershipValidations {
 
+  private val canViewGroupDetails = true
+
   def hasMembersAndAdmins(group: Group): Either[Throwable, Unit] =
     ensuring(InvalidGroupError("Group must have at least one member and one admin")) {
       group.memberIds.nonEmpty && group.adminUserIds.nonEmpty
@@ -40,6 +42,6 @@ object MembershipValidations {
 
   def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
-      authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin
+      authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin || canViewGroupDetails
     }
 }
