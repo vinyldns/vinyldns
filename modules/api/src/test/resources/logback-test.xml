@@ -1,7 +1,8 @@
 <configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%msg%n</pattern>
+        <encoder class="co.elastic.logging.logback.EcsEncoder">
+            <serviceName>vinyldns-api</serviceName>
+            <serviceNodeName>vinyldns-api</serviceNodeName>
         </encoder>
     </appender>
 

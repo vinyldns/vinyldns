@@ -68,7 +68,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
-      logger.info(s"Getting user with id: $userId")
+      logger.debug(s"Getting user with id: $userId")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID
@@ -86,7 +86,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       maxItems: Option[Int]
   ): IO[ListUsersResults] =
     monitor("repo.User.getUsers") {
-      logger.info(s"Getting users with ids: $userIds")
+      logger.debug(s"Getting users with ids: $userIds")
       IO {
         if (userIds.isEmpty)
           ListUsersResults(List[User](), None)
@@ -133,7 +133,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("repo.User.getUserByAccessKey") {
       IO {
-        logger.info(s"Getting user with accessKey: $accessKey")
+        logger.debug(s"Getting user with accessKey: $accessKey")
         DB.readOnly { implicit s =>
           GET_USER_BY_ACCESS_KEY
             .bind(accessKey)
@@ -147,7 +147,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def getUserByName(userName: String): IO[Option[User]] =
     monitor("repo.User.getUserByName") {
       IO {
-        logger.info(s"Getting user with userName: $userName")
+        logger.debug(s"Getting user with userName: $userName")
         DB.readOnly { implicit s =>
           GET_USER_BY_USER_NAME
             .bind(userName)
@@ -161,7 +161,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def save(user: User): IO[User] =
     monitor("repo.User.save") {
       IO {
-        logger.info(s"Saving user with id: ${user.id}")
+        logger.debug(s"Saving user with id: ${user.id}")
         DB.localTx { implicit s =>
           PUT_USER
             .bindByName(
@@ -180,7 +180,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def save(users: List[User]): IO[List[User]] =
     monitor("repo.User.save") {
       IO {
-        logger.info(s"Saving users with ids: ${users.map(_.id).mkString(", ")}")
+        logger.debug(s"Saving users with ids: ${users.map(_.id).mkString(", ")}")
 
         val updates = users.map { u =>
           Seq(

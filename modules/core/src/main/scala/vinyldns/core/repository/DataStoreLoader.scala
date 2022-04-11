@@ -67,7 +67,7 @@ object DataStoreLoader {
     for {
       _ <- IO(
         logger
-          .error(s"Attempting to load repos ${config.repositories.keys} from ${config.className}")
+          .info(s"Attempting to load repos ${config.repositories.keys} from ${config.className}")
       )
       provider <- IO(
         Class
