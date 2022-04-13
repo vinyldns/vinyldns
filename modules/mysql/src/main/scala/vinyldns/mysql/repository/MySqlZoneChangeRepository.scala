@@ -49,7 +49,7 @@ class MySqlZoneChangeRepository
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       IO {
-        logger.info(s"Saving zone change ${zoneChange.id}")
+        logger.debug(s"Saving zone change ${zoneChange.id}")
         DB.localTx { implicit s =>
           PUT_ZONE_CHANGE
             .bindByName(
@@ -74,7 +74,7 @@ class MySqlZoneChangeRepository
     // sorted from most recent, startFrom is an offset from the most recent change
     monitor("repo.ZoneChange.listZoneChanges") {
       IO {
-        logger.info(s"Getting zone changes for zone $zoneId")
+        logger.debug(s"Getting zone changes for zone $zoneId")
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(DateTime.now().getMillis.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId

@@ -50,7 +50,7 @@ def test_list_group_admins_group_not_found(shared_zone_test_context):
 
 def test_list_group_admins_unauthed(shared_zone_test_context):
     """
-    Tests that we cant list admins without access
+    Tests that non-group members can still list group admins
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
@@ -64,7 +64,7 @@ def test_list_group_admins_unauthed(shared_zone_test_context):
         }
         saved_group = client.create_group(new_group, status=200)
 
-        dummy_client.list_group_admins(saved_group["id"], status=403)
+        dummy_client.list_group_admins(saved_group["id"], status=200)
         client.list_group_admins(saved_group["id"], status=200)
     finally:
         if saved_group:

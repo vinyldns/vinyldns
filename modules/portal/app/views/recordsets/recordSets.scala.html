@@ -122,6 +122,25 @@
                     </div>
                     <!-- END PAGINATION -->
 
+                    <!-- MODAL BEGIN -->
+                    <div class="modal fade" id="loader" tabindex="-1" role="dialog">
+                        <div class="spinner" ></div>
+                    </div>
+
+                    <div class="modal fade" id="ShowNoRec" tabindex="-1" role="dialog">
+                        <div class="modal-dialog modal-sm" role="document">
+                            <div class="modal-content">
+                                <div class="modal-body text-center">
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    <div clas="loader-txt">
+                                        <p> <br /><br />No records found.<br /><br /></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- MODAL END -->
+
                     <table id="recordDataTable" class="table table-hover table-striped">
                         <thead>
                         <tr>
@@ -141,6 +160,7 @@
                         </tr>
                         </thead>
                         <tbody>
+
                         <tr ng-repeat="(recordName, record) in records track by $index">
                             <td>
                                 <div class="wrap-long-text">
@@ -348,6 +368,7 @@
                         </tbody>
                     </table>
 
+
                     <!-- PAGINATION -->
                     <div class="dataTables_paginate">
                         <ul class="pagination">
@@ -376,5 +397,6 @@
 @plugins = {
 <script type='text/javascript' src='/public/js/ui.js'></script>
 }
+
 
 @main(rootAccountName)("RecordSetsController")("RecordSets")(content)(plugins)

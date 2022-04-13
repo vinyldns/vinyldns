@@ -46,7 +46,7 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
     extends Notifier {
 
-  private val logger = LoggerFactory.getLogger("EmailNotifier")
+  private val logger = LoggerFactory.getLogger(classOf[EmailNotifier])
 
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {

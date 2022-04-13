@@ -40,6 +40,13 @@ angular.module('service.records', [])
                 "recordOwnerGroupFilter": ownerGroupFilter
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
+            if ($http.get(url)){
+             $("#loader").modal({
+                             backdrop: "static", //remove ability to close modal with click
+                             keyboard: false, //remove option to close with keyboard
+                             show: true //Display loader!
+                             });
+              }else{$("#loader").modal("hide");}
             return $http.get(url)
         };
 

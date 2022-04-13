@@ -35,6 +35,7 @@ final case class MySqlConnectionConfig(
     url: String,
     user: String,
     password: String,
+    flywayOutOfOrder: Boolean,
     migrationSchemaTable: Option[String],
     // Optional settings, will use Hikari defaults if unset
     // see https://github.com/brettwooldridge/HikariCP#frequently-used
