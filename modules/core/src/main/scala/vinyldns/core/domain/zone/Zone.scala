@@ -21,7 +21,8 @@ import java.util.UUID
 import cats.effect.IO
 import com.typesafe.config.Config
 import org.joda.time.DateTime
-import pureconfig.ConfigSource
+import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import scala.collection.JavaConverters._
@@ -162,6 +163,16 @@ object Algorithm {
     Map
       .get(name)
       .toRight[String](s"Unsupported algorithm $name, must be one of ${Values.mkString(",")}")
+
+  implicit val algorithmReader: ConfigReader[Algorithm] =
+    ConfigReader.fromCursor[Algorithm](cur =>
+      cur.asString.flatMap(alg =>
+        Algorithm.fromString(alg).fold(
+          errMsg => cur.failed(CannotConvert(alg, "Algorithm", errMsg)),
+          algObj => Right(algObj)
+        )
+      )
+    )
 }
 
 case class ZoneConnection(
