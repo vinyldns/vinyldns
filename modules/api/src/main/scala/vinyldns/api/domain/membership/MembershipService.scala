@@ -341,4 +341,16 @@ class MembershipService(
       newUser = existingUser.updateUserLockStatus(lockStatus)
       _ <- userRepo.save(newUser).toResult[User]
     } yield newUser
+
+  def getUser(
+      userId: String,
+      authPrincipal: AuthPrincipal
+  ): Result[User] =
+    getExistingUser(userId)
+
+//  def getGroup(id: String, authPrincipal: AuthPrincipal): Result[Group] =
+//    for {
+//      group <- getExistingGroup(id)
+//      _ <- canSeeGroup(id, authPrincipal).toResult
+//    } yield group
 }

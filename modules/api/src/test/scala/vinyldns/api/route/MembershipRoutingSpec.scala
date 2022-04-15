@@ -781,4 +781,20 @@ class MembershipRoutingSpec
       }
     }
   }
+
+  "GET user" should {
+    "return a 200 response with the user info" in {
+      //membershipRoute = membershipRoute
+      doReturn(result(okUserInfo))
+        .when(membershipService)
+        .getUser("ok", okAuth)
+      Get("/users/ok") ~> Route.seal(membershipRoute) ~> check {
+        val result = responseAs[UserInfo]
+        println("debug")
+        println(result)
+        status shouldBe StatusCodes.OK
+        result.id shouldBe okUserInfo.id
+      }
+    }
+  }
 }
