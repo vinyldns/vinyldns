@@ -7,10 +7,6 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG"/>
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG"/>
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG"/>
-
     <logger name="vinyldns.core.route.Monitor" level="OFF"/>
 
     <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF"/>
