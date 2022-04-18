@@ -284,15 +284,17 @@ class MySqlRecordSetDataRepository
         .apply()
     }}
 
+  /**
+    * Retrieves recordset data for records with the given {@code recordName} in the zone given by {@code zoneId} of the
+    * record type given by {@code recordType}
+    *
+    * @param zoneId The identifier for the zone
+    * @param recordName The name of the record
+    * @param typ The {@link RecordType} to include in the results
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def getRecordSetDataList(zoneId: String, recordName: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataList") {
-
-      /**
-        * get recordset by zone id, record name and record type from recordset_data table.
-        * @params zone ID , record name and record type.
-        * @return data, fqdn from recordset_data table.
-        */
-
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME_TYPE
@@ -307,14 +309,15 @@ class MySqlRecordSetDataRepository
       }
     }
 
-  // Note: In MySql we do not need the zone id, since can hit the key directly
+  /**
+    * Retrieves recordset data for records with the given {@code recordId} in the recordset
+    * In MySql we do not need the zone id, since can hit the key directly
+    *
+    * @param recordSetId The identifier for the recordset
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def getRecordSetData(recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetData") {
-
-      /**
-        * @return this returns the record data from the recordset_data table by record ID.
-        */
-
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ID.bindByName('recordset_id -> recordSetId).map(toRecordSetData).single().apply()
@@ -322,13 +325,14 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves recordset data for records with the given {@code recordSetIP} in the recordset
+    *
+    * @param recordSetIP The IPaddress of the record
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def getRecordSetDataByIP(recordSetIP: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetData") {
-
-      /**
-        * @return this returns the list of record data from the recordset_data table by IP Address.
-        */
-
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_IP.bindByName('ip -> recordSetIP).map(toRecordSetData).single().apply()
@@ -336,13 +340,15 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves recordset data for records with the given {@code recordName} in the zone given by {@code zoneId}
+    *
+    * @param zoneId The identifier for the zone
+    * @param recordName The name of the record
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def getRecordSetDataByName(zoneId: String, recordName: String): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataByName") {
-
-      /**
-        * @return this returns the list of record data from the recordset_data table by Record Name.
-        */
-
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME
@@ -354,13 +360,14 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves recordset data for records with the given {@code FQDNs} in the recordset
+    *
+    * @param names The FQDNs of the record
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def getRecordSetDataListByFQDNs(names: Set[String]): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetDataListByFQDNs") {
-
-      /**
-        * @return this returns the list of record data from the recordset_data table by FQDNS.
-        */
-
       IO {
         if (names.isEmpty)
           List[RecordSet]()
@@ -379,13 +386,14 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves no. of recordset data counts for records with the given {@code zoneId} in the recordset
+    *
+    * @param zoneId The identifier for the zone
+    * @return A no. of recordset data counts of {@link RecordSet} matching the criteria
+    */
   def getRecordSetDataCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetDataCount") {
-
-      /**
-        * @return this returns count of record data from the recordset_data table based on zone id.
-        */
-
       IO {
         DB.readOnly { implicit s =>
           // this is a count query, so should always return a value.  However, scalikejdbc doesn't have this,
@@ -400,6 +408,12 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves recordset_id for records with the given {@code ownerGroupId} in the recordset
+    *
+    * @param ownerGroupId The identifier for the OwnerGroup
+    * @return A list of {@link recordset_id} matching the criteria
+    */
   def getFirstOwnedRecordSetDataByGroup(ownerGroupId: String): IO[Option[String]] =
     monitor("repo.RecordSet.getFirstOwnedRecordSetDataByGroup") {
 
@@ -418,6 +432,19 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * Retrieves recordset data for records with the given {@code recordNameFilter} in the zone given by {@code zoneId} of the
+    * record type given by {@code recordTypeFilter} given by {@code recordOwnerGroupFilter}
+    *
+    * @param zoneId The identifier for the zone
+    * @param startFrom The Limits for Start from records
+    * @param maxItems The Limits for maximum records(INT)
+    * @param recordNameFilter The name of the record
+    * @param recordTypeFilter The {@link RecordType} to include in the results
+    * @param recordOwnerGroupFilter The OwnerGroup of the record
+    * @param nameSort The Sort of record Name
+    * @return A list of {@link RecordSet} matching the criteria
+    */
   def listRecordSetData(
                          zoneId: Option[String],
                          startFrom: Option[String],
@@ -428,12 +455,6 @@ class MySqlRecordSetDataRepository
                          nameSort: NameSort
                        ): IO[ListRecordSetDataResults] =
     monitor("repo.RecordSet.listRecordSetData") {
-
-      /**
-        * list the records from the recordset_data table
-        * @return this returns data and fqdn from the recordset_data table
-        */
-
       IO {
         DB.readOnly { implicit s =>
           val maxPlusOne = maxItems.map(_ + 1)
@@ -540,17 +561,17 @@ class MySqlRecordSetDataRepository
       }
     }
 
+  /**
+    * parseIP address from given record data.
+    *
+    * @param ipString The record data from the record set.
+    * @param recordType The RecordType to include in the results
+    * @return A list of IP address from the given record data.
+    */
   def parseIP(
                ipString: String,
                recordType: String
              ): String = {
-
-    /**
-      * parseIP address from record data.
-      * @params ipstring is the record data from the record set.
-      * @params recordType is the type of record (eg A, AAAA, CNAME, etc) from the record set
-      * @return IP address
-      */
 
     var ipAddress: String = null
     val IPADDRESS_IPV4_PATTERN = {
@@ -577,6 +598,13 @@ class MySqlRecordSetDataRepository
     ipAddress
   }
 
+  /**
+    * Append the textual representation of the record data .
+    *
+    * @param recordSetData The record data from the record set.
+    * @param recordType The RecordType to include in the results
+    * @return A record data with the textual representation from the given record data.
+    */
   def extractRecordSetDataString(
                                   recordSetData: String,
                                   recordType: String
