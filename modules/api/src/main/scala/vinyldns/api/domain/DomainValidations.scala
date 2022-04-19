@@ -28,7 +28,7 @@ import scala.util.matching.Regex
  */
 object DomainValidations {
   val validFQDNRegex: Regex =
-    """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1})\.)*$""".r
+    """^(?:([0-9a-zA-Z*_]{1,63}|[0-9a-zA-Z*_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1})\.)*$""".r
   val validIpv4Regex: Regex =
     """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
   val validIpv6Regex: Regex =
@@ -63,7 +63,7 @@ object DomainValidations {
   def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
       Label rules are as follows (from RFC 952; detailed in RFC 1034):
-        - Starts with a letter, OR digit, or underscore (as of RFC 1123)
+        - Starts with a letter, OR digit, or underscore or asterisk (as of RFC 1123)
         - Interior contains letter, digit or hyphen, or underscore
         - Ends with a letter or digit, or underscore
       All possible labels permutations:
