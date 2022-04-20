@@ -36,7 +36,7 @@ class MySqlRecordSetDataRepository
     with ProtobufConversions {
 
   private val INSERT_RECORDSETDATA =
-    sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, record_name, fqdn,  reverse_fqdn, type, record_data, ip, owner_group_id, data) VALUES ({recordset_id}, {zone_id}, {record_name}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, {ip}, {owner_group_id}, {data})"
+    sql"INSERT IGNORE INTO recordset_data(recordset_id, zone_id, record_name, fqdn,  reverse_fqdn, type, record_data, ip, owner_group_id) VALUES ({recordset_id}, {zone_id}, {record_name}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, {ip}, {owner_group_id})"
 
   private val DELETE_RECORDSETDATA =
     sql"DELETE FROM recordset_data WHERE recordset_id = ?"
@@ -48,43 +48,49 @@ class MySqlRecordSetDataRepository
     sql"""
          |SELECT count(*)
          |  FROM recordset_data
-         | WHERE zone_id = {zone_id}
+         |   INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+         | WHERE recordset_data.zone_id = {zone_id}
     """.stripMargin
 
   private val BASE_FIND_RECORDSETS_BY_FQDNS =
     """
-      |SELECT data, fqdn
+      |SELECT recordset.data, recordset_data.fqdn
       |  FROM recordset_data
-      | WHERE fqdn
+      |   INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+      | WHERE recordset_data.fqdn
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
-         |SELECT data, fqdn
+         |SELECT recordset.data, recordset_data.fqdn
          |  FROM recordset_data
-         | WHERE zone_id = {zone_id} AND record_name = {record_name} AND type = {type}
+         |   INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+         | WHERE recordset_data.zone_id = {zone_id} AND recordset_data.record_name = {record_name} AND recordset_data.type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-         |SELECT data, fqdn
+         |SELECT recordset.data, recordset_data.fqdn
          |  FROM recordset_data
-         | WHERE zone_id = {zone_id} AND record_name = {record_name}
+         |  INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+         | WHERE recordset_data.zone_id = {zone_id} AND recordset_data.record_name = {record_name}
     """.stripMargin
 
 
   private val FIND_BY_ID =
     sql"""
-         |SELECT  data, fqdn
+         |SELECT  recordset.data, recordset_data.fqdn
          |  FROM recordset_data
-         | WHERE recordset_id = {recordset_id}
+         |    INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+         | WHERE recordset_data.recordset_id = {recordset_id}
     """.stripMargin
 
   private val FIND_BY_IP =
     sql"""
-         |SELECT data, fqdn
+         |SELECT recordset.data, recordset_data.fqdn
          |  FROM recordset_data
-         | WHERE ip = {ip}
+         |   INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
+         | WHERE recordset_data.ip = {ip}
     """.stripMargin
 
   private val GET_RECORDSETDATA_BY_OWNERID =
@@ -117,8 +123,7 @@ class MySqlRecordSetDataRepository
             oldRs.typ.toString,
             oldRs.records.toString,
             oldRs.ownerGroupId,
-            "update",
-            toPB(oldRs).toByteArray,
+            "update"
           )
         )
       }
@@ -145,8 +150,7 @@ class MySqlRecordSetDataRepository
           toFQDN(i.zone.name, i.recordSet.name),
           toFQDN(i.zone.name, i.recordSet.name).reverse,
           i.recordSet.ownerGroupId,
-          "insert",
-          toPB(i.recordSet).toByteArray,
+          "insert"
         ))
     }
     completeUpdates.map { u =>
@@ -161,8 +165,7 @@ class MySqlRecordSetDataRepository
           toFQDN(u.zone.name, u.recordSet.name),
           toFQDN(u.zone.name, u.recordSet.name).reverse,
           u.recordSet.ownerGroupId,
-          "update",
-          toPB(u.recordSet).toByteArray,
+          "update"
         )
       )
     }
@@ -203,14 +206,13 @@ class MySqlRecordSetDataRepository
               FQDN: String,
               reverseFQDN: String,
               ownerGroupId: Option[String],
-              rs: String,
-              data: Array[Byte]
+              rs: String
             ): Unit =
     rs match {
       /**
         * insert the rsdata, as if recordset are created
         */
-      case "insert" => rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId, data)
+      case "insert" => rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId)
       /**
         * delete and insert the rsdata,  as if recordset are updated.
         */
@@ -221,7 +223,7 @@ class MySqlRecordSetDataRepository
             .update()
             .apply()
         }
-        rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId, data)
+        rsDataSave(db, recordID, recordData, recordType, zoneId, recordName, FQDN, reverseFQDN, ownerGroupId)
     }
 
   def rsDataSave(
@@ -233,14 +235,13 @@ class MySqlRecordSetDataRepository
                   recordName: String,
                   FQDN: String,
                   reverseFQDN: String,
-                  ownerGroupId: Option[String],
-                  data: Array[Byte]
+                  ownerGroupId: Option[String]
                 ): Unit = {
     recordType match {
       case "DS" => for (ipString<- recordData.split(Pattern.quote("),")).map(_.trim).toList) {
-        insertRecordSetData(db, recordId, zoneId, recordName, FQDN, reverseFQDN, recordType, ipString, ownerGroupId, data)}
+        insertRecordSetData(db, recordId, zoneId, recordName, FQDN, reverseFQDN, recordType, ipString, ownerGroupId)}
       case _ => for (ipString <- recordData.split(",").map(_.trim).toList) {
-        insertRecordSetData(db,recordId,zoneId,recordName,FQDN,reverseFQDN,recordType,ipString,ownerGroupId,data)}
+        insertRecordSetData(db,recordId,zoneId,recordName,FQDN,reverseFQDN,recordType,ipString,ownerGroupId)}
     }}
 
   def insertRecordSetData(
@@ -252,8 +253,7 @@ class MySqlRecordSetDataRepository
                            reverseFQDN: String,
                            recordType: String,
                            ipString: String,
-                           ownerGroupId: Option[String],
-                           data: Array[Byte]
+                           ownerGroupId: Option[String]
                          ): Unit = {
     var parseIp: String = null
     var records: String = null
@@ -277,8 +277,7 @@ class MySqlRecordSetDataRepository
           'type -> recordType,
           'record_data -> records,
           'ip -> parseIp,
-          'owner_group_id -> ownerGroupId,
-          'data -> data
+          'owner_group_id -> ownerGroupId
         )
         .update()
         .apply()
@@ -462,10 +461,10 @@ class MySqlRecordSetDataRepository
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND record_name LIKE ${rName.replace('*', '%')} ")
+              Some(sqls"recordset_data.zone_id = $zId AND recordset_data.record_name LIKE ${rName.replace('*', '%')} ")
             case (None, Some(fqdn)) =>  val reversefqdn = fqdn.reverse // reverse the fqdn.
-              Some(sqls"reverse_fqdn LIKE ${reversefqdn.replace('*', '%')} ")
-            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
+              Some(sqls"recordset_data.reverse_fqdn LIKE ${reversefqdn.replace('*', '%')} ")
+            case (Some(zId), None) => Some(sqls"recordset_data.zone_id = $zId ")
             case _ => None
           }
 
@@ -476,38 +475,38 @@ class MySqlRecordSetDataRepository
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                sqls"((record_name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR record_name < ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((recordset_data.record_name <= ${pagingKey.map(pk => pk.recordName)} AND recordset_data.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.record_name < ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
-                sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((recordset_data.fqdn >= ${pagingKey.map(pk => pk.recordName)} AND recordset_data.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.fqdn > ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.DESC) =>
               pagingKey.as(
-                sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((recordset_data.fqdn <= ${pagingKey.map(pk => pk.recordName)} AND recordset_data.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.fqdn < ${pagingKey.map(pk => pk.recordName)})"
               )
             case _ =>
               pagingKey.as(
-                sqls"((record_name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR record_name > ${pagingKey.map(pk => pk.recordName)})"
+                sqls"((recordset_data.record_name >= ${pagingKey.map(pk => pk.recordName)} AND recordset_data.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.record_name > ${pagingKey.map(pk => pk.recordName)})"
               )
           }
 
           val typeFilter = recordTypeFilter.map { t =>
             val list = t.map(fromRecordType)
-            sqls"type IN ($list)"
+            sqls"recordset_data.type IN ($list)"
           }
 
           val ownerGroupFilter =
-            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
+            recordOwnerGroupFilter.map(owner => sqls"recordset_data.owner_group_id = $owner ")
 
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
           val qualifiers = if (nameSort == ASC) {
-            sqls"ORDER BY fqdn ASC, type ASC "
+            sqls"ORDER BY recordset_data.fqdn ASC, recordset_data.type ASC "
           }
           else {
-            sqls"ORDER BY fqdn DESC, type ASC "
+            sqls"ORDER BY recordset_data.fqdn DESC, recordset_data.type ASC "
           }
 
           val recordLimit = maxPlusOne match {
@@ -518,7 +517,12 @@ class MySqlRecordSetDataRepository
           val finalQualifiers = qualifiers.append(recordLimit)
 
           // construct query
-          val initialQuery = sqls"SELECT data, fqdn FROM recordset_data "
+          val initialQuery = sqls"SELECT recordset.data, recordset_data.fqdn FROM recordset_data "
+
+          // Join query for data column from recordset table
+          val recordsetDataJoin = sqls"INNER JOIN recordset ON recordset.id=recordset_data.recordset_id "
+
+          val recordsetDataJoinQuery = initialQuery.append(recordsetDataJoin)
 
           val appendOpts = if (opts.nonEmpty){
             val setDelimiter = SQLSyntax.join(opts, sqls"AND")
@@ -526,7 +530,7 @@ class MySqlRecordSetDataRepository
             addWhere.append(setDelimiter)
           } else sqls""
 
-          val appendQueries = initialQuery.append(appendOpts)
+          val appendQueries = recordsetDataJoinQuery.append(appendOpts)
 
           val finalQuery = appendQueries.append(finalQualifiers)
 
