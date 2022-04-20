@@ -68,6 +68,16 @@ class DomainValidationsSpec
     validateHostName("underscore._domain.name.").isValid
   }
 
+  // For wildcard records. '*' can only be in the beginning followed by '.' and domain name
+  property("Domain names beginning with asterisk should pass property-based testing") {
+    validateHostName("*.domain.name.") shouldBe valid
+    validateHostName("aste*risk.domain.name.") shouldBe invalid
+    validateHostName("*asterisk.domain.name.") shouldBe invalid
+    validateHostName("asterisk*.domain.name.") shouldBe invalid
+    validateHostName("asterisk.*domain.name.") shouldBe invalid
+    validateHostName("asterisk.domain*.name.") shouldBe invalid
+  }
+
   property("Valid Ipv4 addresses should pass property-based testing") {
     forAll(validIpv4Gen) { validIp: String =>
       val res = validateIpv4Address(validIp)
