@@ -784,15 +784,14 @@ class MembershipRoutingSpec
 
   "GET user" should {
     "return a 200 response with the user info" in {
-      //membershipRoute = membershipRoute
+//      membershipRoute = okAuthRoute
       doReturn(result(okUserInfo))
         .when(membershipService)
         .getUser("ok", okAuth)
-      Get("/users/ok") ~> Route.seal(membershipRoute) ~> check {
-        val result = responseAs[UserInfo]
-        println("debug")
-        println(result)
+      Get("/users/ok") ~> membershipRoute ~> check {
+        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
         status shouldBe StatusCodes.OK
+        val result = responseAs[UserInfo]
         result.id shouldBe okUserInfo.id
       }
     }
