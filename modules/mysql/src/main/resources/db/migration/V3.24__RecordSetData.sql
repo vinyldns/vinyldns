@@ -19,6 +19,4 @@ CREATE TABLE recordset_data (
   INDEX recordset_data_reverse_fqdn_index(reverse_fqdn),
   FULLTEXT INDEX recordset_data_fdqn_fulltext_index(fqdn),
   FULLTEXT INDEX recordset_data_record_data_fulltex_index(record_data)
-
-
 );
