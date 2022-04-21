@@ -52,7 +52,7 @@ class MySqlRecordSetDataRepository
     """.stripMargin
 
   private val BASE_FIND_RECORDSETS_BY_FQDNS =
-    sql"""
+    """
       |SELECT recordset.data, recordset_data.fqdn
       |  FROM recordset_data
       |   INNER JOIN recordset ON recordset.id=recordset_data.recordset_id
