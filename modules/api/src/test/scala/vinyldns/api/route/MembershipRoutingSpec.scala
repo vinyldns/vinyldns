@@ -784,8 +784,7 @@ class MembershipRoutingSpec
 
   "GET user" should {
     "return a 200 response with the user info" in {
-//      membershipRoute = okAuthRoute
-      doReturn(result(okUserInfo))
+      doReturn(result(okUser))
         .when(membershipService)
         .getUser("ok", okAuth)
       Get("/users/ok") ~> membershipRoute ~> check {
@@ -793,6 +792,52 @@ class MembershipRoutingSpec
         status shouldBe StatusCodes.OK
         val result = responseAs[UserInfo]
         result.id shouldBe okUserInfo.id
+      }
+    }
+
+    "return a 200 response with the user info when the user ID is valid" in {
+      val testUser = listOfDummyUsers.head
+      doReturn(result(testUser))
+        .when(membershipService)
+        .getUser("dummy000", okAuth)
+      Get("/users/dummy000") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
+        val result = responseAs[UserInfo]
+        result.id shouldBe testUser.id
+      }
+    }
+
+    "return a 200 response with the user info when the username is valid" in {
+      val testUser = listOfDummyUsers.head
+      doReturn(result(testUser))
+        .when(membershipService)
+        .getUser("name-dummy000", okAuth)
+      Get("/users/name-dummy000") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
+        val result = responseAs[UserInfo]
+        result.id shouldBe testUser.id
+      }
+    }
+
+    "return a 404 Not Found response when the userIdentifier is not a valid user ID or username" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .getUser("fail", okAuth)
+      Get("/users/fail") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
+      }
+    }
+
+    "return a 403 Forbidden response when not authorized" in {
+      doReturn(result(NotAuthorizedError("not authorized")))
+        .when(membershipService)
+        .getUser(anyString, any[AuthPrincipal])
+      Get("/users/ok") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.Forbidden
+        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
       }
     }
   }

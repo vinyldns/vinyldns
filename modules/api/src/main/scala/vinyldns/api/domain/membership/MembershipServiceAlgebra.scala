@@ -70,7 +70,7 @@ trait MembershipServiceAlgebra {
   ): Result[User]
 
   def getUser(
-      userId: String,
+      userIdentifier: String,
       authPrincipal: AuthPrincipal
   ): Result[User]
 }
