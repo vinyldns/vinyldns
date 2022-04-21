@@ -40,7 +40,10 @@ angular.module('service.records', [])
                 "recordOwnerGroupFilter": ownerGroupFilter
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
-            if ($http.get(url)){
+            var http = new XMLHttpRequest();
+            http.open('HEAD', url, false);
+            http.send();
+            if ($http.get(url)  && http.status == 200){
              $("#loader").modal({
                              backdrop: "static", //remove ability to close modal with click
                              keyboard: false, //remove option to close with keyboard
