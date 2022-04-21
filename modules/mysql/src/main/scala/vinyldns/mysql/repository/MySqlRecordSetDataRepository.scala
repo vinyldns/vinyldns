@@ -51,7 +51,7 @@ class MySqlRecordSetDataRepository
          | WHERE zone_id = {zone_id}
     """.stripMargin
 
-  private val BASE_FIND_RECORDSETS_BY_FQDNS =
+  private val BASE_FIND_RECORDSETDATALIST_BY_FQDNS =
     """
       |SELECT recordset.data, recordset_data.fqdn
       |  FROM recordset_data
@@ -361,7 +361,7 @@ class MySqlRecordSetDataRepository
           DB.readOnly { implicit s =>
             val namesList = names.toList
             val inClause = " IN (" + namesList.as("?").mkString(",") + ")"
-            val query = BASE_FIND_RECORDSETS_BY_FQDNS + inClause
+            val query = BASE_FIND_RECORDSETDATALIST_BY_FQDNS + inClause
             SQL(query)
               .bind(namesList: _*)
               .map(toRecordSetData)
