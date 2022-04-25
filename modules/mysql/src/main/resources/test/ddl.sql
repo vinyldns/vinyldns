@@ -108,7 +108,6 @@ CREATE TABLE IF NOT EXISTS recordset
     data           blob         not null,
     fqdn           varchar(255) not null,
     owner_group_id char(36)     null,
-    data_hash      varchar(40) not null,
     constraint recordset_zone_id_name_type_index
     unique (zone_id, name, type)
 );
