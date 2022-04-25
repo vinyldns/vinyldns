@@ -86,23 +86,24 @@ class MySqlBatchChangeRepository
 
   private final val GET_BATCH_CHANGE_SUMMARY_BASE =
     """
-         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
-         |              bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp,
-         |              SUM( case when sc.status like 'Failed' or sc.status like 'Rejected' then 1 else 0 end ) AS fail_count,
-         |              SUM( case when sc.status like 'Pending' or sc.status like 'NeedsReview' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count,
-         |              SUM( case sc.status when 'Cancelled' then 1 else 0 end ) AS cancelled_count
-         |         FROM single_change sc
-         |         JOIN batch_change bc
-         |           ON sc.batch_change_id = bc.id
+      |SELECT batch_change_page.id, user_id, user_name, created_time, comments, owner_group_id, approval_status, reviewer_id,
+      |       review_comment, review_timestamp, scheduled_time, cancelled_timestamp,
+      |       SUM(CASE WHEN sc.status LIKE 'Failed' OR sc.status LIKE 'Rejected' THEN 1 ELSE 0 END) AS fail_count,
+      |       SUM(CASE WHEN sc.status LIKE 'Pending' OR sc.status LIKE 'NeedsReview' THEN 1 ELSE 0 END) AS pending_count,
+      |       SUM(CASE sc.status WHEN 'Complete' THEN 1 ELSE 0 END) AS complete_count,
+      |       SUM(CASE sc.status WHEN 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count
+      |              FROM (SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
+      |                           bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp
+      |                    FROM batch_change bc
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_SUMMARY_END =
     """
-         |        GROUP BY bc.id
-         |        ORDER BY bc.created_time DESC
-         |        LIMIT {maxItems}
-         |        OFFSET {startFrom}
+      |                    ORDER BY created_time DESC
+      |                    LIMIT {maxItems} OFFSET {startFrom}) batch_change_page
+      |                    JOIN single_change sc ON batch_change_page.id = sc.batch_change_id
+      |GROUP BY batch_change_page.id
+      |ORDER BY created_time DESC
         """.stripMargin
 
   private final val GET_SINGLE_CHANGES_BY_BCID =

@@ -49,7 +49,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
-      _ <- IO(logger.info(s"Queue URL: $queueUrl\n"))
+      _ <- IO(logger.info(s"Queue URL: $queueUrl"))
     } yield new SqsMessageQueue(queueUrl, client)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {

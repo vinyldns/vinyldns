@@ -7,13 +7,9 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="INFO">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="org.flywaydb" level="INFO"/>
 
-    <logger name="vinyldns.core.route.Monitor" level="OFF">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="vinyldns.core.route.Monitor" level="OFF"/>
 
     <root level="OFF">
         <appender-ref ref="CONSOLE"/>

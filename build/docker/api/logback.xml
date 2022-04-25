@@ -7,25 +7,9 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="vinyldns.core.route.Monitor" level="OFF"/>
 
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="vinyldns.core.route.Monitor" level="OFF">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
