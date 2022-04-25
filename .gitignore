@@ -37,3 +37,7 @@ quickstart/data
 **/*cache*
 **/artifacts/
 **/.env.overrides
+**/node_modules
+.run
+**/*.zip
+**/*.log
