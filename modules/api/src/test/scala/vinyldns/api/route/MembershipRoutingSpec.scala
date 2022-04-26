@@ -788,7 +788,6 @@ class MembershipRoutingSpec
         .when(membershipService)
         .getUser("ok", okAuth)
       Get("/users/ok") ~> membershipRoute ~> check {
-        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
         status shouldBe StatusCodes.OK
         val result = responseAs[UserInfo]
         result.id shouldBe okUserInfo.id
@@ -802,7 +801,6 @@ class MembershipRoutingSpec
         .getUser("dummy000", okAuth)
       Get("/users/dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
-        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
         val result = responseAs[UserInfo]
         result.id shouldBe testUser.id
       }
@@ -815,7 +813,6 @@ class MembershipRoutingSpec
         .getUser("name-dummy000", okAuth)
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
-        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
         val result = responseAs[UserInfo]
         result.id shouldBe testUser.id
       }
@@ -827,7 +824,6 @@ class MembershipRoutingSpec
         .getUser("fail", okAuth)
       Get("/users/fail") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.NotFound
-        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
       }
     }
 
@@ -837,7 +833,6 @@ class MembershipRoutingSpec
         .getUser(anyString, any[AuthPrincipal])
       Get("/users/ok") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.Forbidden
-        response.entity.dataBytes.map(_.utf8String).runForeach(data => println(data))
       }
     }
   }

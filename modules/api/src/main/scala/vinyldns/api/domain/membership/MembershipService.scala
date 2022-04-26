@@ -242,6 +242,17 @@ class MembershipService(
       maxItems
     )
 
+  /**
+   * Retrieves the requested User from the given userIdentifier, which can be a userId or username
+   * @param userIdentifier The userId or username
+   * @return The found User
+   */
+  def getUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[User] =
+    userRepo
+      .getUserByIdOrName(userIdentifier)
+      .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
+      .toResult[User]
+
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String] = None,
@@ -289,7 +300,7 @@ class MembershipService(
       .getGroupByName(name)
       .map {
         case Some(existingGroup)
-            if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
+          if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
           GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight
@@ -341,21 +352,4 @@ class MembershipService(
       newUser = existingUser.updateUserLockStatus(lockStatus)
       _ <- userRepo.save(newUser).toResult[User]
     } yield newUser
-
-  /**
-   * Retrieves the requested User from the given userIdentifier, which can be a userId or username
-   *
-   * @param userIdentifier The userId or username
-   * @return The found User
-   */
-  def getUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[User] =
-    userRepo
-      .getUser(userIdentifier) // try get by userId first
-      .map {
-        case None => userRepo.getUserByName(userIdentifier).map { // try get by username if userId lookup fails
-          case Some(x) => x.asRight[User]
-          case None => UserNotFoundError(s"User $userIdentifier not found").asLeft
-        }
-        case Some(found) => found.asRight[User]
-      }.toResult[User]
 }
