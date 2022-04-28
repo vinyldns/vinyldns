@@ -826,14 +826,5 @@ class MembershipRoutingSpec
         status shouldBe StatusCodes.NotFound
       }
     }
-
-    "return a 403 Forbidden response when not authorized" in {
-      doReturn(result(NotAuthorizedError("not authorized")))
-        .when(membershipService)
-        .getUser(anyString, any[AuthPrincipal])
-      Get("/users/ok") ~> membershipRoute ~> check {
-        status shouldBe StatusCodes.Forbidden
-      }
-    }
   }
 }
