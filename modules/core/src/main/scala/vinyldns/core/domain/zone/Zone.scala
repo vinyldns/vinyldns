@@ -51,8 +51,8 @@ final case class Zone(
     isTest: Boolean = false,
     backendId: Option[String] = None
 ) {
-  val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
-  val isIPv6: Boolean = name.endsWith("ip6.arpa.")
+  val isIPv4: Boolean = name.endsWith("in-addr.arpa.") || name.endsWith("IN-ADDR.ARPA.")
+  val isIPv6: Boolean = name.endsWith("ip6.arpa.") || name.endsWith("IP6.ARPA.")
   val isReverse: Boolean = isIPv4 || isIPv6
 
   def addACLRule(rule: ACLRule): Zone =
