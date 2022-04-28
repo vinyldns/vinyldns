@@ -75,7 +75,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
-      logger.debug(s"Receiving $count messages.\n")
+      logger.debug(s"Receiving $count messages.")
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         // Can return 1-10 messages.
         // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
@@ -112,7 +112,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def delete(receiptHandle: String): IO[Unit] =
     monitor("queue.SQS.delete") {
-      logger.info(s"Deleting message with receipt handle: $receiptHandle.\n")
+      logger.info(s"Deleting message with receipt handle: $receiptHandle.")
       sqsAsync[DeleteMessageRequest, DeleteMessageResult](
         new DeleteMessageRequest(queueUrl, receiptHandle),
         client.deleteMessageAsync
@@ -130,7 +130,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.SQS.send") {
-      logger.info(s"Sending command: $command.\n")
+      logger.info(s"Sending command: $command.")
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
@@ -157,7 +157,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
-      logger.info(s"Updating visibility timeout to $duration for message: $message.\n")
+      logger.info(s"Updating visibility timeout to $duration for message: $message.")
       IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
         sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
           new ChangeMessageVisibilityRequest()
