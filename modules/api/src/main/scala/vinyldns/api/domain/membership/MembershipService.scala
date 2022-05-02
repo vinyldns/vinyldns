@@ -57,6 +57,7 @@ class MembershipService(
     val adminMembers = inputGroup.adminUserIds
     val nonAdminMembers = inputGroup.memberIds.diff(adminMembers)
     for {
+      _ <- groupValidation(newGroup)
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
@@ -76,6 +77,7 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      _ <- groupValidation(newGroup)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
       addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
       // new non-admin members ++ admins converted to non-admins
@@ -262,6 +264,16 @@ class MembershipService(
       .getGroup(groupId)
       .orFail(GroupNotFoundError(s"Group with ID $groupId was not found"))
       .toResult[Group]
+
+  // Validate group details. Group name and email cannot be empty
+  def groupValidation(group: Group): Result[Unit] = {
+    Option(group) match {
+      case Some(value) if value.name.isEmpty || value.email.isEmpty =>
+        GroupValidationError(GroupValidationErrorMsg).asLeft
+      case _ =>
+        ().asRight
+    }
+  }.toResult
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
     groupRepo

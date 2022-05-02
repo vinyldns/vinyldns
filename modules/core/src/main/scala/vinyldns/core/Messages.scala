@@ -79,4 +79,6 @@ object Messages {
   val NotAuthorizedErrorMsg =
     "User \"%s\" is not authorized. Contact %s owner group: %s at %s to make DNS changes."
 
+  // Error displayed when group name or email is empty
+  val GroupValidationErrorMsg = "Group name and email cannot be empty."
 }
