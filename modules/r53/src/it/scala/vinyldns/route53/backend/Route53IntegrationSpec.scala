@@ -30,7 +30,7 @@ import vinyldns.core.domain.{Fqdn, record}
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 
 class Route53IntegrationSpec
-  extends AnyWordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers {
@@ -52,6 +52,8 @@ class Route53IntegrationSpec
           "test",
           Option("access"),
           Option("secret"),
+          None,
+          None,
           sys.env.getOrElse("R53_SERVICE_ENDPOINT", "http://localhost:19003"),
           "us-east-1"
         )

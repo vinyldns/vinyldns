@@ -27,6 +27,8 @@ final case class Route53BackendConfig(
     id: String,
     accessKey: Option[String],
     secretKey: Option[String],
+    roleArn: Option[String],
+    externalId: Option[String],
     serviceEndpoint: String,
     signingRegion: String
 )
