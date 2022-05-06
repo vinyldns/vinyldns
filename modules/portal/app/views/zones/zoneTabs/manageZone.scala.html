@@ -376,7 +376,7 @@
                         ng-controller="ZonesController"
                         ng-disabled="aclModal.details.readOnly"
                         required>
-                    <option ng-repeat="group in myGroups" value="{{ group.id }}">
+                    <option ng-repeat="group in allGroups" value="{{ group.id }}">
                         {{group.name}} ({{group.description}})</option>
                     <option value="">--- Please select a group ---</option>
                 </select>
