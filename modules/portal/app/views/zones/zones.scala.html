@@ -59,7 +59,12 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="zone-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input id="zone-search-text" ng-model="query" type="text" class="form-control"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                            </div>
+                                            <div class="checkbox pull-right">
+                                                <label>
+                                                    <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                </label>
                                             </div>
                                         </form>
                                     </div>
@@ -165,8 +170,14 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="all-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input id="all-zones-search-text" ng-model="query" type="text" class="form-control" placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
                                             </div>
+
+                                                <div class="checkbox pull-right">
+                                                    <label>
+                                                        <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                    </label>
+                                                </div>
                                         </form>
                                     </div>
                                     <!-- END SEARCH BOX -->

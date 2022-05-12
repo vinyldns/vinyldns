@@ -233,6 +233,61 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     * This is somewhat complicated due to how we need to build the SQL.
     *
     * - Dynamically build the accessor list combining the user id and group ids
+    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
+    *
+    * @return a ListZonesResults
+    */
+  def listZonesByAdminGroupId(
+       authPrincipal: AuthPrincipal,
+       startFrom: Option[String] = None,
+       maxItems: Int = 100,
+       adminGroupId: String,
+       ignoreAccess: Boolean = false
+  ): IO[ListZonesResults] =
+    monitor("repo.ZoneJDBC.listZonesByAdminGroupId") {
+      IO {
+        DB.readOnly { implicit s =>
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          sb.append(s" WHERE admin_group_id='$adminGroupId' ")
+
+          sb.append(s" GROUP BY z.name ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+          println("Query: ", query)
+
+          val results: List[Zone] = SQL(query)
+            .bind(accessors: _*)
+            .map(extractZone(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.name))
+            else (results, None)
+
+
+          ListZonesResults(
+            zones = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = None,
+            ignoreAccess = ignoreAccess,
+          )
+        }
+      }
+    }
+
+  /**
+    * This is somewhat complicated due to how we need to build the SQL.
+    *
+    * - Dynamically build the accessor list combining the user id and group ids
     * - Do not include a zone name filter if there is no filter applied
     * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
     *
