@@ -19,7 +19,7 @@ package vinyldns.core.repository
 import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.record.{RecordChangeRepository,  RecordSetRepository, RecordSetCacheRepository}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneRepository, ZoneChangeRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
 import vinyldns.core.health.HealthCheck.HealthCheck

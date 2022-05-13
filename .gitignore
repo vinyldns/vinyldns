@@ -34,7 +34,6 @@ project/metals.sbt
 quickstart/data
 **/.virtualenv
 **/.venv*
-**/*cache*
 **/artifacts/
 **/.env.overrides
 **/node_modules

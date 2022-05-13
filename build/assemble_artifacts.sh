@@ -17,11 +17,11 @@ usage() {
 
 clean(){
   echo "Cleaning artifacts"
-  if [ -d "${DIR}/../artifacts/" ] && [ -f "${DIR}/../artifacts/*.jar" ]; then
-    rm "${DIR}/../artifacts/*.jar"
+  if [ -d "${DIR}/../artifacts/" ] && [ -f "${DIR}/../artifacts/vinyldns-api.jar" ]; then
+    rm "${DIR}/../artifacts/vinyldns-api.jar"
   fi
-  if [ -d "${DIR}/../artifacts/" ] && [ -f "${DIR}/../artifacts/*.zip" ]; then
-    rm "${DIR}/../artifacts/*.zip"
+  if [ -d "${DIR}/../artifacts/" ] && [ -f "${DIR}/../artifacts/vinyldns-portal.zip" ]; then
+    rm "${DIR}/../artifacts/vinyldns-portal.zip"
   fi
 }
 
