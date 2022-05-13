@@ -563,7 +563,7 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-    def listRecordSetData(
+    def searchRecordSets(
                            startFrom: Option[String],
                            maxItems: Option[Int],
                            recordNameFilter: String,
@@ -571,12 +571,12 @@ class RecordSetRoutingSpec
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
                            authPrincipal: AuthPrincipal
-                         ): Result[ListGlobalRecordSetDataResponse] = {
+                         ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
-          ListGlobalRecordSetDataResponse(
+          ListGlobalRecordSetsResponse(
             List(
-              RecordSetDataGlobalInfo(rs4, okZone.name, okZone.shared, None)
+              RecordSetGlobalInfo(rs4, okZone.name, okZone.shared, None)
             ),
             startFrom,
             None,
@@ -589,16 +589,16 @@ class RecordSetRoutingSpec
         )
       } else {
         val recordSetList = recordOwnerGroupFilter match {
-          case Some("my-group") => List(RecordSetDataGlobalInfo(rs2, okZone.name, okZone.shared, None))
+          case Some("my-group") => List(RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None))
           case _ =>
             List(
-              RecordSetDataGlobalInfo(rs1, okZone.name, okZone.shared, None),
-              RecordSetDataGlobalInfo(rs2, okZone.name, okZone.shared, None),
-              RecordSetDataGlobalInfo(rs3, okZone.name, okZone.shared, None)
+              RecordSetGlobalInfo(rs1, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs3, okZone.name, okZone.shared, None)
             )
         }
         Right(
-          ListGlobalRecordSetDataResponse(
+          ListGlobalRecordSetsResponse(
             recordSetList,
             startFrom,
             None,

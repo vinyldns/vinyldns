@@ -19,14 +19,16 @@ function usage() {
   echo -e "Starts up a local VinylDNS installation using Docker Compose"
   echo
   echo -e "options:"
-  echo -e "\t-a, --api-only     do not start up the VinylDNS Portal"
+  echo -e "\t-a, --api          start the API, but not the Portal and its dependencies (e.g., LDAP)"
   echo -e "\t-b, --build        force a rebuild of the Docker images with the local code"
   echo -e "\t-c, --clean        stops all VinylDNS containers and exits"
-  echo -e "\t-d, --deps-only    only start up the dependencies, not the API or Portal"
+  echo -e "\t-d, --deps         start up the dependencies, but not the API or Portal"
+  echo -e "\t-sh, --shell       loads the .env file into a new BASH shell. The .env file can be overridden with -e"
+  echo -e "\t-e, --env-file     specifies the path (relative to the docker-compose file) to the .env file to load (e.g., .env.dev)."
   echo -e "\t-r, --reset        stops any the running containers before starting new containers"
   echo -e "\t-s, --service      specify the service to run"
   echo -e "\t-t, --timeout      the time to wait (in seconds) for the Portal and API to start (default: 60)"
-  echo -e "\t-u, --update       remove the local quickstart images to force a re-pull from Docker Hub"
+  echo -e "\t-u, --update       remove the local quickstart images to force a rebuild"
   echo -e "\t-v, --version-tag  specify Docker image tag version (default: latest)"
   echo
   echo -e "\t-h, --help         show this help"
@@ -73,18 +75,6 @@ function wait_for_portal() {
   fi
 }
 
-# Source customizable env files ('-a' causes all variables to be exported)
-set -a
-source "${DIR}/.env"
-set +a
-
-# The version of VinylDNS docker image to run
-export VINYLDNS_VERSION=latest
-# The base/starting version of VinylDNS docker build image to use (vinyldns/build:<version>)
-export VINYLDNS_BASE_VERSION=latest
-# The version of the images to build
-export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
-
 # Defaults
 TIMEOUT=60
 DOCKER_COMPOSE_CONFIG="${DIR}/docker-compose.yml"
@@ -93,6 +83,7 @@ BUILD=""
 RESET_DOCKER=0
 UPDATE=0
 CLEAN=0
+ENV_FILE="${DIR}/.env"
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -t | --timeout)
@@ -100,12 +91,16 @@ while [[ $# -gt 0 ]]; do
     shift
     shift
     ;;
-  -d | --deps-only)
-    SERVICE="integration ldap"
+  -d | --deps | --deps-only)
+    SERVICE="$SERVICE integration ldap"
     shift
     ;;
-  -a | --api-only)
-    SERVICE="api"
+  -a | --api | --api-only)
+    SERVICE="$SERVICE api"
+    shift
+    ;;
+  -p | --portal | --portal-only)
+    SERVICE="$SERVICE ldap portal"
     shift
     ;;
   -c | --clean)
@@ -113,7 +108,7 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -s | --service)
-    SERVICE="$2"
+    SERVICE="$SERVICE $2"
     shift
     shift
     ;;
@@ -127,6 +122,19 @@ while [[ $# -gt 0 ]]; do
     ;;
   -r | --reset)
     RESET_DOCKER=1
+    shift
+    ;;
+    -sh | --shell)
+      # shellcheck disable=SC2046
+      export $(grep -Ev '^#' "${ENV_FILE}" | xargs)
+      echo "Please wait.. creating a new shell with the environment variables set."
+      echo "To return, simply exit the new shell with 'exit' or ^D."
+      bash
+      exit
+      ;;
+  -e | --env-file)
+    export ENV_FILE="${DIR}/$2"
+    shift
     shift
     ;;
   -v | --version-tag)
@@ -143,12 +151,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Source customizable env files ('-a' causes all variables to be exported)
+
+set -a
+# shellcheck disable=SC1090
+source "${ENV_FILE}"
+set +a
+
+# The version of VinylDNS docker image to run
+export VINYLDNS_VERSION=latest
+# The base/starting version of VinylDNS docker build image to use (vinyldns/build:<version>)
+export VINYLDNS_BASE_VERSION=latest
+# The version of the images to build
+export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+
+# Make the list of services unique
+SERVICE=$(echo "$SERVICE" | uniq)
+
 if [[ $RESET_DOCKER -eq 1 ]] || [[ $CLEAN -eq 1 ]]; then
   "${DIR}/../utils/clean-vinyldns-containers.sh"
   if [[ $CLEAN -eq 1 ]]; then
     echo "${F_GREEN}Clean up completed!${F_RESET}"
     exit 0
   fi
+fi
+
+if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
+  VINYLDNS_IMAGE_VERSION="local-dev"
+  export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
 fi
 
 # Update images if requested
@@ -159,13 +189,9 @@ if [[ $UPDATE -eq 1 ]]; then
   echo "${F_YELLOW}Removing any local VinylDNS Docker images tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
   docker images -a |grep vinyldns | grep "${VINYLDNS_IMAGE_VERSION}" | awk '{print $3}' | xargs docker rmi -f &> /dev/null || true
   echo "${F_GREEN}Successfully removed all local VinylDNS Docker images and running containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
-  echo "${F_LRED}You may need to re-run with the '--build' flag...${F_RESET}"
-fi
-
-
-if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
-  VINYLDNS_IMAGE_VERSION="local-dev"
-  export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
+  if [ -z "${BUILD}" ]; then
+    echo "${F_LRED}You may need to re-run with the '--build' flag...${F_RESET}"
+  fi
 fi
 
 if [ -n "${BUILD}" ]; then
@@ -173,7 +199,9 @@ if [ -n "${BUILD}" ]; then
 else
   echo "Starting VinylDNS (${VINYLDNS_IMAGE_VERSION}) the background..."
 fi
-docker-compose -f "${DOCKER_COMPOSE_CONFIG}" up ${BUILD} -d ${SERVICE} || (
+
+# shellcheck disable=SC2086
+docker-compose -f "${DOCKER_COMPOSE_CONFIG}" --env-file "${ENV_FILE}" up ${BUILD} -d ${SERVICE} || (
   echo -e "${F_RED}Sorry, there was an error starting VinylDNS :-(\nTry resetting any existing containers with:\n\t${F_RESET}'$0 --reset'"; \
   exit 1; \
 )

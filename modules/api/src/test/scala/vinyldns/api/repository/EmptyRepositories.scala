@@ -18,11 +18,11 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetDataResults, ListRecordSetResults, NameSort, RecordSet, RecordSetDataRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneRepository, ListZonesResults}
 import cats.effect._
 import scalikejdbc._
-import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
@@ -62,7 +62,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def deleteRecordSetsInZone(DB: DB, zoneId: String, zoneName: String): IO[Unit] = IO(())
 }
 
-trait EmptyRecordSetDataRepo extends RecordSetDataRepository {
+trait EmptyRecordSetCacheRepo extends RecordSetCacheRepository {
 
   def listRecordSetData(
                          zoneId: Option[String],
@@ -72,8 +72,8 @@ trait EmptyRecordSetDataRepo extends RecordSetDataRepository {
                          recordTypeFilter: Option[Set[RecordType]],
                          recordOwnerGroupFilter: Option[String],
                          nameSort: NameSort
-                       ): IO[ListRecordSetDataResults] =
-    IO.pure(ListRecordSetDataResults(nameSort = nameSort))
+                       ): IO[ListRecordSetResults] =
+    IO.pure(ListRecordSetResults(nameSort = nameSort))
 }
 
 trait EmptyZoneRepo extends ZoneRepository {

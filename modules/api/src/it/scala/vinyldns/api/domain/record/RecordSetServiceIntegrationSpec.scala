@@ -56,7 +56,7 @@ class RecordSetServiceIntegrationSpec
   private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
   private val recordSetRepo = recordSetRepository
-  private val recordSetDataRepo = recordSetDataRepository
+  private val recordSetCacheRepo = recordSetCacheRepository
 
   private val zoneRepo: ZoneRepository = zoneRepository
   private val groupRepo: GroupRepository = groupRepository
@@ -292,7 +292,7 @@ class RecordSetServiceIntegrationSpec
       zoneRepo,
       groupRepo,
       recordSetRepo,
-      recordSetDataRepo,
+      recordSetCacheRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestMessageQueue,
@@ -300,7 +300,8 @@ class RecordSetServiceIntegrationSpec
       mockBackendResolver,
       false,
       vinyldnsConfig.highValueDomainConfig,
-      vinyldnsConfig.serverConfig.approvedNameServers
+      vinyldnsConfig.serverConfig.approvedNameServers,
+      useRecordSetCache = true
     )
   }
 

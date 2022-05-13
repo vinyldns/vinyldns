@@ -19,12 +19,8 @@ package vinyldns.core.repository
 import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.record.{
-  RecordChangeRepository,
-  RecordSetDataRepository,
-  RecordSetRepository
-}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.record.{RecordChangeRepository,  RecordSetRepository, RecordSetCacheRepository}
+import vinyldns.core.domain.zone.{ZoneRepository, ZoneChangeRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
 import vinyldns.core.health.HealthCheck.HealthCheck
 import vinyldns.core.task.TaskRepository
@@ -45,7 +41,7 @@ object DataStore {
       groupChangeRepository: Option[GroupChangeRepository] = None,
       recordSetRepository: Option[RecordSetRepository] = None,
       recordChangeRepository: Option[RecordChangeRepository] = None,
-      recordSetDataRepository: Option[RecordSetDataRepository] = None,
+      recordSetCacheRepository: Option[RecordSetCacheRepository] = None,
       zoneChangeRepository: Option[ZoneChangeRepository] = None,
       zoneRepository: Option[ZoneRepository] = None,
       batchChangeRepository: Option[BatchChangeRepository] = None,
@@ -59,7 +55,7 @@ object DataStore {
       groupChangeRepository,
       recordSetRepository,
       recordChangeRepository,
-      recordSetDataRepository,
+      recordSetCacheRepository,
       zoneChangeRepository,
       zoneRepository,
       batchChangeRepository,
@@ -75,7 +71,7 @@ class DataStore(
     groupChangeRepository: Option[GroupChangeRepository] = None,
     recordSetRepository: Option[RecordSetRepository] = None,
     recordChangeRepository: Option[RecordChangeRepository] = None,
-    recordSetDataRepository: Option[RecordSetDataRepository] = None,
+    recordSetCacheRepository: Option[RecordSetCacheRepository] = None,
     zoneChangeRepository: Option[ZoneChangeRepository] = None,
     zoneRepository: Option[ZoneRepository] = None,
     batchChangeRepository: Option[BatchChangeRepository] = None,
@@ -91,7 +87,7 @@ class DataStore(
       groupChangeRepository.map(RepositoryName.groupChange -> _),
       recordSetRepository.map(RepositoryName.recordSet -> _),
       recordChangeRepository.map(RepositoryName.recordChange -> _),
-      recordSetDataRepository.map(RepositoryName.recordSetData -> _),
+      recordSetCacheRepository.map(RepositoryName.recordSetCache -> _),
       zoneChangeRepository.map(RepositoryName.zoneChange -> _),
       zoneRepository.map(RepositoryName.zone -> _),
       batchChangeRepository.map(RepositoryName.batchChange -> _),

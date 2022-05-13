@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.TestZoneData.zoneChangePending
-import vinyldns.core.domain.record.{RecordSetDataRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
@@ -37,7 +37,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val mockZoneRepo = mock[ZoneRepository]
     val mockChangeRepo = mock[ZoneChangeRepository]
     val mockRecordSetRepo = mock[RecordSetRepository]
-    val mockRecordSetDataRepo = mock[RecordSetDataRepository]
+    val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
     val change = zoneChangePending
     val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo, mockRecordSetRepo,mockRecordSetDataRepo )

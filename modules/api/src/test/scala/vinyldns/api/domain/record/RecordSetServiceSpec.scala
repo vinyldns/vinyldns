@@ -28,7 +28,7 @@ import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.route.{ListGlobalRecordSetDataResponse, ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
+import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
@@ -51,7 +51,7 @@ class RecordSetServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
   private val mockRecordRepo = mock[RecordSetRepository]
-  private val mockRecordDataRepo = mock[RecordSetDataRepository]
+  private val mockRecordDataRepo = mock[RecordSetCacheRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMessageQueue = mock[MessageQueue]
@@ -83,7 +83,8 @@ class RecordSetServiceSpec
     mockBackendResolver,
     false,
     VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.approvedNameServers
+    VinylDNSTestHelpers.approvedNameServers,
+    true
   )
 
   val underTestWithDnsBackendValidations = new RecordSetService(
@@ -100,7 +101,8 @@ class RecordSetServiceSpec
     mockBackendResolver,
     true,
     VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.approvedNameServers
+    VinylDNSTestHelpers.approvedNameServers,
+    true
   )
 
   "addRecordSet" should {
@@ -1051,7 +1053,7 @@ class RecordSetServiceSpec
 
       doReturn(
         IO.pure(
-          ListRecordSetDataResults(
+          ListRecordSetResults(
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC,
@@ -1069,9 +1071,9 @@ class RecordSetServiceSpec
           nameSort = any[NameSort.NameSort]
         )
 
-      val result: ListGlobalRecordSetDataResponse = rightResultOf(
+      val result = rightResultOf(
         underTest
-          .listRecordSetData(
+          .searchRecordSets(
             startFrom = None,
             maxItems = None,
             recordNameFilter = "aaaa*",
@@ -1084,7 +1086,7 @@ class RecordSetServiceSpec
       )
       result.recordSets shouldBe
         List(
-          RecordSetDataGlobalInfo(
+          RecordSetGlobalInfo(
             sharedZoneRecord,
             sharedZone.name,
             sharedZone.shared,
@@ -1096,7 +1098,7 @@ class RecordSetServiceSpec
     "fail recordSetData if recordNameFilter is fewer than two characters" in {
       val result = leftResultOf(
         underTest
-          .listRecordSetData(
+          .searchRecordSets(
             startFrom = None,
             maxItems = None,
             recordNameFilter = "a",

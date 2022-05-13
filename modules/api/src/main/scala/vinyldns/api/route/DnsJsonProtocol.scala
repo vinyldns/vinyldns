@@ -23,7 +23,7 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
-import vinyldns.api.domain.zone.{RecordSetDataGlobalInfo, RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
+import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.Fqdn
@@ -42,7 +42,6 @@ trait DnsJsonProtocol extends JsonValidation {
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
-    RecordSetDataGlobalInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
@@ -284,33 +283,6 @@ trait DnsJsonProtocol extends JsonValidation {
         ).mapN(RecordSetGlobalInfo.apply)
 
     override def toJson(rs: RecordSetGlobalInfo): JValue =
-      ("type" -> Extraction.decompose(rs.typ)) ~
-        ("zoneId" -> rs.zoneId) ~
-        ("name" -> rs.name) ~
-        ("ttl" -> rs.ttl) ~
-        ("status" -> Extraction.decompose(rs.status)) ~
-        ("created" -> Extraction.decompose(rs.created)) ~
-        ("updated" -> Extraction.decompose(rs.updated)) ~
-        ("records" -> Extraction.decompose(rs.records)) ~
-        ("id" -> rs.id) ~
-        ("account" -> rs.account) ~
-        ("ownerGroupId" -> rs.ownerGroupId) ~
-        ("ownerGroupName" -> rs.ownerGroupName) ~
-        ("fqdn" -> rs.fqdn) ~
-        ("zoneName" -> rs.zoneName) ~
-        ("zoneShared" -> rs.zoneShared)
-  }
-
-  case object RecordSetDataGlobalInfoSerializer extends ValidationSerializer[RecordSetDataGlobalInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, RecordSetDataGlobalInfo] =
-      (
-        RecordSetSerializer.fromJson(js),
-        (js \ "zoneName").required[String]("Missing Zone.name"),
-        (js \ "zoneShared").required[Boolean]("Missing Zone.shared"),
-        (js \ "ownerGroupName").optional[String]
-        ).mapN(RecordSetDataGlobalInfo.apply)
-
-    override def toJson(rs: RecordSetDataGlobalInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
         ("zoneId" -> rs.zoneId) ~
         ("name" -> rs.name) ~

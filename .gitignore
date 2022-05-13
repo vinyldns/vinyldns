@@ -41,3 +41,9 @@ quickstart/data
 .run
 **/*.zip
 **/*.log
+modules/portal/public/custom/
+modules/portal/public/gentelella/
+modules/portal/public/javascripts/
+modules/portal/public/project/
+modules/portal/public/stylesheets/
+**/.env.*

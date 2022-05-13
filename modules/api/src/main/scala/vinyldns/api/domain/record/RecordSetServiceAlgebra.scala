@@ -20,7 +20,7 @@ import vinyldns.api.Interfaces.Result
 import vinyldns.api.domain.zone.RecordSetInfo
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneCommandResult
-import vinyldns.api.route.{ListGlobalRecordSetDataResponse, ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
+import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -57,15 +57,27 @@ trait RecordSetServiceAlgebra {
                       authPrincipal: AuthPrincipal
                     ): Result[ListGlobalRecordSetsResponse]
 
-  def listRecordSetData(
-                         startFrom: Option[String],
-                         maxItems: Option[Int],
-                         recordNameFilter: String,
-                         recordTypeFilter: Option[Set[RecordType]],
-                         recordOwnerGroupId: Option[String],
-                         nameSort: NameSort,
-                         authPrincipal: AuthPrincipal
-                       ): Result[ListGlobalRecordSetDataResponse]
+  /**
+   * Searches recordsets, optionally using the recordset cache (controlled by the 'use-recordset-cache' setting)
+   *
+   * @param startFrom          The starting record
+   * @param maxItems           The maximum number of items
+   * @param recordNameFilter   The record name filter
+   * @param recordTypeFilter   The record type filter
+   * @param recordOwnerGroupId THe owner group identifier
+   * @param nameSort           The sort direction
+   * @param authPrincipal      The authenticated principal
+   * @return A {@link ListGlobalRecordSetsResponse}
+   */
+  def searchRecordSets(
+                        startFrom: Option[String],
+                        maxItems: Option[Int],
+                        recordNameFilter: String,
+                        recordTypeFilter: Option[Set[RecordType]],
+                        recordOwnerGroupId: Option[String],
+                        nameSort: NameSort,
+                        authPrincipal: AuthPrincipal
+                      ): Result[ListGlobalRecordSetsResponse]
 
   def listRecordSetsByZone(
                             zoneId: String,
