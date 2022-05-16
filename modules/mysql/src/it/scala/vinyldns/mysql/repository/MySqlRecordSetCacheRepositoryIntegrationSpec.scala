@@ -441,16 +441,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
     "return applicable recordsets in descending order when recordNameFilter is given and name sort is descending" in {
       val existing = insert(okZone, 10).map(_.recordSet)
       val found = recordSetCacheRepo
-        .listRecordSetData(None, None, None, Some("*.ok*"), None, None, NameSort.DESC)
-        .unsafeRunSync()
-      found.recordSets should contain theSameElementsAs existing
-        .map(r => recordSetDataWithFQDN(r, okZone))
-        .reverse
-    }
-    "return applicable recordsets in descending order when recordNameFilter supports full-text" in {
-      val existing = insert(okZone, 10).map(_.recordSet)
-      val found = recordSetCacheRepo
-        .listRecordSetData(None, None, None, Some("apply*test"), None, None, NameSort.DESC)
+        .listRecordSetData(None, None, None, Some("*.recordsets."), None, None, NameSort.DESC)
         .unsafeRunSync()
       found.recordSets should contain theSameElementsAs existing
         .map(r => recordSetDataWithFQDN(r, okZone))

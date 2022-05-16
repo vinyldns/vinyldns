@@ -24,7 +24,7 @@ function usage() {
   echo -e "\t-c, --clean        stops all VinylDNS containers and exits"
   echo -e "\t-d, --deps         start up the dependencies, but not the API or Portal"
   echo -e "\t-sh, --shell       loads the .env file into a new BASH shell. The .env file can be overridden with -e"
-  echo -e "\t-e, --env-file     specifies the path (relative to the docker-compose file) to the .env file to load (e.g., .env.dev)."
+  echo -e "\t-e, --env-file     specifies the suffix of the .env file (relative to the docker-compose file) to load (e.g., 'dev' - to load '.env.dev')"
   echo -e "\t-r, --reset        stops any the running containers before starting new containers"
   echo -e "\t-s, --service      specify the service to run"
   echo -e "\t-t, --timeout      the time to wait (in seconds) for the Portal and API to start (default: 60)"
@@ -84,6 +84,7 @@ RESET_DOCKER=0
 UPDATE=0
 CLEAN=0
 ENV_FILE="${DIR}/.env"
+SHELL_REQUESTED=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -t | --timeout)
@@ -124,16 +125,16 @@ while [[ $# -gt 0 ]]; do
     RESET_DOCKER=1
     shift
     ;;
-    -sh | --shell)
-      # shellcheck disable=SC2046
-      export $(grep -Ev '^#' "${ENV_FILE}" | xargs)
-      echo "Please wait.. creating a new shell with the environment variables set."
-      echo "To return, simply exit the new shell with 'exit' or ^D."
-      bash
-      exit
-      ;;
+  -sh | --shell)
+    SHELL_REQUESTED=1
+    shift
+    ;;
   -e | --env-file)
-    export ENV_FILE="${DIR}/$2"
+    if [ ! -f "${DIR}/.env.$2" ]; then
+      echo "Cannot load ${DIR}/.env.$2"
+      exit 1
+    fi
+    export ENV_FILE="${DIR}/.env.$2"
     shift
     shift
     ;;
@@ -151,12 +152,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Source customizable env files ('-a' causes all variables to be exported)
+# Load environment variables
+export $(echo $(cat "${ENV_FILE}" | sed 's/#.*//g'| xargs) | envsubst)
 
-set -a
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
-set +a
+if [[ $SHELL_REQUESTED -eq 1 ]]; then
+  echo "Please wait.. creating a new shell with the environment variables set."
+  echo "To return, simply exit the new shell with 'exit' or ^D."
+  bash
+  exit
+fi
 
 # The version of VinylDNS docker image to run
 export VINYLDNS_VERSION=latest

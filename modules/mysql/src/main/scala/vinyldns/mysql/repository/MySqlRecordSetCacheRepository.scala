@@ -314,11 +314,11 @@ class MySqlRecordSetCacheRepository
             )
           case (false, NameSort.ASC) =>
             pagingKey.as(
-              sqls"((recordset_data.fqdn >= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.fqdn > ${pagingKey.map(pk => pk.recordName)})"
+              sqls"((recordset.fqdn >= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn > ${pagingKey.map(pk => pk.recordName)})"
             )
           case (false, NameSort.DESC) =>
             pagingKey.as(
-              sqls"((recordset_data.fqdn <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset_data.fqdn < ${pagingKey.map(pk => pk.recordName)})"
+              sqls"((recordset.fqdn <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn < ${pagingKey.map(pk => pk.recordName)})"
             )
           case _ =>
             pagingKey.as(
@@ -338,10 +338,10 @@ class MySqlRecordSetCacheRepository
           (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
-          sqls"ORDER BY recordset_data.fqdn ASC, recordset.type ASC "
+          sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "
         }
         else {
-          sqls"ORDER BY recordset_data.fqdn DESC, recordset.type ASC "
+          sqls"ORDER BY recordset.fqdn DESC, recordset.type ASC "
         }
 
         val recordLimit = maxPlusOne match {
@@ -358,7 +358,6 @@ class MySqlRecordSetCacheRepository
 
         // Join query for data column from recordset table
         val recordsetDataJoin = sqls"RIGHT JOIN recordset ON recordset.id=recordset_data.recordset_id "
-
         val recordsetDataJoinQuery = initialQuery.append(recordsetDataJoin)
 
         val appendOpts = if (opts.nonEmpty) {
