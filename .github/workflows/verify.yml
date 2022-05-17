@@ -26,6 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Test
+        id: build
         run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
       - name: Codecov
@@ -56,7 +57,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: set the status              # set the workflow status if command failed
-        if: always()
+        if: steps.build.outcome=='success'
         run: |
           if ${{ steps.codecov0.outcome=='success' || steps.codecov1.outcome=='success' || steps.codecov2.outcome=='success' || steps.codecov3.outcome=='success' }}; then
              echo "Codecov completed successfully"
