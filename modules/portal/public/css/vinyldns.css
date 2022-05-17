@@ -425,6 +425,11 @@ input[type="file"] {
     word-break: break-all;
 }
 
+.no-wrap {
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
 .record-data-label {
     vertical-align: top;
 }

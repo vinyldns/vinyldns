@@ -255,8 +255,9 @@ trait ProtobufConversions {
       .addAllRules(acl.rules.map(toPB).asJava)
       .build()
 
-  def toPB(data: AData): VinylDNSProto.AData =
+  def toPB(data: AData): VinylDNSProto.AData = {
     VinylDNSProto.AData.newBuilder().setAddress(data.address).build()
+  }
 
   def toPB(data: AAAAData): VinylDNSProto.AAAAData =
     VinylDNSProto.AAAAData.newBuilder().setAddress(data.address).build()
@@ -332,24 +333,31 @@ trait ProtobufConversions {
   def toPB(data: TXTData): VinylDNSProto.TXTData =
     VinylDNSProto.TXTData.newBuilder().setText(data.text).build()
 
+  /**
+   * Converts record data into protobuf form
+   *
+   * @param data the record data to convert
+   * @return The record data in protobuf form
+   */
+  def recordDataToPB(data: RecordData) = data match {
+    case x: AData => toPB(x)
+    case x: AAAAData => toPB(x)
+    case x: CNAMEData => toPB(x)
+    case x: DSData => toPB(x)
+    case x: MXData => toPB(x)
+    case x: NSData => toPB(x)
+    case x: PTRData => toPB(x)
+    case x: SOAData => toPB(x)
+    case x: SPFData => toPB(x)
+    case x: SRVData => toPB(x)
+    case x: NAPTRData => toPB(x)
+    case x: SSHFPData => toPB(x)
+    case x: TXTData => toPB(x)
+  }
+
   /* This cannot be called toPB because RecordData is the base type for things like AData, cannot overload */
   def toRecordData(data: RecordData): VinylDNSProto.RecordData = {
-    val d = data match {
-      case x: AData => toPB(x)
-      case x: AAAAData => toPB(x)
-      case x: CNAMEData => toPB(x)
-      case x: DSData => toPB(x)
-      case x: MXData => toPB(x)
-      case x: NSData => toPB(x)
-      case x: PTRData => toPB(x)
-      case x: SOAData => toPB(x)
-      case x: SPFData => toPB(x)
-      case x: SRVData => toPB(x)
-      case x: NAPTRData => toPB(x)
-      case x: SSHFPData => toPB(x)
-      case x: TXTData => toPB(x)
-    }
-    VinylDNSProto.RecordData.newBuilder().setData(d.toByteString).build()
+    VinylDNSProto.RecordData.newBuilder().setData(recordDataToPB(data).toByteString).build()
   }
 
   def toPB(rs: RecordSet): VinylDNSProto.RecordSet = {
