@@ -33,6 +33,7 @@ describe('Controller: ZonesController', function () {
         this.pagingService = pagingService;
 
         this.scope.myGroups = {};
+        this.scope.allGroups = {};
         this.scope.zones = {};
 
         profileService.getAuthenticatedUserData = function() {
@@ -45,6 +46,7 @@ describe('Controller: ZonesController', function () {
                 }
             });
         };
+
         zonesService.getZones = function() {
             return $q.when({
                 data: {
