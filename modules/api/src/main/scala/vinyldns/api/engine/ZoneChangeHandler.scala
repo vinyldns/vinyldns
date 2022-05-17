@@ -19,15 +19,15 @@ package vinyldns.api.engine
 import cats.effect.IO
 import scalikejdbc.DB
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
-import vinyldns.core.domain.record.{RecordSetDataRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
 
 object ZoneChangeHandler {
   def apply(
-      zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository,
-      recordSetRepository: RecordSetRepository ,
-      recordSetDataRepository: RecordSetDataRepository,
+             zoneRepository: ZoneRepository,
+             zoneChangeRepository: ZoneChangeRepository,
+             recordSetRepository: RecordSetRepository,
+             recordSetCacheRepository: RecordSetCacheRepository,
 
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
@@ -45,8 +45,8 @@ object ZoneChangeHandler {
             for {
               _ <- recordSetRepository
               .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
-              _ <- recordSetDataRepository
-            .deleteRecordSetDatasInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
+              _ <- recordSetCacheRepository
+            .deleteRecordSetDataInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
             yield ()
           }
             .attempt

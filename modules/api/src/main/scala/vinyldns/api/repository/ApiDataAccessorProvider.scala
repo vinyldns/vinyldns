@@ -22,7 +22,7 @@ import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{
   RecordChangeRepository,
-  RecordSetDataRepository,
+  RecordSetCacheRepository,
   RecordSetRepository
 }
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
@@ -39,7 +39,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       groupChange,
       recordSet,
       recordChange,
-      recordSetData,
+      recordSetCache,
       zoneChange,
       zone,
       batchChange
@@ -55,7 +55,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       getRepoOf[GroupChangeRepository](dataStores, groupChange),
       getRepoOf[RecordSetRepository](dataStores, recordSet),
       getRepoOf[RecordChangeRepository](dataStores, recordChange),
-      getRepoOf[RecordSetDataRepository](dataStores, recordSetData),
+      getRepoOf[RecordSetCacheRepository](dataStores, recordSetCache),
       getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
       getRepoOf[ZoneRepository](dataStores, zone),
       getRepoOf[BatchChangeRepository](dataStores, batchChange)
