@@ -153,7 +153,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Load environment variables
-export $(echo $(cat "${ENV_FILE}" | sed 's/#.*//g'| xargs) | envsubst)
+export $(echo $(cat "${ENV_FILE}" | sed 's/#.*//g'| xargs))
 
 if [[ $SHELL_REQUESTED -eq 1 ]]; then
   echo "Please wait.. creating a new shell with the environment variables set."
