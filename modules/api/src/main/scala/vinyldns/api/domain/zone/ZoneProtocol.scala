@@ -29,31 +29,31 @@ import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 
 case class ZoneInfo(
-    name: String,
-    email: String,
-    status: ZoneStatus,
-    created: DateTime,
-    updated: Option[DateTime],
-    id: String,
-    connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection],
-    account: String,
-    shared: Boolean,
-    acl: ZoneACLInfo,
-    adminGroupId: String,
-    adminGroupName: String,
-    latestSync: Option[DateTime],
-    backendId: Option[String],
-    accessLevel: AccessLevel
-)
+                     name: String,
+                     email: String,
+                     status: ZoneStatus,
+                     created: DateTime,
+                     updated: Option[DateTime],
+                     id: String,
+                     connection: Option[ZoneConnection],
+                     transferConnection: Option[ZoneConnection],
+                     account: String,
+                     shared: Boolean,
+                     acl: ZoneACLInfo,
+                     adminGroupId: String,
+                     adminGroupName: String,
+                     latestSync: Option[DateTime],
+                     backendId: Option[String],
+                     accessLevel: AccessLevel
+                   )
 
 object ZoneInfo {
   def apply(
-      zone: Zone,
-      aclInfo: ZoneACLInfo,
-      groupName: String,
-      accessLevel: AccessLevel
-  ): ZoneInfo =
+             zone: Zone,
+             aclInfo: ZoneACLInfo,
+             groupName: String,
+             accessLevel: AccessLevel
+           ): ZoneInfo =
     ZoneInfo(
       name = zone.name,
       email = zone.email,
@@ -75,23 +75,23 @@ object ZoneInfo {
 }
 
 case class ZoneSummaryInfo(
-    name: String,
-    email: String,
-    status: ZoneStatus,
-    created: DateTime,
-    updated: Option[DateTime],
-    id: String,
-    connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection],
-    account: String,
-    shared: Boolean,
-    acl: ZoneACL,
-    adminGroupId: String,
-    adminGroupName: String,
-    latestSync: Option[DateTime],
-    backendId: Option[String],
-    accessLevel: AccessLevel
-)
+                            name: String,
+                            email: String,
+                            status: ZoneStatus,
+                            created: DateTime,
+                            updated: Option[DateTime],
+                            id: String,
+                            connection: Option[ZoneConnection],
+                            transferConnection: Option[ZoneConnection],
+                            account: String,
+                            shared: Boolean,
+                            acl: ZoneACL,
+                            adminGroupId: String,
+                            adminGroupName: String,
+                            latestSync: Option[DateTime],
+                            backendId: Option[String],
+                            accessLevel: AccessLevel
+                          )
 
 object ZoneSummaryInfo {
   def apply(zone: Zone, groupName: String, accessLevel: AccessLevel): ZoneSummaryInfo =
@@ -116,21 +116,21 @@ object ZoneSummaryInfo {
 }
 
 case class RecordSetListInfo(
-    zoneId: String,
-    name: String,
-    typ: RecordType,
-    ttl: Long,
-    status: RecordSetStatus,
-    created: DateTime,
-    updated: Option[DateTime],
-    records: List[RecordData],
-    id: String,
-    account: String,
-    accessLevel: AccessLevel,
-    ownerGroupId: Option[String],
-    ownerGroupName: Option[String],
-    fqdn: Option[String]
-)
+                              zoneId: String,
+                              name: String,
+                              typ: RecordType,
+                              ttl: Long,
+                              status: RecordSetStatus,
+                              created: DateTime,
+                              updated: Option[DateTime],
+                              records: List[RecordData],
+                              id: String,
+                              account: String,
+                              accessLevel: AccessLevel,
+                              ownerGroupId: Option[String],
+                              ownerGroupName: Option[String],
+                              fqdn: Option[String]
+                            )
 
 object RecordSetListInfo {
   def apply(recordSet: RecordSetInfo, accessLevel: AccessLevel): RecordSetListInfo =
@@ -153,20 +153,20 @@ object RecordSetListInfo {
 }
 
 case class RecordSetInfo(
-    zoneId: String,
-    name: String,
-    typ: RecordType,
-    ttl: Long,
-    status: RecordSetStatus,
-    created: DateTime,
-    updated: Option[DateTime],
-    records: List[RecordData],
-    id: String,
-    account: String,
-    ownerGroupId: Option[String],
-    ownerGroupName: Option[String],
-    fqdn: Option[String]
-)
+                          zoneId: String,
+                          name: String,
+                          typ: RecordType,
+                          ttl: Long,
+                          status: RecordSetStatus,
+                          created: DateTime,
+                          updated: Option[DateTime],
+                          records: List[RecordData],
+                          id: String,
+                          account: String,
+                          ownerGroupId: Option[String],
+                          ownerGroupName: Option[String],
+                          fqdn: Option[String]
+                        )
 
 object RecordSetInfo {
   def apply(recordSet: RecordSet, groupName: Option[String]): RecordSetInfo =
@@ -188,30 +188,30 @@ object RecordSetInfo {
 }
 
 case class RecordSetGlobalInfo(
-    zoneId: String,
-    name: String,
-    typ: RecordType,
-    ttl: Long,
-    status: RecordSetStatus,
-    created: DateTime,
-    updated: Option[DateTime],
-    records: List[RecordData],
-    id: String,
-    account: String,
-    ownerGroupId: Option[String],
-    ownerGroupName: Option[String],
-    fqdn: Option[String],
-    zoneName: String,
-    zoneShared: Boolean
-)
+                                zoneId: String,
+                                name: String,
+                                typ: RecordType,
+                                ttl: Long,
+                                status: RecordSetStatus,
+                                created: DateTime,
+                                updated: Option[DateTime],
+                                records: List[RecordData],
+                                id: String,
+                                account: String,
+                                ownerGroupId: Option[String],
+                                ownerGroupName: Option[String],
+                                fqdn: Option[String],
+                                zoneName: String,
+                                zoneShared: Boolean
+                              )
 
 object RecordSetGlobalInfo {
   def apply(
-      recordSet: RecordSet,
-      zoneName: String,
-      zoneShared: Boolean,
-      groupName: Option[String]
-  ): RecordSetGlobalInfo =
+             recordSet: RecordSet,
+             zoneName: String,
+             zoneShared: Boolean,
+             groupName: Option[String]
+           ): RecordSetGlobalInfo =
     RecordSetGlobalInfo(
       zoneId = recordSet.zoneId,
       name = recordSet.name,
@@ -232,17 +232,17 @@ object RecordSetGlobalInfo {
 }
 
 case class RecordSetChangeInfo(
-    zone: Zone,
-    recordSet: RecordSet,
-    userId: String,
-    changeType: RecordSetChangeType,
-    status: RecordSetChangeStatus,
-    created: DateTime,
-    systemMessage: Option[String],
-    updates: Option[RecordSet],
-    id: String,
-    userName: String
-)
+                                zone: Zone,
+                                recordSet: RecordSet,
+                                userId: String,
+                                changeType: RecordSetChangeType,
+                                status: RecordSetChangeStatus,
+                                created: DateTime,
+                                systemMessage: Option[String],
+                                updates: Option[RecordSet],
+                                id: String,
+                                userName: String
+                              )
 
 object RecordSetChangeInfo {
   def apply(recordSetChange: RecordSetChange, name: Option[String]): RecordSetChangeInfo =
@@ -261,13 +261,13 @@ object RecordSetChangeInfo {
 }
 
 case class ListZonesResponse(
-    zones: List[ZoneSummaryInfo],
-    nameFilter: Option[String],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
-    maxItems: Int = 100,
-    ignoreAccess: Boolean = false
-)
+                              zones: List[ZoneSummaryInfo],
+                              nameFilter: Option[String],
+                              startFrom: Option[String] = None,
+                              nextId: Option[String] = None,
+                              maxItems: Int = 100,
+                              ignoreAccess: Boolean = false
+                            )
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
@@ -305,7 +305,7 @@ case class ConnectionFailed(zone: Zone, message: String) extends Throwable(messa
 case class RecordSetValidation(msg: String) extends Throwable(msg)
 
 case class ZoneValidationFailed(zone: Zone, errors: List[String], message: String)
-    extends Throwable(message)
+  extends Throwable(message)
 
 case class ZoneTooLargeError(msg: String) extends Throwable(msg)
 

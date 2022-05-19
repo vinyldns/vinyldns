@@ -53,7 +53,7 @@ class RecordSetChangeHandlerSpec
   private val mockBackend = mock[Backend]
   private val mockRsRepo = mock[RecordSetRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
-  private val mockRecordSetDataRepo = mock[RecordSetDataRepository]
+  private val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
@@ -575,7 +575,7 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(BackendResponse.NoError("test")))
         .when(mockBackend)
         .applyChange(updateChange)
-      
+
       doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[DB], any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[DB], any[ChangeSet])
       doReturn(IO.pure(cs)).when(mockRecordSetDataRepo).save(any[DB], any[ChangeSet])

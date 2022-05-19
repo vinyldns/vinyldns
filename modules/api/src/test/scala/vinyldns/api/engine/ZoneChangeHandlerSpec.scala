@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.TestZoneData.zoneChangePending
-import vinyldns.core.domain.record.{RecordSetDataRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
@@ -37,7 +37,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val mockZoneRepo = mock[ZoneRepository]
     val mockChangeRepo = mock[ZoneChangeRepository]
     val mockRecordSetRepo = mock[RecordSetRepository]
-    val mockRecordSetDataRepo = mock[RecordSetDataRepository]
+    val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
     val change = zoneChangePending
     val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo, mockRecordSetRepo,mockRecordSetDataRepo )
@@ -77,12 +77,12 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
     doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
     executeWithinTransaction { db: DB =>
-    doReturn(IO.pure(()))
-      .when(mockRecordSetRepo)
-      .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
-    doReturn(IO.pure(()))
-      .when(mockRecordSetDataRepo)
-      .deleteRecordSetDatasInZone(db, deleteChange.zone.id, deleteChange.zone.name)}
+      doReturn(IO.pure(()))
+        .when(mockRecordSetRepo)
+        .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
+      doReturn(IO.pure(()))
+        .when(mockRecordSetDataRepo)
+        .deleteRecordSetDataInZone(db, deleteChange.zone.id, deleteChange.zone.name)}
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(deleteChange).unsafeRunSync()
@@ -99,12 +99,12 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
     doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
     executeWithinTransaction { db: DB =>
-    doReturn(IO.raiseError(new Throwable("error")))
-      .when(mockRecordSetRepo)
-      .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
-    doReturn(IO.raiseError(new Throwable("error")))
-      .when(mockRecordSetDataRepo)
-      .deleteRecordSetDatasInZone(db,deleteChange.zone.id, deleteChange.zone.name)}
+      doReturn(IO.raiseError(new Throwable("error")))
+        .when(mockRecordSetRepo)
+        .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
+      doReturn(IO.raiseError(new Throwable("error")))
+        .when(mockRecordSetDataRepo)
+        .deleteRecordSetDataInZone(db,deleteChange.zone.id, deleteChange.zone.name)}
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(deleteChange).unsafeRunSync()
