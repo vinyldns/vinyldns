@@ -17,8 +17,8 @@
 package vinyldns.api.domain.membership
 
 import java.util.UUID
-
 import org.joda.time.DateTime
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -36,15 +36,20 @@ final case class GroupInfo(
     admins: Set[UserId] = Set.empty
 )
 object GroupInfo {
-  def apply(group: Group): GroupInfo = GroupInfo(
+  def apply(group: Group): GroupInfo = fromGroup(group, abridged = false, None)
+
+  def fromGroup(group: Group, abridged: Boolean = false,
+                authPrincipal: Option[AuthPrincipal]): GroupInfo = GroupInfo(
     id = group.id,
     name = group.name,
     email = group.email,
     description = group.description,
-    created = group.created,
-    status = group.status,
-    members = group.memberIds.map(UserId),
-    admins = group.adminUserIds.map(UserId)
+    created = if (abridged) null else group.created,
+    status = if (abridged) null else group.status,
+    members = (if (abridged && authPrincipal.isDefined) group.memberIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupMember(group.id))
+              else group.memberIds).map(UserId),
+    admins = (if (abridged && authPrincipal.isDefined) group.adminUserIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupAdmin(group))
+              else group.memberIds).map(UserId)
   )
 }
 
