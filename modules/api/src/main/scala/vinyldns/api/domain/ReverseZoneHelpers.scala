@@ -109,7 +109,7 @@ object ReverseZoneHelpers {
     string.split('.').filter(!_.isEmpty).reverse.toList
 
   private def getZoneAsCIDRString(zone: Zone): Either[Throwable, String] = {
-    val zoneName = Pattern.compile("in-addr.arpa.", Pattern.CASE_INSENSITIVE).split(zone.name)(0)
+    val zoneName = zone.name.dropRight("in-addr.arpa.".length)
     val zoneOctets = ipv4ReverseSplitByOctets(zoneName)
     val zoneString = zoneOctets.mkString(".")
 
