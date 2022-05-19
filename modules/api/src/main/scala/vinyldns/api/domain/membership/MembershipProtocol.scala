@@ -49,7 +49,7 @@ object GroupInfo {
     members = (if (abridged && authPrincipal.isDefined) group.memberIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupMember(group.id))
               else group.memberIds).map(UserId),
     admins = (if (abridged && authPrincipal.isDefined) group.adminUserIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupAdmin(group))
-              else group.memberIds).map(UserId)
+              else group.adminUserIds).map(UserId)
   )
 }
 
