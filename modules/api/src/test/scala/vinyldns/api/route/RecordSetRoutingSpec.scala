@@ -41,7 +41,7 @@ import vinyldns.core.domain.zone._
 import scala.util.Random
 
 class RecordSetRoutingSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with ScalatestRouteTest
     with VinylDNSJsonProtocol
     with VinylDNSRouteTestHelper
@@ -409,11 +409,11 @@ class RecordSetRoutingSpec
   class TestService extends RecordSetServiceAlgebra {
 
     def evaluate(
-        rsId: String,
-        zoneId: String,
-        authPrincipal: AuthPrincipal,
-        chgType: RecordSetChangeType
-    ): Either[Throwable, RecordSetChange] = zoneId match {
+                  rsId: String,
+                  zoneId: String,
+                  authPrincipal: AuthPrincipal,
+                  chgType: RecordSetChangeType
+                ): Either[Throwable, RecordSetChange] = zoneId match {
       case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
       case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
@@ -480,17 +480,17 @@ class RecordSetRoutingSpec
     }.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
 
     def deleteRecordSet(
-        recordSetId: String,
-        zoneId: String,
-        auth: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
+                         recordSetId: String,
+                         zoneId: String,
+                         auth: AuthPrincipal
+                       ): Result[ZoneCommandResult] = {
       evaluate(recordSetId, zoneId, auth, RecordSetChangeType.Delete)
     }.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
 
     def getRecordSet(
-        recordSetId: String,
-        authPrincipal: AuthPrincipal
-    ): Result[RecordSetInfo] = {
+                      recordSetId: String,
+                      authPrincipal: AuthPrincipal
+                    ): Result[RecordSetInfo] = {
       recordSetId match {
         case rsError.id => Left(new RuntimeException("fail"))
         case rsNotFound.id => Left(RecordSetNotFoundError(s"$recordSetId"))
@@ -499,10 +499,10 @@ class RecordSetRoutingSpec
     }.toResult
 
     def getRecordSetByZone(
-        recordSetId: String,
-        zoneId: String,
-        authPrincipal: AuthPrincipal
-    ): Result[RecordSetInfo] = {
+                            recordSetId: String,
+                            zoneId: String,
+                            authPrincipal: AuthPrincipal
+                          ): Result[RecordSetInfo] = {
       if (zoneId == zoneNotFound.id) {
         Left(ZoneNotFoundError(s"$zoneId"))
       } else {
@@ -515,14 +515,63 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSets(
-        startFrom: Option[String],
-        maxItems: Option[Int],
-        recordNameFilter: String,
-        recordTypeFilter: Option[Set[RecordType]],
-        recordOwnerGroupFilter: Option[String],
-        nameSort: NameSort,
-        authPrincipal: AuthPrincipal
-    ): Result[ListGlobalRecordSetsResponse] = {
+                        startFrom: Option[String],
+                        maxItems: Option[Int],
+                        recordNameFilter: String,
+                        recordTypeFilter: Option[Set[RecordType]],
+                        recordOwnerGroupFilter: Option[String],
+                        nameSort: NameSort,
+                        authPrincipal: AuthPrincipal
+                      ): Result[ListGlobalRecordSetsResponse] = {
+      if (recordTypeFilter.contains(Set(CNAME))) {
+        Right(
+          ListGlobalRecordSetsResponse(
+            List(
+              RecordSetGlobalInfo(rs4, okZone.name, okZone.shared, None)
+            ),
+            startFrom,
+            None,
+            maxItems,
+            "rs*",
+            recordTypeFilter,
+            recordOwnerGroupFilter,
+            nameSort
+          )
+        )
+      } else {
+        val recordSetList = recordOwnerGroupFilter match {
+          case Some("my-group") => List(RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None))
+          case _ =>
+            List(
+              RecordSetGlobalInfo(rs1, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs2, okZone.name, okZone.shared, None),
+              RecordSetGlobalInfo(rs3, okZone.name, okZone.shared, None)
+            )
+        }
+        Right(
+          ListGlobalRecordSetsResponse(
+            recordSetList,
+            startFrom,
+            None,
+            maxItems,
+            "rs*",
+            recordTypeFilter,
+            None,
+            nameSort
+          )
+        )
+      }
+    }.toResult
+
+    def searchRecordSets(
+                           startFrom: Option[String],
+                           maxItems: Option[Int],
+                           recordNameFilter: String,
+                           recordTypeFilter: Option[Set[RecordType]],
+                           recordOwnerGroupFilter: Option[String],
+                           nameSort: NameSort,
+                           authPrincipal: AuthPrincipal
+                         ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
           ListGlobalRecordSetsResponse(
@@ -564,15 +613,15 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSetsByZone(
-        zoneId: String,
-        startFrom: Option[String],
-        maxItems: Option[Int],
-        recordNameFilter: Option[String],
-        recordTypeFilter: Option[Set[RecordType]],
-        recordOwnerGroupFilter: Option[String],
-        nameSort: NameSort,
-        authPrincipal: AuthPrincipal
-    ): Result[ListRecordSetsByZoneResponse] = {
+                              zoneId: String,
+                              startFrom: Option[String],
+                              maxItems: Option[Int],
+                              recordNameFilter: Option[String],
+                              recordTypeFilter: Option[Set[RecordType]],
+                              recordOwnerGroupFilter: Option[String],
+                              nameSort: NameSort,
+                              authPrincipal: AuthPrincipal
+                            ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
@@ -611,10 +660,10 @@ class RecordSetRoutingSpec
     }.toResult
 
     def getRecordSetChange(
-        zoneId: String,
-        changeId: String,
-        authPrincipal: AuthPrincipal
-    ): Result[RecordSetChange] = {
+                            zoneId: String,
+                            changeId: String,
+                            authPrincipal: AuthPrincipal
+                          ): Result[RecordSetChange] = {
       changeId match {
         case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
@@ -624,11 +673,11 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSetChanges(
-        zoneId: String,
-        startFrom: Option[String],
-        maxItems: Int,
-        authPrincipal: AuthPrincipal
-    ): Result[ListRecordSetChangesResponse] = {
+                              zoneId: String,
+                              startFrom: Option[String],
+                              maxItems: Int,
+                              authPrincipal: AuthPrincipal
+                            ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))

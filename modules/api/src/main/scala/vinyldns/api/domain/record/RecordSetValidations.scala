@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{RecordType, RecordSet}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -324,10 +324,9 @@ object RecordSetValidations {
     )
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
-    ensuring(
-      InvalidRequest(RecordNameFilterError)
-    ) {
-      val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
-      searchRegex.findFirstIn(recordNameFilter).isDefined
+    ensuring(onError = InvalidRequest(RecordNameFilterError)) {
+      val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
+      val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
+      searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty
     }
 }

@@ -39,7 +39,7 @@
                     updateRecordDisplay(response.data['recordSets']);
                 }
                 return recordsService
-                    .listRecordSets(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.ownerGroupFilter)
+                    .listRecordSetData(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.ownerGroupFilter)
                     .then(success)
                     .catch(function (error) {
                         handleError(error, 'dnsChangesService::getRecordSet-failure');
@@ -85,16 +85,14 @@
                     newRecords.push(recordsService.toDisplayRecord(record, ''));
                 });
                 $scope.records = newRecords;
-                if($scope.records.length > 0) {
-                  $("#ShowNoRec").modal("hide");
-                  $("#loader").modal("hide");
-                  $("td.dataTables_empty").hide();
+                if ($scope.records.length > 0) {
+                    $("#ShowNoRec").modal("hide");
+                    $("td.dataTables_empty").hide();
                 } else {
-                    $("#loader").modal("hide");
                     $("td.dataTables_empty").show();
                     $("#ShowNoRec").modal("show");
-                    setTimeout(function(){
-                    $("#ShowNoRec").modal("hide");
+                    setTimeout(function () {
+                        $("#ShowNoRec").modal("hide");
                     }, 5000);
                 }
             };
@@ -117,7 +115,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(recordsPaging);
                 return recordsService
-                    .listRecordSets(recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
+                    .listRecordSetData(recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
                     .then(function(response) {
                         recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                         updateRecordDisplay(response.data.recordSets);
@@ -129,7 +127,7 @@
 
             $scope.nextPage = function() {
                 return recordsService
-                        .listRecordSets(recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
+                        .listRecordSetData(recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordOwnerGroupFilter)
                         .then(function(response) {
                         var recordSets = response.data.recordSets;
                         recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);

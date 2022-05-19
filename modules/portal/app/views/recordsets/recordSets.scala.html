@@ -39,25 +39,32 @@
                 <div class="collapse" id="collapseInstruction">
                     <div class="well">
                         <p>The search is based on the fully qualified domain name (FQDN) of a record. You can do an exact match search or fuzzy match to lookup records.</p>
-                        <p>A minimum of two alphanumeric characters for the record name is <i>required</i> for searching.</p>
-                        <p><strong>Examples:</strong>
-                        <ul>
-                            <li>test.example.com. -> test.example.com.</li>
-                            <li>test.example.com -> test.example.com.</li>
-                            <li>test.* -> test.example.com., test.example.net., test.net.</li>
-                            <li>*example.com -> one.example.com., test.example.com.</li>
-                            <li>*example* -> one.example.com., test.example.com., test.example.net.</li>
-                        </ul>
+                        <p>
+                            A minimum of <strong>two alphanumeric characters</strong> for the record name is <em>required</em> for searching. Also,
+                            a search term cannot <strong>both start and end</strong> with a wildcard character.
+                        </p>
+                        <p>
+                            <strong>Examples:</strong>
+                            <ul>
+                                <li>test.example.com. -&gt; test.example.com.</li>
+                                <li>test.example.com -&gt; test.example.com.</li>
+                                <li>test.* -&gt; test.example.com., test.example.net., test.net.</li>
+                                <li>*example.com -&gt; one.example.com., test.example.com.</li>
+                                <li>*example* -&gt; <strong>INVALID</strong></li>
+                            </ul>
                         </p>
                         <hr/>
                         <h5>PTR Records</h5>
-                        <p>For PTR records you can look up records by their IP address or by their FQDN. Compressed or expanded formats of IPv6 addresses are supported. Partial matching is not supported.</p>
-                        <p><strong>Examples:</strong>
-                        <ul>
-                            <li>4.4.8.8.in-addr.arpa. -> 4.4.8.8.in-addr.arpa.</li>
-                            <li>8.8.4.4 -> 4.4.8.8.in-addr.arpa.</li>
-                            <li>2001:db8::567:89ab -> b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.</li>
-                        </ul>
+                        <p>For PTR records you can look up records by their IP address or by their FQDN. Compressed or expanded formats of IPv6 addresses are supported. </p>
+                        <p>Partial matching of IP addresses is not supported, but partial matching of the FQDN is supported.</p>
+                        <p>
+                            <strong>Examples:</strong>
+                            <ul>
+                                <li>4.4.8.8.in-addr.arpa. -&gt; 4.4.8.8.in-addr.arpa.</li>
+                                <li>*.4.8.8.in-addr.arpa. -&gt; 2.4.8.8.in-addr.arpa., 3.4.8.8.in-addr.arpa., 4.4.8.8.in-addr.arpa.</li>
+                                <li>8.8.4.4 -&gt; 4.4.8.8.in-addr.arpa.</li>
+                                <li>2001:db8::567:89ab -&gt; b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.</li>
+                            </ul>
                         </p>
                     </div>
                 </div>
@@ -167,8 +174,8 @@
                                     {{record.fqdn}}
                                 </div>
                             </td>
-                            <td class="wrap-long-text">{{record.type}}</td>
-                            <td class="wrap-long-text">{{record.ttl}}</td>
+                            <td class="no-wrap">{{record.type}}</td>
+                            <td class="no-wrap">{{record.ttl}}</td>
                             <td class="record-data wrap-long-text">
                                 <span ng-if="record.accessLevel != 'NoAccess'">
                                 <span ng-if="record.type == 'A'">
