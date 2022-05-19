@@ -18,11 +18,11 @@ package vinyldns.api.repository
 
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, NameSort, RecordSet, RecordSetRepository}
-import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneRepository, ListZonesResults}
 import cats.effect._
 import scalikejdbc._
-import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
@@ -36,15 +36,16 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
-      zoneId: Option[String],
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults] =
+                      zoneId: Option[String],
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: Option[String],
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupFilter: Option[String],
+                      nameSort: NameSort
+                    ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort))
+
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     IO.pure(List())
@@ -61,6 +62,20 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def deleteRecordSetsInZone(DB: DB, zoneId: String, zoneName: String): IO[Unit] = IO(())
 }
 
+trait EmptyRecordSetCacheRepo extends RecordSetCacheRepository {
+
+  def listRecordSetData(
+                         zoneId: Option[String],
+                         startFrom: Option[String],
+                         maxItems: Option[Int],
+                         recordNameFilter: Option[String],
+                         recordTypeFilter: Option[Set[RecordType]],
+                         recordOwnerGroupFilter: Option[String],
+                         nameSort: NameSort
+                       ): IO[ListRecordSetResults] =
+    IO.pure(ListRecordSetResults(nameSort = nameSort))
+}
+
 trait EmptyZoneRepo extends ZoneRepository {
 
   def save(zone: Zone): IO[Either[DuplicateZoneError, Zone]] = IO.pure(Right(zone))
@@ -70,12 +85,12 @@ trait EmptyZoneRepo extends ZoneRepository {
   def getZoneByName(zoneName: String): IO[Option[Zone]] = IO.pure(None)
 
   def listZones(
-      authPrincipal: AuthPrincipal,
-      zoneNameFilter: Option[String] = None,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100,
-      ignoreAccess: Boolean = false
-  ): IO[ListZonesResults] = IO.pure(ListZonesResults())
+                 authPrincipal: AuthPrincipal,
+                 zoneNameFilter: Option[String] = None,
+                 startFrom: Option[String] = None,
+                 maxItems: Int = 100,
+                 ignoreAccess: Boolean = false
+               ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())
 
@@ -105,10 +120,10 @@ trait EmptyUserRepo extends UserRepository {
   def getUser(userId: String): IO[Option[User]] = IO.pure(None)
 
   def getUsers(
-      userIds: Set[String],
-      startFrom: Option[String],
-      maxItems: Option[Int]
-  ): IO[ListUsersResults] = IO.pure(ListUsersResults(List(), None))
+                userIds: Set[String],
+                startFrom: Option[String],
+                maxItems: Option[Int]
+              ): IO[ListUsersResults] = IO.pure(ListUsersResults(List(), None))
 
   def getAllUsers: IO[List[User]] = IO.pure(List())
 

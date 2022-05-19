@@ -73,6 +73,7 @@ lazy val apiAssemblySettings = Seq(
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
       MergeStrategy.discard
+    case x if x.endsWith("module-info.class") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
