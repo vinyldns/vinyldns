@@ -2057,18 +2057,6 @@ def test_create_ds_unknown_digest_type(shared_zone_test_context):
     assert_that(errors, contains_inanyorder("Digest Type 0 is not a supported DS record digest type"))
 
 
-def test_create_ds_bad_ttl_fails(shared_zone_test_context):
-    """
-    Test that creating a DS record with unmatching TTL fails
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
-    record_json = create_recordset(zone, "dskey", "DS", record_data, ttl=100)
-    error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_("DS record [dskey] must have TTL matching its linked NS (3600)"))
-
-
 def test_create_ds_no_ns_fails(shared_zone_test_context):
     """
     Test that creating a DS record when there is no child NS in the zone fails
