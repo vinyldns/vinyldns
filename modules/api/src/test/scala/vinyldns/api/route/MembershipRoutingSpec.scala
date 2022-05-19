@@ -266,7 +266,7 @@ class MembershipRoutingSpec
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okAuth, false)
+        .listMyGroups(None, None, 100, okAuth, false, abridged = false)
 
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.InternalServerError
