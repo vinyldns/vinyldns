@@ -48,6 +48,7 @@ object MySqlConnector {
         val placeholders = Map("dbName" -> config.name)
         val migration = Flyway
           .configure()
+          .envVars()
           .outOfOrder(config.flywayOutOfOrder)
           .dataSource(migrationDataSource)
           .placeholders(placeholders.asJava)
