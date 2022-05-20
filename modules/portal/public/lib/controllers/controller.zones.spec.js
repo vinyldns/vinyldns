@@ -37,12 +37,12 @@ describe('Controller: ZonesController', function () {
         this.scope.zones = {};
 
         profileService.getAuthenticatedUserData = function() {
-            return $q.when({data: {}});
+            return $q.when({data: {id: "userId"}});
         };
-        groupsService.getGroups = function() {
+        groupsService.getGroupsAbridged = function () {
             return $q.when({
                 data: {
-                    groups: [{id: "all my groups"}]
+                    groups: [{id: "all my groups", members: [{id: "userId"}]}]
                 }
             });
         };
@@ -65,7 +65,7 @@ describe('Controller: ZonesController', function () {
 
     it('test that we properly get users groups when loading ZonesController', function(){
         this.scope.$digest();
-        expect(this.scope.myGroups).toEqual([{id: "all my groups"}]);
+        expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
 
     it('nextPageMyZones should call getZones with the correct parameters', function () {

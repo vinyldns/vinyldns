@@ -55,6 +55,9 @@ angular.module('controller.zones', [])
 
     groupsService.getGroupsAbridged(true, "").then(function (results) {
         if (results.data) {
+            // Get all groups where the group members include the current user
+            $scope.myGroups = results.data.groups.filter(grp => grp.members.findIndex(mem => mem.id === $scope.profile.id) >= 0);
+            $scope.myGroupIds = $scope.myGroups.map(grp => grp.id);
             $scope.allGroups = results.data.groups;
         }
         $scope.resetCurrentZone();
