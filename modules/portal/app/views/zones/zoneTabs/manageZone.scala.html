@@ -352,7 +352,7 @@
     <!-- START ACL MODAL -->
 <form name="addAclRuleForm" role="form" class="form-horizontal" novalidate>
     <modal modal-id="acl_modal" modal-title="{{ aclModal.title }}">
-        <div class="modal-body">
+        <div class="modal-body" ng-controller="ZonesController">
             <modal-element label="Apply Rule to" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.priority.$invalid">
                 <select name="priority"
                         id="acl-rule-priority"
@@ -373,10 +373,9 @@
                 <select name="groupId"
                         class="form-control"
                         ng-model="currentAclRule.groupId"
-                        ng-controller="ZonesController"
                         ng-disabled="aclModal.details.readOnly"
                         required>
-                    <option ng-repeat="group in myGroups" value="{{ group.id }}">
+                    <option ng-repeat="group in allGroups | orderBy:'+name'" value="{{ group.id }}">
                         {{group.name}} ({{group.description}})</option>
                     <option value="">--- Please select a group ---</option>
                 </select>

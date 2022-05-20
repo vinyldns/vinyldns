@@ -57,7 +57,7 @@ describe('Controller: GroupsController', function () {
                 groups: "all my groups"
             }
         };
-        var getGroups = spyOn(this.groupsService, 'getGroups')
+        var getGroups = spyOn(this.groupsService, 'getGroupsAbridged')
             .and.stub()
             .and.returnValue(this.q.when(response));
 

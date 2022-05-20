@@ -188,7 +188,8 @@ class MembershipService(
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean
+      ignoreAccess: Boolean,
+      abridged: Boolean = false
   ): Result[ListMyGroupsResponse] = {
     val groupsCall =
       if (authPrincipal.isSystemAdmin || ignoreAccess) {
@@ -198,7 +199,7 @@ class MembershipService(
       }
 
     groupsCall.map { grp =>
-      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems, ignoreAccess)
+      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems, ignoreAccess, abridged, authPrincipal)
     }
   }.toResult
 
@@ -207,12 +208,14 @@ class MembershipService(
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      ignoreAccess: Boolean
-  ): ListMyGroupsResponse = {
+      ignoreAccess: Boolean,
+      abridged: Boolean = false,
+      authPrincipal: AuthPrincipal
+    ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
       .sortBy(_.id)
-      .map(GroupInfo.apply)
+      .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
     val filtered = allMyGroups
       .filter(grp => groupNameFilter.forall(grp.name.contains(_)))

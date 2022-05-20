@@ -197,12 +197,13 @@ class MembershipRoutingSpec
   "GET Groups" should {
     "return a 200 response with the groups when no optional parameters are used" in {
       val twoUserGroupInfo = GroupInfo(twoUserGroup)
+
       doReturn(
         result(
           ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)
         )
-      ).when(membershipService)
-        .listMyGroups(None, None, 100, okAuth, false)
+      ).when(membershipService).listMyGroups(None, None, 100, okAuth, false, false)
+
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
 
@@ -231,9 +232,10 @@ class MembershipRoutingSpec
           startFrom = Some("anyString"),
           maxItems = 100,
           okAuth,
-          ignoreAccess = false
+          ignoreAccess = false,
+          abridged = true
         )
-      Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok") ~> Route.seal(
+      Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok&abridged=true") ~> Route.seal(
         membershipRoute
       ) ~> check {
         status shouldBe StatusCodes.OK
@@ -264,7 +266,7 @@ class MembershipRoutingSpec
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okAuth, false)
+        .listMyGroups(None, None, 100, okAuth, false, abridged = false)
 
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.InternalServerError
