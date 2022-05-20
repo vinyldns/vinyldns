@@ -58,7 +58,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val recordSets = Some(new MySqlRecordSetRepository())
     val groups = Some(new MySqlGroupRepository())
     val recordChanges = Some(new MySqlRecordChangeRepository())
-    val recordSetDatas = Some(new MySqlRecordSetDataRepository())
+    val recordSetCache = Some(new MySqlRecordSetCacheRepository())
     val membership = Some(new MySqlMembershipRepository())
     val groupChanges = Some(new MySqlGroupChangeRepository())
     val userChanges = Some(new MySqlUserChangeRepository())
@@ -71,7 +71,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       recordSetRepository = recordSets,
       groupRepository = groups,
       recordChangeRepository = recordChanges,
-      recordSetDataRepository = recordSetDatas,
+      recordSetCacheRepository = recordSetCache,
       membershipRepository = membership,
       groupChangeRepository = groupChanges,
       userChangeRepository = userChanges,

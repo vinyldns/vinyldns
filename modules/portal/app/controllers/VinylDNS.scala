@@ -65,15 +65,15 @@ object VinylDNS {
   case class Alert(alertType: String, message: String)
 
   case class UserInfo(
-      userName: String,
-      firstName: Option[String],
-      lastName: Option[String],
-      email: Option[String],
-      isSuper: Boolean,
-      isSupport: Boolean,
-      id: String,
-      lockStatus: LockStatus
-  )
+                       userName: String,
+                       firstName: Option[String],
+                       lastName: Option[String],
+                       email: Option[String],
+                       isSuper: Boolean,
+                       isSupport: Boolean,
+                       id: String,
+                       lockStatus: LockStatus
+                     )
   object UserInfo {
     def fromUser(user: User): UserInfo =
       UserInfo(
@@ -98,16 +98,16 @@ object VinylDNS {
 
 @Singleton
 class VinylDNS @Inject() (
-    configuration: Configuration,
-    authenticator: Authenticator,
-    userAccountAccessor: UserAccountAccessor,
-    wsClient: WSClient,
-    components: ControllerComponents,
-    crypto: CryptoAlgebra,
-    oidcAuthenticator: OidcAuthenticator,
-    securitySupport: SecuritySupport
-) extends AbstractController(components)
-    with CacheHeader {
+                           configuration: Configuration,
+                           authenticator: Authenticator,
+                           userAccountAccessor: UserAccountAccessor,
+                           wsClient: WSClient,
+                           components: ControllerComponents,
+                           crypto: CryptoAlgebra,
+                           oidcAuthenticator: OidcAuthenticator,
+                           securitySupport: SecuritySupport
+                         ) extends AbstractController(components)
+  with CacheHeader {
 
   import VinylDNS._
   import play.api.mvc._
@@ -480,6 +480,25 @@ class VinylDNS @Inject() (
     // $COVERAGE-ON$
   }
 
+  def listRecordSetData: Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      "recordsets",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def listRecordSetsByZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
@@ -583,7 +602,7 @@ class VinylDNS @Inject() (
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-      // $COVERAGE-ON$
+    // $COVERAGE-ON$
   }
 
   def deleteRecordSet(zid: String, rid: String): Action[AnyContent] = userAction.async {
@@ -595,19 +614,19 @@ class VinylDNS @Inject() (
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-      // $COVERAGE-ON$
+    // $COVERAGE-ON$
   }
 
   private def extractParameters(
-      params: util.Map[String, util.List[String]]
-  ): Seq[(String, String)] =
+                                 params: util.Map[String, util.List[String]]
+                               ): Seq[(String, String)] =
     params.asScala.foldLeft(Seq[(String, String)]()) {
       case (acc, (key, values)) =>
         acc ++ values.asScala.map(v => key -> v)
     }
 
   private def executeRequest(request: VinylDNSRequest, user: User)(
-      implicit userRequest: UserRequest[_]
+    implicit userRequest: UserRequest[_]
   ) = {
     val signableRequest = new SignableVinylDNSRequest(request)
     val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
@@ -669,7 +688,7 @@ class VinylDNS @Inject() (
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-      // $COVERAGE-ON$
+    // $COVERAGE-ON$
   }
 
   def newBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
@@ -729,7 +748,7 @@ class VinylDNS @Inject() (
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-      // $COVERAGE-ON$
+    // $COVERAGE-ON$
   }
 
   def approveBatchChange(batchChangeId: String): Action[AnyContent] = userAction.async {
@@ -748,7 +767,7 @@ class VinylDNS @Inject() (
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-      // $COVERAGE-ON$
+    // $COVERAGE-ON$
   }
 
   def rejectBatchChange(batchChangeId: String): Action[AnyContent] =

@@ -30,7 +30,7 @@ import vinyldns.core.domain.membership.{
 }
 import vinyldns.core.domain.record.{
   RecordChangeRepository,
-  RecordSetDataRepository,
+  RecordSetCacheRepository,
   RecordSetRepository
 }
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
@@ -68,7 +68,7 @@ class ApiDataAccessorProviderSpec
     val groupChange = mock[GroupChangeRepository]
     val recordSet = mock[RecordSetRepository]
     val recordChange = mock[RecordChangeRepository]
-    val recordSetData = mock[RecordSetDataRepository]
+    val recordSetCache = mock[RecordSetCacheRepository]
 
     val zoneChange = mock[ZoneChangeRepository]
     val zone = mock[ZoneRepository]
@@ -85,7 +85,7 @@ class ApiDataAccessorProviderSpec
         Some(groupChange),
         Some(recordSet),
         Some(recordChange),
-        Some(recordSetData),
+        Some(recordSetCache),
         Some(zoneChange),
         Some(zone),
         Some(batchChange),
@@ -109,7 +109,7 @@ class ApiDataAccessorProviderSpec
         Some(groupChange),
         Some(recordSet),
         Some(recordChange),
-        Some(recordSetData),
+        Some(recordSetCache),
         Some(zoneChange),
         Some(zone),
         Some(batchChange)
@@ -128,7 +128,7 @@ class ApiDataAccessorProviderSpec
         Some(groupChange),
         Some(recordSet),
         Some(recordChange),
-        Some(recordSetData),
+        Some(recordSetCache),
         Some(zoneChange),
         None,
         None

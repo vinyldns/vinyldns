@@ -28,7 +28,7 @@ import vinyldns.core.domain.membership.{
 }
 import vinyldns.core.domain.record.{
   RecordChangeRepository,
-  RecordSetDataRepository,
+  RecordSetCacheRepository,
   RecordSetRepository
 }
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
@@ -45,7 +45,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     val groupChange = repoConfig.groupChange.map(_ => mock[GroupChangeRepository])
     val recordSet = repoConfig.recordSet.map(_ => mock[RecordSetRepository])
     val recordChange = repoConfig.recordChange.map(_ => mock[RecordChangeRepository])
-    val recordSetData = repoConfig.recordSetData.map(_ => mock[RecordSetDataRepository])
+    val recordSetCache = repoConfig.recordSetCache.map(_ => mock[RecordSetCacheRepository])
     val zoneChange = repoConfig.zoneChange.map(_ => mock[ZoneChangeRepository])
     val zone = repoConfig.zone.map(_ => mock[ZoneRepository])
     val batchChange = repoConfig.batchChange.map(_ => mock[BatchChangeRepository])
@@ -59,7 +59,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
           groupChange,
           recordSet,
           recordChange,
-          recordSetData,
+          recordSetCache,
           zoneChange,
           zone,
           batchChange

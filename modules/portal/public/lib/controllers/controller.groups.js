@@ -15,12 +15,12 @@
  */
 
 angular.module('controller.groups', []).controller('GroupsController', function ($scope, $log, $location, groupsService, profileService, utilityService) {
-        //registering bootstrap modal close event to refresh data after create group action
+    //registering bootstrap modal close event to refresh data after create group action
     angular.element('#modal_new_group').one('hide.bs.modal', function () {
         $scope.closeModal();
     });
 
-    $scope.groups = { items: [] };
+    $scope.groups = {items: []};
     $scope.groupsLoaded = false;
     $scope.alerts = [];
     $scope.ignoreAccess = false;
@@ -37,26 +37,26 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     //shared modal
     var modalDialog;
 
-    $scope.openModal = function(evt){
+    $scope.openModal = function (evt) {
         $scope.currentGroup = {};
-        void(evt && evt.preventDefault());
-        if(!modalDialog){
+        void (evt && evt.preventDefault());
+        if (!modalDialog) {
             modalDialog = angular.element('#modal_new_group').modal();
         }
         modalDialog.modal('show');
     };
 
-    $scope.closeModal = function(evt){
-        void(evt && evt.preventDefault());
-        if(!modalDialog){
+    $scope.closeModal = function (evt) {
+        void (evt && evt.preventDefault());
+        if (!modalDialog) {
             modalDialog = angular.element('#modal_new_group').modal();
         }
         modalDialog.modal('hide');
         return true;
     };
 
-    $scope.closeEditModal = function(evt){
-        void(evt && evt.preventDefault());
+    $scope.closeEditModal = function (evt) {
+        void (evt && evt.preventDefault());
         editModalDialog = angular.element('#modal_edit_group').modal();
         editModalDialog.modal('hide');
         $scope.reset();
@@ -68,7 +68,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-       $log.log('createGroup::called', $scope.data);
+        $log.log('createGroup::called', $scope.data);
 
         if ($scope.processing) {
             $log.log('createGroup::processing is true; exiting');
@@ -83,14 +83,14 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 'name': name,
                 'email': email,
                 'description': description,
-                'members': [{ id: $scope.profile.id }],
-                'admins': [{ id: $scope.profile.id }]
+                'members': [{id: $scope.profile.id}],
+                'admins': [{id: $scope.profile.id}]
             };
 
         //create group success callback
         function success(response) {
-        var alert = utilityService.success('Successfully Created Group: ' + name, response, 'createGroup::createGroup successful');
-        $scope.alerts.push(alert);
+            var alert = utilityService.success('Successfully Created Group: ' + name, response, 'createGroup::createGroup successful');
+            $scope.alerts.push(alert);
             $scope.closeModal();
             $scope.reset();
             $scope.refresh();
@@ -99,17 +99,17 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
         return groupsService.createGroup(payload)
             .then(success)
-            .catch(function (error){
+            .catch(function (error) {
                 handleError(error, 'groupsService::createGroup-failure');
             });
     };
 
-    $scope.allGroups = function() {
+    $scope.allGroups = function () {
         $scope.ignoreAccess = true;
         $scope.refresh();
     }
 
-    $scope.myGroups = function() {
+    $scope.myGroups = function () {
         $scope.ignoreAccess = false;
         $scope.refresh();
     }
@@ -121,11 +121,12 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             $scope.groups.items = result.groups;
             $scope.groupsLoaded = true;
             if (!$scope.query.length) {
-                $scope.hasGroups = response.data.groups.length > 0;
+                $scope.hasGroups = $scope.groups.items.length > 0;
             }
             return result;
         }
-        getGroups($scope.ignoreAccess)
+
+        getGroupsAbridged($scope.ignoreAccess)
             .then(success)
             .catch(function (error) {
                 handleError(error, 'getGroups::refresh-failure');
@@ -151,30 +152,43 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             $log.log('groupsService::getGroups-success');
             return response.data;
         }
+
         return groupsService
             .getGroups($scope.ignoreAccess, $scope.query)
             .then(success)
-            .catch(function (error){
+            .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
-        });
+            });
+    }
+
+    function getGroupsAbridged() {
+        function success(response) {
+            $log.log('groupsService::getGroups-success');
+            return response.data;
+        }
+
+        return groupsService
+            .getGroupsAbridged($scope.ignoreAccess, $scope.query)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroups-failure');
+            });
     }
 
     // Return true if there are no groups created by the user
-    $scope.haveNoGroups = function(groupLength){
-        if(!$scope.hasGroups && !groupLength && $scope.groupsLoaded && $scope.query.length == ""){
+    $scope.haveNoGroups = function (groupLength) {
+        if (!$scope.hasGroups && !groupLength && $scope.groupsLoaded && $scope.query.length == "") {
             return true
-        }
-        else{
+        } else {
             return false
         }
     }
 
     // Return true if no groups are found related to the search query
-    $scope.searchCriteria = function(groupLength){
-        if($scope.groupsLoaded && !groupLength && $scope.query.length != ""){
+    $scope.searchCriteria = function (groupLength) {
+        if ($scope.groupsLoaded && !groupLength && $scope.query.length != "") {
             return true
-        }
-        else{
+        } else {
             return false
         }
     }
@@ -188,7 +202,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-       $log.log('updateGroup::called', $scope.data);
+        $log.log('updateGroup::called', $scope.data);
 
         if ($scope.processing) {
             $log.log('updateGroup::processing is true; exiting');
@@ -213,17 +227,17 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
         //update group success callback
         function success(response) {
-        var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
-        $scope.alerts.push(alert);
-        $scope.closeEditModal();
-        $scope.reset();
-        $scope.refresh();
-        return response.data;
+            var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
+            $scope.alerts.push(alert);
+            $scope.closeEditModal();
+            $scope.reset();
+            $scope.refresh();
+            return response.data;
         }
 
         return groupsService.updateGroup($scope.currentGroup.id, payload)
             .then(success)
-            .catch(function (error){
+            .catch(function (error) {
                 handleError(error, 'groupsService::updateGroup-failure');
             });
     };
@@ -234,17 +248,18 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     };
 
     $scope.submitDeleteGroup = function () {
-        function success (response){
+        function success(response) {
             $("#delete_group_modal").modal("hide");
             $scope.refresh();
             var alert = utilityService.success('Removed Group: ' + $scope.currentGroup.name, response, 'groupsService::deleteGroup successful');
             $scope.alerts.push(alert);
         }
+
         groupsService.deleteGroups($scope.currentGroup.id)
-        .then(success)
-        .catch(function (error){
-            handleError(error, 'groupsService::deleteGroup-failure');
-        });
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::deleteGroup-failure');
+            });
     };
 
     function profileSuccess(results) {
@@ -263,15 +278,15 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.profile = $scope.profile || {};
     }
 
-    $scope.groupAdmin = function(group) {
+    $scope.groupAdmin = function (group) {
         var isAdmin = group.admins.find(function (x) {
-          return x.id === $scope.profile.id;
+            return x.id === $scope.profile.id;
         });
         var isSuper = $scope.profile.isSuper;
         return isAdmin || isSuper;
     }
 
-    $scope.canSeeGroup = function(group) {
+    $scope.canSeeGroup = function (group) {
         var isMember = group.members.some(x => x.id === $scope.profile.id);
         var isSupport = $scope.profile.isSupport;
         var isSuper = $scope.profile.isSuper;

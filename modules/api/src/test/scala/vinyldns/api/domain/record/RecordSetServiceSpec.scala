@@ -41,7 +41,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with EitherMatchers
     with Matchers
     with MockitoSugar
@@ -51,6 +51,7 @@ class RecordSetServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
   private val mockRecordRepo = mock[RecordSetRepository]
+  private val mockRecordDataRepo = mock[RecordSetCacheRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMessageQueue = mock[MessageQueue]
@@ -72,6 +73,7 @@ class RecordSetServiceSpec
     mockZoneRepo,
     mockGroupRepo,
     mockRecordRepo,
+    mockRecordDataRepo,
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
@@ -81,13 +83,15 @@ class RecordSetServiceSpec
     mockBackendResolver,
     false,
     VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.approvedNameServers
+    VinylDNSTestHelpers.approvedNameServers,
+    true
   )
 
   val underTestWithDnsBackendValidations = new RecordSetService(
     mockZoneRepo,
     mockGroupRepo,
     mockRecordRepo,
+    mockRecordDataRepo,
     mockRecordChangeRepo,
     mockUserRepo,
     mockMessageQueue,
@@ -97,7 +101,8 @@ class RecordSetServiceSpec
     mockBackendResolver,
     true,
     VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.approvedNameServers
+    VinylDNSTestHelpers.approvedNameServers,
+    true
   )
 
   "addRecordSet" should {
@@ -1035,6 +1040,79 @@ class RecordSetServiceSpec
       result shouldBe an[InvalidRequest]
     }
   }
+
+  "listRecordSetData" should {
+    "return the recordSetData" in {
+      doReturn(IO.pure(Set(okGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(Set(sharedZone.id))
+
+      doReturn(
+        IO.pure(
+          ListRecordSetResults(
+            List(sharedZoneRecord),
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = Some("owner group id")
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          zoneId = any[Option[String]],
+          startFrom = any[Option[String]],
+          maxItems = any[Option[Int]],
+          recordNameFilter = any[Option[String]],
+          recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          recordOwnerGroupFilter = any[Option[String]],
+          nameSort = any[NameSort.NameSort]
+        )
+
+      val result = rightResultOf(
+        underTest
+          .searchRecordSets(
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = "aaaa*",
+            recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
+            nameSort = NameSort.ASC,
+            authPrincipal = sharedAuth
+          )
+          .value
+      )
+      result.recordSets shouldBe
+        List(
+          RecordSetGlobalInfo(
+            sharedZoneRecord,
+            sharedZone.name,
+            sharedZone.shared,
+            Some(okGroup.name)
+          )
+        )
+    }
+
+    "fail recordSetData if recordNameFilter is fewer than two characters" in {
+      val result = leftResultOf(
+        underTest
+          .searchRecordSets(
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = "a",
+            recordTypeFilter = None,
+            recordOwnerGroupFilter = Some("owner group id"),
+            nameSort = NameSort.ASC,
+            authPrincipal = okAuth
+          )
+          .value
+      )
+      result shouldBe an[InvalidRequest]
+    }
+  }
+
 
   "listRecordSetsByZone" should {
     "return the recordSets" in {

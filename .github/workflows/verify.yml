@@ -26,10 +26,42 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Test
+        id: build
         run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
 
       - name: Codecov
+        id: codecov0
         uses: codecov/codecov-action@v2
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+      - name: Codecov Retry
+        id: codecov1
+        if: steps.codecov0.outcome=='failure'
+        uses: codecov/codecov-action@v2
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Codecov Retry 2
+        id: codecov2
+        if: steps.codecov1.outcome=='failure'
+        uses: codecov/codecov-action@v2
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Codecov Retry 3
+        id: codecov3
+        if: steps.codecov2.outcome=='failure'
+        uses: codecov/codecov-action@v2
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: set the status              # set the workflow status if command failed
+        if: steps.build.outcome=='success'
+        run: |
+          if ${{ steps.codecov0.outcome=='success' || steps.codecov1.outcome=='success' || steps.codecov2.outcome=='success' || steps.codecov3.outcome=='success' }}; then
+             echo "Codecov completed successfully"
+          else
+            echo "Codecov failed after three retries"
+            exit 1
+          fi

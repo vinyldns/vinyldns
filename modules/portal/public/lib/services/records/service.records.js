@@ -19,7 +19,7 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSets = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
+        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
             if (typeFilter == "") {
                 typeFilter = null;
             }
@@ -40,17 +40,19 @@ angular.module('service.records', [])
                 "recordOwnerGroupFilter": ownerGroupFilter
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
-            var http = new XMLHttpRequest();
-            http.open('HEAD', url, false);
-            http.send();
-            if ($http.get(url)  && http.status == 200){
-             $("#loader").modal({
+
+
+            let loader = $("#loader");
+            loader.modal({
                              backdrop: "static", //remove ability to close modal with click
                              keyboard: false, //remove option to close with keyboard
                              show: true //Display loader!
                              });
-              }else{$("#loader").modal("hide");}
-            return $http.get(url)
+            let promis = $http.get(url);
+            // What?
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+
+            return promis
         };
 
         this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort) {

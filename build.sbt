@@ -2,10 +2,9 @@ import CompilerOptions._
 import Dependencies._
 import microsites._
 import org.scalafmt.sbt.ScalafmtPlugin._
-import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
+import scoverage.ScoverageKeys.{coverageMinimum, coverageFailOnMinimum}
 
 import scala.language.postfixOps
-import scala.sys.env
 import scala.util.Try
 
 lazy val IntegrationTest = config("it").extend(Test)
@@ -38,7 +37,7 @@ lazy val sharedSettings = Seq(
   // coverage options
   coverageMinimum := 85,
   coverageFailOnMinimum := true,
-  coverageHighlighting := true,
+  coverageHighlighting := true
 )
 
 lazy val testSettings = Seq(
@@ -73,6 +72,7 @@ lazy val apiAssemblySettings = Seq(
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
       MergeStrategy.discard
+    case x if x.endsWith("module-info.class") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
@@ -205,9 +205,11 @@ lazy val portalSettings = Seq(
   routesGenerator := InjectedRoutesGenerator,
   coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
   javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-  // ads the version when working locally with sbt run
+  // Adds the version when working locally with sbt run
   PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
-  // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
+  // Automatically run the prepare portal script before `run`
+  PlayKeys.playRunHooks += PreparePortalHook(baseDirectory.value),
+  // Adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
   // directory and lay down any dependencies that are required when deploying
   scriptClasspath in bashScriptDefines ~= (cp => cp :+ "lib_extra/*"),
   mainClass in reStart := None,
@@ -240,7 +242,7 @@ lazy val portal = (project in file("modules/portal"))
   .settings(testSettings)
   .settings(portalSettings)
   .settings(
-    name := "portal",
+    name := "portal"
   )
   .dependsOn(mysql)
 
