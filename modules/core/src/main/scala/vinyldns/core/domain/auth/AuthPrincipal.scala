@@ -37,4 +37,6 @@ case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
   val secretKey: String = signedInUser.secretKey
 
   val userId: String = signedInUser.id
+
+  val userName: String = signedInUser.userName
 }

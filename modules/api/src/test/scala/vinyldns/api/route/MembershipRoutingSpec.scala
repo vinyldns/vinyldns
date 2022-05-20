@@ -783,4 +783,50 @@ class MembershipRoutingSpec
       }
     }
   }
+
+  "GET user" should {
+    "return a 200 response with the user info" in {
+      doReturn(result(okUser))
+        .when(membershipService)
+        .getUser("ok", okAuth)
+      Get("/users/ok") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[UserResponseInfo]
+        result.id shouldBe okUserInfo.id
+      }
+    }
+
+    "return a 200 response with the user info when the user ID is valid" in {
+      val testUser = listOfDummyUsers.head
+      doReturn(result(testUser))
+        .when(membershipService)
+        .getUser("dummy000", okAuth)
+      Get("/users/dummy000") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[UserResponseInfo]
+        result.id shouldBe testUser.id
+      }
+    }
+
+    "return a 200 response with the user info when the username is valid" in {
+      val testUser = listOfDummyUsers.head
+      doReturn(result(testUser))
+        .when(membershipService)
+        .getUser("name-dummy000", okAuth)
+      Get("/users/name-dummy000") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[UserResponseInfo]
+        result.id shouldBe testUser.id
+      }
+    }
+
+    "return a 404 Not Found response when the userIdentifier is not a valid user ID or username" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .getUser("fail", okAuth)
+      Get("/users/fail") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
 }
