@@ -53,7 +53,6 @@ trait MembershipJsonProtocol extends JsonValidation {
     GroupChangeInfoSerializer,
     CreateGroupInputSerializer,
     UpdateGroupInputSerializer,
-    UserInfoSerializer,
     JsonEnumV(LockStatus),
     JsonEnumV(GroupStatus),
     JsonEnumV(GroupChangeType)
@@ -123,18 +122,5 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "created").default[String](DateTime.now.getMillis.toString)
       ).mapN(GroupChangeInfo.apply)
-  }
-
-  case object UserInfoSerializer extends ValidationSerializer[UserInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, UserInfo] =
-      (
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "userName").optional[String],
-        (js \ "firstName").optional[String],
-        (js \ "lastName").optional[String],
-        (js \ "email").optional[String],
-        (js \ "created").optional[DateTime],
-        (js \ "lockStatus").default(LockStatus.Unlocked)
-        ).mapN(UserInfo.apply)
   }
 }

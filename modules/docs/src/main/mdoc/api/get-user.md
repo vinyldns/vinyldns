@@ -26,22 +26,11 @@ name          | type   | description                                            
  ------------ |--------|:---------------------------------------------------------------------------|
 id            | string | Unique UUID of the user                                                    |
 userName      | string | The username of the user                                                   |
-firstName     | string | The user's first name                                                      |
-lastName      | string | The user's last name
-created       | string | The timestamp (UTC) the user was created                                   |
-email         | string | The email address associated with the user                                 |
-lockStatus    | string | **Locked** or **Unlocked**                                                 |
-
 #### EXAMPLE RESPONSE
 
 ```json
 {
   "id": "ok",
-  "userName": "ok",
-  "firstName": "ok",
-  "lastName": "ok",
-  "email": "test@test.com",
-  "created": "2022-04-28T18:48:14Z",
-  "lockStatus": "Unlocked"
+  "userName": "ok"
 }
 ```

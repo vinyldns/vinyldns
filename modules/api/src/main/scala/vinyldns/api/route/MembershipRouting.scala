@@ -196,7 +196,7 @@ class MembershipRoute(
       (get & monitor("Endpoint.getUser")) {
         authenticateAndExecute(membershipService.getUser(id, _)) {
           user =>
-            complete(StatusCodes.OK, UserInfo(user))
+            complete(StatusCodes.OK, UserResponseInfo(user))
         }
       }
     }

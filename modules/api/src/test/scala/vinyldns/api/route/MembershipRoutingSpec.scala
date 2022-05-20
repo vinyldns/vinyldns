@@ -789,7 +789,7 @@ class MembershipRoutingSpec
         .getUser("ok", okAuth)
       Get("/users/ok") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
-        val result = responseAs[UserInfo]
+        val result = responseAs[UserResponseInfo]
         result.id shouldBe okUserInfo.id
       }
     }
@@ -801,7 +801,7 @@ class MembershipRoutingSpec
         .getUser("dummy000", okAuth)
       Get("/users/dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
-        val result = responseAs[UserInfo]
+        val result = responseAs[UserResponseInfo]
         result.id shouldBe testUser.id
       }
     }
@@ -813,7 +813,7 @@ class MembershipRoutingSpec
         .getUser("name-dummy000", okAuth)
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
-        val result = responseAs[UserInfo]
+        val result = responseAs[UserResponseInfo]
         result.id shouldBe testUser.id
       }
     }
