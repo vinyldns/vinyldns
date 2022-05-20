@@ -44,7 +44,8 @@ trait MembershipServiceAlgebra {
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean
+      ignoreAccess: Boolean,
+      abridged: Boolean = false
   ): Result[ListMyGroupsResponse]
 
   def listMembers(
