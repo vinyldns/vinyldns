@@ -193,6 +193,14 @@ class MembershipRoute(
             complete(StatusCodes.OK, UserInfo(user))
         }
       }
+    } ~
+    path("users" / Segment) { id =>
+      (get & monitor("Endpoint.getUser")) {
+        authenticateAndExecute(membershipService.getUser(id, _)) {
+          user =>
+            complete(StatusCodes.OK, UserResponseInfo(user))
+        }
+      }
     }
 
   private val invalidQueryHandler = RejectionHandler

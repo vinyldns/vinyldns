@@ -97,6 +97,19 @@ object UserInfo {
     )
 }
 
+case class UserResponseInfo(
+   id: String,
+   userName: Option[String] = None
+ )
+
+object UserResponseInfo {
+  def apply(user: User): UserResponseInfo =
+    UserResponseInfo(
+      id = user.id,
+      userName = Some(user.userName)
+    )
+}
+
 case class MemberInfo(
     id: String,
     userName: Option[String] = None,

@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import java.util.UUID
-
 import cats.data._
 import cats.implicits._
 import org.joda.time.DateTime
