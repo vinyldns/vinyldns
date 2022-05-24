@@ -65,13 +65,9 @@ object DomainValidations {
     validateHostName(name.fqdn).map(_ => name)
 
   def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
-    isReverse match {
-      case true => validateCname(name.fqdn, isReverse).map(_ => name)
-      case false => validateCname(name.fqdn, isReverse).map(_ => name)
-    }
+      validateCname(name.fqdn, isReverse).map(_ => name)
 
   def validateCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
-
     isReverse match {
       case true =>
         val checkRegex = validReverseZoneFQDNRegex
