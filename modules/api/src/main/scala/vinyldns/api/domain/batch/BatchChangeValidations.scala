@@ -242,8 +242,8 @@ class BatchChangeValidations(
         val isIPv6: Boolean = change.inputName.toLowerCase.endsWith("ip6.arpa.")
         val isReverse: Boolean = isIPv4 || isIPv6
         isReverse match {
-          case true => validateReverseHostName(cname.cname).asUnit
-          case false => validateHostName(cname.cname).asUnit
+          case true => validateCname(cname.cname,isReverse).asUnit
+          case false => validateCname(cname.cname,isReverse).asUnit
         }
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit

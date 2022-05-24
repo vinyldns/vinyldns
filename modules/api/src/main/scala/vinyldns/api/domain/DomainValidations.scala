@@ -27,8 +27,10 @@ import scala.util.matching.Regex
   Object to house common domain validations
  */
 object DomainValidations {
-  val validReverseFQDNRegex: Regex =
+  val validReverseZoneFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z\-\/_]{1,63}|[0-9a-zA-Z\-\/_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z\-\/_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z\-\/_]{1})\.)*$""".r
+  val validForwardZoneFQDNRegex: Regex =
+    """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-_]{0,61}[0-9a-zA-Z_]{1}|[*.]{2}[0-9a-zA-Z\-_]{0,60}[0-9a-zA-Z_]{1})\.)*$""".r
   val validFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z_]{1})\.)*$""".r
   val validIpv4Regex: Regex =
@@ -62,35 +64,35 @@ object DomainValidations {
   def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateHostName(name.fqdn).map(_ => name)
 
-  def validateReverseHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
-    validateReverseHostName(name.fqdn).map(_ => name)
+  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+    isReverse match {
+      case true => validateCname(name.fqdn, isReverse).map(_ => name)
+      case false => validateCname(name.fqdn, isReverse).map(_ => name)
+    }
 
-  def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
-    /*
-      Label rules are as follows (from RFC 952; detailed in RFC 1034):
-        - Starts with a letter, or digit, or underscore or asterisk (as of RFC 1123)
-        - Interior contains letter, digit or hyphen, or underscore
-        - Ends with a letter or digit, or underscore
-      All possible labels permutations:
-        - A single letter/digit: [0-9a-zA-Z]{1}
-        - A combination of 1-63 letters/digits: [0-9a-zA-Z]{1,63}
-        - A single letter/digit followed by up to 61 letters, digits, hyphens or slashes
-        and ending with a letter/digit:[0-9a-zA-Z]{1}[0-9a-zA-Z\-]{0,61}[0-9a-zA-Z]{1}
-        - A wildcard and dot character (*.) followed by up to 60 letters, digits, hyphens
-        and ending with a letter/digit:[*.]{2}[0-9a-zA-Z\-_]{0,60}[0-9a-zA-Z_]{1}
-      A valid domain name is a series of one or more <label>s,
-      joined by dots and terminating on a zero-length <label> (ie. dot)
-     */
-    val checkRegex = validFQDNRegex
-      .findFirstIn(name)
-      .map(_.validNel)
-      .getOrElse(InvalidDomainName(name).invalidNel)
-    val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
+  def validateCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
 
-    checkRegex.combine(checkLength).map(_ => name)
+    isReverse match {
+      case true =>
+        val checkRegex = validReverseZoneFQDNRegex
+          .findFirstIn(name)
+          .map(_.validNel)
+          .getOrElse(InvalidDomainName(name).invalidNel)
+        val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
+
+        checkRegex.combine(checkLength).map(_ => name)
+      case false =>
+        val checkRegex = validForwardZoneFQDNRegex
+          .findFirstIn(name)
+          .map(_.validNel)
+          .getOrElse(InvalidDomainName(name).invalidNel)
+        val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
+
+        checkRegex.combine(checkLength).map(_ => name)
+    }
   }
 
-  def validateReverseHostName(name: String): ValidatedNel[DomainValidationError, String] = {
+  def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
       Label rules are as follows (from RFC 952; detailed in RFC 1034):
         - Starts with a letter, or digit, or underscore or asterisk (as of RFC 1123)
@@ -106,7 +108,7 @@ object DomainValidations {
       A valid domain name is a series of one or more <label>s,
       joined by dots/slashes and terminating on a zero-length <label> (ie. dot)
      */
-    val checkRegex = validReverseFQDNRegex
+    val checkRegex = validFQDNRegex
       .findFirstIn(name)
       .map(_.validNel)
       .getOrElse(InvalidDomainName(name).invalidNel)
@@ -114,6 +116,8 @@ object DomainValidations {
 
     checkRegex.combine(checkLength).map(_ => name)
   }
+
+
 
   def validateIpv4Address(address: String): ValidatedNel[DomainValidationError, String] =
     validIpv4Regex
