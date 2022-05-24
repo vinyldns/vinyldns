@@ -247,9 +247,9 @@ class RecordSetServiceIntegrationSpec
     clearGroupRepo()
 
     def saveGroupData(
-                       groupRepo: GroupRepository,
-                       group: Group
-                     ): IO[Group] =
+        groupRepo: GroupRepository,
+        group: Group
+    ): IO[Group] =
       executeWithinTransaction { db: DB =>
         groupRepo.save(db, group)
       }
@@ -300,6 +300,7 @@ class RecordSetServiceIntegrationSpec
       mockBackendResolver,
       false,
       vinyldnsConfig.highValueDomainConfig,
+      vinyldnsConfig.dottedLabelConfigs,
       vinyldnsConfig.serverConfig.approvedNameServers,
       useRecordSetCache = true
     )

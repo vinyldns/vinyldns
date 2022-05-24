@@ -42,6 +42,7 @@ final case class VinylDNSConfig(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     scheduledChangesConfig: ScheduledChangesConfig,
+    dottedLabelConfigs: List[DottedLabelConfig],
     batchChangeConfig: BatchChangeConfig,
     messageQueueConfig: MessageQueueConfig,
     notifierConfigs: List[NotifierConfig],
@@ -88,6 +89,10 @@ object VinylDNSConfig {
       httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
       hvdConfig <- loadIO[HighValueDomainConfig](config, "vinyldns.high-value-domains")
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
+      dottedLabelConfigs <- loadIO[List[DottedLabelConfig]](
+        config,
+        "vinyldns.dotted-label-allowlist"
+      )
       messageQueueConfig <- loadIO[MessageQueueConfig](config, "vinyldns.queue")
       dataStoreConfigs <- loadFromStringListIO[DataStoreConfig](config, "vinyldns.data-stores")
       notifierConfigs <- loadFromStringListIO[NotifierConfig](config, "vinyldns.notifiers")
@@ -105,6 +110,7 @@ object VinylDNSConfig {
       hvdConfig,
       manualReviewConfig,
       scheduledChangesConfig,
+      dottedLabelConfigs,
       batchChangeConfig,
       messageQueueConfig,
       notifierConfigs,

@@ -83,6 +83,7 @@ class RecordSetServiceSpec
     mockBackendResolver,
     false,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedLabelConfigs,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
@@ -101,6 +102,7 @@ class RecordSetServiceSpec
     mockBackendResolver,
     true,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedLabelConfigs,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
@@ -246,6 +248,24 @@ class RecordSetServiceSpec
       )
 
       result.recordSet.name shouldBe okZone.name
+    }
+    "succeed if dotted record in allowlist" in {
+      val recordName = "new._domainkey"
+      val record =
+        aaaa.copy(name = recordName, zoneId = okZone.id, status = RecordSetStatus.Active)
+
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSets(okZone.id, record.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, record.name)
+
+      val result: RecordSetChange = rightResultOf(
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
+      )
+
+      result.recordSet.name shouldBe recordName
     }
     "succeed if user is in owner group" in {
       val record = aaaa.copy(ownerGroupId = Some(okGroup.id))
