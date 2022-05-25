@@ -2679,7 +2679,7 @@ class BatchChangeValidationsSpec
   }
   property("validateAddChangeInput: should succeed for a valid CNAME addChangeInput with forward slash for reverse zone") {
     val cnameWithForwardSlash = AddChangeInput("2.0.192.in-addr.arpa.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname/")))
-    val result = validateAddChangeInput(cnameWithForwardSlash, false)
+    val result = validateAddChangeInput(cnameWithForwardSlash, true)
     result shouldBe valid
   }
 
