@@ -601,7 +601,7 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
 
 def test_create_dotted_cname_record_in_allow_list_succeeds(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with dotted host record name returns an error.
+    Test that creating a CNAME record set with dotted host in the allow list succeeds.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
