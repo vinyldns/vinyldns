@@ -24,7 +24,7 @@ POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
-GET           /api/recordsets                    @controllers.VinylDNS.listRecordSets
+GET           /api/recordsets                    @controllers.VinylDNS.listRecordSetData
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
@@ -54,6 +54,7 @@ GET           /api/users/currentuser             @controllers.VinylDNS.getAuthen
 GET           /api/users/lookupuser/:uname       @controllers.VinylDNS.getUserDataByUsername(uname: String)
 PUT           /api/users/:uid/lock               @controllers.VinylDNS.lockUser(uid: String)
 PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUser(uid: String)
+GET           /api/users/:uid                    @controllers.VinylDNS.getUser(uid: String)
 
 GET           /api/dnschanges/:id                @controllers.VinylDNS.getBatchChange(id: String)
 GET           /api/dnschanges                    @controllers.VinylDNS.listBatchChanges

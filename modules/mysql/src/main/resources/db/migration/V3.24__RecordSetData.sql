@@ -20,4 +20,3 @@ CREATE TABLE recordset_data (
   FULLTEXT INDEX recordset_data_fdqn_fulltext_index(fqdn),
   FULLTEXT INDEX recordset_data_record_data_fulltex_index(record_data)
 );
-

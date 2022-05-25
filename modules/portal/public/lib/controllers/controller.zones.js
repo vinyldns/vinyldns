@@ -22,6 +22,7 @@ angular.module('controller.zones', [])
     $scope.zonesLoaded = false;
     $scope.allZonesLoaded = false;
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
+    $scope.allGroups = [];
 
     $scope.query = "";
 
@@ -52,10 +53,12 @@ angular.module('controller.zones', [])
         $scope.currentZone.transferConnection = {};
     };
 
-    groupsService.getGroups().then(function (results) {
+    groupsService.getGroupsAbridged(true, "").then(function (results) {
         if (results.data) {
-            $scope.myGroups = results.data.groups;
-            $scope.myGroupIds = results.data.groups.map(function(grp) {return grp['id']});
+            // Get all groups where the group members include the current user
+            $scope.myGroups = results.data.groups.filter(grp => grp.members.findIndex(mem => mem.id === $scope.profile.id) >= 0);
+            $scope.myGroupIds = $scope.myGroups.map(grp => grp.id);
+            $scope.allGroups = results.data.groups;
         }
         $scope.resetCurrentZone();
     });

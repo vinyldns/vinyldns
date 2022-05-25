@@ -31,54 +31,76 @@ trait RecordSetServiceAlgebra {
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteRecordSet(
-      recordSetId: String,
-      zoneId: String,
-      auth: AuthPrincipal
-  ): Result[ZoneCommandResult]
+                       recordSetId: String,
+                       zoneId: String,
+                       auth: AuthPrincipal
+                     ): Result[ZoneCommandResult]
 
   def getRecordSet(
-      recordSetId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo]
+                    recordSetId: String,
+                    authPrincipal: AuthPrincipal
+                  ): Result[RecordSetInfo]
 
   def getRecordSetByZone(
-      recordSetId: String,
-      zoneId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetInfo]
+                          recordSetId: String,
+                          zoneId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetInfo]
 
   def listRecordSets(
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: String,
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupId: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListGlobalRecordSetsResponse]
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: String,
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupId: Option[String],
+                      nameSort: NameSort,
+                      authPrincipal: AuthPrincipal
+                    ): Result[ListGlobalRecordSetsResponse]
+
+  /**
+   * Searches recordsets, optionally using the recordset cache (controlled by the 'use-recordset-cache' setting)
+   *
+   * @param startFrom          The starting record
+   * @param maxItems           The maximum number of items
+   * @param recordNameFilter   The record name filter
+   * @param recordTypeFilter   The record type filter
+   * @param recordOwnerGroupId THe owner group identifier
+   * @param nameSort           The sort direction
+   * @param authPrincipal      The authenticated principal
+   * @return A {@link ListGlobalRecordSetsResponse}
+   */
+  def searchRecordSets(
+                        startFrom: Option[String],
+                        maxItems: Option[Int],
+                        recordNameFilter: String,
+                        recordTypeFilter: Option[Set[RecordType]],
+                        recordOwnerGroupId: Option[String],
+                        nameSort: NameSort,
+                        authPrincipal: AuthPrincipal
+                      ): Result[ListGlobalRecordSetsResponse]
 
   def listRecordSetsByZone(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupId: Option[String],
-      nameSort: NameSort,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetsByZoneResponse]
+                            zoneId: String,
+                            startFrom: Option[String],
+                            maxItems: Option[Int],
+                            recordNameFilter: Option[String],
+                            recordTypeFilter: Option[Set[RecordType]],
+                            recordOwnerGroupId: Option[String],
+                            nameSort: NameSort,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetsByZoneResponse]
 
   def getRecordSetChange(
-      zoneId: String,
-      changeId: String,
-      authPrincipal: AuthPrincipal
-  ): Result[RecordSetChange]
+                          zoneId: String,
+                          changeId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[RecordSetChange]
 
   def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[String],
-      maxItems: Int,
-      authPrincipal: AuthPrincipal
-  ): Result[ListRecordSetChangesResponse]
+                            zoneId: String,
+                            startFrom: Option[String],
+                            maxItems: Int,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetChangesResponse]
 
 }

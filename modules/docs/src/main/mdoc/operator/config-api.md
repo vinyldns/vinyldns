@@ -235,6 +235,8 @@ vinyldns {
         }
         record-set {
         }
+        record-set-cache {
+        }
      }
   }
 
@@ -623,6 +625,8 @@ v6-discovery-nibble-boundaries {
         user {
         }
         record-set {
+        }
+        record-set-cache {
         }
         group {
         }

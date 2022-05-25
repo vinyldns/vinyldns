@@ -1996,31 +1996,6 @@ def test_update_ds_data_failures(shared_zone_test_context):
             client.wait_until_recordset_deleted(result_rs["zoneId"], result_rs["id"])
 
 
-@pytest.mark.serial
-def test_update_ds_bad_ttl(shared_zone_test_context):
-    """
-    Test that updating a DS record with a TTL that doesn't match the zone NS record TTL fails
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.ds_zone
-    record_data_create = [
-        {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}
-    ]
-    record_json = create_recordset(zone, "dskey", "DS", record_data_create, ttl=3600)
-    result_rs = None
-    try:
-        create_call = client.create_recordset(record_json, status=202)
-        result_rs = client.wait_until_recordset_change_status(create_call, "Complete")["recordSet"]
-
-        update_json = result_rs
-        update_json["ttl"] = 100
-        client.update_recordset(update_json, status=422)
-    finally:
-        if result_rs:
-            client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=(202, 404))
-            client.wait_until_recordset_deleted(result_rs["zoneId"], result_rs["id"])
-
-
 def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_test_context):
     """
     Test that a 422 is returned if the zoneId in the body and route do not match

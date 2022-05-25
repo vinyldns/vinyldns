@@ -23,20 +23,24 @@ import vinyldns.api.domain.zone.ZoneRecordValidations
 import scala.util.matching.Regex
 
 final case class ServerConfig(
-    healthCheckTimeout: Int,
-    defaultTtl: Int,
-    maxZoneSize: Int,
-    syncDelay: Int,
-    validateRecordLookupAgainstDnsBackend: Boolean,
-    approvedNameServers: List[Regex],
-    color: String,
-    version: String,
-    keyName: String,
-    processingDisabled: Boolean
-)
+                               healthCheckTimeout: Int,
+                               defaultTtl: Int,
+                               maxZoneSize: Int,
+                               syncDelay: Int,
+                               validateRecordLookupAgainstDnsBackend: Boolean,
+                               approvedNameServers: List[Regex],
+                               color: String,
+                               version: String,
+                               keyName: String,
+                               processingDisabled: Boolean,
+                               useRecordSetCache: Boolean,
+                               loadTestData: Boolean
+                             )
 object ServerConfig {
+
   import ZoneRecordValidations.toCaseIgnoredRegexList
-  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct10[
+
+  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct12[
     ServerConfig,
     Int,
     Int,
@@ -47,6 +51,8 @@ object ServerConfig {
     String,
     String,
     Config,
+    Boolean,
+    Boolean,
     Boolean
   ](
     "health-check-timeout",
@@ -58,20 +64,23 @@ object ServerConfig {
     "color",
     "version",
     "defaultZoneConnection",
-    "processing-disabled"
+    "processing-disabled",
+    "use-recordset-cache",
+    "load-test-data"
   ) {
     case (
-        timeout,
-        ttl,
-        maxZone,
-        syncDelay,
-        validateDnsBackend,
-        approvedNameServers,
-        color,
-        version,
-        zoneConnConfig,
-        processingDisabled
-        ) =>
+      timeout,
+      ttl,
+      maxZone,
+      syncDelay,
+      validateDnsBackend,
+      approvedNameServers,
+      color,
+      version,
+      zoneConnConfig,
+      processingDisabled,
+      useRecordSetCache,
+      loadTestData) =>
       ServerConfig(
         timeout,
         ttl,
@@ -82,7 +91,9 @@ object ServerConfig {
         color,
         version,
         zoneConnConfig.getString("keyName"),
-        processingDisabled
+        processingDisabled,
+        useRecordSetCache,
+        loadTestData
       )
   }
 }

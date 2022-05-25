@@ -60,6 +60,13 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |  WHERE user_name = ?
        """.stripMargin
 
+  private final val GET_USER_BY_ID_OR_NAME =
+    sql"""
+         | SELECT data
+         |   FROM user
+         |  WHERE ? IN(id, user_name)
+     """.stripMargin
+
   private final val BASE_GET_USERS: String =
     """
       | SELECT data
@@ -151,6 +158,25 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
         DB.readOnly { implicit s =>
           GET_USER_BY_USER_NAME
             .bind(userName)
+            .map(toUser(1))
+            .first()
+            .apply()
+        }
+      }
+    }
+
+  /**
+   * Retrieves the requested User from the database by the given userIdentifier, which can be a userId or username
+   * @param userIdentifier The userId or username
+   * @return The found User
+   */
+  def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
+    monitor("repo.User.getUser") {
+      logger.debug(s"Getting user with id: $userIdentifier")
+      IO {
+        DB.readOnly { implicit s =>
+          GET_USER_BY_ID_OR_NAME
+            .bind(userIdentifier)
             .map(toUser(1))
             .first()
             .apply()
