@@ -413,6 +413,42 @@ describe('Controller: ManageZonesController', function () {
         expect(this.scope.currentAclRule).toEqual(expectedRule);
     });
 
+    it('submitAclRule works as expected when priority is group', function() {
+        this.scope.addAclRuleForm.$valid = true;
+        var mockRule = {
+            priority: 'Group',
+            groupId: '1234',
+            accessLevel: 'Read',
+            recordType: ['A','AAAA']
+        };
+        var mockZone = {
+            name: 'vinyldns.',
+            email: 'test@example.com',
+            adminGroupId: '1234',
+            acl: {
+                rules: []
+            }
+        };
+        this.scope.currentAclRule = mockRule;
+        this.scope.zoneInfo = mockZone;
+        var getUserDataByUsername = spyOn(this.profileService, 'getUserDataByUsername')
+            .and.stub();
+        var postUserLookup = spyOn(this.scope, 'postUserLookup')
+            .and.stub();
+        var expectedRule = {
+            priority: 'Group',
+            groupId: '1234',
+            accessLevel: 'Read',
+            recordType: ['A','AAAA'],
+        };
+
+        this.scope.submitAclRule('Create');
+        this.scope.$digest();
+        expect(getUserDataByUsername.calls.count()).toBe(0);
+        expect(postUserLookup.calls.count()).toBe(1);
+        expect(this.scope.currentAclRule).toEqual(expectedRule);
+    });
+
     it('postUserLookup works as expected when given Create', function() {
         var mockRule = {
             accessLevel: 'Read',

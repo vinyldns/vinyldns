@@ -46,3 +46,4 @@ modules/portal/public/javascripts/
 modules/portal/public/project/
 modules/portal/public/stylesheets/
 **/.env.*
+modules/portal/package-lock.json

@@ -185,11 +185,7 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] = {
     // see https://tools.ietf.org/html/rfc4035#section-2.4
     val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
-      case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
-      case Some(ns) =>
-        InvalidRequest(
-          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})"
-        ).asLeft
+      case Some(_) => ().asRight
       case None =>
         InvalidRequest(
           s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
