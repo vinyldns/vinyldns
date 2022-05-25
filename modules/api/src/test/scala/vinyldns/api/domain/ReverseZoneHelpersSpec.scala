@@ -68,6 +68,13 @@ class ReverseZoneHelpersSpec
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "192.0.2.193"
       }
+
+      "convert PTR with two octets in zone and two octets in record set to ip4 with upper case" in {
+        val zn1 = Zone("1.2.IN-ADDR.ARPA.", "email")
+        val rs1 = RecordSet("id", "4.5", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+
+        ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "2.1.5.4"
+      }
     }
 
     "convertPTRtoIPv6" should {
@@ -112,6 +119,19 @@ class ReverseZoneHelpersSpec
         )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
+      }
+      "convert PTR with 16 nibbles in zone and 16 nibbles in record set to ip6 with upper case" in {
+        val zn1 = Zone("0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.IP6.ARPA.", "email")
+        val rs1 = RecordSet(
+          "id",
+          "B.A.9.8.7.6.5.0.0.0.0.0.0.0.0.0",
+          RecordType.PTR,
+          200,
+          RecordSetStatus.Active,
+          DateTime.now
+        )
+
+        ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89AB"
       }
     }
     "recordsetIsWithinCidrMask" should {
