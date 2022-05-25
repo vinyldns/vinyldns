@@ -712,7 +712,7 @@ class BatchChangeValidationsSpec
       )
     val result = validateAddChangeInput(change, false)
 
-    result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidCNAMERecordData."))
+    result should haveInvalid[DomainValidationError](InvalidCname(s"$invalidCNAMERecordData.",false))
   }
 
   property("""validateAddChangeInput: should fail with InvalidLength
@@ -2670,7 +2670,7 @@ class BatchChangeValidationsSpec
   property("validateAddChangeInput:  should fail for a CNAME addChangeInput with forward slash for forward zone") {
     val cnameWithForwardSlash = AddChangeInput("cname.ok.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname/")))
     val result = validateAddChangeInput(cnameWithForwardSlash, false)
-    result should haveInvalid[DomainValidationError](InvalidDomainName("cname/."))
+    result should haveInvalid[DomainValidationError](InvalidCname("cname/.",false))
   }
   property("validateAddChangeInput: should succeed for a valid CNAME addChangeInput without forward slash for forward zone") {
     val cname = AddChangeInput("cname.ok.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname")))

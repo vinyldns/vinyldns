@@ -22,7 +22,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import vinyldns.api.ValidationTestImprovements._
-import vinyldns.core.domain.{InvalidDomainName, InvalidForwardZoneCame, InvalidLength}
+import vinyldns.core.domain.{InvalidDomainName, InvalidCname, InvalidLength}
 
 class DomainValidationsSpec
     extends AnyPropSpec
@@ -154,8 +154,8 @@ class DomainValidationsSpec
     validateCname("slash.cname./name.",true).isValid
   }
   property("Cname names with forward slash should fail with forward zone") {
-    validateCname("/slash.cname.name.",false).failWith[InvalidForwardZoneCame]
-    validateCname("slash./cname.name.",false).failWith[InvalidForwardZoneCame]
-    validateCname("slash.cname./name.",false).failWith[InvalidForwardZoneCame]
+    validateCname("/slash.cname.name.",false).failWith[InvalidCname]
+    validateCname("slash./cname.name.",false).failWith[InvalidCname]
+    validateCname("slash.cname./name.",false).failWith[InvalidCname]
   }
 }
