@@ -71,18 +71,21 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     "return the user when retrieving a user that exists by name" in {
       mockRepo.getUserByName(user.userName).returns(IO.pure(Some(user)))
       mockRepo.getUser(user.userName).returns(IO.pure(None))
+      mockRepo.getUserByIdOrName(user.userName).returns(IO.pure(Some(user)))
       underTest.get("fbaggins").unsafeRunSync() must beSome(user)
     }
 
     "return the user when retrieving a user that exists by user ID" in {
       mockRepo.getUserByName(user.id).returns(IO.pure(None))
       mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
+      mockRepo.getUserByIdOrName(user.userName).returns(IO.pure(Some(user)))
       underTest.get(user.id).unsafeRunSync() must beSome(user)
     }
 
     "return None when the user to be retrieved does not exist" in {
       mockRepo.getUserByName(any[String]).returns(IO.pure(None))
       mockRepo.getUser(any[String]).returns(IO.pure(None))
+      mockRepo.getUserByIdOrName(any[String]).returns(IO.pure(None))
       underTest.get("fbaggins").unsafeRunSync() must beNone
     }
 

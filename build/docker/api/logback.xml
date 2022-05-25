@@ -1,4 +1,6 @@
 <configuration>
+    <variable name="VINYLDNS_LOG_LEVEL" value="${VINYLDNS_LOG_LEVEL:-INFO}" />
+
     <!-- Test configuration, log to console so we can get the docker logs -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="co.elastic.logging.logback.EcsEncoder">
@@ -7,27 +9,11 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="vinyldns.core.route.Monitor" level="OFF"/>
 
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF"/>
 
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="vinyldns.core.route.Monitor" level="OFF">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <root level="INFO">
+    <root level="${VINYLDNS_LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

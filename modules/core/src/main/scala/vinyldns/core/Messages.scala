@@ -20,7 +20,7 @@ object Messages {
 
   // Error displayed when less than two letters or numbers is filled in Record Name Filter field in RecordSetSearch page
   val RecordNameFilterError =
-    "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
+    "Record Name Filter field must contain at least two letters or numbers and cannot have wildcard at both the start and end."
 
   /*
    *  Error displayed when attempting to create group with name that already exists

@@ -20,7 +20,7 @@ import cats.effect._
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.backend.Backend
-import vinyldns.core.domain.record.{NameSort, RecordSetDataRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{NameSort, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
@@ -55,7 +55,7 @@ object VinylDNSZoneViewLoader {
 case class VinylDNSZoneViewLoader(
     zone: Zone,
     recordSetRepository: RecordSetRepository,
-    recordSetDataRepository: RecordSetDataRepository
+    recordSetCacheRepository: RecordSetCacheRepository
 ) extends ZoneViewLoader
     with Monitored {
   def load: () => IO[ZoneView] =

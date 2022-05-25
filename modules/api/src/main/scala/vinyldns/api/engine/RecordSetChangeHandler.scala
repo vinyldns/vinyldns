@@ -38,16 +38,16 @@ object RecordSetChangeHandler extends TransactionProvider {
   final case class Requeue(change: RecordSetChange) extends Throwable
 
   def apply(
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository,
-      batchChangeRepository: BatchChangeRepository
+             recordSetRepository: RecordSetRepository,
+             recordChangeRepository: RecordChangeRepository,
+             recordSetCacheRepository: RecordSetCacheRepository,
+             batchChangeRepository: BatchChangeRepository
   )(implicit timer: Timer[IO]): (Backend, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
         recordChangeRepository,
-        recordSetDataRepository,
+        recordSetCacheRepository,
         batchChangeRepository,
         conn,
         recordSetChange
@@ -55,12 +55,12 @@ object RecordSetChangeHandler extends TransactionProvider {
     }
 
   def process(
-     recordSetRepository: RecordSetRepository,
-     recordChangeRepository: RecordChangeRepository,
-     recordSetDataRepository: RecordSetDataRepository,
-     batchChangeRepository: BatchChangeRepository,
-     conn: Backend,
-     recordSetChange: RecordSetChange
+               recordSetRepository: RecordSetRepository,
+               recordChangeRepository: RecordChangeRepository,
+               recordSetCacheRepository: RecordSetCacheRepository,
+               batchChangeRepository: BatchChangeRepository,
+               conn: Backend,
+               recordSetChange: RecordSetChange
   )(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
@@ -70,26 +70,26 @@ object RecordSetChangeHandler extends TransactionProvider {
         wildCardExists,
         recordSetRepository,
         recordChangeRepository,
-        recordSetDataRepository
+        recordSetCacheRepository
       )
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- saveChangeSet(recordSetRepository, recordChangeRepository,recordSetDataRepository, batchChangeRepository, recordSetChange, completedState, changeSet)
+      _ <- saveChangeSet(recordSetRepository, recordChangeRepository,recordSetCacheRepository, batchChangeRepository, recordSetChange, completedState, changeSet)
     } yield completedState.change
 
   def saveChangeSet(
-   recordSetRepository: RecordSetRepository,
-   recordChangeRepository: RecordChangeRepository,
-   recordSetDataRepository: RecordSetDataRepository,
-   batchChangeRepository: BatchChangeRepository,
-   recordSetChange: RecordSetChange,
-   completedState: ProcessorState,
-   changeSet: ChangeSet
+                     recordSetRepository: RecordSetRepository,
+                     recordChangeRepository: RecordChangeRepository,
+                     recordSetCacheRepository: RecordSetCacheRepository,
+                     batchChangeRepository: BatchChangeRepository,
+                     recordSetChange: RecordSetChange,
+                     completedState: ProcessorState,
+                     changeSet: ChangeSet
   ): IO[Unit] =
     executeWithinTransaction { db: DB =>
       for {
        _ <-  recordSetRepository.apply(db, changeSet)
        _ <-  recordChangeRepository.save(db, changeSet)
-       _ <-  recordSetDataRepository.save(db, changeSet)
+       _ <-  recordSetCacheRepository.save(db, changeSet)
        // Update single changes within this transaction to rollback the changes made to recordset and record change repo
        // when exception occurs while updating single changes
        singleBatchChanges <- batchChangeRepository.getSingleChanges(
@@ -147,12 +147,12 @@ object RecordSetChangeHandler extends TransactionProvider {
   final case class Retry(change: RecordSetChange) extends ProcessingStatus
 
   def syncAndGetProcessingStatusFromDnsBackend(
-      change: RecordSetChange,
-      conn: Backend,
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository,
-      performSync: Boolean = false
+                                                change: RecordSetChange,
+                                                conn: Backend,
+                                                recordSetRepository: RecordSetRepository,
+                                                recordChangeRepository: RecordChangeRepository,
+                                                recordSetCacheRepository: RecordSetCacheRepository,
+                                                performSync: Boolean = false
   ): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(matches(_, recordSet, zoneName))
@@ -201,7 +201,7 @@ object RecordSetChangeHandler extends TransactionProvider {
               existingRecords,
               recordSetRepository,
               recordChangeRepository,
-              recordSetDataRepository
+              recordSetCacheRepository
             )
             processingStatus <- getProcessingStatus(change, dnsBackendRRSet)
           } yield processingStatus
@@ -219,7 +219,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       wildcardExists: Boolean,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository
+      recordSetCacheRepository: RecordSetCacheRepository
   )(
       implicit timer: Timer[IO]
   ): IO[ProcessorState] = {
@@ -250,7 +250,7 @@ object RecordSetChangeHandler extends TransactionProvider {
           wildcardExists,
           recordSetRepository,
           recordChangeRepository,
-          recordSetDataRepository
+          recordSetCacheRepository
         )
       )
     }
@@ -264,7 +264,7 @@ object RecordSetChangeHandler extends TransactionProvider {
             conn,
             recordSetRepository,
             recordChangeRepository,
-            recordSetDataRepository
+            recordSetCacheRepository
           )
         )
 
@@ -277,7 +277,7 @@ object RecordSetChangeHandler extends TransactionProvider {
             wildcardExists,
             recordSetRepository,
             recordChangeRepository,
-            recordSetDataRepository
+            recordSetCacheRepository
           )
         )
 
@@ -289,7 +289,7 @@ object RecordSetChangeHandler extends TransactionProvider {
             conn,
             recordSetRepository,
             recordChangeRepository,
-            recordSetDataRepository
+            recordSetCacheRepository
           )
         )
 
@@ -309,11 +309,11 @@ object RecordSetChangeHandler extends TransactionProvider {
   }
 
   private def syncAgainstDnsBackend(
-      change: RecordSetChange,
-      dnsBackendRRSet: List[RecordSet],
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository
+                                     change: RecordSetChange,
+                                     dnsBackendRRSet: List[RecordSet],
+                                     recordSetRepository: RecordSetRepository,
+                                     recordChangeRepository: RecordChangeRepository,
+                                     recordSetCacheRepository: RecordSetCacheRepository
   ): IO[List[RecordSet]] = {
 
     /*
@@ -322,12 +322,12 @@ object RecordSetChangeHandler extends TransactionProvider {
      * - Delete record from database for ADD request if exists in database but does not exist in DNS backend
      */
     def syncDnsBackendRRSet(
-        storedRRSet: Option[RecordSet],
-        dnsBackendRRSet: Option[RecordSet],
-        zone: Zone,
-        recordSetRepository: RecordSetRepository,
-        recordChangeRepository: RecordChangeRepository,
-        recordSetDataRepository: RecordSetDataRepository
+                             storedRRSet: Option[RecordSet],
+                             dnsBackendRRSet: Option[RecordSet],
+                             zone: Zone,
+                             recordSetRepository: RecordSetRepository,
+                             recordChangeRepository: RecordChangeRepository,
+                             recordSetCacheRepository: RecordSetCacheRepository
     ): IO[Unit] = {
       val recordSetToSync = (storedRRSet, dnsBackendRRSet) match {
         case (Some(savedRs), None) if change.changeType == RecordSetChangeType.Create =>
@@ -348,7 +348,7 @@ object RecordSetChangeHandler extends TransactionProvider {
             for {
               _ <-  recordSetRepository.apply(db, changeSet)
               _ <-  recordChangeRepository.save(db, changeSet)
-              _ <-  recordSetDataRepository.save(db, changeSet)
+              _ <-  recordSetCacheRepository.save(db, changeSet)
 
             } yield ()
           }
@@ -365,25 +365,25 @@ object RecordSetChangeHandler extends TransactionProvider {
         change.zone,
         recordSetRepository,
         recordChangeRepository,
-        recordSetDataRepository
+        recordSetCacheRepository
       )
     } yield dnsBackendRRSet
   }
 
   /* Step 1: Validate the change hasn't already been applied */
   private def validate(
-      change: RecordSetChange,
-      conn: Backend,
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository
+                        change: RecordSetChange,
+                        conn: Backend,
+                        recordSetRepository: RecordSetRepository,
+                        recordChangeRepository: RecordChangeRepository,
+                        recordSetCacheRepository: RecordSetCacheRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
       conn,
       recordSetRepository,
       recordChangeRepository,
-      recordSetDataRepository
+      recordSetCacheRepository
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
@@ -417,14 +417,14 @@ object RecordSetChangeHandler extends TransactionProvider {
       conn: Backend,
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
-      recordSetDataRepository: RecordSetDataRepository
+      recordSetCacheRepository: RecordSetCacheRepository
   ): IO[ProcessorState] =
     syncAndGetProcessingStatusFromDnsBackend(
       change,
       conn,
       recordSetRepository,
       recordChangeRepository,
-      recordSetDataRepository
+      recordSetCacheRepository
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case Failure(_, message) =>

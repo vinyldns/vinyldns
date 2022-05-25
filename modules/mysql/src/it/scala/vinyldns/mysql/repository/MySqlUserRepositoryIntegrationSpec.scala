@@ -179,6 +179,37 @@ class MySqlUserRepositoryIntegrationSpec
     }
   }
 
+  "MySqlUserRepository.getUserByIdOrName" should {
+    "retrieve a user when userName exists" in {
+      repo.getUser(users.head.userName).unsafeRunSync() shouldBe None
+      repo.getUserByName(users.head.userName).unsafeRunSync() shouldBe Some(users.head)
+      repo.getUserByIdOrName(users.head.userName).unsafeRunSync() shouldBe Some(users.head)
+    }
+
+    "retrieve a user when user ID exists" in {
+      repo.getUser(users.head.id).unsafeRunSync() shouldBe Some(users.head)
+      repo.getUserByName(users.head.id).unsafeRunSync() shouldBe None
+      repo.getUserByIdOrName(users.head.id).unsafeRunSync() shouldBe Some(users.head)
+    }
+
+    "returns None when both user ID and userName do not exist" in {
+      repo.getUser("no-existo").unsafeRunSync() shouldBe None
+      repo.getUserByName("no-existo").unsafeRunSync() shouldBe None
+      repo.getUserByIdOrName("no-existo").unsafeRunSync() shouldBe None
+    }
+
+    "be case insensitive" in {
+      repo.getUserByIdOrName("name1").unsafeRunSync() shouldBe Some(caseInsensitiveUser1)
+      repo.getUserByIdOrName("NAME1").unsafeRunSync() shouldBe Some(caseInsensitiveUser1)
+
+      repo.getUserByIdOrName("name2").unsafeRunSync() shouldBe Some(caseInsensitiveUser2)
+      repo.getUserByIdOrName("NAME2").unsafeRunSync() shouldBe Some(caseInsensitiveUser2)
+
+      repo.getUserByIdOrName("name3").unsafeRunSync() shouldBe Some(caseInsensitiveUser3)
+      repo.getUserByIdOrName("NAME3").unsafeRunSync() shouldBe Some(caseInsensitiveUser3)
+    }
+  }
+
   "MySqlUserRepository.getUsers" should {
     "omit all non existing users" in {
       val result = repo.getUsers(Set("no-existo", users.head.id), None, None).unsafeRunSync()

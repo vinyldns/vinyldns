@@ -44,7 +44,8 @@ trait MembershipServiceAlgebra {
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean
+      ignoreAccess: Boolean,
+      abridged: Boolean = false
   ): Result[ListMyGroupsResponse]
 
   def listMembers(
@@ -66,6 +67,11 @@ trait MembershipServiceAlgebra {
   def updateUserLockStatus(
       userId: String,
       lockStatus: LockStatus,
+      authPrincipal: AuthPrincipal
+  ): Result[User]
+
+  def getUser(
+      userIdentifier: String,
       authPrincipal: AuthPrincipal
   ): Result[User]
 }

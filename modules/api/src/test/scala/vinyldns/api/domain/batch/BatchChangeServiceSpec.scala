@@ -386,6 +386,17 @@ class BatchChangeServiceSpec
           case _ => None
         }
       }
+    override def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
+      IO.pure {
+        userIdentifier match {
+          case superUser.id => Some(superUser)
+          case superUser.userName => Some(superUser)
+          case auth.userId => Some(okUser)
+          case auth.userName => Some(okUser)
+          case "testuser" => Some(okUser.copy(isTest = true))
+          case _ => None
+        }
+      }
     override def getUsers(
         userIds: Set[String],
         startFrom: Option[String],

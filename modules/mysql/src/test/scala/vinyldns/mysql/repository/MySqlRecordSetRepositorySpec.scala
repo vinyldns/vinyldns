@@ -73,14 +73,6 @@ class MySqlRecordSetRepositorySpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "hashBytes" should {
-    "return a hash value of vinyldns and should be match" in {
-      val name = "vinyldns"
-      val expected = "2facad1ec8f33fbb207761e2d4e5081599624e22"
-      hashString(name) shouldBe expected
-    }
-  }
-
   "PagingKey.fromStartFrom" should {
     "return None if startFrom is None" in {
       PagingKey(None) shouldBe None
