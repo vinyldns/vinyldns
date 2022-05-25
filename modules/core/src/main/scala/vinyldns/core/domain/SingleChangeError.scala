@@ -30,7 +30,7 @@ object DomainValidationErrorType extends Enumeration {
   type DomainValidationErrorType = Value
   // NOTE: once defined, an error code type cannot be changed!
   val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
-  InvalidDomainName, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
+  InvalidDomainName, InvalidReverseZoneCame, InvalidForwardZoneCame, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
   InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
   CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
@@ -46,6 +46,8 @@ object DomainValidationErrorType extends Enumeration {
       case _: GroupDoesNotExist => GroupDoesNotExist
       case _: NotAMemberOfOwnerGroup => NotAMemberOfOwnerGroup
       case _: InvalidDomainName => InvalidDomainName
+      case _: InvalidReverseZoneCame => InvalidReverseZoneCame
+      case _: InvalidForwardZoneCame => InvalidForwardZoneCame
       case _: InvalidLength => InvalidLength
       case _: InvalidEmail => InvalidEmail
       case _: InvalidRecordType => InvalidRecordType

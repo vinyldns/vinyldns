@@ -73,7 +73,7 @@ object DomainValidations {
         val checkRegex = validReverseZoneFQDNRegex
           .findFirstIn(name)
           .map(_.validNel)
-          .getOrElse(InvalidDomainName(name).invalidNel)
+          .getOrElse(InvalidReverseZoneCame(name).invalidNel)
         val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
 
         checkRegex.combine(checkLength).map(_ => name)
@@ -81,7 +81,7 @@ object DomainValidations {
         val checkRegex = validForwardZoneFQDNRegex
           .findFirstIn(name)
           .map(_.validNel)
-          .getOrElse(InvalidDomainName(name).invalidNel)
+          .getOrElse(InvalidForwardZoneCame(name).invalidNel)
         val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
 
         checkRegex.combine(checkLength).map(_ => name)
