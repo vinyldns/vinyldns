@@ -268,7 +268,7 @@ class MembershipService(
   // Validate group details. Group name and email cannot be empty
   def groupValidation(group: Group): Result[Unit] = {
     Option(group) match {
-      case Some(value) if value.name.isEmpty || value.email.isEmpty =>
+      case Some(value) if Option(value.name).forall(_.trim.isEmpty) || Option(value.email).forall(_.trim.isEmpty) =>
         GroupValidationError(GroupValidationErrorMsg).asLeft
       case _ =>
         ().asRight
