@@ -207,6 +207,9 @@ options:
       - title: Membership Model
         url: api/membership-model.html
         menu_section: membershipapireference
+      - title: Get User
+        url: api/get-user.html
+        menu_section: membershipapireference
       - title: Create Group
         url: api/create-group.html
         menu_section: membershipapireference

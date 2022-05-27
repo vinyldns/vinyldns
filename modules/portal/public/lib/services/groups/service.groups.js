@@ -84,6 +84,21 @@ angular.module('service.groups', [])
             return $http.get(url);
         };
 
+        this.getGroupsAbridged = function (ignoreAccess, query) {
+            if (query == "") {
+                query = null;
+            }
+            var params = {
+                "maxItems": 1500,
+                "groupNameFilter": query,
+                "ignoreAccess": ignoreAccess,
+                "abridged": true
+            };
+            var url = '/api/groups';
+            url = this.urlBuilder(url, params);
+            return $http.get(url);
+        };
+
         this.getGroupListChanges = function (id, count, groupId) {
             var url = '/api/groups/' + groupId + '/changes';
             url = this.urlBuilder(url, { 'startFrom': id, 'maxItems': count });

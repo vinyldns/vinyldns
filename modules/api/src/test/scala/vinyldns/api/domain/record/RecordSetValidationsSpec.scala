@@ -388,10 +388,6 @@ class RecordSetValidationsSpec
         val error = leftValue(dsValidations(ds, List(), okZone))
         error shouldBe an[InvalidRequest]
       }
-      "return an InvalidRequest if the matching NS has a different TTL" in {
-        val error = leftValue(dsValidations(ds, List(matchingNs.copy(ttl = 20)), okZone))
-        error shouldBe an[InvalidRequest]
-      }
       "return an InvalidRequest if the DS is dotted" in {
         val error =
           leftValue(dsValidations(ds.copy(name = "test.dotted"), List(matchingNs), okZone))
