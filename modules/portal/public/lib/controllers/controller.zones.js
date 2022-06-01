@@ -53,7 +53,7 @@ angular.module('controller.zones', [])
         $scope.currentZone.transferConnection = {};
     };
 
-    groupsService.getGroupsAbridged(true, "").then(function (results) {
+    groupsService.getGroups(true, "").then(function (results) {
         if (results.data) {
             // Get all groups where the group members include the current user
             $scope.myGroups = results.data.groups.filter(grp => grp.members.findIndex(mem => mem.id === $scope.profile.id) >= 0);

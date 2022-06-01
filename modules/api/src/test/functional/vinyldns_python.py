@@ -220,7 +220,7 @@ class VinylDNSClient(object):
 
         return data
 
-    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=200, ignore_access=False, **kwargs):
+    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=100, ignore_access=False, **kwargs):
         """
         Retrieves my groups
         :param start_from: the start key of the page

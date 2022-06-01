@@ -79,7 +79,7 @@ class MembershipRoute(
       } ~
         (get & monitor("Endpoint.listMyGroups")) {
           parameters(
-            "startFrom".?,
+            "startFrom".as[String].?,
             "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
             "groupNameFilter".?,
             "ignoreAccess".as[Boolean].?(false),
