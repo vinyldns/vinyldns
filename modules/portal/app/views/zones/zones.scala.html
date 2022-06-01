@@ -122,6 +122,8 @@
                                         </tbody>
                                     </table>
 
+
+
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
                                         <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
@@ -144,6 +146,11 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                    <div class="spinner" ></div>
+                </div>
+
                 <div class="tab-pane" id="allZones">
                     <div class="row">
                         <div class="col-md-12">
@@ -175,6 +182,7 @@
                                 <div id="zone-list-table" class="panel-body">
                                     <p ng-if="!allZonesLoaded">Loading zones...</p>
                                     <p ng-if="allZonesLoaded && !allZones.length">No zones match the search criteria.</p>
+
 
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
