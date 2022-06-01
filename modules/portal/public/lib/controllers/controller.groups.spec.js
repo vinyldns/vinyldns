@@ -175,4 +175,57 @@ describe('Controller: GroupsController', function () {
         expect(getGroupSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
     });
+
+    it('nextPageAllGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = true;
+
+        this.scope.nextPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+          [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
+
+    it('prevPageAllGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = true;
+
+        this.scope.prevPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+
+        this.scope.nextPageAllGroups();
+        this.scope.prevPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(3);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
 });
