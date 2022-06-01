@@ -30,7 +30,17 @@ angular.module('service.zones', [])
                 "ignoreAccess": ignoreAccess
             };
             var url = groupsService.urlBuilder("/api/zones", params);
-            return $http.get(url);
+
+            let loader = $("#loader");
+            loader.modal({
+                          backdrop: "static", //remove ability to close modal with click
+                          keyboard: false, //remove option to close with keyboard
+                          show: true //Display loader!
+                          })
+            let promis =  $http.get(url);
+            // What?
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            return promis
         };
 
         this.getBackendIds = function() {
