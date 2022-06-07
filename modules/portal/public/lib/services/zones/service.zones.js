@@ -38,7 +38,7 @@ angular.module('service.zones', [])
                           show: true //Display loader!
                           })
             let promis =  $http.get(url);
-            // What?
+            // Hide loader when api gets response
             promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
             return promis
         };
