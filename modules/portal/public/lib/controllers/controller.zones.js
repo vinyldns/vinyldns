@@ -25,6 +25,7 @@ angular.module('controller.zones', [])
     $scope.allGroups = [];
 
     $scope.query = "";
+    $scope.includeReverse = true;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
@@ -87,7 +88,7 @@ angular.module('controller.zones', [])
         allZonesPaging = pagingService.resetPaging(allZonesPaging);
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.includeReverse)
             .then(function (response) {
                 $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;

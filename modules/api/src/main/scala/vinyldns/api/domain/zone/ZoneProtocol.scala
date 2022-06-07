@@ -266,7 +266,8 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
 
 // Errors

@@ -78,13 +78,15 @@ class ZoneRoute(
           "nameFilter".?,
           "startFrom".as[String].?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
-          "ignoreAccess".as[Boolean].?(false)
+          "ignoreAccess".as[Boolean].?(false),
+          "includeReverse".as[Boolean].?(true)
         ) {
           (
               nameFilter: Option[String],
               startFrom: Option[String],
               maxItems: Int,
-              ignoreAccess: Boolean
+              ignoreAccess: Boolean,
+              includeReverse: Boolean
           ) =>
             {
               handleRejections(invalidQueryHandler) {
@@ -94,7 +96,7 @@ class ZoneRoute(
                 ) {
                   authenticateAndExecute(
                     zoneService
-                      .listZones(_, nameFilter, startFrom, maxItems, ignoreAccess)
+                      .listZones(_, nameFilter, startFrom, maxItems, ignoreAccess, includeReverse)
                   ) { result =>
                     complete(StatusCodes.OK, result)
                   }

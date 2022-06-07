@@ -201,6 +201,9 @@ class MySqlZoneRepositoryIntegrationSpec
       repo
         .getZonesByFilters(Set("67.345.12.in-addr.arpa.", "extraZone"))
         .unsafeRunSync() should contain theSameElementsAs expectedZones
+
+      println(repo
+        .getZonesByFilters(Set("67.345.12.in-addr.arpa.", "extraZone")).unsafeRunSync())
     }
 
     "get authorized zones" in {
@@ -450,19 +453,19 @@ class MySqlZoneRepositoryIntegrationSpec
     "apply the zone filter as a normal user" in {
 
       val testZones = Seq(
-        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
         testZone("system-temp.", adminGroupId = "foo"),
         testZone("system-nomatch.", adminGroupId = "bar")
       )
 
-      val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
+      val expectedZones = Seq(testZones(1)).sortBy(_.name)
 
       val auth = AuthPrincipal(dummyUser, Seq("foo"))
 
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"))
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"), includeReverse = false)
         } yield retrieved
 
       (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)

@@ -243,7 +243,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
@@ -252,6 +253,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
+
+          val noReverseRegex =
+            if (!includeReverse)
+              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            else None
 
           val filters = List(
             zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
@@ -263,16 +269,28 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             sb.append(filters.mkString(" AND "))
           }
 
+          if (!includeReverse) {
+            sb.append(" AND ")
+            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+          }
+
           sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
+          println(query)
 
           val results: List[Zone] = SQL(query)
             .bind(accessors: _*)
             .map(extractZone(1))
             .list()
             .apply()
+
+          for(element<-results)
+          {
+            println(element)
+          }
+
 
           val (newResults, nextId) =
             if (results.size > maxItems)
@@ -285,7 +303,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             startFrom = startFrom,
             maxItems = maxItems,
             zonesFilter = zoneNameFilter,
-            ignoreAccess = ignoreAccess
+            ignoreAccess = ignoreAccess,
+            includeReverse = includeReverse
           )
         }
       }

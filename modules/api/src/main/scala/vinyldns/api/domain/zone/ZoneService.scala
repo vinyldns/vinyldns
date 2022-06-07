@@ -147,7 +147,8 @@ class ZoneService(
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): Result[ListZonesResponse] = {
     for {
       listZonesResult <- zoneRepository.listZones(
@@ -155,7 +156,8 @@ class ZoneService(
         nameFilter,
         startFrom,
         maxItems,
-        ignoreAccess
+        ignoreAccess,
+        includeReverse
       )
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
@@ -167,7 +169,8 @@ class ZoneService(
       listZonesResult.startFrom,
       listZonesResult.nextId,
       listZonesResult.maxItems,
-      listZonesResult.ignoreAccess
+      listZonesResult.ignoreAccess,
+      listZonesResult.includeReverse
     )
   }.toResult
 
