@@ -270,8 +270,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           }
 
           if (!includeReverse) {
-            sb.append(" AND ")
-            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            if (filters.nonEmpty) {
+              sb.append(" AND ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
+            else {
+              sb.append(" WHERE ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
           }
 
           sb.append(s" GROUP BY z.name ")

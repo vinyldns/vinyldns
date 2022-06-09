@@ -88,7 +88,7 @@ angular.module('controller.zones', [])
         allZonesPaging = pagingService.resetPaging(allZonesPaging);
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.includeReverse)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, true, $scope.includeReverse)
             .then(function (response) {
                 $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;
