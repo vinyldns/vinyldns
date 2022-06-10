@@ -428,15 +428,15 @@ class BatchChangeValidations(
 
     val validations =
       typedValidations |+|
-        noIncompatibleRecordExists(change, groupedChanges) |+|
+        //noIncompatibleRecordExists(change, groupedChanges) |+|
         userCanAddRecordSet(change, auth) |+|
-        recordDoesNotExist(
+        /*recordDoesNotExist(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
           groupedChanges
-        ) |+|
+        ) |+|*/
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
 

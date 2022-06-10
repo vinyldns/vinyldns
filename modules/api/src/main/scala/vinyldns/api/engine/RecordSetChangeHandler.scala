@@ -107,6 +107,8 @@ object RecordSetChangeHandler extends TransactionProvider {
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
         singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
+      case RecordSetChangeStatus.AlreadyExists =>
+        singleChanges.map(_.alreadyExists(recordSetChange.systemMessage,recordSetChange.id, recordSetChange.recordSet.id))
       case RecordSetChangeStatus.Failed =>
         singleChanges.map(_.withProcessingError(recordSetChange.systemMessage, recordSetChange.id))
       case _ => singleChanges
@@ -138,6 +140,8 @@ object RecordSetChangeHandler extends TransactionProvider {
   // Change has already been applied. Abort processing and return successful response to user.
   final case class AlreadyApplied(change: RecordSetChange) extends ProcessingStatus
 
+  final case class AlreadyExists(change: RecordSetChange, message: String) extends ProcessingStatus
+
   // Change can proceed to the next state of processing. In the Verified ProcessorState,
   // ReadyToApply will attempt to retry until max retries limit is reached,
   // at which point the response will be returned.
@@ -167,7 +171,9 @@ object RecordSetChangeHandler extends TransactionProvider {
           if (existingRecords.isEmpty) ReadyToApply(change)
           else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
             AlreadyApplied(change)
-          else Failure(change, "Incompatible record already exists in DNS.")
+          else if (existingRecords.nonEmpty)
+            AlreadyExists(change,"Record already exists in DNS.")
+          else Failure(change, "Incompatible record in DNS.")
 
         case RecordSetChangeType.Update =>
           if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
@@ -187,7 +193,8 @@ object RecordSetChangeHandler extends TransactionProvider {
           }
 
         case RecordSetChangeType.Delete =>
-          if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
+          if (existingRecords.nonEmpty) {ReadyToApply(change)
+          } // we have a record set, move forward
           else AlreadyApplied(change) // we did not find the record set, so already applied
       }
     }
@@ -386,6 +393,10 @@ object RecordSetChangeHandler extends TransactionProvider {
       recordSetCacheRepository
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
+      case AlreadyExists(_,message) => Completed(change.alreadyExists(
+        s"ℹ️ DNS for change ${change.id}:${change.recordSet.name}: $message"
+      )
+      )
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
         Completed(

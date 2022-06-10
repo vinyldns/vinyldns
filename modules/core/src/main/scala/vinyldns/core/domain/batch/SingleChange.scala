@@ -77,6 +77,22 @@ sealed trait SingleChange {
         recordSetId = Some(recordSetId)
       )
   }
+  def alreadyExists(message: Option[String],completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
+    case add: SingleAddChange =>
+      add.copy(
+        status = SingleChangeStatus.Complete,
+        systemMessage = message,
+        recordChangeId = Some(completeRecordChangeId),
+        recordSetId = Some(recordSetId)
+      )
+    case delete: SingleDeleteRRSetChange =>
+      delete.copy(
+        status = SingleChangeStatus.Complete,
+        systemMessage = message,
+        recordChangeId = Some(completeRecordChangeId),
+        recordSetId = Some(recordSetId)
+      )
+  }
 
   def reject: SingleChange = this match {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
