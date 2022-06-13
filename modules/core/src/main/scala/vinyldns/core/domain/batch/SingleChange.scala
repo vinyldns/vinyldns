@@ -49,7 +49,7 @@ sealed trait SingleChange {
 
   def withDoesNotExistMessage(error: String): SingleChange = this match {
     case add: SingleAddChange =>
-      add.copy(status = SingleChangeStatus.Failed, systemMessage = Some("Error queueing RecordSetChange for processing"))
+      add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
     case delete: SingleDeleteRRSetChange =>
       delete.copy(status = SingleChangeStatus.Complete, systemMessage = Some(error))
   }
