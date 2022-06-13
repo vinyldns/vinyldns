@@ -37,6 +37,8 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
+  private val completedMessage: String = "ℹ️ This record does not exist." +
+    "No further action is required."
 
   private def makeSingleAddChange(
       name: String,
@@ -158,6 +160,14 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     makeAddChangeForValidation("txtToUpdate", TXTData("update"), TXT),
     makeDeleteRRSetChangeForValidation("mxToUpdate", MX),
     makeAddChangeForValidation("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
+  )
+
+  private val singleChangesOneDelete = List(
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A)
+  )
+
+  private val changeForValidationOneDelete = List(
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A)
   )
 
   private val singleChangesOneBad = List(
@@ -528,6 +538,44 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       // validate other changes have no update
       returnedBatch.changes(0) shouldBe singleChangesOneBad(0)
       returnedBatch.changes(1) shouldBe singleChangesOneBad(1)
+
+      // check the update has been made in the DB
+      val savedBatch: Option[BatchChange] =
+        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
+      savedBatch shouldBe Some(returnedBatch)
+    }
+
+    "set status to complete when deleting a record that does not exists" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          singleChangesOneDelete,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result = rightResultOf(
+        underTest
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneDelete.map(_.validNel), existingRecordSets),
+            None
+          )
+          .value
+      )
+
+      val returnedBatch = result.batchChange
+
+      // validate failed status update returned
+      val receivedChange = returnedBatch.changes(0)
+      receivedChange.status shouldBe SingleChangeStatus.Complete
+      receivedChange.recordChangeId shouldBe None
+      receivedChange.systemMessage shouldBe Some(completedMessage)
+
+      // validate other changes have no update
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(completedMessage), status = SingleChangeStatus.Complete)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =

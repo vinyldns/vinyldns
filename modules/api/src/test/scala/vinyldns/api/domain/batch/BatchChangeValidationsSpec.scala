@@ -1004,7 +1004,7 @@ class BatchChangeValidationsSpec
     )
   }
 
-  property("validateChangesWithContext: should fail for update if record does not exist") {
+  property("validateChangesWithContext: should complete for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
     val deleteNonExistentEntry = makeDeleteUpdateDeleteRRSet("ok", Some(AData("1.1.1.1")))
@@ -1026,15 +1026,8 @@ class BatchChangeValidationsSpec
     )
 
     result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRRSet.inputChange.inputName)
-    )
-    result(3) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
-    result(3) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
+    result(1) shouldBe valid
+    result(3) shouldBe valid
     result(4) shouldBe valid
     deleteNonExistentEntry.inputChange.record.foreach { record =>
       result(5) should haveInvalid[DomainValidationError](
@@ -1589,7 +1582,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
+    """validateChangesWithContext: should complete DeleteChangeForValidation
       |if record does not exist""".stripMargin
   ) {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
@@ -1606,12 +1599,8 @@ class BatchChangeValidationsSpec
         None
       )
 
-    result(0) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRRSet.inputChange.inputName)
-    )
-    result(1) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
+    result(0) shouldBe valid
+    result(1) shouldBe valid
   }
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation

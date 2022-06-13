@@ -47,6 +47,13 @@ sealed trait SingleChange {
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
+  def withDoesNotExistMessage(error: String): SingleChange = this match {
+    case add: SingleAddChange =>
+      add.copy(status = SingleChangeStatus.Failed, systemMessage = Some("Error queueing RecordSetChange for processing"))
+    case delete: SingleDeleteRRSetChange =>
+      delete.copy(status = SingleChangeStatus.Complete, systemMessage = Some(error))
+  }
+
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
     this match {
       case add: SingleAddChange =>
