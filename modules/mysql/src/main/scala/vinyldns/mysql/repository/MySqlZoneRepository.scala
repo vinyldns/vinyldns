@@ -284,19 +284,12 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
-          println(query)
 
           val results: List[Zone] = SQL(query)
             .bind(accessors: _*)
             .map(extractZone(1))
             .list()
             .apply()
-
-          for(element<-results)
-          {
-            println(element)
-          }
-
 
           val (newResults, nextId) =
             if (results.size > maxItems)

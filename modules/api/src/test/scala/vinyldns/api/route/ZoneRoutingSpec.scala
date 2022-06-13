@@ -252,7 +252,8 @@ class ZoneRoutingSpec
         nameFilter: Option[String],
         startFrom: Option[String],
         maxItems: Int,
-        ignoreAccess: Boolean = false
+        ignoreAccess: Boolean = false,
+        includeReverse: Boolean = true
     ): Result[ListZonesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
