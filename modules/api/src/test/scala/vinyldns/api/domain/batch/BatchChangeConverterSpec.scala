@@ -568,13 +568,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
       val returnedBatch = result.batchChange
 
-      // validate failed status update returned
+      // validate completed status returned
       val receivedChange = returnedBatch.changes(0)
       receivedChange.status shouldBe SingleChangeStatus.Complete
       receivedChange.recordChangeId shouldBe None
       receivedChange.systemMessage shouldBe Some(completedMessage)
-
-      // validate other changes have no update
       returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(completedMessage), status = SingleChangeStatus.Complete)
 
       // check the update has been made in the DB
