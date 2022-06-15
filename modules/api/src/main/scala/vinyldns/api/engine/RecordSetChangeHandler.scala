@@ -107,8 +107,6 @@ object RecordSetChangeHandler extends TransactionProvider {
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
         singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
-      case RecordSetChangeStatus.AlreadyExists =>
-        singleChanges.map(_.alreadyExists(recordSetChange.systemMessage,recordSetChange.id, recordSetChange.recordSet.id))
       case RecordSetChangeStatus.Failed =>
         singleChanges.map(_.withProcessingError(recordSetChange.systemMessage, recordSetChange.id))
       case _ => singleChanges
@@ -158,8 +156,9 @@ object RecordSetChangeHandler extends TransactionProvider {
                                                 recordSetCacheRepository: RecordSetCacheRepository,
                                                 performSync: Boolean = false
   ): IO[ProcessingStatus] = {
-    def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
+    def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean = {
       dnsResult.exists(matches(_, recordSet, zoneName))
+    }
 
     // Determine processing status by comparing request against disposition of DNS backend
     def getProcessingStatus(
@@ -168,16 +167,15 @@ object RecordSetChangeHandler extends TransactionProvider {
     ): IO[ProcessingStatus] = IO {
       change.changeType match {
         case RecordSetChangeType.Create =>
-          if (existingRecords.isEmpty) ReadyToApply(change)
-          else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
-            AlreadyApplied(change)
-          else if (existingRecords.nonEmpty)
-            AlreadyExists(change,"Record already exists in DNS.")
+          if (existingRecords.isEmpty) { ReadyToApply(change)}
+          else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name)) {
+            AlreadyApplied(change) }
+          else if (existingRecords.nonEmpty) { AlreadyExists(change, "Record updated in DNS") }//Record exists in DNS
           else Failure(change, "Incompatible record in DNS.")
 
         case RecordSetChangeType.Update =>
           if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
-            AlreadyApplied(change)
+          AlreadyApplied(change)
           else {
             // record must not exist in the DNS backend, or be synced if it exists
             val canApply = existingRecords.isEmpty ||
@@ -193,8 +191,7 @@ object RecordSetChangeHandler extends TransactionProvider {
           }
 
         case RecordSetChangeType.Delete =>
-          if (existingRecords.nonEmpty) {ReadyToApply(change)
-          } // we have a record set, move forward
+          if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
           else AlreadyApplied(change) // we did not find the record set, so already applied
       }
     }
@@ -394,7 +391,7 @@ object RecordSetChangeHandler extends TransactionProvider {
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case AlreadyExists(_,message) => Completed(change.alreadyExists(
-        s"ℹ️ DNS for change ${change.id}:${change.recordSet.name}: $message"
+        s"ℹ️ DNS for change ${change.id}: ${change.recordSet.name}: $message"
       )
       )
       case ReadyToApply(_) => Validated(change)
@@ -438,6 +435,9 @@ object RecordSetChangeHandler extends TransactionProvider {
       recordSetCacheRepository
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
+      case AlreadyExists(_,message) => Completed(change.alreadyExists(
+        s"ℹ️ DNS for change ${change.id}: ${change.recordSet.name}: $message"
+      ))
       case Failure(_, message) =>
         Completed(
           change.failed(

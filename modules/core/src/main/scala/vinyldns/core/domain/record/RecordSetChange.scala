@@ -23,7 +23,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
 object RecordSetChangeStatus extends Enumeration {
   type RecordSetChangeStatus = Value
-  val Pending, Complete, Failed, Synced, AlreadyExists = Value
+  val Pending, Complete, Failed, Synced = Value
 
   def isDone(status: RecordSetChangeStatus): Boolean = status == Complete || status == Failed
 }
@@ -61,7 +61,7 @@ case class RecordSetChange(
 
   def alreadyExists(message: Option[String] = None): RecordSetChange =
     copy(
-      status = RecordSetChangeStatus.AlreadyExists,
+      status = RecordSetChangeStatus.Complete,
       systemMessage = message,
       recordSet = recordSet
         .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))

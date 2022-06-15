@@ -59,14 +59,18 @@ object BatchTransformations {
   }
 
   final case class ExistingRecordSets(recordSets: List[RecordSet]) {
-    val recordSetMap: Map[(String, String), List[RecordSet]] =
+    val recordSetMap: Map[(String, String), List[RecordSet]] = {
       recordSets.groupBy(rs => (rs.zoneId, rs.name.toLowerCase))
+    }
 
     def get(zoneId: String, name: String, recordType: RecordType): Option[RecordSet] =
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List()).find(_.typ == recordType)
 
     def get(recordKey: RecordKey): Option[RecordSet] =
       get(recordKey.zoneId, recordKey.recordName, recordKey.recordType)
+
+    def get(recordKeyData: RecordKeyData): Option[RecordSet] =
+      get(recordKeyData.zoneId, recordKeyData.recordName, recordKeyData.recordType)
 
     def getRecordSetMatch(zoneId: String, name: String): List[RecordSet] =
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List())
@@ -170,6 +174,9 @@ object BatchTransformations {
 
     def getExistingRecordSet(recordKey: RecordKey): Option[RecordSet] =
       existingRecordSets.get(recordKey)
+
+    def getExistingRecordSetData(recordKeyData: RecordKeyData): Option[RecordSet] =
+      existingRecordSets.get(recordKeyData)
 
     def getProposedAdds(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten

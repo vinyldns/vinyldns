@@ -109,10 +109,20 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
       "If zone exists, then it must be connected to in VinylDNS."
 }
 
-final case class RecordAlreadyExists(name: String) extends DomainValidationError {
-  def message: String =
-    s"""Record "$name" Already Exists: cannot add an existing record; to update it, """ +
-      "issue a DeleteRecordSet then an Add."
+final case class RecordAlreadyExists(name: String, isApproved:Boolean, recordData: RecordData,
+                                     fatal: Boolean = false) extends DomainValidationError(fatal) {
+  def message: String = {
+    if (isApproved == false) {
+      s"""Record Name $name already exists. Your request will be manually reviewed.
+        | If you intended to update this record, you can avoid manual review by adding a
+        | DeleteRecordSet entry followed by an Add..""".stripMargin
+    }
+    else {
+      s"""ℹ️ Record data $recordData in DNS is not exists.
+         |Complete the request in backend and give approve.
+         |""".stripMargin
+    }
+  }
 }
 
 final case class RecordDoesNotExist(name: String) extends DomainValidationError {
