@@ -391,14 +391,14 @@ object RecordSetChangeHandler extends TransactionProvider {
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case AlreadyExists(_,message) => Completed(change.alreadyExists(
-        s"ℹ️ DNS for change ${change.id}: ${change.recordSet.name}: $message"
+        s"""ℹ️ DNS for change "${change.id}": "${change.recordSet.name}": $message"""
       )
       )
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message
+            s"""Failed validating update to DNS for change "${change.id}": "${change.recordSet.name}": """ + message
           )
         )
       case Retry(_) => Retrying(change)
@@ -436,12 +436,12 @@ object RecordSetChangeHandler extends TransactionProvider {
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case AlreadyExists(_,message) => Completed(change.alreadyExists(
-        s"ℹ️ DNS for change ${change.id}: ${change.recordSet.name}: $message"
+        s"""ℹ️ DNS for change "${change.id}": "${change.recordSet.name}": $message"""
       ))
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
+            s"""Failed verifying update to DNS for change "${change.id}":"${change.recordSet.name}": $message"""
           )
         )
       case _ => Retrying(change)

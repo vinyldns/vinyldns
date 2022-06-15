@@ -113,14 +113,13 @@ final case class RecordAlreadyExists(name: String, isApproved:Boolean, recordDat
                                      fatal: Boolean = false) extends DomainValidationError(fatal) {
   def message: String = {
     if (isApproved == false) {
-      s"""Record Name $name already exists. Your request will be manually reviewed.
-        | If you intended to update this record, you can avoid manual review by adding a
-        | DeleteRecordSet entry followed by an Add..""".stripMargin
+      s"""RecordName "$name" already exists. Your request will be manually reviewed. """ +
+         "If you intended to update this record, you can avoid manual review by adding " +
+        " a DeleteRecordSet entry followed by an Add."
     }
     else {
-      s"""ℹ️ Record data $recordData in DNS is not exists.
-         |Complete the request in backend and give approve.
-         |""".stripMargin
+      s"""ℹ️ Record data "$recordData" in DNS is does not exists.
+         Complete the request in DNS and give approve. """
     }
   }
 }
