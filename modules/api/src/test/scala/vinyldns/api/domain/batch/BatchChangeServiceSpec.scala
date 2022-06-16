@@ -66,8 +66,8 @@ class BatchChangeServiceSpec
 
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  private val nonFatalError = ZoneDiscoveryError("test")
-  private val fatalError = RecordAlreadyExists("test")
+    private val nonFatalError = ZoneDiscoveryError("test")
+  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test", true, AData("1.1.1.1"))
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
@@ -747,7 +747,7 @@ class BatchChangeServiceSpec
     "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
-      val result =
+      val result = {
         rightResultOf(
           underTestManualEnabled
             .approveBatchChange(
@@ -757,6 +757,7 @@ class BatchChangeServiceSpec
             )
             .value
         )
+      }
 
       result.userId shouldBe batchChangeNeedsApproval.userId
       result.userName shouldBe batchChangeNeedsApproval.userName
@@ -2007,7 +2008,7 @@ class BatchChangeServiceSpec
               asAdds.head,
               7200L
             ).validNel,
-            fatalError.invalidNel
+            nonFatalErrorRecordAlreadyExists.invalidNel
           ),
           reviewInfo
         )

@@ -824,10 +824,10 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName)
+      RecordAlreadyExists(existingA.inputChange.inputName,false, existingA.inputChange.record)
     )
     result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName)
+      RecordAlreadyExists(existingCname.inputChange.inputName,false ,existingCname.inputChange.record)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
@@ -1189,7 +1189,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName)
+        RecordAlreadyExists(input.inputChange.inputName,false,input.inputChange.record)
       )
     }
   }
@@ -2185,7 +2185,7 @@ class BatchChangeValidationsSpec
         false,
         None
       )
-    result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
+    result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict.", false, addMX.inputChange.record))
   }
 
   property("validateChangesWithContext: should succeed if duplicate MX records in batch") {
