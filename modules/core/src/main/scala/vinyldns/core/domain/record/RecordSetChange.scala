@@ -17,7 +17,6 @@
 package vinyldns.core.domain.record
 
 import java.util.UUID
-
 import org.joda.time.DateTime
 import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
@@ -59,13 +58,14 @@ case class RecordSetChange(
         .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
     )
 
-  def alreadyExists(message: Option[String] = None): RecordSetChange =
-    copy(
+  def alreadyExists(message: Option[String] = None): RecordSetChange = {
+      copy(
       status = RecordSetChangeStatus.Complete,
-      systemMessage = message,
+        systemMessage = message,
       recordSet = recordSet
         .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
     )
+  }
 
   def alreadyExists(message: String): RecordSetChange = alreadyExists(Some(message))
 

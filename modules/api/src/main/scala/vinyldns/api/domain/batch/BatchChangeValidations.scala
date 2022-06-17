@@ -479,16 +479,12 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       isApproved: Boolean
   ): SingleValidation[Unit] = {
-    isApproved match {
-      case false =>
-        groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, typ)) match {
-          case Some(_) => RecordAlreadyExists(inputName, isApproved, recordData).invalidNel
-          case None => ().validNel}
-      case true =>
-        val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
-            if (record.get.records.contains(recordData)){ ().validNel }
-            else { RecordAlreadyExists(inputName, isApproved, recordData).invalidNel }
-        }
+    val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
+    if(record.isDefined) {
+      record.get.records.contains(recordData) match {
+        case true => ().validNel
+        case false => RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+    } else ().validNel
     }
 
   def noIncompatibleRecordExists(

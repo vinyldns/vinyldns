@@ -26,7 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
-import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
+import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, AlreadyExists, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.CatsHelpers
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChangeStatus}
@@ -692,7 +692,7 @@ class RecordSetChangeHandlerSpec
             true
           )
           .unsafeRunSync()
-      processorStatus shouldBe an[AlreadyApplied]
+      processorStatus shouldBe an[AlreadyExists]
     }
 
     "remove record from database for Add if record does not exist in DNS backend" in {
