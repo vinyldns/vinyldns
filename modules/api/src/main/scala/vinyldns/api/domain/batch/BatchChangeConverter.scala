@@ -34,8 +34,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
-  private val recordAlreadyExistsMessage : String =
-    "ℹ️ This record already exists. No further action is required."
+
+  private val recordAlreadyExistsMessage : Option[String] =
+    Some(s"""This record already exists. No further action is required.""")
 
   def sendBatchForProcessing(
       batchChange: BatchChange,

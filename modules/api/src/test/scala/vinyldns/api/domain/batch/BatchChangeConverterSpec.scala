@@ -38,12 +38,15 @@ import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
 
+  private val makeRecordAlreadyExistsMessage : Option[String] =
+    Some(s"""This record already exists. No further action is required.""")
+
   private def makeSingleAddChange(
-      name: String,
-      recordData: RecordData,
-      typ: RecordType = A,
-      zone: Zone = okZone
-  ) = {
+                                   name: String,
+                                   recordData: RecordData,
+                                   typ: RecordType = A,
+                                   zone: Zone = okZone
+                                 ) = {
     val fqdn = s"$name.${zone.name}"
     SingleAddChange(
       Some(zone.id),
@@ -60,6 +63,28 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     )
   }
 
+  private def makeRecordAlreadyExistsSingleAddChange(
+                                                      name: String,
+                                                      recordData: RecordData,
+                                                      typ: RecordType = A,
+                                                      zone: Zone = okZone
+                                                    ) = {
+    val fqdn = s"$name.${zone.name}"
+    SingleAddChange(
+      Some(zone.id),
+      Some(zone.name),
+      Some(name),
+      fqdn,
+      typ,
+      123,
+      recordData,
+      SingleChangeStatus.Complete,
+      makeRecordAlreadyExistsMessage,
+      None,
+      None
+    )
+  }
+
   private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone) = {
     val fqdn = s"$name.${zone.name}"
     SingleDeleteRRSetChange(
@@ -69,18 +94,18 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       fqdn,
       typ,
       None,
-      SingleChangeStatus.Pending,
-      None,
+      SingleChangeStatus.Complete,
+      makeRecordAlreadyExistsMessage,
       None,
       None
     )
   }
 
   private def makeAddChangeForValidation(
-      recordName: String,
-      recordData: RecordData,
-      typ: RecordType = RecordType.A
-  ): AddChangeForValidation =
+                                          recordName: String,
+                                          recordData: RecordData,
+                                          typ: RecordType = RecordType.A
+                                        ): AddChangeForValidation =
     AddChangeForValidation(
       okZone,
       s"$recordName",
@@ -89,9 +114,9 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     )
 
   private def makeDeleteRRSetChangeForValidation(
-      recordName: String,
-      typ: RecordType = RecordType.A
-  ): DeleteRRSetChangeForValidation =
+                                                  recordName: String,
+                                                  typ: RecordType = RecordType.A
+                                                ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
@@ -108,6 +133,18 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     makeSingleAddChange("10.1.1.1", PTRData(Fqdn("ptrData")), PTR),
     makeSingleAddChange("txtRecord", TXTData("text"), TXT),
     makeSingleAddChange("mxRecord", MXData(1, Fqdn("foo.bar.")), MX)
+  )
+
+  private val addSingleChangesWithRecordAlreadyExists = List(
+    makeRecordAlreadyExistsSingleAddChange("one", AData("1.1.1.1")),
+    makeRecordAlreadyExistsSingleAddChange("two", AData("1.1.1.2")),
+    makeRecordAlreadyExistsSingleAddChange("repeat", AData("1.1.1.3")),
+    makeRecordAlreadyExistsSingleAddChange("repeat", AData("1.1.1.4")),
+    makeRecordAlreadyExistsSingleAddChange("aaaaRecord", AAAAData("1::1"), AAAA),
+    makeRecordAlreadyExistsSingleAddChange("cnameRecord", CNAMEData(Fqdn("cname.com.")), CNAME),
+    makeRecordAlreadyExistsSingleAddChange("10.1.1.1", PTRData(Fqdn("ptrData")), PTR),
+    makeRecordAlreadyExistsSingleAddChange("txtRecord", TXTData("text"), TXT),
+    makeRecordAlreadyExistsSingleAddChange("mxRecord", MXData(1, Fqdn("foo.bar.")), MX)
   )
 
   private val addChangeForValidationGood = List(
@@ -140,13 +177,13 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
   private val updateSingleChangesGood = List(
     makeSingleDeleteRRSetChange("aToUpdate", A),
-    makeSingleAddChange("aToUpdate", AData("1.1.1.1")),
+    makeRecordAlreadyExistsSingleAddChange("aToUpdate", AData("1.1.1.1")),
     makeSingleDeleteRRSetChange("cnameToUpdate", CNAME),
-    makeSingleAddChange("cnameToUpdate", CNAMEData(Fqdn("newcname.com.")), CNAME),
+    makeRecordAlreadyExistsSingleAddChange("cnameToUpdate", CNAMEData(Fqdn("newcname.com.")), CNAME),
     makeSingleDeleteRRSetChange("txtToUpdate", TXT),
-    makeSingleAddChange("txtToUpdate", TXTData("update"), TXT),
+    makeRecordAlreadyExistsSingleAddChange("txtToUpdate", TXTData("update"), TXT),
     makeSingleDeleteRRSetChange("mxToUpdate", MX),
-    makeSingleAddChange("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
+    makeRecordAlreadyExistsSingleAddChange("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
   )
 
   private val updateChangeForValidationGood = List(
@@ -161,9 +198,9 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   )
 
   private val singleChangesOneBad = List(
-    makeSingleAddChange("one", AData("1.1.1.1")),
-    makeSingleAddChange("two", AData("1.1.1.2")),
-    makeSingleAddChange("bad", AData("1.1.1.1"))
+    makeRecordAlreadyExistsSingleAddChange("one", AData("1.1.1.1")),
+    makeRecordAlreadyExistsSingleAddChange("two", AData("1.1.1.2")),
+    makeRecordAlreadyExistsSingleAddChange("bad", AData("1.1.1.1"))
   )
 
   private val changeForValidationOneBad = List(
@@ -291,7 +328,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.userName,
           None,
           DateTime.now,
-          addSingleChangesGood,
+          addSingleChangesWithRecordAlreadyExists,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
       val result = rightResultOf(
@@ -412,7 +449,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     }
 
     "successfully handle a combination of adds, updates, and deletes" in {
-      val changes = addSingleChangesGood ++ deleteSingleChangesGood ++ updateSingleChangesGood
+      val changes = addSingleChangesWithRecordAlreadyExists ++ deleteSingleChangesGood ++ updateSingleChangesGood
       val changeForValidation = addChangeForValidationGood ++ deleteRRSetChangeForValidationGood ++
         updateChangeForValidationGood
       val batchChange =
@@ -489,7 +526,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       result.batchChange shouldBe batchChange
     }
 
-    "set status to failure for changes with queueing issues" in {
+    "set status for record already exists to complete for changes with queueing issues" in {
       val batchWithBadChange =
         BatchChange(
           okUser.id,
@@ -677,11 +714,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   }
 
   private def validateRecordSetChange(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange,
-      typ: RecordSetChangeType
-  ) = {
+                                       name: String,
+                                       recordSetChanges: List[RecordSetChange],
+                                       batchChange: BatchChange,
+                                       typ: RecordSetChangeType
+                                     ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true
@@ -708,10 +745,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   }
 
   private def validateRecordDataCombination(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange
-  ) = {
+                                             name: String,
+                                             recordSetChanges: List[RecordSetChange],
+                                             batchChange: BatchChange
+                                           ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true
