@@ -17,7 +17,6 @@
 package vinyldns.core.domain.batch
 
 import java.util.UUID
-
 import vinyldns.core.domain.SingleChangeError
 import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.record.RecordData
@@ -45,6 +44,13 @@ sealed trait SingleChange {
       add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
     case delete: SingleDeleteRRSetChange =>
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
+  }
+
+  def withAlreadyExists(message: String): SingleChange = this match {
+    case add: SingleAddChange =>
+      add.copy(status = SingleChangeStatus.Complete, systemMessage = Some(message))
+    case delete: SingleDeleteRRSetChange =>
+      delete.copy(status = SingleChangeStatus.Complete, systemMessage = Some(message))
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =

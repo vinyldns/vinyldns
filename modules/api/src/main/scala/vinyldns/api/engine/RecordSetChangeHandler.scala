@@ -178,7 +178,7 @@ object RecordSetChangeHandler extends TransactionProvider {
         case RecordSetChangeType.Create =>
           if (existingRecords.isEmpty) ReadyToApply(change)
           else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name) || recordExist(existingRecords,change))
-            AlreadyExists(change, "Record updated in DNS") //Record exists in DNS
+            AlreadyExists(change, "Record exists/updated in DNS") //Record exists in DNS
           else Failure(change, "Incompatible record in DNS.")
 
         case RecordSetChangeType.Update =>

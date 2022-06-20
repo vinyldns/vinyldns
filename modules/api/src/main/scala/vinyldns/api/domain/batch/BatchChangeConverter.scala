@@ -34,6 +34,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
+  private val recordAlreadyExistsMessage : String =
+    "ℹ️ This record already exists. No further action is required."
 
   def sendBatchForProcessing(
       batchChange: BatchChange,
@@ -62,20 +64,27 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     } yield BatchConversionOutput(changeToStore, recordSetChanges)
   }
 
+  def recordExist(recordSetChanges: List[RecordSetChange], batchChange: BatchChange): Boolean = {
+    var isExists : Boolean = false
+    for (record <- recordSetChanges.flatMap(_.recordSet.records))
+    if (batchChange.changes.toString.split(",").toList.contains(record.toString)) isExists= true
+    else isExists= false
+    isExists
+  }
+
   def allChangesWereConverted(
       singleChanges: List[SingleChange],
       recordSetChanges: List[RecordSetChange]
   ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
-
     singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
       case Some(change) => BatchConversionError(change).toLeftBatchResult
       case None =>
-        logger.info(s"Successfully converted SingleChanges [${singleChanges
-          .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
-        ().toRightBatchResult
+          logger.info(s"Successfully converted SingleChanges [${singleChanges
+            .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+          ().toRightBatchResult
+        }
     }
-  }
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange],
@@ -104,27 +113,26 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val idsMap = recordSetChanges.flatMap { rsChange =>
       rsChange.singleBatchChangeIds.map(batchId => (batchId, rsChange.id))
     }.toMap
-
     val withStatus = batchChange.changes.map { change =>
-      idsMap
-        .get(change.id)
-        .map { _ =>
-          // a recordsetchange was successfully queued for this change
-          change
-        }
-        .getOrElse {
-          // failure here means there was a message queue issue for this change
-          change.withFailureMessage("Error queueing RecordSetChange for processing")
-        }
-    }
-
+        idsMap
+          .get(change.id)
+          .map { _ =>
+       if (recordExist(recordSetChanges, batchChange) && batchChange.approvalStatus.toString == "AutoApproved") {
+         change.withAlreadyExists(recordAlreadyExistsMessage) //a recordset already exists
+       } else change } // a recordsetchange was successfully queued for this change
+          .getOrElse {
+            // failure here means there was a message queue issue for this change
+            change.withFailureMessage("Error queueing RecordSetChange for processing")
+          }
+      }
     batchChange.copy(changes = withStatus)
   }
 
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     val failedChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed => change
-    }
+      case change
+        if change.status == SingleChangeStatus.Failed ||
+          change.systemMessage.getOrElse("") == recordAlreadyExistsMessage => change }
     batchChangeRepo.updateSingleChanges(failedChanges).as(())
   }.toBatchResult
 
