@@ -33,7 +33,7 @@ import vinyldns.core.queue.MessageQueue
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val completedMessage: String = "ℹ️ This record does not exist." +
+  private val notExistCompletedMessage: String = "ℹ️ This record does not exist." +
     "No further action is required."
   private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
@@ -128,7 +128,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           change match {
             case _: SingleDeleteRRSetChange if change.recordSetId.isEmpty =>
               // Mark as Complete since we don't want to throw it as an error
-              change.withDoesNotExistMessage(completedMessage)
+              change.withDoesNotExistMessage(notExistCompletedMessage)
             case _ =>
               // Failure here means there was a message queue issue for this change
               change.withFailureMessage(failedMessage)
@@ -142,7 +142,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     // Update if Single change is Failed or if a record that does not exist is deleted
     val failedAndNotExistsChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed || change.systemMessage.getOrElse("") == completedMessage => change
+      case change if change.status == SingleChangeStatus.Failed || change.systemMessage.contains(notExistCompletedMessage) => change
     }
     batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
   }.toBatchResult

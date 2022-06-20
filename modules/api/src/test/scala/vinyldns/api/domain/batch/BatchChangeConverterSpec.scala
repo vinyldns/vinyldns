@@ -37,7 +37,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
-  private val completedMessage: String = "ℹ️ This record does not exist." +
+  private val notExistCompletedMessage: String = "ℹ️ This record does not exist." +
     "No further action is required."
 
   private def makeSingleAddChange(
@@ -572,8 +572,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       val receivedChange = returnedBatch.changes(0)
       receivedChange.status shouldBe SingleChangeStatus.Complete
       receivedChange.recordChangeId shouldBe None
-      receivedChange.systemMessage shouldBe Some(completedMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(completedMessage), status = SingleChangeStatus.Complete)
+      receivedChange.systemMessage shouldBe Some(notExistCompletedMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(notExistCompletedMessage), status = SingleChangeStatus.Complete)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
