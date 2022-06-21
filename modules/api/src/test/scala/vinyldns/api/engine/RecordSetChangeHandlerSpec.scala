@@ -142,18 +142,18 @@ class RecordSetChangeHandlerSpec
       verify(mockChangeRepo).save(any[DB], changeRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+      appliedCs.status shouldBe ChangeSetStatus.Pending
+      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
       appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
 
       val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+      savedCs.status shouldBe ChangeSetStatus.Pending
+      savedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.Complete,
+          status = SingleChangeStatus.AlreadyExists,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -183,13 +183,13 @@ class RecordSetChangeHandlerSpec
       verify(mockChangeRepo).save(any[DB], changeRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Complete
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+      appliedCs.status shouldBe ChangeSetStatus.Pending
+      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
       appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
 
       val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Complete
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+      savedCs.status shouldBe ChangeSetStatus.Pending
+      savedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
 
       // make sure the record was applied and then verified
       verify(mockBackend).applyChange(rsChange)
@@ -198,7 +198,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.Complete,
+          status = SingleChangeStatus.AlreadyExists,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )

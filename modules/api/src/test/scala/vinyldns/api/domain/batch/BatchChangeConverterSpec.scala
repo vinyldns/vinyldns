@@ -39,7 +39,7 @@ import vinyldns.core.domain.zone.Zone
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
 
   private val makeRecordAlreadyExistsMessage : Option[String] =
-    Some(s"""This record already exists. No further action is required.""")
+    Some(s"""ℹ️ This record already exists. No further action is required.""")
 
   private def makeSingleAddChange(
                                    name: String,
@@ -78,7 +78,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       typ,
       123,
       recordData,
-      SingleChangeStatus.Complete,
+      SingleChangeStatus.AlreadyExists,
       makeRecordAlreadyExistsMessage,
       None,
       None
@@ -94,7 +94,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
       fqdn,
       typ,
       None,
-      SingleChangeStatus.Complete,
+      SingleChangeStatus.AlreadyExists,
       makeRecordAlreadyExistsMessage,
       None,
       None
