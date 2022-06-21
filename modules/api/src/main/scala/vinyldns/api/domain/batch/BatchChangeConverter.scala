@@ -36,7 +36,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
   private val recordAlreadyExistsMessage : Option[String] =
-    Some(s"""This record already exists. No further action is required.""")
+    Some(s"""ℹ️ This record already exists. No further action is required.""")
 
   def sendBatchForProcessing(
       batchChange: BatchChange,
@@ -118,9 +118,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         idsMap
           .get(change.id)
           .map { _ =>
-       if (recordExist(recordSetChanges, batchChange) && batchChange.approvalStatus.toString == "AutoApproved") {
+       if (recordExist(recordSetChanges, batchChange) && batchChange.approvalStatus.toString == "AutoApproved")
          change.withAlreadyExists(recordAlreadyExistsMessage) //a recordset already exists
-       } else change } // a recordsetchange was successfully queued for this change
+       else change } // a recordsetchange was successfully queued for this change
           .getOrElse {
             // failure here means there was a message queue issue for this change
             change.withFailureMessage("Error queueing RecordSetChange for processing")
@@ -133,7 +133,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val failedChanges = batchChange.changes.collect {
       case change
         if change.status == SingleChangeStatus.Failed ||
-          change.systemMessage.getOrElse("") == recordAlreadyExistsMessage => change }
+          change.status == SingleChangeStatus.AlreadyExists => change }
     batchChangeRepo.updateSingleChanges(failedChanges).as(())
   }.toBatchResult
 

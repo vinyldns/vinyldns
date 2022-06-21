@@ -46,11 +46,11 @@ sealed trait SingleChange {
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
-  def withAlreadyExists(error: Option[String]): SingleChange = this match {
+  def withAlreadyExists(messages: Option[String]): SingleChange = this match {
     case add: SingleAddChange =>
-      add.copy(status = SingleChangeStatus.Complete, systemMessage = error)
+      add.copy(status = SingleChangeStatus.AlreadyExists, systemMessage = messages)
     case delete: SingleDeleteRRSetChange =>
-      delete.copy(status = SingleChangeStatus.Complete, systemMessage = error)
+      delete.copy(status = SingleChangeStatus.AlreadyExists, systemMessage = messages)
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
@@ -79,6 +79,21 @@ sealed trait SingleChange {
     case delete: SingleDeleteRRSetChange =>
       delete.copy(
         status = SingleChangeStatus.Complete,
+        recordChangeId = Some(completeRecordChangeId),
+        recordSetId = Some(recordSetId)
+      )
+  }
+
+  def alreadyExists(completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
+    case add: SingleAddChange =>
+      add.copy(
+        status = SingleChangeStatus.AlreadyExists,
+        recordChangeId = Some(completeRecordChangeId),
+        recordSetId = Some(recordSetId)
+      )
+    case delete: SingleDeleteRRSetChange =>
+      delete.copy(
+        status = SingleChangeStatus.AlreadyExists,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId)
       )
@@ -142,7 +157,7 @@ final case class SingleDeleteRRSetChange(
  */
 object SingleChangeStatus extends Enumeration {
   type SingleChangeStatus = Value
-  val Pending, Complete, Failed, NeedsReview, Rejected, Cancelled = Value
+  val Pending, Complete, Failed, NeedsReview, Rejected, Cancelled, AlreadyExists = Value
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)

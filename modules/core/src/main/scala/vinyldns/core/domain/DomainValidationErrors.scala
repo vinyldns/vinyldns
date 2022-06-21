@@ -118,8 +118,9 @@ final case class RecordAlreadyExists(name: String, recordData: RecordData, isApp
         " a DeleteRecordSet entry followed by an Add."
     }
     else {
-      s"""ℹ️ Record data "$recordData" in DNS is does not exists.
+      s"""ℹ️ Record data "$recordData" is does not exists.
          Complete the request in DNS and give approve. """
+
     }
   }
 }

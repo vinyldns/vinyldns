@@ -107,6 +107,8 @@ object RecordSetChangeHandler extends TransactionProvider {
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
         singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
+      case RecordSetChangeStatus.AlreadyExists =>
+        singleChanges.map(_.alreadyExists(recordSetChange.id, recordSetChange.recordSet.id))
       case RecordSetChangeStatus.Failed =>
         singleChanges.map(_.withProcessingError(recordSetChange.systemMessage, recordSetChange.id))
       case _ => singleChanges
@@ -399,7 +401,7 @@ object RecordSetChangeHandler extends TransactionProvider {
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case AlreadyExists(_,message) => Completed(change.alreadyExists(
-        s"""ℹ️ DNS for change "${change.id}": "${change.recordSet.name}": $message"""
+        s"""ℹ️ DNS change for "${change.id}": "${change.recordSet.name}": $message"""
       )
       )
       case ReadyToApply(_) => Validated(change)
@@ -444,7 +446,7 @@ object RecordSetChangeHandler extends TransactionProvider {
     ).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case AlreadyExists(_ ,message) => Completed(change.alreadyExists(
-        s"""ℹ️ DNS for change "${change.id}": "${change.recordSet.name}": $message"""
+        s"""ℹ️ DNS change for "${change.id}": "${change.recordSet.name}": $message"""
       ))
       case Failure(_, message) =>
         Completed(
