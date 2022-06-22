@@ -112,17 +112,12 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
 final case class RecordAlreadyExists(name: String, recordData: RecordData, isApproved:Boolean,
                                      fatal: Boolean = false) extends DomainValidationError(fatal) {
   def message: String = {
-    if (isApproved == false) {
+    if (isApproved == false)
       s"""RecordName "$name" already exists. Your request will be manually reviewed. """ +
         "If you intended to update this record, you can avoid manual review by adding " +
         " a DeleteRecordSet entry followed by an Add."
-    }
-    else {
-      s"""ℹ️ Record data "$recordData" is does not exists.
-         Complete the request in DNS and give approve. """
-
-    }
-  }
+    else s"""ℹ️ Record data "$recordData" is does not exists.
+         Complete the request in DNS and give approve. """ }
 }
 
 final case class RecordDoesNotExist(name: String) extends DomainValidationError {
