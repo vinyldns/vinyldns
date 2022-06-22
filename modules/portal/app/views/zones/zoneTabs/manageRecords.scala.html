@@ -34,8 +34,7 @@
                     <td>{{change.changeType}}</td>
                     <td>{{change.userName}}</td>
                     <td>
-                        <span ng-if="change.status !='AlreadyExists'" class="label label-{{ getRecordChangeStatusLabel(change.status) }}">{{ change.status }}</span>
-                        <span ng-if="change.status =='AlreadyExists'" class="label label-success">Complete</span>
+                        <span class="label label-{{ getRecordChangeStatusLabel(change.status) }}">{{ change.status }}</span>
                     </td>
                     <td class="col-md-3 wrap-long-text">
                         {{change.systemMessage}}

@@ -151,7 +151,6 @@
                                 <td>{{change.ttl}}</td>
                                 <td>
                                     <span ng-if="change.status =='Complete'" class="label label-success">{{change.status}}</span>
-                                    <span ng-if="change.status =='AlreadyExists'" class="label label-success">Complete</span>
                                     <span ng-if="change.status =='Pending'" class="label label-info">{{change.status}}</span>
                                     <span ng-if="change.status =='NeedsReview'" class="label label-warning">Needs Review</span>
                                     <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
@@ -159,10 +158,13 @@
                                     <span ng-if="change.status == 'Cancelled'" class="label label-default">{{batch.status}}</span>
                                 </td>
                                 <td class="wrap-long-text">
-                                    <div ng-if="batch.approvalStatus !='AutoApproved' && change.status !='AlreadyExists'">
+                                    <div ng-if="batch.approvalStatus !='AutoApproved' && change.status !='Complete'">
                                         <p ng-repeat="error in change.validationErrors">
                                         {{error.message ? error.message : error}} </p>{{change.systemMessage}}</div>
-                                    <div ng-if="batch.approvalStatus == 'AutoApproved' && change.status =='AlreadyExists'">ℹ️ This record already exists. No further action is required.</div>
+                                    <div ng-if="batch.approvalStatus == 'AutoApproved'
+                                             && change.systemMessage.includes('exists')
+                                             && change.status =='Complete'">
+                                        ℹ️ This record already exists. <br> No further action is required.</div>
                                 </td>
                             </tr>
                             </tbody>

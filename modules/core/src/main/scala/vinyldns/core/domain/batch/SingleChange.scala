@@ -48,9 +48,9 @@ sealed trait SingleChange {
 
   def withAlreadyExists(messages: Option[String]): SingleChange = this match {
     case add: SingleAddChange =>
-      add.copy(status = SingleChangeStatus.AlreadyExists, systemMessage = messages)
+      add.copy(status = SingleChangeStatus.Complete, systemMessage = messages)
     case delete: SingleDeleteRRSetChange =>
-      delete.copy(status = SingleChangeStatus.AlreadyExists, systemMessage = messages)
+      delete.copy(status = SingleChangeStatus.Complete, systemMessage = messages)
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
@@ -69,31 +69,35 @@ sealed trait SingleChange {
         )
     }
 
-  def complete(completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
+  def complete(message: Option[String], completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
     case add: SingleAddChange =>
       add.copy(
         status = SingleChangeStatus.Complete,
+        systemMessage = message,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId)
       )
     case delete: SingleDeleteRRSetChange =>
       delete.copy(
         status = SingleChangeStatus.Complete,
+        systemMessage = message,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId)
       )
   }
 
-  def alreadyExists(completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
+  def alreadyExists(message: Option[String], completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
     case add: SingleAddChange =>
       add.copy(
-        status = SingleChangeStatus.AlreadyExists,
+        status = SingleChangeStatus.Complete,
+        systemMessage = message,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId)
       )
     case delete: SingleDeleteRRSetChange =>
       delete.copy(
-        status = SingleChangeStatus.AlreadyExists,
+        status = SingleChangeStatus.Complete,
+        systemMessage = message,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId)
       )
@@ -157,7 +161,7 @@ final case class SingleDeleteRRSetChange(
  */
 object SingleChangeStatus extends Enumeration {
   type SingleChangeStatus = Value
-  val Pending, Complete, Failed, NeedsReview, Rejected, Cancelled, AlreadyExists = Value
+  val Pending, Complete, Failed, NeedsReview, Rejected, Cancelled = Value
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)

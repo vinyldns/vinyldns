@@ -26,7 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
-import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, AlreadyExists, ReadyToApply, Requeue}
+import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.CatsHelpers
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChangeStatus}
@@ -142,18 +142,19 @@ class RecordSetChangeHandlerSpec
       verify(mockChangeRepo).save(any[DB], changeRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Pending
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
+      appliedCs.status shouldBe ChangeSetStatus.Complete
+      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
       appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
 
       val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Pending
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
+      savedCs.status shouldBe ChangeSetStatus.Complete
+      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.AlreadyExists,
+          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record exists / updated in DNS"""),
+         status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -183,13 +184,13 @@ class RecordSetChangeHandlerSpec
       verify(mockChangeRepo).save(any[DB], changeRepoCaptor.capture())
 
       val appliedCs = rsRepoCaptor.getValue
-      appliedCs.status shouldBe ChangeSetStatus.Pending
-      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
+      appliedCs.status shouldBe ChangeSetStatus.Complete
+      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
       appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
 
       val savedCs = changeRepoCaptor.getValue
-      savedCs.status shouldBe ChangeSetStatus.Pending
-      savedCs.changes.head.status shouldBe RecordSetChangeStatus.AlreadyExists
+      savedCs.status shouldBe ChangeSetStatus.Complete
+      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
       // make sure the record was applied and then verified
       verify(mockBackend).applyChange(rsChange)
@@ -198,7 +199,8 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.AlreadyExists,
+          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record exists / updated in DNS"""),
+          status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -602,6 +604,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record updated in DNS"""),
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -692,7 +695,7 @@ class RecordSetChangeHandlerSpec
             true
           )
           .unsafeRunSync()
-      processorStatus shouldBe an[AlreadyExists]
+      processorStatus shouldBe an[AlreadyApplied]
     }
 
     "remove record from database for Add if record does not exist in DNS backend" in {

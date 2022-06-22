@@ -35,9 +35,6 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
 
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
-  private val recordAlreadyExistsMessage : Option[String] =
-    Some(s"""ℹ️ This record already exists. No further action is required.""")
-
   def sendBatchForProcessing(
       batchChange: BatchChange,
       existingZones: ExistingZones,
@@ -63,14 +60,6 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       changeToStore = updateWithQueueingFailures(batchChange, queued)
       _ <- storeQueuingFailures(changeToStore)
     } yield BatchConversionOutput(changeToStore, recordSetChanges)
-  }
-
-  def recordExist(recordSetChanges: List[RecordSetChange], batchChange: BatchChange): Boolean = {
-    var isExists : Boolean = false
-    for (record <- recordSetChanges.flatMap(_.recordSet.records))
-    if (batchChange.changes.toString.split(",").toList.contains(record.toString)) isExists= true
-    else isExists= false
-    isExists
   }
 
   def allChangesWereConverted(
@@ -117,10 +106,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val withStatus = batchChange.changes.map { change =>
         idsMap
           .get(change.id)
-          .map { _ =>
-       if (recordExist(recordSetChanges, batchChange) && batchChange.approvalStatus.toString == "AutoApproved")
-         change.withAlreadyExists(recordAlreadyExistsMessage) //a recordset already exists
-       else change } // a recordsetchange was successfully queued for this change
+          .map { _ => change } // a recordsetchange was successfully queued for this change
           .getOrElse {
             // failure here means there was a message queue issue for this change
             change.withFailureMessage("Error queueing RecordSetChange for processing")
@@ -132,8 +118,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     val failedChanges = batchChange.changes.collect {
       case change
-        if change.status == SingleChangeStatus.Failed ||
-          change.status == SingleChangeStatus.AlreadyExists => change }
+        if change.status == SingleChangeStatus.Failed => change }
     batchChangeRepo.updateSingleChanges(failedChanges).as(())
   }.toBatchResult
 
