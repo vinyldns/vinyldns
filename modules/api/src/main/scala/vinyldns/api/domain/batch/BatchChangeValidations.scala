@@ -271,7 +271,7 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]
-  ): ValidatedBatch[ChangeForValidation] = {
+  ): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
@@ -292,7 +292,6 @@ class BatchChangeValidations(
       case deleteUpdate =>
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
-  }
 
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     if (change.recordName != change.zone.name && change.recordName.contains("."))
@@ -422,7 +421,7 @@ class BatchChangeValidations(
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
 
-    val validations = {
+    val validations =
       typedValidations |+|
         noIncompatibleRecordExists(change, groupedChanges) |+|
         userCanAddRecordSet(change, auth) |+|
@@ -437,7 +436,6 @@ class BatchChangeValidations(
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
-    }
     validations.map(_ => change)
   }
 

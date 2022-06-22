@@ -59,9 +59,8 @@ object BatchTransformations {
   }
 
   final case class ExistingRecordSets(recordSets: List[RecordSet]) {
-    val recordSetMap: Map[(String, String), List[RecordSet]] = {
+    val recordSetMap: Map[(String, String), List[RecordSet]] =
       recordSets.groupBy(rs => (rs.zoneId, rs.name.toLowerCase))
-    }
 
     def get(zoneId: String, name: String, recordType: RecordType): Option[RecordSet] =
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List()).find(_.typ == recordType)

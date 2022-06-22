@@ -154,9 +154,8 @@ object RecordSetChangeHandler extends TransactionProvider {
                                                 recordSetCacheRepository: RecordSetCacheRepository,
                                                 performSync: Boolean = false
   ): IO[ProcessingStatus] = {
-    def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean = {
+    def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(matches(_, recordSet, zoneName))
-    }
 
     def recordExist(existingRecords: List[RecordSet], change: RecordSetChange): Boolean = {
       var isExists : Boolean = false
