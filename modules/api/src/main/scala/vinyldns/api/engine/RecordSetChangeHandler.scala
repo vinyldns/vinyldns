@@ -124,7 +124,7 @@ object RecordSetChangeHandler extends TransactionProvider {
 
   private final case class Verified(change: RecordSetChange) extends ProcessorState
 
-  private final case class  Completed(change: RecordSetChange) extends ProcessorState
+  private final case class Completed(change: RecordSetChange) extends ProcessorState
 
   private final case class Retrying(change: RecordSetChange) extends ProcessorState
 
@@ -157,7 +157,7 @@ object RecordSetChangeHandler extends TransactionProvider {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(matches(_, recordSet, zoneName))
 
-    def recordExist(existingRecords: List[RecordSet], change: RecordSetChange): Boolean = {
+    def isRecordExist(existingRecords: List[RecordSet], change: RecordSetChange): Boolean = {
       var isExists : Boolean = false
       existingRecords.foreach(recordData=>
         for (record<-change.recordSet.records)
@@ -174,7 +174,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       change.changeType match {
         case RecordSetChangeType.Create =>
           if (existingRecords.isEmpty) ReadyToApply(change)
-          else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name) || recordExist(existingRecords,change))
+          else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name) || isRecordExist(existingRecords,change))
             AlreadyApplied(change, "Record exists / updated in DNS") //Record exists in DNS
           else Failure(change, "Incompatible record in DNS.")
 

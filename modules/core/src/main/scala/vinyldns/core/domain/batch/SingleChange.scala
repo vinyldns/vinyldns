@@ -46,13 +46,6 @@ sealed trait SingleChange {
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
-  def withAlreadyExists(messages: Option[String]): SingleChange = this match {
-    case add: SingleAddChange =>
-      add.copy(status = SingleChangeStatus.Complete, systemMessage = messages)
-    case delete: SingleDeleteRRSetChange =>
-      delete.copy(status = SingleChangeStatus.Complete, systemMessage = messages)
-  }
-
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
     this match {
       case add: SingleAddChange =>
@@ -70,23 +63,6 @@ sealed trait SingleChange {
     }
 
   def complete(message: Option[String], completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
-    case add: SingleAddChange =>
-      add.copy(
-        status = SingleChangeStatus.Complete,
-        systemMessage = message,
-        recordChangeId = Some(completeRecordChangeId),
-        recordSetId = Some(recordSetId)
-      )
-    case delete: SingleDeleteRRSetChange =>
-      delete.copy(
-        status = SingleChangeStatus.Complete,
-        systemMessage = message,
-        recordChangeId = Some(completeRecordChangeId),
-        recordSetId = Some(recordSetId)
-      )
-  }
-
-  def alreadyExists(message: Option[String], completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
     case add: SingleAddChange =>
       add.copy(
         status = SingleChangeStatus.Complete,
