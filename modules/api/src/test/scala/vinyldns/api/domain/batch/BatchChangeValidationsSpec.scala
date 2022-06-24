@@ -2164,7 +2164,7 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIp))
   }
 
-  property("validateChangesWithContext: should fail if MX record in batch already exists") {
+  property("validateChangesWithContext: should Success if MX record in batch already exists") {
     val existingMX = rsOk.copy(
       zoneId = okZone.id,
       name = "name-conflict",
@@ -2185,7 +2185,6 @@ class BatchChangeValidationsSpec
         false,
         None
       )
-    // result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict.", addMX.inputChange.record, false))
     result(0) shouldBe valid
   }
 
