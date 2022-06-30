@@ -491,3 +491,11 @@ input[type="file"] {
 .modal-backdrop.show {
   opacity: 0.75;
 }
+
+.ui-menu .ui-menu-item a {
+    background: white;
+    width: 100%;
+    font-size: 14px;
+    color: black;
+    border: none;
+}
