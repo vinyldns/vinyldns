@@ -77,9 +77,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
               return {value: group.name, label: group.name}}))}
         });
       },
-      minLength: 0,
-      limit: 5,
-      scroll: true,
+      minLength: 1,
       select: function (event, ui) {
           $("#group-search-text").val(ui.item.value);
           return false;
