@@ -93,14 +93,14 @@
                 $.ajax({
                   url: "/api/recordsets?maxItems=100",
                   dataType: "json",
-                  data: "recordNameFilter="+request.term+"%25",
+                  data: "recordNameFilter="+request.term+"%25&nameSort=asc",
                   success: function( data ) {
                       const recordSearch =  JSON.parse(JSON.stringify(data));
                       response($.map(recordSearch.recordSets, function(item) {
-                      return {value: item.fqdn +" | "+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
+                      return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
                 });
               },
-              minLength: 1,
+              minLength: 2,
               select: function (event, ui) {
                   $("#record-search-text").val(ui.item.value);
                   return false;

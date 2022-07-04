@@ -491,3 +491,27 @@ input[type="file"] {
 .modal-backdrop.show {
   opacity: 0.75;
 }
+
+.ui-menu .ui-menu-item a {
+    background: white;
+    width: 100%;
+    font-size: 14px;
+    color: black;
+    border: none;
+    border-left: 1px;
+}
+
+.ui-menu .ui-menu-item a:hover {
+    background: #f5f5f5;
+}
+
+.ui-menu-item-wrapper {
+    display: block;
+}
+
+.ui-autocomplete {
+    max-height: 200px;
+    width:150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
