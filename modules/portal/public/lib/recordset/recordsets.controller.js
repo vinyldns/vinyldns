@@ -31,15 +31,24 @@
 
             // paging status for recordsets
             var recordsPaging = pagingService.getNewPagingParams(100);
+            var recordType = [];
+            var recordName = [];
 
             $scope.refreshRecords = function() {
-                recordsPaging = pagingService.resetPaging(recordsPaging);
+            if($scope.query.includes("|")) {
+                const queryRecord = $scope.query.split('|');
+                recordName = queryRecord[0].trim();
+                recordType = queryRecord[1].trim(); }
+            else { recordName = $scope.query;
+                   recordType = $scope.selectedRecordTypes.toString(); }
+
+              recordsPaging = pagingService.resetPaging(recordsPaging);
                 function success(response) {
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
                 }
                 return recordsService
-                    .listRecordSetData(recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.ownerGroupFilter)
+                    .listRecordSetData(recordsPaging.maxItems, undefined, recordName, recordType, $scope.nameSort, $scope.ownerGroupFilter)
                     .then(success)
                     .catch(function (error) {
                         handleError(error, 'dnsChangesService::getRecordSet-failure');
@@ -86,14 +95,12 @@
                   dataType: "json",
                   data: "recordNameFilter="+request.term+"%25",
                   success: function( data ) {
-                      const search =  JSON.parse(JSON.stringify(data));
-                      response($.map(search.recordSets, function(item) {
-                      return {value: item.fqdn, label: 'name: ' + item.fqdn + ' | type: ' + item.type}}))}
+                      const recordSearch =  JSON.parse(JSON.stringify(data));
+                      response($.map(recordSearch.recordSets, function(item) {
+                      return {value: item.fqdn +" | "+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
                 });
               },
-              minLength: 2,
-              limit: 8,
-              scroll: true,
+              minLength: 1,
               select: function (event, ui) {
                   $("#record-search-text").val(ui.item.value);
                   return false;
@@ -105,10 +112,10 @@
                 $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
               }
             }).data("ui-autocomplete")._renderItem = function( ul, item ) {
-                    let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+                    let recordSet = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
                     return $("<li></li>")
                           .data("ui-autocomplete-item", item.value)
-                          .append("<a>" + txt + "</a>")
+                          .append("<a>" + recordSet + "</a>")
                           .appendTo(ul); };
 
             function updateRecordDisplay(records) {
