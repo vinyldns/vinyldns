@@ -74,7 +74,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
           success: function(data) {
               const search =  JSON.parse(JSON.stringify(data));
               response($.map(search.groups, function(group) {
-              return {value: group.name, label: group.name}}))
+              return {value: group.name, label: group.name}
+              }))
           }
         });
       },
@@ -89,11 +90,13 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       close: function() {
         $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
       }
-    }).__renderItem = function(ul, item) {
+    });
+
+    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
             let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
             return $("<li></li>")
                   .data("ui-autocomplete-item", item.value)
-                  .append("<a>" + txt + "</a>")
+                  .append("<div>" + txt + "</div>")
                   .appendTo(ul);
     };
 
