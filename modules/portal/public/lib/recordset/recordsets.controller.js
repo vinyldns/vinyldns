@@ -111,11 +111,13 @@
               close: function() {
                 $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
               }
-            }).data("ui-autocomplete")._renderItem = function( ul, item ) {
+            });
+
+            $.ui.autocomplete.prototype._renderItem = function( ul, item ) {
                     let recordSet = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
                     return $("<li></li>")
                           .data("ui-autocomplete-item", item.value)
-                          .append("<a>" + recordSet + "</a>")
+                          .append("<div>" + recordSet + "</div>")
                           .appendTo(ul); };
 
             function updateRecordDisplay(records) {

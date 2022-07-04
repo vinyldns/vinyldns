@@ -492,7 +492,7 @@ input[type="file"] {
   opacity: 0.75;
 }
 
-.ui-menu .ui-menu-item a {
+.ui-menu .ui-menu-item div {
     background: white;
     width: 100%;
     font-size: 14px;
