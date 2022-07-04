@@ -74,7 +74,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
           success: function(data) {
               const search =  JSON.parse(JSON.stringify(data));
               response($.map(search.groups, function(group) {
-              return {value: group.name, label: group.name}}))}
+              return {value: group.name, label: group.name}}))
+          }
         });
       },
       minLength: 1,
@@ -83,17 +84,18 @@ angular.module('controller.groups', []).controller('GroupsController', function 
           return false;
         },
       open: function() {
-        $(this).removeClass( "ui-corner-all").addClass("ui-corner-top");
+        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
       },
       close: function() {
         $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
       }
-    }).data("ui-autocomplete")._renderItem = function(ul, item) {
+    }).__renderItem = function(ul, item) {
             let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
             return $("<li></li>")
                   .data("ui-autocomplete-item", item.value)
                   .append("<a>" + txt + "</a>")
-                  .appendTo(ul); };
+                  .appendTo(ul);
+    };
 
     $scope.createGroup = function (name, email, description) {
         //prevent user executing service call multiple times
