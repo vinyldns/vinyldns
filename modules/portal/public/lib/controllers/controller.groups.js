@@ -92,6 +92,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       }
     });
 
+    // Autocomplete text-highlight
     $.ui.autocomplete.prototype._renderItem = function(ul, item) {
             let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
             return $("<li></li>")
