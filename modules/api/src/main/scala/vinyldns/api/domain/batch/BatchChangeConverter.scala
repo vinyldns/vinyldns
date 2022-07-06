@@ -70,6 +70,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       recordSetChanges: List[RecordSetChange]
   ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
+
     singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
       // Each single change has a corresponding recordset id
       // If they're not equal, then there's a delete request for a record that doesn't exist. So we allow this to process
@@ -80,7 +81,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       case Some(change) => BatchConversionError(change).toLeftBatchResult
       case None =>
         logger.info(s"Successfully converted SingleChanges [${singleChanges
-            .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+          .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
         ().toRightBatchResult
     }
   }
