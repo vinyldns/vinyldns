@@ -3724,7 +3724,7 @@ def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_co
 
 def test_create_batch_delete_record_that_does_not_exists_completes(shared_zone_test_context):
     """
-    Test delete record set fails for non-existent record and non-existent record data
+    Test delete record set completes for non-existent record
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone_name = shared_zone_test_context.ok_zone["name"]
@@ -3739,7 +3739,7 @@ def test_create_batch_delete_record_that_does_not_exists_completes(shared_zone_t
     response = client.create_batch_change(batch_change_input, status=202)
     get_batch = client.get_batch_change(response["id"])
 
-    assert_that(get_batch["changes"][0]["systemMessage"], is_("ℹ️ This record does not exist." +
+    assert_that(get_batch["changes"][0]["systemMessage"], is_("This record does not exist." +
                                                               "No further action is required."))
 
     assert_successful_change_in_error_response(response["changes"][0], input_name=f"delete-non-existent-record.{ok_zone_name}", record_data="1.1.1.1", change_type="DeleteRecordSet")

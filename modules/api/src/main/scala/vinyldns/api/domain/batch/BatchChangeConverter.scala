@@ -33,7 +33,7 @@ import vinyldns.core.queue.MessageQueue
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val notExistCompletedMessage: String = "ℹ️ This record does not exist." +
+  private val notExistCompletedMessage: String = "This record does not exist." +
     "No further action is required."
   private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
@@ -70,21 +70,18 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       recordSetChanges: List[RecordSetChange]
   ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
-    // Each single change has a corresponding recordset id
-    // If they're not equal, then there's a delete request for a record that doesn't exist. So we allow this to process
-    if(singleChanges.map(_.id).length != recordSetChanges.map(_.id).length && !singleChanges.map(_.typ).contains(UNKNOWN)) {
-      logger.info(s"Successfully converted SingleChanges [${singleChanges
-        .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
-      ().toRightBatchResult
-    }
-    else {
-      singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
-        case Some(change) => BatchConversionError(change).toLeftBatchResult
-        case None =>
-          logger.info(s"Successfully converted SingleChanges [${singleChanges
-              .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
-          ().toRightBatchResult
-      }
+    singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
+      // Each single change has a corresponding recordset id
+      // If they're not equal, then there's a delete request for a record that doesn't exist. So we allow this to process
+      case Some(_) if singleChanges.map(_.id).length != recordSetChanges.map(_.id).length && !singleChanges.map(_.typ).contains(UNKNOWN) =>
+        logger.info(s"Successfully converted SingleChanges [${singleChanges
+          .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+        ().toRightBatchResult
+      case Some(change) => BatchConversionError(change).toLeftBatchResult
+      case None =>
+        logger.info(s"Successfully converted SingleChanges [${singleChanges
+            .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+        ().toRightBatchResult
     }
   }
 
