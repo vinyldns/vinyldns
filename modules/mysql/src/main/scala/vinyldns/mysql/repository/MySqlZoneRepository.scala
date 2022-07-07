@@ -254,7 +254,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           sb.append(withAccessorCheck)
 
           val filters = List(
-            zoneNameFilter.map(flt => s"LOWER ( z.name ) LIKE '${ensureTrailingDot(flt.replace('*', '%').toLowerCase())}'"),
+            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
             startFrom.map(os => s"z.name > '$os'")
           ).flatten
 
