@@ -58,17 +58,6 @@ case class RecordSetChange(
         .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
     )
 
-  def alreadyExists(message: Option[String] = None): RecordSetChange = {
-      copy(
-      status = RecordSetChangeStatus.Complete,
-        systemMessage = message,
-      recordSet = recordSet
-        .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
-    )
-  }
-
-  def alreadyExists(message: String): RecordSetChange = alreadyExists(Some(message))
-
   def failed(message: String): RecordSetChange = failed(Some(message))
 
   def failed(message: Option[String] = None): RecordSetChange =

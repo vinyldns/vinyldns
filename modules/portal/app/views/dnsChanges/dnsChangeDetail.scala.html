@@ -159,7 +159,6 @@
                                 </td>
                                 <td class="wrap-long-text">
                                     <div ng-if="batch.approvalStatus != 'AutoApproved'
-                                             && change.systemMessage.includes('Record exists / updated in DNS') != -1
                                              && change.status != 'Rejected'
                                              && change.status != 'Cancelled'">
                                         <p ng-repeat="error in change.validationErrors">
@@ -167,9 +166,8 @@
                                     <div ng-if="batch.approvalStatus =='ManuallyRejected' || batch.approvalStatus =='Cancelled'">
                                     </div>
                                     <div ng-if="batch.approvalStatus == 'AutoApproved'
-                                             && change.systemMessage.includes('Record exists / updated in DNS')
                                              && change.status =='Complete'">
-                                        ℹ️ This record already exists. <br> No further action is required.</div>
+                                        ℹ️ No further action is required.</div>
                                 </td>
                             </tr>
                             </tbody>
