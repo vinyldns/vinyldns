@@ -153,7 +153,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record exists / updated in DNS"""),
+          systemMessage= None,
          status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -199,7 +199,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record exists / updated in DNS"""),
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -604,7 +604,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          systemMessage= Some(s"""ℹ️ DNS change for "${rsChange.id}": "${"aaaa"}": Record updated in DNS"""),
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)

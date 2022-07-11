@@ -106,11 +106,11 @@ class RecordSetChangeSpec extends AnyWordSpec with Matchers {
 
   "for Already exists" should {
       "set the system message when provided" in {
-        val result = pendingCreateAAAA.alreadyExists("Already Exists")
-        result.systemMessage shouldBe Some("Already Exists")
+        val result = pendingCreateAAAA.successful
+        result.systemMessage shouldBe None
       }
       "set the system message to none when not provided" in {
-        val result = pendingCreateAAAA.alreadyExists()
+        val result = pendingCreateAAAA.successful
         result.systemMessage shouldBe None
       }
   }
