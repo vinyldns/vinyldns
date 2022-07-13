@@ -563,13 +563,13 @@ class ZoneServiceSpec
     }
 
     "name filter must be used to return zones by admin group name, when search by admin group option is true" in {
-      doReturn(IO.pure(Some(abcGroup)))
+      doReturn(IO.pure(Set(abcGroup)))
         .when(mockGroupRepo)
         .getGroupsByName(any[String])
       doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
         .when(mockZoneRepo)
         .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true)
-      doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
       val result: ListZonesResponse =
