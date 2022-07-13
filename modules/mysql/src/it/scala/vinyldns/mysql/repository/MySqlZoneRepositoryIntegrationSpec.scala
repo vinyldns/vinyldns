@@ -240,10 +240,10 @@ class MySqlZoneRepositoryIntegrationSpec
       )
 
       f.unsafeRunSync()
-      repo.listZonesByAdminGroupId(okUserAuth, None, 100, testZoneAdminGroupId).unsafeRunSync().zones should contain theSameElementsAs testZones
+      repo.listZonesByAdminGroupIds(okUserAuth, None, 100, Set(testZoneAdminGroupId)).unsafeRunSync().zones should contain theSameElementsAs testZones
 
       // dummy user only has access to one zone
-      (repo.listZonesByAdminGroupId(dummyAuth, None, 100, testZoneAdminGroupId).unsafeRunSync().zones should contain).only(testZones.head)
+      (repo.listZonesByAdminGroupIds(dummyAuth, None, 100, Set(testZoneAdminGroupId)).unsafeRunSync().zones should contain).only(testZones.head)
 
       // delete the group created to test
       groupRepository.delete(okGroup).unsafeRunSync()
@@ -293,8 +293,8 @@ class MySqlZoneRepositoryIntegrationSpec
         groupRepository.save(db, okGroup)
       }.unsafeRunSync()
 
-      val group = groupRepository.getGroupByName(okGroup.name).unsafeRunSync()
-      val groupId = group.get.id
+      val group = groupRepository.getGroupsByName(okGroup.name).unsafeRunSync()
+      val groupId = group.head.id
 
       // store all of the zones
       val privateZone = okZone.copy(
@@ -325,13 +325,13 @@ class MySqlZoneRepositoryIntegrationSpec
       f.unsafeRunSync()
 
       repo
-        .listZonesByAdminGroupId(okUserAuth, None, 100, groupId, ignoreAccess = true)
+        .listZonesByAdminGroupIds(okUserAuth, None, 100, Set(groupId), ignoreAccess = true)
         .unsafeRunSync()
         .zones should contain theSameElementsAs testZones
 
       // dummy user only have all of the zones returned
       repo
-        .listZonesByAdminGroupId(dummyAuth, None, 100, groupId, ignoreAccess = true)
+        .listZonesByAdminGroupIds(dummyAuth, None, 100, Set(groupId), ignoreAccess = true)
         .unsafeRunSync()
         .zones should contain theSameElementsAs testZones
 

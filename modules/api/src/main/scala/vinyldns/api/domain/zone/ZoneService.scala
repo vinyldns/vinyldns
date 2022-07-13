@@ -176,17 +176,17 @@ class ZoneService(
     }
     else {
       for {
-        groupId <- getGroupIdByName(nameFilter.get)
-        listZonesResult <- zoneRepository.listZonesByAdminGroupId(
+        groupIds <- getGroupsIdsByName(nameFilter.get)
+        listZonesResult <- zoneRepository.listZonesByAdminGroupIds(
           authPrincipal,
           startFrom,
           maxItems,
-          groupId,
+          groupIds,
           ignoreAccess
         )
         zones = listZonesResult.zones
-        group <- groupRepository.getGroup(groupId)
-        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, group.toSet)
+        groups <- groupRepository.getGroups(groupIds)
+        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
       } yield ListZonesResponse(
         zoneSummaryInfos,
         nameFilter,
@@ -269,6 +269,10 @@ class ZoneService(
     } yield zoneChange
   }
 
+  def getGroupsIdsByName(groupName: String): IO[Set[String]] = {
+    groupRepository.getGroupsByName(groupName).map(x => x.map(_.id))
+  }
+
   def getBackendIds(): Result[List[String]] =
     backendResolver.ids.toList.toResult
 
@@ -300,13 +304,6 @@ class ZoneService(
       case None => "Unknown group name"
     }
   }.toResult
-
-  def getGroupIdByName(groupName: String): IO[String] = {
-    groupRepository.getGroupByName(groupName).map {
-      case Some(group) => group.id
-      case None => "Cannot find group"
-    }
-  }
 
   def getZoneOrFail(zoneId: String): Result[Zone] =
     zoneRepository

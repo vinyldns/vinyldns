@@ -237,14 +237,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * @return a ListZonesResults
     */
-  def listZonesByAdminGroupId(
+  def listZonesByAdminGroupIds(
        authPrincipal: AuthPrincipal,
        startFrom: Option[String] = None,
        maxItems: Int = 100,
-       adminGroupId: String,
+       adminGroupIds: Set[String],
        ignoreAccess: Boolean = false
   ): IO[ListZonesResults] =
-    monitor("repo.ZoneJDBC.listZonesByAdminGroupId") {
+    monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
       IO {
         DB.readOnly { implicit s =>
           val (withAccessorCheck, accessors) =
@@ -252,13 +252,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          sb.append(s" WHERE admin_group_id='$adminGroupId' ")
+          val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
+          sb.append(s" WHERE admin_group_id IN ($groupIds) ")
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
-          println("Query: ", query)
 
           val results: List[Zone] = SQL(query)
             .bind(accessors: _*)
