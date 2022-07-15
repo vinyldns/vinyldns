@@ -340,6 +340,29 @@ class MySqlZoneRepositoryIntegrationSpec
       groupRepository.delete(okGroup).unsafeRunSync()
     }
 
+    "get empty list when no matching admin group name is found while filtering zones by group name" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup.copy(id = testZoneAdminGroupId))
+      }.unsafeRunSync()
+
+      // store all of the zones
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+      repo.listZonesByAdminGroupIds(okUserAuth, None, 100, Set()).unsafeRunSync().zones shouldBe empty
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
+    }
+
     "get zones that are accessible by everyone" in {
 
       //user and group id being set to None implies EVERYONE access
