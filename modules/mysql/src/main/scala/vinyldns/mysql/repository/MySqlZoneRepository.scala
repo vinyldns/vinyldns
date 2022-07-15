@@ -252,8 +252,12 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
-          sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          if(adminGroupIds.nonEmpty) {
+            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          } else {
+            sb.append(s" WHERE admin_group_id IN ('') ")
+          }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT ${maxItems + 1}")
