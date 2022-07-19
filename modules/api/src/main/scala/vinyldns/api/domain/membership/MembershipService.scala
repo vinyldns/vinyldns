@@ -238,8 +238,11 @@ class MembershipService(
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
+      userIds = result.changes.map(_.userId).toSet
+      users <- userRepo.getUsers(userIds, None, None).map(_.users).toResult[Seq[User]]
+      userMap = users.map(u => (u.id, u.userName)).toMap
     } yield ListGroupChangesResponse(
-      result.changes.map(GroupChangeInfo.apply),
+      result.changes.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))),
       startFrom,
       result.lastEvaluatedTimeStamp,
       maxItems

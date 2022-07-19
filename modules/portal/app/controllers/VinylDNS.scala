@@ -214,6 +214,25 @@ class VinylDNS @Inject() (
     })
   }
 
+  def listGroupChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = new VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"groups/$id/activity",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def getUser(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"users/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
