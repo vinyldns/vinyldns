@@ -724,8 +724,13 @@ class MembershipServiceSpec
           .when(mockGroupChangeRepo)
           .getGroupChanges(anyString, any[Option[String]], anyInt)
 
+        doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+          .when(mockUserRepo)
+          .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+        val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
         val expected: List[GroupChangeInfo] =
-          listOfDummyGroupChanges.map(GroupChangeInfo.apply).take(100)
+          listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(100)
 
         val result: ListGroupChangesResponse =
           rightResultOf(underTest.getGroupActivity(dummyGroup.id, None, 100, dummyAuth).value)
@@ -744,8 +749,13 @@ class MembershipServiceSpec
         .when(mockGroupChangeRepo)
         .getGroupChanges(anyString, any[Option[String]], anyInt)
 
+      doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
       val expected: List[GroupChangeInfo] =
-        listOfDummyGroupChanges.map(GroupChangeInfo.apply).take(100)
+        listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(100)
 
       val result: ListGroupChangesResponse =
         rightResultOf(underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value)
