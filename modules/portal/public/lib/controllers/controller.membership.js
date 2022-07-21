@@ -23,6 +23,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
     $scope.isGroupAdmin = false;
     $scope.groupChanges = {};
     $scope.currentGroup = {};
+    $scope.isCreatedOrNew = false;
 
     $scope.groupModalState = {
         VIEW_DETAILS: 1
@@ -309,7 +310,56 @@ angular.module('controller.membership', []).controller('MembershipController', f
             });
     };
 
-    $scope.viewGroupInfo = function(group) {
+    function determineGroupDifference(newGroup, oldGroup) {
+        var newGroupData = angular.copy(newGroup);
+        var changeMessage = "";
+        if(oldGroup.name !== newGroup.name){
+            changeMessage += "Group name changed to '" + newGroup.name + "'.";
+        }
+        if(oldGroup.email !== newGroup.email){
+            changeMessage += "Group email changed to '" + newGroup.email + "'.";
+        }
+        if(oldGroup.description !== newGroup.description){
+            changeMessage += "Group description changed to '" + newGroup.description + "'.";
+        }
+        oldGroup.adminIds = [];
+        angular.forEach(oldGroup.admins, function(admin) {
+            oldGroup.adminIds.push(admin.id);
+        });
+        newGroupData.adminIds = [];
+        angular.forEach(newGroup.admins, function(admin) {
+            newGroupData.adminIds.push(admin.id);
+        });
+        var adminAddDifference = newGroupData.adminIds.filter(x => !oldGroup.adminIds.includes(x));
+        if(adminAddDifference.length !== 0){
+            changeMessage += "Group admin/s with userId/s (" + adminAddDifference + ") added.";
+        }
+        var adminRemoveDifference = oldGroup.adminIds.filter(x => !newGroupData.adminIds.includes(x));
+        if(adminRemoveDifference.length !== 0){
+            changeMessage += "Group admin/s with userId/s (" + adminRemoveDifference + ") removed.";
+        }
+        oldGroup.memberIds = [];
+        angular.forEach(oldGroup.members, function(member) {
+            oldGroup.memberIds.push(member.id);
+        });
+        newGroupData.memberIds = [];
+        angular.forEach(newGroup.members, function(member) {
+            newGroupData.memberIds.push(member.id);
+        });
+        var memberAddDifference = newGroupData.memberIds.filter(x => !oldGroup.memberIds.includes(x));
+        if(memberAddDifference.length !== 0){
+            changeMessage += "Group member/s with userId/s (" + memberAddDifference + ") added.";
+        }
+        var memberRemoveDifference = oldGroup.memberIds.filter(x => !newGroupData.memberIds.includes(x));
+        if(memberRemoveDifference.length !== 0){
+            changeMessage += "Group member/s with userId/s (" + memberRemoveDifference + ") removed.";
+        }
+        newGroupData.changeMessage = changeMessage;
+        return newGroupData;
+    }
+
+    $scope.viewCreatedOrOldGroupInfo = function(group) {
+        $scope.isCreatedOrNew = false;
         var newGroup = angular.copy(group);
         newGroup.adminIds = [];
         angular.forEach(group.admins, function(admin) {
@@ -322,7 +372,19 @@ angular.module('controller.membership', []).controller('MembershipController', f
         $scope.currentGroup = newGroup;
         $scope.groupModal = {
             action: $scope.groupModalState.VIEW_DETAILS,
-            title: "Group Info",
+            title: "Created/Old Group Info",
+            basics: $scope.groupModalParams.readOnly,
+            details: $scope.groupModalParams.readOnly,
+        };
+        $("#group_modal").modal("show");
+    };
+
+    $scope.viewNewGroupInfo = function(newGroup, oldGroup) {
+        $scope.isCreatedOrNew = true;
+        $scope.currentGroup = determineGroupDifference(newGroup, oldGroup);
+        $scope.groupModal = {
+            action: $scope.groupModalState.VIEW_DETAILS,
+            title: "New Group Info",
             basics: $scope.groupModalParams.readOnly,
             details: $scope.groupModalParams.readOnly,
         };
