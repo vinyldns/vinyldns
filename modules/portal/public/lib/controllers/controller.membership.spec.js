@@ -70,6 +70,47 @@ describe('Controller: MembershipController', function () {
         this.groupsService.getGroupMemberList = function() {
             return $q.when(mockGroupList);
         };
+
+        this.groupsService.getGroupChanges = function () {
+            return $q.when({
+                data: {
+                    changes: [
+                        {
+                            newGroup: {
+                                id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                                name: "test-group",
+                                email: "test@test.com",
+                                created: "2022-07-20T10:14:49Z",
+                                status: "Active",
+                                members: [
+                                    {
+                                        id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                    },
+                                    {
+                                        id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                    }
+                                ],
+                                admins: [
+                                    {
+                                        id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                    },
+                                    {
+                                        id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                    }
+                                ]
+                            },
+                            changeType: "Delete",
+                            userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                            id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                            created: "2022-07-20T10:24:28Z",
+                            userName: "professor"
+                        }
+                    ],
+                    maxItems: 100
+                }
+            });
+        };
+
         this.controller = $controller('MembershipController', {'$scope': this.scope});
 
         this.mockSuccessAlert = "success";
@@ -113,7 +154,6 @@ describe('Controller: MembershipController', function () {
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.utilitySuccess.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('addMember correctly calls utilityService when failing getUserDataByUsername', function(){
@@ -154,10 +194,9 @@ describe('Controller: MembershipController', function () {
         this.scope.$digest();
 
         expect(profileService.calls.count()).toBe(1);
-        expect(this.utilityFailure.calls.count()).toBe(2);
+        expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when passing updateGroup', function(){
@@ -182,7 +221,6 @@ describe('Controller: MembershipController', function () {
         expect(this.utilitySuccess.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when failing updateGroup', function(){
@@ -204,10 +242,9 @@ describe('Controller: MembershipController', function () {
         this.scope.removeMember('memberId');
         this.scope.$digest();
 
-        expect(this.utilityFailure.calls.count()).toBe(2);
+        expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when passing updateGroup', function(){
@@ -236,7 +273,6 @@ describe('Controller: MembershipController', function () {
         expect(this.utilitySuccess.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when failing updateGroup', function(){
@@ -262,10 +298,9 @@ describe('Controller: MembershipController', function () {
         this.scope.toggleAdmin(mockMember);
         this.scope.$digest();
 
-        expect(this.utilityFailure.calls.count()).toBe(2);
+        expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
-        expect(this.scope.alerts[1]).toEqual(this.mockFailureAlert);
     });
 
     it('refresh correctly handles error when failing getGroup', function() {
@@ -277,7 +312,7 @@ describe('Controller: MembershipController', function () {
         this.scope.$digest();
 
         expect(getGroup.calls.count()).toBe(1);
-        expect(this.utilityFailure.calls.count()).toBe(2);
+        expect(this.utilityFailure.calls.count()).toBe(1);
     });
 
     it('refresh correctly handles error when failing getGroupMemberList', function() {
@@ -289,7 +324,7 @@ describe('Controller: MembershipController', function () {
         this.scope.$digest();
 
         expect(getGroupMemberList.calls.count()).toBe(1);
-        expect(this.utilityFailure.calls.count()).toBe(2);
+        expect(this.utilityFailure.calls.count()).toBe(1);
     });
 
     it('getGroupInfo sets the group info, admin status when the user is an admin', function() {
@@ -408,5 +443,120 @@ describe('Controller: MembershipController', function () {
         expect(this.scope.membership.group).toEqual(expectedGroup);
         expect(this.scope.membership.members).toEqual(expectedMembership);
         expect(this.scope.isGroupAdmin).toBe(true);
+    });
+
+    it('nextPage should call getGroupChanges with the correct parameters', function () {
+
+        var response = {
+            data: {
+                changes: [
+                    {
+                        newGroup: {
+                            id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                            name: "test-group",
+                            email: "test@test.com",
+                            created: "2022-07-20T10:14:49Z",
+                            status: "Active",
+                            members: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ],
+                            admins: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ]
+                        },
+                        changeType: "Delete",
+                        userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                        id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                        created: "2022-07-20T10:24:28Z",
+                        userName: "professor"
+                    }
+                ],
+                maxItems: 100
+            }
+        };
+        var getGroupChangesSets = spyOn(this.groupsService, 'getGroupChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedId = "";
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+
+        this.scope.changeNextPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(1);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+          [expectedId, expectedMaxItems, expectedStartFrom]);
+    });
+
+    it('prevPage should call getGroupChanges with the correct parameters', function () {
+
+        var response = {
+            data: {
+                changes: [
+                    {
+                        newGroup: {
+                            id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                            name: "test-group",
+                            email: "test@test.com",
+                            created: "2022-07-20T10:14:49Z",
+                            status: "Active",
+                            members: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ],
+                            admins: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ]
+                        },
+                        changeType: "Delete",
+                        userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                        id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                        created: "2022-07-20T10:24:28Z",
+                        userName: "professor"
+                    }
+                ],
+                maxItems: 100
+            }
+        };
+        var getGroupChangesSets = spyOn(this.groupsService, 'getGroupChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedId = "";
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+
+        this.scope.changePrevPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(1);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+            [expectedId, expectedMaxItems, expectedStartFrom]);
+
+        this.scope.changeNextPage();
+        this.scope.changePrevPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(3);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+            [expectedId, expectedMaxItems, expectedStartFrom]);
     });
 });
