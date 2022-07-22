@@ -35,7 +35,8 @@ case class GroupChange(
     oldGroup: Option[Group] = None,
     id: String = UUID.randomUUID().toString,
     created: DateTime = DateTime.now,
-    userName: Option[String] = None
+    userName: Option[String] = None,
+    groupChangeMessage: Option[String] = None
 )
 
 object GroupChange {

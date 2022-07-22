@@ -60,7 +60,8 @@ final case class GroupChangeInfo(
     oldGroup: Option[GroupInfo] = None,
     id: String = UUID.randomUUID().toString,
     created: DateTime = DateTime.now,
-    userName: String
+    userName: String,
+    groupChangeMessage: String
 )
 
 object GroupChangeInfo {
@@ -71,7 +72,8 @@ object GroupChangeInfo {
     oldGroup = groupChange.oldGroup.map(GroupInfo.apply),
     id = groupChange.id,
     created = groupChange.created,
-    userName = groupChange.userName.getOrElse("unknown user")
+    userName = groupChange.userName.getOrElse("unknown user"),
+    groupChangeMessage = groupChange.groupChangeMessage.getOrElse("")
   )
 }
 

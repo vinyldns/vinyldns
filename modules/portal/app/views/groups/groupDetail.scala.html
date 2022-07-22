@@ -140,6 +140,7 @@
                                             <th>Time</th>
                                             <th>Group Change ID</th>
                                             <th>Change Type</th>
+                                            <th>Change Message</th>
                                             <th>Change Info</th>
                                             <th>User</th>
                                         </tr>
@@ -149,11 +150,12 @@
                                             <td>{{change.created}}</td>
                                             <td>{{change.id}}</td>
                                             <td>{{change.changeType}}</td>
+                                            <td class="col-md-3 wrap-long-text">{{change.groupChangeMessage}}</td>
                                             <td class="col-md-3 wrap-long-text">
-                                                <a ng-if="change.changeType =='Create'" ng-click="viewCreatedOrOldGroupInfo(change.newGroup)" class="force-cursor">View created group</a>
+                                                <a ng-if="change.changeType =='Create'" ng-click="viewGroupInfo(change.newGroup)" class="force-cursor">View created group</a>
 
-                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewNewGroupInfo(change.newGroup, change.oldGroup)" class="force-cursor">View new group</a></div>
-                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewCreatedOrOldGroupInfo(change.oldGroup)" class="force-cursor">View old group</a></div>
+                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewGroupInfo(change.newGroup)" class="force-cursor">View new group</a></div>
+                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewGroupInfo(change.oldGroup)" class="force-cursor">View old group</a></div>
                                             </td>
                                             <td>{{change.userName}}</td>
                                         </tr>
@@ -190,18 +192,6 @@
     <form name="viewGroupForm" role="form" class="form-horizontal" novalidate>
         <modal modal-id="group_modal" modal-title="{{ groupModal.title }}">
             <modal-body>
-                <modal-element ng-if="isCreatedOrNew" label="Group Changes Made">
-                <textarea id="create-group-change-text"
-                          name="groupChangeMessage"
-                          ng-model="currentGroup.changeMessage"
-                          rows="5"
-                          class="form-control"
-                          ng-trim="false"
-                          ng-class="groupModal.details.class"
-                          ng-readonly="groupModal.details.readOnly">
-                </textarea>
-                </modal-element>
-
                 <modal-element label="Group ID">
                     <input id="create-group-id-text" type="text" name="groupID" class="form-control"
                            ng-model="currentGroup.id"

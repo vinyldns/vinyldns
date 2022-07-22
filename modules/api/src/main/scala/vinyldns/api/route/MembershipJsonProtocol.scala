@@ -122,6 +122,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "created").default[DateTime](DateTime.now),
         (js \ "userName").required[String]("Missing userName"),
+        (js \ "groupChangeMessage").required[String]("Missing groupChangeMessage"),
         ).mapN(GroupChangeInfo.apply)
   }
 }
