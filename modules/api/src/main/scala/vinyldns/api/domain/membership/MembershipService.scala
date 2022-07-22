@@ -281,12 +281,10 @@ class MembershipService(
         if (memberRemoveDifference.nonEmpty) {
           sb.append(s"Group member/s with userId/s (${memberRemoveDifference.mkString(",")}) removed.")
         }
-        println("Query: ", sb)
         groupChangeMessage = groupChangeMessage :+ sb.toString()
       }
       // It'll be a newly created group, so we will have no group change message
       else {
-        println("Query: ", sb)
         groupChangeMessage = groupChangeMessage :+ sb.toString()
       }
     }
