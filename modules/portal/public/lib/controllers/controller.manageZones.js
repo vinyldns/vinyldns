@@ -38,6 +38,8 @@ angular.module('controller.manageZones', [])
 
     $scope.alerts = [];
     $scope.zoneInfo = {};
+    $scope.zoneChanges={};
+    $scope.allAclRules = [];
     $scope.updateZoneInfo = {};
     $scope.manageZoneState = {
         UPDATE: 0,
@@ -282,6 +284,87 @@ angular.module('controller.manageZones', [])
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::getZone-failure');
+            });
+    };
+
+    $scope.refreshZoneChange = function() {
+         function success(response) {
+            $log.log('zonesService::getZoneChanges-success');
+            updateZoneChangeDisplay(response.data.zoneChanges);
+         }
+         return zonesService
+               .getZoneChanges($scope.zoneId)
+               .then(success)
+               .catch(function (error) {
+                    handleError(error, 'zonesService::getZoneChanges-failure');
+               });
+    };
+
+    $scope.refreshAclRule = function (index) {
+            for (var length = 0; length < $scope.allZonesChange[index].zone.acl.rules.length; length++) {
+                $scope.allAclRules.push($scope.allZonesChange[index].zone.acl.rules[length]);
+                getAclUser($scope.allZonesChange[index].zone.acl.rules[length].userId, length, index);
+                getAclGroup($scope.allZonesChange[index].zone.acl.rules[length].groupId, length, index);
+            }
+    }
+
+    function updateZoneChangeDisplay (zoneChange) {
+        $scope.allZonesChange = zoneChange;
+            for (var length = 0; length < zoneChange.length; length++) {
+                getZoneGroup(zoneChange[length].zone.adminGroupId, length);
+                getZoneUser(zoneChange[length].userId, length);
+            }
+        };
+
+    function getZoneGroup(groupId, length) {
+        function success(response) {
+            $log.log('groupsService::getZoneGroup-success');
+            $scope.allZonesChange[length].zone.adminGroupName = response.data.name;
+        }
+            return groupsService
+                    .getGroup(groupId)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'groupsService::getZoneGroup-failure');
+                    });
+    }
+
+    function getZoneUser(userId, length) {
+        function success(response) {
+            $log.log('profileService::getZoneUserDataById-success');
+            $scope.allZonesChange[length].userName = response.data.userName;
+        }
+        return profileService
+            .getUserDataById(userId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'profileService::getZoneUserDataById-failure');
+            });
+    };
+
+    function getAclGroup(groupId, length, index) {
+        function success(response) {
+            $log.log('groupsService::getAclGroup-success',length);
+            $scope.allZonesChange[index].zone.acl.rules[length].groupName = response.data.name;
+        }
+        return groupsService
+                .getGroup(groupId)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getAclGroup-failure');
+                });
+    }
+
+    function getAclUser(userId, length, index) {
+        function success(response) {
+            $log.log('profileService::getAclUserDataById-success',userId, length, index);
+            $scope.allZonesChange[index].zone.acl.rules[length].userName = response.data.userName;
+        }
+        return profileService
+            .getUserDataById(userId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'profileService::getAclUserDataById-failure');
             });
     };
 

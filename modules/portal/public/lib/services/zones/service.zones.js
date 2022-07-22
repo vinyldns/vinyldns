@@ -33,6 +33,11 @@ angular.module('service.zones', [])
             return $http.get(url);
         };
 
+        this.getZoneChanges = function (zoneId) {
+                    var url = '/api/zones/' + zoneId + '/changes';
+                    return $http.get(url);
+        };
+
         this.getBackendIds = function() {
             var url = "/api/zones/backendids";
             return $http.get(url);
