@@ -766,6 +766,17 @@ class MembershipServiceSpec
     }
   }
 
+    "determine group difference" should {
+      "return difference between two groups" in {
+        val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate)
+        val result: Seq[String] = rightResultOf(underTest.determineGroupDifference(groupChange).value)
+        // Newly created group won't have group change message
+        result(0) shouldBe ""
+        // Updated group with group change message
+        result(1) shouldBe "Group name changed to 'ok'.Group email changed to 'test@test.com'."
+      }
+    }
+
     "listAdmins" should {
       "return a list of admins" in {
         val testGroup =
