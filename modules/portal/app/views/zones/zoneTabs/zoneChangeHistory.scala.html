@@ -20,27 +20,28 @@
                     <th>Created</th>
                     <th>Updated</th>
                     <th>Change type</th>
-                    <th>ACL</th>
                     <th>Admin group</th>
-
+                    <th>ACL</th>
                 </tr>
             </thead>
             <tbody>
-                <tr  ng-repeat="zoneChange in allZonesChange track by $index">
+                <tr  ng-repeat="zoneChange in zoneChanges track by $index">
                     <td>{{ zoneChange.userName }}</td>
                     <td>{{ zoneChange.zone.email }}</td>
-                    <td>{{zoneChange.zone.shared ? "Shared" : "Private"}}</td>
-                    <td>{{zoneChange.zone.created}}</td>
-                    <td>{{zoneChange.zone.updated}}</td>
+                    <td>{{ zoneChange.zone.shared ? "Shared" : "Private" }}</td>
+                    <td>{{ zoneChange.zone.created }}</td>
+                    <td>{{ zoneChange.zone.updated }}</td>
                     <td>{{ zoneChange.changeType }}</td>
-                    <td>
-                        <a href="#aclModal"
+                    <td><a ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                    </td>
+                    <td> <button class="btn btn-info btn-sm"
+                                 ng-if="zoneChange.zone.acl.rules.length != 0"
+                                 ng-click="refreshAclRule($index)">ACL Rules</button>
+                        <!--<a href="#aclModal"
                            ng-if="zoneChange.zone.acl.rules.length != 0"
                            ng-click="refreshAclRule($index)"
                            data-toggle="modal"> ACL Rules
-                        </a>
-                    </td>
-                    <td><a ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                        </a>-->
                     </td>
                 </tr>
             </tbody>
@@ -64,19 +65,10 @@
 <div class="panel-footer"></div>
     <!-- END SIMPLE DATATABLE -->
 
-    <!-- THE ACL RULE MODAL STARTS -->
-<div class="modal" id="aclModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <h4 class="modal-title">Zone Access Rules</h4>
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <!-- Modal body -->
-            <div class="modal-body">
+<!-- THE ACL RULE MODAL FORM STARTS -->
+<form name="aclModalViewForm" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="aclModalView" modal-title="{{ aclRulesModal.title }}">
+        <modal-body>
                 <table id="aclRuleTable" class="table table-hover table-striped">
                     <thead>
                     <tr>
@@ -97,11 +89,9 @@
                                 {{rule.userName}}
                             </span>
                         </td>
-
                         <td>
                             {{rule.accessLevel}}
                         </td>
-
                         <td>
                             <span ng-if="rule.recordTypes.length == 0">All Types</span>
                             <ul class="table-cell-list">
@@ -110,28 +100,24 @@
                                 </li>
                             </ul>
                         </td>
-
                         <td class="wrap-long-text">
                             {{rule.recordMask}}
                         </td>
-
                         <td class="wrap-long-text">
                             {{rule.description}}
                         </td>
                     </tr>
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Modal footer -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-<!-- THE ACL RULE MODAL ENDS -->
+        </modal-body>
+        <modal-footer>
+                <span>
+                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeAclModalView()">Close</button>
+                </span>
+        </modal-footer>
+    </modal>
+</form>
+<!-- THE ACL RULE MODAL FORM ENDS -->
 
 
 
