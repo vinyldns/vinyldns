@@ -425,6 +425,7 @@ angular.module('controller.manageZones', [])
 
                 if (zoneChanges.length > 0) {
                     $scope.zoneChanges = response.data.zoneChanges;
+                    $scope.updateZoneChangeDisplay(response.data.zoneChanges)
                 }
             })
             .catch(function (error) {
@@ -439,6 +440,7 @@ angular.module('controller.manageZones', [])
             .then(function(response) {
                 zoneHistoryPaging = pagingService.prevPageUpdate(response.data.nextId, zoneHistoryPaging);
                 $scope.zoneChanges = response.data.zoneChanges;
+                $scope.updateZoneChangeDisplay(response.data.zoneChanges);
             })
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
