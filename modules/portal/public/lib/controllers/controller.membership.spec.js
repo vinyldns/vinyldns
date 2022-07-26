@@ -153,7 +153,7 @@ describe('Controller: MembershipController', function () {
         expect(profileService.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
         expect(this.utilitySuccess.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
+        expect(this.scope.alerts).toEqual(this.mockSuccessAlert);
     });
 
     it('addMember correctly calls utilityService when failing getUserDataByUsername', function(){
@@ -196,7 +196,7 @@ describe('Controller: MembershipController', function () {
         expect(profileService.calls.count()).toBe(1);
         expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
+        expect(this.scope.alerts).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when passing updateGroup', function(){
@@ -220,7 +220,7 @@ describe('Controller: MembershipController', function () {
 
         expect(this.utilitySuccess.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
+        expect(this.scope.alerts).toEqual(this.mockSuccessAlert);
     });
 
     it('removeMember correctly calls utilityService when failing updateGroup', function(){
@@ -244,7 +244,7 @@ describe('Controller: MembershipController', function () {
 
         expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
+        expect(this.scope.alerts).toEqual(this.mockFailureAlert);
     });
 
     it('removeMember correctly calls utilityService when passing updateGroup', function(){
@@ -272,7 +272,7 @@ describe('Controller: MembershipController', function () {
 
         expect(this.utilitySuccess.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockSuccessAlert);
+        expect(this.scope.alerts).toEqual(this.mockSuccessAlert);
     });
 
     it('removeMember correctly calls utilityService when failing updateGroup', function(){
@@ -300,7 +300,7 @@ describe('Controller: MembershipController', function () {
 
         expect(this.utilityFailure.calls.count()).toBe(1);
         expect(updateGroup.calls.count()).toBe(1);
-        expect(this.scope.alerts[0]).toEqual(this.mockFailureAlert);
+        expect(this.scope.alerts).toEqual(this.mockFailureAlert);
     });
 
     it('refresh correctly handles error when failing getGroup', function() {
