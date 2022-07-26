@@ -27,7 +27,6 @@ angular.module('controller.membership', []).controller('MembershipController', f
     $scope.groupModalState = {
         VIEW_DETAILS: 1
     };
-    $scope.disabledStates = [$scope.groupModalState.VIEW_DETAILS];
 
     // read-only data for setting various classes/attributes in group modal
     $scope.groupModalParams = {
