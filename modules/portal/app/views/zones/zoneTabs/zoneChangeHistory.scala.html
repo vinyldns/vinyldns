@@ -9,8 +9,6 @@
         <div class="btn-group">
             <button class="btn btn-default" ng-click="refreshZoneChange()"><span class="fa fa-refresh"></span> Refresh</button>
         </div>
-
-
         <table id="zoneChangeDataTable" class="table table-hover table-striped">
             <thead>
                 <tr>
@@ -34,14 +32,11 @@
                     <td>{{ zoneChange.changeType }}</td>
                     <td><a ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
                     </td>
-                    <td> <button class="btn btn-info btn-sm"
+                    <td>
+                        <button class="btn btn-info btn-sm"
                                  ng-if="zoneChange.zone.acl.rules.length != 0"
-                                 ng-click="refreshAclRule($index)">ACL Rules</button>
-                        <!--<a href="#aclModal"
-                           ng-if="zoneChange.zone.acl.rules.length != 0"
-                           ng-click="refreshAclRule($index)"
-                           data-toggle="modal"> ACL Rules
-                        </a>-->
+                                 ng-click="refreshAclRule($index)">ACL Rules
+                        </button>
                     </td>
                 </tr>
             </tbody>

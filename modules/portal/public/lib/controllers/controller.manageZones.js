@@ -280,6 +280,7 @@ angular.module('controller.manageZones', [])
             $scope.updateZoneInfo.hiddenTransferKey = '';
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
+            $scope.refreshZoneChange();
         }
         return recordsService
             .getZone($scope.zoneId)
@@ -294,7 +295,8 @@ angular.module('controller.manageZones', [])
          function success(response) {
             $log.log('zonesService::getZoneChanges-success');
             zoneHistoryPaging.next = response.data.nextId;
-            updateZoneChangeDisplay(response.data.zoneChanges);
+            $scope.zoneChanges = response.data.zoneChanges;
+            $scope.updateZoneChangeDisplay(response.data.zoneChanges);
          }
          return zonesService
                .getZoneChanges(zoneHistoryPaging.maxItems, undefined, $scope.zoneId)
@@ -328,12 +330,11 @@ angular.module('controller.manageZones', [])
         $scope.aclModalViewForm.$setPristine();
     };
 
-    function updateZoneChangeDisplay (zoneChange) {
+    $scope.updateZoneChangeDisplay = function (zoneChange) {
             for (var length = 0; length < zoneChange.length; length++) {
                 getZoneGroup(zoneChange[length].zone.adminGroupId, length);
                 getZoneUser(zoneChange[length].userId, length);
             }
-        $scope.zoneChanges = zoneChange;
         };
 
     $scope.refreshAclRuleDisplay = function() {
@@ -423,7 +424,7 @@ angular.module('controller.manageZones', [])
                 zoneHistoryPaging = pagingService.nextPageUpdate(zoneChanges, response.data.nextId, zoneHistoryPaging);
 
                 if (zoneChanges.length > 0) {
-                    updateZoneChangeDisplay(response.data.zoneChanges);
+                    $scope.updateZoneChangeDisplay(response.data.zoneChanges);
                 }
             })
             .catch(function (error) {
@@ -437,7 +438,7 @@ angular.module('controller.manageZones', [])
             .getZoneChanges(zoneHistoryPaging.maxItems, startFrom, $scope.zoneId )
             .then(function(response) {
                 zoneHistoryPaging = pagingService.prevPageUpdate(response.data.nextId, zoneHistoryPaging);
-                updateZoneChangeDisplay(response.data.zoneChanges);
+                $scope.updateZoneChangeDisplay(response.data.zoneChanges);
             })
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
