@@ -333,7 +333,7 @@ angular.module('controller.manageZones', [])
     $scope.updateZoneChangeDisplay = function (zoneChange) {
             for (var length = 0; length < zoneChange.length; length++) {
                 getZoneGroup(zoneChange[length].zone.adminGroupId, length);
-                getZoneUser(zoneChange[length].userId, length);
+                 getZoneUser(zoneChange[length].userId, length);
             }
         };
 
@@ -424,7 +424,7 @@ angular.module('controller.manageZones', [])
                 zoneHistoryPaging = pagingService.nextPageUpdate(zoneChanges, response.data.nextId, zoneHistoryPaging);
 
                 if (zoneChanges.length > 0) {
-                    $scope.updateZoneChangeDisplay(response.data.zoneChanges);
+                    $scope.zoneChanges = response.data.zoneChanges;
                 }
             })
             .catch(function (error) {
@@ -438,7 +438,7 @@ angular.module('controller.manageZones', [])
             .getZoneChanges(zoneHistoryPaging.maxItems, startFrom, $scope.zoneId )
             .then(function(response) {
                 zoneHistoryPaging = pagingService.prevPageUpdate(response.data.nextId, zoneHistoryPaging);
-                $scope.updateZoneChangeDisplay(response.data.zoneChanges);
+                $scope.zoneChanges = response.data.zoneChanges;
             })
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
