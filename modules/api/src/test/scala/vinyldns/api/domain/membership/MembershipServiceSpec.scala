@@ -773,7 +773,7 @@ class MembershipServiceSpec
         // Newly created group won't have group change message
         result(0) shouldBe ""
         // Updated group with group change message
-        result(1) shouldBe "Group name changed to 'dummy-group'. Group email changed to 'dummy@test.com'. Group description changed to 'dummy group'. Group admin/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group admin/s with userId/s (ok) removed. Group member/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group member/s with userId/s (ok) removed. "
+        result(1) shouldBe "Group name changed to 'dummy-group'. Group email changed to 'dummy@test.com'. Group description changed to 'dummy group'. Group admin/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group admin/s with userId/s (ok) removed. Group member/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group member/s with userId/s (ok) removed."
       }
     }
 
