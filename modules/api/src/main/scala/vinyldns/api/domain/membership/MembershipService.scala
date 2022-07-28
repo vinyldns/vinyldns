@@ -257,29 +257,29 @@ class MembershipService(
       val sb = new StringBuilder
       if (change.oldGroup.isDefined) {
         if (change.oldGroup.get.name != change.newGroup.name) {
-          sb.append(s"Group name changed to '${change.newGroup.name}'.")
+          sb.append(s"Group name changed to '${change.newGroup.name}'. ")
         }
         if (change.oldGroup.get.email != change.newGroup.email) {
-          sb.append(s"Group email changed to '${change.newGroup.email}'.")
+          sb.append(s"Group email changed to '${change.newGroup.email}'. ")
         }
         if (change.oldGroup.get.description != change.newGroup.description) {
-          sb.append(s"Group description changed to '${change.newGroup.description.get}'.")
+          sb.append(s"Group description changed to '${change.newGroup.description.get}'. ")
         }
         val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
         if (adminAddDifference.nonEmpty) {
-          sb.append(s"Group admin/s with userId/s (${adminAddDifference.mkString(",")}) added.")
+          sb.append(s"Group admin/s with userId/s (${adminAddDifference.mkString(",")}) added. ")
         }
         val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
         if (adminRemoveDifference.nonEmpty) {
-          sb.append(s"Group admin/s with userId/s (${adminRemoveDifference.mkString(",")}) removed.")
+          sb.append(s"Group admin/s with userId/s (${adminRemoveDifference.mkString(",")}) removed. ")
         }
         val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
         if (memberAddDifference.nonEmpty) {
-          sb.append(s"Group member/s with userId/s (${memberAddDifference.mkString(",")}) added.")
+          sb.append(s"Group member/s with userId/s (${memberAddDifference.mkString(",")}) added. ")
         }
         val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
         if (memberRemoveDifference.nonEmpty) {
-          sb.append(s"Group member/s with userId/s (${memberRemoveDifference.mkString(",")}) removed.")
+          sb.append(s"Group member/s with userId/s (${memberRemoveDifference.mkString(",")}) removed. ")
         }
         groupChangeMessage = groupChangeMessage :+ sb.toString()
       }

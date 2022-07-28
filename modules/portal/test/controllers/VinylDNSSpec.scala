@@ -801,6 +801,25 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     }
 
     ".listGroupChanges" should {
+      "return group changes - status ok (200)" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/${hobbitGroupId}/activity" =>
+            defaultActionBuilder { Results.Ok(hobbitGroupChanges) }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.listGroupChanges(hobbitGroupId)(
+            FakeRequest(GET, s"/groups/$hobbitGroupId/activity")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitGroupChanges)
+      }
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
         val underTest = withClient(client)

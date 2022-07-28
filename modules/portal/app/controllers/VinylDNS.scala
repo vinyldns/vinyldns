@@ -215,7 +215,6 @@ class VinylDNS @Inject() (
   }
 
   def listGroupChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
-    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString
@@ -230,7 +229,6 @@ class VinylDNS @Inject() (
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
-    // $COVERAGE-ON$
   }
 
   def getUser(id: String): Action[AnyContent] = userAction.async { implicit request =>

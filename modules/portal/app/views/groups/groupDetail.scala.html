@@ -150,7 +150,7 @@
                                             <td>{{change.created}}</td>
                                             <td>{{change.id}}</td>
                                             <td>{{change.changeType}}</td>
-                                            <td class="col-md-3 wrap-long-text">{{change.groupChangeMessage}}</td>
+                                            <td class="col-md-3 wrap-long-text" ng-bind-html="changeMessage(change.groupChangeMessage)"></td>
                                             <td class="col-md-3 wrap-long-text">
                                                 <a ng-if="change.changeType =='Create'" ng-click="viewGroupInfo(change.newGroup)" class="force-cursor">View created group</a>
 

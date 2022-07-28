@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-angular.module('controller.membership', []).controller('MembershipController', function ($scope, $log, $location, $timeout, pagingService,
+angular.module('controller.membership', []).controller('MembershipController', function ($scope, $log, $location, $sce, $timeout, pagingService,
                                                                                          groupsService, profileService, utilityService) {
 
     $scope.membership = { members: [], group: {} };
@@ -34,6 +34,11 @@ angular.module('controller.membership', []).controller('MembershipController', f
             class: "",
             readOnly: true
         }
+    };
+
+    $scope.changeMessage = function (groupChangeMessage) {
+        message = groupChangeMessage.replaceAll('. ', '.<br>')
+        return $sce.trustAsHtml(message);
     };
 
     // paging status for group changes
