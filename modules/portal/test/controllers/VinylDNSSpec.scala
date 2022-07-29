@@ -800,6 +800,104 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getGroupChange" should {
+      tag("slow")
+      "return the group change if it is found - status ok (200)" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/change/${hobbitGroupChangeId}" =>
+            defaultActionBuilder { Results.Ok(hobbitGroupChange) }
+        }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroupChange(hobbitGroupChangeId)(
+            FakeRequest(GET, s"/groups/change/$hobbitGroupChangeId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitGroupChange)
+      }
+      "return authentication failed (401) when auth fails in the backend" in new WithApplication(
+        app
+      ) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/groups/change/${hobbitGroupChangeId}" =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroupChange(hobbitGroupChangeId)(
+            FakeRequest(GET, s"/groups/change/$hobbitGroupChangeId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+      "return a not found (404) if the group change does not exist" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == "http://localhost:9001/groups/change/not-hobbits" =>
+            defaultActionBuilder { Results.NotFound }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getGroupChange("not-hobbits")(
+          FakeRequest(GET, "/groups/change/not-hobbits")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
+      }
+      "return status forbidden (403) if the user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result =
+          underTest.getGroupChange(hobbitGroupChangeId)(
+            FakeRequest(GET, s"/groups/change/$hobbitGroupChangeId")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+      "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getGroupChange(hobbitGroupChangeId)(FakeRequest(GET, s"/groups/change/$hobbitGroupChangeId"))
+
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+    }
+
     ".listGroupChanges" should {
       "return group changes - status ok (200)" in new WithApplication(app) {
         val client = MockWS {

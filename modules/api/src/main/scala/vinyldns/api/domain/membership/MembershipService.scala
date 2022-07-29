@@ -227,6 +227,23 @@ class MembershipService(
     ListMyGroupsResponse(groups, groupNameFilter, startFrom, nextId, maxItems, ignoreAccess)
   }
 
+  def getGroupChange(
+    groupChangeId: String,
+    authPrincipal: AuthPrincipal
+  ): Result[GroupChangeInfo] =
+    for {
+      result <- groupChangeRepo
+        .getGroupChange(groupChangeId)
+        .toResult[Option[GroupChange]]
+      _ <- isGroupChangePresent(result).toResult
+      _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
+      groupChangeMessage <- determineGroupDifference(Seq(result.get))
+      groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
+      userIds = Seq(result.get).map(_.userId).toSet
+      users <- getUsers(userIds).map(_.users)
+      userMap = users.map(u => (u.id, u.userName)).toMap
+    } yield groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).head
+
   def getGroupActivity(
       groupId: String,
       startFrom: Option[String],
@@ -283,8 +300,14 @@ class MembershipService(
         }
         groupChangeMessage = groupChangeMessage :+ sb.toString().trim
       }
-      // It'll be a newly created group, so we will have no group change message
+      // It'll be in else statement if the group was created or deleted
       else {
+        if (change.changeType == GroupChangeType.Create) {
+          sb.append("Group Created.")
+        }
+        else if (change.changeType == GroupChangeType.Delete){
+          sb.append("Group Deleted.")
+        }
         groupChangeMessage = groupChangeMessage :+ sb.toString()
       }
     }

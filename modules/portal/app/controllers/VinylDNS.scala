@@ -214,6 +214,15 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getGroupChange(gcid: String): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/change/$gcid")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      logger.info(s"group change [$gcid] retrieved with status [${response.status}]")
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def listGroupChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {

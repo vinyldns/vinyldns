@@ -178,6 +178,13 @@ class MembershipRoute(
         }
       }
     } ~
+    path("groups" / "change" / Segment) { groupChangeId =>
+      (get & monitor("Endpoint.groupSingleChange")) {
+        authenticateAndExecute(membershipService.getGroupChange(groupChangeId, _)) { groupChange =>
+          complete(StatusCodes.OK, groupChange)
+        }
+      }
+    } ~
     path("users" / Segment / "lock") { id =>
       (put & monitor("Endpoint.lockUser")) {
         authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Locked, _)) {
