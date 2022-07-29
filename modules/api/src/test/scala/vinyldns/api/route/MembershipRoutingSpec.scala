@@ -296,6 +296,28 @@ class MembershipRoutingSpec
     }
   }
 
+  "GET group change" should {
+    "return a 200 response with the group change when found" in {
+      val grpChange = GroupChangeInfo(okGroupChange)
+      doReturn(result(grpChange)).when(membershipService).getGroupChange("ok", okAuth)
+      Get("/groups/change/ok") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupChangeInfo]
+        result shouldBe grpChange
+      }
+    }
+
+    "return a 400 Bad Request when the group change id is not valid" in {
+      doReturn(result(InvalidGroupRequestError("Invalid Group Change ID")))
+        .when(membershipService)
+        .getGroupChange("notValid", okAuth)
+      Get("/groups/change/notValid") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
   "DELETE group" should {
     "return a 200 response with the deleted group when it exists" in {
       val grpBaseTime = deletedGroup.copy(created = baseTime)
