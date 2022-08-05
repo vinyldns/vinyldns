@@ -125,9 +125,8 @@ class AccessValidationsSpec
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
 
-    "return false if the zone is shared and user does not have other access" in {
-      val error = leftValue(accessValidationTest.canSeeZone(okAuth, sharedZone))
-      error shouldBe a[NotAuthorizedError]
+    "return true if the zone is shared and user does not have other access" in {
+      accessValidationTest.canSeeZone(okAuth, sharedZone) should be(right)
     }
   }
 
