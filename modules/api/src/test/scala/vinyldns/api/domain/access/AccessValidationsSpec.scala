@@ -1199,8 +1199,8 @@ class AccessValidationsSpec
       accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
     }
 
-    "return access level NoAccess if zone is shared and user is not an admin" in {
-      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.NoAccess)
+    "return access level Read if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.Read)
     }
 
     "return access level Read if zone is private and user is an ACL rule" in {
