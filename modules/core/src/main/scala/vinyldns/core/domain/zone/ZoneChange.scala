@@ -18,7 +18,7 @@ package vinyldns.core.domain.zone
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 
 object ZoneChangeStatus extends Enumeration {
   type ZoneChangeStatus = Value
@@ -38,7 +38,7 @@ case class ZoneChange(
     userId: String,
     changeType: ZoneChangeType,
     status: ZoneChangeStatus = ZoneChangeStatus.Pending,
-    created: DateTime = DateTime.now,
+    created: Instant = Instant.now,
     systemMessage: Option[String] = None,
     id: String = UUID.randomUUID().toString
 ) extends ZoneCommand
@@ -54,7 +54,7 @@ case class ZoneChange(
     sb.append("changeType=\"").append(changeType.toString).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("systemMessage=\"").append(systemMessage.toString).append("\"; ")
-    sb.append("created=\"").append(created.getMillis.toString).append("\"; ")
+    sb.append("created=\"").append(created.toEpochMilli.toString).append("\"; ")
     sb.append(zone.toString)
     sb.append(" ]")
     sb.toString

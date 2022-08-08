@@ -18,7 +18,7 @@ package vinyldns.core.domain.membership
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.auth.AuthPrincipal
 
 object GroupChangeType extends Enumeration {
@@ -34,7 +34,7 @@ case class GroupChange(
     userId: String,
     oldGroup: Option[Group] = None,
     id: String = UUID.randomUUID().toString,
-    created: DateTime = DateTime.now
+    created: Instant = Instant.now
 )
 
 object GroupChange {

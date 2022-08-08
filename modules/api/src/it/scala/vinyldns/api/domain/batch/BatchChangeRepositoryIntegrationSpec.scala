@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.batch
 
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.api.MySqlApiIntegrationSpec
@@ -44,7 +44,7 @@ class BatchChangeRepositoryIntegrationSpec
         okUser.id,
         okUser.userName,
         None,
-        DateTime.now,
+        Instant.now,
         List(
           SingleAddChange(
             Some("some-zone-id"),

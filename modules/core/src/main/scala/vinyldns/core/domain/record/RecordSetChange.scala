@@ -18,7 +18,7 @@ package vinyldns.core.domain.record
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
 object RecordSetChangeStatus extends Enumeration {
@@ -41,7 +41,7 @@ case class RecordSetChange(
     userId: String,
     changeType: RecordSetChangeType,
     status: RecordSetChangeStatus = RecordSetChangeStatus.Pending,
-    created: DateTime = DateTime.now,
+    created: Instant = Instant.now,
     systemMessage: Option[String] = None,
     updates: Option[RecordSet] = None,
     id: String = UUID.randomUUID().toString,
@@ -56,7 +56,7 @@ case class RecordSetChange(
       status = RecordSetChangeStatus.Complete,
       systemMessage = None,
       recordSet = recordSet
-        .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now))
+        .copy(status = RecordSetStatus.Active, updated = Some(Instant.now))
     )
 
   def failed(message: String): RecordSetChange = failed(Some(message))
@@ -66,7 +66,7 @@ case class RecordSetChange(
       status = RecordSetChangeStatus.Failed,
       systemMessage = message,
       recordSet = recordSet
-        .copy(status = RecordSetStatus.Inactive, updated = Some(DateTime.now))
+        .copy(status = RecordSetStatus.Inactive, updated = Some(Instant.now))
     )
 
   def isDone: Boolean = RecordSetChangeStatus.isDone(status)

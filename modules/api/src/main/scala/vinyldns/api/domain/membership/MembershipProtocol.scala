@@ -17,7 +17,7 @@
 package vinyldns.api.domain.membership
 
 import java.util.UUID
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
@@ -30,7 +30,7 @@ final case class GroupInfo(
     name: String,
     email: String,
     description: Option[String] = None,
-    created: DateTime = DateTime.now,
+    created: Instant = Instant.now,
     status: GroupStatus = GroupStatus.Active,
     members: Set[UserId] = Set.empty,
     admins: Set[UserId] = Set.empty
@@ -59,7 +59,7 @@ final case class GroupChangeInfo(
     userId: String,
     oldGroup: Option[GroupInfo] = None,
     id: String = UUID.randomUUID().toString,
-    created: String = DateTime.now.getMillis.toString
+    created: String = Instant.now.toEpochMilli.toString
 )
 
 object GroupChangeInfo {
@@ -69,7 +69,7 @@ object GroupChangeInfo {
     userId = groupChange.userId,
     oldGroup = groupChange.oldGroup.map(GroupInfo.apply),
     id = groupChange.id,
-    created = groupChange.created.getMillis.toString
+    created = groupChange.created.toEpochMilli.toString
   )
 }
 
@@ -81,7 +81,7 @@ case class UserInfo(
     firstName: Option[String] = None,
     lastName: Option[String] = None,
     email: Option[String] = None,
-    created: Option[DateTime] = None,
+    created: Option[Instant] = None,
     lockStatus: LockStatus
 )
 object UserInfo {
@@ -116,7 +116,7 @@ case class MemberInfo(
     firstName: Option[String] = None,
     lastName: Option[String] = None,
     email: Option[String] = None,
-    created: Option[DateTime] = None,
+    created: Option[Instant] = None,
     isAdmin: Boolean = false,
     lockStatus: LockStatus
 )

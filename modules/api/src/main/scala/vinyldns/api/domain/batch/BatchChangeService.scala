@@ -20,7 +20,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
@@ -447,7 +447,7 @@ class BatchChangeService(
         auth.userId,
         auth.signedInUser.userName,
         batchChangeInput.comments,
-        DateTime.now,
+        Instant.now,
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.PendingReview,
@@ -462,7 +462,7 @@ class BatchChangeService(
         auth.userId,
         auth.signedInUser.userName,
         batchChangeInput.comments,
-        DateTime.now,
+        Instant.now,
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved,
@@ -594,6 +594,7 @@ class BatchChangeService(
       ignoreAccess: Boolean = false,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
+    println(auth.userId)
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     for {
       listResults <- batchChangeRepo
@@ -631,7 +632,7 @@ class BatchChangeService(
       approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
       reviewerId = Some(reviewerId),
       reviewComment = reviewComment,
-      reviewTimestamp = Some(DateTime.now),
+      reviewTimestamp = Some(Instant.now),
       changes = rejectedSingleChanges
     )
 
@@ -644,7 +645,7 @@ class BatchChangeService(
     // Update rejection attributes and single changes for batch change
     val cancelledBatch = batchChange.copy(
       approvalStatus = BatchChangeApprovalStatus.Cancelled,
-      cancelledTimestamp = Some(DateTime.now),
+      cancelledTimestamp = Some(Instant.now),
       changes = cancelledSingleChanges
     )
 

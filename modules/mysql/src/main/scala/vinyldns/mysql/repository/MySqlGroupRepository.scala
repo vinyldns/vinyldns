@@ -71,6 +71,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
 
   def save(db: DB, group: Group): IO[Group] =
     monitor("repo.Group.save") {
+      println("Time: ", group.created)
       IO {
         logger.debug(s"Saving group with (id, name): (${group.id}, ${group.name})")
         db.withinTx { implicit s =>

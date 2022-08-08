@@ -17,7 +17,7 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.zone._
@@ -56,7 +56,7 @@ class MySqlZoneChangeRepository
               'change_id -> zoneChange.id,
               'zone_id -> zoneChange.zoneId,
               'data -> toPB(zoneChange).toByteArray,
-              'created_timestamp -> zoneChange.created.getMillis
+              'created_timestamp -> zoneChange.created.toEpochMilli
             )
             .update()
             .apply()
@@ -76,7 +76,7 @@ class MySqlZoneChangeRepository
       IO {
         logger.debug(s"Getting zone changes for zone $zoneId")
         DB.readOnly { implicit s =>
-          val startValue = startFrom.getOrElse(DateTime.now().getMillis.toString)
+          val startValue = startFrom.getOrElse(Instant.now().toEpochMilli.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = LIST_ZONES_CHANGES
             .bindByName(
@@ -93,7 +93,7 @@ class MySqlZoneChangeRepository
           // earlier maxItems was incremented, if the (maxItems + 1) size is not reached then pages are exhausted
           val nextId = queryResult match {
             case _ if queryResult.size <= maxItems | queryResult.isEmpty => None
-            case _ => Some(queryResult.last.created.getMillis.toString)
+            case _ => Some(queryResult.last.created.toEpochMilli.toString)
           }
 
           ListZoneChangesResults(maxQueries, nextId, startFrom, maxItems)

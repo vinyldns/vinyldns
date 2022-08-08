@@ -19,7 +19,7 @@ package vinyldns.api.route
 import cats.data.NonEmptyList
 import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import cats.syntax.all._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -144,6 +144,7 @@ class BatchChangeJsonProtocolSpec
 
   "De-serializing ChangeInputSerializer from JSON" should {
     "successfully serialize valid add change data" in {
+      println(addAChangeInputJson)
       val resultA = ChangeInputSerializer.fromJson(addAChangeInputJson).value
 
       resultA shouldBe addAChangeInput
@@ -238,6 +239,7 @@ class BatchChangeJsonProtocolSpec
 
   "De-serializing BatchChangeInput from JSON" should {
     "successfully serialize valid add change data with comment and without owner group ID" in {
+      println(addBatchChangeInputWithComment)
       val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value
 
       result shouldBe BatchChangeInput(
@@ -451,7 +453,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = DateTime.now
+      val time = Instant.now
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",
@@ -585,7 +587,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = DateTime.now
+      val time = Instant.now
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",

@@ -33,7 +33,7 @@ import cats.effect.IO
 import javax.mail.{Address, Message}
 import vinyldns.core.domain.membership.User
 import _root_.vinyldns.core.domain.batch._
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import com.typesafe.config.Config
@@ -89,7 +89,7 @@ class EmailNotifierSpec
       "test",
       "testUser",
       description,
-      DateTime.now(),
+      Instant.now(),
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,

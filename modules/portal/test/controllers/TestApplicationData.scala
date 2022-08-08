@@ -18,7 +18,7 @@ package controllers
 import actions.{ApiActionBuilder, FrontendActionBuilder, SecuritySupport}
 import akka.io.dns.RecordType
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.Instant
 import org.specs2.mock.Mockito
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -45,7 +45,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now,
     "frodo-uuid"
   )
 
@@ -56,7 +56,7 @@ trait TestApplicationData { this: Mockito =>
     Some("LockedFrodo"),
     Some("LockedBaggins"),
     Some("lockedfbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now,
     "locked-frodo-uuid",
     false,
     LockStatus.Locked
@@ -69,7 +69,7 @@ trait TestApplicationData { this: Mockito =>
     Some("SuperFrodo"),
     Some("SuperBaggins"),
     Some("superfbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now,
     "super-frodo-uuid",
     true,
     LockStatus.Unlocked
@@ -79,7 +79,7 @@ trait TestApplicationData { this: Mockito =>
     "frodo-uuid",
     frodoUser,
     "fbaggins",
-    DateTime.now,
+    Instant.now,
     None,
     UserChangeType.Create
   ).toOption.get
@@ -87,7 +87,7 @@ trait TestApplicationData { this: Mockito =>
   val serviceAccountDetails =
     LdapUserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
   val serviceAccount =
-    User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
+    User("service", "key", "secret", None, None, None, Instant.now, "service-uuid")
 
   val frodoJsonString: String =
     s"""{
@@ -107,7 +107,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Samwise"),
     Some("Gamgee"),
     Some("sgamgee@hobbitmail.me"),
-    DateTime.now,
+    Instant.now,
     "sam-uuid"
   )
   val samDetails = LdapUserDetails(

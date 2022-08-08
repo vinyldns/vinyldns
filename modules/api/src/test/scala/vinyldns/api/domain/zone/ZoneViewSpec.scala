@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
@@ -35,7 +35,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AData("1.1.1.1"))
     ),
     RecordSet(
@@ -44,7 +44,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AData("2.2.2.2"))
     ),
     RecordSet(
@@ -53,7 +53,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.AAAA,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AAAAData("2001:db8:a0b:12f0::1")),
       ownerGroupId = Some("someGroup")
     ),
@@ -63,7 +63,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AData("3.3.3.3")),
       ownerGroupId = Some("someOwner")
     ),
@@ -73,7 +73,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AData("1.1.1.1"))
     ),
     RecordSet(
@@ -82,7 +82,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
       typ = RecordType.AAAA,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now,
       records = List(AAAAData("2001:db8:a0b:12f0::1"))
     )
   )
@@ -188,7 +188,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.AAAA,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AAAAData("2001:db8:a0b:12f0::1"))
           ),
           RecordSet(
@@ -197,7 +197,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.A,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AData("4.4.4.4"))
           ) //updated
         )
@@ -241,7 +241,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.AAAA,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AAAAData("2001:db8:a0b:12f0::1"))
           ),
           RecordSet(
@@ -250,7 +250,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.A,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AData("3.3.3.3")),
             ownerGroupId = Some("defOwner")
           )
@@ -264,7 +264,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.AAAA,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AAAAData("2001:db8:a0b:12f0::1"))
           ), //same
           RecordSet(
@@ -273,7 +273,7 @@ class ZoneViewSpec extends AnyWordSpec with Matchers with VinylDNSTestHelpers {
             typ = RecordType.A,
             ttl = 100,
             status = RecordSetStatus.Active,
-            created = DateTime.now,
+            created = Instant.now,
             records = List(AData("4.4.4.4"))
           ) //updated
         )

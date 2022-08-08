@@ -19,7 +19,7 @@ package vinyldns.mysql.queue
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeCommand
@@ -173,7 +173,7 @@ class MySqlMessageQueue(maxRetries: Int)
     commands.toList.map(insertParams)
 
   def insertParams(cmd: ZoneCommand): Seq[(Symbol, Any)] = {
-    val ts = DateTime.now
+    val ts = Instant.now
     Seq(
       'id -> cmd.id,
       'messageType -> MessageType.fromCommand(cmd).value,

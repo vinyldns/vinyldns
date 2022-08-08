@@ -18,7 +18,7 @@ package vinyldns.core.domain.membership
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 
 object GroupStatus extends Enumeration {
   type GroupStatus = Value
@@ -31,7 +31,7 @@ case class Group(
     email: String,
     description: Option[String] = None,
     id: String = UUID.randomUUID().toString,
-    created: DateTime = DateTime.now,
+    created: Instant = Instant.now,
     status: GroupStatus = GroupStatus.Active,
     memberIds: Set[String] = Set.empty,
     adminUserIds: Set[String] = Set.empty

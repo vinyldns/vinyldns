@@ -17,7 +17,7 @@
 package vinyldns.mysql.repository
 import java.util.UUID
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -122,7 +122,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now,
         records = List(AData("127.0.0.1"))
       )
       val recordForPending = RecordSet(
@@ -131,7 +131,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Pending,
-        DateTime.now,
+        Instant.now,
         records = List(AData("127.0.0.1"))
       )
       val recordForFailed = RecordSet(
@@ -140,7 +140,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Inactive,
-        DateTime.now,
+        Instant.now,
         records = List(AData("127.0.0.1"))
       )
 

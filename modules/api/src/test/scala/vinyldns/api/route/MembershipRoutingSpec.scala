@@ -19,7 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.joda.time.DateTime
+import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -67,7 +67,7 @@ class MembershipRoutingSpec
 
   // marshalling and unmarshalling cuts off some 0s. By setting the times to epoch,
   // this is avoided since were working with 0s there anyway
-  val baseTime = new DateTime(0)
+  val baseTime: Instant = Instant.ofEpochMilli(0)
   val okUserInfo: UserInfo = UserInfo(okUser).copy(created = Some(baseTime))
   val okUserId: UserId = UserId(okUser.id)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser).copy(created = Some(baseTime))

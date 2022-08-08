@@ -16,7 +16,7 @@
 
 package vinyldns.core.domain.zone
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.TestZoneData._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -41,7 +41,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result shouldNot include("latestSync=")
     }
     "toString should output a zone properly with updated and latestSync" in {
-      val time = DateTime.now()
+      val time = Instant.now()
       val result = zoneActive.copy(updated = Some(time), latestSync = Some(time)).toString
 
       result should include("id=\"" + zoneActive.id + "\"")

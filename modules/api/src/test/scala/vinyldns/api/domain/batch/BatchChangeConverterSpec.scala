@@ -18,7 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.CatsHelpers
@@ -192,7 +192,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     A,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(AData("1.1.1.1"))
   )
@@ -202,7 +202,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     CNAME,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(CNAMEData(Fqdn("old.com.")))
   )
@@ -212,7 +212,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     A,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(AData("1.1.1.1"))
   )
@@ -222,7 +222,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     CNAME,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(CNAMEData(Fqdn("old.com.")))
   )
@@ -232,7 +232,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     TXT,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(TXTData("old"))
   )
@@ -242,7 +242,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     TXT,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(TXTData("test"))
   )
@@ -252,7 +252,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     MX,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(MXData(1, Fqdn("old.com.")))
   )
@@ -262,7 +262,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     MX,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(MXData(1, Fqdn("delete.com.")))
   )
@@ -290,7 +290,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           addSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -324,7 +324,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           deleteSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -373,7 +373,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           updateSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -420,7 +420,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           changes,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -471,7 +471,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -495,7 +495,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           singleChangesOneBad,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -541,7 +541,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now,
           singleChangesOneUnsupported,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )

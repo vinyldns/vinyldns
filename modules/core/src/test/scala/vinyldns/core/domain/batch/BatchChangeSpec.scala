@@ -16,7 +16,7 @@
 
 package vinyldns.core.domain.batch
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.record.{AData, RecordType}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -42,7 +42,7 @@ class BatchChangeSpec extends AnyWordSpec with Matchers {
     "userId",
     "userName",
     None,
-    DateTime.now,
+    Instant.now,
     List(pendingChange, failedChange, completeChange),
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )
@@ -83,7 +83,7 @@ class BatchChangeSpec extends AnyWordSpec with Matchers {
       batchChangeBase
         .copy(
           approvalStatus = BatchChangeApprovalStatus.PendingReview,
-          scheduledTime = Some(DateTime.now)
+          scheduledTime = Some(Instant.now)
         )
         .status shouldBe BatchChangeStatus.Scheduled
     }

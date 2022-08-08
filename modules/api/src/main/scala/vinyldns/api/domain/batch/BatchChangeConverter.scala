@@ -18,7 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.syntax.list._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -219,7 +219,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             recordType,
             ttl,
             RecordSetStatus.Pending,
-            DateTime.now,
+            Instant.now,
             None,
             proposedRecordData.toList,
             ownerGroupId = setOwnerGroupId

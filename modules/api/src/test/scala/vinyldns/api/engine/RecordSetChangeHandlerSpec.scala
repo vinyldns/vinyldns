@@ -17,7 +17,7 @@
 package vinyldns.api.engine
 
 import cats.effect.{IO, Timer}
-import org.joda.time.DateTime
+import java.time.Instant
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -95,7 +95,7 @@ class RecordSetChangeHandlerSpec
     "userId",
     "userName",
     None,
-    DateTime.now,
+    Instant.now,
     singleChanges,
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )

@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import cats.scalatest.{ValidatedMatchers, ValidatedValues}
-import org.joda.time.DateTime
+import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.matchers.should.Matchers
@@ -38,7 +38,7 @@ class GroupSerializerSpec
       ("email" -> "test@test.com") ~~
       ("description" -> Extraction.decompose(Some("description"))) ~~
       ("id" -> "uuid") ~~
-      ("created" -> Extraction.decompose(DateTime.now)) ~~
+      ("created" -> Extraction.decompose(Instant.now)) ~~
       ("status" -> GroupStatus.Deleted.toString) ~~
       ("memberIds" -> Set("Johnny", "Bravo")) ~~
       ("adminUserIds" -> Set("Johnny"))

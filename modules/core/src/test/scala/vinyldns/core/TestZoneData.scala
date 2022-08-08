@@ -18,7 +18,7 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
-import org.joda.time.DateTime
+import java.time.Instant
 
 object TestZoneData {
 
@@ -80,7 +80,7 @@ object TestZoneData {
     "ok",
     ZoneChangeType.Create,
     ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000)
+    created = Instant.now.minusMillis(1000)
   )
 
   val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)

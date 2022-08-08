@@ -17,7 +17,7 @@
 package vinyldns.api.backend.dns
 
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -54,7 +54,7 @@ class DnsBackendSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(AData("10.1.1.1"))
   )
@@ -65,7 +65,7 @@ class DnsBackendSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now,
     None,
     List(AData("1.1.1.1"), AData("2.2.2.2"))
   )

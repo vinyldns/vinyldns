@@ -18,7 +18,7 @@ package vinyldns.api.domain.zone
 
 import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
@@ -30,7 +30,7 @@ class ZoneValidations(syncDelayMillis: Int) {
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
-      case Some(time) if DateTime.now.getMillis - time.getMillis < syncDelayMillis => {
+      case Some(time) if Instant.now.toEpochMilli - time.toEpochMilli < syncDelayMillis => {
         RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
       }
       case _ => Right(())
