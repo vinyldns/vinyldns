@@ -35,7 +35,7 @@ object Dependencies {
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
     "org.json4s"                %% "json4s-ext"                     % "3.6.1",
-    "org.json4s"                %% "json4s-jackson"                 % "3.6.1",
+    "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
