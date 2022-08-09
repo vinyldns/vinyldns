@@ -206,7 +206,7 @@ class BatchChangeRoutingSpec()
     val validResponseWithOwnerGroupId: BatchChange =
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
 
-    val testScheduledTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS)
+    val testScheduledTime: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
     val validResponseWithCommentsAndScheduled = createBatchChangeResponse(
       comments = Some("validResponseWithCommentsAndScheduled"),
       scheduledTime = Some(testScheduledTime)
@@ -532,7 +532,7 @@ class BatchChangeRoutingSpec()
         compact(
           render(
             ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
-              .decompose(Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS))) ~~ changeList
+              .decompose(Instant.now.truncatedTo(ChronoUnit.SECONDS))) ~~ changeList
           )
         )
 
