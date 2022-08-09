@@ -22,6 +22,7 @@ import cats.implicits._
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s._
+import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
 
@@ -100,7 +101,7 @@ trait MembershipJsonProtocol extends JsonValidation {
   }
 
   case object GroupInfoSerializer extends ValidationSerializer[GroupInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] = {
       (
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "name").required[String]("Missing Group.name"),
@@ -111,17 +112,37 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "members").default[Set[UserId]](Set.empty),
         (js \ "admins").default[Set[UserId]](Set.empty)
       ).mapN(GroupInfo.apply)
+    }
+
+    override def toJson(gi: GroupInfo): JValue =
+      ("id" -> gi.id) ~
+      ("name" -> gi.name) ~
+      ("email" -> gi.email) ~
+      ("description" -> gi.description) ~
+      ("created" -> Extraction.decompose(gi.created)) ~
+      ("status" -> Extraction.decompose(gi.status)) ~
+      ("members" -> Extraction.decompose(gi.members)) ~
+      ("admins" -> Extraction.decompose(gi.admins))
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] = {
       (
         (js \ "newGroup").required[GroupInfo]("Missing new group"),
         (js \ "changeType").required(GroupChangeType, "Missing change type"),
         (js \ "userId").required[String]("Missing userId"),
         (js \ "oldGroup").optional[GroupInfo],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[String](Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli.toString)
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS))
       ).mapN(GroupChangeInfo.apply)
+    }
+
+    override def toJson(gci: GroupChangeInfo): JValue =
+      ("newGroup" -> Extraction.decompose(gci.newGroup)) ~
+      ("changeType" -> Extraction.decompose(gci.changeType)) ~
+      ("userId" -> gci.userId) ~
+      ("oldGroup" -> Extraction.decompose(gci.oldGroup)) ~
+      ("id" -> gci.id) ~
+      ("created" -> Extraction.decompose(gci.created))
   }
 }
