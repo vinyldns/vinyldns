@@ -35,7 +35,7 @@ import vinyldns.mysql.queue.MessageType.{
   ZoneChangeMessageType
 }
 import vinyldns.proto.VinylDNSProto
-
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration._
 
 object MySqlMessageQueue {
@@ -173,7 +173,7 @@ class MySqlMessageQueue(maxRetries: Int)
     commands.toList.map(insertParams)
 
   def insertParams(cmd: ZoneCommand): Seq[(Symbol, Any)] = {
-    val ts = Instant.now
+    val ts = Instant.now.truncatedTo(ChronoUnit.MILLIS)
     Seq(
       'id -> cmd.id,
       'messageType -> MessageType.fromCommand(cmd).value,

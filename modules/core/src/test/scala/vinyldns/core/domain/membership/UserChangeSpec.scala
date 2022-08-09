@@ -20,11 +20,12 @@ import java.time.Instant
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import java.time.temporal.ChronoUnit
 
 class UserChangeSpec extends AnyWordSpec with Matchers with EitherMatchers with EitherValues {
 
   private val newUser = User("foo", "key", "secret")
-  private val currentDate = Instant.now
+  private val currentDate = Instant.now.truncatedTo(ChronoUnit.MILLIS)
 
   "apply" should {
     "succeed for CreateUser" in {

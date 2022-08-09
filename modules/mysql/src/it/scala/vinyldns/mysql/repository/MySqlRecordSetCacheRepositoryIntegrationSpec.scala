@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 import vinyldns.mysql.TransactionProvider
+import java.time.temporal.ChronoUnit
 
 class MySqlRecordSetCacheRepositoryIntegrationSpec
   extends AnyWordSpec
@@ -122,7 +123,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Active,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         records = List(AData("127.0.0.1"))
       )
       val recordForPending = RecordSet(
@@ -131,7 +132,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Pending,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         records = List(AData("127.0.0.1"))
       )
       val recordForFailed = RecordSet(
@@ -140,7 +141,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Inactive,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         records = List(AData("127.0.0.1"))
       )
 

@@ -43,7 +43,7 @@ import vinyldns.mysql.queue.MySqlMessageQueue.{
   MessageAttemptsExceeded,
   QUEUE_CONNECTION_NAME
 }
-
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration._
 
 final case class RowData(
@@ -251,7 +251,7 @@ class MySqlMessageQueueIntegrationSpec
 
   "receive" should {
     "drop messages that have an invalid message type" in {
-      insert("foo", 23, false, rsChangeBytes, Instant.now, Instant.now, 100, 0)
+      insert("foo", 23, false, rsChangeBytes, Instant.now.truncatedTo(ChronoUnit.MILLIS), Instant.now.truncatedTo(ChronoUnit.MILLIS), 100, 0)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       findMessage("foo") should not be defined
@@ -262,8 +262,8 @@ class MySqlMessageQueueIntegrationSpec
         RecordChangeMessageType.value,
         false,
         "blah".getBytes,
-        Instant.now,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         100,
         0
       )
@@ -277,8 +277,8 @@ class MySqlMessageQueueIntegrationSpec
         RecordChangeMessageType.value,
         false,
         "blah".getBytes,
-        Instant.now,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         100,
         101
       )
@@ -288,7 +288,7 @@ class MySqlMessageQueueIntegrationSpec
     }
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
-      val initialTs = Instant.now.minusSeconds(20)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(20)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,
@@ -310,7 +310,7 @@ class MySqlMessageQueueIntegrationSpec
     }
     "grab messages that are in flight but expired" in {
       // put a message in whose updated timestamp was 100 seconds ago, set the timeout to 30 seconds
-      val initialTs = Instant.now.minusSeconds(100)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(100)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,
@@ -368,7 +368,7 @@ class MySqlMessageQueueIntegrationSpec
 
   "requeue" should {
     "reset the message in the database" in {
-      val initialTs = Instant.now.minusSeconds(20)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(20)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,

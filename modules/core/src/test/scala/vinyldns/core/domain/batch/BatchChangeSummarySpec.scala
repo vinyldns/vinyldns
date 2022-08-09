@@ -20,6 +20,7 @@ import java.time.Instant
 import vinyldns.core.domain.record.{AData, RecordType}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import java.time.temporal.ChronoUnit
 
 class BatchChangeSummarySpec extends AnyWordSpec with Matchers {
   private val pendingChange = SingleAddChange(
@@ -42,7 +43,7 @@ class BatchChangeSummarySpec extends AnyWordSpec with Matchers {
     "userId",
     "userName",
     Some("comments"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(pendingChange, failedChange, completeChange),
     Some("groupId"),
     BatchChangeApprovalStatus.AutoApproved,

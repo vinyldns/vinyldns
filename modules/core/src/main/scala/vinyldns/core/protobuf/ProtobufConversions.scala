@@ -29,7 +29,6 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.domain.{Fqdn, record, zone}
 import vinyldns.proto.VinylDNSProto
 
-import java.time.temporal.ChronoUnit
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -114,7 +113,7 @@ trait ProtobufConversions {
       name = zn.getName,
       email = zn.getEmail,
       status = status,
-      created = Instant.ofEpochMilli(zn.getCreated).truncatedTo(ChronoUnit.NANOS),
+      created = Instant.ofEpochMilli(zn.getCreated),
       updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None,
       id = zn.getId,
       connection = if (zn.hasConnection) Some(fromPB(zn.getConnection)) else None,

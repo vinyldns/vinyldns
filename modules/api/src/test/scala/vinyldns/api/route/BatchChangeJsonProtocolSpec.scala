@@ -145,7 +145,6 @@ class BatchChangeJsonProtocolSpec
 
   "De-serializing ChangeInputSerializer from JSON" should {
     "successfully serialize valid add change data" in {
-      println(addAChangeInputJson)
       val resultA = ChangeInputSerializer.fromJson(addAChangeInputJson).value
 
       resultA shouldBe addAChangeInput
@@ -240,7 +239,6 @@ class BatchChangeJsonProtocolSpec
 
   "De-serializing BatchChangeInput from JSON" should {
     "successfully serialize valid add change data with comment and without owner group ID" in {
-      println(addBatchChangeInputWithComment)
       val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value
 
       result shouldBe BatchChangeInput(

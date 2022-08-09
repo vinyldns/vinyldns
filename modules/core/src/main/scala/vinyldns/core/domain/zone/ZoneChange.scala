@@ -19,6 +19,7 @@ package vinyldns.core.domain.zone
 import java.util.UUID
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 object ZoneChangeStatus extends Enumeration {
   type ZoneChangeStatus = Value
@@ -38,7 +39,7 @@ case class ZoneChange(
     userId: String,
     changeType: ZoneChangeType,
     status: ZoneChangeStatus = ZoneChangeStatus.Pending,
-    created: Instant = Instant.now,
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     systemMessage: Option[String] = None,
     id: String = UUID.randomUUID().toString
 ) extends ZoneCommand

@@ -29,6 +29,7 @@ import vinyldns.proto.VinylDNSProto
 import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import java.time.temporal.ChronoUnit
 
 class ProtobufConversionsSpec
     extends AnyWordSpec
@@ -75,7 +76,7 @@ class ProtobufConversionsSpec
     "system",
     ZoneChangeType.Update,
     ZoneChangeStatus.Complete,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
   )
   private val aRs = RecordSet(
@@ -84,8 +85,8 @@ class ProtobufConversionsSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    Instant.now,
-    Some(Instant.now),
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
     List(AData("10.1.1.1"), AData("10.2.2.2"))
   )
   private val aaaa = RecordSet(
@@ -94,7 +95,7 @@ class ProtobufConversionsSpec
     RecordType.AAAA,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("10.1.1.1"))
   )
@@ -104,7 +105,7 @@ class ProtobufConversionsSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname")))
   )
@@ -114,7 +115,7 @@ class ProtobufConversionsSpec
     RecordType.MX,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(100, Fqdn("exchange")))
   )
@@ -124,7 +125,7 @@ class ProtobufConversionsSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("nsrecordname")))
   )
@@ -134,7 +135,7 @@ class ProtobufConversionsSpec
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr")))
   )
@@ -144,7 +145,7 @@ class ProtobufConversionsSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
@@ -154,7 +155,7 @@ class ProtobufConversionsSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("spf"))
   )
@@ -164,7 +165,7 @@ class ProtobufConversionsSpec
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target")))
   )
@@ -174,7 +175,7 @@ class ProtobufConversionsSpec
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target")))
   )
@@ -184,7 +185,7 @@ class ProtobufConversionsSpec
     RecordType.SSHFP,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SSHFPData(1, 2, "fingerprint"))
   )
@@ -194,7 +195,7 @@ class ProtobufConversionsSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("text"))
   )
@@ -208,7 +209,7 @@ class ProtobufConversionsSpec
       "system",
       RecordSetChangeType.Update,
       RecordSetChangeStatus.Pending,
-      Instant.now,
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       Some("hello"),
       Some(rs),
       singleBatchChangeIds = singleBatchChangeIds
@@ -459,7 +460,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for a Zone with an update date" in {
-      val z = zone.copy(updated = Some(Instant.now))
+      val z = zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
       val pb = toPB(z)
 
       pb.getUpdated shouldBe z.updated.get.toEpochMilli
@@ -467,7 +468,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for a Zone with a latest sync date" in {
-      val z = zone.copy(latestSync = Some(Instant.now))
+      val z = zone.copy(latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
       val pb = toPB(z)
 
       pb.getLatestSync shouldBe z.latestSync.get.toEpochMilli

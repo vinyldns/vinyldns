@@ -99,13 +99,13 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         okAuth.userId,
         okAuth.signedInUser.userName,
         Some("description"),
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         changes,
         Some(UUID.randomUUID().toString),
         BatchChangeApprovalStatus.AutoApproved,
         Some(UUID.randomUUID().toString),
         Some("review comment"),
-        Some(Instant.now.plusSeconds(2))
+        Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(2))
       )
 
     val bcARecords: BatchChange = randomBatchChange()
@@ -113,27 +113,27 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     def randomBatchChangeWithList(singleChanges: List[SingleChange]): BatchChange =
       bcARecords.copy(id = UUID.randomUUID().toString, changes = singleChanges)
 
-    val pendingBatchChange: BatchChange = randomBatchChange().copy(createdTimestamp = Instant.now)
+    val pendingBatchChange: BatchChange = randomBatchChange().copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
     val completeBatchChange: BatchChange = randomBatchChangeWithList(
       randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
-    ).copy(createdTimestamp = Instant.now.plusMillis(1000))
+    ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000))
 
     val failedBatchChange: BatchChange =
       randomBatchChangeWithList(randomBatchChange().changes.map(_.withFailureMessage("failed")))
-        .copy(createdTimestamp = Instant.now.plusMillis(100000))
+        .copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(100000))
 
     val partialFailureBatchChange: BatchChange = randomBatchChangeWithList(
       randomBatchChange().changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
         ++ randomBatchChange().changes.drop(2).map(_.withFailureMessage("failed"))
-    ).copy(createdTimestamp = Instant.now.plusMillis(1000000))
+    ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000000))
 
     val rejectedBatchChange: BatchChange =
       randomBatchChangeWithList(randomBatchChange().changes.map(_.reject))
-        .copy(createdTimestamp = Instant.now.plusMillis(10000000))
+        .copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(10000000))
 
     // listing/ordering changes
-    val timeBase: Instant = Instant.now
+    val timeBase: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
     val change_one: BatchChange = pendingBatchChange.copy(
       createdTimestamp = timeBase,
       approvalStatus = BatchChangeApprovalStatus.PendingReview
@@ -233,7 +233,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
         reviewerId = Some("reviewer-id"),
         reviewComment = Some("updated reviewer comment"),
-        reviewTimestamp = Some(Instant.now),
+        reviewTimestamp = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         changes = singleChanges
       )
 

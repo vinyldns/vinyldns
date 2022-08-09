@@ -21,6 +21,7 @@ import cats.implicits._
 import javax.inject.{Inject, Singleton}
 import java.time.Instant
 import vinyldns.core.domain.membership._
+import java.time.temporal.ChronoUnit
 
 @Singleton
 class UserAccountAccessor @Inject() (users: UserRepository, changes: UserChangeRepository) {
@@ -45,13 +46,13 @@ class UserAccountAccessor @Inject() (users: UserRepository, changes: UserChangeR
   def create(user: User): IO[User] =
     for {
       _ <- users.save(user)
-      _ <- changes.save(UserChange.CreateUser(user, "system", Instant.now))
+      _ <- changes.save(UserChange.CreateUser(user, "system", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
     } yield user
 
   def update(user: User, oldUser: User): IO[User] =
     for {
       _ <- users.save(user)
-      _ <- changes.save(UserChange.UpdateUser(user, "system", Instant.now, oldUser))
+      _ <- changes.save(UserChange.UpdateUser(user, "system", Instant.now.truncatedTo(ChronoUnit.MILLIS), oldUser))
     } yield user
 
   def getUserByKey(key: String): IO[Option[User]] =
@@ -61,7 +62,7 @@ class UserAccountAccessor @Inject() (users: UserRepository, changes: UserChangeR
     users.getAllUsers
 
   def lockUsers(usersToLock: List[User]): IO[List[User]] = {
-    val currentTime = Instant.now
+    val currentTime = Instant.now.truncatedTo(ChronoUnit.MILLIS)
     for {
       lockedUsers <- users.save(usersToLock.map(_.copy(lockStatus = LockStatus.Locked)))
       _ <- usersToLock

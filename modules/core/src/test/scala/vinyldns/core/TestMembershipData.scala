@@ -148,7 +148,7 @@ object TestMembershipData {
   )
 
   // changes added in reverse order
-  val now: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS)
+  val now: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   val listOfDummyGroupChanges: List[GroupChange] = List.range(0, 300).map { i =>
     GroupChange(
       oneUserDummyGroup,

@@ -18,6 +18,7 @@ package controllers
 import actions.{ApiActionBuilder, FrontendActionBuilder, SecuritySupport}
 import akka.io.dns.RecordType
 import cats.effect.IO
+import java.time.temporal.ChronoUnit
 import java.time.Instant
 import org.specs2.mock.Mockito
 import play.api.inject.bind
@@ -45,7 +46,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "frodo-uuid"
   )
 
@@ -56,7 +57,7 @@ trait TestApplicationData { this: Mockito =>
     Some("LockedFrodo"),
     Some("LockedBaggins"),
     Some("lockedfbaggins@hobbitmail.me"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "locked-frodo-uuid",
     false,
     LockStatus.Locked
@@ -69,7 +70,7 @@ trait TestApplicationData { this: Mockito =>
     Some("SuperFrodo"),
     Some("SuperBaggins"),
     Some("superfbaggins@hobbitmail.me"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "super-frodo-uuid",
     true,
     LockStatus.Unlocked
@@ -79,7 +80,7 @@ trait TestApplicationData { this: Mockito =>
     "frodo-uuid",
     frodoUser,
     "fbaggins",
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     UserChangeType.Create
   ).toOption.get
@@ -87,7 +88,7 @@ trait TestApplicationData { this: Mockito =>
   val serviceAccountDetails =
     LdapUserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
   val serviceAccount =
-    User("service", "key", "secret", None, None, None, Instant.now, "service-uuid")
+    User("service", "key", "secret", None, None, None, Instant.now.truncatedTo(ChronoUnit.MILLIS), "service-uuid")
 
   val frodoJsonString: String =
     s"""{
@@ -107,7 +108,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Samwise"),
     Some("Gamgee"),
     Some("sgamgee@hobbitmail.me"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "sam-uuid"
   )
   val samDetails = LdapUserDetails(
