@@ -60,7 +60,7 @@ final case class GroupChangeInfo(
     userId: String,
     oldGroup: Option[GroupInfo] = None,
     id: String = UUID.randomUUID().toString,
-    created: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
 )
 
 object GroupChangeInfo {
