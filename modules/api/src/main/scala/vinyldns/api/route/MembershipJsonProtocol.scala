@@ -20,6 +20,7 @@ import java.util.UUID
 import cats.data._
 import cats.implicits._
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s._
 import vinyldns.api.domain.membership._
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
@@ -91,7 +92,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[Instant](Instant.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "memberIds").default[Set[String]](Set.empty),
         (js \ "adminUserIds").default[Set[String]](Set.empty)
@@ -105,7 +106,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
-        (js \ "created").default[Instant](Instant.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "members").default[Set[UserId]](Set.empty),
         (js \ "admins").default[Set[UserId]](Set.empty)
@@ -120,7 +121,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "userId").required[String]("Missing userId"),
         (js \ "oldGroup").optional[GroupInfo],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[String](Instant.now.toEpochMilli.toString)
+        (js \ "created").default[String](Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli.toString)
       ).mapN(GroupChangeInfo.apply)
   }
 }

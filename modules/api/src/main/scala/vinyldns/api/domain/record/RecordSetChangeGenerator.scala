@@ -17,7 +17,7 @@
 package vinyldns.api.domain.record
 
 import java.util.UUID
-
+import java.time.temporal.ChronoUnit
 import java.time.Instant
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -37,7 +37,7 @@ object RecordSetChangeGenerator extends DnsConversions {
       recordSet = recordSet.copy(
         name = relativize(recordSet.name, zone.name),
         id = UUID.randomUUID().toString, // TODO once user cant specify ID, no need to refresh it here
-        created = Instant.now,
+        created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
         status = RecordSetStatus.Pending
       ),
       userId = userId,
@@ -69,7 +69,7 @@ object RecordSetChangeGenerator extends DnsConversions {
         id = replacing.id,
         name = relativize(newRecordSet.name, zone.name),
         status = RecordSetStatus.PendingUpdate,
-        updated = Some(Instant.now)
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       ),
       userId = userId,
       changeType = RecordSetChangeType.Update,
@@ -105,7 +105,7 @@ object RecordSetChangeGenerator extends DnsConversions {
       recordSet = recordSet.copy(
         name = relativize(recordSet.name, zone.name),
         status = RecordSetStatus.PendingDelete,
-        updated = Some(Instant.now)
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       ),
       userId = userId,
       changeType = RecordSetChangeType.Delete,
@@ -150,7 +150,7 @@ object RecordSetChangeGenerator extends DnsConversions {
         id = replacing.id,
         name = relativize(newRecordSet.name, zone.name),
         status = RecordSetStatus.Active,
-        updated = Some(Instant.now),
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         ownerGroupId = replacing.ownerGroupId
       ),
       userId = "system",

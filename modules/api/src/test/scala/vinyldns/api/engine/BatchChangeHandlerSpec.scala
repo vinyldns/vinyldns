@@ -18,6 +18,7 @@ package vinyldns.api.engine
 
 import cats.effect._
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{doReturn, verify}
 import org.scalatest.BeforeAndAfterEach
@@ -64,7 +65,7 @@ class BatchChangeHandlerSpec
     "userId",
     "userName",
     Some("comments"),
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(addChange),
     Some("ownerGroupId"),
     BatchChangeApprovalStatus.AutoApproved

@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import java.net.InetAddress
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import cats.data._
 import cats.implicits._
@@ -183,7 +184,7 @@ class BatchChangeValidations(
 
   def validateScheduledApproval(batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.scheduledTime match {
-      case Some(dt) if dt.isAfter(Instant.now) => Left(ScheduledChangeNotDue(dt))
+      case Some(dt) if dt.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Left(ScheduledChangeNotDue(dt))
       case _ => Right(())
     }
 
@@ -671,7 +672,7 @@ class BatchChangeValidations(
   ): Either[BatchChangeErrorResponse, Unit] =
     (scheduledChangesEnabled, input.scheduledTime) match {
       case (_, None) => Right(())
-      case (true, Some(scheduledTime)) if scheduledTime.isAfter(Instant.now) => Right(())
+      case (true, Some(scheduledTime)) if scheduledTime.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
     }

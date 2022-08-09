@@ -19,7 +19,7 @@ package vinyldns.core.domain.zone
 import java.util.UUID
 import cats.effect.IO
 import com.typesafe.config.Config
-
+import java.time.temporal.ChronoUnit
 import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
@@ -38,7 +38,7 @@ final case class Zone(
     name: String,
     email: String,
     status: ZoneStatus = ZoneStatus.Active,
-    created: Instant = Instant.now(),
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     updated: Option[Instant] = None,
     id: String = UUID.randomUUID().toString,
     connection: Option[ZoneConnection] = None,

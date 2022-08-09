@@ -18,6 +18,7 @@ package vinyldns.mysql.repository
 
 import cats.effect.IO
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.zone._
@@ -76,7 +77,7 @@ class MySqlZoneChangeRepository
       IO {
         logger.debug(s"Getting zone changes for zone $zoneId")
         DB.readOnly { implicit s =>
-          val startValue = startFrom.getOrElse(Instant.now().toEpochMilli.toString)
+          val startValue = startFrom.getOrElse(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = LIST_ZONES_CHANGES
             .bindByName(

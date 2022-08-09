@@ -20,6 +20,7 @@ import cats.data.NonEmptyList
 import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import cats.syntax.all._
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -453,7 +454,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = Instant.now
+      val time = Instant.now.truncatedTo(ChronoUnit.MILLIS)
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",
@@ -587,7 +588,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = Instant.now
+      val time = Instant.now.truncatedTo(ChronoUnit.MILLIS)
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",

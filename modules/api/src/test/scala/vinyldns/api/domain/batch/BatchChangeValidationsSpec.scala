@@ -179,7 +179,7 @@ class BatchChangeValidationsSpec
     okUser.id,
     okUser.userName,
     None,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(),
     approvalStatus = BatchChangeApprovalStatus.PendingReview
   )
@@ -188,7 +188,7 @@ class BatchChangeValidationsSpec
     okUser.id,
     okUser.userName,
     None,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(),
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )
@@ -236,7 +236,7 @@ class BatchChangeValidationsSpec
   property(
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled"
   ) {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now))
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
     validateScheduledChange(input, scheduledChangesEnabled = false) should
       beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
   }
@@ -244,7 +244,7 @@ class BatchChangeValidationsSpec
   property(
     "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled"
   ) {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.plus(1, ChronoUnit.HOURS)))
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.HOURS)))
     validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
   }
 
@@ -349,7 +349,7 @@ class BatchChangeValidationsSpec
     val input = BatchChangeInput(
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
-      scheduledTime = Some(Instant.now)
+      scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
     )
     val bcv =
       new BatchChangeValidations(
@@ -370,7 +370,7 @@ class BatchChangeValidationsSpec
     val input = BatchChangeInput(
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
-      scheduledTime = Some(Instant.now.minus(1, ChronoUnit.HOURS))
+      scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).minus(1, ChronoUnit.HOURS))
     )
     val bcv =
       new BatchChangeValidations(
@@ -395,13 +395,13 @@ class BatchChangeValidationsSpec
   }
 
   property("validateScheduledApproval: should fail if scheduled time is not due") {
-    val dt = Instant.now.plus(2, ChronoUnit.DAYS)
+    val dt = Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(2, ChronoUnit.DAYS)
     val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
     validateScheduledApproval(change) shouldBe Left(ScheduledChangeNotDue(dt))
   }
 
   property("validateScheduledApproval: should succeed if scheduled time is due") {
-    val dt = Instant.now.minus(2, ChronoUnit.DAYS)
+    val dt = Instant.now.truncatedTo(ChronoUnit.MILLIS).minus(2, ChronoUnit.DAYS)
     val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
     validateScheduledApproval(change) should be(right)
   }

@@ -18,6 +18,7 @@ package vinyldns.api.engine
 
 import cats.effect.{IO, Timer}
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -95,7 +96,7 @@ class RecordSetChangeHandlerSpec
     "userId",
     "userName",
     None,
-    Instant.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     singleChanges,
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )

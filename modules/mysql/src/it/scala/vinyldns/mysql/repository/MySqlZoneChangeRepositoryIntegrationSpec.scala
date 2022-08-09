@@ -21,6 +21,7 @@ import java.util.UUID
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -76,7 +77,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       zone.account,
       ZoneChangeType.Update,
       status,
-      created = Instant.now().minusSeconds(Random.nextInt(1000))
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
   }
 

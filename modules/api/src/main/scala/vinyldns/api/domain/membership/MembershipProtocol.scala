@@ -18,6 +18,7 @@ package vinyldns.api.domain.membership
 
 import java.util.UUID
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
@@ -30,7 +31,7 @@ final case class GroupInfo(
     name: String,
     email: String,
     description: Option[String] = None,
-    created: Instant = Instant.now,
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     status: GroupStatus = GroupStatus.Active,
     members: Set[UserId] = Set.empty,
     admins: Set[UserId] = Set.empty
@@ -59,7 +60,7 @@ final case class GroupChangeInfo(
     userId: String,
     oldGroup: Option[GroupInfo] = None,
     id: String = UUID.randomUUID().toString,
-    created: String = Instant.now.toEpochMilli.toString
+    created: String = Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli.toString
 )
 
 object GroupChangeInfo {

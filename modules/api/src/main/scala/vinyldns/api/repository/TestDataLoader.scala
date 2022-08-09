@@ -37,7 +37,7 @@ object TestDataLoader extends TransactionProvider {
   final val testUser = User(
     userName = "testuser",
     id = "testuser",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "testUserAccessKey",
     secretKey = "testUserSecretKey",
     firstName = Some("Test"),
@@ -48,7 +48,7 @@ object TestDataLoader extends TransactionProvider {
   final val okUser = User(
     userName = "ok",
     id = "ok",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "okAccessKey",
     secretKey = "okSecretKey",
     firstName = Some("ok"),
@@ -59,7 +59,7 @@ object TestDataLoader extends TransactionProvider {
   final val dummyUser = User(
     userName = "dummy",
     id = "dummy",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "dummyAccessKey",
     secretKey = "dummySecretKey",
     isTest = true
@@ -67,7 +67,7 @@ object TestDataLoader extends TransactionProvider {
   final val sharedZoneUser = User(
     userName = "sharedZoneUser",
     id = "sharedZoneUser",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "sharedZoneUserAccessKey",
     secretKey = "sharedZoneUserSecretKey",
     firstName = Some("sharedZoneUser"),
@@ -78,7 +78,7 @@ object TestDataLoader extends TransactionProvider {
   final val lockedUser = User(
     userName = "locked",
     id = "locked",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "lockedAccessKey",
     secretKey = "lockedSecretKey",
     firstName = Some("Locked"),
@@ -91,7 +91,7 @@ object TestDataLoader extends TransactionProvider {
     User(
       userName = "name-dummy%03d".format(runner),
       id = "dummy%03d".format(runner),
-      created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
       accessKey = "dummy",
       secretKey = "dummy",
       isTest = true
@@ -100,7 +100,7 @@ object TestDataLoader extends TransactionProvider {
   final val listGroupUser = User(
     userName = "list-group-user",
     id = "list-group-user",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listGroupAccessKey",
     secretKey = "listGroupSecretKey",
     firstName = Some("list-group"),
@@ -112,7 +112,7 @@ object TestDataLoader extends TransactionProvider {
   final val listZonesUser = User(
     userName = "list-zones-user",
     id = "list-zones-user",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listZonesAccessKey",
     secretKey = "listZonesSecretKey",
     firstName = Some("list-zones"),
@@ -124,7 +124,7 @@ object TestDataLoader extends TransactionProvider {
   final val zoneHistoryUser = User(
     userName = "history-user",
     id = "history-id",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "history-key",
     secretKey = "history-secret",
     firstName = Some("history-first"),
@@ -136,7 +136,7 @@ object TestDataLoader extends TransactionProvider {
   final val listRecordsUser = User(
     userName = "list-records-user",
     id = "list-records-user",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listRecordsAccessKey",
     secretKey = "listRecordsSecretKey",
     firstName = Some("list-records"),
@@ -148,7 +148,7 @@ object TestDataLoader extends TransactionProvider {
   final val listBatchChangeSummariesUser = User(
     userName = "list-batch-summaries-user",
     id = "list-batch-summaries-id",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listBatchSummariesAccessKey",
     secretKey = "listBatchSummariesSecretKey",
     firstName = Some("list-batch-summaries"),
@@ -168,7 +168,7 @@ object TestDataLoader extends TransactionProvider {
   final val listZeroBatchChangeSummariesUser = User(
     userName = "list-zero-summaries-user",
     id = "list-zero-summaries-id",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listZeroSummariesAccessKey",
     secretKey = "listZeroSummariesSecretKey",
     firstName = Some("list-zero-summaries"),
@@ -180,7 +180,7 @@ object TestDataLoader extends TransactionProvider {
   final val supportUser = User(
     userName = "support-user",
     id = "support-user-id",
-    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS),
     accessKey = "supportUserAccessKey",
     secretKey = "supportUserSecretKey",
     firstName = Some("support-user"),

@@ -18,6 +18,7 @@ package vinyldns.mysql.repository
 
 import cats.effect.IO
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -53,7 +54,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       group,
       GroupChangeType.Create,
       s"user-$i",
-      created = Instant.now().plusSeconds(i)
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(i)
     )
   }
 
@@ -78,7 +79,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
 
       val groupChangeUpdate =
-        groupChange.copy(created = Instant.now().plusSeconds(10000), userId = "updated")
+        groupChange.copy(created = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(10000), userId = "updated")
       saveGroupChangeData(repo, groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
       repo.getGroupChange(groupChangeUpdate.id).unsafeRunSync() shouldBe Some(groupChangeUpdate)
     }

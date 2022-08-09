@@ -100,7 +100,7 @@ class BatchChangeRoutingSpec()
         auth.userId,
         auth.signedInUser.userName,
         comments,
-        Instant.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(
           SingleAddChange(
             Some("zoneId"),
@@ -206,7 +206,7 @@ class BatchChangeRoutingSpec()
     val validResponseWithOwnerGroupId: BatchChange =
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
 
-    val testScheduledTime: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
+    val testScheduledTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS)
     val validResponseWithCommentsAndScheduled = createBatchChangeResponse(
       comments = Some("validResponseWithCommentsAndScheduled"),
       scheduledTime = Some(testScheduledTime)
@@ -445,7 +445,7 @@ class BatchChangeRoutingSpec()
         case ("notFoundUser", _) =>
           EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
         case ("schedNotPastDue", _) =>
-          EitherT(IO.pure(ScheduledChangeNotDue(Instant.now).asLeft))
+          EitherT(IO.pure(ScheduledChangeNotDue(Instant.now.truncatedTo(ChronoUnit.MILLIS)).asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
 
@@ -532,7 +532,7 @@ class BatchChangeRoutingSpec()
         compact(
           render(
             ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
-              .decompose(Instant.now.truncatedTo(ChronoUnit.SECONDS))) ~~ changeList
+              .decompose(Instant.now.truncatedTo(ChronoUnit.MILLIS).truncatedTo(ChronoUnit.SECONDS))) ~~ changeList
           )
         )
 

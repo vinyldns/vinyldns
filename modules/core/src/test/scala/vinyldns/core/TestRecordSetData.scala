@@ -17,7 +17,7 @@
 package vinyldns.core
 
 import java.util.UUID
-
+import java.time.temporal.ChronoUnit
 import java.time.Instant
 import vinyldns.core.domain.record._
 import TestZoneData._
@@ -185,7 +185,7 @@ object TestRecordSetData {
     RecordType.DS,
     200,
     RecordSetStatus.Pending,
-    Instant.now(),
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(dSDataSha1, dSDataSha256)
   )
 
