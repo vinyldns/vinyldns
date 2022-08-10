@@ -21,7 +21,6 @@ import cats.data._
 import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s._
-import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
 
@@ -114,7 +113,7 @@ trait MembershipJsonProtocol extends JsonValidation {
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] = {
+    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] =
       (
         (js \ "newGroup").required[GroupInfo]("Missing new group"),
         (js \ "changeType").required(GroupChangeType, "Missing change type"),
@@ -125,16 +124,5 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "userName").required[String]("Missing userName"),
         (js \ "groupChangeMessage").required[String]("Missing groupChangeMessage"),
         ).mapN(GroupChangeInfo.apply)
-    }
-
-    override def toJson(gci: GroupChangeInfo): JValue =
-      ("newGroup" -> Extraction.decompose(gci.newGroup)) ~
-      ("changeType" -> Extraction.decompose(gci.changeType)) ~
-      ("userId" -> gci.userId) ~
-      ("oldGroup" -> Extraction.decompose(gci.oldGroup)) ~
-      ("id" -> gci.id) ~
-      ("created" -> gci.created.toString) ~
-      ("userName" -> gci.userName) ~
-      ("groupChangeMessage" -> gci.groupChangeMessage)
   }
 }
