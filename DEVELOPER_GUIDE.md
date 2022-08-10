@@ -27,18 +27,19 @@
 
 ## Developer Requirements (Local)
 
-- Java 8+
+- Java (version: >= 8, <= 11)
 - Scala 2.12
 - sbt 1.4+
-
-
 - curl
 - docker
 - docker-compose
 - GNU Make 3.82+
 - grunt
-- npm
+- Node.js/npm v12+
 - Python 3.5+
+- [coreutils](https://www.gnu.org/software/coreutils/)
+  - Linux: `apt install coreutils` or `yum install coreutils`
+  - macOS: [`brew install coreutils`](https://formulae.brew.sh/formula/coreutils)
 
 ## Developer Requirements (Docker)
 
@@ -188,7 +189,7 @@ To run the portal locally, you _first_ have to start up the VinylDNS API Server.
 instructions for [Staring the API Server](#starting-the-api-server) or by using the QuickStart:
 
 ```shell
-quickstart/quickstart-vinyldns.sh --api-only
+quickstart/quickstart-vinyldns.sh --api
 ```
 
 Once that is done, in the same `sbt` session or a different one, go to `project portal` and then

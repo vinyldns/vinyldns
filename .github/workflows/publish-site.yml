@@ -1,4 +1,4 @@
-name: Microsite
+name: Documentation Site
 concurrency:
   cancel-in-progress: true
   group: "publish-site"

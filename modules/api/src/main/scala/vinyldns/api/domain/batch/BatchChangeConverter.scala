@@ -33,7 +33,7 @@ import vinyldns.core.queue.MessageQueue
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val logger = LoggerFactory.getLogger("BatchChangeConverter")
+  private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
   def sendBatchForProcessing(
       batchChange: BatchChange,

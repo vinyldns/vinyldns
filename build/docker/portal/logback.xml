@@ -1,10 +1,11 @@
 <configuration>
-    
+  <variable name="VINYLDNS_LOG_LEVEL" value="${VINYLDNS_LOG_LEVEL:-INFO}" />
   <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{"yyyy-MM-dd HH:mm:ss,SSS"} %coloredLevel - %logger - %message%n%xException</pattern>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="co.elastic.logging.logback.EcsEncoder">
+      <serviceName>vinyldns-portal</serviceName>
+      <serviceNodeName>vinyldns-portal</serviceNodeName>
     </encoder>
   </appender>
   <!--
@@ -14,8 +15,8 @@
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
 
-  <root level="INFO">
-    <appender-ref ref="STDOUT" />
+  <root level="${VINYLDNS_LOG_LEVEL}">
+    <appender-ref ref="CONSOLE" />
   </root>
 
 </configuration>

@@ -48,5 +48,5 @@ trait RecordSetRepository extends Repository {
 
   def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]]
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit]
+  def deleteRecordSetsInZone(db: DB,zoneId: String, zoneName: String): IO[Unit]
 }

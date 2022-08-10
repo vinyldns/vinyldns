@@ -109,6 +109,7 @@ class Route53ApiIntegrationSpec
       val syncHandler = ZoneSyncHandler.apply(
         recordSetRepository,
         recordChangeRepository,
+        recordSetCacheRepository,
         zoneChangeRepository,
         zoneRepository,
         backendResolver,

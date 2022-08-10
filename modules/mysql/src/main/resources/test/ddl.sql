@@ -108,7 +108,6 @@ CREATE TABLE IF NOT EXISTS recordset
     data           blob         not null,
     fqdn           varchar(255) not null,
     owner_group_id char(36)     null,
-    data_hash      varchar(40) not null,
     constraint recordset_zone_id_name_type_index
     unique (zone_id, name, type)
 );
@@ -121,6 +120,35 @@ CREATE INDEX IF NOT EXISTS recordset_owner_group_id_index
 
 CREATE INDEX IF NOT EXISTS recordset_type_index
     on recordset (type);
+
+CREATE TABLE IF NOT EXISTS recordset_data
+(
+  recordset_id VARCHAR(36) NOT NULL,
+  zone_id VARCHAR(36) NOT NULL,
+  fqdn VARCHAR(255) NOT NULL,
+  reverse_fqdn VARCHAR(255) NOT NULL,
+  type VARCHAR(25) NOT NULL,
+  record_data VARCHAR(4096) NOT NULL,
+  ip VARBINARY(16)
+);
+
+CREATE INDEX IF NOT EXISTS recordset_data_zone_id_index
+    on recordset_data (zone_id);
+
+CREATE INDEX IF NOT EXISTS recordset_data_type_index
+    on recordset_data (type);
+
+CREATE INDEX IF NOT EXISTS recordset_data_fqdn_index
+    on recordset_data (fqdn);
+
+CREATE INDEX IF NOT EXISTS recordset_data_ip_index
+    on recordset_data (ip);
+
+CREATE INDEX IF NOT EXISTS recordset_data_recordset_id_index
+    on recordset_data (recordset_id);
+
+CREATE INDEX IF NOT EXISTS recordset_data_reverse_fqdn_index
+    on recordset_data (reverse_fqdn);
 
 CREATE TABLE IF NOT EXISTS single_change
 (

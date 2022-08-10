@@ -64,7 +64,7 @@ def test_get_deleted_group(shared_zone_test_context):
 
 def test_get_group_unauthed(shared_zone_test_context):
     """
-    Tests that we cant get a group were not in
+    Tests that non-group members can still get group
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
@@ -79,7 +79,7 @@ def test_get_group_unauthed(shared_zone_test_context):
         }
         saved_group = client.create_group(new_group, status=200)
 
-        dummy_client.get_group(saved_group["id"], status=403)
+        dummy_client.get_group(saved_group["id"], status=200)
         client.get_group(saved_group["id"], status=200)
     finally:
         if saved_group:

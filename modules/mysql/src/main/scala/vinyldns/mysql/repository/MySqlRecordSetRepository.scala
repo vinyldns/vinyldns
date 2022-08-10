@@ -20,15 +20,13 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
-import org.apache.commons.codec.binary.Hex
 import vinyldns.proto.VinylDNSProto
 
-import java.security.MessageDigest
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -36,37 +34,37 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE zone_id = {zoneId} AND name = {name}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
     sql"""
-      |SELECT data, fqdn
-      |  FROM recordset
-      | WHERE id = {id}
+         |SELECT data, fqdn
+         |  FROM recordset
+         | WHERE id = {id}
     """.stripMargin
 
   private val COUNT_RECORDSETS_IN_ZONE =
     sql"""
-      |SELECT count(*)
-      |  FROM recordset
-      | WHERE zone_id = {zoneId}
+         |SELECT count(*)
+         |  FROM recordset
+         | WHERE zone_id = {zoneId}
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id, data_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ?, data_hash = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -83,10 +81,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val GET_RECORDSET_BY_OWNERID =
     sql"""
-      |SELECT id
-      |  FROM recordset
-      |WHERE owner_group_id = {ownerGroupId}
-      |LIMIT 1
+         |SELECT id
+         |  FROM recordset
+         |WHERE owner_group_id = {ownerGroupId}
+         |LIMIT 1
     """.stripMargin
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
@@ -112,7 +110,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
             oldRs.ownerGroupId,
-            hashString(toPB(oldRs).toString),
             oldRs.id
           )
         }
@@ -138,7 +135,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name),
             i.recordSet.ownerGroupId,
-            hashString(toPB(i.recordSet).toString)
           )
         }
 
@@ -151,7 +147,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
-            hashString(toPB(u.recordSet).toString),
             u.recordSet.id
           )
         }
@@ -175,14 +170,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def listRecordSets(
-      zoneId: Option[String],
-      startFrom: Option[String],
-      maxItems: Option[Int],
-      recordNameFilter: Option[String],
-      recordTypeFilter: Option[Set[RecordType]],
-      recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort
-  ): IO[ListRecordSetResults] =
+                      zoneId: Option[String],
+                      startFrom: Option[String],
+                      maxItems: Option[Int],
+                      recordNameFilter: Option[String],
+                      recordTypeFilter: Option[Set[RecordType]],
+                      recordOwnerGroupFilter: Option[String],
+                      nameSort: NameSort
+                    ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
@@ -191,9 +186,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(s"zone_id = '$zId' AND name LIKE '${rName.replace('*', '%')}' ")
-            case (None, Some(fqdn)) => Some(s"fqdn LIKE '${fqdn.replace('*', '%')}' ")
-            case (Some(zId), None) => Some(s"zone_id = '$zId' ")
+              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
+            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
           }
 
@@ -204,50 +199,61 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val sortBy = (searchByZone, nameSort) match {
             case (true, NameSort.DESC) =>
               pagingKey.as(
-                "((name <= {startFromName} AND type > {startFromType}) OR name < {startFromName})"
+                sqls"((name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name < ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.ASC) =>
               pagingKey.as(
-                "((fqdn >= {startFromName} AND type > {startFromType}) OR fqdn > {startFromName})"
+                sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
               )
             case (false, NameSort.DESC) =>
               pagingKey.as(
-                "((fqdn <= {startFromName} AND type > {startFromType}) OR fqdn < {startFromName})"
+                sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
               )
             case _ =>
               pagingKey.as(
-                "((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})"
+                sqls"((name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name > ${pagingKey.map(pk => pk.recordName)})"
               )
           }
 
           val typeFilter = recordTypeFilter.map { t =>
-            val list = t.map(fromRecordType).mkString(",")
-            s"type IN ($list)"
+            val list = t.map(fromRecordType)
+            sqls"type IN ($list)"
           }
 
           val ownerGroupFilter =
-            recordOwnerGroupFilter.map(owner => s"owner_group_id = '$owner' ")
+            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
-          val qualifiers = new StringBuilder()
-          qualifiers.append(s" ORDER BY fqdn ${nameSort.toString}, type ASC ")
-          maxPlusOne.foreach(limit => qualifiers.append(s"LIMIT $limit"))
+          val qualifiers = if (nameSort == ASC) {
+            sqls"ORDER BY fqdn ASC, type ASC "
+          }
+          else {
+            sqls"ORDER BY fqdn DESC, type ASC "
+          }
 
-          val params = (pagingKey.map(pk => 'startFromName -> pk.recordName) ++
-            pagingKey.map(pk => 'startFromType -> pk.recordType)).toSeq
+          val recordLimit = maxPlusOne match {
+            case Some(limit) => sqls"LIMIT $limit"
+            case None => sqls""
+          }
+
+          val finalQualifiers = qualifiers.append(recordLimit)
 
           // construct query
-          val query = new StringBuilder()
-          query.append("SELECT data, fqdn FROM recordset")
-          if (opts.nonEmpty) {
-            query.append(" WHERE ").append(opts.mkString(" AND "))
-          }
-          query.append(qualifiers)
+          val initialQuery = sqls"SELECT data, fqdn FROM recordset "
 
-          val results = SQL(query.toString())
-            .bindByName(params: _*)
+          val appendOpts = if (opts.nonEmpty){
+            val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+            val addWhere = sqls"WHERE"
+            addWhere.append(setDelimiter)
+          } else sqls""
+
+          val appendQueries = initialQuery.append(appendOpts)
+
+          val finalQuery = appendQueries.append(finalQualifiers)
+
+          val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
             .apply()
@@ -363,16 +369,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
+  def deleteRecordSetsInZone(db: DB, zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO {
-        val numDeleted = DB.localTx { implicit s =>
-          DELETE_RECORDSETS_IN_ZONE
+        val numDeleted = db.withinTx { implicit session =>
+        DELETE_RECORDSETS_IN_ZONE
             .bind(zoneId)
             .update()
             .apply()
         }
-        logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
+        logger.debug(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
       }.handleErrorWith { error =>
         logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
         IO.raiseError(error)
@@ -417,13 +423,6 @@ object MySqlRecordSetRepository extends ProtobufConversions {
     if (absoluteRecordSetName.equals(absoluteZoneName)) absoluteZoneName
     else absoluteRecordSetName + absoluteZoneName
   }
-
-  /**Hashing the record set. */
-  def hashString(s: String) = hashBytes(s.getBytes("UTF-8"))
-
-  def hashBytes(rs: Array[Byte]) = hexString(MessageDigest.getInstance("SHA-1").digest(rs))
-
-  def hexString(bytes: Array[Byte]): String = String.valueOf(Hex.encodeHex(bytes))
 
   case class PagingKey(recordName: String, recordType: Int)
 

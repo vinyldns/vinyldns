@@ -36,13 +36,14 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def apply(
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      zoneChangeRepository: ZoneChangeRepository,
-      zoneRepository: ZoneRepository,
-      backendResolver: BackendResolver,
-      maxZoneSize: Int,
-      vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
+             recordSetRepository: RecordSetRepository,
+             recordChangeRepository: RecordChangeRepository,
+             recordSetCacheRepository: RecordSetCacheRepository,
+             zoneChangeRepository: ZoneChangeRepository,
+             zoneRepository: ZoneRepository,
+             backendResolver: BackendResolver,
+             maxZoneSize: Int,
+             vinyldnsLoader: (Zone, RecordSetRepository, RecordSetCacheRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
@@ -52,6 +53,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
         syncChange <- runSync(
           recordSetRepository,
           recordChangeRepository,
+          recordSetCacheRepository,
           zoneChange,
           backendResolver,
           maxZoneSize,
@@ -79,12 +81,13 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
     }
 
   def runSync(
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      zoneChange: ZoneChange,
-      backendResolver: BackendResolver,
-      maxZoneSize: Int,
-      vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
+               recordSetRepository: RecordSetRepository,
+               recordChangeRepository: RecordChangeRepository,
+               recordSetCacheRepository: RecordSetCacheRepository,
+               zoneChange: ZoneChange,
+               backendResolver: BackendResolver,
+               maxZoneSize: Int,
+               vinyldnsLoader: (Zone, RecordSetRepository, RecordSetCacheRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): IO[ZoneChange] =
     monitor("zone.sync") {
@@ -96,12 +99,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
             s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
           )(dnsLoader.load())
         val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
-          vinyldnsLoader(zone, recordSetRepository).load()
+          vinyldnsLoader(zone, recordSetRepository, recordSetCacheRepository).load()
         )
         val recordSetChanges = (dnsView, vinyldnsView).parTupled.map {
           case (dnsZoneView, vinylDnsZoneView) => vinylDnsZoneView.diff(dnsZoneView)
         }
-
         recordSetChanges.flatMap { allChanges =>
           val changesWithUserIds = allChanges.map(_.withUserId(zoneChange.userId))
 
@@ -148,11 +150,15 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
               val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
                 recordSetRepository.apply(db, changeSet)
               )
+              val saveRecordSetDatas = time(s"zone.sync.saveRecordSetDatas; zoneName='${zone.name}'")(
+                recordSetCacheRepository.save(db,changeSet)
+              )
 
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
                 _ <- saveRecordSets
+                _ <- saveRecordSetDatas
               } yield zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced

@@ -1,24 +1,13 @@
 <configuration>
     <!-- Test configuration, log to console so we can get the docker logs -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%d [test] %-5p | \(%logger{4}:%line\) | %msg %n</pattern>
+        <encoder class="co.elastic.logging.logback.EcsEncoder">
+            <serviceName>vinyldns-api</serviceName>
+            <serviceNodeName>vinyldns-api</serviceNodeName>
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <root level="ERROR">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

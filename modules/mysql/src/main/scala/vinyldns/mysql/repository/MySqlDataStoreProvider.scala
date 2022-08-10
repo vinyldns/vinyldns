@@ -58,6 +58,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val recordSets = Some(new MySqlRecordSetRepository())
     val groups = Some(new MySqlGroupRepository())
     val recordChanges = Some(new MySqlRecordChangeRepository())
+    val recordSetCache = Some(new MySqlRecordSetCacheRepository())
     val membership = Some(new MySqlMembershipRepository())
     val groupChanges = Some(new MySqlGroupChangeRepository())
     val userChanges = Some(new MySqlUserChangeRepository())
@@ -70,6 +71,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       recordSetRepository = recordSets,
       groupRepository = groups,
       recordChangeRepository = recordChanges,
+      recordSetCacheRepository = recordSetCache,
       membershipRepository = membership,
       groupChangeRepository = groupChanges,
       userChangeRepository = userChanges,
@@ -81,7 +83,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val dbConnectionSettings = MySqlDataSourceSettings(config, "mysqlDbPool")
 
     getDataSource(dbConnectionSettings).map { dataSource =>
-      logger.error("configuring connection pool")
+      logger.info("Configuring connection pool")
 
       // pulled out of DBs.setupAll since we're no longer using the db. structure for config
       DBs.loadGlobalSettings()
@@ -91,13 +93,13 @@ class MySqlDataStoreProvider extends DataStoreProvider {
         new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
       )
 
-      logger.error("database init complete")
+      logger.info("Database init complete")
     }
   }
 
   private def shutdown(): IO[Unit] =
     IO(DBs.close())
-      .handleError(e => logger.error(s"exception occurred while shutting down", e))
+      .handleError(e => logger.error(s"Exception occurred while shutting down", e))
 
   private final val HEALTH_CHECK =
     sql"""

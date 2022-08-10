@@ -54,7 +54,8 @@ object Dependencies {
     "com.iheart"                %% "ficus"                          % ficusV,
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
-    "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources()
+    "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources(),
+    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2"
   )
 
   lazy val coreDependencies = Seq(
@@ -75,7 +76,9 @@ object Dependencies {
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
     "javax.activation"          %  "activation"                     % "1.1.1",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
-    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
+    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
+    "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4"
   )
 
   lazy val mysqlDependencies = Seq(
@@ -84,9 +87,7 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
-    "com.h2database"            %  "h2"                             % "1.4.200",
-    "commons-codec"             %  "commons-codec"                  % "1.15"
-
+    "com.h2database"            %  "h2"                             % "1.4.200"
   )
 
   lazy val sqsDependencies = Seq(
@@ -105,17 +106,13 @@ object Dependencies {
     "com.ironcorelabs"          %% "cats-scalatest"                 % "3.0.5",
     "org.mockito"               %  "mockito-core"                   % "1.10.19",
     "org.scalatestplus"         %% "scalatestplus-mockito"          % "1.0.0-M2",
-    "org.scalatestplus"         %% "scalatestplus-scalacheck"       % "3.1.0.0-RC2",
-    "commons-codec"             %  "commons-codec"                  % "1.15"
-
+    "org.scalatestplus"         %% "scalatestplus-scalacheck"       % "3.1.0.0-RC2"
   )
 
   lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
     "com.typesafe.akka"         %% "akka-stream-testkit"            % akkaV,
-    "junit"                     %  "junit"                          % "4.12",
-    "commons-codec"             %  "commons-codec"                  % "1.15"
-
+    "junit"                     %  "junit"                          % "4.12"
   )
 
   lazy val portalDependencies = Seq(
@@ -132,6 +129,7 @@ object Dependencies {
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
-    "com.iheart"                %% "ficus"                          % ficusV
+    "com.iheart"                %% "ficus"                          % ficusV,
+    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2"
   )
 }

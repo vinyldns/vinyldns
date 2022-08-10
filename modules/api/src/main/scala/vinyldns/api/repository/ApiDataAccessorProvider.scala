@@ -20,7 +20,11 @@ import cats.data.ValidatedNel
 import cats.implicits._
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetCacheRepository,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
@@ -35,6 +39,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       groupChange,
       recordSet,
       recordChange,
+      recordSetCache,
       zoneChange,
       zone,
       batchChange
@@ -50,6 +55,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       getRepoOf[GroupChangeRepository](dataStores, groupChange),
       getRepoOf[RecordSetRepository](dataStores, recordSet),
       getRepoOf[RecordChangeRepository](dataStores, recordChange),
+      getRepoOf[RecordSetCacheRepository](dataStores, recordSetCache),
       getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
       getRepoOf[ZoneRepository](dataStores, zone),
       getRepoOf[BatchChangeRepository](dataStores, batchChange)

@@ -235,6 +235,8 @@ vinyldns {
         }
         record-set {
         }
+        record-set-cache {
+        }
      }
   }
 
@@ -624,6 +626,8 @@ v6-discovery-nibble-boundaries {
         }
         record-set {
         }
+        record-set-cache {
+        }
         group {
         }
         membership {
@@ -792,8 +796,8 @@ v6-discovery-nibble-boundaries {
      }
    
      parsing {
-        # akka-http doesn't like the AWS4 headers
-        illegal-header-warnings = on
+        # Don't complain about the / in the AWS SigV4 auth header
+        ignore-illegal-header-for = ["authorization"]
      }
   }
 }

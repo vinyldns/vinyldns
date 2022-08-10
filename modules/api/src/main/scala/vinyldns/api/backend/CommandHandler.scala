@@ -28,7 +28,12 @@ import vinyldns.api.engine.{
 }
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetChange,
+  RecordSetCacheRepository,
+  RecordSetRepository
+}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
@@ -194,28 +199,30 @@ object CommandHandler {
     }.as(())
 
   def run(
-      mq: MessageQueue,
-      msgsPerPoll: MessageCount,
-      processingSignal: SignallingRef[IO, Boolean],
-      pollingInterval: FiniteDuration,
-      zoneRepo: ZoneRepository,
-      zoneChangeRepo: ZoneChangeRepository,
-      recordSetRepo: RecordSetRepository,
-      recordChangeRepo: RecordChangeRepository,
-      batchChangeRepo: BatchChangeRepository,
-      notifiers: AllNotifiers,
-      backendResolver: BackendResolver,
-      maxZoneSize: Int
+           mq: MessageQueue,
+           msgsPerPoll: MessageCount,
+           processingSignal: SignallingRef[IO, Boolean],
+           pollingInterval: FiniteDuration,
+           zoneRepo: ZoneRepository,
+           zoneChangeRepo: ZoneChangeRepository,
+           recordSetRepo: RecordSetRepository,
+           recordChangeRepo: RecordChangeRepository,
+           recordSetCacheRepo: RecordSetCacheRepository,
+           batchChangeRepo: BatchChangeRepository,
+           notifiers: AllNotifiers,
+           backendResolver: BackendResolver,
+           maxZoneSize: Int
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
-      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
+      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo, recordSetCacheRepo)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
+      RecordSetChangeHandler(recordSetRepo, recordChangeRepo,recordSetCacheRepo, batchChangeRepo )
     val zoneSyncHandler =
       ZoneSyncHandler(
         recordSetRepo,
         recordChangeRepo,
+        recordSetCacheRepo,
         zoneChangeRepo,
         zoneRepo,
         backendResolver,

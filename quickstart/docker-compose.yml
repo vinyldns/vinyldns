@@ -22,7 +22,7 @@ services:
     environment:
       RUN_SERVICES: "deps-only tail-logs"
     env_file:
-      .env
+      - "${ENV_FILE:-.env}"
     ports:
       - "19001-19003:19001-19003/tcp"
       - "19001:19001/udp"
@@ -40,8 +40,9 @@ services:
         DOCKER_FILE_PATH: "build/docker/api"
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
+      - ../build/docker/api/logback.xml:/opt/vinyldns/conf/logback.xml
     env_file:
-      - .env
+      - "${ENV_FILE:-.env}"
     ports:
       - "9000:9000"
     depends_on:
@@ -59,11 +60,12 @@ services:
         DOCKER_FILE_PATH: "build/docker/portal"
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
     env_file:
-      .env
+      - "${ENV_FILE:-.env}"
     ports:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     volumes:
       - ../build/docker/portal/application.conf:/opt/vinyldns/conf/application.conf
+      - ../build/docker/portal/logback.xml:/opt/vinyldns/conf/logback.xml
     depends_on:
       - ldap
 

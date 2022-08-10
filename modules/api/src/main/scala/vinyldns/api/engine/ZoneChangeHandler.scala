@@ -17,14 +17,18 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import vinyldns.core.domain.record.RecordSetRepository
+import scalikejdbc.DB
+import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
+import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
 
 object ZoneChangeHandler {
   def apply(
-      zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository,
-      recordSetRepository: RecordSetRepository
+             zoneRepository: ZoneRepository,
+             zoneChangeRepository: ZoneChangeRepository,
+             recordSetRepository: RecordSetRepository,
+             recordSetCacheRepository: RecordSetCacheRepository,
+
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       zoneRepository.save(zoneChange.zone).flatMap {
@@ -36,8 +40,15 @@ object ZoneChangeHandler {
             )
           )
         case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-          recordSetRepository
-            .deleteRecordSetsInZone(zoneChange.zone.id, zoneChange.zone.name)
+
+          executeWithinTransaction { db: DB =>
+            for {
+              _ <- recordSetRepository
+              .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
+              _ <- recordSetCacheRepository
+            .deleteRecordSetDataInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
+            yield ()
+          }
             .attempt
             .flatMap { _ =>
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))

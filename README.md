@@ -1,6 +1,6 @@
 [![VinylDNS Release](https://img.shields.io/github/v/release/vinyldns/vinyldns?label=latest%20release&logo=github)](https://github.com/vinyldns/vinyldns/releases/latest)
-[![VinylDNS API Docker Image](https://img.shields.io/docker/v/vinyldns/api?color=brightgreen&label=API%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/api/tags?page=1&ordering=last_updated)
-[![VinylDNS Portal Docker Image](https://img.shields.io/docker/v/vinyldns/portal?color=brightgreen&label=Portal%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/portal/tags?page=1&ordering=last_updated)
+[![VinylDNS API Docker Image](https://img.shields.io/github/v/release/vinyldns/vinyldns?color=brightgreen&label=API%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/api/tags?page=1&ordering=last_updated)
+[![VinylDNS Portal Docker Image](https://img.shields.io/github/v/release/vinyldns/vinyldns?color=brightgreen&label=Portal%20Image&logo=docker&logoColor=white&cacheSeconds=300)](https://hub.docker.com/r/vinyldns/portal/tags?page=1&ordering=last_updated)
 
 <p align="left">
   <a href="https://www.vinyldns.io/">

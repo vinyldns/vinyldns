@@ -21,7 +21,8 @@ import java.util.UUID
 import cats.effect.IO
 import com.typesafe.config.Config
 import org.joda.time.DateTime
-import pureconfig.ConfigSource
+import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import scala.collection.JavaConverters._
@@ -50,8 +51,8 @@ final case class Zone(
     isTest: Boolean = false,
     backendId: Option[String] = None
 ) {
-  val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
-  val isIPv6: Boolean = name.endsWith("ip6.arpa.")
+  val isIPv4: Boolean = name.toLowerCase.endsWith("in-addr.arpa.")
+  val isIPv6: Boolean = name.toLowerCase.endsWith("ip6.arpa.")
   val isReverse: Boolean = isIPv4 || isIPv6
 
   def addACLRule(rule: ACLRule): Zone =
@@ -162,6 +163,16 @@ object Algorithm {
     Map
       .get(name)
       .toRight[String](s"Unsupported algorithm $name, must be one of ${Values.mkString(",")}")
+
+  implicit val algorithmReader: ConfigReader[Algorithm] =
+    ConfigReader.fromCursor[Algorithm](cur =>
+      cur.asString.flatMap(alg =>
+        Algorithm.fromString(alg).fold(
+          errMsg => cur.failed(CannotConvert(alg, "Algorithm", errMsg)),
+          algObj => Right(algObj)
+        )
+      )
+    )
 }
 
 case class ZoneConnection(

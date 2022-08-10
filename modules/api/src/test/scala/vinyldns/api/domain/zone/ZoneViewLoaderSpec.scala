@@ -92,6 +92,8 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
   "VinylDNSZoneViewLoader" should {
     "load the DNS Zones" in {
       val mockRecordSetRepo = mock[RecordSetRepository]
+      val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
+
 
       doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC)))
         .when(mockRecordSetRepo)
@@ -105,7 +107,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           any[NameSort]
         )
 
-      val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo)
+      val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo)
 
       val expected = ZoneView(testZone, records)
 

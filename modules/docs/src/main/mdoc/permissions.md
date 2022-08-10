@@ -67,6 +67,10 @@ ACL rules provide an extremely flexible way to grant access to DNS records.  Eac
 
 Depending on your organization, you may choose to exclusively use _Zone Ownership_ for managing self-service.  This does come at a higher cost of administrative overhead than other options; however, it is the most restrictive and still very flexible.
 
+Users and groups can have multiple ACL entries associated with them. Permission conflicts are resolved via the following rules:
+- The **MOST** permissive rule is chosen in the case of a tie. For example, if a user has an ACL entry with a `Write` permission, and another with a `Read` permission, the `Write` permission will take precedence.
+- `NoAccess` takes precedence over other permission levels. For example, if a user has three ACL rules, `Read`, `Write`, and `NoAccess`, `NoAccess` will take precedence.
+- `User` rules take precedence over `group` rules. For example, if a user has an ACL entry with a `Read` permission, and a group ACL entry with a `Write` permission, the `Read` permission will take precedence, even though `Write` is more permissive.
 # Shared Zone Ownership
 
 Shared Zones were introduced in order to alleviate the administrative burden of Zone Ownership for large organizations.  If you mark a zone as `Shared` (via the Manage Zone tab or API), you effectively grant anyone who can login to VinylDNS permissions to manage records in that DNS Zone.  Read this section closely, as it can be a little confusing.

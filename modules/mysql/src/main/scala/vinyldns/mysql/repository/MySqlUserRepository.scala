@@ -60,6 +60,13 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |  WHERE user_name = ?
        """.stripMargin
 
+  private final val GET_USER_BY_ID_OR_NAME =
+    sql"""
+         | SELECT data
+         |   FROM user
+         |  WHERE ? IN(id, user_name)
+     """.stripMargin
+
   private final val BASE_GET_USERS: String =
     """
       | SELECT data
@@ -68,7 +75,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
-      logger.info(s"Getting user with id: $userId")
+      logger.debug(s"Getting user with id: $userId")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID
@@ -86,7 +93,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       maxItems: Option[Int]
   ): IO[ListUsersResults] =
     monitor("repo.User.getUsers") {
-      logger.info(s"Getting users with ids: $userIds")
+      logger.debug(s"Getting users with ids: $userIds")
       IO {
         if (userIds.isEmpty)
           ListUsersResults(List[User](), None)
@@ -133,7 +140,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("repo.User.getUserByAccessKey") {
       IO {
-        logger.info(s"Getting user with accessKey: $accessKey")
+        logger.debug(s"Getting user with accessKey: $accessKey")
         DB.readOnly { implicit s =>
           GET_USER_BY_ACCESS_KEY
             .bind(accessKey)
@@ -147,7 +154,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def getUserByName(userName: String): IO[Option[User]] =
     monitor("repo.User.getUserByName") {
       IO {
-        logger.info(s"Getting user with userName: $userName")
+        logger.debug(s"Getting user with userName: $userName")
         DB.readOnly { implicit s =>
           GET_USER_BY_USER_NAME
             .bind(userName)
@@ -158,10 +165,29 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       }
     }
 
+  /**
+   * Retrieves the requested User from the database by the given userIdentifier, which can be a userId or username
+   * @param userIdentifier The userId or username
+   * @return The found User
+   */
+  def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
+    monitor("repo.User.getUser") {
+      logger.debug(s"Getting user with id: $userIdentifier")
+      IO {
+        DB.readOnly { implicit s =>
+          GET_USER_BY_ID_OR_NAME
+            .bind(userIdentifier)
+            .map(toUser(1))
+            .first()
+            .apply()
+        }
+      }
+    }
+
   def save(user: User): IO[User] =
     monitor("repo.User.save") {
       IO {
-        logger.info(s"Saving user with id: ${user.id}")
+        logger.debug(s"Saving user with id: ${user.id}")
         DB.localTx { implicit s =>
           PUT_USER
             .bindByName(
@@ -180,7 +206,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   def save(users: List[User]): IO[List[User]] =
     monitor("repo.User.save") {
       IO {
-        logger.info(s"Saving users with ids: ${users.map(_.id).mkString(", ")}")
+        logger.debug(s"Saving users with ids: ${users.map(_.id).mkString(", ")}")
 
         val updates = users.map { u =>
           Seq(

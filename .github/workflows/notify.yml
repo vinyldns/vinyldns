@@ -10,9 +10,6 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Dump context
-        uses: crazy-max/ghaction-dump-context@v1.2.0
-
       - name: Send Slack Notification On Success
         uses: slackapi/slack-github-action@v1.18.0
         if: github.event.workflow_run.conclusion == 'success'

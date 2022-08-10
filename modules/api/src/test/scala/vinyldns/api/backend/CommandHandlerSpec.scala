@@ -30,8 +30,13 @@ import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.backend.dns.DnsBackend
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeCommand, BatchChangeRepository}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
+import vinyldns.core.domain.record.{
+  RecordChangeRepository,
+  RecordSetChange,
+  RecordSetCacheRepository,
+  RecordSetRepository
+}
+import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
@@ -311,7 +316,7 @@ class CommandHandlerSpec
       verify(mq, atLeastOnce()).receive(count)
       verify(mockRecordChangeProcessor, atLeastOnce())
         .apply(any[DnsBackend], mockito.Matchers.eq(pendingCreateAAAA))
-      verify(mq).remove(cmd)
+      verify(mq, atLeastOnce()).remove(cmd)
     }
     "continue processing on unexpected failure" in {
       val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
@@ -372,6 +377,7 @@ class CommandHandlerSpec
       val zoneRepo = mock[ZoneRepository]
       val zoneChangeRepo = mock[ZoneChangeRepository]
       val recordSetRepo = mock[RecordSetRepository]
+      val recordSetCacheRepo = mock[RecordSetCacheRepository]
       val recordChangeRepo = mock[RecordChangeRepository]
       val batchChangeRepo = mock[BatchChangeRepository]
 
@@ -405,6 +411,7 @@ class CommandHandlerSpec
             zoneChangeRepo,
             recordSetRepo,
             recordChangeRepo,
+            recordSetCacheRepo,
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,
