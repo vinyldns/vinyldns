@@ -355,8 +355,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           'id -> zone.id,
           'name -> zone.name,
           'adminGroupId -> zone.adminGroupId,
-//          'data -> toPB(zone).toByteArray,
-          'data -> toPB(zone.copy(shared=true)).toByteArray
+          'data -> toPB(zone).toByteArray
         ): _*
       )
       .update()
