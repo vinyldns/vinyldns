@@ -84,15 +84,17 @@ class StatusRoute(
       (post & path("status")) {
         parameters("processingDisabled".as[Boolean]) { isProcessingDisabled =>
           authenticateAndExecute(postStatus(isProcessingDisabled, _)){ isProcessingDisabled =>
-            complete(
-              StatusCodes.OK,
-              CurrentStatus(
-                isProcessingDisabled,
-                serverConfig.color,
-                serverConfig.keyName,
-                serverConfig.version
+            onSuccess(processingDisabled.set(isProcessingDisabled).unsafeToFuture()) {
+              complete(
+                StatusCodes.OK,
+                CurrentStatus(
+                  isProcessingDisabled,
+                  serverConfig.color,
+                  serverConfig.keyName,
+                  serverConfig.version
+                )
               )
-            )
+            }
           }
         }
       }

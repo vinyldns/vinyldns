@@ -16,9 +16,11 @@
 
 package vinyldns.api
 
+import cats.effect.{ContextShift, IO}
 import com.comcast.ip4s.IpAddress
+import fs2.concurrent.SignallingRef
 import org.joda.time.DateTime
-import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig, ServerConfig}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -26,6 +28,12 @@ import vinyldns.core.domain.zone._
 import scala.util.matching.Regex
 
 trait VinylDNSTestHelpers {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  val processingDisabled: SignallingRef[IO, Boolean] =
+    fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   val highValueDomainRegexList: List[Regex] = List(new Regex("high-value-domain.*"))
   val highValueDomainIpList: List[IpAddress] =
@@ -70,6 +78,9 @@ trait VinylDNSTestHelpers {
 
   val testLimitConfig: LimitsConfig =
     LimitsConfig(100,100,1000,1500,100,100,100)
+
+  val testServerConfig: ServerConfig =
+    ServerConfig(100, 100, 100, 100, true, approvedNameServers, "blue", "unset", "vinyldns.", false, true, true)
 
   val batchChangeConfig: BatchChangeConfig =
     BatchChangeConfig(batchChangeLimit, sharedApprovedTypes, v6DiscoveryNibbleBoundaries)
