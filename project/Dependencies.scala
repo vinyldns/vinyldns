@@ -47,7 +47,7 @@ object Dependencies {
     "com.typesafe"              % "config"                          % configV,
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.47deg"                 %% "github4s"                       % "0.18.6",
-    "com.comcast"               % "ip4s-core_2.12"                  % "3.1.3",
+    "com.comcast"               %% "ip4s-core"                      % "3.1.3",
     "com.iheart"                %% "ficus"                          % ficusV,
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",

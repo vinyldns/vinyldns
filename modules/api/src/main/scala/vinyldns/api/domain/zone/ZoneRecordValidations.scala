@@ -19,12 +19,7 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
-import vinyldns.core.domain.{
-  DomainHelpers,
-  DomainValidationError,
-  HighValueDomainError,
-  RecordRequiresManualReview
-}
+import vinyldns.core.domain.{DomainHelpers, DomainValidationError, HighValueDomainError, RecordRequiresManualReview}
 import vinyldns.core.domain.record.{NSData, RecordSet}
 
 import scala.util.matching.Regex

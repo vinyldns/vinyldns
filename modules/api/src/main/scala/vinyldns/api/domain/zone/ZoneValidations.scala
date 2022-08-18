@@ -56,10 +56,10 @@ class ZoneValidations(syncDelayMillis: Int) {
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
     rule.recordMask match {
       case Some(mask) if rule.recordTypes == Set(RecordType.PTR) =>
-        Try(Cidr.fromString(mask)) match {
+        Try(Cidr.fromString(mask).get) match {
           case Success(_) => Right(())
-          case Failure(e) =>
-            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").asLeft
+          case Failure(_) =>
+            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: Invalid CIDR block").asLeft
         }
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
         InvalidRequest("Multiple record types including PTR must have no mask").asLeft

@@ -957,8 +957,8 @@ class AccessValidationsSpec
 
   "ruleAppliesToRecordNameIPv4" should {
 
-    "filter in/out record set based on CIDR rule of 0 (lower bound for ip4 CIDR rules)" in {
-      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/0"))
+    "filter in/out record set based on CIDR rule of 1 (lower bound for ip4 CIDR rules)" in {
+      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/1"))
       val znTrue = Zone("40.120.in-addr.arpa.", "email")
       val rsTrue =
         RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
