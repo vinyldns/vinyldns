@@ -24,7 +24,6 @@ import fs2.concurrent.SignallingRef
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces.{EitherImprovements, Result, ensuring}
 import vinyldns.api.config.ServerConfig
-import vinyldns.api.domain.membership.UserNotFoundError
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.domain.auth.AuthPrincipal
 
