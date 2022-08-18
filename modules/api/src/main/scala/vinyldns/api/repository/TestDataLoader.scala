@@ -189,6 +189,19 @@ object TestDataLoader extends TransactionProvider {
     isTest = true
   )
 
+  final val superUser = User(
+    userName = "super-user",
+    id = "super-user-id",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "superUserAccessKey",
+    secretKey = "superUserSecretKey",
+    firstName = Some("super-user"),
+    lastName = Some("super-user"),
+    email = Some("test@test.com"),
+    isSuper = true,
+    isTest = true
+  )
+
   final val sharedZoneGroup = Group(
     name = "testSharedZoneGroup",
     id = "shared-zone-group",
@@ -275,7 +288,7 @@ object TestDataLoader extends TransactionProvider {
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
-        listRecordsUser :: listOfDummyUsers).map { user =>
+        superUser :: listRecordsUser :: listOfDummyUsers).map { user =>
         userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out
