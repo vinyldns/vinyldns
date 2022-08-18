@@ -52,7 +52,6 @@ class StatusRoute(
 
   def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
-    case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
   }
 
   def postStatus(isProcessingDisabled: Boolean, authPrincipal: AuthPrincipal): Result[Boolean] = {
