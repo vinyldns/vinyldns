@@ -21,7 +21,6 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
@@ -36,7 +35,7 @@ import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
-class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
+class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
   private def makeSingleAddChange(
       name: String,
@@ -294,7 +293,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           addSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -302,8 +301,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(addChangeForValidationGood.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -328,7 +327,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           deleteSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -339,8 +338,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset change basics generated from batch
@@ -377,7 +376,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           updateSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -388,8 +387,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -424,7 +423,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           changes,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -432,8 +431,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(changeForValidation.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -460,7 +459,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
       // check the batch has been stored in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchChange.id))
+        batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync()
 
       savedBatch shouldBe Some(batchChange)
     }
@@ -475,7 +474,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -483,8 +482,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(List(), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
 
       result.batchChange shouldBe batchChange
     }
@@ -499,7 +498,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           singleChangesOneBad,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchWithBadChange,
@@ -507,8 +506,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(changeForValidationOneBad.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       rsChanges.length shouldBe 3
@@ -531,7 +530,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
       savedBatch shouldBe Some(returnedBatch)
     }
 
@@ -545,7 +544,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           singleChangesOneUnsupported,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = leftResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChangeUnsupported,
@@ -556,12 +555,12 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
+
       result shouldBe an[BatchConversionError]
 
       val notSaved: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchChangeUnsupported.id))
+        batchChangeRepo.getBatchChange(batchChangeUnsupported.id).unsafeRunSync()
       notSaved shouldBe None
     }
   }
