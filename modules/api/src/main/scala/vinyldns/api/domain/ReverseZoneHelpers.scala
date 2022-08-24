@@ -101,8 +101,8 @@ object ReverseZoneHelpers {
         case 4 => ipMaskOctets.mkString(".")
       }
 
-      val updatedMask = Cidr(Ipv4Address.fromString(fullIp).get,Cidr.fromString4(mask).get.prefixBits)
-      updatedMask.contains(recordIpAddr.get)
+      val updatedMask = Cidr(recordIpAddr.get,Cidr.fromString4(mask).get.prefixBits)
+      updatedMask.contains(Ipv4Address.fromString(fullIp).get)
     }.getOrElse(false)
   }
 
