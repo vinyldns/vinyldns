@@ -74,7 +74,7 @@ class ProtobufConversionsSpec
     zone,
     "system",
     ZoneChangeType.Update,
-    ZoneChangeStatus.Complete,
+    ZoneChangeStatus.Synced,
     DateTime.now,
     Some("hello")
   )

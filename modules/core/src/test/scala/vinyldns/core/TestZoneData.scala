@@ -79,11 +79,11 @@ object TestZoneData {
     okZone,
     "ok",
     ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
+    ZoneChangeStatus.Synced,
     created = DateTime.now.minus(1000)
   )
 
-  val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)
+  val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Synced)
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =
     ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)
