@@ -17,15 +17,9 @@
 package vinyldns.api.domain.batch
 
 import java.net.InetAddress
-
 import cats.data._
 import cats.implicits._
-import vinyldns.api.config.{
-  BatchChangeConfig,
-  HighValueDomainConfig,
-  ManualReviewConfig,
-  ScheduledChangesConfig
-}
+import vinyldns.api.config.{BatchChangeConfig, DottedHostsConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -54,7 +48,8 @@ trait BatchChangeValidationsAlgebra {
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+      batchOwnerGroupId: Option[String],
+      zoneOrRecordDoesNotAlreadyExist: Boolean
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -85,7 +80,8 @@ class BatchChangeValidations(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     batchChangeConfig: BatchChangeConfig,
-    scheduledChangesConfig: ScheduledChangesConfig
+    scheduledChangesConfig: ScheduledChangesConfig,
+    dottedHostsConfig: DottedHostsConfig
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -275,7 +271,8 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+      batchOwnerGroupId: Option[String],
+      zoneOrRecordDoesNotAlreadyExist: Boolean
   ): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
@@ -283,7 +280,7 @@ class BatchChangeValidations(
           if groupedChanges
             .getLogicalChangeType(add.recordKey)
             .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
+        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
       // These cases MUST be below adds because:
@@ -298,11 +295,28 @@ class BatchChangeValidations(
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
 
-  def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
-    if (change.recordName != change.zone.name && change.recordName.contains("."))
-      ZoneDiscoveryError(change.inputChange.inputName).invalidNel
-    else
-      ().validNel
+  // Check if the new record set has dots and if so whether they are allowed or not
+  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean): SingleValidation[Unit] = {
+
+    // Check if the zone of the record set is present in dotted hosts config list
+    val isDomainAllowed = dottedHostsConfig.zoneList.contains(change.zone.name)
+
+    // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
+    if(change.recordName.contains(".") && isDomainAllowed) {
+      // If there is a zone or record already present which conflicts with the new dotted record, throw an error
+      if (!zoneOrRecordDoesNotAlreadyExist || change.recordName == change.zone.name)
+        DottedHostError(change.recordName, change.inputChange.typ.toString).invalidNel
+      else
+        ().validNel
+    }
+    else {
+      // If the recordset contains dot but is not in the allowed zones to create dotted records, throw an error
+      if (change.recordName != change.zone.name && change.recordName.contains("."))
+        ZoneDiscoveryError(change.inputChange.inputName).invalidNel
+      else
+        ().validNel
+    }
+  }
 
   def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
     existingRecordSetData.exists { rd =>
@@ -412,14 +426,15 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      ownerGroupId: Option[String]
+      ownerGroupId: Option[String],
+      zoneOrRecordDoesNotAlreadyExist: Boolean
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetIsNotDotted(change)
+        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
-          newRecordSetIsNotDotted(change)
+          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist)
       case TXT | PTR =>
         ().validNel
       case other =>

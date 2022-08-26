@@ -32,7 +32,7 @@ object DomainValidationErrorType extends Enumeration {
   val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
   InvalidDomainName, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
-  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
+  InvalidBatchRecordType, ZoneDiscoveryError, DottedHostError, RecordAlreadyExists, RecordDoesNotExist,
   CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
   NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
@@ -57,6 +57,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: InvalidMxPreference => InvalidMxPreference
       case _: InvalidBatchRecordType => InvalidBatchRecordType
       case _: ZoneDiscoveryError => ZoneDiscoveryError
+      case _: DottedHostError => DottedHostError
       case _: RecordAlreadyExists => RecordAlreadyExists
       case _: RecordDoesNotExist => RecordDoesNotExist
       case _: CnameIsNotUniqueError => CnameIsNotUniqueError

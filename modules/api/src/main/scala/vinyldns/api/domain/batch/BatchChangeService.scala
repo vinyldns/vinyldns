@@ -32,21 +32,10 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.{
-  CnameAtZoneApexError,
-  SingleChangeError,
-  UserIsNotAuthorizedError,
-  ZoneDiscoveryError
-}
-import vinyldns.core.domain.membership.{
-  Group,
-  GroupRepository,
-  ListUsersResults,
-  User,
-  UserRepository
-}
+import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.notifier.{AllNotifiers, Notification}
 
@@ -133,15 +122,42 @@ class BatchChangeService(
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
+      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(groupedChanges).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         groupedChanges,
         auth,
         isApproved,
-        batchChangeInput.ownerGroupId
+        batchChangeInput.ownerGroupId,
+        zoneOrRecordDoesNotAlreadyExist
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
     } yield BatchValidationFlowOutput(validatedSingleChangesWithGroups, zoneMap, groupedChanges)
+
+  // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
+  def zoneOrRecordDoesNotExist(groupedChanges: ChangeForValidationMap): IO[Boolean] = {
+    val inputChange = groupedChanges.changes.map(x => x.toOption).map(x => x.get)
+    // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
+    val newRecordFqdn = inputChange.map(_.recordName).head + "." + inputChange.map(_.zone.name).head
+    for {
+      zone <- zoneRepository.getZoneByName(newRecordFqdn)
+      record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
+      isZoneAlreadyExist = zone.isDefined
+      isRecordAlreadyExist = doesRecordWithSameTypeExist(record, inputChange.map(_.inputChange))
+      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist) false else true
+    } yield doesNotExist
+  }
+
+  // Check if a record with same type already exist in 'recordset' mysql table
+  def doesRecordWithSameTypeExist(oldRecord: List[RecordSet], newRecord: List[ChangeInput]): Boolean = {
+    if(oldRecord.nonEmpty) {
+      val typeExists = oldRecord.map(x => x.typ == newRecord.map(_.typ))
+      if (typeExists.contains(true)) true else false
+    }
+    else {
+      false
+    }
+  }
 
   def getGroupIdsFromUnauthorizedErrors(
       changes: ValidatedBatch[ChangeForValidation]

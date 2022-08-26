@@ -121,7 +121,8 @@ object Boot extends App {
         vinyldnsConfig.highValueDomainConfig,
         vinyldnsConfig.manualReviewConfig,
         vinyldnsConfig.batchChangeConfig,
-        vinyldnsConfig.scheduledChangesConfig
+        vinyldnsConfig.scheduledChangesConfig,
+        vinyldnsConfig.dottedHostsConfig
       )
       val membershipService = MembershipService(repositories)
 
@@ -139,6 +140,7 @@ object Boot extends App {
           backendResolver,
           vinyldnsConfig.serverConfig.validateRecordLookupAgainstDnsBackend,
           vinyldnsConfig.highValueDomainConfig,
+          vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
           vinyldnsConfig.serverConfig.useRecordSetCache
         )

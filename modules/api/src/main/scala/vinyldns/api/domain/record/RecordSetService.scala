@@ -28,7 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -46,6 +46,7 @@ object RecordSetService {
              backendResolver: BackendResolver,
              validateRecordLookupAgainstDnsBackend: Boolean,
              highValueDomainConfig: HighValueDomainConfig,
+             dottedHostsConfig: DottedHostsConfig,
              approvedNameServers: List[Regex],
              useRecordSetCache: Boolean
            ): RecordSetService =
@@ -61,6 +62,7 @@ object RecordSetService {
       backendResolver,
       validateRecordLookupAgainstDnsBackend,
       highValueDomainConfig,
+      dottedHostsConfig,
       approvedNameServers,
       useRecordSetCache
     )
@@ -78,6 +80,7 @@ class RecordSetService(
                         backendResolver: BackendResolver,
                         validateRecordLookupAgainstDnsBackend: Boolean,
                         highValueDomainConfig: HighValueDomainConfig,
+                        dottedHostsConfig: DottedHostsConfig,
                         approvedNameServers: List[Regex],
                         useRecordSetCache: Boolean
                       ) extends RecordSetServiceAlgebra {
@@ -107,12 +110,15 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         None,
-        approvedNameServers
+        approvedNameServers,
+        zoneOrRecordDoesNotAlreadyExist,
+        dottedHostsConfig
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -143,12 +149,15 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         Some(existing),
-        approvedNameServers
+        approvedNameServers,
+        zoneOrRecordDoesNotAlreadyExist,
+        dottedHostsConfig
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -168,6 +177,30 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
+
+  // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
+  def zoneOrRecordDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
+    // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
+    val newRecordFqdn = newRecordSet.name + "." + zone.name
+    for {
+      zone <- zoneRepository.getZoneByName(newRecordFqdn)
+      record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
+      isZoneAlreadyExist = zone.isDefined
+      isRecordAlreadyExist = doesRecordWithSameTypeExist(record, newRecordSet)
+      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist) false else true
+    } yield doesNotExist
+  }
+
+  // Check if a record with same type already exist in 'recordset' mysql table
+  def doesRecordWithSameTypeExist(oldRecord: List[RecordSet], newRecord: RecordSet): Boolean = {
+    if(oldRecord.nonEmpty) {
+      val typeExists = oldRecord.map(x => x.typ == newRecord.typ)
+      if (typeExists.contains(true)) true else false
+    }
+    else {
+      false
+    }
+  }
 
   def getRecordSet(
                     recordSetId: String,
