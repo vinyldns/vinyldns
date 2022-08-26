@@ -17,6 +17,7 @@
 package vinyldns.core.domain.zone
 
 import cats.effect._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.repository.Repository
 
 trait ZoneChangeRepository extends Repository {
@@ -28,4 +29,12 @@ trait ZoneChangeRepository extends Repository {
       startFrom: Option[String] = None,
       maxItems: Int = 100
   ): IO[ListZoneChangesResults]
+
+  def listDeletedZoneInZoneChanges(
+                 authPrincipal: AuthPrincipal,
+                 zoneNameFilter: Option[String] = None,
+                 startFrom: Option[String] = None,
+                 maxItems: Int = 100,
+                 ignoreAccess: Boolean = false
+               ): IO[ListDeletedZonesChangeResults]
 }

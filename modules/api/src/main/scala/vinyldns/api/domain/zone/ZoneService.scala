@@ -171,6 +171,34 @@ class ZoneService(
     )
   }.toResult
 
+  def listDeletedZones(
+                 authPrincipal: AuthPrincipal,
+                 nameFilter: Option[String] = None,
+                 startFrom: Option[String] = None,
+                 maxItems: Int = 100,
+                 ignoreAccess: Boolean = false
+               ): Result[ListDeletedZoneChangesResponse] = {
+    for {
+      listZonesResult <- zoneChangeRepository.listDeletedZoneInZoneChanges(
+        authPrincipal,
+        nameFilter,
+        startFrom,
+        maxItems,
+        ignoreAccess
+      )
+      zoneChanges = listZonesResult.zoneChange
+    } yield {
+      ListDeletedZoneChangesResponse(
+        zoneChanges,
+      listZonesResult.zoneChangeFilter,
+      listZonesResult.nextId,
+      listZonesResult.startFrom,
+      listZonesResult.maxItems,
+      listZonesResult.ignoreAccess
+    )
+    }
+  }.toResult
+
   def zoneSummaryInfoMapping(
       zones: List[Zone],
       auth: AuthPrincipal,

@@ -45,6 +45,14 @@ trait ZoneServiceAlgebra {
       ignoreAccess: Boolean
   ): Result[ListZonesResponse]
 
+  def listDeletedZones(
+                 authPrincipal: AuthPrincipal,
+                 nameFilter: Option[String],
+                 startFrom: Option[String],
+                 maxItems: Int,
+                 ignoreAccess: Boolean
+               ): Result[ListDeletedZoneChangesResponse]
+
   def listZoneChanges(
       zoneId: String,
       authPrincipal: AuthPrincipal,

@@ -22,3 +22,12 @@ case class ListZoneChangesResults(
     startFrom: Option[String] = None,
     maxItems: Int = 100
 )
+
+case class ListDeletedZonesChangeResults(
+                                          zoneChange: List[ZoneChange] = List[ZoneChange](),
+                                          zoneChangeFilter: Option[String] = None,
+                                          nextId: Option[String] = None,
+                                          startFrom: Option[String] = None,
+                                          maxItems: Int = 100,
+                                          ignoreAccess: Boolean = false
+                                 )

@@ -20,6 +20,9 @@ import cats.effect.IO
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf._
 import vinyldns.core.route.Monitored
@@ -30,12 +33,19 @@ class MySqlZoneChangeRepository
     with ProtobufConversions
     with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneChangeRepository])
+  private final val MAX_ACCESSORS = 30
 
   private final val PUT_ZONE_CHANGE =
     sql"""
       |REPLACE INTO zone_change (change_id, zone_id, data, created_timestamp)
       |  VALUES ({change_id}, {zone_id}, {data}, {created_timestamp})
       """.stripMargin
+
+  private final val BASE_ZONE_CHANGE_SEARCH_SQL =
+    """
+      |SELECT zc.data
+      |  FROM zone_change zc
+       """.stripMargin
 
   private final val LIST_ZONES_CHANGES =
     sql"""
@@ -97,6 +107,99 @@ class MySqlZoneChangeRepository
           }
 
           ListZoneChangesResults(maxQueries, nextId, startFrom, maxItems)
+        }
+      }
+    }
+
+  /* Limit the accessors so that we don't have boundless parameterized queries */
+  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
+    val allAccessors = user.id +: groupIds
+
+    if (allAccessors.length > MAX_ACCESSORS) {
+      logger.warn(
+        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
+      )
+    }
+
+    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
+    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
+  }
+
+  private def withAccessors(
+                             user: User,
+                             groupIds: Seq[String],
+                             ignoreAccessZones: Boolean
+                           ): (String, Seq[Any]) =
+  // Super users do not need to join across to check zone access as they have access to all of the zones
+    if (ignoreAccessZones || user.isSuper || user.isSupport) {
+      (BASE_ZONE_CHANGE_SEARCH_SQL, Seq.empty)
+    } else {
+      // User is not super or support,
+      // let's join across to the zone access table so we return only zones a user has access to
+      val accessors = buildZoneSearchAccessorList(user, groupIds)
+      val questionMarks = List.fill(accessors.size)("?").mkString(",")
+      val withAccessorCheck = BASE_ZONE_CHANGE_SEARCH_SQL +
+        s"""
+           | JOIN zone_access_cache zac ON zc.zone_id = zac.zone_id
+           |      AND zac.accessor_id IN ($questionMarks)
+    """.stripMargin
+      (withAccessorCheck, accessors)
+    }
+
+  def listDeletedZoneInZoneChanges(
+                 authPrincipal: AuthPrincipal,
+                 zoneNameFilter: Option[String] = None,
+                 startFrom: Option[String] = None,
+                 maxItems: Int = 100,
+                 ignoreAccess: Boolean = false
+               ): IO[ListDeletedZonesChangeResults] =
+    monitor("repo.ZoneChange.listDeletedZoneInZoneChanges") {
+      IO {
+        DB.readOnly { implicit s =>
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          val filters = List(
+            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}')"),
+            startFrom.map(os => s"zc.name > '$os'")
+          ).flatten
+
+          sb.append(s""" where zc.zone_id !=
+               (select case when max(z.id) is not null then z.id else 0 end as ZoneId
+                  from zone z """ )
+
+          if (filters.nonEmpty) {
+            sb.append(" WHERE ")
+            sb.append(filters.mkString(" AND "))
+          }
+          else sb.append(s")")
+
+          sb.append(s" GROUP BY zc.zone_id ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+
+          val results: List[ZoneChange] = SQL(query)
+            .bind(accessors: _*)
+            .map(extractZoneChange(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.zone.name))
+            else (results, None)
+
+          ListDeletedZonesChangeResults(
+            zoneChange = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zoneChangeFilter = zoneNameFilter,
+            ignoreAccess = ignoreAccess
+          )
         }
       }
     }

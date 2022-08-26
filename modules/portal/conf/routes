@@ -30,6 +30,7 @@ GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
+GET           /api/zones/deleted/changes         @controllers.VinylDNS.getDeletedZones
 POST          /api/zones                         @controllers.VinylDNS.addZone
 PUT           /api/zones/:id                     @controllers.VinylDNS.updateZone(id: String)
 DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZone(id: String)

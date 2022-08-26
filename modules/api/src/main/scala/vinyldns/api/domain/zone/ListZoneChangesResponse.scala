@@ -17,7 +17,7 @@
 package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.zone
-import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange}
+import vinyldns.core.domain.zone.{ListDeletedZonesChangeResults, ListZoneChangesResults, ZoneChange}
 
 case class ListZoneChangesResponse(
     zoneId: String,
@@ -37,3 +37,25 @@ object ListZoneChangesResponse {
       listResults.maxItems
     )
 }
+
+case class ListDeletedZoneChangesResponse(
+                                           zoneChanges: List[ZoneChange] = Nil,
+                                           zoneChangeFilter: Option[String] = None,
+                                           nextId: Option[String] = None,
+                                           startFrom: Option[String] = None,
+                                           maxItems: Int = 100,
+                                           ignoreAccess: Boolean = false
+                                         )
+
+object ListDeletedZoneChangesResponse {
+  def apply(listResults: ListDeletedZonesChangeResults): ListDeletedZoneChangesResponse =
+    zone.ListDeletedZoneChangesResponse(
+      listResults.zoneChange,
+      listResults.zoneChangeFilter,
+      listResults.nextId,
+      listResults.startFrom,
+      listResults.maxItems,
+      listResults.ignoreAccess
+    )
+}
+
