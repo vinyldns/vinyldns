@@ -110,20 +110,6 @@ class MySqlZoneChangeRepository
       }
     }
 
-  /* Limit the accessors so that we don't have boundless parameterized queries */
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
-  }
-
   private def withAccessors(
                              user: User,
                              groupIds: Seq[String],
@@ -139,11 +125,25 @@ class MySqlZoneChangeRepository
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
       val withAccessorCheck = BASE_ZONE_CHANGE_SEARCH_SQL +
         s"""
-           | JOIN zone_access_cache zac ON zc.zone_id = zac.zone_id
-           |      AND zac.accessor_id IN ($questionMarks)
+           |    JOIN zone_access za ON zc.zone_id = za.zone_id
+           |      AND za.accessor_id IN ($questionMarks)
     """.stripMargin
       (withAccessorCheck, accessors)
     }
+
+  /* Limit the accessors so that we don't have boundless parameterized queries */
+  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
+    val allAccessors = user.id +: groupIds
+
+    if (allAccessors.length > MAX_ACCESSORS) {
+      logger.warn(
+        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
+      )
+    }
+
+    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
+    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
+  }
 
   def listDeletedZoneInZoneChanges(
                  authPrincipal: AuthPrincipal,
@@ -174,7 +174,8 @@ class MySqlZoneChangeRepository
             .list()
             .apply()
 
-          val deletedZoneResults: List[ZoneChange] = zoneChangeResults.filter(_.zone.status.equals(ZoneStatus.Deleted))
+          val deletedZoneResults: List[ZoneChange] =
+            zoneChangeResults.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct
 
           val results: List[ZoneChange]=
           if(zoneNameFilter.nonEmpty){
