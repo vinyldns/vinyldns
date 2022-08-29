@@ -209,7 +209,7 @@ angular.module('controller.zones', [])
              case 'allZones':
                  return pagingService.getPanelTitle(allZonesPaging);
              case 'myDeletedZones':
-                              return pagingService.getPanelTitle(deleteZonesPaging);
+                 return pagingService.getPanelTitle(deleteZonesPaging);
          }
      };
 
@@ -220,7 +220,7 @@ angular.module('controller.zones', [])
             case 'allZones':
                 return pagingService.prevPageEnabled(allZonesPaging);
             case 'myDeletedZones':
-                                          return pagingService.prevPageEnabled(deleteZonesPaging);
+                return pagingService.prevPageEnabled(deleteZonesPaging);
         }
     };
 
@@ -231,7 +231,7 @@ angular.module('controller.zones', [])
             case 'allZones':
                 return pagingService.nextPageEnabled(allZonesPaging);
             case 'myDeletedZones':
-                                                      return pagingService.nextPageEnabled(deleteZonesPaging);
+                return pagingService.nextPageEnabled(deleteZonesPaging);
         }
     };
 
@@ -313,7 +313,7 @@ angular.module('controller.zones', [])
                 var deletedZoneSets = response.data.zoneChangeDeletedInfo;
                 deleteZonesPaging = pagingService.nextPageUpdate(deletedZoneSets, response.data.nextId, deleteZonesPaging);
 
-                if (zoneSets.length > 0) {
+                if (deletedZoneSets.length > 0) {
                     updateDeletedZoneDisplay(response.data.zoneChangeDeletedInfo);
                 }
             })

@@ -165,8 +165,6 @@ class MySqlZoneChangeRepository
                          (select case when max(z.id) is not null then z.id else 0 end as ZoneId
                          from zone z )""" )
 
-          sb.append(s" LIMIT ${maxItems + 1}")
-
           val query = sb.toString
 
           val zoneChangeResults: List[ZoneChange] =
@@ -180,10 +178,11 @@ class MySqlZoneChangeRepository
 
           val results: List[ZoneChange]=
           if(zoneNameFilter.nonEmpty){
-            deletedZoneResults.filter(r=>r.zone.name.contains(zoneNameFilter.getOrElse("non")))
+            deletedZoneResults.filter(r=>r.zone.name.contains(zoneNameFilter.getOrElse("not found")))
           }else {
             deletedZoneResults
-          }
+          }.take(maxItems+1)
+
           val (newResults, nextId) =
             if (results.size > maxItems)
               (results.dropRight(1), results.dropRight(1).lastOption.map(_.zone.name))
@@ -191,10 +190,10 @@ class MySqlZoneChangeRepository
 
           ListDeletedZonesChangeResults(
             zoneChange = newResults,
+            zoneChangeFilter = zoneNameFilter,
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zoneChangeFilter = zoneNameFilter,
             ignoreAccess = ignoreAccess
           )
         }
