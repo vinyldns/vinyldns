@@ -323,6 +323,40 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )
 
+//  def superUserCanUpdateOwnerGroup(
+//      existing: RecordSet,
+//      updates: RecordSet,
+//      zone: Zone,
+//      auth: AuthPrincipal
+//  ): Either[Throwable, Unit] =
+//    Either.cond(
+//      updates.ownerGroupId != existing.ownerGroupId
+//        && updates.zoneId == existing.zoneId
+//        && updates.name == existing.name
+//        && updates.typ == existing.typ
+//        && updates.ttl == existing.ttl
+//        && updates.records == existing.records
+//        && zone.shared
+//        && auth.isSuper,
+//      (),
+//      InvalidRequest("Cannot update RecordSet.")
+//    )
+
+  def canSuperUserUpdateOwnerGroup(
+    existing: RecordSet,
+    updates: RecordSet,
+    zone: Zone,
+    auth: AuthPrincipal
+  ): Boolean =
+    (updates.ownerGroupId != existing.ownerGroupId
+        && updates.zoneId == existing.zoneId
+        && updates.name == existing.name
+        && updates.typ == existing.typ
+        && updates.ttl == existing.ttl
+        && updates.records == existing.records
+        && zone.shared
+        && auth.isSuper)
+
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
       val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
