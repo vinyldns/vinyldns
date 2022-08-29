@@ -20,7 +20,6 @@ import cats.effect.IO
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
@@ -161,32 +160,30 @@ class MySqlZoneChangeRepository
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}')"),
-            startFrom.map(os => s"zc.name > '$os'")
-          ).flatten
-
+          // get only deleted zones data.
           sb.append(s""" where zc.zone_id !=
-               (select case when max(z.id) is not null then z.id else 0 end as ZoneId
-                  from zone z """ )
+                         (select case when max(z.id) is not null then z.id else 0 end as ZoneId
+                         from zone z )""" )
 
-          if (filters.nonEmpty) {
-            sb.append(" WHERE ")
-            sb.append(filters.mkString(" AND "))
-          }
-          else sb.append(s")")
-
-          sb.append(s" GROUP BY zc.zone_id ")
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
 
-          val results: List[ZoneChange] = SQL(query)
+          val zoneChangeResults: List[ZoneChange] =
+            SQL(query)
             .bind(accessors: _*)
             .map(extractZoneChange(1))
             .list()
             .apply()
 
+          val deletedZoneResults: List[ZoneChange] = zoneChangeResults.filter(_.zone.status.equals(ZoneStatus.Deleted))
+
+          val results: List[ZoneChange]=
+          if(zoneNameFilter.nonEmpty){
+            deletedZoneResults.filter(r=>r.zone.name.contains(zoneNameFilter.getOrElse("non")))
+          }else {
+            deletedZoneResults
+          }
           val (newResults, nextId) =
             if (results.size > maxItems)
               (results.dropRight(1), results.dropRight(1).lastOption.map(_.zone.name))

@@ -30,4 +30,4 @@ case class ListDeletedZonesChangeResults(
                                           startFrom: Option[String] = None,
                                           maxItems: Int = 100,
                                           ignoreAccess: Boolean = false
-                                 )
+                                        )

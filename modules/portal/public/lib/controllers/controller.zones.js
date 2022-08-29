@@ -117,9 +117,9 @@ angular.module('controller.zones', [])
         zonesService
                     .getDeletedZones(zonesPaging.maxItems, undefined, $scope.query)
                     .then(function (response) {
-                        $log.log('zonesService::getDeletedZones-success (' + response.data.zoneChanges.length + ' zones)');
+                        $log.log('zonesService::getDeletedZones-success (' + response.data.zoneChangeDeletedInfo.length + ' zones)');
                         deleteZonesPaging.next = response.data.nextId;
-                        updateDeletedZoneDisplay(response.data.zoneChanges);
+                        updateDeletedZoneDisplay(response.data.zoneChangeDeletedInfo);
                     })
                     .catch(function (error) {
                         handleError(error, 'zonesService::getDeletedZones-failure');
@@ -267,7 +267,7 @@ angular.module('controller.zones', [])
             .getDeletedZones(deleteZonesPaging.maxItems, startFrom, $scope.query, true)
             .then(function(response) {
                 deleteZonesPaging = pagingService.prevPageUpdate(response.data.nextId, deleteZonesPaging);
-                updateDeletedZoneDisplay(response.data.zoneChanges);
+                updateDeletedZoneDisplay(response.data.zoneChangeDeletedInfo);
             })
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
@@ -310,11 +310,11 @@ angular.module('controller.zones', [])
         return zonesService
             .getDeletedZones(deleteZonesPaging.maxItems, deleteZonesPaging.next, $scope.query, true)
             .then(function(response) {
-                var deletedZoneSets = response.data.zoneChanges;
+                var deletedZoneSets = response.data.zoneChangeDeletedInfo;
                 deleteZonesPaging = pagingService.nextPageUpdate(deletedZoneSets, response.data.nextId, deleteZonesPaging);
 
                 if (zoneSets.length > 0) {
-                    updateDeletedZoneDisplay(response.data.zoneChanges);
+                    updateDeletedZoneDisplay(response.data.zoneChangeDeletedInfo);
                 }
             })
             .catch(function (error) {

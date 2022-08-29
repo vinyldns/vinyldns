@@ -22,7 +22,7 @@ import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
@@ -179,25 +179,49 @@ class ZoneService(
                  ignoreAccess: Boolean = false
                ): Result[ListDeletedZoneChangesResponse] = {
     for {
-      listZonesResult <- zoneChangeRepository.listDeletedZoneInZoneChanges(
+      listZonesChangeResult <- zoneChangeRepository.listDeletedZoneInZoneChanges(
         authPrincipal,
         nameFilter,
         startFrom,
         maxItems,
         ignoreAccess
       )
-      zoneChanges = listZonesResult.zoneChange
+      zoneChanges = listZonesChangeResult.zoneChange
+      groupIds = zoneChanges.map(_.zone.adminGroupId).toSet
+      groups <- groupRepository.getGroups(groupIds)
+      userId = zoneChanges.map(_.userId).toSet
+      users <- userRepository.getUsers(userId,None,None)
+      zoneDeleteSummaryInfos = ZoneChangeDeletedInfoMapping(zoneChanges, authPrincipal, groups, users)
     } yield {
       ListDeletedZoneChangesResponse(
-        zoneChanges,
-      listZonesResult.zoneChangeFilter,
-      listZonesResult.nextId,
-      listZonesResult.startFrom,
-      listZonesResult.maxItems,
-      listZonesResult.ignoreAccess
+        zoneDeleteSummaryInfos,
+        listZonesChangeResult.zoneChangeFilter,
+        listZonesChangeResult.nextId,
+        listZonesChangeResult.startFrom,
+        listZonesChangeResult.maxItems,
+        listZonesChangeResult.ignoreAccess
     )
     }
   }.toResult
+
+    def ZoneChangeDeletedInfoMapping(
+                                zoneChange: List[ZoneChange],
+                                auth: AuthPrincipal,
+                                groups: Set[Group],
+                                users: ListUsersResults
+                              ): List[ZoneChangeDeletedInfo] =
+      zoneChange.map { zc =>
+        val groupName = groups.find(_.id == zc.zone.adminGroupId) match {
+          case Some(group) => group.name
+          case None => "Unknown group name"
+        }
+        val userName = users.users.find(_.id == zc.userId) match {
+          case Some(user) => user.userName
+          case None => "Unknown user name"
+        }
+        val zoneAccess = getZoneAccess(auth, zc.zone)
+        ZoneChangeDeletedInfo(zc, groupName,userName, zoneAccess)
+      }
 
   def zoneSummaryInfoMapping(
       zones: List[Zone],

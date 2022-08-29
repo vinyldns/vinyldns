@@ -304,10 +304,11 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Email</th>
-                                            <th>Created</th>
-                                            <th>Updated</th>
                                             <th>Admin Group</th>
+                                            <th>Created</th>
+                                            <th>Abandoned</th>
                                             <th>Status</th>
+                                            <th>Abandoned By</th>
                                             @if(meta.sharedDisplayEnabled) {
                                             <th>Access</th>
                                             }
@@ -315,21 +316,26 @@
                                         </thead>
                                         <tbody>
                                         <tr ng-repeat="deletedZone in deletedZones">
-                                            <td class="wrap-long-text">
-                                                {{deletedZone.zone.name}}
+                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.name">
                                             </td>
-                                            <td class="wrap-long-text" ng-bind="deletedZone.zone.email"></td>
-                                            <td>
-                                                {{deletedZone.zone.created}}
+                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.email">
                                             </td>
                                             <td>
-                                                {{deletedZone.zone.updated}}
+                                                <a ng-if="canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                   href="/groups/{{deletedZone.zoneChange.zone.adminGroupId}}"></a>
+                                                <span ng-if="!canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                      style="line-height: 0"></span>
                                             </td>
                                             <td>
-                                                <a ng-if="canAccessGroup(deletedZone.zone.adminGroupId)" ng-bind="deletedZone.zone.adminGroupName" href="/groups/{{deletedZone.zone.adminGroupId}}"></a>
-                                                <span ng-if="!canAccessGroup(deletedZone.zone.adminGroupId)" ng-bind="deletedZone.zone.adminGroupName" style="line-height: 0"></span>
+                                                {{deletedZone.zoneChange.zone.created}}
                                             </td>
-                                            <td ng-bind="deletedZone.zone.status"></td>
+                                            <td>
+                                                {{deletedZone.zoneChange.zone.updated}}
+                                            </td>
+                                            <td ng-bind="deletedZone.zoneChange.zone.status"></td>
+                                            <td>
+                                                {{deletedZone.userName}}
+                                            </td>
                                             @if(meta.sharedDisplayEnabled) {
                                             <td>{{zone.shared ? "Shared" : "Private"}}</td>
                                             }
