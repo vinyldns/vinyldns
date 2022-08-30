@@ -188,6 +188,16 @@ case class ZoneConnection(
 
   def decrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.decrypt(key))
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append("ZoneConnection: [")
+    sb.append("name=\"").append(name).append("\"; ")
+    sb.append("keyName=\"").append(keyName).append("\"; ")
+    sb.append("primaryServer=\"").append(primaryServer).append("\"; ")
+    sb.append("]")
+    sb.toString
+  }
 }
 
 final case class LegacyDnsBackend(
