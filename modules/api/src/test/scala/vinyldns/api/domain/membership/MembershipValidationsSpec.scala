@@ -94,7 +94,13 @@ class MembershipValidationsSpec
         val nonSuperAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, nonSuperAuth) should be(right)
       }
+    }
 
+    "User toString" should {
+      "not display access and secret keys" in {
+        val userString = s"""User: [id="ok"; userName="ok"; firstName="Some(ok)"; lastName="Some(ok)"; email="Some(test@test.com)"; created="${okUser.created}"; isSuper="false"; isSupport="false"; isTest="false"; lockStatus="Unlocked"; ]"""
+        okUser.toString shouldBe userString
+      }
     }
   }
 }
