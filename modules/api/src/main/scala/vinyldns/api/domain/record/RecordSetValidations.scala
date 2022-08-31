@@ -323,25 +323,10 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )
 
-//  def superUserCanUpdateOwnerGroup(
-//      existing: RecordSet,
-//      updates: RecordSet,
-//      zone: Zone,
-//      auth: AuthPrincipal
-//  ): Either[Throwable, Unit] =
-//    Either.cond(
-//      updates.ownerGroupId != existing.ownerGroupId
-//        && updates.zoneId == existing.zoneId
-//        && updates.name == existing.name
-//        && updates.typ == existing.typ
-//        && updates.ttl == existing.ttl
-//        && updates.records == existing.records
-//        && zone.shared
-//        && auth.isSuper,
-//      (),
-//      InvalidRequest("Cannot update RecordSet.")
-//    )
-
+  /**
+   * Checks of the user is a superuser, the zone is shared, and the only record attribute being changed
+   * is the record owner group.
+   */
   def canSuperUserUpdateOwnerGroup(
     existing: RecordSet,
     updates: RecordSet,

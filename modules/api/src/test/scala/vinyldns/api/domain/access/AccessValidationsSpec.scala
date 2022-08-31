@@ -255,6 +255,8 @@ class AccessValidationsSpec
       ) should be(right)
     }
   }
+
+  //TODO
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
@@ -290,6 +292,13 @@ class AccessValidationsSpec
       accessValidationTest.canUpdateRecordSet(userAuth, "test", RecordType.A, zoneIn, None) should be(
         right
       )
+    }
+
+    "return true if the user has AccessLevel.Read or AccessLevel.NoAccess and superUserCanUpdateOwnerGroup is true" in {
+      accessValidationTest.canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead,
+        None, true) should be(right)
+      accessValidationTest.canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone,
+        None, true) should be(right)
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
@@ -365,7 +374,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData(Fqdn("test.foo.comcast.net")))
+        newRecordData = List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }

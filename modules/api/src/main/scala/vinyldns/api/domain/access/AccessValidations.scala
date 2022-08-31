@@ -73,7 +73,7 @@ class AccessValidations(
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
-      superUserCanUpdateOwnerGroup: Boolean,
+      superUserCanUpdateOwnerGroup: Boolean = false,
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] = {
     val accessLevel =

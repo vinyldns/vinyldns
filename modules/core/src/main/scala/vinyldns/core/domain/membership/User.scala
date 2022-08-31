@@ -37,7 +37,7 @@ final case class User(
     email: Option[String] = None,
     created: DateTime = DateTime.now,
     id: String = UUID.randomUUID().toString,
-    isSuper: Boolean = true,
+    isSuper: Boolean = false,
     lockStatus: LockStatus = LockStatus.Unlocked,
     isSupport: Boolean = false,
     isTest: Boolean = false
