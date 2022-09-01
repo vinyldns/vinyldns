@@ -296,9 +296,9 @@ class AccessValidationsSpec
 
     "return true if the user has AccessLevel.Read or AccessLevel.NoAccess and superUserCanUpdateOwnerGroup is true" in {
       accessValidationTest.canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead,
-        None, true) should be(right)
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
       accessValidationTest.canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone,
-        None, true) should be(right)
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
