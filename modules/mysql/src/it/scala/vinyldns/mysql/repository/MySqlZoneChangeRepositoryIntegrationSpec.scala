@@ -66,7 +66,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     val zones: IndexedSeq[Zone] = for { i <- 1 to 3 } yield Zone(
       s"${goodUser.userName}.zone$i.",
       "test@test.com",
-      status = ZoneStatus.Deleted,
+      status = ZoneStatus.Active,
       connection = testConnection
     )
 
@@ -306,9 +306,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         memberGroupIds = groups.map(_.id)
       )
 
-      println(zoneRepo.listZones(okUserAuth).unsafeRunSync())
-      println(repo.listZoneChanges(testZone.head.id).unsafeRunSync())
-
       repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain theSameElementsAs deletedZoneChanges
 
       // dummy user only has access to one zone
@@ -350,10 +347,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       )
       addACL.unsafeRunSync()
       addACLZc.unsafeRunSync()
-
-      println(zoneRepo.listZones(okUserAuth).unsafeRunSync())
-      println(repo.listZoneChanges( testZone.take(2).head.id).unsafeRunSync())
-      println(zoneChange)
 
       (repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain). allElementsOf(zoneChange)
 

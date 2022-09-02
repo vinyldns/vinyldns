@@ -683,6 +683,29 @@ class MySqlZoneRepositoryIntegrationSpec
       f.unsafeRunSync() should contain theSameElementsAs expectedZones
     }
 
+    "check if an id has an ACL rule for at least one of the zones" in {
+
+      val zoneId = UUID.randomUUID().toString
+      val adminId = UUID.randomUUID().toString
+
+      val testZones = (1 until 3).map { num =>
+        okZone.copy(
+          name = num.toString + ".",
+          id = zoneId,
+          adminGroupId = adminId,
+          acl = testZoneAcl
+        )
+      }
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          zones <- repo.getFirstOwnedZoneAclGroupId(adminId)
+        } yield zones
+
+      f.unsafeRunSync() shouldBe Some(zoneId)
+    }
+
     "return None when group id is not in any ACL rule" in {
       val testZones = (1 until 3).map { num =>
         okZone.copy(
