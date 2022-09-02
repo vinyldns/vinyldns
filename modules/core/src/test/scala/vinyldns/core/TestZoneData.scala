@@ -98,9 +98,6 @@ object TestZoneData {
 
   val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)
 
-  val DeletedZoneChangePending: ZoneChange =
-    ZoneChange(zoneDeleted, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
-
   val abcDeletedZoneChange: ZoneChange = ZoneChange(
     abcZoneDeleted,
     "ok",
@@ -116,11 +113,6 @@ object TestZoneData {
     ZoneChangeStatus.Complete,
     created = DateTime.now.minus(1000)
   )
-
-  val DeletedZoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)
-
-
-
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =
     ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)
