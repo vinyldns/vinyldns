@@ -131,7 +131,7 @@ object ZoneChangeDeletedInfo {
     ZoneChangeDeletedInfo(
       zoneChange= zoneChange,
       groupName = groupName,
-      userName =userName,
+      userName = userName,
       accessLevel = accessLevel
     )
 }

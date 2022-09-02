@@ -39,12 +39,12 @@ object ListZoneChangesResponse {
 }
 
 case class ListDeletedZoneChangesResponse(
-                                           zoneChangeDeletedInfo: List[ZoneChangeDeletedInfo],
-                                           zoneChangeFilter: Option[String] = None,
-                                           nextId: Option[String] = None,
-                                           startFrom: Option[String] = None,
-                                           maxItems: Int = 100,
-                                           ignoreAccess: Boolean = false
-                                         )
+     zonesDeletedInfo: List[ZoneChangeDeletedInfo],
+     zoneChangeFilter: Option[String] = None,
+     nextId: Option[String] = None,
+     startFrom: Option[String] = None,
+     maxItems: Int = 100,
+     ignoreAccess: Boolean = false
+)
 
 

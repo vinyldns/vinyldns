@@ -145,7 +145,7 @@ class MySqlZoneChangeRepository
     allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
-  def listDeletedZoneInZoneChanges(
+  def listDeletedZones(
                  authPrincipal: AuthPrincipal,
                  zoneNameFilter: Option[String] = None,
                  startFrom: Option[String] = None,
@@ -160,11 +160,6 @@ class MySqlZoneChangeRepository
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          // get only deleted zones data.
-          sb.append(s""" where zc.zone_id !=
-                         (select case when max(z.id) is not null then z.id else 0 end as ZoneId
-                         from zone z )""" )
-
           val query = sb.toString
 
           val zoneChangeResults: List[ZoneChange] =
@@ -174,6 +169,7 @@ class MySqlZoneChangeRepository
             .list()
             .apply()
 
+          // get only deleted zones data.
           val deletedZoneResults: List[ZoneChange] =
             zoneChangeResults.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct
 
@@ -190,11 +186,11 @@ class MySqlZoneChangeRepository
             else (results, None)
 
           ListDeletedZonesChangeResults(
-            zoneChange = newResults,
-            zoneChangeFilter = zoneNameFilter,
+            zoneDeleted = newResults,
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
+            zoneChangeFilter = zoneNameFilter,
             ignoreAccess = ignoreAccess
           )
         }

@@ -179,14 +179,14 @@ class ZoneService(
                  ignoreAccess: Boolean = false
                ): Result[ListDeletedZoneChangesResponse] = {
     for {
-      listZonesChangeResult <- zoneChangeRepository.listDeletedZoneInZoneChanges(
+      listZonesChangeResult <- zoneChangeRepository.listDeletedZones(
         authPrincipal,
         nameFilter,
         startFrom,
         maxItems,
         ignoreAccess
       )
-      zoneChanges = listZonesChangeResult.zoneChange
+      zoneChanges = listZonesChangeResult.zoneDeleted
       groupIds = zoneChanges.map(_.zone.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
       userId = zoneChanges.map(_.userId).toSet

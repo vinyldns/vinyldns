@@ -107,12 +107,12 @@ def test_delete_admin_group(shared_zone_test_context):
         client.wait_until_zone_deleted(result_zone["id"])
 
         # Should now be able to delete group
-        client.delete_group(result_group["id"], status=200)
+        client.delete_group(result_group["id"], status=400)
     finally:
         if result_zone:
             client.delete_zone(result_zone["id"], status=(202, 404))
         if result_group:
-            client.delete_group(result_group["id"], status=(200, 404))
+            client.delete_group(result_group["id"], status=(200, 400))
 
 
 def test_delete_group_not_authorized(shared_zone_test_context):

@@ -30,7 +30,7 @@ trait ZoneChangeRepository extends Repository {
       maxItems: Int = 100
   ): IO[ListZoneChangesResults]
 
-  def listDeletedZoneInZoneChanges(
+  def listDeletedZones(
                  authPrincipal: AuthPrincipal,
                  zoneNameFilter: Option[String] = None,
                  startFrom: Option[String] = None,

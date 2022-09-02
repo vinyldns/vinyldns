@@ -237,10 +237,7 @@ CREATE TABLE IF NOT EXISTS zone_access
 (
     accessor_id char(36) not null,
     zone_id     char(36) not null,
-    primary key (accessor_id, zone_id),
-    constraint fk_zone_access_zone_id
-    foreign key (zone_id) references zone (id)
-    on delete cascade
+    primary key (accessor_id, zone_id)
 );
 
 CREATE INDEX IF NOT EXISTS zone_access_accessor_id_index
