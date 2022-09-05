@@ -19,7 +19,7 @@ package vinyldns.api.domain.batch
 import java.net.InetAddress
 import cats.data._
 import cats.implicits._
-import vinyldns.api.config.{BatchChangeConfig, DottedHostsConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -49,7 +49,8 @@ trait BatchChangeValidationsAlgebra {
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean
+      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      dottedHostConfig: Set[String]
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -80,8 +81,7 @@ class BatchChangeValidations(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     batchChangeConfig: BatchChangeConfig,
-    scheduledChangesConfig: ScheduledChangesConfig,
-    dottedHostsConfig: DottedHostsConfig
+    scheduledChangesConfig: ScheduledChangesConfig
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -272,7 +272,8 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean
+      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      dottedHostConfig: Set[String]
   ): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
@@ -280,7 +281,7 @@ class BatchChangeValidations(
           if groupedChanges
             .getLogicalChangeType(add.recordKey)
             .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist)
+        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
       // These cases MUST be below adds because:
@@ -296,10 +297,10 @@ class BatchChangeValidations(
     }
 
   // Check if the new record set has dots and if so whether they are allowed or not
-  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean): SingleValidation[Unit] = {
+  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean, dottedHostConfig: Set[String]): SingleValidation[Unit] = {
 
     // Check if the zone of the record set is present in dotted hosts config list
-    val isDomainAllowed = dottedHostsConfig.zoneList.contains(change.zone.name)
+    val isDomainAllowed = dottedHostConfig.contains(change.zone.name)
 
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
     if(change.recordName.contains(".") && isDomainAllowed) {
@@ -427,14 +428,15 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean,
       ownerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean
+      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      dottedHostConfig: Set[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist)
+        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig: Set[String])
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
-          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist)
+          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig: Set[String])
       case TXT | PTR =>
         ().validNel
       case other =>

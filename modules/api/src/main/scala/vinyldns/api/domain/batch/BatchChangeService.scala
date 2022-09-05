@@ -27,6 +27,7 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.backend.dns.DnsConversions._
+import vinyldns.api.config.DottedHostsConfig
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
@@ -49,7 +50,8 @@ object BatchChangeService {
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
       v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-      defaultTtl: Long
+      defaultTtl: Long,
+      dottedHostsConfig: DottedHostsConfig
   ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
@@ -64,7 +66,8 @@ object BatchChangeService {
       notifiers,
       scheduledChangesEnabled,
       v6DiscoveryNibbleBoundaries,
-      defaultTtl
+      defaultTtl,
+      dottedHostsConfig
     )
 }
 
@@ -81,7 +84,8 @@ class BatchChangeService(
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
     v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-    defaultTtl: Long
+    defaultTtl: Long,
+    dottedHostsConfig: DottedHostsConfig
 ) extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -122,13 +126,15 @@ class BatchChangeService(
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
+      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toBatchResult
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(groupedChanges).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         groupedChanges,
         auth,
         isApproved,
         batchChangeInput.ownerGroupId,
-        zoneOrRecordDoesNotAlreadyExist
+        zoneOrRecordDoesNotAlreadyExist,
+        allowedZoneList
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
@@ -156,6 +162,25 @@ class BatchChangeService(
     }
     else {
       false
+    }
+  }
+
+  // Get zones that are allowed to create dotted hosts using the zones present in dotted hosts config
+  def  getAllowedZones(zones: List[String]): IO[Set[String]] = {
+    if(zones.isEmpty){
+      val noZones: IO[Set[String]] = IO(Set.empty)
+      noZones
+    }
+    else {
+      // Wildcard zones needs to be passed to a separate method
+      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", ""))
+      // Zones without wildcard character are passed to a separate function
+      val namedZones = zones.filter(zone => !zone.contains("*"))
+      for{
+        namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
+        wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
+        zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
+      } yield zoneResult.map(x => x.name)
     }
   }
 

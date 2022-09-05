@@ -110,6 +110,7 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -118,7 +119,7 @@ class RecordSetService(
         None,
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
-        dottedHostsConfig
+        allowedZoneList
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -149,6 +150,7 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -157,7 +159,7 @@ class RecordSetService(
         Some(existing),
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
-        dottedHostsConfig
+        allowedZoneList
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -199,6 +201,25 @@ class RecordSetService(
     }
     else {
       false
+    }
+  }
+
+  // Get zones that are allowed to create dotted hosts using the zones present in dotted hosts config
+  def  getAllowedZones(zones: List[String]): IO[Set[String]] = {
+    if(zones.isEmpty){
+      val noZones: IO[Set[String]] = IO(Set.empty)
+      noZones
+    }
+    else {
+      // Wildcard zones needs to be passed to a separate method
+      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", ""))
+      // Zones without wildcard character are passed to a separate function
+      val namedZones = zones.filter(zone => !zone.contains("*"))
+      for{
+        namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
+        wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
+        zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
+      } yield zoneResult.map(x => x.name)
     }
   }
 
