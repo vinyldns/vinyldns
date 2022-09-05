@@ -750,7 +750,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
             client.delete_zone(zone["id"], status=202)
             client.wait_until_zone_deleted(zone["id"])
         if group:
-            shared_zone_test_context.ok_vinyldns_client.delete_group(group["id"], status=(200, 400))
+            shared_zone_test_context.ok_vinyldns_client.delete_group(group["id"], status=(200, 404))
 
 
 @pytest.mark.serial

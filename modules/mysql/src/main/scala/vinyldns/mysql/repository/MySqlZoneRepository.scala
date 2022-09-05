@@ -70,9 +70,16 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     */
   private final val PUT_ZONE_ACCESS =
     sql"""
-       |REPLACE INTO zone_access(accessor_id, zone_id)
-       |      VALUES ({accessorId}, {zoneId})
+       |REPLACE INTO zone_access(accessor_id, zone_id, zone_status)
+       |      VALUES ({accessorId}, {zoneId}, {zoneStatus})
         """.stripMargin
+
+  private final val UPDATE_ZONE_ACCESS =
+    sql"""
+         |UPDATE zone_access
+         |  SET zone_status = {zoneStatus}
+         |  WHERE zone_id = {zoneId}
+      """.stripMargin
 
   private final val DELETE_ZONE_ACCESS =
     sql"""
@@ -119,8 +126,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
     sql"""
          |SELECT zone_id
-         |  FROM zone_access z
-         | WHERE z.accessor_id = (?)
+         |  FROM zone_access za
+         | WHERE za.accessor_id = (?) AND za.zone_status <> 'Deleted'
          | LIMIT 1
         """.stripMargin
 
@@ -380,10 +387,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     val sqlParameters: Seq[Seq[(Symbol, Any)]] =
       zone.acl.rules.toSeq
         .map(r => r.userId.orElse(r.groupId).getOrElse("EVERYONE")) // if the user and group are empty, assert everyone
-        .map(userOrGroupId => Seq('accessorId -> userOrGroupId, 'zoneId -> zone.id))
+        .map(userOrGroupId => Seq('accessorId -> userOrGroupId, 'zoneId -> zone.id, 'zoneStatus -> zone.status.toString))
 
     // we MUST make sure that we put the admin group id as an accessor to this zone
-    val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id)
+    val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id,'zoneStatus -> zone.status.toString)
 
     // make sure that we do a distinct, so that we don't generate unnecessary inserts
     PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
@@ -394,9 +401,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     DELETE_ZONE.bind(zone.id).update().apply()
     zone
   }
-
   private def deleteZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
     DELETE_ZONE_ACCESS.bind(zone.id).update().apply()
+    zone
+  }
+
+  private def updateZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
+    UPDATE_ZONE_ACCESS.bindByName(
+      'zoneStatus ->zone.status.toString, 'zoneId ->zone.id).update().apply()
     zone
   }
 
@@ -409,6 +421,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       IO {
         DB.localTx { implicit s =>
           deleteZone(zone)
+          updateZoneAccess(zone)
         }
       }
     }
