@@ -245,8 +245,8 @@ class ZoneConnectionValidatorSpec
     "Zone Connection toString" should {
       "not display key and algorithm" in {
         zc.toString shouldBe "ZoneConnection: [name=\"zc.\"; keyName=\"zc.\"; primaryServer=\"10.1.1.1\"; ]"
-
-        // verify the same while displaying connection and transferConnection in Zone
+      }
+      "not display key and algorithm while displaying connection and transferConnection of a Zone" in {
         val zoneString = s"""Zone: [id="${testZone.id}"; name="vinyldns."; account="system"; adminGroupId="system"; status="Active"; shared="false"; connection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; transferConnection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; reverse="false"; isTest="false"; created="${testZone.created}"; ]"""
         testZone.toString shouldBe zoneString
       }
