@@ -83,6 +83,7 @@ class RecordSetServiceSpec
     mockBackendResolver,
     false,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
@@ -101,6 +102,7 @@ class RecordSetServiceSpec
     mockBackendResolver,
     true,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
@@ -165,6 +167,18 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe an[InvalidRequest]

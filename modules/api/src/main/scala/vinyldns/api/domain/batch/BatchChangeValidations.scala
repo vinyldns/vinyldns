@@ -303,10 +303,10 @@ class BatchChangeValidations(
     val isDomainAllowed = dottedHostConfig.contains(change.zone.name)
 
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
-    if(change.recordName.contains(".") && isDomainAllowed) {
+    if((change.recordName.contains(".") || !zoneOrRecordDoesNotAlreadyExist) && isDomainAllowed && change.recordName != change.zone.name) {
       // If there is a zone or record already present which conflicts with the new dotted record, throw an error
       if (!zoneOrRecordDoesNotAlreadyExist || change.recordName == change.zone.name)
-        DottedHostError(change.recordName, change.inputChange.typ.toString).invalidNel
+        DottedHostError(change.recordName, change.zone.name).invalidNel
       else
         ().validNel
     }

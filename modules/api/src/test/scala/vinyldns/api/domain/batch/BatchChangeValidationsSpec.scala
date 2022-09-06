@@ -819,7 +819,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -884,7 +886,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.foreach(_ shouldBe valid)
@@ -924,7 +928,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.foreach(_ shouldBe valid)
@@ -951,7 +957,9 @@ class BatchChangeValidationsSpec
       ),
       notAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -982,7 +990,9 @@ class BatchChangeValidationsSpec
       ),
       notAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1022,7 +1032,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1072,7 +1084,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1110,7 +1124,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.foreach(_ shouldBe valid)
@@ -1133,7 +1149,9 @@ class BatchChangeValidationsSpec
           ChangeForValidationMap(List(input.validNel), ExistingRecordSets(newRecordSetList)),
           okAuth,
           false,
-          None
+          None,
+          true,
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
         )
 
         result(0) should haveInvalid[DomainValidationError](
@@ -1150,7 +1168,9 @@ class BatchChangeValidationsSpec
           ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           okAuth,
           false,
-          None
+          None,
+          true,
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
         )
 
       result(0) shouldBe valid
@@ -1166,7 +1186,9 @@ class BatchChangeValidationsSpec
           ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           okAuth,
           false,
-          None
+          None,
+          true,
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
         )
         result(0) shouldBe valid
       }
@@ -1185,7 +1207,9 @@ class BatchChangeValidationsSpec
         ChangeForValidationMap(List(input.validNel), ExistingRecordSets(existingRecordSetList)),
         okAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
 
       result(0) should haveInvalid[DomainValidationError](
@@ -1217,7 +1241,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1238,7 +1264,9 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(List(addCname.validNel), ExistingRecordSets(newRecordSetList)),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1267,7 +1295,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1292,7 +1322,9 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(List(addCname.validNel), ExistingRecordSets(List(existingRecordPTR))),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1327,7 +1359,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1362,7 +1396,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1402,7 +1438,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1444,7 +1482,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.map(_ shouldBe valid)
@@ -1463,7 +1503,9 @@ class BatchChangeValidationsSpec
         ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
         okAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
 
     result(0) shouldBe valid
@@ -1482,7 +1524,9 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
       AuthPrincipal(superUser, Seq.empty),
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1509,7 +1553,9 @@ class BatchChangeValidationsSpec
         ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
         notAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
 
     result(0) shouldBe valid
@@ -1525,7 +1571,9 @@ class BatchChangeValidationsSpec
           ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           notAuth,
           false,
-          None
+          None,
+          true,
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
         )
 
       result(0) should haveInvalid[DomainValidationError](
@@ -1557,7 +1605,9 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(List(addCname.validNel, addPtr.validNel), ExistingRecordSets(List())),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1582,7 +1632,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1603,7 +1655,9 @@ class BatchChangeValidationsSpec
         ),
         okAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1633,7 +1687,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1655,7 +1711,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1677,7 +1735,9 @@ class BatchChangeValidationsSpec
       ),
       AuthPrincipal(superUser, Seq.empty),
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1708,7 +1768,9 @@ class BatchChangeValidationsSpec
       ),
       notAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1731,7 +1793,9 @@ class BatchChangeValidationsSpec
       ),
       notAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1799,7 +1863,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1848,7 +1914,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result.map(_ shouldBe valid)
   }
@@ -1891,7 +1959,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result.map(_ shouldBe valid)
   }
@@ -1921,7 +1991,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result.map(_ shouldBe valid)
   }
@@ -1959,7 +2031,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -1998,7 +2072,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result.map(_ shouldBe valid)
   }
@@ -2031,7 +2107,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result.map(_ shouldBe valid)
   }
@@ -2069,7 +2147,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.map(_ shouldBe valid)
@@ -2183,7 +2263,9 @@ class BatchChangeValidationsSpec
         ChangeForValidationMap(List(addMX.validNel), ExistingRecordSets(List(existingMX))),
         okAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
@@ -2206,7 +2288,9 @@ class BatchChangeValidationsSpec
       ChangeForValidationMap(List(addMx.validNel, addMx2.validNel), ExistingRecordSets(List())),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result(0) shouldBe valid
   }
@@ -2237,7 +2321,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
     result(0) shouldBe valid
   }
@@ -2266,7 +2352,9 @@ class BatchChangeValidationsSpec
       ),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
-      Some("some-owner-group-id")
+      Some("some-owner-group-id"),
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result.foreach(_ shouldBe valid)
@@ -2296,7 +2384,9 @@ class BatchChangeValidationsSpec
       ),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2325,7 +2415,9 @@ class BatchChangeValidationsSpec
       ),
       dummyAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) should
@@ -2349,7 +2441,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2363,7 +2457,9 @@ class BatchChangeValidationsSpec
       ),
       sharedAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2397,7 +2493,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      Some(okGroup.id)
+      Some(okGroup.id),
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2442,7 +2540,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      Some(okGroup.id)
+      Some(okGroup.id),
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2501,7 +2601,9 @@ class BatchChangeValidationsSpec
         ),
         okAuth,
         false,
-        None
+        None,
+        true,
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
       )
 
     result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
@@ -2555,7 +2657,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid
@@ -2657,7 +2761,9 @@ class BatchChangeValidationsSpec
       ),
       okAuth,
       false,
-      None
+      None,
+      true,
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
     )
 
     result(0) shouldBe valid

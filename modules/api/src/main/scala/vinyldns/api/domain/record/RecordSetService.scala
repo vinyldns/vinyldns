@@ -183,13 +183,22 @@ class RecordSetService(
   // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
   def zoneOrRecordDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
     // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
-    val newRecordFqdn = newRecordSet.name + "." + zone.name
+    val newRecordFqdn = if(newRecordSet.name != zone.name) newRecordSet.name + "." + zone.name else newRecordSet.name
+
+    val possibleZones = if(newRecordSet.name.contains(".")){
+      newRecordSet.name.split('.').map(x => x + "." + zone.name)
+    } else {
+      Array(newRecordSet.name)
+    }
+
     for {
       zone <- zoneRepository.getZoneByName(newRecordFqdn)
+      allMatchingZones <- zoneRepository.getZonesByFilters(possibleZones.toSet)
       record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
+      isNotTheIntendedZone = allMatchingZones.map(x => x.name).exists(x => newRecordFqdn.contains(x))
       isZoneAlreadyExist = zone.isDefined
       isRecordAlreadyExist = doesRecordWithSameTypeExist(record, newRecordSet)
-      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist) false else true
+      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist || isNotTheIntendedZone) false else true
     } yield doesNotExist
   }
 

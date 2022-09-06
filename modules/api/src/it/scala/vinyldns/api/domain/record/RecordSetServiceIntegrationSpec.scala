@@ -300,6 +300,7 @@ class RecordSetServiceIntegrationSpec
       mockBackendResolver,
       false,
       vinyldnsConfig.highValueDomainConfig,
+      vinyldnsConfig.dottedHostsConfig,
       vinyldnsConfig.serverConfig.approvedNameServers,
       useRecordSetCache = true
     )

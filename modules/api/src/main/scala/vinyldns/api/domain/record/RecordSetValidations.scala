@@ -103,7 +103,7 @@ object RecordSetValidations {
     val isDomainAllowed = dottedHostConfig.contains(zone.name)
 
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
-    if(newRecordSet.name.contains(".") && isDomainAllowed) {
+    if((newRecordSet.name.contains(".") || !zoneOrRecordDoesNotAlreadyExist) && isDomainAllowed && newRecordSet.name != zone.name) {
       isDotted(newRecordSet, zone, existingRecordSet, zoneOrRecordDoesNotAlreadyExist)
     }
     else{
@@ -120,8 +120,8 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     ensuring(
       InvalidRequest(
-        s"Record with name ${newRecordSet.name} and type ${newRecordSet.typ} already exists. " +
-          s"Please check the record and zone that's already present and make the change there."
+        s"Record with fqdn '${newRecordSet.name}.${zone.name}' cannot be created. " +
+          s"Please check if there's a zone or record that already exist and make the change there."
       )
     )(
       (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && zoneOrRecordDoesNotAlreadyExist

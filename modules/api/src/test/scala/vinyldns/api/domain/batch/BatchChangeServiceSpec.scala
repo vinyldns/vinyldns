@@ -418,7 +418,8 @@ class BatchChangeServiceSpec
     mockNotifiers,
     false,
     defaultv6Discovery,
-    7200L
+    7200L,
+    VinylDNSTestHelpers.dottedHostsConfig
   )
 
   private val underTestManualEnabled = new BatchChangeService(
@@ -434,7 +435,8 @@ class BatchChangeServiceSpec
     mockNotifiers,
     false,
     defaultv6Discovery,
-    7200L
+    7200L,
+    VinylDNSTestHelpers.dottedHostsConfig
   )
 
   private val underTestScheduledEnabled = new BatchChangeService(
@@ -450,7 +452,8 @@ class BatchChangeServiceSpec
     mockNotifiers,
     true,
     defaultv6Discovery,
-    7200L
+    7200L,
+    VinylDNSTestHelpers.dottedHostsConfig
   )
 
   "applyBatchChange" should {
@@ -476,7 +479,8 @@ class BatchChangeServiceSpec
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 17),
-        7200L
+        7200L,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -507,7 +511,8 @@ class BatchChangeServiceSpec
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 16),
-        7200L
+        7200L,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -1177,7 +1182,8 @@ class BatchChangeServiceSpec
         mockNotifiers,
         false,
         defaultv6Discovery,
-        7200L
+        7200L,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1218,7 +1224,8 @@ class BatchChangeServiceSpec
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 16),
-        7200L
+        7200L,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1244,7 +1251,8 @@ class BatchChangeServiceSpec
         mockNotifiers,
         false,
         defaultv6Discovery,
-        7200L
+        7200L,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
       val ip1 = "::1"
