@@ -326,7 +326,7 @@ class RecordSetServiceSpec
       result.status shouldBe RecordSetChangeStatus.Pending
     }
   }
-  //TODO
+
   "updateRecordSet" should {
     "return the recordSet change as the result" in {
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)

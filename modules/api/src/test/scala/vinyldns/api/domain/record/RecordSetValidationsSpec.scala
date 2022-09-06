@@ -605,8 +605,7 @@ class RecordSetValidationsSpec
         error.getMessage() shouldBe RecordNameFilterError
       }
     }
-
-    //TODO
+    
     "canSuperUserUpdateOwnerGroup" should {
       "return true when record owner group is the only field changed in the updated record, the zone is shared, " +
         "and user is a superuser" in {

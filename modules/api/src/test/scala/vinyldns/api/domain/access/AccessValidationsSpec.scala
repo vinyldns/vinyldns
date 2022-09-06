@@ -256,7 +256,6 @@ class AccessValidationsSpec
     }
   }
 
-  //TODO
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
