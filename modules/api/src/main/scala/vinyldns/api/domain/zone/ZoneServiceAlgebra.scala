@@ -52,6 +52,10 @@ trait ZoneServiceAlgebra {
       maxItems: Int
   ): Result[ListZoneChangesResponse]
 
+  def listFailedZoneChanges(
+                             authPrincipal: AuthPrincipal
+                           ): Result[ListFailedZoneChangesResponse]
+
   def addACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,

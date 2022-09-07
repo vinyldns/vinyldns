@@ -41,3 +41,7 @@ object ListRecordSetChangesResponse {
       listResults.maxItems
     )
 }
+
+case class ListFailedRecordSetChangesResponse(
+                                         failedRecordSetChanges: List[RecordSetChangeInfo] = Nil,
+                                       )

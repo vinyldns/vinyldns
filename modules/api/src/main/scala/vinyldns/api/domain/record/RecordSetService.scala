@@ -377,6 +377,25 @@ class RecordSetService(
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
     } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
+  def listFailedRecordSetChanges(
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListFailedRecordSetChangesResponse] =
+    for {
+      recordSetChangesFailedResults <- recordChangeRepository
+        .listFailedRecordSetChanges()
+        .toResult[List[RecordSetChange]]
+      _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
+      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesFailedResults)
+    } yield ListFailedRecordSetChangesResponse(recordSetChangesInfo)
+
+  def zoneAccess(
+                  RecordSetCh: List[RecordSetChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    RecordSetCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
+
   def getZone(zoneId: String): Result[Zone] =
     zoneRepository
       .getZone(zoneId)

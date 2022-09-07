@@ -233,6 +233,16 @@ class RecordSetRoute(
             }
         }
       }
+    } ~
+    path("metrics" / "health" / "recordsetchangesfailure") {
+      (get & monitor("Endpoint.listFailedRecordSetChanges")) {
+        handleRejections(invalidQueryHandler) {
+          authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_)) {
+            changes =>
+              complete(StatusCodes.OK, changes)
+          }
+        }
+      }
     }
 
   private val invalidQueryHandler = RejectionHandler

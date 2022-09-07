@@ -46,6 +46,12 @@ class MySqlZoneChangeRepository
       |  LIMIT {maxItems}
     """.stripMargin
 
+  private final val LIST_ZONES_CHANGES_DATA =
+    sql"""
+         |SELECT zc.data
+         |  FROM zone_change zc
+    """.stripMargin
+
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       IO {
@@ -97,6 +103,20 @@ class MySqlZoneChangeRepository
           }
 
           ListZoneChangesResults(maxQueries, nextId, startFrom, maxItems)
+        }
+      }
+    }
+
+  def listFailedZoneChanges(): IO[List[ZoneChange]] =
+    monitor("repo.ZoneChange.listFailedZoneChanges") {
+      IO {
+        DB.readOnly { implicit s =>
+          val queryResult = LIST_ZONES_CHANGES_DATA
+            .map(extractZoneChange(1))
+            .list()
+            .apply()
+          val maxQueries = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed)
+          maxQueries
         }
       }
     }
