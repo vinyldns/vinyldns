@@ -998,7 +998,7 @@ class ZoneRoutingSpec
       val zoneUpdateFailed = zoneUpdate.copy(status = ZoneChangeStatus.Failed)
       Get(s"/metrics/health/zonechangesfailure") ~> zoneRoute ~> check {
         val changes = responseAs[ListFailedZoneChangesResponse]
-        changes.FailedZoneChanges.map(_.id) shouldBe List(zoneCreateFailed.id, zoneUpdateFailed.id)
+        changes.failedZoneChanges.map(_.id) shouldBe List(zoneCreateFailed.id, zoneUpdateFailed.id)
 
       }
     }

@@ -743,7 +743,7 @@ class ZoneServiceSpec
       val result: ListFailedZoneChangesResponse =
         rightResultOf(underTest.listFailedZoneChanges(okAuth).value)
 
-      result.FailedZoneChanges shouldBe List(
+      result.failedZoneChanges shouldBe List(
         zoneUpdate.copy(status = ZoneChangeStatus.Failed))
   }
   }
