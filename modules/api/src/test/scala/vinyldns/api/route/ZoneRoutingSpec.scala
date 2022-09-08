@@ -992,6 +992,18 @@ class ZoneRoutingSpec
     }
   }
 
+  "GET failed zone changes" should {
+    "return the failed zone changes" in {
+      val zoneCreateFailed = zoneCreate.copy(status = ZoneChangeStatus.Failed)
+      val zoneUpdateFailed = zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      Get(s"/metrics/health/zonechangesfailure") ~> zoneRoute ~> check {
+        val changes = responseAs[ListFailedZoneChangesResponse]
+        changes.FailedZoneChanges.map(_.id) shouldBe List(zoneCreateFailed.id, zoneUpdateFailed.id)
+
+      }
+    }
+  }
+
   "PUT zone" should {
     "return 202 when the zone is updated" in {
       Put(s"/zones/${ok.id}")

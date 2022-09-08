@@ -409,7 +409,7 @@ class RecordSetRoutingSpec
 
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
-  private val listFailedRecordSetChangesResponse = ListFailedRecordSetChangesResponse(
+  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
     failedChangesWithUserName
   )
 
@@ -574,7 +574,7 @@ class RecordSetRoutingSpec
                                authPrincipal: AuthPrincipal
                              ): Result[ListFailedRecordSetChangesResponse] = {
       val outcome = authPrincipal match {
-        case _ => Right(listFailedRecordSetChangesResponse)
+        case _ => Right(listFailedRecordSetChangeResponse)
       }
       outcome.toResult
     }
@@ -832,6 +832,20 @@ class RecordSetRoutingSpec
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+  "GET failed record set changes" should {
+    "return the failed record set changes" in {
+      val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
+      val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
+      println(rsChangeFailed1)
+      println(rsChangeFailed2)
+
+      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+        val changes = responseAs[ListFailedRecordSetChangesResponse]
+        changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
+
       }
     }
   }
