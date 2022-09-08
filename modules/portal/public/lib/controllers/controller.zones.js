@@ -70,7 +70,7 @@ angular.module('controller.zones', [])
     });
 
     $scope.canAccessGroup = function(groupId) {
-         return $scope.myGroupIds !== "undefined" &&  $scope.myGroupIds.indexOf(groupId) > -1;
+         return $scope.myGroupIds !== undefined &&  $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     $scope.canAccessZone = function(accessLevel) {
@@ -89,7 +89,7 @@ angular.module('controller.zones', [])
         zonesService
             .getZones(zonesPaging.maxItems, undefined, $scope.query)
             .then(function (response) {
-                $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
+                $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;
                 updateZoneDisplay(response.data.zones);
                 if (!$scope.query.length) {
@@ -103,7 +103,7 @@ angular.module('controller.zones', [])
         zonesService
             .getZones(zonesPaging.maxItems, undefined, $scope.query, true)
             .then(function (response) {
-                $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
+                $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 allZonesPaging.next = response.data.nextId;
                 updateAllZonesDisplay(response.data.zones);
             })
@@ -116,7 +116,7 @@ angular.module('controller.zones', [])
         $scope.zones = zones;
         $scope.myZoneIds = zones.map(function(zone) {return zone['id']});
         $scope.zonesLoaded = true;
-        $log.log("Displaying my zones: ", $scope.zones);
+        $log.debug("Displaying my zones: ", $scope.zones);
         if($scope.zones.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
@@ -127,7 +127,7 @@ angular.module('controller.zones', [])
     function updateAllZonesDisplay (zones) {
         $scope.allZones = zones;
         $scope.allZonesLoaded = true;
-        $log.log("Displaying all zones: ", $scope.allZones);
+        $log.debug("Displaying all zones: ", $scope.allZones);
         if($scope.allZones.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
@@ -139,7 +139,7 @@ angular.module('controller.zones', [])
 
     $scope.addZoneConnection = function () {
         if ($scope.processing) {
-            $log.log('zoneConnection::processing is true; exiting');
+            $log.debug('zoneConnection::processing is true; exiting');
             return;
         }
 

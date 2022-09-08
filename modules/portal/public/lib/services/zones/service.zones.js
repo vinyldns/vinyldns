@@ -40,7 +40,7 @@ angular.module('service.zones', [])
 
         this.sendZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: sending zone", sanitizedPayload);
+            $log.debug("service.zones: sending zone", sanitizedPayload);
             return $http.post("/api/zones", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 
@@ -50,7 +50,7 @@ angular.module('service.zones', [])
 
         this.updateZone = function (id, payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: updating zone", sanitizedPayload);
+            $log.debug("service.zones: updating zone", sanitizedPayload);
             return $http.put("/api/zones/"+id, sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 
