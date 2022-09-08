@@ -39,5 +39,5 @@ object ListZoneChangesResponse {
 }
 
 case class ListFailedZoneChangesResponse(
-                                    FailedZoneChanges: List[ZoneChange] = Nil,
+                                    failedZoneChanges: List[ZoneChange] = Nil,
                                   )

@@ -95,7 +95,8 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       repo.getRecordSetChange(okZone.id, deletes(0).id).unsafeRunSync() shouldBe deletes.headOption
     }
   }
-  "list failed record changes" should {
+
+  "list record changes" should {
     "return successfully without start from" in {
       val inserts = generateInserts(okZone, 10)
       val saveRecChange = executeWithinTransaction { db: DB =>
@@ -137,6 +138,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       page3.items should contain theSameElementsAs expectedOrder.slice(4, 5)
     }
   }
+
   "list failed record changes" should {
       "return records for failed record changes" in {
         val inserts = generateFailedInserts(okZone, 10)
@@ -160,6 +162,4 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       result shouldBe List()
     }
   }
-
-
   }

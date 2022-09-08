@@ -839,8 +839,6 @@ class RecordSetRoutingSpec
     "return the failed record set changes" in {
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
       val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
-      println(rsChangeFailed1)
-      println(rsChangeFailed2)
 
       Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
         val changes = responseAs[ListFailedRecordSetChangesResponse]
