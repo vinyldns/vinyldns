@@ -78,6 +78,22 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       status,
       created = DateTime.now().minusSeconds(Random.nextInt(1000))
     )
+    val failedChanges
+    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
+      zone,
+      zone.account,
+      ZoneChangeType.Update,
+      status= ZoneChangeStatus.Failed,
+      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+    )
+    val successChanges
+    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
+      zone,
+      zone.account,
+      ZoneChangeType.Update,
+      status= ZoneChangeStatus.Complete,
+      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+    )
   }
 
   import TestData._
@@ -144,6 +160,33 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       listResponse.items should equal(expectedChanges)
       listResponse.nextId should equal(None)
       listResponse.startFrom should equal(None)
+    }
+
+    "get all failedChanges for a failed zone changes" in {
+      val changeSetupResults = failedChanges.map(repo.save(_)).toList.parSequence
+      changeSetupResults
+        .unsafeRunTimed(5.minutes)
+        .getOrElse(
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
+
+      val expectedChanges =
+        failedChanges.toList
+
+      val listResponse = repo.listFailedZoneChanges().unsafeRunSync()
+      listResponse should contain theSameElementsAs(expectedChanges)
+    }
+
+    "get empty list in failedChanges for a success zone changes" in {
+      val changeSetupResults = successChanges.map(repo.save(_)).toList.parSequence
+      changeSetupResults
+        .unsafeRunTimed(5.minutes)
+        .getOrElse(
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
+
+      val listResponse = repo.listFailedZoneChanges().unsafeRunSync()
+      listResponse shouldBe List()
     }
 
     "get zone changes using a maxItems of 1" in {

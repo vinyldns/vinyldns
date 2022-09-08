@@ -385,8 +385,7 @@ class RecordSetService(
         .listFailedRecordSetChanges()
         .toResult[List[RecordSetChange]]
       _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
-      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesFailedResults)
-    } yield ListFailedRecordSetChangesResponse(recordSetChangesInfo)
+    } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)
 
   def zoneAccess(
                   RecordSetCh: List[RecordSetChange],

@@ -27,7 +27,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
@@ -396,6 +396,7 @@ class RecordSetRoutingSpec
     RecordSetChangeType.Create,
     RecordSetChangeStatus.Complete
   )
+
   private val changesWithUserName =
     List(RecordSetChangeInfo(rsChange1, Some("ok")), RecordSetChangeInfo(rsChange2, Some("ok")))
   private val listRecordSetChangesResponse = ListRecordSetChangesResponse(
@@ -404,6 +405,12 @@ class RecordSetRoutingSpec
     nextId = None,
     startFrom = None,
     maxItems = 100
+  )
+
+  private val failedChangesWithUserName =
+    List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
+  private val listFailedRecordSetChangesResponse = ListFailedRecordSetChangesResponse(
+    failedChangesWithUserName
   )
 
   class TestService extends RecordSetServiceAlgebra {
@@ -562,6 +569,15 @@ class RecordSetRoutingSpec
         )
       }
     }.toResult
+
+    def listFailedRecordSetChanges(
+                               authPrincipal: AuthPrincipal
+                             ): Result[ListFailedRecordSetChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedRecordSetChangesResponse)
+      }
+      outcome.toResult
+    }
 
     def searchRecordSets(
                            startFrom: Option[String],

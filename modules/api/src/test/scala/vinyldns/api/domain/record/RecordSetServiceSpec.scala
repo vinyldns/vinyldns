@@ -1291,6 +1291,30 @@ class RecordSetServiceSpec
     }
   }
 
+  "listFailedRecordSetChanges" should {
+    "retrieve the recordset changes" in {
+      val completeRecordSetChanges: List[RecordSetChange] = List(
+        pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+        pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
+        completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+        completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+      )
+      //val recordSetChange= List[RecordSetChange]
+      doReturn(IO.pure(completeRecordSetChanges))
+        .when(mockRecordChangeRepo)
+        .listFailedRecordSetChanges()
+
+
+      val result: ListFailedRecordSetChangesResponse =
+        rightResultOf(underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value)
+
+      val changesWithName =
+        ListFailedRecordSetChangesResponse(completeRecordSetChanges)
+
+      result shouldBe changesWithName
+    }
+  }
+
   "getRecordSetChange" should {
     "return the record set change if it is found" in {
       doReturn(IO.pure(Some(pendingCreateAAAA)))

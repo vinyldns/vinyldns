@@ -133,6 +133,10 @@ class ZoneRoutingSpec
     maxItems = 100
   )
 
+  private val listFailedZoneChangeResponse = ListFailedZoneChangesResponse(
+    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed))
+  )
+
   val crypto = new JavaCrypto(
     ConfigFactory.parseString(
       """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
@@ -344,10 +348,21 @@ class ZoneRoutingSpec
         startFrom: Option[String],
         maxItems: Int
     ): Result[ListZoneChangesResponse] = {
+
+
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listZoneChangeResponse)
+      }
+      outcome.toResult
+    }
+
+    def listFailedZoneChanges(
+                         authPrincipal: AuthPrincipal
+                       ): Result[ListFailedZoneChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedZoneChangeResponse)
       }
       outcome.toResult
     }
