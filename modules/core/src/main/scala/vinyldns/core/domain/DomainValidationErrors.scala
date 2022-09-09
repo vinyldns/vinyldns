@@ -52,6 +52,11 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
       "joined by dots, and terminated with a dot."
 }
 
+final case class InvalidCName(param: String) extends DomainValidationError {
+  def message: String =
+    s"""Invalid Cname: "$param", valid cname should not be IP address"""
+}
+
 final case class InvalidLength(param: String, minLengthInclusive: Int, maxLengthInclusive: Int)
     extends DomainValidationError {
   def message: String =

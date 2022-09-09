@@ -27,6 +27,7 @@ import scala.util.matching.Regex
   Object to house common domain validations
  */
 object DomainValidations {
+
   val validFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z_]{1})\.)*$""".r
   val validIpv4Regex: Regex =
@@ -56,6 +57,13 @@ object DomainValidations {
   val TXT_TEXT_MAX_LENGTH: Int = 64764
   val MX_PREFERENCE_MIN_VALUE: Int = 0
   val MX_PREFERENCE_MAX_VALUE: Int = 65535
+
+  // Cname check - Cname should not be IP address
+  def validateCName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
+    validateIpv4Address(name.fqdn.dropRight(1)).isValid match {
+      case true => InvalidCName(name.toString).invalidNel
+      case false => validateHostName(name.fqdn).map(_ => name)
+    }
 
   def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateHostName(name.fqdn).map(_ => name)

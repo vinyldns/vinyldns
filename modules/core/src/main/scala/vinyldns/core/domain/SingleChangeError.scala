@@ -36,7 +36,7 @@ object DomainValidationErrorType extends Enumeration {
   CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
   NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
-  DeleteRecordDataDoesNotExist = Value
+  DeleteRecordDataDoesNotExist, InvalidCName = Value
 
   // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
@@ -72,6 +72,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: RecordRequiresManualReview => RecordRequiresManualReview
       case _: UnsupportedOperation => UnsupportedOperation
       case _: DeleteRecordDataDoesNotExist => DeleteRecordDataDoesNotExist
+      case _: InvalidCName => InvalidCName
     }
   // $COVERAGE-ON$
 }

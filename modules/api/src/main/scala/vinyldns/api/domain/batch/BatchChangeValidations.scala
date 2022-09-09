@@ -234,7 +234,7 @@ class BatchChangeValidations(
     record match {
       case a: AData => validateIpv4Address(a.address).asUnit
       case aaaa: AAAAData => validateIpv6Address(aaaa.address).asUnit
-      case cname: CNAMEData => validateHostName(cname.cname).asUnit
+      case cname: CNAMEData => validateCName(cname.cname).asUnit
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
