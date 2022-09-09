@@ -117,7 +117,7 @@ angular.module('controller.zones', [])
         zonesService
                     .getDeletedZones(zonesPaging.maxItems, undefined, $scope.query)
                     .then(function (response) {
-                        $log.log('zonesService::getDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
+                        $log.debug('zonesService::getDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
                         deleteZonesPaging.next = response.data.nextId;
                         updateDeletedZoneDisplay(response.data.zonesDeletedInfo);
                     })
@@ -129,7 +129,7 @@ angular.module('controller.zones', [])
     function updateDeletedZoneDisplay (deletedZones) {
         $scope.deletedZones = deletedZones;
         $scope.DeletedZonesLoaded = true;
-        $log.log("Displaying my Deleted zones: ", $scope.deletedZones);
+        $log.debug("Displaying my Deleted zones: ", $scope.deletedZones);
                 if($scope.deletedZones.length > 0) {
                     $("td.dataTables_empty").hide();
                 } else {

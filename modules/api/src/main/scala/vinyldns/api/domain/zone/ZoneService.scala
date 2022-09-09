@@ -204,7 +204,7 @@ class ZoneService(
     }
   }.toResult
 
-    def ZoneChangeDeletedInfoMapping(
+   private def ZoneChangeDeletedInfoMapping(
                                 zoneChange: List[ZoneChange],
                                 auth: AuthPrincipal,
                                 groups: Set[Group],
