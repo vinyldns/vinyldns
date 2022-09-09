@@ -238,10 +238,10 @@ angular.module('controller.membership', []).controller('MembershipController', f
             id = id.substring(id.lastIndexOf('/') + 1);
             id = id.substring(0, id.indexOf('#'))
         }
-        $log.log('refreshGroupChanges, loading group with id ', id);
+        $log.debug('refreshGroupChanges, loading group with id ', id);
         changePaging = pagingService.resetPaging(changePaging);
         function success(response) {
-            $log.log('groupsService::getGroupChanges-success');
+            $log.debug('groupsService::getGroupChanges-success');
             changePaging.next = response.data.nextId;
             updateChangeDisplay(response.data.changes)
         }
@@ -281,7 +281,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
         var id = $location.absUrl().toString();
         id = id.substring(id.lastIndexOf('/') + 1);
         id = id.substring(0, id.indexOf('#'))
-        $log.log('changePrevPage, loading group with id ', id);
+        $log.debug('changePrevPage, loading group with id ', id);
         return groupsService
             .getGroupChanges(id, changePaging.maxItems, startFrom)
             .then(function(response) {
@@ -297,7 +297,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
         var id = $location.absUrl().toString();
         id = id.substring(id.lastIndexOf('/') + 1);
         id = id.substring(0, id.indexOf('#'))
-        $log.log('changeNextPage, loading group with id ', id);
+        $log.debug('changeNextPage, loading group with id ', id);
         return groupsService
             .getGroupChanges(id, changePaging.maxItems, changePaging.next)
             .then(function(response) {
