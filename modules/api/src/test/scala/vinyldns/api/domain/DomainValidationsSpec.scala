@@ -23,7 +23,7 @@ import org.scalatest._
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import vinyldns.api.ValidationTestImprovements._
-import vinyldns.core.domain.{Fqdn, InvalidCName, InvalidDomainName, InvalidLength}
+import vinyldns.core.domain.{Fqdn, InvalidDomainName, InvalidLength}
 
 class DomainValidationsSpec
     extends AnyPropSpec
@@ -107,8 +107,8 @@ class DomainValidationsSpec
   }
 
   property("fqdn names beginning with invalid characters should fail with InvalidDomainName") {
-    validateCName(Fqdn("/slash.domain.name.")).failWith[InvalidCName]
-    validateCName(Fqdn("-hyphen.domain.name.")).failWith[InvalidCName]
+    validateCName(Fqdn("/slash.domain.name.")).failWith[InvalidDomainName]
+    validateCName(Fqdn("-hyphen.domain.name.")).failWith[InvalidDomainName]
   }
 
   property("fqdn names with underscores should pass property-based testing") {
