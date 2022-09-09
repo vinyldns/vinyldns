@@ -117,7 +117,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         groupsService
             .getGroupsAbridged(groupsPaging.maxItems, undefined, false, $scope.query)
             .then(function (result) {
-                  $log.log('getGroups:refresh-success', result);
+                  $log.debug('getGroups:refresh-success', result);
                   //update groups
                   groupsPaging.next = result.data.nextId;
                   updateGroupDisplay(result.data.groups);
@@ -132,7 +132,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         groupsService
             .getGroupsAbridged(allGroupsPaging.maxItems, undefined, true, $scope.query)
             .then(function (result) {
-                $log.log('getGroups:refresh-success', result);
+                $log.debug('getGroups:refresh-success', result);
                 //update groups
                 allGroupsPaging.next = result.data.nextId;
                 updateAllGroupDisplay(result.data.groups);
@@ -296,7 +296,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     function updateGroupDisplay (groups) {
         $scope.groups.items = groups;
         $scope.groupsLoaded = true;
-        $log.log("Displaying my groups: ", $scope.groups.items);
+        $log.debug("Displaying my groups: ", $scope.groups.items);
         if($scope.groups.items.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
@@ -307,7 +307,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     function updateAllGroupDisplay (groups) {
         $scope.allGroup.items = groups;
         $scope.allGroupsLoaded = true;
-        $log.log("Displaying all groups: ", $scope.allGroup.items);
+        $log.debug("Displaying all groups: ", $scope.allGroup.items);
         if($scope.allGroup.items.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
