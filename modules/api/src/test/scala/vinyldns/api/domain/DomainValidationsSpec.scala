@@ -23,7 +23,7 @@ import org.scalatest._
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import vinyldns.api.ValidationTestImprovements._
-import vinyldns.core.domain.{InvalidDomainName, InvalidLength}
+import vinyldns.core.domain.{Fqdn, InvalidCName, InvalidDomainName, InvalidLength}
 
 class DomainValidationsSpec
     extends AnyPropSpec
@@ -76,6 +76,55 @@ class DomainValidationsSpec
     validateHostName("asterisk*.domain.name.") shouldBe invalid
     validateHostName("asterisk.*domain.name.") shouldBe invalid
     validateHostName("asterisk.domain*.name.") shouldBe invalid
+  }
+
+  property("Shortests fqdn name should be valid") {
+    val fqdn = Fqdn("a.")
+    validateCName(fqdn) shouldBe valid
+  }
+
+  property("Ip address in cname should be invalid") {
+    val fqdn = Fqdn("1.2.3.4")
+    println(validateCName(fqdn))
+    validateCName(fqdn) shouldBe invalid
+  }
+
+  property("Longest fqdn name should be valid") {
+    val fqdn = Fqdn(("a" * 50 + ".") * 5)
+    validateCName(fqdn) shouldBe valid
+  }
+
+  property("fqdn name should pass property-based testing") {
+    forAll(domainGenerator) { domain: String =>
+      val domains= Fqdn(domain)
+      whenever(validateCName(domains).isValid) {
+        domains.fqdn.length should be > 0
+        domains.fqdn.length should be < 256
+        (domains.fqdn should fullyMatch).regex(validFQDNRegex)
+        domains.fqdn should endWith(".")
+      }
+    }
+  }
+
+  property("fqdn names beginning with invalid characters should fail with InvalidDomainName") {
+    validateCName(Fqdn("/slash.domain.name.")).failWith[InvalidCName]
+    validateCName(Fqdn("-hyphen.domain.name.")).failWith[InvalidCName]
+  }
+
+  property("fqdn names with underscores should pass property-based testing") {
+    validateCName(Fqdn("_underscore.domain.name.")).isValid
+    validateCName(Fqdn("under_score.domain.name.")).isValid
+    validateCName(Fqdn("underscore._domain.name.")).isValid
+  }
+
+  // For wildcard records. '*' can only be in the beginning followed by '.' and domain name
+  property("fqdn names beginning with asterisk should pass property-based testing") {
+    validateCName(Fqdn("*.domain.name.")) shouldBe valid
+    validateCName(Fqdn("aste*risk.domain.name.")) shouldBe invalid
+    validateCName(Fqdn("*asterisk.domain.name.")) shouldBe invalid
+    validateCName(Fqdn("asterisk*.domain.name.")) shouldBe invalid
+    validateCName(Fqdn("asterisk.*domain.name."))shouldBe invalid
+    validateCName(Fqdn("asterisk.domain*.name.")) shouldBe invalid
   }
 
   property("Valid Ipv4 addresses should pass property-based testing") {
