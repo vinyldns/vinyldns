@@ -491,3 +491,14 @@ input[type="file"] {
 .modal-backdrop.show {
   opacity: 0.75;
 }
+
+#fixed-side-menu {
+    position: fixed;
+    top: 0;
+}
+
+#fixed-top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
