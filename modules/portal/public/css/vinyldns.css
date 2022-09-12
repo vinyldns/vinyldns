@@ -104,7 +104,7 @@ a.action-link {
     top: 3px;
     left: 50%;
     width: 40%;
-    z-index: 100;
+    z-index: 2000;
 }
 
 .dns-connection-form {
