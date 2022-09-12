@@ -19,7 +19,7 @@ package vinyldns.api.domain.record
 import cats.effect.IO
 import org.slf4j.LoggerFactory
 import scalikejdbc.DB
-import vinyldns.core.domain.record.{NameSort, ListRecordSetResults, RecordSetCacheRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{ListRecordSetResults, NameSort, RecordSetCacheRepository, RecordSetRepository, RecordTypeSort}
 import vinyldns.mysql.TransactionProvider
 
 
@@ -30,7 +30,7 @@ class RecordSetCacheService(recordSetRepository: RecordSetRepository,
   final def populateRecordSetCache(nextId: Option[String] = None): IO[ListRecordSetResults] = {
     logger.info(s"Populating recordset data. Starting at $nextId")
     for {
-      result <- recordSetRepository.listRecordSets(None, nextId, Some(1000), None, None, None, NameSort.ASC)
+      result <- recordSetRepository.listRecordSets(None, nextId, Some(1000), None, None, None, NameSort.ASC, RecordTypeSort.ASC)
 
       _ <- executeWithinTransaction { db: DB =>
         IO {

@@ -26,6 +26,19 @@ object NameSort extends Enumeration {
   def find(value: String): Value = value.toUpperCase match {
     case "DESC" => NameSort.DESC
     case _ => NameSort.ASC
+
+  }
+}
+
+object RecordTypeSort extends Enumeration {
+  type RecordTypeSort = Value
+  val ASC, DESC, NONE = Value
+
+  def find(value: String): Value = value.toUpperCase match {
+    case "DESC" => RecordTypeSort.DESC
+    case "ASC" => RecordTypeSort.ASC
+    case _ => NONE
+
   }
 }
 

@@ -20,7 +20,7 @@ import cats.effect._
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.backend.Backend
-import vinyldns.core.domain.record.{NameSort, RecordSetCacheRepository, RecordSetRepository}
+import vinyldns.core.domain.record.{NameSort, RecordSetCacheRepository, RecordSetRepository, RecordTypeSort}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
@@ -69,7 +69,8 @@ case class VinylDNSZoneViewLoader(
             recordNameFilter = None,
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(
