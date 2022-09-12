@@ -62,7 +62,7 @@ object ReverseZoneHelpers {
     }
 
   def convertPTRtoIPv4(zone: Zone, recordName: String): String = {
-    val zoneName = zone.name.split("in-addr.arpa.")(0)
+    val zoneName = zone.name.dropRight("in-addr.arpa.".length)
     val zoneOctets = ipv4ReverseSplitByOctets(zoneName)
     val recordOctets = ipv4ReverseSplitByOctets(recordName)
 
@@ -74,7 +74,7 @@ object ReverseZoneHelpers {
   }
 
   def convertPTRtoIPv6(zone: Zone, recordName: String): String = {
-    val zoneName = zone.name.split("ip6.arpa.")(0)
+    val zoneName = zone.name.dropRight("ip6.arpa.".length)
     val zoneNameNibblesReversed = zoneName.split('.').reverse.toList
     val recordSetNibblesReversed = recordName.split('.').reverse.toList
     val allUnseparated = (zoneNameNibblesReversed ++ recordSetNibblesReversed).mkString("")
@@ -109,7 +109,7 @@ object ReverseZoneHelpers {
     string.split('.').filter(!_.isEmpty).reverse.toList
 
   private def getZoneAsCIDRString(zone: Zone): Either[Throwable, String] = {
-    val zoneName = zone.name.split("in-addr.arpa.")(0)
+    val zoneName = zone.name.dropRight("in-addr.arpa.".length)
     val zoneOctets = ipv4ReverseSplitByOctets(zoneName)
     val zoneString = zoneOctets.mkString(".")
 
@@ -147,7 +147,7 @@ object ReverseZoneHelpers {
       zone: Zone,
       recordName: String
   ): Either[Throwable, Unit] = {
-    val v6Regex = "([0-9a-f][.]){32}ip6.arpa.".r
+    val v6Regex = "(?i)([0-9a-f][.]){32}ip6.arpa.".r
 
     s"$recordName.${zone.name}" match {
       case v6Regex(_*) => ().asRight

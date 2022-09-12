@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{RecordType, RecordSet}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -185,11 +185,7 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] = {
     // see https://tools.ietf.org/html/rfc4035#section-2.4
     val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
-      case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
-      case Some(ns) =>
-        InvalidRequest(
-          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})"
-        ).asLeft
+      case Some(_) => ().asRight
       case None =>
         InvalidRequest(
           s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
@@ -328,10 +324,9 @@ object RecordSetValidations {
     )
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
-    ensuring(
-      InvalidRequest(RecordNameFilterError)
-    ) {
-      val searchRegex: Regex = """[a-zA-Z0-9].*[a-zA-Z0-9]+""".r
-      searchRegex.findFirstIn(recordNameFilter).isDefined
+    ensuring(onError = InvalidRequest(RecordNameFilterError)) {
+      val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
+      val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
+      searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty
     }
 }

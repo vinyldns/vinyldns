@@ -83,13 +83,15 @@ class MembershipRoute(
             "startFrom".?,
             "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
             "groupNameFilter".?,
-            "ignoreAccess".as[Boolean].?(false)
+            "ignoreAccess".as[Boolean].?(false),
+            "abridged".as[Boolean].?(false),
           ) {
             (
                 startFrom: Option[String],
                 maxItems: Int,
                 groupNameFilter: Option[String],
-                ignoreAccess: Boolean
+                ignoreAccess: Boolean,
+                abridged: Boolean
             ) =>
               {
                 handleRejections(invalidQueryHandler) {
@@ -102,7 +104,7 @@ class MembershipRoute(
                   ) {
                     authenticateAndExecute(
                       membershipService
-                        .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess)
+                        .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess, abridged)
                     ) { groups =>
                       complete(StatusCodes.OK, groups)
                     }
@@ -190,6 +192,14 @@ class MembershipRoute(
         authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Unlocked, _)) {
           user =>
             complete(StatusCodes.OK, UserInfo(user))
+        }
+      }
+    } ~
+    path("users" / Segment) { id =>
+      (get & monitor("Endpoint.getUser")) {
+        authenticateAndExecute(membershipService.getUser(id, _)) {
+          user =>
+            complete(StatusCodes.OK, UserResponseInfo(user))
         }
       }
     }

@@ -1095,7 +1095,6 @@ class MembershipServiceSpec
             .updateUserLockStatus(okUser.id, LockStatus.Locked, supportAuth)
             .value
         )
-
         error shouldBe a[NotAuthorizedError]
       }
 
@@ -1107,7 +1106,20 @@ class MembershipServiceSpec
             .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
             .value
         )
+        error shouldBe a[UserNotFoundError]
+      }
+    }
 
+    "get user" should {
+      "return the user" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
+        val result: User = rightResultOf(underTest.getUser(okUser.id, okAuth).value)
+        result shouldBe okUser
+      }
+
+      "return an error if the user is not found" in {
+        doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(anyString)
+        val error = leftResultOf(underTest.getUser("notfound", okAuth).value)
         error shouldBe a[UserNotFoundError]
       }
     }

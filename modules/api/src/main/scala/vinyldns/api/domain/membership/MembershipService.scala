@@ -190,7 +190,8 @@ class MembershipService(
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal,
-      ignoreAccess: Boolean
+      ignoreAccess: Boolean,
+      abridged: Boolean = false
   ): Result[ListMyGroupsResponse] = {
     val groupsCall =
       if (authPrincipal.isSystemAdmin || ignoreAccess) {
@@ -200,7 +201,7 @@ class MembershipService(
       }
 
     groupsCall.map { grp =>
-      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems, ignoreAccess)
+      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems, ignoreAccess, abridged, authPrincipal)
     }
   }.toResult
 
@@ -209,12 +210,14 @@ class MembershipService(
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      ignoreAccess: Boolean
-  ): ListMyGroupsResponse = {
+      ignoreAccess: Boolean,
+      abridged: Boolean = false,
+      authPrincipal: AuthPrincipal
+    ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
       .sortBy(_.id)
-      .map(GroupInfo.apply)
+      .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
     val filtered = allMyGroups
       .filter(grp => groupNameFilter.forall(grp.name.contains(_)))
@@ -243,6 +246,17 @@ class MembershipService(
       result.lastEvaluatedTimeStamp,
       maxItems
     )
+
+  /**
+   * Retrieves the requested User from the given userIdentifier, which can be a userId or username
+   * @param userIdentifier The userId or username
+   * @return The found User
+   */
+  def getUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[User] =
+    userRepo
+      .getUserByIdOrName(userIdentifier)
+      .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
+      .toResult[User]
 
   def getUsers(
       userIds: Set[String],
@@ -301,7 +315,7 @@ class MembershipService(
       .getGroupByName(name)
       .map {
         case Some(existingGroup)
-            if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
+          if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
           GroupAlreadyExistsError(GroupAlreadyExistsErrorMsg.format(name, existingGroup.email)).asLeft
         case _ =>
           ().asRight

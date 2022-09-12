@@ -189,7 +189,7 @@ To run the portal locally, you _first_ have to start up the VinylDNS API Server.
 instructions for [Staring the API Server](#starting-the-api-server) or by using the QuickStart:
 
 ```shell
-quickstart/quickstart-vinyldns.sh --api-only
+quickstart/quickstart-vinyldns.sh --api
 ```
 
 Once that is done, in the same `sbt` session or a different one, go to `project portal` and then
