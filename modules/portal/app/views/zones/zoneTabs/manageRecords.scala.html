@@ -109,7 +109,11 @@
                             <i class="fa {{nameSortSymbol}}"></i>
                         </a>
                     </th>
-                    <th>Type</th>
+                    <th class="col-md-4">
+                        <a class="force-cursor" ng-click="toggleRecordtypeSort()">Type
+                            <i class="fa {{recordTypeSortSymbol}}"></i>
+                        </a>
+                    </th>
                     <th>TTL</th>
                     <th class="col-md-4">Record Data</th>
                     @if(meta.sharedDisplayEnabled) {

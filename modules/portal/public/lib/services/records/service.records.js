@@ -55,7 +55,7 @@ angular.module('service.records', [])
             return promis
         };
 
-        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort) {
+        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort, recordTypeSort) {
             if (nameFilter == "") {
                 nameFilter = null;
             }
@@ -65,12 +65,16 @@ angular.module('service.records', [])
             if (nameSort == "") {
                 nameSort = null;
             }
+            if (recordTypeSort == "") {
+                recordTypeSort = null;
+            }
             var params = {
                 "maxItems": limit,
                 "startFrom": startFrom,
                 "recordNameFilter": nameFilter,
                 "recordTypeFilter": typeFilter,
-                "nameSort": nameSort
+                "nameSort": nameSort,
+                "recordTypeSort": recordTypeSort
             };
             var url = utilityService.urlBuilder("/api/zones/"+id+"/recordsets", params);
             return $http.get(url);

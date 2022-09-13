@@ -235,11 +235,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             sqls"ORDER BY fqdn DESC, type ASC "
           }
 
-          val recordTypeSortQualifiers = if (recordTypeSort == RecordTypeSort.ASC) {
-            sqls"ORDER BY type ASC"
-          }
-          else {
-            sqls"ORDER BY type DESC"
+          val recordTypeSortQualifiers = recordTypeSort match {
+            case RecordTypeSort.ASC => sqls"ORDER BY type ASC"
+            case RecordTypeSort.DESC => sqls"ORDER BY type DESC"
+            case RecordTypeSort.NONE => nameSortQualifiers
+
           }
 
           val recordLimit = maxPlusOne match {
@@ -247,8 +247,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case None => sqls""
           }
 
-          val finalQualifiers = if (recordTypeSort == RecordTypeSort.NONE) nameSortQualifiers.append(recordLimit)
-          else recordTypeSortQualifiers.append(recordLimit)
+          val finalQualifiers = recordTypeSortQualifiers.append(recordLimit)
 
           // construct query
           val initialQuery = sqls"SELECT data, fqdn FROM recordset "
