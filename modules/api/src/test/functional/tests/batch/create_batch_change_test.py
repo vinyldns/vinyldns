@@ -1974,7 +1974,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                f'Invalid domain name: "bad-ttl-and-invalid-name$.{parent_zone_name}", '
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.",
-                                                               'Invalid domain name: "also$bad.name.", valid domain names must be letters, numbers, underscores, and hyphens, '
+                                                               'Invalid Cname: "also$bad.name.", valid cnames must be letters, numbers, underscores, and hyphens, '
                                                                "joined by dots, and terminated with a dot."])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME",
@@ -2134,7 +2134,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "20", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.',
-                                                               'Invalid domain name: "$another.invalid.cname.", valid domain names must be letters, numbers, '
+                                                               'Invalid Cname: "$another.invalid.cname.", valid cnames must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure

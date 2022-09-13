@@ -114,6 +114,7 @@ class MembershipServiceSpec
     "create a new group" should {
       "save the group and add the members when the group is valid" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(groupInfo)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
@@ -141,6 +142,7 @@ class MembershipServiceSpec
 
       "save the groupChange in the groupChangeRepo" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(groupInfo)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
@@ -168,7 +170,7 @@ class MembershipServiceSpec
           adminUserIds = Set(okUserInfo.id, dummyUserInfo.id)
         )
         val expectedMembersAdded = Set(okUserInfo.id, dummyUserInfo.id)
-
+        doReturn(().toResult).when(underTest).groupValidation(info)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
@@ -196,6 +198,7 @@ class MembershipServiceSpec
       "set the current user as a member" in {
         val info = groupInfo.copy(memberIds = Set.empty, adminUserIds = Set.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(info)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
         doReturn(().toResult).when(underTest).usersExist(Set(okAuth.userId))
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
@@ -224,6 +227,7 @@ class MembershipServiceSpec
 
       "return an error if users do not exist" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(groupInfo)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
@@ -239,6 +243,7 @@ class MembershipServiceSpec
 
       "return an error if fail while saving the group" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(groupInfo)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockGroupRepo).save(any[DB], any[Group])
@@ -253,6 +258,7 @@ class MembershipServiceSpec
 
       "return an error if fail while adding the members" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(().toResult).when(underTest).groupValidation(groupInfo)
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
         doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
@@ -263,6 +269,20 @@ class MembershipServiceSpec
 
         val error = leftResultOf(underTest.createGroup(groupInfo, okAuth).value)
         error shouldBe a[RuntimeException]
+      }
+
+      "return an error if group name and/or email is empty" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(result(GroupValidationError("fail")))
+          .when(underTest)
+          .groupValidation(groupInfo.copy(name = "", email = ""))
+
+        val error = leftResultOf(underTest.createGroup(groupInfo.copy(name = "", email = ""), okAuth).value)
+        error shouldBe a[GroupValidationError]
+
+        verify(mockGroupRepo, never()).save(any[DB], any[Group])
+        verify(mockMembershipRepo, never())
+          .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
       }
     }
 
@@ -386,6 +406,31 @@ class MembershipServiceSpec
             .value
         )
         error shouldBe a[GroupAlreadyExistsError]
+      }
+
+      "return an error if group name and/or email is empty" in {
+        doReturn(IO.pure(Some(existingGroup)))
+          .when(mockGroupRepo)
+          .getGroup(existingGroup.id)
+        doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
+        doReturn(result(GroupValidationError("fail")))
+          .when(underTest)
+          .groupValidation(existingGroup.copy(name = "", email = ""))
+
+        val error = leftResultOf(
+          underTest
+            .updateGroup(
+              updatedInfo.id,
+              name = "",
+              email = "",
+              updatedInfo.description,
+              updatedInfo.memberIds,
+              updatedInfo.adminUserIds,
+              okAuth
+            )
+            .value
+        )
+        error shouldBe a[GroupValidationError]
       }
 
       "return an error if the group is not found" in {
