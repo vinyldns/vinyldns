@@ -338,7 +338,7 @@ describe('Controller: RecordsController', function () {
             [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
     });
 
-    it('toggle sort should call listRecordSetsByZone with the correct parameters', function () {
+    it('toggle name sort should call listRecordSetsByZone with the correct parameters', function () {
         var mockRecords = {data: { recordSets: [
             {   name: "dummy",
                 records: [{address: "1.1.1.1"}],
@@ -360,6 +360,34 @@ describe('Controller: RecordsController', function () {
         var expectedSort = "desc";
 
         this.scope.toggleNameSort();
+
+        expect(listRecordSetsByZone.calls.count()).toBe(1);
+        expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+    });
+
+    it('toggle record type sort should call listRecordSetsByZone with the correct parameters', function () {
+        var mockRecords = {data: { recordSets: [
+            {   name: "dummy",
+                records: [{address: "1.1.1.1"}],
+                status: "Active",
+                ttl: 38400,
+                type: "A"}
+            ],
+            maxItems: 100,
+            recordTypeSort: "desc"}};
+
+        var listRecordSetsByZone = spyOn(this.recordsService, 'listRecordSetsByZone')
+            .and.stub()
+            .and.returnValue(this.q.when(mockRecords));
+
+        var expectedZoneId = this.scope.zoneId;
+        var expectedMaxItems = 100;
+        var expectedStartFrom =  undefined;
+        var expectedQuery = this.scope.query;
+        var expectedSort = "desc";
+
+        this.scope.toggleRecordTypeSort();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(

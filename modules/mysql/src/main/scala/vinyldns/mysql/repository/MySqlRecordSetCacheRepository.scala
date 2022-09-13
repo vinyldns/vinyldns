@@ -394,7 +394,8 @@ class MySqlRecordSetCacheRepository
             maxItems = maxItems,
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
-            nameSort = nameSort)
+            nameSort = nameSort,
+            recordTypeSort = RecordTypeSort.NONE)
         }
       }
     }

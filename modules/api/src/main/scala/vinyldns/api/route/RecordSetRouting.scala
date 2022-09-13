@@ -40,7 +40,7 @@ case class ListGlobalRecordSetsResponse(
                                          nextId: Option[String] = None,
                                          maxItems: Option[Int] = None,
                                          recordNameFilter: String,
-                                         recordTypeFilter: Option[Set[RecordType]] = None,
+                                          recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
                                          nameSort: NameSort
                                        )
@@ -151,7 +151,7 @@ class RecordSetRoute(
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC"),
-          "recordTypeSort".as[String].?("ASC")
+          "recordTypeSort".as[String].?("NONE")
         ) {
           (
             startFrom: Option[String],

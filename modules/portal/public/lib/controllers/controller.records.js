@@ -545,7 +545,7 @@ angular.module('controller.records', [])
     };
 
     $scope.toggleNameSort = function() {
-    $scope.recordTypeSort = "NONE"
+    $scope.recordTypeSort = "none"
         if ($scope.nameSort == "asc") {
             $scope.nameSort = "desc";
             $scope.nameSortSymbol = "fa-chevron-down";
@@ -556,7 +556,7 @@ angular.module('controller.records', [])
         return $scope.refreshRecords();
     };
 
-    $scope.toggleRecordtypeSort = function() {
+    $scope.toggleRecordTypeSort = function() {
         if ($scope.recordTypeSort == "asc") {
             $scope.recordTypeSort = "desc";
             $scope.recordTypeSortSymbol = "fa-chevron-down";

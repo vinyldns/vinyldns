@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 
 object NameSort extends Enumeration {
   type NameSort = Value
@@ -50,5 +51,6 @@ case class ListRecordSetResults(
                                  recordNameFilter: Option[String] = None,
                                  recordTypeFilter: Option[Set[RecordType]] = None,
                                  recordOwnerGroupFilter: Option[String] = None,
-                                 nameSort: NameSort
+                                 nameSort: NameSort,
+                                 recordTypeSort: RecordTypeSort
                                )
