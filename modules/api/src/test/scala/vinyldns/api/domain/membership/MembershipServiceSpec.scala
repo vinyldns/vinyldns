@@ -642,6 +642,30 @@ class MembershipServiceSpec
           ignoreAccess = false
         )
       }
+      "return only return groups whose name matches the filter, regardless of case" in {
+        doReturn(IO.pure(listOfDummyGroups.toSet))
+          .when(mockGroupRepo)
+          .getGroups(any[Set[String]])
+        val result: ListMyGroupsResponse = rightResultOf(
+          underTest
+            .listMyGroups(
+              groupNameFilter = Some("Name-Dummy01"),
+              startFrom = None,
+              maxItems = 100,
+              listOfDummyGroupsAuth,
+              false
+            )
+            .value
+        )
+        result shouldBe ListMyGroupsResponse(
+          groups = listOfDummyGroupInfo.slice(10, 20),
+          groupNameFilter = Some("Name-Dummy01"),
+          startFrom = None,
+          nextId = None,
+          maxItems = 100,
+          ignoreAccess = false
+        )
+      }
       "return only return groups after startFrom" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)

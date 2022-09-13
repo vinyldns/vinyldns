@@ -220,7 +220,7 @@ class MembershipService(
       .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
     val filtered = allMyGroups
-      .filter(grp => groupNameFilter.forall(grp.name.contains(_)))
+      .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
       .filter(grp => startFrom.forall(grp.id > _))
 
     val nextId = if (filtered.length > maxItems) Some(filtered(maxItems - 1).id) else None
