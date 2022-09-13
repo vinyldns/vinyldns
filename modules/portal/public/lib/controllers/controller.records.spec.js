@@ -275,13 +275,15 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
-        var expectedSort = "asc";
+        var expectedNameSort = "asc";
+        var expectedRecordTypeSort = "none";
+
 
         this.scope.refreshRecords();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedNameSort, expectedRecordTypeSort]);
     });
 
     it('next page should call listRecordSetsByZone with the correct parameters', function () {
@@ -302,13 +304,14 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
-        var expectedSort = "asc";
+        var expectedNameSort = "asc";
+        var expectedRecordTypeSort = "none";
 
         this.scope.nextPage();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, "", expectedNameSort, expectedRecordTypeSort]);
     });
 
     it('prev page should call listRecordSetsByZone with the correct parameters', function () {
@@ -329,13 +332,14 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom =  undefined;
         var expectedQuery = this.scope.query;
-        var expectedSort = "asc";
+        var expectedNameSort = "asc";
+        var expectedRecordTypeSort = "none";
 
         this.scope.prevPage();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedNameSort, expectedRecordTypeSort]);
     });
 
     it('toggle name sort should call listRecordSetsByZone with the correct parameters', function () {
@@ -357,13 +361,14 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom =  undefined;
         var expectedQuery = this.scope.query;
-        var expectedSort = "desc";
+        var expectedNameSort = "desc";
+        var expectedRecordTypeSort = "none";
 
         this.scope.toggleNameSort();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedNameSort, expectedRecordTypeSort]);
     });
 
     it('toggle record type sort should call listRecordSetsByZone with the correct parameters', function () {
@@ -375,7 +380,8 @@ describe('Controller: RecordsController', function () {
                 type: "A"}
             ],
             maxItems: 100,
-            recordTypeSort: "desc"}};
+            nameSort: "",
+            recordTypeSort: "asc"}};
 
         var listRecordSetsByZone = spyOn(this.recordsService, 'listRecordSetsByZone')
             .and.stub()
@@ -385,13 +391,15 @@ describe('Controller: RecordsController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom =  undefined;
         var expectedQuery = this.scope.query;
-        var expectedSort = "desc";
+        var expectedNameSort = "";
+        var expectedRecordTypeSort = "asc";
 
         this.scope.toggleRecordTypeSort();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, '', expectedNameSort, expectedRecordTypeSort]);
+
     });
 
     it('filter by record type should call listRecordSetsByZone with the correct parameters', function () {
@@ -414,13 +422,15 @@ describe('Controller: RecordsController', function () {
         var expectedStartFrom =  undefined;
         var expectedQuery = this.scope.query;
         var expectedRecordTypeFilter = "A";
-        var expectedSort = "asc";
+        var expectedNameSort = "asc";
+        var expectedRecordTypeSort = "none";
+
 
         this.scope.toggleCheckedRecordType("A");
         this.scope.refreshRecords();
 
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
-            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedSort]);
+            [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedNameSort, expectedRecordTypeSort]);
     });
 });

@@ -557,6 +557,7 @@ angular.module('controller.records', [])
     };
 
     $scope.toggleRecordTypeSort = function() {
+        $scope.nameSort = ""
         if ($scope.recordTypeSort == "asc") {
             $scope.recordTypeSort = "desc";
             $scope.recordTypeSortSymbol = "fa-chevron-down";
