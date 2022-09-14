@@ -507,6 +507,7 @@ input[type="file"] {
 
 .ui-autocomplete {
     max-height: 200px;
+    width:150px;
     overflow-y: auto;
     overflow-x: hidden;
 }
