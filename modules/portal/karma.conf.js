@@ -16,6 +16,7 @@ module.exports = function(config) {
     files: [
       'js/jquery.min.js',
       'js/jquery-ui-dist.js',
+      'js/jquery-ui.js',
       'js/bootstrap.min.js',
       'js/angular.min.js',
       'js/moment.min.js',

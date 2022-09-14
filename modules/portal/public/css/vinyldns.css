@@ -104,7 +104,7 @@ a.action-link {
     top: 3px;
     left: 50%;
     width: 40%;
-    z-index: 100;
+    z-index: 2000;
 }
 
 .dns-connection-form {
@@ -510,4 +510,15 @@ input[type="file"] {
     width:150px;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+#fixed-side-menu {
+    position: fixed;
+    top: 0;
+}
+
+#fixed-top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }

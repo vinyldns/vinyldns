@@ -468,6 +468,27 @@ class MySqlZoneRepositoryIntegrationSpec
       (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
     }
 
+    "support case insensitivity in the zone filter" in {
+
+      val testZones = Seq(
+        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("SyStEm*"))
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
     "support starts with wildcard" in {
 
       val testZones = Seq(
