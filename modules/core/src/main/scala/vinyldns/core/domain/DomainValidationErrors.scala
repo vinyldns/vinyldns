@@ -112,7 +112,7 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
 final case class DottedHostError(name: String, zone: String) extends DomainValidationError {
   def message: String =
     s"Record with fqdn '$name.$zone' cannot be created. " +
-      s"Please check if there's a zone or record that already exist and make the change there."
+      s"Please check if user has permission or if there's a zone/record that already exist and make the change there."
 }
 
 final case class RecordAlreadyExists(name: String) extends DomainValidationError {

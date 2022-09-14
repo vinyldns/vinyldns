@@ -127,6 +127,7 @@ class BatchChangeService(
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toBatchResult
+      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(groupedChanges).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         groupedChanges,
@@ -134,7 +135,8 @@ class BatchChangeService(
         isApproved,
         batchChangeInput.ownerGroupId,
         zoneOrRecordDoesNotAlreadyExist,
-        allowedZoneList
+        allowedZoneList,
+        isUserAllowed
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
@@ -142,14 +144,21 @@ class BatchChangeService(
 
   // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
   def zoneOrRecordDoesNotExist(groupedChanges: ChangeForValidationMap): IO[Boolean] = {
-    val inputChange = groupedChanges.changes.map(x => x.toOption).map(x => x.get)
-    // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
-    val newRecordFqdn = inputChange.map(_.recordName).head + "." + inputChange.map(_.zone.name).head
+    val groupedChangesMap = groupedChanges.changes.map(x => x.toOption).filter(x => x.isDefined)
+
+    val newRecordFqdn = if(groupedChangesMap.nonEmpty){
+      val inputChange = groupedChangesMap.map(x => x.get)
+      // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
+      inputChange.map(_.recordName).head + "." + inputChange.map(_.zone.name).head
+    } else {
+      ""
+    }
+
     for {
       zone <- zoneRepository.getZoneByName(newRecordFqdn)
       record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
       isZoneAlreadyExist = zone.isDefined
-      isRecordAlreadyExist = doesRecordWithSameTypeExist(record, inputChange.map(_.inputChange))
+      isRecordAlreadyExist = if(groupedChangesMap.nonEmpty) doesRecordWithSameTypeExist(record, groupedChangesMap.map(x => x.get).map(_.inputChange)) else false
       doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist) false else true
     } yield doesNotExist
   }
@@ -176,11 +185,21 @@ class BatchChangeService(
       val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", ""))
       // Zones without wildcard character are passed to a separate function
       val namedZones = zones.filter(zone => !zone.contains("*"))
-      for{
+      for {
         namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
         wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
         zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
       } yield zoneResult.map(x => x.name)
+    }
+  }
+
+  // Check if the user is allowed to create dotted hosts using the users present in dotted hosts config
+  def  checkIfAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
+    if(users.contains(auth.signedInUser.userName)){
+      true
+    }
+    else {
+      false
     }
   }
 

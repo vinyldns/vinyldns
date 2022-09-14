@@ -117,6 +117,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result: RecordSetChange =
         rightResultOf(
@@ -157,7 +172,7 @@ class RecordSetServiceSpec
       val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
       result shouldBe a[RecordSetAlreadyExists]
     }
-    "fail if the record is dotted" in {
+    "fail if the record is dotted and zone is not in the dotted hosts config allowed zones" in {
       val record =
         aaaa.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
 
@@ -179,6 +194,9 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe an[InvalidRequest]
@@ -193,6 +211,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result =
         leftResultOf(underTestWithDnsBackendValidations.addRecordSet(record, okAuth).value)
@@ -218,6 +251,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -236,6 +284,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -273,6 +336,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(okGroup)))
         .when(mockGroupRepo)
         .getGroup(okGroup.id)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -326,6 +404,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result: RecordSetChange =
         rightResultOf(
@@ -355,6 +448,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -391,6 +499,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -430,6 +553,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -452,6 +590,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -474,6 +627,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -609,6 +777,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(oneUserDummyGroup)))
         .when(mockGroupRepo)
         .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result = rightResultOf(
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
@@ -638,6 +821,21 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
 
       val result = rightResultOf(
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value

@@ -111,6 +111,7 @@ class RecordSetService(
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
+      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -119,7 +120,8 @@ class RecordSetService(
         None,
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
-        allowedZoneList
+        allowedZoneList,
+        isUserAllowed
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -151,6 +153,7 @@ class RecordSetService(
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
+      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -159,7 +162,8 @@ class RecordSetService(
         Some(existing),
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
-        allowedZoneList
+        allowedZoneList,
+        isUserAllowed
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -185,18 +189,12 @@ class RecordSetService(
     // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
     val newRecordFqdn = if(newRecordSet.name != zone.name) newRecordSet.name + "." + zone.name else newRecordSet.name
 
-    val possibleZones = if(newRecordSet.name.contains(".")){
-      newRecordSet.name.split('.').map(x => x + "." + zone.name)
-    } else {
-      Array(newRecordSet.name)
-    }
-
     for {
-      zone <- zoneRepository.getZoneByName(newRecordFqdn)
-      allMatchingZones <- zoneRepository.getZonesByFilters(possibleZones.toSet)
+      existingZone <- zoneRepository.getZoneByName(newRecordFqdn)
+      allMatchingZones <- if(newRecordSet.name.contains(".")) zoneRepository.getZonesByFilters(newRecordSet.name.split('.').map(x => x + "." + zone.name).toSet) else zoneRepository.getZonesByFilters(Set.empty)
       record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
       isNotTheIntendedZone = allMatchingZones.map(x => x.name).exists(x => newRecordFqdn.contains(x))
-      isZoneAlreadyExist = zone.isDefined
+      isZoneAlreadyExist = existingZone.isDefined
       isRecordAlreadyExist = doesRecordWithSameTypeExist(record, newRecordSet)
       doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist || isNotTheIntendedZone) false else true
     } yield doesNotExist
@@ -229,6 +227,16 @@ class RecordSetService(
         wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
         zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
       } yield zoneResult.map(x => x.name)
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def  checkIfAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
+    if(users.contains(auth.signedInUser.userName)){
+      true
+    }
+    else {
+      false
     }
   }
 

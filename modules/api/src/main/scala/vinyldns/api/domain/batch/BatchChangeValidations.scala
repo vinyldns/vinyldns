@@ -50,7 +50,8 @@ trait BatchChangeValidationsAlgebra {
       isApproved: Boolean,
       batchOwnerGroupId: Option[String],
       zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostConfig: Set[String]
+      dottedHostZoneConfig: Set[String],
+      isUserAllowed: Boolean
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -273,7 +274,8 @@ class BatchChangeValidations(
       isApproved: Boolean,
       batchOwnerGroupId: Option[String],
       zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostConfig: Set[String]
+      dottedHostZoneConfig: Set[String],
+      isUserAllowed: Boolean
   ): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
@@ -281,7 +283,7 @@ class BatchChangeValidations(
           if groupedChanges
             .getLogicalChangeType(add.recordKey)
             .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig)
+        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isUserAllowed)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
       // These cases MUST be below adds because:
@@ -297,15 +299,15 @@ class BatchChangeValidations(
     }
 
   // Check if the new record set has dots and if so whether they are allowed or not
-  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean, dottedHostConfig: Set[String]): SingleValidation[Unit] = {
+  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean, dottedHostZoneConfig: Set[String], isUserAllowed: Boolean): SingleValidation[Unit] = {
 
     // Check if the zone of the record set is present in dotted hosts config list
-    val isDomainAllowed = dottedHostConfig.contains(change.zone.name)
+    val isDomainAllowed = dottedHostZoneConfig.contains(change.zone.name)
 
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
     if((change.recordName.contains(".") || !zoneOrRecordDoesNotAlreadyExist) && isDomainAllowed && change.recordName != change.zone.name) {
-      // If there is a zone or record already present which conflicts with the new dotted record, throw an error
-      if (!zoneOrRecordDoesNotAlreadyExist || change.recordName == change.zone.name)
+      // If the user is not authorized or if there is a zone/record already present which conflicts with the new dotted record, throw an error
+      if (!zoneOrRecordDoesNotAlreadyExist || change.recordName == change.zone.name || !isUserAllowed)
         DottedHostError(change.recordName, change.zone.name).invalidNel
       else
         ().validNel
@@ -429,14 +431,15 @@ class BatchChangeValidations(
       isApproved: Boolean,
       ownerGroupId: Option[String],
       zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostConfig: Set[String]
+      dottedHostZoneConfig: Set[String],
+      isUserAllowed: Boolean
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig: Set[String])
+        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig: Set[String], isUserAllowed)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
-          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostConfig: Set[String])
+          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig: Set[String], isUserAllowed)
       case TXT | PTR =>
         ().validNel
       case other =>

@@ -86,7 +86,7 @@ object VinylDNSConfig {
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
       backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
-      dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns")
+      dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns.dotted-hosts")
       httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
       hvdConfig <- loadIO[HighValueDomainConfig](config, "vinyldns.high-value-domains")
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
