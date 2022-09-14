@@ -343,7 +343,7 @@ class RecordSetService(
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
       recordSetResults.nameSort,
-      recordTypeSort
+      recordSetResults.recordTypeSort
     )
 
   def getRecordSetChange(

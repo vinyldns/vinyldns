@@ -35,7 +35,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record.RecordTypeSort.{NONE, RecordTypeSort}
+import vinyldns.core.domain.record.RecordTypeSort.{ASC, DESC, RecordTypeSort}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 
@@ -628,12 +628,13 @@ class RecordSetRoutingSpec
                             ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
-        case okZone.id if recordTypeSort!=NONE =>
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==DESC && nameSort == NameSort.ASC=>
           Right(
             ListRecordSetsByZoneResponse(
               List(
-                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
               ),
               startFrom,
@@ -643,7 +644,44 @@ class RecordSetRoutingSpec
               recordTypeFilter,
               None,
               nameSort,
-              recordTypeSort = RecordTypeSort.ASC
+              recordTypeSort
+            )
+          )
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==ASC && nameSort == NameSort.ASC  =>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
+        case okZone.id if recordTypeFilter.isEmpty && nameSort == NameSort.DESC && recordTypeSort==ASC =>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
             )
           )
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
@@ -659,10 +697,10 @@ class RecordSetRoutingSpec
               recordTypeFilter,
               recordOwnerGroupFilter,
               nameSort,
-              recordTypeSort = RecordTypeSort.ASC
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
-        case okZone.id if recordTypeFilter.isEmpty =>
+        case okZone.id if recordTypeFilter.isEmpty && nameSort != NameSort.ASC || nameSort!=NameSort.DESC=>
           Right(
             ListRecordSetsByZoneResponse(
               List(
@@ -677,7 +715,7 @@ class RecordSetRoutingSpec
               recordTypeFilter,
               None,
               nameSort,
-              recordTypeSort = RecordTypeSort.ASC
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
       }
@@ -1076,25 +1114,35 @@ class RecordSetRoutingSpec
       }
     }
 
-    "return all recordsets types in descending order" in {
+    "return all recordSets types in descending order" in {
 
       Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=desc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
 
         val resultRs = responseAs[ListRecordSetsByZoneResponse]
-        (resultRs.recordSets.map(_.id) should contain)
-          .only(soa.id, cname.id, aaaa.id)
+        (resultRs.recordSets.map(_.typ) shouldBe List(soa.typ, cname.typ, aaaa.typ))
       }
     }
 
-    "return all recordsets types in ascending order" in {
+    "return all recordSets types in ascending order" in {
 
       Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=asc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
 
         val resultRs = responseAs[ListRecordSetsByZoneResponse]
-        (resultRs.recordSets.map(_.id) should contain)
-          .only(aaaa.id, cname.id, soa.id)
+        (resultRs.recordSets.map(_.typ) shouldBe List(aaaa.typ, cname.typ, soa.typ))
+
+      }
+    }
+
+    "return all record name in descending order when recordSets and type sort simultaneously" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.name) shouldBe List(soa.name, cname.name, aaaa.name))
+
       }
     }
 
