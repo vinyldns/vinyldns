@@ -492,6 +492,25 @@ input[type="file"] {
   opacity: 0.75;
 }
 
+.ui-menu .ui-menu-item div {
+    background: white;
+    width: 100%;
+    font-size: 14px;
+    color: black;
+    border: none;
+    border-left: 1px;
+}
+
+.ui-menu .ui-menu-item div:hover {
+    background: #f5f5f5;
+}
+
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 #fixed-side-menu {
     position: fixed;
     top: 0;
