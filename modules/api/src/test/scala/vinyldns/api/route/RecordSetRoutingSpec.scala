@@ -1117,7 +1117,7 @@ class RecordSetRoutingSpec
       }
     }
 
-    "return all record name in ascending order when recordSets and type sort simultaneously" in {
+    "return all record name in ascending order when name and type sort simultaneously" in {
 
       Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK

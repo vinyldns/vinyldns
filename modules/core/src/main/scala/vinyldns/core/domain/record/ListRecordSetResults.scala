@@ -38,7 +38,7 @@ object RecordTypeSort extends Enumeration {
   def find(value: String): Value = value.toUpperCase match {
     case "DESC" => RecordTypeSort.DESC
     case "ASC" => RecordTypeSort.ASC
-    case _ => NONE
+    case _ => RecordTypeSort.NONE
 
   }
 }
