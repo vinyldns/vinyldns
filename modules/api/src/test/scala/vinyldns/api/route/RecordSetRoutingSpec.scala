@@ -629,7 +629,7 @@ class RecordSetRoutingSpec
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         // NameSort will be in ASC by default
-        case okZone.id if recordTypeSort==DESC && nameSort == NameSort.ASC=>
+        case okZone.id if recordTypeSort==DESC =>
           Right(
             ListRecordSetsByZoneResponse(
               List(
@@ -648,31 +648,13 @@ class RecordSetRoutingSpec
             )
           )
         // NameSort will be in ASC by default
-        case okZone.id if recordTypeSort==ASC && nameSort == NameSort.ASC  =>
+        case okZone.id if recordTypeSort==ASC=>
           Right(
             ListRecordSetsByZoneResponse(
               List(
                 RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
                 RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read)
-              ),
-              startFrom,
-              None,
-              maxItems,
-              recordNameFilter,
-              recordTypeFilter,
-              None,
-              nameSort,
-              recordTypeSort
-            )
-          )
-        case okZone.id if recordTypeFilter.isEmpty && nameSort == NameSort.DESC && recordTypeSort==ASC =>
-          Right(
-            ListRecordSetsByZoneResponse(
-              List(
-                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
-                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
-                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
               ),
               startFrom,
               None,
@@ -700,7 +682,7 @@ class RecordSetRoutingSpec
               recordTypeSort=RecordTypeSort.ASC
             )
           )
-        case okZone.id if recordTypeFilter.isEmpty && nameSort != NameSort.ASC || nameSort!=NameSort.DESC=>
+        case okZone.id if recordTypeFilter.isEmpty =>
           Right(
             ListRecordSetsByZoneResponse(
               List(
@@ -1135,13 +1117,13 @@ class RecordSetRoutingSpec
       }
     }
 
-    "return all record name in descending order when recordSets and type sort simultaneously" in {
+    "return all record name in ascending order when recordSets and type sort simultaneously" in {
 
       Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
 
         val resultRs = responseAs[ListRecordSetsByZoneResponse]
-        (resultRs.recordSets.map(_.name) shouldBe List(soa.name, cname.name, aaaa.name))
+        (resultRs.recordSets.map(_.name) shouldBe List(aaaa.name, cname.name, soa.name))
 
       }
     }
