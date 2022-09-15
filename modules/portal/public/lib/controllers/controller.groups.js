@@ -81,6 +81,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       },
       minLength: 1,
       select: function (event, ui) {
+          $scope.query = ui.item.value;
           $("#group-search-text").val(ui.item.value);
           return false;
         },

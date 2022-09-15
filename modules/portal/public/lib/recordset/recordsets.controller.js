@@ -43,8 +43,6 @@
                   success: function( data ) {
                       const recordSearch =  JSON.parse(JSON.stringify(data));
                       response($.map(recordSearch.recordSets, function(item) {
-                      $log.log(request.term);
-                      $log.log(item.fqdn);
                       return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
                 });
               },
@@ -123,6 +121,7 @@
                     $scope.selectedRecordTypes.push(recordType);
                 }
             };
+
 
             function updateRecordDisplay(records) {
                 var newRecords = [];
