@@ -34,6 +34,39 @@
             var recordType = [];
             var recordName = [];
 
+            $( "#record-search-text" ).autocomplete({
+              source: function( request, response ) {
+                $.ajax({
+                  url: "/api/recordsets?maxItems=100",
+                  dataType: "json",
+                  data: "recordNameFilter="+request.term+"%25&nameSort=asc",
+                  success: function( data ) {
+                      const recordSearch =  JSON.parse(JSON.stringify(data));
+                      response($.map(recordSearch.recordSets, function(item) {
+                      return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
+                });
+              },
+              minLength: 2,
+              select: function (event, ui) {
+                  $scope.query = ui.item.value;
+                  $("#record-search-text").val(ui.item.value);
+                  return false;
+                },
+              open: function() {
+                $( this ).removeClass( "ui-corner-all" ).addClass( "ui-corner-top" );
+              },
+              close: function() {
+                $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
+              }
+            });
+
+            $.ui.autocomplete.prototype._renderItem = function( ul, item ) {
+                    let recordSet = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+                    return $("<li></li>")
+                          .data("ui-autocomplete-item", item.value)
+                          .append("<div>" + recordSet + "</div>")
+                          .appendTo(ul); };
+
             $scope.refreshRecords = function() {
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
@@ -88,37 +121,6 @@
                 }
             };
 
-            $( "#record-search-text" ).autocomplete({
-              source: function( request, response ) {
-                $.ajax({
-                  url: "/api/recordsets?maxItems=100",
-                  dataType: "json",
-                  data: "recordNameFilter="+request.term+"%25&nameSort=asc",
-                  success: function( data ) {
-                      const recordSearch =  JSON.parse(JSON.stringify(data));
-                      response($.map(recordSearch.recordSets, function(item) {
-                      return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
-                });
-              },
-              minLength: 2,
-              select: function (event, ui) {
-                  $("#record-search-text").val(ui.item.value);
-                  return false;
-                },
-              open: function() {
-                $( this ).removeClass( "ui-corner-all" ).addClass( "ui-corner-top" );
-              },
-              close: function() {
-                $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
-              }
-            });
-
-            $.ui.autocomplete.prototype._renderItem = function( ul, item ) {
-                    let recordSet = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-                    return $("<li></li>")
-                          .data("ui-autocomplete-item", item.value)
-                          .append("<div>" + recordSet + "</div>")
-                          .appendTo(ul); };
 
             function updateRecordDisplay(records) {
                 var newRecords = [];
