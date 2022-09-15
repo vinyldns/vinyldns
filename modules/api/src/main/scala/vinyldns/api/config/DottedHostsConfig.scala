@@ -18,14 +18,16 @@ package vinyldns.api.config
 
 import pureconfig.ConfigReader
 
-final case class DottedHostsConfig(zoneList: List[String], allowedUserList: List[String])
+final case class DottedHostsConfig(zoneList: List[String], allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String])
 object DottedHostsConfig {
   implicit val configReader: ConfigReader[DottedHostsConfig] =
-    ConfigReader.forProduct2[DottedHostsConfig, List[String], List[String]](
+    ConfigReader.forProduct4[DottedHostsConfig, List[String], List[String], List[String], List[String]](
       "zone-list",
-      "allowed-user-list"
+      "allowed-user-list",
+      "allowed-group-list",
+      "allowed-record-type"
     ){
-      case (zoneList, allowedUserList) =>
-        DottedHostsConfig(zoneList, allowedUserList)
+      case (zoneList, allowedUserList, allowedGroupList, allowedRecordType) =>
+        DottedHostsConfig(zoneList, allowedUserList, allowedGroupList, allowedRecordType)
     }
 }

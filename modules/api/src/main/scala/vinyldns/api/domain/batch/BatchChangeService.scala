@@ -127,7 +127,9 @@ class BatchChangeService(
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toBatchResult
-      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toBatchResult
+      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(groupedChanges).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         groupedChanges,
@@ -136,7 +138,8 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         zoneOrRecordDoesNotAlreadyExist,
         allowedZoneList,
-        isUserAllowed
+        isAllowedUser,
+        dottedHostsConfig
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
@@ -193,14 +196,25 @@ class BatchChangeService(
     }
   }
 
-  // Check if the user is allowed to create dotted hosts using the users present in dotted hosts config
-  def  checkIfAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def checkIfInAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
     if(users.contains(auth.signedInUser.userName)){
       true
     }
     else {
       false
     }
+  }
+
+  // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
+  def checkIfInAllowedGroups(groups: List[String], auth: AuthPrincipal): IO[Boolean] = {
+    for{
+      groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
+      members = groupsInConfig.flatMap(x => x.memberIds)
+      usersList <- userRepository.getUsers(members, None, None)
+      users = usersList.users.map(x => x.userName)
+      isPresent = users.contains(auth.signedInUser.userName)
+    } yield isPresent
   }
 
   def getGroupIdsFromUnauthorizedErrors(

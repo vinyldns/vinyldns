@@ -111,7 +111,11 @@ class RecordSetService(
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
-      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toResult[Boolean]
+      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
+      isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
+      isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -121,7 +125,7 @@ class RecordSetService(
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
         allowedZoneList,
-        isUserAllowed
+        isRecordTypeAndUserAllowed
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -153,7 +157,11 @@ class RecordSetService(
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
-      isUserAllowed = checkIfAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toResult[Boolean]
+      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
+      isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
+      isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
       zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -163,7 +171,7 @@ class RecordSetService(
         approvedNameServers,
         zoneOrRecordDoesNotAlreadyExist,
         allowedZoneList,
-        isUserAllowed
+        isRecordTypeAndUserAllowed,
       ).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
@@ -231,13 +239,24 @@ class RecordSetService(
   }
 
   // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
-  def  checkIfAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
+  def checkIfInAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
     if(users.contains(auth.signedInUser.userName)){
       true
     }
     else {
       false
     }
+  }
+
+  // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
+  def checkIfInAllowedGroups(groups: List[String], auth: AuthPrincipal): IO[Boolean] = {
+    for{
+      groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
+      members = groupsInConfig.flatMap(x => x.memberIds)
+      usersList <- userRepository.getUsers(members, None, None)
+      users = usersList.users.map(x => x.userName)
+      isPresent = users.contains(auth.signedInUser.userName)
+    } yield isPresent
   }
 
   def getRecordSet(
