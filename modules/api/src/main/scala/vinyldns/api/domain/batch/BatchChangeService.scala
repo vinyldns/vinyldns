@@ -211,8 +211,8 @@ class BatchChangeService(
     for{
       groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
       members = groupsInConfig.flatMap(x => x.memberIds)
-      usersList <- userRepository.getUsers(members, None, None)
-      users = usersList.users.map(x => x.userName)
+      usersList <- if(members.isEmpty) IO(Seq.empty) else userRepository.getUsers(members, None, None).map(x => x.users)
+      users = if(usersList.isEmpty) Seq.empty else usersList.map(x => x.userName)
       isPresent = users.contains(auth.signedInUser.userName)
     } yield isPresent
   }

@@ -821,7 +821,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -888,7 +890,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.foreach(_ shouldBe valid)
@@ -930,7 +934,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.foreach(_ shouldBe valid)
@@ -959,7 +965,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -992,7 +1000,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1034,7 +1044,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1086,7 +1098,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1126,7 +1140,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.foreach(_ shouldBe valid)
@@ -1151,7 +1167,9 @@ class BatchChangeValidationsSpec
           false,
           None,
           true,
-          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+          false,
+          VinylDNSTestHelpers.dottedHostsConfig
         )
 
         result(0) should haveInvalid[DomainValidationError](
@@ -1170,7 +1188,9 @@ class BatchChangeValidationsSpec
           false,
           None,
           true,
-          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+          false,
+          VinylDNSTestHelpers.dottedHostsConfig
         )
 
       result(0) shouldBe valid
@@ -1188,7 +1208,9 @@ class BatchChangeValidationsSpec
           false,
           None,
           true,
-          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+          false,
+          VinylDNSTestHelpers.dottedHostsConfig
         )
         result(0) shouldBe valid
       }
@@ -1209,7 +1231,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
       result(0) should haveInvalid[DomainValidationError](
@@ -1243,7 +1267,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1266,7 +1292,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1297,7 +1325,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1324,7 +1354,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1361,7 +1393,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1398,7 +1432,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1440,7 +1476,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1484,7 +1522,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.map(_ shouldBe valid)
@@ -1505,7 +1545,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
     result(0) shouldBe valid
@@ -1526,7 +1568,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1555,7 +1599,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
     result(0) shouldBe valid
@@ -1573,7 +1619,9 @@ class BatchChangeValidationsSpec
           false,
           None,
           true,
-          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+          VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+          false,
+          VinylDNSTestHelpers.dottedHostsConfig
         )
 
       result(0) should haveInvalid[DomainValidationError](
@@ -1607,7 +1655,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1634,7 +1684,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1657,7 +1709,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1689,7 +1743,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1713,7 +1769,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1737,7 +1795,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1770,7 +1830,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1795,7 +1857,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1865,7 +1929,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -1916,7 +1982,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result.map(_ shouldBe valid)
   }
@@ -1961,7 +2029,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result.map(_ shouldBe valid)
   }
@@ -1993,7 +2063,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result.map(_ shouldBe valid)
   }
@@ -2033,7 +2105,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2074,7 +2148,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result.map(_ shouldBe valid)
   }
@@ -2109,7 +2185,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result.map(_ shouldBe valid)
   }
@@ -2149,7 +2227,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.map(_ shouldBe valid)
@@ -2265,7 +2345,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
@@ -2290,7 +2372,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result(0) shouldBe valid
   }
@@ -2323,7 +2407,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
     result(0) shouldBe valid
   }
@@ -2354,7 +2440,9 @@ class BatchChangeValidationsSpec
       false,
       Some("some-owner-group-id"),
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result.foreach(_ shouldBe valid)
@@ -2386,7 +2474,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2417,7 +2507,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) should
@@ -2443,7 +2535,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2459,7 +2553,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2495,7 +2591,9 @@ class BatchChangeValidationsSpec
       false,
       Some(okGroup.id),
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2542,7 +2640,9 @@ class BatchChangeValidationsSpec
       false,
       Some(okGroup.id),
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2603,7 +2703,9 @@ class BatchChangeValidationsSpec
         false,
         None,
         true,
-        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+        VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+        false,
+        VinylDNSTestHelpers.dottedHostsConfig
       )
 
     result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
@@ -2659,7 +2761,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid
@@ -2763,7 +2867,9 @@ class BatchChangeValidationsSpec
       false,
       None,
       true,
-      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet
+      VinylDNSTestHelpers.dottedHostsConfig.zoneList.toSet,
+      false,
+      VinylDNSTestHelpers.dottedHostsConfig
     )
 
     result(0) shouldBe valid

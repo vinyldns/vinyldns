@@ -40,7 +40,7 @@ trait VinylDNSTestHelpers {
 
   val approvedNameServers: List[Regex] = List(new Regex("some.test.ns."))
 
-  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List("dotted.xyz"))
+  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List("dotted.xyz"), List("super"), List("dummy"), List("CNAME"))
 
   val defaultTtl: Long = 7200
 
