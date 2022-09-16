@@ -50,6 +50,7 @@ class MySqlZoneChangeRepository
     sql"""
          |SELECT zc.data
          |  FROM zone_change zc
+         |  JOIN zone z ON z.id = zc.zone_id
     """.stripMargin
 
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
@@ -115,8 +116,10 @@ class MySqlZoneChangeRepository
             .map(extractZoneChange(1))
             .list()
             .apply()
-          val maxQueries = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed)
-          maxQueries
+
+          val failedZoneChanges = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed)
+
+          failedZoneChanges
         }
       }
     }
