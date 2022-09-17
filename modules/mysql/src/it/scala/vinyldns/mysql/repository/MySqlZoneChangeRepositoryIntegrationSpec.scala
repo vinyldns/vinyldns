@@ -47,6 +47,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     IO.contextShift(scala.concurrent.ExecutionContext.global)
   private var repo: ZoneChangeRepository = _
 
+  private val zoneRepo= TestMySqlInstance.zoneRepository.asInstanceOf[MySqlZoneRepository]
+
   object TestData {
 
     def randomZoneChange: ZoneChange =
@@ -163,6 +165,11 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     }
 
     "get all failedChanges for a failed zone changes" in {
+      zones.map(zoneRepo.save(_)).toList.parSequence.unsafeRunTimed(5.minutes)
+        .getOrElse(
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
+        )
+
       val changeSetupResults = failedChanges.map(repo.save(_)).toList.parSequence
       changeSetupResults
         .unsafeRunTimed(5.minutes)
