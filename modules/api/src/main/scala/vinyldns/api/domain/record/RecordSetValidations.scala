@@ -20,13 +20,14 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.domain.DomainValidations.validateIpv4Address
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordType, RecordSet}
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -164,6 +165,15 @@ object RecordSetValidations {
         noConsecutiveDots(newRecordSet.records.head.toString)
       )
     }
+    val isNotIPv4inCname = {
+      ensuring(
+        RecordSetValidation(
+          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid cname cannot not be an IP address"""
+        )
+      )(
+        validateIpv4Address(newRecordSet.records.head.toString.dropRight(1)).isInvalid
+      )
+    }
 
     for {
       _ <- isNotOrigin(
@@ -174,6 +184,7 @@ object RecordSetValidations {
       _ <- noRecordWithName
       _ <- RDataWithConsecutiveDots
       _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
+      _ <- isNotIPv4inCname
     } yield ()
 
   }
