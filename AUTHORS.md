@@ -18,7 +18,6 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
-- Jayaraj
 - Joe Crowe
 - Jearvon Dharrie
 - Andrew Dunn
@@ -37,14 +36,17 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Joshulyne Park
 - Nathan Pierce
 - Michael Pilquist
+- Aravindh Raju
 - Sriram Ramakrishnan
 - Khalid Reid
 - Timo Schmid
 - Trent Schmidt
+- Nick Spadaccino
 - Ghafar Shah
 - Rebecca Star
 - Jess Stodola
 - Juan Valencia
+- Jayaraj Velkumar
 - Anastasia Vishnyakova
 - Jim Wakemen
 - Fei Wan
