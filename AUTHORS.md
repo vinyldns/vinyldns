@@ -18,6 +18,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
+- Jayaraj
 - Joe Crowe
 - Jearvon Dharrie
 - Andrew Dunn
