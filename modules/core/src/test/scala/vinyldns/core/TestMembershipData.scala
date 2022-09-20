@@ -36,6 +36,7 @@ object TestMembershipData {
 
   val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
   val superUser = User("super", "superAccess", "superSecret", isSuper = true)
+  val xyzUser = User("xyz", "xyzAccess", "xyzSecret")
   val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
   val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
   val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")

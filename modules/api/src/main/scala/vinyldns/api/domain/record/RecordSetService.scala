@@ -116,7 +116,7 @@ class RecordSetService(
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
       isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
-      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
+      zoneOrRecordDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
@@ -162,7 +162,7 @@ class RecordSetService(
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
       isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
-      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(rsForValidations, zone).toResult[Boolean]
+      zoneOrRecordDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
@@ -192,19 +192,15 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
-  def zoneOrRecordDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
-    // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
+  // For dotted hosts. Check if a record that may conflict with dotted host exist or not
+  def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
+    // Use fqdn for searching through `recordset` mysql table to see if it already exist
     val newRecordFqdn = if(newRecordSet.name != zone.name) newRecordSet.name + "." + zone.name else newRecordSet.name
 
     for {
-      existingZone <- zoneRepository.getZoneByName(newRecordFqdn)
-      allMatchingZones <- if(newRecordSet.name.contains(".")) zoneRepository.getZonesByFilters(newRecordSet.name.split('.').map(x => x + "." + zone.name).toSet) else zoneRepository.getZonesByFilters(Set.empty)
       record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
-      isNotTheIntendedZone = allMatchingZones.map(x => x.name).exists(x => newRecordFqdn.contains(x))
-      isZoneAlreadyExist = existingZone.isDefined
       isRecordAlreadyExist = doesRecordWithSameTypeExist(record, newRecordSet)
-      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist || isNotTheIntendedZone) false else true
+      doesNotExist = if(isRecordAlreadyExist) false else true
     } yield doesNotExist
   }
 

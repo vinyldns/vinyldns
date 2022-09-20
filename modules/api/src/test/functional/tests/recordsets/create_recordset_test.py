@@ -585,6 +585,25 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
     """
     Test that creating a CNAME record set with dotted host record name returns an error.
     """
+    client = shared_zone_test_context.dummy_vinyldns_client
+    zone = shared_zone_test_context.dummy_zone
+    apex_cname_rs = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    error = client.create_recordset(apex_cname_rs, status=422)
+    assert_that(error,
+                is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
+
+
+def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set with dotted host record name returns an error.
+    """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
     apex_cname_rs = {
@@ -595,8 +614,15 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
         "records": [{"cname": "foo.bar."}]
     }
 
-    error = client.create_recordset(apex_cname_rs, status=422)
-    assert_that(error, is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
+    apex_cname_record = None
+    try:
+        apex_cname_response = client.create_recordset(apex_cname_rs, status=202)
+        apex_cname_record = client.wait_until_recordset_change_status(apex_cname_response, "Complete")["recordSet"]
+        assert_that(apex_cname_record["name"], is_(apex_cname_rs["name"]))
+    finally:
+        if apex_cname_record:
+            delete_result = client.delete_recordset(apex_cname_record["zoneId"], apex_cname_record["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
 def test_create_cname_with_multiple_records(shared_zone_test_context):
@@ -1368,7 +1394,6 @@ def test_at_create_recordset(shared_zone_test_context):
         }
         result = client.create_recordset(new_rs, status=202)
 
-
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -1417,7 +1442,6 @@ def test_create_record_with_escape_characters_in_record_data_succeeds(shared_zon
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
