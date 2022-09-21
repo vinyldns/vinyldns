@@ -95,17 +95,17 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       zone: Zone,
       existingRecordSet: Option[RecordSet] = None,
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      recordFqdnDoesNotExist: Boolean,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] = {
 
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     // Check if the zone of the record set is present in dotted hosts config list
-    val isDomainAllowed = dottedHostZoneConfig.contains(zone.name)
-
+    val isDomainAllowed = dottedHostZoneConfig.contains(zoneName)
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
-    if((newRecordSet.name.contains(".") || !zoneOrRecordDoesNotAlreadyExist) && isDomainAllowed && isRecordTypeAndUserAllowed && newRecordSet.name != zone.name) {
-      isDotted(newRecordSet, zone, existingRecordSet, zoneOrRecordDoesNotAlreadyExist, isRecordTypeAndUserAllowed)
+    if((newRecordSet.name.contains(".") || !recordFqdnDoesNotExist) && isDomainAllowed && isRecordTypeAndUserAllowed && newRecordSet.name != zone.name) {
+      isDotted(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, isRecordTypeAndUserAllowed)
     }
     else {
       isNotDotted(newRecordSet, zone, existingRecordSet)
@@ -117,7 +117,7 @@ object RecordSetValidations {
      newRecordSet: RecordSet,
      zone: Zone,
      existingRecordSet: Option[RecordSet] = None,
-     zoneOrRecordDoesNotAlreadyExist: Boolean,
+     recordFqdnDoesNotExist: Boolean,
      isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] =
     ensuring(
@@ -126,7 +126,7 @@ object RecordSetValidations {
           s"Please check if user has permission or if there's a zone/record that already exist and make the change there."
       )
     )(
-      (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && zoneOrRecordDoesNotAlreadyExist && isRecordTypeAndUserAllowed
+      (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed
     )
 
   // Check if the recordset contains dot but is not in the allowed zones to create dotted records. If so, throw an error
@@ -151,18 +151,18 @@ object RecordSetValidations {
       zone: Zone,
       existingRecordSet: Option[RecordSet],
       approvedNameServers: List[Regex],
-      zoneOrRecordDoesNotAlreadyExist: Boolean = true,
+      recordFqdnDoesNotExist: Boolean = true,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] =
     newRecordSet.typ match {
-      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
-      case NS => nsValidations(newRecordSet, zone, existingRecordSet, approvedNameServers, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
-      case SOA => soaValidations(newRecordSet, zone, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      case NS => nsValidations(newRecordSet, zone, existingRecordSet, approvedNameServers, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      case SOA => soaValidations(newRecordSet, zone, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
-      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
-      case _ => checkForDot(newRecordSet, zone, existingRecordSet, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      case _ => checkForDot(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
     }
 
   def typeSpecificDeleteValidations(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
@@ -184,7 +184,7 @@ object RecordSetValidations {
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
       existingRecordSet: Option[RecordSet] = None,
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      recordFqdnDoesNotExist: Boolean,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] = {
@@ -219,7 +219,7 @@ object RecordSetValidations {
       )
       _ <- noRecordWithName
       _ <- RDataWithConsecutiveDots
-      _ <- checkForDot(newRecordSet, zone, existingRecordSet, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      _ <- checkForDot(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
     } yield ()
 
   }
@@ -228,7 +228,7 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      recordFqdnDoesNotExist: Boolean,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] = {
@@ -243,7 +243,7 @@ object RecordSetValidations {
     }
 
     for {
-      _ <- checkForDot(newRecordSet, zone, None, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
+      _ <- checkForDot(newRecordSet, zone, None, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed)
       _ <- isNotOrigin(
         newRecordSet,
         zone,
@@ -258,12 +258,12 @@ object RecordSetValidations {
       zone: Zone,
       oldRecordSet: Option[RecordSet],
       approvedNameServers: List[Regex],
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
+      recordFqdnDoesNotExist: Boolean,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] = {
     // TODO kept consistency with old validation. Not sure why NS could be dotted in reverse specifically
-    val isNotDottedHost = if (!zone.isReverse) checkForDot(newRecordSet, zone, None, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed) else ().asRight
+    val isNotDottedHost = if (!zone.isReverse) checkForDot(newRecordSet, zone, None, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed) else ().asRight
 
     for {
       _ <- isNotDottedHost
@@ -285,9 +285,9 @@ object RecordSetValidations {
     } yield ()
   }
 
-  def soaValidations(newRecordSet: RecordSet, zone: Zone, zoneOrRecordDoesNotAlreadyExist: Boolean, dottedHostZoneConfig: Set[String], isRecordTypeAndUserAllowed: Boolean): Either[Throwable, Unit] =
+  def soaValidations(newRecordSet: RecordSet, zone: Zone, recordFqdnDoesNotExist: Boolean, dottedHostZoneConfig: Set[String], isRecordTypeAndUserAllowed: Boolean): Either[Throwable, Unit] =
     // TODO kept consistency with old validation. in theory if SOA always == zone name, no special case is needed here
-    if (!zone.isReverse) checkForDot(newRecordSet, zone, None, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed) else ().asRight
+    if (!zone.isReverse) checkForDot(newRecordSet, zone, None, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed) else ().asRight
 
   def ptrValidations(newRecordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
     // TODO we don't check for PTR as dotted...not sure why

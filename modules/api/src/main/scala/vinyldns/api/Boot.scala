@@ -184,8 +184,7 @@ object Boot extends App {
         notifiers,
         vinyldnsConfig.scheduledChangesConfig.enabled,
         vinyldnsConfig.batchChangeConfig.v6DiscoveryNibbleBoundaries,
-        vinyldnsConfig.serverConfig.defaultTtl,
-        vinyldnsConfig.dottedHostsConfig
+        vinyldnsConfig.serverConfig.defaultTtl
       )
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(

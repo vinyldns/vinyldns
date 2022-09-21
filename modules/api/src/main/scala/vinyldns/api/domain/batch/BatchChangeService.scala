@@ -27,7 +27,6 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.backend.dns.DnsConversions._
-import vinyldns.api.config.DottedHostsConfig
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
@@ -36,7 +35,7 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.notifier.{AllNotifiers, Notification}
 
@@ -50,8 +49,7 @@ object BatchChangeService {
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
       v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-      defaultTtl: Long,
-      dottedHostsConfig: DottedHostsConfig
+      defaultTtl: Long
   ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
@@ -66,8 +64,7 @@ object BatchChangeService {
       notifiers,
       scheduledChangesEnabled,
       v6DiscoveryNibbleBoundaries,
-      defaultTtl,
-      dottedHostsConfig
+      defaultTtl
     )
 }
 
@@ -84,8 +81,7 @@ class BatchChangeService(
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
     v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-    defaultTtl: Long,
-    dottedHostsConfig: DottedHostsConfig
+    defaultTtl: Long
 ) extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -126,96 +122,15 @@ class BatchChangeService(
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
-      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toBatchResult
-      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
-      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toBatchResult
-      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
-      zoneOrRecordDoesNotAlreadyExist <- zoneOrRecordDoesNotExist(groupedChanges).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         groupedChanges,
         auth,
         isApproved,
-        batchChangeInput.ownerGroupId,
-        zoneOrRecordDoesNotAlreadyExist,
-        allowedZoneList,
-        isAllowedUser,
-        dottedHostsConfig
+        batchChangeInput.ownerGroupId
       )
       errorGroupIds <- getGroupIdsFromUnauthorizedErrors(validatedSingleChanges)
       validatedSingleChangesWithGroups = errorGroupMapping(errorGroupIds, validatedSingleChanges)
     } yield BatchValidationFlowOutput(validatedSingleChangesWithGroups, zoneMap, groupedChanges)
-
-  // For dotted hosts. Check if a zone or record that may conflict with dotted host exist or not
-  def zoneOrRecordDoesNotExist(groupedChanges: ChangeForValidationMap): IO[Boolean] = {
-    val groupedChangesMap = groupedChanges.changes.map(x => x.toOption).filter(x => x.isDefined)
-
-    val newRecordFqdn = if(groupedChangesMap.nonEmpty){
-      val inputChange = groupedChangesMap.map(x => x.get)
-      // Use fqdn for searching through `recordset` and `zone` mysql table to see if it already exist
-      inputChange.map(_.recordName).head + "." + inputChange.map(_.zone.name).head
-    } else {
-      ""
-    }
-
-    for {
-      zone <- zoneRepository.getZoneByName(newRecordFqdn)
-      record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
-      isZoneAlreadyExist = zone.isDefined
-      isRecordAlreadyExist = if(groupedChangesMap.nonEmpty) doesRecordWithSameTypeExist(record, groupedChangesMap.map(x => x.get).map(_.inputChange)) else false
-      doesNotExist = if(isZoneAlreadyExist || isRecordAlreadyExist) false else true
-    } yield doesNotExist
-  }
-
-  // Check if a record with same type already exist in 'recordset' mysql table
-  def doesRecordWithSameTypeExist(oldRecord: List[RecordSet], newRecord: List[ChangeInput]): Boolean = {
-    if(oldRecord.nonEmpty) {
-      val typeExists = oldRecord.map(x => x.typ == newRecord.map(_.typ))
-      if (typeExists.contains(true)) true else false
-    }
-    else {
-      false
-    }
-  }
-
-  // Get zones that are allowed to create dotted hosts using the zones present in dotted hosts config
-  def  getAllowedZones(zones: List[String]): IO[Set[String]] = {
-    if(zones.isEmpty){
-      val noZones: IO[Set[String]] = IO(Set.empty)
-      noZones
-    }
-    else {
-      // Wildcard zones needs to be passed to a separate method
-      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", ""))
-      // Zones without wildcard character are passed to a separate function
-      val namedZones = zones.filter(zone => !zone.contains("*"))
-      for {
-        namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
-        wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
-        zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
-      } yield zoneResult.map(x => x.name)
-    }
-  }
-
-  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
-  def checkIfInAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
-    if(users.contains(auth.signedInUser.userName)){
-      true
-    }
-    else {
-      false
-    }
-  }
-
-  // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
-  def checkIfInAllowedGroups(groups: List[String], auth: AuthPrincipal): IO[Boolean] = {
-    for{
-      groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
-      members = groupsInConfig.flatMap(x => x.memberIds)
-      usersList <- if(members.isEmpty) IO(Seq.empty) else userRepository.getUsers(members, None, None).map(x => x.users)
-      users = if(usersList.isEmpty) Seq.empty else usersList.map(x => x.userName)
-      isPresent = users.contains(auth.signedInUser.userName)
-    } yield isPresent
-  }
 
   def getGroupIdsFromUnauthorizedErrors(
       changes: ValidatedBatch[ChangeForValidation]

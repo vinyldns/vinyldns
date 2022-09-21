@@ -18,7 +18,7 @@ package vinyldns.api
 
 import com.comcast.ip4s.IpAddress
 import org.joda.time.DateTime
-import vinyldns.api.config.{BatchChangeConfig, DottedHostsConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{AuthConfigs, BatchChangeConfig, DottedHostsConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -40,7 +40,7 @@ trait VinylDNSTestHelpers {
 
   val approvedNameServers: List[Regex] = List(new Regex("some.test.ns."))
 
-  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List("dotted.xyz"), List("super"), List("dummy"), List("CNAME"))
+  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List(AuthConfigs("dotted.xyz.",List("xyz"),List("dummy"),List("CNAME")), AuthConfigs("abc.zone.recordsets.",List("locked"),List("dummy"),List("CNAME")), AuthConfigs("xyz.",List("super"),List("xyz"),List("CNAME"))))
 
   val defaultTtl: Long = 7200
 

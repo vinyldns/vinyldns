@@ -28,7 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{AuthConfigs, DottedHostsConfig, HighValueDomainConfig}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -110,20 +110,23 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
-      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
-      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toResult[Boolean]
+      authZones = dottedHostsConfig.authMethods.map {
+        case y:AuthConfigs => y.zone
+      }
+      allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
+      isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
-      isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
+      isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
-      zoneOrRecordDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
+      recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         None,
         approvedNameServers,
-        zoneOrRecordDoesNotAlreadyExist,
+        recordFqdnDoesNotAlreadyExist,
         allowedZoneList,
         isRecordTypeAndUserAllowed
       ).toResult
@@ -156,20 +159,23 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      allowedZoneList <- getAllowedZones(dottedHostsConfig.zoneList).toResult[Set[String]]
-      isInAllowedUsers = checkIfInAllowedUsers(dottedHostsConfig.allowedUserList, auth)
-      isUserInAllowedGroups <- checkIfInAllowedGroups(dottedHostsConfig.allowedGroupList, auth).toResult[Boolean]
+      authZones = dottedHostsConfig.authMethods.map {
+        case y:AuthConfigs => y.zone
+      }
+      allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
+      isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
-      isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(rsForValidations.typ.toString)
+      isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
-      zoneOrRecordDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
+      recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         Some(existing),
         approvedNameServers,
-        zoneOrRecordDoesNotAlreadyExist,
+        recordFqdnDoesNotAlreadyExist,
         allowedZoneList,
         isRecordTypeAndUserAllowed,
       ).toResult
@@ -223,7 +229,7 @@ class RecordSetService(
     }
     else {
       // Wildcard zones needs to be passed to a separate method
-      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", ""))
+      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", "%"))
       // Zones without wildcard character are passed to a separate function
       val namedZones = zones.filter(zone => !zone.contains("*"))
       for{
@@ -235,17 +241,87 @@ class RecordSetService(
   }
 
   // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
-  def checkIfInAllowedUsers(users: List[String], auth: AuthPrincipal): Boolean = {
-    if(users.contains(auth.signedInUser.userName)){
-      true
+  def checkIfInAllowedUsers(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): Boolean = {
+    val configZones = config.authMethods.map{
+      case x: AuthConfigs => x.zone
     }
-    else {
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainWildcardZone || isContainNormalZone){
+      val users = config.authMethods.flatMap {
+        case x: AuthConfigs => if (x.zone.contains("*")) {
+          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+          if(zoneName.matches(wildcardZone)) x.allowedUserList else List.empty
+        } else {
+          if (x.zone == zoneName) x.allowedUserList else List.empty
+        }
+      }
+      if(users.contains(auth.signedInUser.userName)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else{
+      false
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def checkIfInAllowedRecordType(zone: Zone, config: DottedHostsConfig, rs: RecordSet): Boolean = {
+    val configZones = config.authMethods.map{
+      case x: AuthConfigs => x.zone
+    }
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainWildcardZone || isContainNormalZone){
+      val rType = config.authMethods.flatMap {
+        case x: AuthConfigs => if (x.zone.contains("*")) {
+          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+          if(zoneName.matches(wildcardZone)) x.allowedRecordType else List.empty
+        } else {
+          if (x.zone == zoneName) x.allowedRecordType else List.empty
+        }
+      }
+      if(rType.contains(rs.typ.toString)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else{
       false
     }
   }
 
   // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
-  def checkIfInAllowedGroups(groups: List[String], auth: AuthPrincipal): IO[Boolean] = {
+  def checkIfInAllowedGroups(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): IO[Boolean] = {
+    val configZones = config.authMethods.map{
+      case x: AuthConfigs => x.zone
+    }
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    val groups = if(isContainWildcardZone || isContainNormalZone){
+      config.authMethods.flatMap {
+        case x: AuthConfigs => if (x.zone.contains("*")) {
+          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+          if(zoneName.matches(wildcardZone)) x.allowedGroupList else List.empty
+        } else {
+          if (x.zone == zoneName) x.allowedGroupList else List.empty
+        }
+      }
+    }
+    else {
+      List.empty
+    }
     for{
       groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
       members = groupsInConfig.flatMap(x => x.memberIds)

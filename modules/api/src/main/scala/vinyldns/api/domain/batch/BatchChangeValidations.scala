@@ -19,7 +19,7 @@ package vinyldns.api.domain.batch
 import java.net.InetAddress
 import cats.data._
 import cats.implicits._
-import vinyldns.api.config.{BatchChangeConfig, DottedHostsConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -45,14 +45,10 @@ trait BatchChangeValidationsAlgebra {
   ): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostZoneConfig: Set[String],
-      isUserAllowed: Boolean,
-      dottedHostsConfig: DottedHostsConfig
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -270,22 +266,18 @@ class BatchChangeValidations(
   /* context validations */
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostZoneConfig: Set[String],
-      isUserAllowed: Boolean,
-      dottedHostsConfig: DottedHostsConfig
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation] =
-    // Updates are a combination of an add and delete for a record with the same name and type in a zone.
+  // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
-          if groupedChanges
-            .getLogicalChangeType(add.recordKey)
-            .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig, isUserAllowed, dottedHostsConfig)
+        if groupedChanges
+          .getLogicalChangeType(add.recordKey)
+          .contains(LogicalChangeType.Add) =>
+        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
       // These cases MUST be below adds because:
@@ -300,30 +292,11 @@ class BatchChangeValidations(
         validateDeleteUpdateWithContext(deleteUpdate, groupedChanges, auth, isApproved)
     }
 
-  // Check if the new record set has dots and if so whether they are allowed or not
-  def newRecordSetDottedCheck(change: AddChangeForValidation, zoneOrRecordDoesNotAlreadyExist: Boolean, dottedHostZoneConfig: Set[String], isUserAllowed: Boolean, dottedHostsConfig: DottedHostsConfig): SingleValidation[Unit] = {
-
-    // Check if the zone of the record set is present in dotted hosts config list
-    val isDomainAllowed = dottedHostZoneConfig.contains(change.zone.name)
-
-    val isRecordTypeAllowed = dottedHostsConfig.allowedRecordType.contains(change.inputChange.typ.toString)
-
-    // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
-    if((change.recordName.contains(".") || !zoneOrRecordDoesNotAlreadyExist) && isDomainAllowed && isUserAllowed && isRecordTypeAllowed && change.recordName != change.zone.name) {
-      // If the user is not authorized or if there is a zone/record already present which conflicts with the new dotted record, throw an error
-      if (!zoneOrRecordDoesNotAlreadyExist || change.recordName == change.zone.name || !isUserAllowed)
-        DottedHostError(change.recordName, change.zone.name).invalidNel
-      else
-        ().validNel
-    }
-    else {
-      // If the recordset contains dot but is not in the allowed zones to create dotted records, throw an error
-      if (change.recordName != change.zone.name && change.recordName.contains("."))
-        ZoneDiscoveryError(change.inputChange.inputName).invalidNel
-      else
-        ().validNel
-    }
-  }
+  def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
+    if (change.recordName != change.zone.name && change.recordName.contains("."))
+      ZoneDiscoveryError(change.inputChange.inputName).invalidNel
+    else
+      ().validNel
 
   def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
     existingRecordSetData.exists { rd =>
@@ -429,22 +402,18 @@ class BatchChangeValidations(
   }
 
   def validateAddWithContext(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      ownerGroupId: Option[String],
-      zoneOrRecordDoesNotAlreadyExist: Boolean,
-      dottedHostZoneConfig: Set[String],
-      isUserAllowed: Boolean,
-      dottedHostsConfig: DottedHostsConfig
+    change: AddChangeForValidation,
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig: Set[String], isUserAllowed, dottedHostsConfig)
+        newRecordSetIsNotDotted(change)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
-          newRecordSetDottedCheck(change, zoneOrRecordDoesNotAlreadyExist, dottedHostZoneConfig: Set[String], isUserAllowed, dottedHostsConfig)
+          newRecordSetIsNotDotted(change)
       case TXT | PTR =>
         ().validNel
       case other =>

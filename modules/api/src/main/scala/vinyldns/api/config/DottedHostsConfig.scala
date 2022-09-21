@@ -17,17 +17,16 @@
 package vinyldns.api.config
 
 import pureconfig.ConfigReader
+import pureconfig.generic.auto._
 
-final case class DottedHostsConfig(zoneList: List[String], allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String])
+sealed trait AuthMethod
+final case class AuthConfigs(zone: String, allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String]) extends AuthMethod
+final case class DottedHostsConfig(authMethods: List[AuthMethod])
+
 object DottedHostsConfig {
   implicit val configReader: ConfigReader[DottedHostsConfig] =
-    ConfigReader.forProduct4[DottedHostsConfig, List[String], List[String], List[String], List[String]](
-      "zone-list",
-      "allowed-user-list",
-      "allowed-group-list",
-      "allowed-record-type"
-    ){
-      case (zoneList, allowedUserList, allowedGroupList, allowedRecordType) =>
-        DottedHostsConfig(zoneList, allowedUserList, allowedGroupList, allowedRecordType)
-    }
+    ConfigReader.forProduct1[DottedHostsConfig, List[AuthMethod]](
+      "allowed-settings",
+    )(authMethods =>
+      DottedHostsConfig(authMethods))
 }
