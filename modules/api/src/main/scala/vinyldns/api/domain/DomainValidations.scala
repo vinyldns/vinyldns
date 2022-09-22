@@ -65,7 +65,7 @@ object DomainValidations {
   // Cname check - Cname should not be IP address
   def validateCName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateIpv4Address(name.fqdn.dropRight(1)).isValid match {
-      case true => InvalidCName(name.toString).invalidNel
+      case true => InvalidIPv4CName(name.toString).invalidNel
       case false => validateHostName(name.fqdn).map(_ => name)
     }
 
