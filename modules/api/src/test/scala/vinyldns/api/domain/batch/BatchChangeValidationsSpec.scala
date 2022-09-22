@@ -727,7 +727,7 @@ class BatchChangeValidationsSpec
       )
     val result = validateAddChangeInput(change, false)
 
-    result should haveInvalid[DomainValidationError](InvalidCName(s"Fqdn($invalidCNAMERecordData.)"))
+    result should haveInvalid[DomainValidationError](InvalidIPv4CName(s"Fqdn($invalidCNAMERecordData.)"))
   }
 
   property("""validateAddChangeInput: should fail with InvalidLength
