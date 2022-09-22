@@ -78,7 +78,7 @@ class DomainValidationsSpec
     validateHostName("asterisk.domain*.name.") shouldBe invalid
   }
 
-  property("Shortests fqdn name should be valid") {
+  property("Shortest fqdn name should be valid") {
     val fqdn = Fqdn("a.")
     validateCName(fqdn) shouldBe valid
   }
