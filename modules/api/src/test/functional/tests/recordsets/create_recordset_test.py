@@ -508,9 +508,11 @@ def test_create_invalid_record_data(shared_zone_test_context):
     ))
 
 
-def test_create_dotted_a_record_not_apex_fails(shared_zone_test_context):
+def test_create_dotted_a_record_not_apex_fails_when_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
-    Test that creating a dotted host name A record set fails.
+    Test that creating a dotted host name A record set fails
+    Here the zone and user (individual) is allowed but record type is not allowed. Hence the test fails
+    Config present in reference.conf
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
@@ -526,6 +528,33 @@ def test_create_dotted_a_record_not_apex_fails(shared_zone_test_context):
     error = client.create_recordset(dotted_host_a_record, status=422)
     assert_that(error, is_("Record with name " + dotted_host_a_record["name"] + " and type A is a dotted host which "
                                                                                 "is not allowed in zone " + zone_name))
+
+
+def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name succeeds
+    Here the zone, user (in group) and record type is allowed. Hence the test succeeds
+    Config present in reference.conf
+    """
+    client = shared_zone_test_context.history_client
+    zone = shared_zone_test_context.dummy_zone
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+
+    dotted_a_record = None
+    try:
+        dotted_cname_response = client.create_recordset(dotted_host_a_record, status=202)
+        dotted_a_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_a_record["name"], is_(dotted_host_a_record["name"]))
+    finally:
+        if dotted_a_record:
+            delete_result = client.delete_recordset(dotted_a_record["zoneId"], dotted_a_record["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
@@ -581,13 +610,15 @@ def test_create_dotted_a_record_apex_with_trailing_dot_succeeds(shared_zone_test
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
-def test_create_dotted_cname_record_fails(shared_zone_test_context):
+def test_create_dotted_cname_record_fails_when_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with dotted host record name returns an error.
+    Test that creating a CNAME record set with dotted host record name returns an error
+    Here the zone is allowed but user (individual or in group) and record type is not allowed. Hence the test fails
+    Config present in reference.conf
     """
     client = shared_zone_test_context.dummy_vinyldns_client
     zone = shared_zone_test_context.dummy_zone
-    apex_cname_rs = {
+    dotted_host_cname_record = {
         "zoneId": zone["id"],
         "name": "dot.ted",
         "type": "CNAME",
@@ -595,18 +626,20 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
         "records": [{"cname": "foo.bar."}]
     }
 
-    error = client.create_recordset(apex_cname_rs, status=422)
+    error = client.create_recordset(dotted_host_cname_record, status=422)
     assert_that(error,
                 is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
 
 
 def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with dotted host record name returns an error.
+    Test that creating a CNAME record set with dotted host record name succeeds.
+    Here the zone, user (individual) and record type is allowed. Hence the test succeeds
+    Config present in reference.conf
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
-    apex_cname_rs = {
+    dotted_host_cname_record = {
         "zoneId": zone["id"],
         "name": "dot.ted",
         "type": "CNAME",
@@ -614,14 +647,14 @@ def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfie
         "records": [{"cname": "foo.bar."}]
     }
 
-    apex_cname_record = None
+    dotted_cname_record = None
     try:
-        apex_cname_response = client.create_recordset(apex_cname_rs, status=202)
-        apex_cname_record = client.wait_until_recordset_change_status(apex_cname_response, "Complete")["recordSet"]
-        assert_that(apex_cname_record["name"], is_(apex_cname_rs["name"]))
+        dotted_cname_response = client.create_recordset(dotted_host_cname_record, status=202)
+        dotted_cname_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_cname_record["name"], is_(dotted_host_cname_record["name"]))
     finally:
-        if apex_cname_record:
-            delete_result = client.delete_recordset(apex_cname_record["zoneId"], apex_cname_record["id"], status=202)
+        if dotted_cname_record:
+            delete_result = client.delete_recordset(dotted_cname_record["zoneId"], dotted_cname_record["id"], status=202)
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
@@ -2099,7 +2132,8 @@ def test_create_apex_ds_fails(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "@", "DS", record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
     assert_that(error, is_(f'Record with name [{zone["name"]}] is an DS record at apex and cannot be added'))

@@ -42,6 +42,8 @@ trait VinylDNSTestHelpers {
 
   val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List(AuthConfigs("dotted.xyz.",List("xyz"),List("dummy"),List("CNAME")), AuthConfigs("abc.zone.recordsets.",List("locked"),List("dummy"),List("CNAME")), AuthConfigs("xyz.",List("super"),List("xyz"),List("CNAME"))))
 
+  val emptyDottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List.empty)
+
   val defaultTtl: Long = 7200
 
   val manualReviewDomainList: List[Regex] = List(new Regex("needs-review.*"))
