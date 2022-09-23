@@ -549,7 +549,9 @@ Note the following:
 3. Wildcard character `*` can be used in `zone` to allow dotted hosts for all zones matching it.
 4. Individual users who are allowed to create dotted hosts are added to the `allowed-user-list` using their username.
 5. A set of users in a group who are allowed to create dotted hosts are added to the `allowed-group-list` using group name.
-6. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
+6. If the user is either in `allowed-user-list` or `allowed-group-list`, they are allowed to create a dotted host. It is
+not necessary for the user to be in both `allowed-user-list` and `allowed-group-list`.
+7. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
 
 ```yaml
 # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
@@ -576,7 +578,7 @@ dotted-hosts = {
 
 In the above, the dotted hosts can be created only in the zone `dummy.` and zones matching `*ent.com.` (parent.com., child.parent.com.)
 
-Also, it must satisfy the allowed users, group users and record type of the respective zone to create a dotted host.
+Also, it must satisfy the allowed users or group users and record type of the respective zone to create a dotted host.
 
 For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`
 
