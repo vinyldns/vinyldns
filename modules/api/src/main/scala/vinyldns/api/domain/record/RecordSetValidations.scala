@@ -123,7 +123,7 @@ object RecordSetValidations {
     ensuring(
       InvalidRequest(
         s"Record with fqdn '${newRecordSet.name}.${zone.name}' cannot be created. " +
-          s"Please check if user has permission or if there's a zone/record that already exist and make the change there."
+          s"Please check if there's a record with the same fqdn and type already exist and make the change there."
       )
     )(
       (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed

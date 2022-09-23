@@ -121,12 +121,6 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
       "If zone exists, then it must be connected to in VinylDNS."
 }
 
-final case class DottedHostError(name: String, zone: String) extends DomainValidationError {
-  def message: String =
-    s"Record with fqdn '$name.$zone' cannot be created. " +
-      s"Please check if user has permission or if there's a zone/record that already exist and make the change there."
-}
-
 final case class RecordAlreadyExists(name: String) extends DomainValidationError {
   def message: String =
     s"""Record "$name" Already Exists: cannot add an existing record; to update it, """ +
