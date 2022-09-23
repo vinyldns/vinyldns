@@ -580,7 +580,9 @@ In the above, the dotted hosts can be created only in the zone `dummy.` and zone
 
 Also, it must satisfy the allowed users or group users and record type of the respective zone to create a dotted host.
 
-For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`
+For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`.
+And the user `professor` can't create a dotted host in the zone `dummy.` as the user is not in `allowed-user-list` or 
+`allowed-group-list`.
 
 The config can be left empty as follows if we don't want to use it:
 
