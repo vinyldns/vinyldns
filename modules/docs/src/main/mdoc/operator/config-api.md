@@ -536,7 +536,50 @@ v6-discovery-nibble-boundaries {
   min = 5
   max = 20
 }
+```
 
+### Dotted Hosts
+
+Configuration setting that determines the zones, users (either individual or based on group) and record types that are 
+allowed to create dotted hosts. If only all the above are satisfied, one can create a dotted host in VinylDNS.
+
+Note the following: 
+1. The config `type = "auth-configs"` is a default which shouldn't be changed.
+2. Zones defined in the `zone` must always end with a dot. Eg: `comcast.com.`
+3. Wildcard character `*` can be used in `zone` to allow dotted hosts for all zones matching it.
+4. Individual users who are allowed to create dotted hosts are added to the `allowed-user-list` using their username.
+5. A set of users in a group who are allowed to create dotted hosts are added to the `allowed-group-list` using group name.
+6. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
+
+```yaml
+# approved zones, individual users, users in groups and record types that are allowed for dotted hosts
+dotted-hosts = {
+   allowed-settings = [
+      {
+      type = "auth-configs"
+      zone = "dummy."
+      allowed-user-list = ["testuser"]
+      allowed-group-list = ["dummy-group"]
+      allowed-record-type = ["AAAA"]
+      },
+      {
+      # for wildcard zones. Settings will be applied to all matching zones
+      type = "auth-configs"
+      zone = "*ent.com."
+      allowed-user-list = ["professor", "testuser"]
+      allowed-group-list = ["testing-group"]
+      allowed-record-type = ["A", "CNAME"]
+      }
+   ]
+}
+```
+
+The config can be left empty as follows if we don't want to use it:
+
+```yaml
+dotted-hosts = {
+   allowed-settings = []
+}
 ```
 
 ### Full Example Config
@@ -711,6 +754,27 @@ v6-discovery-nibble-boundaries {
         # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
         signing-region = "us-east-1"
      }
+  }
+
+  # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
+  dotted-hosts = {
+     allowed-settings = [
+        {
+        type = "auth-configs"
+        zone = "dummy."
+        allowed-user-list = ["testuser"]
+        allowed-group-list = ["dummy-group"]
+        allowed-record-type = ["AAAA"]
+        },
+        {
+        # for wildcard zones. Settings will be applied to all matching zones
+        type = "auth-configs"
+        zone = "*ent.com."
+        allowed-user-list = ["professor", "testuser"]
+        allowed-group-list = ["testing-group"]
+        allowed-record-type = ["A", "CNAME"]
+        }
+     ]
   }
 
   # true if you want to enable manual review for non-fatal errors
