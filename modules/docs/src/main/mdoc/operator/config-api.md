@@ -574,6 +574,12 @@ dotted-hosts = {
 }
 ```
 
+In the above, the dotted hosts can be created only in the zone `dummy.` and zones matching `*ent.com.` (parent.com., child.parent.com.)
+
+Also, it must satisfy the allowed users, group users and record type of the respective zone to create a dotted host.
+
+For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`
+
 The config can be left empty as follows if we don't want to use it:
 
 ```yaml
