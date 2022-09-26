@@ -128,21 +128,20 @@ class RecordSetServiceSpec
   )
 
   def getDottedHostsConfigGroupsAllowed(zone: Zone, config: DottedHostsConfig): List[String] = {
-    val configZones = config.authMethods.map {
-      case x: AuthConfigs => x.zone
-    }
+    val configZones = config.authConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.substring(0, zoneName.length - 1).matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
     val groups = if (isContainWildcardZone || isContainNormalZone) {
-      config.authMethods.flatMap {
-        case x: AuthConfigs => if (x.zone.contains("*")) {
-          val wildcardZone = x.zone.replace("*", "[A-Za-z.]*")
-          if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.allowedGroupList else List.empty
-        } else {
-          if (x.zone == zoneName) x.allowedGroupList else List.empty
-        }
+      config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z.]*")
+            if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.allowedGroupList else List.empty
+          } else {
+            if (x.zone == zoneName) x.allowedGroupList else List.empty
+          }
       }
     }
     else {
@@ -151,9 +150,7 @@ class RecordSetServiceSpec
     groups
   }
 
-  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
-    case y:AuthConfigs => y.zone
-  }
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
 
   val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(okZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -563,9 +560,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
-      case y:AuthConfigs => y.zone
-    }
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -609,9 +604,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = xyzZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
-      case y:AuthConfigs => y.zone
-    }
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(xyzZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -691,9 +684,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = abcZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
-      case y:AuthConfigs => y.zone
-    }
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(abcZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -734,7 +725,7 @@ class RecordSetServiceSpec
     val record =
       aaaa.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map {
       case y:AuthConfigs => y.zone
     }
 

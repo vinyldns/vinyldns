@@ -25,7 +25,6 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{InvalidGroupError, InvalidRequest, PendingUpdateError, RecordSetAlreadyExists, RecordSetValidation}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.VinylDNSTestHelpers
-import vinyldns.api.config.AuthConfigs
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestMembershipData._
@@ -45,9 +44,7 @@ class RecordSetValidationsSpec
 
   import RecordSetValidations._
 
-  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authMethods.map {
-    case y:AuthConfigs => y.zone
-  }
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
 
   "RecordSetValidations" should {
     "validRecordTypes" should {

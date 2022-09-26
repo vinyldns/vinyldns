@@ -110,9 +110,7 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      authZones = dottedHostsConfig.authMethods.map {
-        case y:AuthConfigs => y.zone
-      }
+      authZones = dottedHostsConfig.authConfigs.map(x => x.zone)
       allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
       isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
       isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
@@ -159,9 +157,7 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      authZones = dottedHostsConfig.authMethods.map {
-        case y:AuthConfigs => y.zone
-      }
+      authZones = dottedHostsConfig.authConfigs.map(x => x.zone)
       allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
       isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
       isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
@@ -242,21 +238,20 @@ class RecordSetService(
 
   // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
   def checkIfInAllowedUsers(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): Boolean = {
-    val configZones = config.authMethods.map{
-      case x: AuthConfigs => x.zone
-    }
+    val configZones = config.authConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
     if(isContainWildcardZone || isContainNormalZone){
-      val users = config.authMethods.flatMap {
-        case x: AuthConfigs => if (x.zone.contains("*")) {
-          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
-          if(zoneName.matches(wildcardZone)) x.allowedUserList else List.empty
-        } else {
-          if (x.zone == zoneName) x.allowedUserList else List.empty
-        }
+      val users = config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.allowedUserList else List.empty
+          } else {
+            if (x.zone == zoneName) x.allowedUserList else List.empty
+          }
       }
       if(users.contains(auth.signedInUser.userName)){
         true
@@ -272,21 +267,20 @@ class RecordSetService(
 
   // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
   def checkIfInAllowedRecordType(zone: Zone, config: DottedHostsConfig, rs: RecordSet): Boolean = {
-    val configZones = config.authMethods.map{
-      case x: AuthConfigs => x.zone
-    }
+    val configZones = config.authConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
     if(isContainWildcardZone || isContainNormalZone){
-      val rType = config.authMethods.flatMap {
-        case x: AuthConfigs => if (x.zone.contains("*")) {
-          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
-          if(zoneName.matches(wildcardZone)) x.allowedRecordType else List.empty
-        } else {
-          if (x.zone == zoneName) x.allowedRecordType else List.empty
-        }
+      val rType = config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.allowedRecordType else List.empty
+          } else {
+            if (x.zone == zoneName) x.allowedRecordType else List.empty
+          }
       }
       if(rType.contains(rs.typ.toString)){
         true
@@ -302,21 +296,20 @@ class RecordSetService(
 
   // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
   def checkIfInAllowedGroups(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): IO[Boolean] = {
-    val configZones = config.authMethods.map{
-      case x: AuthConfigs => x.zone
-    }
+    val configZones = config.authConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
     val groups = if(isContainWildcardZone || isContainNormalZone){
-      config.authMethods.flatMap {
-        case x: AuthConfigs => if (x.zone.contains("*")) {
-          val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
-          if(zoneName.matches(wildcardZone)) x.allowedGroupList else List.empty
-        } else {
-          if (x.zone == zoneName) x.allowedGroupList else List.empty
-        }
+      config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.allowedGroupList else List.empty
+          } else {
+            if (x.zone == zoneName) x.allowedGroupList else List.empty
+          }
       }
     }
     else {
