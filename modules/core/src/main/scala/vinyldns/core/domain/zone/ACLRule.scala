@@ -26,12 +26,13 @@ object AccessLevel extends Enumeration {
 
 case class ACLRule(
     accessLevel: AccessLevel,
+    allowDottedHosts: Boolean = false,
     description: Option[String] = None,
     userId: Option[String] = None,
     groupId: Option[String] = None,
     recordMask: Option[String] = None, // regular expression for record names
     recordTypes: Set[RecordType] = Set.empty
-)
+                  )
 
 object ACLRule {
   final val DESCRIPTION_MAX = 255
@@ -39,10 +40,11 @@ object ACLRule {
   def apply(aclRuleInfo: ACLRuleInfo): ACLRule =
     ACLRule(
       aclRuleInfo.accessLevel,
+      aclRuleInfo.allowDottedHosts,
       aclRuleInfo.description,
       aclRuleInfo.userId,
       aclRuleInfo.groupId,
       aclRuleInfo.recordMask,
-      aclRuleInfo.recordTypes
+      aclRuleInfo.recordTypes,
     )
 }

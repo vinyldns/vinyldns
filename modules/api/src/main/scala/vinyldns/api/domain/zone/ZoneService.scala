@@ -88,6 +88,7 @@ class ZoneService(
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      updateAclDottedHosts <- updateAclDottedHosts(updateZoneInput).toResult
       _ <- isValidZoneAcl(updateZoneInput.acl).toResult
       _ <- connectionValidator.isValidBackendId(updateZoneInput.backendId).toResult
       existingZone <- getZoneOrFail(updateZoneInput.id)
@@ -100,7 +101,7 @@ class ZoneService(
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
-      zoneWithUpdates = Zone(updateZoneInput, existingZone)
+      zoneWithUpdates = Zone(updateZoneInput.copy(acl = updateAclDottedHosts), existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
@@ -257,6 +258,11 @@ class ZoneService(
         case _ => ().asRight
       }
       .toResult
+
+  def updateAclDottedHosts(updateZoneInput: UpdateZoneInput): ZoneACL =
+    updateZoneInput.allowDottedHosts match {
+      case true => ZoneACL(updateZoneInput.acl.rules)
+      case false => ZoneACL(updateZoneInput.acl.rules.map(_.copy(allowDottedHosts = false)))}
 
   def adminGroupExists(groupId: String): Result[Unit] =
     groupRepository

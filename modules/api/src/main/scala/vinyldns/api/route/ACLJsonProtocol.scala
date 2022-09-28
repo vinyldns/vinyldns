@@ -34,13 +34,14 @@ trait ACLJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, ACLRuleInfo] = {
       val deserialized = (
         (js \ "accessLevel").required(AccessLevel, "Missing ACLRule.accessLevel"),
+        (js \ "allowDottedHosts").default[Boolean](false),
         (js \ "description").optional[String],
         (js \ "userId").optional[String],
         (js \ "groupId").optional[String],
         (js \ "recordMask").optional[String],
         (js \ "recordTypes").default[Set[RecordType]](Set.empty[RecordType]),
         (js \ "displayName").optional[String]
-      ).mapN(ACLRuleInfo.apply)
+        ).mapN(ACLRuleInfo.apply)
 
       deserialized.check(
         ("Cannot specify both a userId and a groupId", { rule =>

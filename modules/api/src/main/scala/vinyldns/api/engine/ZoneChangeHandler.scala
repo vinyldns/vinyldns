@@ -30,8 +30,10 @@ object ZoneChangeHandler {
              recordSetCacheRepository: RecordSetCacheRepository,
 
   ): ZoneChange => IO[ZoneChange] =
+
     zoneChange =>
       zoneRepository.save(zoneChange.zone).flatMap {
+
         case Left(duplicateZoneError) =>
           zoneChangeRepository.save(
             zoneChange.copy(
@@ -40,7 +42,6 @@ object ZoneChangeHandler {
             )
           )
         case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-
           executeWithinTransaction { db: DB =>
             for {
               _ <- recordSetRepository

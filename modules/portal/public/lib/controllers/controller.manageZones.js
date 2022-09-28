@@ -191,6 +191,7 @@ angular.module('controller.manageZones', [])
 
     $scope.submitAclRule = function(type) {
         if ($scope.addAclRuleForm.$valid) {
+
             $("#acl_modal").modal('hide');
             if ($scope.currentAclRule.priority == 'User') {
                 profileService.getUserDataByUsername($scope.currentAclRule.userName)

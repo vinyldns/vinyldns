@@ -150,6 +150,7 @@ angular.module('service.zones', [])
         this.toVinylAclRule = function(rule) {
             var newRule = {
                 accessLevel: rule.accessLevel,
+                allowDottedHosts: rule.allowDottedHosts,
                 description: rule.description,
                 recordMask: rule.recordMask,
                 recordTypes: rule.recordTypes,

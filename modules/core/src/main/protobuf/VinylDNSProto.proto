@@ -27,6 +27,7 @@ message ACLRule {
   optional string groupId = 4;
   optional string recordMask = 5;
   repeated string recordTypes = 6;
+  optional bool allowDottedHosts = 7 [default = false];
 }
 
 message ZoneACL {
@@ -49,6 +50,7 @@ message Zone {
   optional int64 latestSync = 13;
   optional bool isTest = 14 [default = false];
   optional string backendId = 15;
+  optional bool allowDottedHosts = 16 [default = false];
 }
 
 message AData {

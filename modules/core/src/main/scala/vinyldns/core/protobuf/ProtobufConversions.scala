@@ -49,6 +49,7 @@ trait ProtobufConversions {
   def fromPB(rule: VinylDNSProto.ACLRule): ACLRule =
     ACLRule(
       accessLevel = AccessLevel.withName(rule.getAccessLevel),
+      allowDottedHosts = rule.getAllowDottedHosts,
       description = if (rule.hasDescription) Option(rule.getDescription) else None,
       userId = if (rule.hasUserId) Option(rule.getUserId) else None,
       groupId = if (rule.hasGroupId) Option(rule.getGroupId) else None,
@@ -57,6 +58,7 @@ trait ProtobufConversions {
         if (rule.getRecordTypesCount > 0)
           rule.getRecordTypesList.asScala.map(RecordType.withName).toSet
         else Set.empty[RecordType]
+
     )
 
   def fromPB(acl: VinylDNSProto.ZoneACL): ZoneACL =
@@ -120,6 +122,7 @@ trait ProtobufConversions {
         if (zn.hasTransferConnection) Some(fromPB(zn.getTransferConnection)) else None,
       account = zn.getAccount,
       shared = zn.getShared,
+      allowDottedHosts = zn.getAllowDottedHosts,
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
       latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None,
@@ -239,6 +242,7 @@ trait ProtobufConversions {
     val builder = VinylDNSProto.ACLRule
       .newBuilder()
       .setAccessLevel(rule.accessLevel.toString)
+      .setAllowDottedHosts(rule.allowDottedHosts)
 
     rule.recordTypes.foreach(typ => builder.addRecordTypes(typ.toString))
     rule.description.foreach(builder.setDescription)
@@ -391,6 +395,7 @@ trait ProtobufConversions {
       .setStatus(zone.status.toString)
       .setAccount(zone.account)
       .setShared(zone.shared)
+      .setAllowDottedHosts(zone.allowDottedHosts)
       .setAcl(toPB(zone.acl))
       .setAdminGroupId(zone.adminGroupId)
       .setIsTest(zone.isTest)

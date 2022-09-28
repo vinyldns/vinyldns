@@ -367,6 +367,7 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
+        $scope.isSuper = $scope.profile.isSuper;
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
         $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || $scope.zoneInfo.shared ||

@@ -76,6 +76,23 @@
                                 </div>
                             </div>
 
+                            <div class="form-group" ng-if="isSuper">
+                                <label class="col-md-3 control-label">Allow Dotted Hosts</label>
+                                <div class="col-md-9">
+                                    <div>
+                                        <select class="form-control" ng-model="updateZoneInfo.allowDottedHosts">
+                                            <option ng-value="true" ng-model="updateZoneInfo.allowDottedHosts"
+                                                    ng-selected="updateZoneInfo.allowDottedHosts == true">
+                                                Allow</option>
+                                            <option ng-value="false" ng-model="updateZoneInfo.allowDottedHosts"
+                                                    ng-selected="updateZoneInfo.allowDottedHosts == false">
+                                                Disallow</option>
+                                        </select>
+                                    </div>
+                                    <a ng-if="updateZoneInfo.allowDottedHosts==true" href="aclRuleTable">Edit Acl</a>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label class="col-md-3 control-label">DNS Backend Id (optional)</label>
                                 <div class="col-md-9 col-xs-12">
@@ -297,6 +314,7 @@
                     <th>Access Level</th>
                     <th>Record Types</th>
                     <th>Record Mask</th>
+                    <th>Allow Dotted Hosts</th>
                     <th>Description</th>
                     <th>Actions</th>
                 </tr>
@@ -323,6 +341,10 @@
 
                     <td class="wrap-long-text">
                         {{rule.recordMask}}
+                    </td>
+
+                    <td class="wrap-long-text">
+                        {{rule.allowDottedHosts}}
                     </td>
 
                     <td class="wrap-long-text">
@@ -445,6 +467,19 @@
                     records, any valid regex will be accepted. For PTR records, please input a CIDR rule. If no mask is entered, the
                     rule will apply to all.
                 </span>
+            </modal-element>
+
+            <modal-element  ng-if="zoneInfo.allowDottedHosts == true && isSuper"  label="Allow Dotted Hosts">
+                <div>
+                    <select class="form-control" ng-model="currentAclRule.allowDottedHosts">
+                        <option ng-value="true" ng-model="currentAclRule.allowDottedHosts"
+                                ng-selected="currentAclRule.allowDottedHosts == true">
+                            Allow</option>
+                        <option ng-value="false" ng-model="currentAclRule.allowDottedHosts"
+                                ng-selected="currentAclRule.allowDottedHosts == false">
+                            Disallow</option>
+                    </select>
+                </div>
             </modal-element>
 
             <modal-element label="Description">
