@@ -28,8 +28,8 @@
         <!-- START VERTICAL TABS -->
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
-                <li class="active"><a href="#myZones" data-toggle="tab">My Zones</a></li>
-                <li><a id="tab2-button" href="#allZones" data-toggle="tab">All Zones</a></li>
+                <li class="active"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
+                <li><a id="tab2-button" href="#allZones" data-toggle="tab" ng-click="allZonesAccess()">All Zones</a></li>
             </ul>
 
             <div class="panel-body tab-content">
@@ -59,7 +59,7 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="zone-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="Zone Name"/>
                                             </div>
                                         </form>
                                     </div>
@@ -168,7 +168,7 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="all-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="Zone Name"/>
                                             </div>
                                         </form>
                                     </div>
