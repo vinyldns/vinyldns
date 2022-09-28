@@ -40,6 +40,6 @@ object ACLRuleInfo {
       groupId = aCLRule.groupId,
       recordMask = aCLRule.recordMask,
       recordTypes = aCLRule.recordTypes,
-      displayName = name,
+      displayName = name
     )
 }
