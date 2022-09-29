@@ -343,8 +343,9 @@
                         {{rule.recordMask}}
                     </td>
 
-                    <td class="wrap-long-text">
-                        {{rule.allowDottedHosts}}
+                    <td>
+                        <span ng-if="rule.allowDottedHosts == true">Allow</span>
+                        <span ng-if="rule.allowDottedHosts == false">Disallow</span>
                     </td>
 
                     <td class="wrap-long-text">

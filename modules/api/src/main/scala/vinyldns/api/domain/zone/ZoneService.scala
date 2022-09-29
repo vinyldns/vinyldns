@@ -19,6 +19,7 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
+import vinyldns.api.domain.membership.MembershipValidations.isSuperAdmin
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
@@ -74,13 +75,15 @@ class ZoneService(
       auth: AuthPrincipal
   ): Result[ZoneCommandResult] =
     for {
+      createAclDottedHosts <- createZoneAcl(createZoneInput, auth)
+      allowDottedHosts <- allowDottedHostsCreateZones(auth, createZoneInput)
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
       _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
       _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      zoneToCreate = Zone(createZoneInput, auth.isTestUser)
+      zoneToCreate = Zone(createZoneInput.copy(allowDottedHosts=allowDottedHosts, acl = createAclDottedHosts), auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
@@ -88,7 +91,8 @@ class ZoneService(
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
-      updateAclDottedHosts <- updateAclDottedHosts(updateZoneInput).toResult
+      updateAclDottedHosts <- updateZoneAcl(updateZoneInput, auth)
+      allowDottedHosts <- allowDottedHostsUpdateZones(auth, updateZoneInput)
       _ <- isValidZoneAcl(updateZoneInput.acl).toResult
       _ <- connectionValidator.isValidBackendId(updateZoneInput.backendId).toResult
       existingZone <- getZoneOrFail(updateZoneInput.id)
@@ -101,7 +105,7 @@ class ZoneService(
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
-      zoneWithUpdates = Zone(updateZoneInput.copy(acl = updateAclDottedHosts), existingZone)
+      zoneWithUpdates = Zone(updateZoneInput.copy(allowDottedHosts = allowDottedHosts, acl = updateAclDottedHosts), existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
@@ -259,10 +263,34 @@ class ZoneService(
       }
       .toResult
 
-  def updateAclDottedHosts(updateZoneInput: UpdateZoneInput): ZoneACL =
+  def allowDottedHostsUpdateZones(authPrincipal: AuthPrincipal, updateZoneInput: UpdateZoneInput): Result[Boolean] =
+    if (updateZoneInput.allowDottedHosts == true){
+    isSuperAdmin(authPrincipal).isRight match {
+      case true => updateZoneInput.allowDottedHosts.toResult
+      case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+    }} else updateZoneInput.allowDottedHosts.toResult
+
+  def allowDottedHostsCreateZones(authPrincipal: AuthPrincipal, createZoneInput: CreateZoneInput): Result[Boolean] =
+    if (createZoneInput.allowDottedHosts == true){
+      isSuperAdmin(authPrincipal).isRight match {
+      case true => createZoneInput.allowDottedHosts.toResult
+      case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      }} else createZoneInput.allowDottedHosts.toResult
+
+  def updateZoneAcl(updateZoneInput: UpdateZoneInput, authPrincipal: AuthPrincipal): Result[ZoneACL] = {
     updateZoneInput.allowDottedHosts match {
-      case true => ZoneACL(updateZoneInput.acl.rules)
-      case false => ZoneACL(updateZoneInput.acl.rules.map(_.copy(allowDottedHosts = false)))}
+      case true =>
+        if (isSuperAdmin(authPrincipal).isRight){ZoneACL(updateZoneInput.acl.rules)}.toResult
+      else   NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      case false => ZoneACL(updateZoneInput.acl.rules.map(_.copy(allowDottedHosts = false))).toResult}
+  }
+
+  def createZoneAcl(createZoneInput: CreateZoneInput, authPrincipal: AuthPrincipal): Result[ZoneACL] = {
+    createZoneInput.allowDottedHosts match {
+      case true => if (isSuperAdmin(authPrincipal).isRight){ZoneACL(createZoneInput.acl.rules)}.toResult
+      else   NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      case false => ZoneACL(createZoneInput.acl.rules.map(_.copy(allowDottedHosts = false))).toResult}
+  }
 
   def adminGroupExists(groupId: String): Result[Unit] =
     groupRepository
