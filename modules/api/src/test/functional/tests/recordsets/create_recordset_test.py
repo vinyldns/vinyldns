@@ -526,8 +526,8 @@ def test_create_dotted_a_record_not_apex_fails_when_dotted_hosts_config_not_sati
 
     zone_name = shared_zone_test_context.parent_zone["name"]
     error = client.create_recordset(dotted_host_a_record, status=422)
-    assert_that(error, is_("Record with name " + dotted_host_a_record["name"] + " and type A is a dotted host which "
-                                                                                "is not allowed in zone " + zone_name))
+    assert_that(error, is_("Record type is not allowed or the user is not authorized to create a dotted host in the "
+                           "zone '" + zone_name + "'"))
 
 
 def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
@@ -627,8 +627,8 @@ def test_create_dotted_cname_record_fails_when_dotted_hosts_config_not_satisfied
     }
 
     error = client.create_recordset(dotted_host_cname_record, status=422)
-    assert_that(error,
-                is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
+    assert_that(error, is_("Record type is not allowed or the user is not authorized to create a dotted host in the "
+                           "zone '" + zone["name"] + "'"))
 
 
 def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):

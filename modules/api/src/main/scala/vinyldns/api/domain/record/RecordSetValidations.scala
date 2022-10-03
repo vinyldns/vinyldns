@@ -101,18 +101,24 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] = {
 
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
-    // Check if the zone of the record set is present in dotted hosts config list
+    // Check if the zone of the recordset is present in dotted hosts config list
     val isDomainAllowed = dottedHostZoneConfig.contains(zoneName)
+
     // Check if record set contains dot and if it is in zone which is allowed to have dotted records from dotted hosts config
-    if((newRecordSet.name.contains(".") || !recordFqdnDoesNotExist) && isDomainAllowed && isRecordTypeAndUserAllowed && newRecordSet.name != zone.name) {
-      isDotted(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, isRecordTypeAndUserAllowed)
+    if(newRecordSet.name.contains(".") && isDomainAllowed && newRecordSet.name != zone.name) {
+      if(!isRecordTypeAndUserAllowed){
+        isUserAndRecordTypeAuthorized(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, isRecordTypeAndUserAllowed)
+      }
+      else {
+        isDotted(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, isRecordTypeAndUserAllowed)
+      }
     }
     else {
       isNotDotted(newRecordSet, zone, existingRecordSet)
     }
   }
 
-  // Check if the user is not authorized and if there is a zone/record already present which conflicts with the new dotted record. If so, throw an error
+  // For dotted host. Check if a record is already present which conflicts with the new dotted record. If so, throw an error
   def isDotted(
      newRecordSet: RecordSet,
      zone: Zone,
@@ -124,6 +130,22 @@ object RecordSetValidations {
       InvalidRequest(
         s"Record with fqdn '${newRecordSet.name}.${zone.name}' cannot be created. " +
           s"Please check if there's a record with the same fqdn and type already exist and make the change there."
+      )
+    )(
+      (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed
+    )
+
+  // For dotted host. Check if the user is authorized and the record type is allowed. If not, throw an error
+  def isUserAndRecordTypeAuthorized(
+     newRecordSet: RecordSet,
+     zone: Zone,
+     existingRecordSet: Option[RecordSet] = None,
+     recordFqdnDoesNotExist: Boolean,
+     isRecordTypeAndUserAllowed: Boolean
+  ): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest(
+        s"Record type is not allowed or the user is not authorized to create a dotted host in the zone '${zone.name}'"
       )
     )(
       (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed
@@ -151,7 +173,7 @@ object RecordSetValidations {
       zone: Zone,
       existingRecordSet: Option[RecordSet],
       approvedNameServers: List[Regex],
-      recordFqdnDoesNotExist: Boolean = true,
+      recordFqdnDoesNotExist: Boolean,
       dottedHostZoneConfig: Set[String],
       isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] =

@@ -91,10 +91,12 @@ class RecordSetService(
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
-      change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
+      authZones = dottedHostsConfig.authConfigs.map(x => x.zone)
+      newRs = if(authZones.contains(zone.name) && recordSet.name.takeRight(1) == ".") recordSet.copy(name = recordSet.name.dropRight(1)) else recordSet
+      change <- RecordSetChangeGenerator.forAdd(newRs, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
+      _ <- isNotHighValueDomain(newRs, zone, highValueDomainConfig).toResult
       _ <- recordSetDoesNotExist(
         backendResolver.resolve,
         zone,
@@ -110,7 +112,6 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      authZones = dottedHostsConfig.authConfigs.map(x => x.zone)
       allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
       isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
       isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
