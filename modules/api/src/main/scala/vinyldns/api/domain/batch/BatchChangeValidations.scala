@@ -205,7 +205,7 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[Unit] = {
     val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
-    val validRecord = validateRecordData(addChangeInput.record)
+    val validRecord = validateRecordData(addChangeInput.record, addChangeInput)
     val validInput = validateInputName(addChangeInput, isApproved)
 
     validTTL |+| validRecord |+| validInput
@@ -216,7 +216,7 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[Unit] = {
     val validRecord = deleteRRSetChangeInput.record match {
-      case Some(recordData) => validateRecordData(recordData)
+      case Some(recordData) => validateRecordData(recordData, deleteRRSetChangeInput)
       case None => ().validNel
     }
     val validInput = validateInputName(deleteRRSetChangeInput, isApproved)
@@ -224,11 +224,18 @@ class BatchChangeValidations(
     validRecord |+| validInput
   }
 
-  def validateRecordData(record: RecordData): SingleValidation[Unit] =
+  def validateRecordData(record: RecordData,change: ChangeInput): SingleValidation[Unit] =
     record match {
       case a: AData => validateIpv4Address(a.address).asUnit
       case aaaa: AAAAData => validateIpv6Address(aaaa.address).asUnit
-      case cname: CNAMEData => validateHostName(cname.cname).asUnit
+      case cname: CNAMEData =>
+        /*
+        To validate the zone is reverse
+         */
+        val isIPv4: Boolean = change.inputName.toLowerCase.endsWith("in-addr.arpa.")
+        val isIPv6: Boolean = change.inputName.toLowerCase.endsWith("ip6.arpa.")
+        val isReverse: Boolean = isIPv4 || isIPv6
+        validateCname(cname.cname,isReverse).asUnit
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>

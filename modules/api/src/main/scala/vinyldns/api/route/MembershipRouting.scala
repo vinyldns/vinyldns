@@ -45,6 +45,7 @@ class MembershipRoute(
     case GroupNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
     case GroupAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
+    case GroupValidationError(msg) => complete(StatusCodes.BadRequest, msg)
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)

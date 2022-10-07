@@ -52,6 +52,18 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
       "joined by dots, and terminated with a dot."
 }
 
+final case class InvalidCname(param: String, isReverseZone: Boolean) extends DomainValidationError {
+  def message: String =
+    isReverseZone match {
+      case true =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, slashes, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+      case false =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+    }
+}
+
 final case class InvalidLength(param: String, minLengthInclusive: Int, maxLengthInclusive: Int)
     extends DomainValidationError {
   def message: String =
