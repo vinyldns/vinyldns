@@ -217,18 +217,6 @@ to version 1.0.6:
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.6")
 ```
 
-Also update the sbt-plugin for the Play framework from version 2.7.4:
-
-```shell
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.4")
-```
-
-to version 2.8.16:
-
-```shell
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.8.16")
-``` 
-
 ### Starting the API Server
 
 Before starting the API service, you can start the dependencies for local development:
