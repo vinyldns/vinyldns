@@ -197,12 +197,6 @@ class RecordSetValidationsSpec
         leftValue(isDotted(test, okZone, None, true, false)) shouldBe an[InvalidRequest]
       }
 
-      "return a failure for a dotted record name that matches the zone name" in {
-        val test = aaaa.copy(name = "ok.www.comcast.net")
-        val zone = okZone.copy(name = "ok.www.comcast.net")
-        leftValue(isDotted(test, zone, None, true, true)) shouldBe an[InvalidRequest]
-      }
-
       "return success for a dotted record if it does not already have a record or zone with same name and user is allowed" in {
         val test = aaaa.copy(name = "this.passes")
         isDotted(test, okZone, None, true, true) should be(right)

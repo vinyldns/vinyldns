@@ -266,7 +266,7 @@ class RecordSetService(
     }
   }
 
-  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  // Check if user is allowed to create dotted hosts using the record types present in dotted hosts config
   def checkIfInAllowedRecordType(zone: Zone, config: DottedHostsConfig, rs: RecordSet): Boolean = {
     val configZones = config.authConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name

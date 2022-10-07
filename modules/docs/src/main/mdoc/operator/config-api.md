@@ -579,7 +579,7 @@ Also, it must satisfy the allowed users or group users and record type of the re
 
 For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`.
 And the user `professor` can't create a dotted host in the zone `dummy.` as the user is not in `allowed-user-list` or 
-`allowed-group-list`.
+`allowed-group-list` (not part of `dummy-group`).
 
 The config can be left empty as follows if we don't want to use it:
 

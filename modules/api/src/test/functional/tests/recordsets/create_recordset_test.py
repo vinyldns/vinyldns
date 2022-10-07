@@ -530,7 +530,7 @@ def test_create_dotted_a_record_not_apex_fails_when_dotted_hosts_config_not_sati
                            "zone '" + zone_name + "'"))
 
 
-def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
+def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfied(shared_zone_test_context):
     """
     Test that creating a A record set with dotted host record name succeeds
     Here the zone, user (in group) and record type is allowed. Hence the test succeeds
@@ -631,7 +631,7 @@ def test_create_dotted_cname_record_fails_when_dotted_hosts_config_not_satisfied
                            "zone '" + zone["name"] + "'"))
 
 
-def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfies(shared_zone_test_context):
+def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfied(shared_zone_test_context):
     """
     Test that creating a CNAME record set with dotted host record name succeeds.
     Here the zone, user (individual) and record type is allowed. Hence the test succeeds
