@@ -244,15 +244,10 @@ class RecordSetService(
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
-    if(isContainWildcardZone || isContainNormalZone){
+    if(isContainNormalZone){
       val users = config.authConfigs.flatMap {
         x: AuthConfigs =>
-          if (x.zone.contains("*")) {
-            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
-            if (zoneName.matches(wildcardZone)) x.allowedUserList else List.empty
-          } else {
-            if (x.zone == zoneName) x.allowedUserList else List.empty
-          }
+          if (x.zone == zoneName) x.allowedUserList else List.empty
       }
       if(users.contains(auth.signedInUser.userName)){
         true
@@ -261,7 +256,22 @@ class RecordSetService(
         false
       }
     }
-    else{
+    else if(isContainWildcardZone){
+      val users = config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.allowedUserList else List.empty
+          } else List.empty
+      }
+      if(users.contains(auth.signedInUser.userName)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else {
       false
     }
   }
@@ -273,15 +283,10 @@ class RecordSetService(
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
-    if(isContainWildcardZone || isContainNormalZone){
+    if(isContainNormalZone){
       val rType = config.authConfigs.flatMap {
         x: AuthConfigs =>
-          if (x.zone.contains("*")) {
-            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
-            if (zoneName.matches(wildcardZone)) x.allowedRecordType else List.empty
-          } else {
-            if (x.zone == zoneName) x.allowedRecordType else List.empty
-          }
+          if (x.zone == zoneName) x.allowedRecordType else List.empty
       }
       if(rType.contains(rs.typ.toString)){
         true
@@ -290,7 +295,22 @@ class RecordSetService(
         false
       }
     }
-    else{
+    else if(isContainWildcardZone){
+      val rType = config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.allowedRecordType else List.empty
+          } else List.empty
+      }
+      if(rType.contains(rs.typ.toString)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else {
       false
     }
   }
@@ -302,15 +322,19 @@ class RecordSetService(
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
-    val groups = if(isContainWildcardZone || isContainNormalZone){
+    val groups = if(isContainNormalZone){
+      config.authConfigs.flatMap {
+        x: AuthConfigs =>
+          if (x.zone == zoneName) x.allowedGroupList else List.empty
+      }
+    }
+    else if(isContainWildcardZone){
       config.authConfigs.flatMap {
         x: AuthConfigs =>
           if (x.zone.contains("*")) {
             val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
             if (zoneName.matches(wildcardZone)) x.allowedGroupList else List.empty
-          } else {
-            if (x.zone == zoneName) x.allowedGroupList else List.empty
-          }
+          } else List.empty
       }
     }
     else {
