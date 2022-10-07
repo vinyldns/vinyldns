@@ -10,6 +10,7 @@
     * [Portal](#portal)
     * [Documentation](#documentation)
 - [Running VinylDNS Locally](#running-vinyldns-locally)
+    * [Support for M1 Macs](#support-for-m1-macs)
     * [Starting the API Server](#starting-the-api-server)
     * [Starting the Portal](#starting-the-portal)
 - [Testing](#testing)
@@ -160,6 +161,73 @@ settings for the microsite are also configured in `build.sbt` of the project roo
 
 VinylDNS can be started in the background by running the [quickstart instructions](README.md#quickstart) located in the
 README. However, VinylDNS can also be run in the foreground.
+
+### Support for M1 Macs
+
+If you are using a Mac running macOS with one of the new Apple M1 chips, you will need to update some dependencies to
+newer versions before attempting to run VinylDNS locally. To verify whether your computer has one of these chips,
+go to About This Mac in the Apple menu in the top-left corner of your screen. If next to Chip you see Apple M1,
+or any later chip such as the Apple M1 Pro or Apple M1 Max, then you will need to apply these changes to the code.
+
+#### build.sbt
+
+Update protoc from version 2.6.1:
+
+```shell
+PB.targets in Compile := Seq(PB.gens.java("2.6.1") -> (sourceManaged in Compile).value),
+PB.protocVersion := "-v261"
+```
+
+to version 3.21.7:
+
+```shell
+PB.targets in Compile := Seq(PB.gens.java("3.21.7") -> (sourceManaged in Compile).value),
+PB.protocVersion := "-v3.21.7"
+```
+
+#### project/build.properties
+
+Update `sbt.version=1.4.0` to `sbt.version=1.7.2`
+
+#### project/Dependencies.scala
+
+Update protobuf from version 2.6.1:
+
+```shell
+"com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
+```
+
+to version 3.21.7:
+
+```shell
+"com.google.protobuf"       %  "protobuf-java"                  % "3.21.7",
+```
+
+#### project/plugins.sbt
+
+Update the sbt-protoc plugin from version 0.99.18:
+
+```shell
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.18")
+```
+
+to version 1.0.6:
+
+```shell
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.6")
+```
+
+Also update the sbt-plugin for the Play framework from version 2.7.4:
+
+```shell
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.4")
+```
+
+to version 2.8.16:
+
+```shell
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.8.16")
+``` 
 
 ### Starting the API Server
 
