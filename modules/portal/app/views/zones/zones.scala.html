@@ -59,7 +59,12 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="zone-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input id="zone-search-text" ng-model="query" type="text" class="form-control"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                            </div>
+                                            <div class="checkbox pull-right">
+                                                <label>
+                                                    <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                </label>
                                             </div>
                                         </form>
                                     </div>
@@ -144,6 +149,9 @@
                         </div>
                     </div>
                 </div>
+                <div class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                    <div class="spinner" ></div>
+                </div>
                 <div class="tab-pane" id="allZones">
                     <div class="row">
                         <div class="col-md-12">
@@ -165,8 +173,14 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="all-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input id="all-zones-search-text" ng-model="query" type="text" class="form-control" placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
                                             </div>
+
+                                                <div class="checkbox pull-right">
+                                                    <label>
+                                                        <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                    </label>
+                                                </div>
                                         </form>
                                     </div>
                                     <!-- END SEARCH BOX -->

@@ -70,6 +70,44 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
 
+    // Autocomplete for group search
+    $("#group-search-text").autocomplete({
+      source: function( request, response ) {
+        $.ajax({
+          url: "/api/groups?maxItems=1500&abridged=true",
+          dataType: "json",
+          data: {groupNameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
+          success: function(data) {
+              const search =  JSON.parse(JSON.stringify(data));
+              response($.map(search.groups, function(group) {
+              return {value: group.name, label: group.name}
+              }))
+          }
+        });
+      },
+      minLength: 1,
+      select: function (event, ui) {
+          $scope.query = ui.item.value;
+          $("#group-search-text").val(ui.item.value);
+          return false;
+        },
+      open: function() {
+        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+      },
+      close: function() {
+        $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+      }
+    });
+
+    // Autocomplete text-highlight
+    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
+            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+            return $("<li></li>")
+                  .data("ui-autocomplete-item", item.value)
+                  .append("<div>" + txt + "</div>")
+                  .appendTo(ul);
+    };
+
     $scope.createGroup = function (name, email, description) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code

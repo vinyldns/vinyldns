@@ -76,13 +76,14 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
 
         this.scope.nextPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
     });
 
     it('prevPageMyZones should call getZones with the correct parameters', function () {
@@ -93,19 +94,20 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
 
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
 
         this.scope.nextPageMyZones();
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
     });
 });
