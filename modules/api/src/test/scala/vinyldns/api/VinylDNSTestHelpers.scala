@@ -40,7 +40,7 @@ trait VinylDNSTestHelpers {
 
   val approvedNameServers: List[Regex] = List(new Regex("some.test.ns."))
 
-  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List(AuthConfigs("dotted.xyz.",List("xyz"),List("dummy"),List("CNAME")), AuthConfigs("abc.zone.recordsets.",List("locked"),List("dummy"),List("CNAME")), AuthConfigs("xyz.",List("super"),List("xyz"),List("CNAME"))))
+  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List(AuthConfigs("dotted.xyz.",List("xyz"),List("dummy"),List("CNAME"), 3), AuthConfigs("abc.zone.recordsets.",List("locked"),List("dummy"),List("CNAME"), 3), AuthConfigs("xyz.",List("super"),List("xyz"),List("CNAME"), 3)))
 
   val emptyDottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List.empty)
 

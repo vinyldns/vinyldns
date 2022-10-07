@@ -19,7 +19,7 @@ package vinyldns.api.config
 import pureconfig.ConfigReader
 import pureconfig.generic.auto._
 
-final case class AuthConfigs(zone: String, allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String])
+final case class AuthConfigs(zone: String, allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String], allowedDotsLimit: Int)
 final case class DottedHostsConfig(authConfigs: List[AuthConfigs])
 
 object DottedHostsConfig {

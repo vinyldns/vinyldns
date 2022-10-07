@@ -352,6 +352,19 @@ object RecordSetValidations {
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
 
+  def checkAllowedDots(allowedDotsLimit: Int, recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
+    ensuring(
+      InvalidRequest(
+        s"RecordSet with name ${recordSet.name} has more dots than that is allowed in config for this zone " +
+          s"which is, 'allowed-dots-limit = $allowedDotsLimit'."
+      )
+    )(
+      recordSet.name.count(_ == '.') <= allowedDotsLimit || (recordSet.name.count(_ == '.') == 1 &&
+        recordSet.name.takeRight(1) == ".") || recordSet.name == zone.name ||
+        (recordSet.typ.toString == "PTR" || recordSet.typ.toString == "SRV" || recordSet.typ.toString == "TXT" || recordSet.typ.toString == "NAPTR")
+    )
+  }
+
   def canUseOwnerGroup(
       ownerGroupId: Option[String],
       group: Option[Group],

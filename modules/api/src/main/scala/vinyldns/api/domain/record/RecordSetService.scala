@@ -118,6 +118,7 @@ class RecordSetService(
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
       isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
+      allowedDotsLimit = getAllowedDotsLimit(zone, dottedHostsConfig)
       recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -129,6 +130,7 @@ class RecordSetService(
         allowedZoneList,
         isRecordTypeAndUserAllowed
       ).toResult
+      _ <- checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -234,6 +236,24 @@ class RecordSetService(
         wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
         zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
       } yield zoneResult.map(x => x.name)
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def getAllowedDotsLimit(zone: Zone, config: DottedHostsConfig): Int = {
+    val configZones = config.authConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainNormalZone){
+      config.authConfigs.filter(x => x.zone == zoneName).head.allowedDotsLimit
+    }
+    else if(isContainWildcardZone){
+      config.authConfigs.filter(x => zoneName.matches(x.zone.replace("*", "[A-Za-z0-9.]*"))).head.allowedDotsLimit
+    }
+    else {
+      0
     }
   }
 

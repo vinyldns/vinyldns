@@ -551,6 +551,7 @@ Note the following:
 5. If the user is either in `allowed-user-list` or `allowed-group-list`, they are allowed to create a dotted host. It is
 not necessary for the user to be in both `allowed-user-list` and `allowed-group-list`.
 6. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
+7. The number of dots allowed in a record name for a zone is given in `allowed-dots-limit`.
 
 ```yaml
 # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
@@ -561,6 +562,7 @@ dotted-hosts = {
       allowed-user-list = ["testuser"]
       allowed-group-list = ["dummy-group"]
       allowed-record-type = ["AAAA"]
+      allowed-dots-limit = 3
       },
       {
       # for wildcard zones. Settings will be applied to all matching zones
@@ -568,6 +570,7 @@ dotted-hosts = {
       allowed-user-list = ["professor", "testuser"]
       allowed-group-list = ["testing-group"]
       allowed-record-type = ["A", "CNAME"]
+      allowed-dots-limit = 3
       }
    ]
 }
@@ -771,6 +774,7 @@ dotted-hosts = {
         allowed-user-list = ["testuser"]
         allowed-group-list = ["dummy-group"]
         allowed-record-type = ["AAAA"]
+        allowed-dots-limit = 3
         },
         {
         # for wildcard zones. Settings will be applied to all matching zones
@@ -778,6 +782,7 @@ dotted-hosts = {
         allowed-user-list = ["professor", "testuser"]
         allowed-group-list = ["testing-group"]
         allowed-record-type = ["A", "CNAME"]
+        allowed-dots-limit = 3
         }
      ]
   }
