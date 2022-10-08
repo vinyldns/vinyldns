@@ -67,15 +67,14 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       recordSetChanges: List[RecordSetChange]
   ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
-
     singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
       case Some(change) => BatchConversionError(change).toLeftBatchResult
       case None =>
-        logger.info(s"Successfully converted SingleChanges [${singleChanges
-          .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
-        ().toRightBatchResult
+          logger.info(s"Successfully converted SingleChanges [${singleChanges
+            .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+          ().toRightBatchResult
+        }
     }
-  }
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange],
@@ -104,27 +103,21 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val idsMap = recordSetChanges.flatMap { rsChange =>
       rsChange.singleBatchChangeIds.map(batchId => (batchId, rsChange.id))
     }.toMap
-
     val withStatus = batchChange.changes.map { change =>
-      idsMap
-        .get(change.id)
-        .map { _ =>
-          // a recordsetchange was successfully queued for this change
-          change
-        }
-        .getOrElse {
-          // failure here means there was a message queue issue for this change
-          change.withFailureMessage("Error queueing RecordSetChange for processing")
-        }
-    }
-
+        idsMap
+          .get(change.id)
+          .map { _ => change } // a recordsetchange was successfully queued for this change
+          .getOrElse {
+            // failure here means there was a message queue issue for this change
+            change.withFailureMessage("Error queueing RecordSetChange for processing")
+          }
+      }
     batchChange.copy(changes = withStatus)
   }
 
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     val failedChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed => change
-    }
+      case change if change.status == SingleChangeStatus.Failed => change }
     batchChangeRepo.updateSingleChanges(failedChanges).as(())
   }.toBatchResult
 

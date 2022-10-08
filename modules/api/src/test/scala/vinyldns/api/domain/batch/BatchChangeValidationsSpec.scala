@@ -824,10 +824,10 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName)
+      RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
     )
     result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName)
+      RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
@@ -1189,7 +1189,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName)
+        RecordAlreadyExists(input.inputChange.inputName, input.inputChange.record, false)
       )
     }
   }
@@ -2164,7 +2164,7 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIp))
   }
 
-  property("validateChangesWithContext: should fail if MX record in batch already exists") {
+  property("validateChangesWithContext: should Success if MX record in batch already exists") {
     val existingMX = rsOk.copy(
       zoneId = okZone.id,
       name = "name-conflict",
@@ -2185,7 +2185,7 @@ class BatchChangeValidationsSpec
         false,
         None
       )
-    result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
+    result(0) shouldBe valid
   }
 
   property("validateChangesWithContext: should succeed if duplicate MX records in batch") {

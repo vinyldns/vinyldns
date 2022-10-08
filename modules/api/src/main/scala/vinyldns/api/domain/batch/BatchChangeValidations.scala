@@ -28,7 +28,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey, RecordKeyData}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -436,11 +436,12 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          groupedChanges
+          change.inputChange.record,
+          groupedChanges,
+          isApproved
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
-
     validations.map(_ => change)
   }
 
@@ -478,11 +479,16 @@ class BatchChangeValidations(
       recordName: String,
       inputName: String,
       typ: RecordType,
-      groupedChanges: ChangeForValidationMap
-  ): SingleValidation[Unit] =
-    groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, typ)) match {
-      case Some(_) => RecordAlreadyExists(inputName).invalidNel
-      case None => ().validNel
+      recordData: RecordData,
+      groupedChanges: ChangeForValidationMap,
+      isApproved: Boolean
+  ): SingleValidation[Unit] = {
+    val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
+    if(record.isDefined) {
+      record.get.records.contains(recordData) match {
+        case true => ().validNel
+        case false => RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+    } else ().validNel
     }
 
   def noIncompatibleRecordExists(

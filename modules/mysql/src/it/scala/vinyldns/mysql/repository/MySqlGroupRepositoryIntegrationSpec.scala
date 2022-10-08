@@ -121,6 +121,20 @@ class MySqlGroupRepositoryIntegrationSpec
     }
   }
 
+  "MySqlGroupRepository.getGroupsByName" should {
+    "retrieve a group" in {
+      repo.getGroupsByName(groups.head.name).unsafeRunSync() shouldBe Set(groups.head)
+    }
+
+    "retrieve groups with wildcard character" in {
+      repo.getGroupsByName("*-group-*").unsafeRunSync() shouldBe groups.toSet
+    }
+
+    "returns empty set when group does not exist" in {
+      repo.getGroupsByName("no-existo").unsafeRunSync() shouldBe Set()
+    }
+  }
+
   "MySqlGroupRepository.getAllGroups" should {
     "retrieve all groups" in {
       repo.getAllGroups().unsafeRunSync() should contain theSameElementsAs groups.toSet
