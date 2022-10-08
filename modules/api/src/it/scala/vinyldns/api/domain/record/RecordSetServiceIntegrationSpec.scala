@@ -391,6 +391,28 @@ class RecordSetServiceIntegrationSpec
         .name shouldBe "test.dotted"
     }
 
+    "fail creating dotted record if it satisfies all dotted hosts config except allowed-dots-limit for the zone" in {
+      val newRecord = RecordSet(
+        dummyZone.id,
+        "test.dotted.more.dots.than.allowed",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        DateTime.now,
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      // The number of dots allowed in the record name for this zone as defined in the config is 3.
+      // Creating with 4 dots results in an error
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, dummyAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
     "update apex A record and add trailing dot" in {
       val newRecord = apexTestRecordA.copy(ttl = 200)
       val result = testRecordSetService

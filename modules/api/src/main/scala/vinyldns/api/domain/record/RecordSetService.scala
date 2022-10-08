@@ -130,7 +130,7 @@ class RecordSetService(
         allowedZoneList,
         isRecordTypeAndUserAllowed
       ).toResult
-      _ <- checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult
+      _ <- if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -167,6 +167,7 @@ class RecordSetService(
       isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
       isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
+      allowedDotsLimit = getAllowedDotsLimit(zone, dottedHostsConfig)
       recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
@@ -178,6 +179,7 @@ class RecordSetService(
         allowedZoneList,
         isRecordTypeAndUserAllowed,
       ).toResult
+      _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
