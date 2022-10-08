@@ -286,7 +286,7 @@ class RecordSetServiceSpec
         .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
       doReturn(IO.pure(Set()))
         .when(mockGroupRepo)
-        .getGroupsByName(Set.empty)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
       doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(Set.empty, None, None)
