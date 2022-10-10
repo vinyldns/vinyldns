@@ -33,6 +33,8 @@ trait GroupRepository extends Repository {
 
   def getGroupByName(groupName: String): IO[Option[Group]]
 
+  def getGroupsByName(groupName: String): IO[Set[Group]]
+
   def getAllGroups(): IO[Set[Group]]
 
 }
