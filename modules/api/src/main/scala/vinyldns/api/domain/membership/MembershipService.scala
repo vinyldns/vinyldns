@@ -216,14 +216,14 @@ class MembershipService(
     ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
-      .sortBy(_.name)
+      .sortBy(_.name.toLowerCase)
       .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
     val filtered = if(startFrom.isDefined){
       val prevPageGroup = allMyGroups.filter(_.id == startFrom.get).head.name
       allMyGroups
         .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
-        .filter(grp => grp.name > prevPageGroup)
+        .filter(grp => grp.name.toLowerCase > prevPageGroup.toLowerCase)
     } else {
       allMyGroups
         .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
