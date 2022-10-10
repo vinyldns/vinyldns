@@ -434,12 +434,12 @@ input[type="file"] {
     vertical-align: top;
 }
 
-.vinyldns_zones_paginate {
+.vinyldns_paginate {
     display: flex;
     align-items: center;
 }
 
-.vinyldns_zones_page_number {
+.vinyldns_page_number {
     margin-right: 10px;
 }
 
