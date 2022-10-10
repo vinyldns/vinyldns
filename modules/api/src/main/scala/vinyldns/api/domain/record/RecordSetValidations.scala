@@ -20,13 +20,14 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.config.DottedLabelConfig
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordType, RecordSet}
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -90,6 +91,31 @@ object RecordSetValidations {
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
     )
 
+  def dottedLabelValidation(
+      newRecordSet: RecordSet,
+      zone: Zone,
+      dottedLabelConfigs: List[DottedLabelConfig],
+      existingRecordSet: Option[RecordSet] = None
+  ): Either[Throwable, Unit] = {
+    val inAllowList = dottedLabelConfigs.exists(
+      cfg =>
+        (
+          (newRecordSet.typ == cfg.typ) && (cfg.pattern
+            .findFirstIn(newRecordSet.name)
+            .isDefined)
+        )
+    )
+
+    ensuring(
+      InvalidRequest(
+        s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} is not allowed in zone ${zone.name}"
+      )
+    )(
+      newRecordSet.name == zone.name || inAllowList || !newRecordSet.name.contains(".") ||
+        existingRecordSet.exists(_.name == newRecordSet.name)
+    )
+  }
+
   def isNotDotted(
       newRecordSet: RecordSet,
       zone: Zone,
@@ -110,16 +136,24 @@ object RecordSetValidations {
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
       existingRecordSet: Option[RecordSet],
-      approvedNameServers: List[Regex]
+      approvedNameServers: List[Regex],
+      dottedLabelConfigs: List[DottedLabelConfig]
   ): Either[Throwable, Unit] =
     newRecordSet.typ match {
-      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet)
+      case CNAME =>
+        cnameValidations(
+          newRecordSet,
+          existingRecordsWithName,
+          zone,
+          dottedLabelConfigs,
+          existingRecordSet
+        )
       case NS => nsValidations(newRecordSet, zone, existingRecordSet, approvedNameServers)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
       case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
-      case _ => isNotDotted(newRecordSet, zone, existingRecordSet)
+      case _ => dottedLabelValidation(newRecordSet, zone, dottedLabelConfigs, existingRecordSet)
     }
 
   def typeSpecificDeleteValidations(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
@@ -140,6 +174,7 @@ object RecordSetValidations {
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
       zone: Zone,
+      dottedLabelConfigs: List[DottedLabelConfig],
       existingRecordSet: Option[RecordSet] = None
   ): Either[Throwable, Unit] = {
     // cannot create a cname record if a record with the same exists
@@ -173,7 +208,7 @@ object RecordSetValidations {
       )
       _ <- noRecordWithName
       _ <- RDataWithConsecutiveDots
-      _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
+      _ <- dottedLabelValidation(newRecordSet, zone, dottedLabelConfigs, existingRecordSet)
     } yield ()
 
   }
@@ -327,6 +362,8 @@ object RecordSetValidations {
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
       val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
       val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
-      searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty
+      searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex
+        .findFirstIn(recordNameFilter)
+        .isEmpty
     }
 }

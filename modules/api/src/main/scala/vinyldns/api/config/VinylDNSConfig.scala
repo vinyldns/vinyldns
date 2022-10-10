@@ -42,6 +42,7 @@ final case class VinylDNSConfig(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     scheduledChangesConfig: ScheduledChangesConfig,
+    dottedLabelConfigs: List[DottedLabelConfig],
     batchChangeConfig: BatchChangeConfig,
     messageQueueConfig: MessageQueueConfig,
     notifierConfigs: List[NotifierConfig],
@@ -79,6 +80,24 @@ object VinylDNSConfig {
         configKeys.traverse(k => loadIO[A](config, s"vinyldns.$k"))
       }
 
+    def loadFromObjectListIO[A](
+        config: Config,
+        path: String
+    )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[List[A]] = {
+      val objectList = IO {
+        if (config.hasPath(path)) config.getObjectList(path).asScala.toList else Nil
+      }
+      objectList.flatMap { configKeys =>
+        configKeys.traverse(k => {
+          EitherT
+            .fromEither[IO](ConfigSource.fromConfig(k.toConfig()).cursor())
+            .subflatMap(cr.from)
+            .leftMap(failures => new ConfigReaderException[A](failures))
+            .rethrowT
+        })
+      }
+    }
+
     for {
       config <- IO.delay(ConfigFactory.load())
       limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits") //Added Limitsconfig to fetch data from the reference.config and pass to LimitsConfig.config
@@ -88,6 +107,10 @@ object VinylDNSConfig {
       httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
       hvdConfig <- loadIO[HighValueDomainConfig](config, "vinyldns.high-value-domains")
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
+      dottedLabelConfigs <- loadFromObjectListIO[DottedLabelConfig](
+        config,
+        "vinyldns.dotted-label-allowlist"
+      )
       messageQueueConfig <- loadIO[MessageQueueConfig](config, "vinyldns.queue")
       dataStoreConfigs <- loadFromStringListIO[DataStoreConfig](config, "vinyldns.data-stores")
       notifierConfigs <- loadFromStringListIO[NotifierConfig](config, "vinyldns.notifiers")
@@ -105,6 +128,7 @@ object VinylDNSConfig {
       hvdConfig,
       manualReviewConfig,
       scheduledChangesConfig,
+      dottedLabelConfigs,
       batchChangeConfig,
       messageQueueConfig,
       notifierConfigs,

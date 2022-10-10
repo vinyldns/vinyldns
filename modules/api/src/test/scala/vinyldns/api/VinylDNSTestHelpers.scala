@@ -18,7 +18,14 @@ package vinyldns.api
 
 import com.comcast.ip4s.IpAddress
 import org.joda.time.DateTime
-import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{
+  BatchChangeConfig,
+  DottedLabelConfig,
+  HighValueDomainConfig,
+  LimitsConfig,
+  ManualReviewConfig,
+  ScheduledChangesConfig
+}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -39,6 +46,12 @@ trait VinylDNSTestHelpers {
     HighValueDomainConfig(highValueDomainRegexList, highValueDomainIpList)
 
   val approvedNameServers: List[Regex] = List(new Regex("some.test.ns."))
+
+  val dottedLabelConfigs: List[DottedLabelConfig] = List(
+    new DottedLabelConfig(RecordType.CNAME, new Regex("^[^.]+\\._domainkey")),
+    new DottedLabelConfig(RecordType.A, new Regex("^[^.]+\\._domainkey")),
+    new DottedLabelConfig(RecordType.AAAA, new Regex("^[^.]+\\._domainkey"))
+  )
 
   val defaultTtl: Long = 7200
 
@@ -69,7 +82,7 @@ trait VinylDNSTestHelpers {
   val batchChangeLimit = 1000
 
   val testLimitConfig: LimitsConfig =
-    LimitsConfig(100,100,1000,1500,100,100,100)
+    LimitsConfig(100, 100, 1000, 1500, 100, 100, 100)
 
   val batchChangeConfig: BatchChangeConfig =
     BatchChangeConfig(batchChangeLimit, sharedApprovedTypes, v6DiscoveryNibbleBoundaries)

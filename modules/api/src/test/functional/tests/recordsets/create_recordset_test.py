@@ -599,6 +599,31 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
     assert_that(error, is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
 
 
+def test_create_dotted_cname_record_in_allow_list_succeeds(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set with dotted host in the allow list succeeds.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    apex_cname_record = {
+        "zoneId": zone["id"],
+        "name": "dot._domainkey",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    apex_cname_rs = None
+    try:
+        apex_cname_response = client.create_recordset(apex_cname_record, status=202)
+        apex_cname_rs = client.wait_until_recordset_change_status(apex_cname_response, "Complete")["recordSet"]
+        assert_that(apex_cname_rs["name"], is_(apex_cname_record["name"]))
+    finally:
+        if apex_cname_rs:
+            delete_result = client.delete_recordset(apex_cname_rs["zoneId"], apex_cname_rs["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
 def test_create_cname_with_multiple_records(shared_zone_test_context):
     """
     Test that creating a CNAME record set with multiple records returns an error
