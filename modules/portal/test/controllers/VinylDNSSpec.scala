@@ -1502,6 +1502,78 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getZoneChange" should {
+
+      "return ok (200) if the zoneChanges is found" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/$hobbitZoneId/changes" =>
+            defaultActionBuilder { Results.Ok(hobbitZoneChange) }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneChange(hobbitZoneId)(
+            FakeRequest(GET, s"/zones/$hobbitZoneId/changes")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitZoneChange)
+      }
+
+      "return a not found (404) if the zoneChanges does not exist" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/not-hobbits/changes" =>
+            defaultActionBuilder { Results.NotFound }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneChange("not-hobbits")(
+            FakeRequest(GET, "/zones/not-hobbits/changes")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
+      }
+
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getZoneChange(hobbitZoneId)(
+            FakeRequest(GET, s"/api/zones/$hobbitZoneId/changes")
+          )
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getZoneChange(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId/changes").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
     ".getZoneByName" should {
       "return ok (200) if the zone is found" in new WithApplication(app) {
         val client = MockWS {

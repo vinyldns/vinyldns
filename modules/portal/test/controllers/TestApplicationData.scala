@@ -196,6 +196,25 @@ trait TestApplicationData { this: Mockito =>
       | }
     """.stripMargin)
 
+  val hobbitZoneChange: JsValue = Json.parse(s"""{
+       | "zoneId":         "$hobbitZoneId",
+       | "zoneChanges":
+       |    [{ "zone": {
+       |             "name":           "$hobbitZoneName",
+       |             "email":          "hobbitAdmin@shire.me",
+       |             "status":         "Active",
+       |             "account":        "system",
+       |             "acl":            "rules",
+       |             "adminGroupId":   "$hobbitGroupId",
+       |             "id":             "$hobbitZoneId",
+       |             "shared":         false,
+       |             "status":         "Active",
+       |             "isTest":         true
+       |     }}],
+       | "maxItems":         100
+       | }
+    """.stripMargin)
+
   val hobbitZoneRequest: JsValue = Json.parse(s"""{
       | "name":           "hobbits",
       | "email":          "hobbitAdmin@shire.me",
