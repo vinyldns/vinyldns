@@ -57,6 +57,7 @@ class MembershipService(
     val adminMembers = inputGroup.adminUserIds
     val nonAdminMembers = inputGroup.memberIds.diff(adminMembers)
     for {
+      _ <- groupValidation(newGroup)
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
@@ -76,6 +77,7 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      _ <- groupValidation(newGroup)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
       addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
       // new non-admin members ++ admins converted to non-admins
@@ -214,12 +216,18 @@ class MembershipService(
     ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
-      .sortBy(_.id)
+      .sortBy(_.name.toLowerCase)
       .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
-    val filtered = allMyGroups
-      .filter(grp => groupNameFilter.forall(grp.name.contains(_)))
-      .filter(grp => startFrom.forall(grp.id > _))
+    val filtered = if(startFrom.isDefined){
+      val prevPageGroup = allMyGroups.filter(_.id == startFrom.get).head.name
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+        .filter(grp => grp.name.toLowerCase > prevPageGroup.toLowerCase)
+    } else {
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+    }
 
     val nextId = if (filtered.length > maxItems) Some(filtered(maxItems - 1).id) else None
     val groups = filtered.take(maxItems)
@@ -345,6 +353,16 @@ class MembershipService(
       .getGroup(groupId)
       .orFail(GroupNotFoundError(s"Group with ID $groupId was not found"))
       .toResult[Group]
+
+  // Validate group details. Group name and email cannot be empty
+  def groupValidation(group: Group): Result[Unit] = {
+    Option(group) match {
+      case Some(value) if Option(value.name).forall(_.trim.isEmpty) || Option(value.email).forall(_.trim.isEmpty) =>
+        GroupValidationError(GroupValidationErrorMsg).asLeft
+      case _ =>
+        ().asRight
+    }
+  }.toResult
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
     groupRepo
