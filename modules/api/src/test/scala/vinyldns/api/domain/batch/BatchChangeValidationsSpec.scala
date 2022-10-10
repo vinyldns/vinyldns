@@ -712,7 +712,7 @@ class BatchChangeValidationsSpec
       )
     val result = validateAddChangeInput(change, false)
 
-    result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidCNAMERecordData."))
+    result should haveInvalid[DomainValidationError](InvalidCname(s"$invalidCNAMERecordData.",false))
   }
 
   property("""validateAddChangeInput: should fail with InvalidLength
@@ -824,10 +824,10 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName)
+      RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
     )
     result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName)
+      RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
@@ -1182,7 +1182,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName)
+        RecordAlreadyExists(input.inputChange.inputName, input.inputChange.record, false)
       )
     }
   }
@@ -2153,7 +2153,7 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIp))
   }
 
-  property("validateChangesWithContext: should fail if MX record in batch already exists") {
+  property("validateChangesWithContext: should Success if MX record in batch already exists") {
     val existingMX = rsOk.copy(
       zoneId = okZone.id,
       name = "name-conflict",
@@ -2174,7 +2174,7 @@ class BatchChangeValidationsSpec
         false,
         None
       )
-    result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
+    result(0) shouldBe valid
   }
 
   property("validateChangesWithContext: should succeed if duplicate MX records in batch") {
@@ -2655,4 +2655,21 @@ class BatchChangeValidationsSpec
     result(3) shouldBe valid
     result(4) shouldBe valid
   }
+
+  property("validateAddChangeInput:  should fail for a CNAME addChangeInput with forward slash for forward zone") {
+    val cnameWithForwardSlash = AddChangeInput("cname.ok.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname/")))
+    val result = validateAddChangeInput(cnameWithForwardSlash, false)
+    result should haveInvalid[DomainValidationError](InvalidCname("cname/.",false))
+  }
+  property("validateAddChangeInput: should succeed for a valid CNAME addChangeInput without forward slash for forward zone") {
+    val cname = AddChangeInput("cname.ok.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname")))
+    val result = validateAddChangeInput(cname, false)
+    result shouldBe valid
+  }
+  property("validateAddChangeInput: should succeed for a valid CNAME addChangeInput with forward slash for reverse zone") {
+    val cnameWithForwardSlash = AddChangeInput("2.0.192.in-addr.arpa.", RecordType.CNAME, ttl, CNAMEData(Fqdn("cname/")))
+    val result = validateAddChangeInput(cnameWithForwardSlash, true)
+    result shouldBe valid
+  }
+
 }

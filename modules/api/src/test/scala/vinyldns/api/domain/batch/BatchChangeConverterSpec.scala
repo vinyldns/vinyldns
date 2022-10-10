@@ -41,11 +41,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     "No further action is required."
 
   private def makeSingleAddChange(
-      name: String,
-      recordData: RecordData,
-      typ: RecordType = A,
-      zone: Zone = okZone
-  ) = {
+                                   name: String,
+                                   recordData: RecordData,
+                                   typ: RecordType = A,
+                                   zone: Zone = okZone
+                                 ) = {
     val fqdn = s"$name.${zone.name}"
     SingleAddChange(
       Some(zone.id),
@@ -79,10 +79,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   }
 
   private def makeAddChangeForValidation(
-      recordName: String,
-      recordData: RecordData,
-      typ: RecordType = RecordType.A
-  ): AddChangeForValidation =
+                                          recordName: String,
+                                          recordData: RecordData,
+                                          typ: RecordType = RecordType.A
+                                        ): AddChangeForValidation =
     AddChangeForValidation(
       okZone,
       s"$recordName",
@@ -91,9 +91,9 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     )
 
   private def makeDeleteRRSetChangeForValidation(
-      recordName: String,
-      typ: RecordType = RecordType.A
-  ): DeleteRRSetChangeForValidation =
+                                                  recordName: String,
+                                                  typ: RecordType = RecordType.A
+                                                ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
@@ -723,11 +723,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   }
 
   private def validateRecordSetChange(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange,
-      typ: RecordSetChangeType
-  ) = {
+                                       name: String,
+                                       recordSetChanges: List[RecordSetChange],
+                                       batchChange: BatchChange,
+                                       typ: RecordSetChangeType
+                                     ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true
@@ -754,10 +754,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
   }
 
   private def validateRecordDataCombination(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange
-  ) = {
+                                             name: String,
+                                             recordSetChanges: List[RecordSetChange],
+                                             batchChange: BatchChange
+                                           ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true

@@ -1481,8 +1481,8 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
         # context validations: conflicting recordsets, unauthorized error
         assert_failed_change_in_error_response(response[7], input_name=existing_a_fqdn, record_data="1.2.3.4",
-                                               error_messages=[f"Record \"{existing_a_fqdn}\" Already Exists: "
-                                                               f"cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+                                               error_messages=[f"RecordName \"{existing_a_fqdn}\" already exists. Your request will be manually reviewed. "
+                                                               f"If you intended to update this record, you can avoid manual review by adding  a DeleteRecordSet entry followed by an Add."])
         assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn,
                                                record_data="1.2.3.4",
                                                error_messages=[f'CNAME Conflict: CNAME record names must be unique. '
@@ -1727,11 +1727,9 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_successful_change_in_error_response(response[6], input_name=f"cname-duplicate.{parent_zone_name}",
-                                                   record_type="AAAA", record_data="1::1")
-        assert_failed_change_in_error_response(response[7], input_name=existing_aaaa_fqdn, record_type="AAAA",
-                                               record_data="1::1",
-                                               error_messages=[f"Record \"{existing_aaaa_fqdn}\" Already Exists: cannot add an existing record; "
-                                                               f"to update it, issue a DeleteRecordSet then an Add."])
+                                               record_type="AAAA", record_data="1::1")
+        assert_successful_change_in_error_response(response[7], input_name=existing_aaaa_fqdn, record_type="AAAA",
+                                               record_data="1::1")
         assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn, record_type="AAAA",
                                                record_data="1::1",
                                                error_messages=[f"CNAME Conflict: CNAME record names must be unique. Existing record with name \"{existing_cname_fqdn}\" "
@@ -1969,7 +1967,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                f'Invalid domain name: "bad-ttl-and-invalid-name$.{parent_zone_name}", '
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.",
-                                                               'Invalid domain name: "also$bad.name.", valid domain names must be letters, numbers, underscores, and hyphens, '
+                                                               'Invalid Cname: "also$bad.name.", valid cnames must be letters, numbers, underscores, and hyphens, '
                                                                "joined by dots, and terminated with a dot."])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME",
@@ -2005,8 +2003,8 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                                f"Existing record with name \"{existing_forward_fqdn}\" and type \"A\" conflicts with this record."])
         assert_failed_change_in_error_response(response[14], input_name=existing_cname_fqdn,
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record \"{existing_cname_fqdn}\" Already Exists: cannot add an existing record; to update it, "
-                                                               f"issue a DeleteRecordSet then an Add.",
+                                               error_messages=[f"RecordName \"{existing_cname_fqdn}\" already exists. Your request will be manually reviewed. "
+                                                               f"If you intended to update this record, you can avoid manual review by adding  a DeleteRecordSet entry followed by an Add.",
                                                                f"CNAME Conflict: CNAME record names must be unique. "
                                                                f"Existing record with name \"{existing_cname_fqdn}\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[15], input_name=existing_reverse_fqdn, record_type="CNAME",
@@ -2133,7 +2131,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "20", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.',
-                                                               'Invalid domain name: "$another.invalid.cname.", valid domain names must be letters, numbers, '
+                                                               'Invalid Cname: "$another.invalid.cname.", valid cnames must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
@@ -2308,7 +2306,8 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # context validations: existing cname recordset
         assert_failed_change_in_error_response(response[11], input_name=f"{ip4_prefix}.193", record_type="PTR", record_data="existing-ptr.",
-                                               error_messages=[f'Record "{ip4_prefix}.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
+                                               error_messages=[f'RecordName "{ip4_prefix}.193" already exists. Your request will be manually reviewed. '
+                                                               f'If you intended to update this record, you can avoid manual review by adding  a DeleteRecordSet entry followed by an Add.'])
         assert_failed_change_in_error_response(response[12], input_name=f"{ip4_prefix}.199", record_type="PTR", record_data="existing-cname.",
                                                error_messages=[
                                                    f'CNAME Conflict: CNAME record names must be unique. Existing record with name "{ip4_prefix}.199" and type "CNAME" conflicts with this record.'])
@@ -2517,8 +2516,8 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         # context validations: existing record sets pre-request
         assert_failed_change_in_error_response(response[5], input_name=f"{ip6_prefix}:1000::bbbb", record_type="PTR",
                                                record_data="existing.ptr.",
-                                               error_messages=[f"Record \"{ip6_prefix}:1000::bbbb\" Already Exists: cannot add an existing record; "
-                                                               "to update it, issue a DeleteRecordSet then an Add."])
+                                               error_messages=[f"RecordName \"{ip6_prefix}:1000::bbbb\" already exists. Your request will be manually reviewed. "
+                                                               f"If you intended to update this record, you can avoid manual review by adding  a DeleteRecordSet entry followed by an Add."])
     finally:
         clear_recordset_list(to_delete, client)
 
@@ -2684,10 +2683,8 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[5], input_name=existing_txt_fqdn, record_type="TXT",
-                                               record_data="test",
-                                               error_messages=[f"Record \"{existing_txt_fqdn}\" Already Exists: "
-                                                               f"cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response[5], input_name=existing_txt_fqdn, record_type="TXT",
+                                               record_data="test")
         assert_failed_change_in_error_response(response[6], input_name=existing_cname_fqdn, record_type="TXT",
                                                record_data="test",
                                                error_messages=[f"CNAME Conflict: CNAME record names must be unique. "
@@ -2891,10 +2888,8 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[8], input_name=existing_mx_fqdn, record_type="MX",
-                                               record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=[f"Record \"{existing_mx_fqdn}\" Already Exists: cannot add an existing record; to update it, "
-                                                               f"issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response[8], input_name=existing_mx_fqdn, record_type="MX",
+                                               record_data={"preference": 1, "exchange": "foo.bar."})
         assert_failed_change_in_error_response(response[9], input_name=existing_cname_fqdn, record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=["CNAME Conflict: CNAME record names must be unique. "
@@ -4140,23 +4135,23 @@ def test_create_batch_change_with_multi_record_adds_with_multi_record_support(sh
             get_change_MX_json(f"multi-mx.{ok_zone_name}", preference=0),
             get_change_MX_json(f"multi-mx.{ok_zone_name}", preference=1000, exchange="bar.foo."),
             get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
-        ]
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group["id"]
     }
 
     try:
         create_rs = client.create_recordset(rs_to_create, status=202)
         to_delete.append(client.wait_until_recordset_change_status(create_rs, "Complete"))
-        response = client.create_batch_change(batch_change_input, status=400)
+        response = client.create_batch_change(batch_change_input, status=202)
 
-        assert_successful_change_in_error_response(response[0], input_name=f"multi.{ok_zone_name}", record_data="1.2.3.4")
-        assert_successful_change_in_error_response(response[1], input_name=f"multi.{ok_zone_name}", record_data="4.5.6.7")
-        assert_successful_change_in_error_response(response[2], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi.test.")
-        assert_successful_change_in_error_response(response[3], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi2.test.")
-        assert_successful_change_in_error_response(response[4], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="some-multi-text")
-        assert_successful_change_in_error_response(response[5], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="more-multi-text")
-        assert_successful_change_in_error_response(response[6], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 0, "exchange": "foo.bar."})
-        assert_successful_change_in_error_response(response[7], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 1000, "exchange": "bar.foo."})
-        assert_failed_change_in_error_response(response[8], input_name=rs_fqdn, record_data="1.1.1.1",
-                                               error_messages=["Record \"" + rs_fqdn + "\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response["changes"][0], input_name=f"multi.{ok_zone_name}", record_data="1.2.3.4")
+        assert_successful_change_in_error_response(response["changes"][1], input_name=f"multi.{ok_zone_name}", record_data="4.5.6.7")
+        assert_successful_change_in_error_response(response["changes"][2], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi.test.")
+        assert_successful_change_in_error_response(response["changes"][3], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi2.test.")
+        assert_successful_change_in_error_response(response["changes"][4], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="some-multi-text")
+        assert_successful_change_in_error_response(response["changes"][5], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="more-multi-text")
+        assert_successful_change_in_error_response(response["changes"][6], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 0, "exchange": "foo.bar."})
+        assert_successful_change_in_error_response(response["changes"][7], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 1000, "exchange": "bar.foo."})
+        assert_successful_change_in_error_response(response["changes"][8], input_name=rs_fqdn, record_data="1.1.1.1")
     finally:
         clear_recordset_list(to_delete, client)
