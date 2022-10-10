@@ -74,7 +74,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $("#group-search-text").autocomplete({
       source: function( request, response ) {
         $.ajax({
-          url: "/api/groups?maxItems=1500&abridged=true",
+          url: "/api/groups?maxItems=100&abridged=true",
           dataType: "json",
           data: {groupNameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
           success: function(data) {
