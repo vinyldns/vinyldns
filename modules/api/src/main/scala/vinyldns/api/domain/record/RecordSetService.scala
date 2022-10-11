@@ -92,11 +92,10 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       authZones = dottedHostsConfig.authConfigs.map(x => x.zone)
-      newRs = if(authZones.contains(zone.name) && recordSet.name.takeRight(1) == ".") recordSet.copy(name = recordSet.name.dropRight(1)) else recordSet
-      change <- RecordSetChangeGenerator.forAdd(newRs, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(newRs, zone, highValueDomainConfig).toResult
+      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- recordSetDoesNotExist(
         backendResolver.resolve,
         zone,
@@ -131,6 +130,7 @@ class RecordSetService(
         isRecordTypeAndUserAllowed
       ).toResult
       _ <- if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
+      _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -180,6 +180,7 @@ class RecordSetService(
         isRecordTypeAndUserAllowed,
       ).toResult
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
+      _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 

@@ -365,6 +365,16 @@ object RecordSetValidations {
     )
   }
 
+  def isNotApexEndsWithDot(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
+    ensuring(
+      InvalidRequest(
+        "RecordSet name cannot end with a dot, unless it's an apex record."
+      )
+    )(
+      recordSet.name.endsWith(zone.name) || !recordSet.name.endsWith(".")
+    )
+  }
+
   def canUseOwnerGroup(
       ownerGroupId: Option[String],
       group: Option[Group],
