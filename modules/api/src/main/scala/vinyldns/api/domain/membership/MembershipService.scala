@@ -235,6 +235,23 @@ class MembershipService(
     ListMyGroupsResponse(groups, groupNameFilter, startFrom, nextId, maxItems, ignoreAccess)
   }
 
+  def getGroupChange(
+    groupChangeId: String,
+    authPrincipal: AuthPrincipal
+  ): Result[GroupChangeInfo] =
+    for {
+      result <- groupChangeRepo
+        .getGroupChange(groupChangeId)
+        .toResult[Option[GroupChange]]
+      _ <- isGroupChangePresent(result).toResult
+      _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
+      groupChangeMessage <- determineGroupDifference(Seq(result.get))
+      groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
+      userIds = Seq(result.get).map(_.userId).toSet
+      users <- getUsers(userIds).map(_.users)
+      userMap = users.map(u => (u.id, u.userName)).toMap
+    } yield groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).head
+
   def getGroupActivity(
       groupId: String,
       startFrom: Option[String],
@@ -246,12 +263,64 @@ class MembershipService(
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
+      groupChangeMessage <- determineGroupDifference(result.changes)
+      groupChanges = (groupChangeMessage, result.changes).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
+      userIds = result.changes.map(_.userId).toSet
+      users <- getUsers(userIds).map(_.users)
+      userMap = users.map(u => (u.id, u.userName)).toMap
     } yield ListGroupChangesResponse(
-      result.changes.map(GroupChangeInfo.apply),
+      groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))),
       startFrom,
       result.lastEvaluatedTimeStamp,
       maxItems
     )
+
+  def determineGroupDifference(groupChange: Seq[GroupChange]): Result[Seq[String]] = {
+    var groupChangeMessage: Seq[String] = Seq.empty[String]
+
+    for (change <- groupChange) {
+      val sb = new StringBuilder
+      if (change.oldGroup.isDefined) {
+        if (change.oldGroup.get.name != change.newGroup.name) {
+          sb.append(s"Group name changed to '${change.newGroup.name}'. ")
+        }
+        if (change.oldGroup.get.email != change.newGroup.email) {
+          sb.append(s"Group email changed to '${change.newGroup.email}'. ")
+        }
+        if (change.oldGroup.get.description != change.newGroup.description) {
+          sb.append(s"Group description changed to '${change.newGroup.description.get}'. ")
+        }
+        val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
+        if (adminAddDifference.nonEmpty) {
+          sb.append(s"Group admin/s with userId/s (${adminAddDifference.mkString(",")}) added. ")
+        }
+        val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
+        if (adminRemoveDifference.nonEmpty) {
+          sb.append(s"Group admin/s with userId/s (${adminRemoveDifference.mkString(",")}) removed. ")
+        }
+        val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
+        if (memberAddDifference.nonEmpty) {
+          sb.append(s"Group member/s with userId/s (${memberAddDifference.mkString(",")}) added. ")
+        }
+        val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
+        if (memberRemoveDifference.nonEmpty) {
+          sb.append(s"Group member/s with userId/s (${memberRemoveDifference.mkString(",")}) removed. ")
+        }
+        groupChangeMessage = groupChangeMessage :+ sb.toString().trim
+      }
+      // It'll be in else statement if the group was created or deleted
+      else {
+        if (change.changeType == GroupChangeType.Create) {
+          sb.append("Group Created.")
+        }
+        else if (change.changeType == GroupChangeType.Delete){
+          sb.append("Group Deleted.")
+        }
+        groupChangeMessage = groupChangeMessage :+ sb.toString()
+      }
+    }
+    groupChangeMessage
+  }.toResult
 
   /**
    * Retrieves the requested User from the given userIdentifier, which can be a userId or username

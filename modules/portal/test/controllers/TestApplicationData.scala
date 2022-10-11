@@ -145,6 +145,48 @@ trait TestApplicationData { this: Mockito =>
        | }
     """.stripMargin)
 
+  val hobbitGroupChangeId = "b6018a9b-c893-40e9-aa25-4ccfee460c18"
+  val hobbitGroupChange: JsValue = Json.parse(s"""{
+      | "newGroup": {
+      | "id":          "$hobbitGroupId",
+      | "name":        "hobbits",
+      | "email":       "hobbitAdmin@shire.me",
+      | "description": "Hobbits of the shire",
+      | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+      | "admins":      [ { "id": "${frodoUser.id}" } ]
+      | },
+      | "changeType": "Create",
+      | "userId": "${frodoUser.id}",
+      | "oldGroup": {},
+      | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
+      | "created": "2022-07-22T08:19:22Z",
+      | "userName": "$frodoUser",
+      | "groupChangeMessage": ""
+      | }
+    """.stripMargin)
+
+  val hobbitGroupChanges: JsValue = Json.parse(s"""{
+       | "changes": [{
+       | "newGroup": {
+       | "id":          "$hobbitGroupId",
+       | "name":        "hobbits",
+       | "email":       "hobbitAdmin@shire.me",
+       | "description": "Hobbits of the shire",
+       | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+       | "admins":      [ { "id": "${frodoUser.id}" } ]
+       | },
+       | "changeType": "Create",
+       | "userId": "${frodoUser.id}",
+       | "oldGroup": {},
+       | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
+       | "created": "2022-07-22T08:19:22Z",
+       | "userName": "$frodoUser",
+       | "groupChangeMessage": ""
+       | }],
+       | "maxItems": 100
+       | }
+    """.stripMargin)
+
   val ringbearerGroup: JsValue = Json.parse(
     s"""{
        |  "id":          "ringbearer-group-uuid",

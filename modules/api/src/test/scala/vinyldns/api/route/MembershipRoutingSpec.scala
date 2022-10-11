@@ -730,6 +730,37 @@ class MembershipRoutingSpec
     }
   }
 
+  "GET group change" should {
+    "return a 200 response with the group change when found" in {
+      val grpChange = GroupChangeInfo(okGroupChange)
+      doReturn(result(grpChange)).when(membershipService).getGroupChange("ok", okAuth)
+      Get("/groups/change/ok") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupChangeInfo]
+        result shouldBe grpChange
+      }
+    }
+
+    "return a 400 Bad Request when the group change id is not valid" in {
+      doReturn(result(InvalidGroupRequestError("Invalid Group Change ID")))
+        .when(membershipService)
+        .getGroupChange("notValid", okAuth)
+      Get("/groups/change/notValid") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a 500 response on failure" in {
+      doReturn(result(new RuntimeException("fail")))
+        .when(membershipService)
+        .getGroupChange("bad", okAuth)
+      Get(s"/groups/change/bad") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.InternalServerError
+      }
+    }
+  }
+
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
       membershipRoute = superUserRoute
