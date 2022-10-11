@@ -323,7 +323,7 @@ Additionally, you can pass `--interactive` to `make run` or `make run-local` to 
 From there you can run tests with the `/functional_test/run.sh` command. This allows for finer-grained control over the
 test execution process as well as easier inspection of logs.
 
-You can run a specific test by name by running `make run -- -k <name of test function>`. Any arguments after
+You can run a specific test by name by running `make build` and `make run -- -k <name of test function>`. Any arguments after
 `make run --` will be passed to the test runner [`test/api/functional/run.sh`](test/api/functional/run.sh).
 
 Finally, you can execute `make run-deps-bg` to all of the dependencies for the functional test, but not run the tests.
