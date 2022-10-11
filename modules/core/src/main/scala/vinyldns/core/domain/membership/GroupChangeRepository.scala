@@ -24,7 +24,8 @@ import vinyldns.core.repository.Repository
 trait GroupChangeRepository extends Repository {
   def save(db: DB, groupChange: GroupChange): IO[GroupChange]
 
-  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
+  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]]
+
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
