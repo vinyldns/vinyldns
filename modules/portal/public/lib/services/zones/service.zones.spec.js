@@ -35,6 +35,15 @@ describe('Service: zoneService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when getting zoneChanges', function () {
+        this.$httpBackend.expectGET('/api/zones/zoneid/changes?maxItems=100&startFrom=start').respond('zoneChanges returned');
+        this.zonesService.getZoneChanges('100', 'start', 'zoneid', false)
+            .then(function(response) {
+                expect(response.data).toBe('zoneChanges returned');
+            });
+        this.$httpBackend.flush();
+    });
+
     it('http backend gets called properly when sending zone', function (done) {
         this.$httpBackend.expectPOST('/api/zones').respond('zone sent');
         this.zonesService.sendZone('zone payload')

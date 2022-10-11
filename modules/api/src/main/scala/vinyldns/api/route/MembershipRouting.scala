@@ -80,7 +80,7 @@ class MembershipRoute(
       } ~
         (get & monitor("Endpoint.listMyGroups")) {
           parameters(
-            "startFrom".?,
+            "startFrom".as[String].?,
             "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
             "groupNameFilter".?,
             "ignoreAccess".as[Boolean].?(false),
@@ -176,6 +176,13 @@ class MembershipRoute(
                 }
               }
             }
+        }
+      }
+    } ~
+    path("groups" / "change" / Segment) { groupChangeId =>
+      (get & monitor("Endpoint.groupSingleChange")) {
+        authenticateAndExecute(membershipService.getGroupChange(groupChangeId, _)) { groupChange =>
+          complete(StatusCodes.OK, groupChange)
         }
       }
     } ~

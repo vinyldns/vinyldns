@@ -783,6 +783,59 @@ class MembershipServiceSpec
       }
     }
 
+    "getGroupChange" should {
+      "return the single group change" in {
+        val groupChangeRepoResponse = listOfDummyGroupChanges.take(1).head
+        doReturn(IO.pure(Option(groupChangeRepoResponse)))
+          .when(mockGroupChangeRepo)
+          .getGroupChange(anyString)
+
+        doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+          .when(mockUserRepo)
+          .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+        val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
+        val expected: GroupChangeInfo =
+          listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
+
+        val result: GroupChangeInfo =
+          rightResultOf(underTest.getGroupChange(dummyGroup.id, dummyAuth).value)
+        result shouldBe expected
+      }
+
+      "return the single group change even if the user is not authorized" in {
+        val groupChangeRepoResponse = listOfDummyGroupChanges.take(1).head
+        doReturn(IO.pure(Some(groupChangeRepoResponse)))
+          .when(mockGroupChangeRepo)
+          .getGroupChange(anyString)
+
+        doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+          .when(mockUserRepo)
+          .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+        val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
+        val expected: GroupChangeInfo =
+          listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
+
+        val result: GroupChangeInfo =
+          rightResultOf(underTest.getGroupChange(dummyGroup.id, okAuth).value)
+        result shouldBe expected
+      }
+
+      "return a InvalidGroupRequestError if the group change id is not valid" in {
+        doReturn(IO.pure(None))
+          .when(mockGroupChangeRepo)
+          .getGroupChange(anyString)
+
+        doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+          .when(mockUserRepo)
+          .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+        val result = leftResultOf(underTest.getGroupChange(dummyGroup.id, okAuth).value)
+        result shouldBe a[InvalidGroupRequestError]
+      }
+    }
+
     "getGroupActivity" should {
       "return the group activity" in {
         val groupChangeRepoResponse = ListGroupChangesResults(
@@ -793,8 +846,13 @@ class MembershipServiceSpec
           .when(mockGroupChangeRepo)
           .getGroupChanges(anyString, any[Option[String]], anyInt)
 
+        doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+          .when(mockUserRepo)
+          .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+        val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
         val expected: List[GroupChangeInfo] =
-          listOfDummyGroupChanges.map(GroupChangeInfo.apply).take(100)
+          listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(100)
 
         val result: ListGroupChangesResponse =
           rightResultOf(underTest.getGroupActivity(dummyGroup.id, None, 100, dummyAuth).value)
@@ -813,8 +871,13 @@ class MembershipServiceSpec
         .when(mockGroupChangeRepo)
         .getGroupChanges(anyString, any[Option[String]], anyInt)
 
+      doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
       val expected: List[GroupChangeInfo] =
-        listOfDummyGroupChanges.map(GroupChangeInfo.apply).take(100)
+        listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(100)
 
       val result: ListGroupChangesResponse =
         rightResultOf(underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value)
@@ -824,6 +887,19 @@ class MembershipServiceSpec
       result.startFrom shouldBe None
     }
   }
+
+    "determine group difference" should {
+      "return difference between two groups" in {
+        val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate, okGroupChange.copy(changeType = GroupChangeType.Delete))
+        val result: Seq[String] = rightResultOf(underTest.determineGroupDifference(groupChange).value)
+        // Newly created group's change message
+        result(0) shouldBe "Group Created."
+        // Updated group's change message
+        result(1) shouldBe "Group name changed to 'dummy-group'. Group email changed to 'dummy@test.com'. Group description changed to 'dummy group'. Group admin/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group admin/s with userId/s (ok) removed. Group member/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group member/s with userId/s (ok) removed."
+        // Deleted group's change message
+        result(2) shouldBe "Group Deleted."
+      }
+    }
 
     "listAdmins" should {
       "return a list of admins" in {
