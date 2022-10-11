@@ -216,12 +216,18 @@ class MembershipService(
     ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
-      .sortBy(_.id)
+      .sortBy(_.name.toLowerCase)
       .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
-    val filtered = allMyGroups
-      .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
-      .filter(grp => startFrom.forall(grp.id > _))
+    val filtered = if(startFrom.isDefined){
+      val prevPageGroup = allMyGroups.filter(_.id == startFrom.get).head.name
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+        .filter(grp => grp.name.toLowerCase > prevPageGroup.toLowerCase)
+    } else {
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+    }
 
     val nextId = if (filtered.length > maxItems) Some(filtered(maxItems - 1).id) else None
     val groups = filtered.take(maxItems)
