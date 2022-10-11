@@ -106,6 +106,12 @@ angular.module('service.groups', [])
             return $http.get(url);
         };
 
+        this.getGroupChanges = function (groupId, count, startFrom) {
+            var url = '/api/groups/' + groupId + '/groupchanges';
+            url = this.urlBuilder(url, { 'startFrom': startFrom, 'maxItems': count });
+            return $http.get(url);
+        };
+
         this.getGroupsStored = function () {
             if (_refreshMyGroups || _myGroupsPromise == undefined) {
                 _myGroupsPromise = this.getGroups().then(
