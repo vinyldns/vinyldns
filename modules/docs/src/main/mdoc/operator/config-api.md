@@ -552,6 +552,12 @@ Note the following:
 not necessary for the user to be in both `allowed-user-list` and `allowed-group-list`.
 6. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
 7. The number of dots allowed in a record name for a zone is given in `allowed-dots-limit`.
+8. If `allowed-user-list` is left empty (`allowed-user-list = []`), no user will be allowed to create dotted hosts unless 
+they're present in `allowed-group-list` and vice-versa. If both `allowed-user-list` and `allowed-group-list` is left empty
+no users will be allowed to create dotted hosts in that zone.
+9. If `allowed-record-type` is left empty (`allowed-record-type = []`), user cannot create dotted hosts of any record type
+in that zone.
+10. If `allowed-dots-limit` is set to 0 (`allowed-dots-limit = 0`), we cannot create dotted hosts record in that zone.
 
 ```yaml
 # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
