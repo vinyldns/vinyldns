@@ -644,6 +644,47 @@ class RecordSetServiceSpec
 
     result.recordSet.name shouldBe record.name
   }
+  "fail if the record is dotted and zone, user in group, record type is allowed but record name has dot in the end and is not an apex record" in {
+    val record =
+      cname.copy(name = "new.name.", zoneId = xyzZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(xyzZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(xyzZone))).when(mockZoneRepo).getZone(xyzZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(xyzZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(xyzZone.id, record.name)
+    doReturn(IO.pure(Set(xyzZone, abcZone, xyzZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + xyzZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + xyzZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + xyzZone.name).toSet)
+    doReturn(IO.pure(Set(xyzGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(xyzUser), None)))
+      .when(mockUserRepo)
+      .getUsers(xyzGroup.memberIds, None, None)
+
+    // fails as dotted host record name has dot at the end and is not an apex record
+    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
   "fail if the record is dotted and zone, user, record type is allowed but number of dots allowed in config is 0" in {
     val record =
       cname.copy(name = "new.name", zoneId = dotZone.id, status = RecordSetStatus.Active)
