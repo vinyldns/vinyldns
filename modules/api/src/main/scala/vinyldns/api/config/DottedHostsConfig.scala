@@ -19,13 +19,13 @@ package vinyldns.api.config
 import pureconfig.ConfigReader
 import pureconfig.generic.auto._
 
-final case class AuthConfigs(zone: String, allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String], allowedDotsLimit: Int)
-final case class DottedHostsConfig(authConfigs: List[AuthConfigs])
+final case class ZoneAuthConfigs(zone: String, allowedUserList: List[String], allowedGroupList: List[String], allowedRecordType: List[String], allowedDotsLimit: Int)
+final case class DottedHostsConfig(zoneAuthConfigs: List[ZoneAuthConfigs])
 
 object DottedHostsConfig {
   implicit val configReader: ConfigReader[DottedHostsConfig] =
-    ConfigReader.forProduct1[DottedHostsConfig, List[AuthConfigs]](
+    ConfigReader.forProduct1[DottedHostsConfig, List[ZoneAuthConfigs]](
       "allowed-settings",
-    )(authConfigs =>
-      DottedHostsConfig(authConfigs))
+    )(zoneAuthConfigs =>
+      DottedHostsConfig(zoneAuthConfigs))
 }

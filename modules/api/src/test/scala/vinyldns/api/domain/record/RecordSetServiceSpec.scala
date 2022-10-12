@@ -24,7 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
-import vinyldns.api.config.{AuthConfigs, DottedHostsConfig}
+import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig}
 import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
@@ -128,14 +128,14 @@ class RecordSetServiceSpec
   )
 
   def getDottedHostsConfigGroupsAllowed(zone: Zone, config: DottedHostsConfig): List[String] = {
-    val configZones = config.authConfigs.map(x => x.zone)
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
     val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
     val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z.]*"))
     val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.substring(0, zoneName.length - 1).matches(x))
     val isContainNormalZone = configZones.contains(zoneName)
     val groups = if (isContainWildcardZone || isContainNormalZone) {
-      config.authConfigs.flatMap {
-        x: AuthConfigs =>
+      config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
           if (x.zone.contains("*")) {
             val wildcardZone = x.zone.replace("*", "[A-Za-z.]*")
             if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.allowedGroupList else List.empty
@@ -150,7 +150,7 @@ class RecordSetServiceSpec
     groups
   }
 
-  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
   val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(okZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -164,7 +164,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -234,7 +234,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -304,7 +304,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -350,7 +350,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -389,7 +389,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -447,7 +447,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(okGroup)))
         .when(mockGroupRepo)
         .getGroup(okGroup.id)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -521,7 +521,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -560,7 +560,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -571,7 +571,7 @@ class RecordSetServiceSpec
     doReturn(IO.pure(List()))
       .when(mockRecordRepo)
       .getRecordSetsByName(dottedZone.id, record.name)
-    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
       .when(mockZoneRepo)
       .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
     doReturn(IO.pure(Set()))
@@ -604,7 +604,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = xyzZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(xyzZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -644,6 +644,47 @@ class RecordSetServiceSpec
 
     result.recordSet.name shouldBe record.name
   }
+  "fail if the record is dotted and zone, user, record type is allowed but number of dots allowed in config is 0" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = dotZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(dotZone))).when(mockZoneRepo).getZone(dotZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(dotZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(dotZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + dotZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + dotZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + dotZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+
+    // fails as no.of.dots allowed for the zone in the config is 0
+    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
   "fail if the record is dotted and user, record type is in allowed dotted hosts config except zone" in {
     val record =
       cname.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
@@ -654,7 +695,7 @@ class RecordSetServiceSpec
     doReturn(IO.pure(List()))
       .when(mockRecordRepo)
       .getRecordSetsByName(okZone.id, record.name)
-    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
       .when(mockZoneRepo)
       .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
     doReturn(IO.pure(Set()))
@@ -684,7 +725,7 @@ class RecordSetServiceSpec
     val record =
       cname.copy(name = "new.name", zoneId = abcZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(abcZone, VinylDNSTestHelpers.dottedHostsConfig)
 
@@ -725,8 +766,8 @@ class RecordSetServiceSpec
     val record =
       aaaa.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
 
-    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map {
-      case y:AuthConfigs => y.zone
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map {
+      case y:ZoneAuthConfigs => y.zone
     }
 
     val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
@@ -738,7 +779,7 @@ class RecordSetServiceSpec
     doReturn(IO.pure(List()))
       .when(mockRecordRepo)
       .getRecordSetsByName(dottedZone.id, record.name)
-    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
       .when(mockZoneRepo)
       .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
     doReturn(IO.pure(Set()))
@@ -779,7 +820,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -836,7 +877,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -896,7 +937,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -939,7 +980,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -982,7 +1023,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))
@@ -1138,7 +1179,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(oneUserDummyGroup)))
         .when(mockGroupRepo)
         .getGroup(oneUserDummyGroup.id)
-      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
       doReturn(IO.pure(Set()))

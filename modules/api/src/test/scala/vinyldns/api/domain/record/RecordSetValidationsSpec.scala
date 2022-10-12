@@ -44,7 +44,7 @@ class RecordSetValidationsSpec
 
   import RecordSetValidations._
 
-  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.authConfigs.map(x => x.zone)
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
   "RecordSetValidations" should {
     "validRecordTypes" should {
@@ -232,18 +232,30 @@ class RecordSetValidationsSpec
         }
 
         "return a success for any new record with dotted hosts in forward zones if it satisfies dotted hosts configs" in {
-          val record = typeSpecificValidations(dottedARecord.copy(zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true)
+          // Zone, User, Record Type and Number of dots are all satisfied
+          val record = typeSpecificValidations(dottedARecord.copy(typ = CNAME, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
           record should be(right)
         }
 
-        "return a failure for any new record with dotted hosts in forward zones (CNAME) if it satisfies dotted hosts configs" in {
-          val record = typeSpecificValidations(dottedARecord.copy(typ = CNAME, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true)
-          record should be(right)
+        "return a failure for any new record with dotted hosts if no.of.dots allowed is 0" in {
+          // Zone, User, Record Type and Number of dots are all satisfied
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(typ = CNAME, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true, 0)
+          ) shouldBe an[InvalidRequest]
         }
 
-        "return a failure for any new record with dotted hosts in forward zones (NS) if it satisfies dotted hosts configs" in {
-          val record = typeSpecificValidations(dottedARecord.copy(typ = NS, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true)
-          record should be(right)
+        "return a failure for any new record with dotted hosts in forward zones (A record) if it doesn't satisfy dotted hosts configs" in {
+          // 'A' record is not allowed in the config
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false, 5)
+          ) shouldBe an[InvalidRequest]
+        }
+
+        "return a failure for any new record with dotted hosts in forward zones (NS record) if it doesn't satisfy dotted hosts configs" in {
+          // 'NS' record is not allowed in the config
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(typ = NS, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false, 5)
+          ) shouldBe an[InvalidRequest]
         }
 
         "return a success for any existing record with dotted hosts in forward zones" in {
@@ -445,7 +457,7 @@ class RecordSetValidationsSpec
       }
       "return ok if the DS is dotted and zone, user, record type is allowed in dotted hosts config" in {
         val record =
-          dsValidations(ds.copy(name = "dotted.trial", zoneId = dottedZone.id), List(matchingNs), dottedZone, true, dottedHostsConfigZonesAllowed.toSet, true)
+          dsValidations(ds.copy(name = "dotted.trial", zoneId = dottedZone.id), List(matchingNs), dottedZone, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
         record should be(right)
       }
       "return an InvalidRequest if the DS is dotted and zone, user, record type is allowed in dotted hosts config but has a conflict with existing record or zone" in {
@@ -508,7 +520,7 @@ class RecordSetValidationsSpec
       }
       "return ok if the CNAME is dotted and zone, user, record type is allowed in dotted hosts config" in {
         val record =
-          cnameValidations(cname.copy(name = "dot.ted", zoneId = dottedZone.id), List(), dottedZone, None, true, dottedHostsConfigZonesAllowed.toSet, true)
+          cnameValidations(cname.copy(name = "dot.ted", zoneId = dottedZone.id), List(), dottedZone, None, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
         record should be(right)
       }
       "return an InvalidRequest if the CNAME is dotted and zone, user, record type is allowed in dotted hosts config but has a conflict with existing record or zone" in {
