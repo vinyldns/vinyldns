@@ -18,6 +18,7 @@ def test_update_zone_success(shared_zone_test_context):
 
         acl_rule = {
             "accessLevel": "Read",
+            "allowDottedHosts": False,
             "description": "test-acl-updated-by-updatezn",
             "userId": "ok",
             "recordMask": "www-*",
@@ -27,6 +28,7 @@ def test_update_zone_success(shared_zone_test_context):
         zone = {
             "name": zone_name,
             "email": "test@test.com",
+            "allowDottedHosts": False,
             "adminGroupId": shared_zone_test_context.ok_group["id"],
             "connection": {
                 "name": "vinyldns.",
@@ -241,6 +243,7 @@ def test_create_acl_group_rule_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-group-id",
         "groupId": shared_zone_test_context.ok_group["id"],
         "recordMask": "www-*",
@@ -270,6 +273,7 @@ def test_create_acl_user_rule_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-user-id",
         "userId": "ok",
         "recordMask": "www-*",
@@ -335,6 +339,7 @@ def test_create_acl_user_rule_valid_cidr_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-user-id",
         "userId": "ok",
         "recordMask": "10.0.0.0/20",
@@ -383,6 +388,7 @@ def test_create_acl_user_rule_multiple_none_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-user-id",
         "userId": "ok",
         "recordTypes": ["PTR", "A", "AAAA"]
@@ -430,6 +436,7 @@ def test_create_acl_idempotent(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Write",
+        "allowDottedHosts": False,
         "description": "test-acl-idempotent",
         "userId": "ok",
         "recordMask": "www-*",
@@ -457,6 +464,7 @@ def test_delete_acl_group_rule_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-delete-group-id",
         "groupId": shared_zone_test_context.ok_group["id"],
         "recordMask": "www-*",
@@ -490,6 +498,7 @@ def test_delete_acl_user_rule_success(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test-acl-delete-user-id",
         "userId": "ok",
         "recordMask": "www-*",
@@ -546,6 +555,7 @@ def test_delete_acl_idempotent(shared_zone_test_context):
 
     acl_rule = {
         "accessLevel": "Write",
+        "allowDottedHosts": False,
         "description": "test-delete-acl-idempotent",
         "userId": "ok",
         "recordMask": "www-*",
@@ -589,6 +599,7 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
     # add acl rule
     acl_rule = {
         "accessLevel": "Read",
+        "allowDottedHosts": False,
         "description": "test_delete_acl_removes_permissions",
         "userId": "dummy",  # give dummy permission to see ok_zone
         "recordMask": "www-*",

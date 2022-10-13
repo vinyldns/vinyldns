@@ -68,7 +68,7 @@ object TestZoneData {
   val groupAclRule: ACLRule = ACLRule(AccessLevel.Read, groupId = Some("someGroup"))
 
   val baseAclRuleInfo: ACLRuleInfo =
-    ACLRuleInfo(AccessLevel.Read, Some("desc"), None, Some("group"), None, Set.empty)
+    ACLRuleInfo(AccessLevel.Read,false, Some("desc"), None, Some("group"), None, Set.empty)
   val baseAclRule: ACLRule = ACLRule(baseAclRuleInfo)
 
   /* ZONE CHANGES */

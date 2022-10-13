@@ -148,6 +148,7 @@ class SharedZoneTestContext(object):
                     "name": f"ok{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -172,6 +173,7 @@ class SharedZoneTestContext(object):
                     "name": f"dummy{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
                     "connection": {
@@ -197,6 +199,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -222,6 +225,7 @@ class SharedZoneTestContext(object):
                     "name": f"0.0.0.1.{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "backendId": "func-test-backend"
@@ -235,6 +239,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.10.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -261,6 +266,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.0.192.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -286,6 +292,7 @@ class SharedZoneTestContext(object):
                     "name": f"192/30.{partition_id}.0.192.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -311,6 +318,7 @@ class SharedZoneTestContext(object):
                     "name": f"system-test{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -337,12 +345,14 @@ class SharedZoneTestContext(object):
                     "name": f"parent.com{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "acl": {
                         "rules": [
                             {
                                 "accessLevel": "Delete",
+                                "allowDottedHosts": False,
                                 "description": "some_test_rule",
                                 "userId": "dummy"
                             }
@@ -371,6 +381,7 @@ class SharedZoneTestContext(object):
                     "name": f"example.com{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -396,6 +407,7 @@ class SharedZoneTestContext(object):
                     "name": f"zone.requires.review{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "backendId": "func-test-backend"
@@ -408,6 +420,7 @@ class SharedZoneTestContext(object):
                     "name": f"shared{partition_id}.",
                     "email": "test@test.com",
                     "shared": True,
+                    "allowDottedHost": False,
                     "adminGroupId": self.shared_record_group["id"],
                     "isTest": True,
                     "connection": {
