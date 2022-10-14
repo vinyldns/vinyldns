@@ -361,7 +361,7 @@ object RecordSetValidations {
     ensuring(
       InvalidRequest(
         s"RecordSet with name ${recordSet.name} has more dots than that is allowed in config for this zone " +
-          s"which is, 'allowed-dots-limit = $allowedDotsLimit'."
+          s"which is, 'dots-limit = $allowedDotsLimit'."
       )
     )(
       recordSet.name.count(_ == '.') <= allowedDotsLimit || (recordSet.name.count(_ == '.') == 1 &&

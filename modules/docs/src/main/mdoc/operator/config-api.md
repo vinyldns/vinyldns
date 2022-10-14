@@ -546,18 +546,18 @@ allowed to create dotted hosts. If only all the above are satisfied, one can cre
 Note the following:
 1. Zones defined in the `zone` must always end with a dot. Eg: `comcast.com.`
 2. Wildcard character `*` can be used in `zone` to allow dotted hosts for all zones matching it.
-3. Individual users who are allowed to create dotted hosts are added to the `allowed-user-list` using their username.
-4. A set of users in a group who are allowed to create dotted hosts are added to the `allowed-group-list` using group name.
-5. If the user is either in `allowed-user-list` or `allowed-group-list`, they are allowed to create a dotted host. It is
-not necessary for the user to be in both `allowed-user-list` and `allowed-group-list`.
-6. The record types which are allowed while creating a dotted host is added to the `allowed-record-type`.
-7. The number of dots allowed in a record name for a zone is given in `allowed-dots-limit`.
-8. If `allowed-user-list` is left empty (`allowed-user-list = []`), no user will be allowed to create dotted hosts unless 
-they're present in `allowed-group-list` and vice-versa. If both `allowed-user-list` and `allowed-group-list` is left empty
+3. Individual users who are allowed to create dotted hosts are added to the `user-list` using their username.
+4. A set of users in a group who are allowed to create dotted hosts are added to the `group-list` using group name.
+5. If the user is either in `user-list` or `group-list`, they are allowed to create a dotted host. It is
+not necessary for the user to be in both `user-list` and `group-list`.
+6. The record types which are allowed while creating a dotted host is added to the `record-types`.
+7. The number of dots allowed in a record name for a zone is given in `dots-limit`.
+8. If `user-list` is left empty (`user-list = []`), no user will be allowed to create dotted hosts unless 
+they're present in `group-list` and vice-versa. If both `user-list` and `group-list` is left empty
 no users will be allowed to create dotted hosts in that zone.
-9. If `allowed-record-type` is left empty (`allowed-record-type = []`), user cannot create dotted hosts of any record type
+9. If `record-types` is left empty (`record-types = []`), user cannot create dotted hosts of any record type
 in that zone.
-10. If `allowed-dots-limit` is set to 0 (`allowed-dots-limit = 0`), we cannot create dotted hosts record in that zone.
+10. If `dots-limit` is set to 0 (`dots-limit = 0`), we cannot create dotted hosts record in that zone.
 
 ```yaml
 # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
@@ -565,18 +565,18 @@ dotted-hosts = {
    allowed-settings = [
       {
       zone = "dummy."
-      allowed-user-list = ["testuser"]
-      allowed-group-list = ["dummy-group"]
-      allowed-record-type = ["AAAA"]
-      allowed-dots-limit = 3
+      user-list = ["testuser"]
+      group-list = ["dummy-group"]
+      record-types = ["AAAA"]
+      dots-limit = 3
       },
       {
       # for wildcard zones. Settings will be applied to all matching zones
       zone = "*ent.com."
-      allowed-user-list = ["professor", "testuser"]
-      allowed-group-list = ["testing-group"]
-      allowed-record-type = ["A", "CNAME"]
-      allowed-dots-limit = 3
+      user-list = ["professor", "testuser"]
+      group-list = ["testing-group"]
+      record-types = ["A", "CNAME"]
+      dots-limit = 3
       }
    ]
 }
@@ -586,9 +586,9 @@ In the above, the dotted hosts can be created only in the zone `dummy.` and zone
 
 Also, it must satisfy the allowed users or group users and record type of the respective zone to create a dotted host.
 
-For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `allowed-record-type`.
-And the user `professor` can't create a dotted host in the zone `dummy.` as the user is not in `allowed-user-list` or 
-`allowed-group-list` (not part of `dummy-group`).
+For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `record-types`.
+And the user `professor` can't create a dotted host in the zone `dummy.` as the user is not in `user-list` or 
+`group-list` (not part of `dummy-group`).
 
 The config can be left empty as follows if we don't want to use it:
 
@@ -777,18 +777,18 @@ dotted-hosts = {
      allowed-settings = [
         {
         zone = "dummy."
-        allowed-user-list = ["testuser"]
-        allowed-group-list = ["dummy-group"]
-        allowed-record-type = ["AAAA"]
-        allowed-dots-limit = 3
+        user-list = ["testuser"]
+        group-list = ["dummy-group"]
+        record-types = ["AAAA"]
+        dots-limit = 3
         },
         {
         # for wildcard zones. Settings will be applied to all matching zones
         zone = "*ent.com."
-        allowed-user-list = ["professor", "testuser"]
-        allowed-group-list = ["testing-group"]
-        allowed-record-type = ["A", "CNAME"]
-        allowed-dots-limit = 3
+        user-list = ["professor", "testuser"]
+        group-list = ["testing-group"]
+        record-types = ["A", "CNAME"]
+        dots-limit = 3
         }
      ]
   }

@@ -138,9 +138,9 @@ class RecordSetServiceSpec
         x: ZoneAuthConfigs =>
           if (x.zone.contains("*")) {
             val wildcardZone = x.zone.replace("*", "[A-Za-z.]*")
-            if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.allowedGroupList else List.empty
+            if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.groupList else List.empty
           } else {
-            if (x.zone == zoneName) x.allowedGroupList else List.empty
+            if (x.zone == zoneName) x.groupList else List.empty
           }
       }
     }

@@ -391,7 +391,7 @@ class RecordSetServiceIntegrationSpec
         .name shouldBe "test.dotted"
     }
 
-    "fail creating dotted record if it satisfies all dotted hosts config except allowed-dots-limit for the zone" in {
+    "fail creating dotted record if it satisfies all dotted hosts config except dots-limit for the zone" in {
       val newRecord = RecordSet(
         dummyZone.id,
         "test.dotted.more.dots.than.allowed",

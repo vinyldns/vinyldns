@@ -562,7 +562,7 @@ def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(s
     Test that creating a A record set with dotted host record name fails
     Here the zone, user (in group) and record type is allowed.
     But the record name has more dots than the number of dots allowed for this zone. Hence the test fails
-    The 'allowed-dots-limit' config from dotted-hosts config is not satisfied. Config present in reference.conf
+    The 'dots-limit' config from dotted-hosts config is not satisfied. Config present in reference.conf
     """
     client = shared_zone_test_context.history_client
     zone = shared_zone_test_context.dummy_zone
@@ -576,7 +576,7 @@ def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(s
 
     error = client.create_recordset(dotted_host_a_record, status=422)
     assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
-                           "allowed in config for this zone which is, 'allowed-dots-limit = 3'."))
+                           "allowed in config for this zone which is, 'dots-limit = 3'."))
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
