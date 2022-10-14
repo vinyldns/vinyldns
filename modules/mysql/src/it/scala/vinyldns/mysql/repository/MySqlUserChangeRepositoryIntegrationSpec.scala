@@ -20,6 +20,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{User, UserChangeRepository}
 import vinyldns.mysql.TestMySqlInstance
@@ -31,7 +32,7 @@ class MySqlUserChangeRepositoryIntegrationSpec
     with Matchers {
 
   private val repo: UserChangeRepository = TestMySqlInstance.userChangeRepository
-  private val user: User = User("user-id", "access-key", "secret-key")
+  private val user: User = User("user-id", "access-key", Encrypted("secret-key"))
   private val createUser = CreateUser(user, "creator-id", user.created)
   private val updateUser =
     UpdateUser(user.copy(userName = "new-username"), "creator-id", user.created, user)

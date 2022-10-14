@@ -35,6 +35,7 @@ import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
 
 import scala.concurrent.duration._
@@ -53,7 +54,7 @@ class ZoneServiceSpec
   private val mockZoneChangeRepo = mock[ZoneChangeRepository]
   private val mockMessageQueue = mock[MessageQueue]
   private val mockBackendResolver = mock[BackendResolver]
-  private val badConnection = ZoneConnection("bad", "bad", "bad", "bad")
+  private val badConnection = ZoneConnection("bad", "bad", Encrypted("bad"), "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name, AccessLevel.Delete)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name, AccessLevel.NoAccess)
 
@@ -442,7 +443,7 @@ class ZoneServiceSpec
     }
 
     "filter out ACL rules that have no matching group or user" in {
-      val goodUser = User("goodUser", "access", "secret")
+      val goodUser = User("goodUser", "access", Encrypted("secret"))
       val goodGroup = Group("goodGroup", "email")
 
       val goodUserRule = baseAclRule.copy(userId = Some(goodUser.id), groupId = None)

@@ -20,6 +20,7 @@ import cats.scalatest.EitherMatchers
 import vinyldns.core.crypto.CryptoAlgebra
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import vinyldns.core.domain.Encrypted
 
 class ZoneConnectionSpec extends AnyWordSpec with Matchers with EitherMatchers {
 
@@ -31,16 +32,16 @@ class ZoneConnectionSpec extends AnyWordSpec with Matchers with EitherMatchers {
 
   "ZoneConnection" should {
     "encrypt clear connections" in {
-      val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+      val test = ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
 
-      test.encrypted(testCrypto).key shouldBe "encrypted!"
+      test.encrypted(testCrypto).key.value shouldBe "encrypted!"
     }
 
     "decrypt connections" in {
-      val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+      val test = ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
       val decrypted = test.decrypted(testCrypto)
 
-      decrypted.key shouldBe "decrypted!"
+      decrypted.key.value shouldBe "decrypted!"
     }
   }
 }

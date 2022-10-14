@@ -25,6 +25,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.{Application, Configuration, Environment}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record._
 import vinyldns.core.health.HealthService
@@ -41,7 +42,7 @@ trait TestApplicationData { this: Mockito =>
   val frodoUser = User(
     "fbaggins",
     "key",
-    "secret",
+    Encrypted("secret"),
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
@@ -52,7 +53,7 @@ trait TestApplicationData { this: Mockito =>
   val lockedFrodoUser = User(
     "lockedFbaggins",
     "lockedKey",
-    "lockedSecret",
+    Encrypted("lockedSecret"),
     Some("LockedFrodo"),
     Some("LockedBaggins"),
     Some("lockedfbaggins@hobbitmail.me"),
@@ -65,7 +66,7 @@ trait TestApplicationData { this: Mockito =>
   val superFrodoUser = User(
     "superBaggins",
     "superKey",
-    "superSecret",
+    Encrypted("superSecret"),
     Some("SuperFrodo"),
     Some("SuperBaggins"),
     Some("superfbaggins@hobbitmail.me"),
@@ -87,7 +88,7 @@ trait TestApplicationData { this: Mockito =>
   val serviceAccountDetails =
     LdapUserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
   val serviceAccount =
-    User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
+    User("service", "key", Encrypted("secret"), None, None, None, DateTime.now, "service-uuid")
 
   val frodoJsonString: String =
     s"""{
@@ -103,7 +104,7 @@ trait TestApplicationData { this: Mockito =>
   val samAccount = User(
     "sgamgee",
     "key",
-    "secret",
+    Encrypted("secret"),
     Some("Samwise"),
     Some("Gamgee"),
     Some("sgamgee@hobbitmail.me"),

@@ -20,10 +20,11 @@ import cats.effect.IO
 import controllers.{Authenticator, UserAccountAccessor}
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 
 class UserSyncTaskSpec extends Specification with Mockito {
-  val notAuthUser: User = User("not-authorized", "accessKey", "secretKey")
+  val notAuthUser: User = User("not-authorized", "accessKey", Encrypted("secretKey"))
   val lockedNotAuthUser: User = notAuthUser.copy(lockStatus = LockStatus.Locked)
   val mockAuthenticator: Authenticator = {
     val mockObject = mock[Authenticator]

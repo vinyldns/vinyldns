@@ -34,7 +34,7 @@ case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
 
   def isTestUser: Boolean = signedInUser.isTest
 
-  val secretKey: String = signedInUser.secretKey
+  val secretKey: String = signedInUser.secretKey.value
 
   val userId: String = signedInUser.id
 

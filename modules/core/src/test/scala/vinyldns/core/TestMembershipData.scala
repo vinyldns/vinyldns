@@ -17,6 +17,7 @@
 package vinyldns.core
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 
@@ -28,17 +29,17 @@ object TestMembershipData {
     id = "ok",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "okAccessKey",
-    secretKey = "okSecretKey",
+    secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
     lastName = Some("ok"),
     email = Some("test@test.com")
   )
 
-  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
-  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
-  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
-  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
-  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
+  val dummyUser = User("dummyName", "dummyAccess", Encrypted("dummySecret"))
+  val superUser = User("super", "superAccess", Encrypted("superSecret"), isSuper = true)
+  val supportUser = User("support", "supportAccess", Encrypted("supportSecret"), isSupport = true)
+  val lockedUser = User("locked", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", Encrypted("sharedSecret"))
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -46,7 +47,7 @@ object TestMembershipData {
       id = "dummy%03d".format(runner),
       created = DateTime.now.secondOfDay().roundFloorCopy(),
       accessKey = "dummy",
-      secretKey = "dummy"
+      secretKey = Encrypted("dummy")
     )
   }
 
@@ -117,7 +118,7 @@ object TestMembershipData {
 
   val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
 
-  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
+  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", Encrypted("secret")), Seq.empty)
 
   val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
 

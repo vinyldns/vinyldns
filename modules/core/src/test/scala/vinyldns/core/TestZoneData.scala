@@ -19,12 +19,13 @@ package vinyldns.core
 import vinyldns.core.domain.zone._
 import TestMembershipData._
 import org.joda.time.DateTime
+import vinyldns.core.domain.Encrypted
 
 object TestZoneData {
 
   /* ZONE CONNECTIONS */
   val testConnection: Option[ZoneConnection] = Some(
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+    ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
   )
 
   /* ZONES */

@@ -21,6 +21,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
 import vinyldns.mysql.TransactionProvider
@@ -38,7 +39,7 @@ object TestDataLoader extends TransactionProvider {
     id = "testuser",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "testUserAccessKey",
-    secretKey = "testUserSecretKey",
+    secretKey = Encrypted("testUserSecretKey"),
     firstName = Some("Test"),
     lastName = Some("User"),
     email = Some("test@test.com"),
@@ -49,7 +50,7 @@ object TestDataLoader extends TransactionProvider {
     id = "ok",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "okAccessKey",
-    secretKey = "okSecretKey",
+    secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
     lastName = Some("ok"),
     email = Some("test@test.com"),
@@ -60,7 +61,7 @@ object TestDataLoader extends TransactionProvider {
     id = "dummy",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "dummyAccessKey",
-    secretKey = "dummySecretKey",
+    secretKey = Encrypted("dummySecretKey"),
     isTest = true
   )
   final val sharedZoneUser = User(
@@ -68,7 +69,7 @@ object TestDataLoader extends TransactionProvider {
     id = "sharedZoneUser",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "sharedZoneUserAccessKey",
-    secretKey = "sharedZoneUserSecretKey",
+    secretKey = Encrypted("sharedZoneUserSecretKey"),
     firstName = Some("sharedZoneUser"),
     lastName = Some("sharedZoneUser"),
     email = Some("test@test.com"),
@@ -79,7 +80,7 @@ object TestDataLoader extends TransactionProvider {
     id = "locked",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "lockedAccessKey",
-    secretKey = "lockedSecretKey",
+    secretKey = Encrypted("lockedSecretKey"),
     firstName = Some("Locked"),
     lastName = Some("User"),
     email = Some("testlocked@test.com"),
@@ -92,7 +93,7 @@ object TestDataLoader extends TransactionProvider {
       id = "dummy%03d".format(runner),
       created = DateTime.now.secondOfDay().roundFloorCopy(),
       accessKey = "dummy",
-      secretKey = "dummy",
+      secretKey = Encrypted("dummy"),
       isTest = true
     )
   }
@@ -101,7 +102,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-group-user",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "listGroupAccessKey",
-    secretKey = "listGroupSecretKey",
+    secretKey = Encrypted("listGroupSecretKey"),
     firstName = Some("list-group"),
     lastName = Some("list-group"),
     email = Some("test@test.com"),
@@ -113,7 +114,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-zones-user",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "listZonesAccessKey",
-    secretKey = "listZonesSecretKey",
+    secretKey = Encrypted("listZonesSecretKey"),
     firstName = Some("list-zones"),
     lastName = Some("list-zones"),
     email = Some("test@test.com"),
@@ -125,7 +126,7 @@ object TestDataLoader extends TransactionProvider {
     id = "history-id",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "history-key",
-    secretKey = "history-secret",
+    secretKey = Encrypted("history-secret"),
     firstName = Some("history-first"),
     lastName = Some("history-last"),
     email = Some("history@history.com"),
@@ -137,7 +138,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-records-user",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "listRecordsAccessKey",
-    secretKey = "listRecordsSecretKey",
+    secretKey = Encrypted("listRecordsSecretKey"),
     firstName = Some("list-records"),
     lastName = Some("list-records"),
     email = Some("test@test.com"),
@@ -149,7 +150,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-batch-summaries-id",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "listBatchSummariesAccessKey",
-    secretKey = "listBatchSummariesSecretKey",
+    secretKey = Encrypted("listBatchSummariesSecretKey"),
     firstName = Some("list-batch-summaries"),
     lastName = Some("list-batch-summaries"),
     email = Some("test@test.com"),
@@ -169,7 +170,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-zero-summaries-id",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "listZeroSummariesAccessKey",
-    secretKey = "listZeroSummariesSecretKey",
+    secretKey = Encrypted("listZeroSummariesSecretKey"),
     firstName = Some("list-zero-summaries"),
     lastName = Some("list-zero-summaries"),
     email = Some("test@test.com"),
@@ -181,7 +182,7 @@ object TestDataLoader extends TransactionProvider {
     id = "support-user-id",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "supportUserAccessKey",
-    secretKey = "supportUserSecretKey",
+    secretKey = Encrypted("supportUserSecretKey"),
     firstName = Some("support-user"),
     lastName = Some("support-user"),
     email = Some("test@test.com"),

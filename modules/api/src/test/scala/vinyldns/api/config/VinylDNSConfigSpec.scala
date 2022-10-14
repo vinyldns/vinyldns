@@ -21,6 +21,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.backend.dns.DnsBackendProviderConfig
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.RepositoryName._
 
@@ -68,7 +69,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
     }
 
     "load specified backends" in {
-      val zc = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001"))
+      val zc = ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001"))
       val tc = zc.copy()
 
       val backends = underTest.backendConfigs.backendProviders

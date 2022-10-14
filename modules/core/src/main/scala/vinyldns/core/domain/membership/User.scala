@@ -21,6 +21,7 @@ import java.util.UUID
 import org.apache.commons.lang3.RandomStringUtils
 import org.joda.time.DateTime
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.{Encrypted, Encryption}
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 
 object LockStatus extends Enumeration {
@@ -31,7 +32,7 @@ object LockStatus extends Enumeration {
 final case class User(
     userName: String,
     accessKey: String,
-    secretKey: String,
+    secretKey: Encrypted,
     firstName: Option[String] = None,
     lastName: Option[String] = None,
     email: Option[String] = None,
@@ -47,10 +48,10 @@ final case class User(
     this.copy(lockStatus = lockStatus)
 
   def regenerateCredentials(): User =
-    copy(accessKey = User.generateKey, secretKey = User.generateKey)
+    copy(accessKey = User.generateKey, secretKey = Encrypted(User.generateKey))
 
   def withEncryptedSecretKey(cryptoAlgebra: CryptoAlgebra): User =
-    copy(secretKey = cryptoAlgebra.encrypt(secretKey))
+    copy(secretKey = Encryption.apply(cryptoAlgebra, secretKey.value))
 }
 
 object User {

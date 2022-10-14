@@ -20,6 +20,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership.{LockStatus, User, UserRepository}
 import vinyldns.mysql.TestMySqlInstance
 
@@ -35,15 +36,15 @@ class MySqlUserRepositoryIntegrationSpec
 
   private val testUserIds = (for { i <- 0 to 100 } yield s"test-user-$i").toList.sorted
   private val users = testUserIds.map { id =>
-    User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
+    User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = Encrypted("123"))
   }
 
   private val caseInsensitiveUser1 =
-    User(id = "caseInsensitiveUser1", userName = "Name1", accessKey = "a1", secretKey = "s1")
+    User(id = "caseInsensitiveUser1", userName = "Name1", accessKey = "a1", secretKey = Encrypted("s1"))
   private val caseInsensitiveUser2 =
-    User(id = "caseInsensitiveUser2", userName = "namE2", accessKey = "a2", secretKey = "s2")
+    User(id = "caseInsensitiveUser2", userName = "namE2", accessKey = "a2", secretKey = Encrypted("s2"))
   private val caseInsensitiveUser3 =
-    User(id = "caseInsensitiveUser3", userName = "name3", accessKey = "a3", secretKey = "s3")
+    User(id = "caseInsensitiveUser3", userName = "name3", accessKey = "a3", secretKey = Encrypted("s3"))
 
   override protected def beforeAll(): Unit = {
     repo = TestMySqlInstance.userRepository
@@ -81,7 +82,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save super user with super status" in {
-      val superUser = User("superName", "superAccess", "superSecret", isSuper = true)
+      val superUser = User("superName", "superAccess", Encrypted("superSecret"), isSuper = true)
       repo.save(superUser).unsafeRunSync() shouldBe superUser
       val result = repo.getUser(superUser.id).unsafeRunSync()
       result shouldBe Some(superUser)
@@ -89,7 +90,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save non-super user with non-super status" in {
-      val nonSuperUser = User("nonSuperName", "nonSuperAccess", "nonSuperSecret")
+      val nonSuperUser = User("nonSuperName", "nonSuperAccess", Encrypted("nonSuperSecret"))
       repo.save(nonSuperUser).unsafeRunSync() shouldBe nonSuperUser
       val result = repo.getUser(nonSuperUser.id).unsafeRunSync()
       result shouldBe Some(nonSuperUser)
@@ -98,7 +99,7 @@ class MySqlUserRepositoryIntegrationSpec
 
     "save locked user with locked status" in {
       val lockedUser =
-        User("lockedName", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
+        User("lockedName", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
       repo.save(lockedUser).unsafeRunSync() shouldBe lockedUser
       val result = repo.getUser(lockedUser.id).unsafeRunSync()
       result shouldBe Some(lockedUser)
@@ -106,7 +107,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save unlocked user with unlocked status" in {
-      val unlockedUser = User("unlockedName", "unlockedAccess", "unlockedSecret")
+      val unlockedUser = User("unlockedName", "unlockedAccess", Encrypted("unlockedSecret"))
       repo.save(unlockedUser).unsafeRunSync() shouldBe unlockedUser
       val result = repo.getUser(unlockedUser.id).unsafeRunSync()
       result shouldBe Some(unlockedUser)
@@ -114,7 +115,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save support user with support status" in {
-      val supportUser = User("lockedName", "lockedAccess", "lockedSecret", isSupport = true)
+      val supportUser = User("lockedName", "lockedAccess", Encrypted("lockedSecret"), isSupport = true)
       repo.save(supportUser).unsafeRunSync() shouldBe supportUser
       val result = repo.getUser(supportUser.id).unsafeRunSync()
       result shouldBe Some(supportUser)
@@ -122,7 +123,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save non-support user with non-support status" in {
-      val nonSupportUser = User("unlockedName", "unlockedAccess", "unlockedSecret")
+      val nonSupportUser = User("unlockedName", "unlockedAccess", Encrypted("unlockedSecret"))
       repo.save(nonSupportUser).unsafeRunSync() shouldBe nonSupportUser
       val result = repo.getUser(nonSupportUser.id).unsafeRunSync()
       result shouldBe Some(nonSupportUser)
@@ -131,7 +132,7 @@ class MySqlUserRepositoryIntegrationSpec
 
     "save a list of users" in {
       val userList = (0 to 10).toList.map { i =>
-        User(userName = s"batch-save-user-$i", "accessKey", "secretKey")
+        User(userName = s"batch-save-user-$i", "accessKey", Encrypted("secretKey"))
       }
 
       repo.save(userList).unsafeRunSync() shouldBe userList
