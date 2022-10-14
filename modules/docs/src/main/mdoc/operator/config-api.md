@@ -560,7 +560,7 @@ in that zone.
 10. If `dots-limit` is set to 0 (`dots-limit = 0`), we cannot create dotted hosts record in that zone.
 
 ```yaml
-# approved zones, individual users, users in groups and record types that are allowed for dotted hosts
+# approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts
 dotted-hosts = {
    allowed-settings = [
       {
@@ -772,7 +772,7 @@ dotted-hosts = {
      }
   }
 
-  # approved zones, individual users, users in groups and record types that are allowed for dotted hosts
+  # approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts
   dotted-hosts = {
      allowed-settings = [
         {
