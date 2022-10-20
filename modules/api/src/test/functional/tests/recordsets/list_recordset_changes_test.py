@@ -83,17 +83,6 @@ def test_list_recordset_changes_no_start(shared_zone_test_context):
     response = client.list_recordset_changes(original_zone["id"], start_from=None, max_items=None)
     check_changes_response(response, recordChanges=True, startFrom=False, nextId=False)
 
-    deleteChanges = response["recordSetChanges"][0:3]
-    updateChanges = response["recordSetChanges"][3:6]
-    createChanges = response["recordSetChanges"][6:9]
-
-    for change in deleteChanges:
-        assert_that(change["changeType"], is_("Delete"))
-    for change in updateChanges:
-        assert_that(change["changeType"], is_("Update"))
-    for change in createChanges:
-        assert_that(change["changeType"], is_("Create"))
-
 
 def test_list_recordset_changes_paging(shared_zone_test_context):
     """
@@ -112,13 +101,6 @@ def test_list_recordset_changes_paging(shared_zone_test_context):
     check_changes_response(response_2, recordChanges=True, nextId=True, startFrom=response_1["nextId"], maxItems=3)
     check_changes_response(response_3, recordChanges=True, nextId=False, startFrom=response_2["nextId"], maxItems=11)
 
-    for change in response_1["recordSetChanges"]:
-        assert_that(change["changeType"], is_("Delete"))
-    for change in response_2["recordSetChanges"]:
-        assert_that(change["changeType"], is_("Update"))
-    for change in response_3["recordSetChanges"]:
-        assert_that(change["changeType"], is_("Create"))
-
 
 def test_list_recordset_changes_exhausted(shared_zone_test_context):
     """
@@ -129,26 +111,15 @@ def test_list_recordset_changes_exhausted(shared_zone_test_context):
     response = client.list_recordset_changes(original_zone["id"], start_from=None, max_items=17)
     check_changes_response(response, recordChanges=True, startFrom=False, nextId=False, maxItems=17)
 
-    deleteChanges = response["recordSetChanges"][0:3]
-    updateChanges = response["recordSetChanges"][3:6]
-    createChanges = response["recordSetChanges"][6:9]
-
-    for change in deleteChanges:
-        assert_that(change["changeType"], is_("Delete"))
-    for change in updateChanges:
-        assert_that(change["changeType"], is_("Update"))
-    for change in createChanges:
-        assert_that(change["changeType"], is_("Create"))
-
 
 def test_list_recordset_returning_no_changes(shared_zone_test_context):
     """
-    Pass in startFrom of 0 should return empty list because start key is created time
+    Pass in startFrom of random should return empty list because start key is created time
     """
     client = shared_zone_test_context.history_client
     original_zone = shared_zone_test_context.history_zone
-    response = client.list_recordset_changes(original_zone["id"], start_from="0", max_items=None)
-    check_changes_response(response, recordChanges=False, startFrom="0", nextId=False)
+    response = client.list_recordset_changes(original_zone["id"], start_from="random", max_items=None)
+    check_changes_response(response, recordChanges=False, startFrom="random", nextId=False)
 
 
 def test_list_recordset_changes_default_max_items(shared_zone_test_context):

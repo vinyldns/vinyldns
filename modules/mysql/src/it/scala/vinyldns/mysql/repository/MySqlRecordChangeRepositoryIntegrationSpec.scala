@@ -100,26 +100,22 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       (result.items should have).length(5)
     }
     "page through record changes" in {
-      // sort by created desc, so adding additional seconds makes it more current, the last
-      val timeSpaced =
-        generateInserts(okZone, 5).zipWithIndex.map {
-          case (c, i) => c.copy(created = c.created.plusSeconds(i))
-        }
+      val inserts = generateInserts(okZone, 5)
 
-      // expect to be sorted by created descending so reverse that
-      val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
+      // expect to be sorted by id in ascending order
+      val expectedOrder = inserts.sortBy(_.id)
 
       val saveRecChange = executeWithinTransaction { db: DB =>
-        repo.save(db, ChangeSet(timeSpaced))
+        repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
       val page1 = repo.listRecordSetChanges(okZone.id, None, 2).unsafeRunSync()
-      page1.nextId shouldBe Some(expectedOrder(1).created.getMillis.toString)
+      page1.nextId shouldBe Some(expectedOrder(1).id)
       page1.maxItems shouldBe 2
       (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
 
       val page2 = repo.listRecordSetChanges(okZone.id, page1.nextId, 2).unsafeRunSync()
-      page2.nextId shouldBe Some(expectedOrder(3).created.getMillis.toString)
+      page2.nextId shouldBe Some(expectedOrder(3).id)
       page2.maxItems shouldBe 2
       (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(2, 4))
 

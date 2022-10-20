@@ -35,8 +35,8 @@ class MySqlRecordChangeRepository
       |SELECT data
       |  FROM record_change
       | WHERE zone_id = {zoneId}
-      |   AND created < {created}
-      |  ORDER BY created DESC
+      |   AND id > {id}
+      |  ORDER BY id ASC
       |  LIMIT {limit}
     """.stripMargin
 
@@ -45,7 +45,7 @@ class MySqlRecordChangeRepository
       |SELECT data
       |  FROM record_change
       | WHERE zone_id = {zoneId}
-      |  ORDER BY created DESC
+      |  ORDER BY id ASC
       |  LIMIT {limit}
     """.stripMargin
 
@@ -98,7 +98,7 @@ class MySqlRecordChangeRepository
           val changes = startFrom match {
             case Some(start) =>
               LIST_CHANGES_WITH_START
-                .bindByName('zoneId -> zoneId, 'created -> start.toLong, 'limit -> maxItems)
+                .bindByName('zoneId -> zoneId, 'id -> start, 'limit -> maxItems)
                 .map(toRecordSetChange)
                 .list()
                 .apply()
@@ -112,7 +112,7 @@ class MySqlRecordChangeRepository
 
           val nextId =
             if (changes.size < maxItems) None
-            else changes.lastOption.map(_.created.getMillis.toString)
+            else changes.lastOption.map(_.id)
 
           ListRecordSetChangesResults(
             changes,
