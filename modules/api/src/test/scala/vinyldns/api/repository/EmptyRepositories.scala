@@ -119,6 +119,8 @@ trait EmptyGroupRepo extends GroupRepository {
 
   def getGroups(groupIds: Set[String]): IO[Set[Group]] = IO.pure(Set())
 
+  def getGroupsByName(groupNames: Set[String]): IO[Set[Group]] = IO.pure(Set())
+
   def getGroupByName(groupName: String): IO[Option[Group]] = IO.pure(None)
 
   def getGroupsByName(groupName: String): IO[Set[Group]] = IO.pure(Set())

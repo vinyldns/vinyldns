@@ -45,10 +45,10 @@ trait BatchChangeValidationsAlgebra {
   ): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -273,17 +273,17 @@ class BatchChangeValidations(
   /* context validations */
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation] =
-    // Updates are a combination of an add and delete for a record with the same name and type in a zone.
+  // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
-          if groupedChanges
-            .getLogicalChangeType(add.recordKey)
-            .contains(LogicalChangeType.Add) =>
+        if groupedChanges
+          .getLogicalChangeType(add.recordKey)
+          .contains(LogicalChangeType.Add) =>
         validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
@@ -409,11 +409,11 @@ class BatchChangeValidations(
   }
 
   def validateAddWithContext(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      ownerGroupId: Option[String]
+    change: AddChangeForValidation,
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
