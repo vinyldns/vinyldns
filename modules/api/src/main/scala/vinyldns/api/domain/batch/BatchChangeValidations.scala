@@ -348,7 +348,7 @@ class BatchChangeValidations(
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+        case None => RecordDoesNotExist(change.inputChange.inputName).validNel
       }
     validations.map(_ => change)
   }
@@ -402,7 +402,7 @@ class BatchChangeValidations(
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          RecordDoesNotExist(change.inputChange.inputName).validNel
       }
 
     validations.map(_ => change)

@@ -120,7 +120,9 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "userId").required[String]("Missing userId"),
         (js \ "oldGroup").optional[GroupInfo],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[String](DateTime.now.getMillis.toString)
-      ).mapN(GroupChangeInfo.apply)
+        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "userName").required[String]("Missing userName"),
+        (js \ "groupChangeMessage").required[String]("Missing groupChangeMessage"),
+        ).mapN(GroupChangeInfo.apply)
   }
 }

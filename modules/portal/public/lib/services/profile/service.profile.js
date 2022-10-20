@@ -26,6 +26,10 @@ angular.module('service.profile', [])
             return $http.get('/api/users/lookupuser/' + username);
         }
 
+        this.getUserDataById = function(userId){
+            return $http.get('/api/users/' + userId);
+        }
+
         this.regenerateCredentials = function(){
             return $http.post('/regenerate-creds', {}, {headers: utilityService.getCsrfHeader()});
         }

@@ -158,4 +158,13 @@ object TestMembershipData {
       id = s"$i"
     )
   }
+  val dummyGroupChangeUpdate: GroupChange = GroupChange(
+    okGroup.copy(name = "dummy-group", email = "dummy@test.com", description = Some("dummy group"),
+      memberIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id),
+      adminUserIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id)),
+    GroupChangeType.Update,
+    okUser.id,
+    Some(okGroup),
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
 }
