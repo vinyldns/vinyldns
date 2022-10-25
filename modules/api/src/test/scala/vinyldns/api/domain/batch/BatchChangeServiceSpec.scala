@@ -55,7 +55,7 @@ import vinyldns.api.domain.access.AccessValidations
 import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with CatsHelpers
