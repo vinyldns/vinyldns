@@ -97,5 +97,16 @@ class MembershipValidationsSpec
       }
 
     }
+
+    "isGroupChangePresent" should {
+      "return true when there is a group change present for the requested group change id" in {
+        isGroupChangePresent(Some(okGroupChange)) should be(right)
+      }
+      "return an error when there is a group change present for the requested group change id" in {
+        val error = leftValue(isGroupChangePresent(None))
+        error shouldBe an[InvalidGroupRequestError]
+      }
+
+    }
   }
 }

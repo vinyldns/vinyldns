@@ -35,6 +35,8 @@ object TestZoneData {
     adminGroupId = okGroup.id,
     connection = testConnection
   )
+  val dottedZone: Zone = Zone("dotted.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
+  val dotZone: Zone = Zone("dot.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
   val abcZone: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id)
   val xyzZone: Zone = Zone("xyz.", "abc@xyz.com", adminGroupId = xyzGroup.id)
   val zoneIp4: Zone = Zone("0.162.198.in-addr.arpa.", "test@test.com", adminGroupId = abcGroup.id)

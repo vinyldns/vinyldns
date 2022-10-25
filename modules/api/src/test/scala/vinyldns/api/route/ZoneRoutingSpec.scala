@@ -253,6 +253,7 @@ class ZoneRoutingSpec
         nameFilter: Option[String],
         startFrom: Option[String],
         maxItems: Int,
+        searchByAdminGroup: Boolean = false,
         ignoreAccess: Boolean = false
     ): Result[ListZonesResponse] = {
 
@@ -917,6 +918,20 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return zones by admin group name when searchByAdminGroup is true" in {
+      Get(s"/zones?nameFilter=ok&startFrom=zone4.&maxItems=4&searchByAdminGroup=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(zone1.id, zone2.id, zone3.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("ok")
         resp.ignoreAccess shouldBe false
       }
     }

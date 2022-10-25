@@ -35,11 +35,12 @@ object TestMembershipData {
     email = Some("test@test.com")
   )
 
-  val dummyUser = User("dummyName", "dummyAccess", Encrypted("dummySecret"))
-  val superUser = User("super", "superAccess", Encrypted("superSecret"), isSuper = true)
-  val supportUser = User("support", "supportAccess", Encrypted("supportSecret"), isSupport = true)
-  val lockedUser = User("locked", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
-  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", Encrypted("sharedSecret"))
+  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
+  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
+  val xyzUser = User("xyz", "xyzAccess", "xyzSecret")
+  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
+  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -158,4 +159,13 @@ object TestMembershipData {
       id = s"$i"
     )
   }
+  val dummyGroupChangeUpdate: GroupChange = GroupChange(
+    okGroup.copy(name = "dummy-group", email = "dummy@test.com", description = Some("dummy group"),
+      memberIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id),
+      adminUserIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id)),
+    GroupChangeType.Update,
+    okUser.id,
+    Some(okGroup),
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
 }
