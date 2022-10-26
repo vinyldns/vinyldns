@@ -35,12 +35,12 @@ object TestMembershipData {
     email = Some("test@test.com")
   )
 
-  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
-  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
-  val xyzUser = User("xyz", "xyzAccess", "xyzSecret")
-  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
-  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
-  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
+  val dummyUser = User("dummyName", "dummyAccess", Encrypted("dummySecret"))
+  val superUser = User("super", "superAccess", Encrypted("superSecret"), isSuper = true)
+  val xyzUser = User("xyz", "xyzAccess", Encrypted("xyzSecret"))
+  val supportUser = User("support", "supportAccess", Encrypted("supportSecret"), isSupport = true)
+  val lockedUser = User("locked", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", Encrypted("sharedSecret"))
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(

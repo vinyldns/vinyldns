@@ -312,6 +312,25 @@ class VinylDNSJsonProtocolSpec
     }
   }
 
+  "EncryptedSerializer" should {
+    "parse a secret key to Encrypted type" in {
+      val secretKeyInput: JValue = "primaryConnectionKey"
+
+      val actual = secretKeyInput.extract[Encrypted]
+      val expected = Encrypted("primaryConnectionKey")
+      actual shouldBe expected
+    }
+
+    "throw an error if there is a type mismatch during deserialization" in {
+      val secretKeyInput: JObject =
+        "key" -> List(
+          "primaryConnectionKey"
+        )
+
+      assertThrows[MappingException](secretKeyInput.extract[Encrypted])
+    }
+  }
+
   "RecordSetSerializer" should {
     "parse a record set with an absolute CNAME record passes" in {
       val recordSetJValue: JValue =

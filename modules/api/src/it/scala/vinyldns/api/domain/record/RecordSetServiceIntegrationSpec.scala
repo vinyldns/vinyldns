@@ -62,9 +62,9 @@ class RecordSetServiceIntegrationSpec
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
-  private val user = User("live-test-user", "key", "secret")
-  private val testUser = User("testuser", "key", "secret")
-  private val user2 = User("shared-record-test-user", "key-shared", "secret-shared")
+  private val user = User("live-test-user", "key", Encrypted("secret"))
+  private val testUser = User("testuser", "key", Encrypted("secret"))
+  private val user2 = User("shared-record-test-user", "key-shared", Encrypted("secret-shared"))
 
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
   private val dummyGroup = Group(s"dummy-group", "test@test.com", adminUserIds = Set(testUser.id))
