@@ -75,7 +75,7 @@ angular.module('service.groups', [])
                 query = null;
             }
             var params = {
-                "maxItems": 1500,
+                "maxItems": 3000,
                 "groupNameFilter": query,
                 "ignoreAccess": ignoreAccess
             };
