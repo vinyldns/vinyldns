@@ -114,7 +114,7 @@ def test_list_recordset_changes_exhausted(shared_zone_test_context):
 
 def test_list_recordset_returning_no_changes(shared_zone_test_context):
     """
-    Pass in startFrom of random should return empty list because start key is created time
+    Pass in startFrom of random should return empty list because start key is id
     """
     client = shared_zone_test_context.history_client
     original_zone = shared_zone_test_context.history_zone
