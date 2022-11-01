@@ -147,8 +147,8 @@ def test_list_recordset_returning_no_changes(shared_zone_test_context):
     """
     client = shared_zone_test_context.history_client
     original_zone = shared_zone_test_context.history_zone
-    response = client.list_recordset_changes(original_zone["id"], start_from="2000", max_items=None)
-    check_changes_response(response, recordChanges=False, startFrom="2000", nextId=False)
+    response = client.list_recordset_changes(original_zone["id"], start_from=2000, max_items=None)
+    check_changes_response(response, recordChanges=False, startFrom=2000, nextId=False)
 
 
 def test_list_recordset_changes_default_max_items(shared_zone_test_context):
