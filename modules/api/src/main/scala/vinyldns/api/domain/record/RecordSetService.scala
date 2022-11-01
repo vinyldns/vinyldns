@@ -169,14 +169,13 @@ class RecordSetService(
       isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
       isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
       allowedDotsLimit = getAllowedDotsLimit(zone, dottedHostsConfig)
-      recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         Some(existing),
         approvedNameServers,
-        recordFqdnDoesNotAlreadyExist,
+        true,
         allowedZoneList,
         isRecordTypeAndUserAllowed,
         allowedDotsLimit
