@@ -215,8 +215,8 @@ class RecordSetRoute(
     } ~
     path("zones" / Segment / "recordsetchanges") { zoneId =>
       (get & monitor("Endpoint.listRecordSetChanges")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (startFrom: Option[String], maxItems: Int) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[Int], maxItems: Int) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
