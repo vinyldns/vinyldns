@@ -47,6 +47,7 @@ final case class VinylDNSConfig(
     notifierConfigs: List[NotifierConfig],
     dataStoreConfigs: List[DataStoreConfig],
     backendConfigs: BackendConfigs,
+    dottedHostsConfig: DottedHostsConfig,
     configuredDnsConnections: ConfiguredDnsConnections,
     apiMetricSettings: APIMetricsSettings,
     crypto: CryptoAlgebra,
@@ -85,6 +86,7 @@ object VinylDNSConfig {
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
       backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
+      dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns.dotted-hosts")
       httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
       hvdConfig <- loadIO[HighValueDomainConfig](config, "vinyldns.high-value-domains")
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
@@ -110,6 +112,7 @@ object VinylDNSConfig {
       notifierConfigs,
       dataStoreConfigs,
       backendConfigs,
+      dottedHostsConfig,
       connections,
       metricSettings,
       crypto,
