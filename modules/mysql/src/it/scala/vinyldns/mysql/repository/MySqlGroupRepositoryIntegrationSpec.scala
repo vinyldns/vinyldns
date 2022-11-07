@@ -93,6 +93,24 @@ class MySqlGroupRepositoryIntegrationSpec
     }
   }
 
+  "MySqlGroupRepository.getGroupsByName" should {
+    "omits all non existing groups" in {
+      val result = repo.getGroupsByName(Set("no-existo", groups.head.name)).unsafeRunSync()
+      result should contain theSameElementsAs Set(groups.head)
+    }
+
+    "returns correct list of groups" in {
+      val names = Set(groups(0).name, groups(1).name, groups(2).name)
+      val result = repo.getGroupsByName(names).unsafeRunSync()
+      result should contain theSameElementsAs groups.take(3).toSet
+    }
+
+    "returns empty list when given no names" in {
+      val result = repo.getGroupsByName(Set[String]()).unsafeRunSync()
+      result should contain theSameElementsAs Set()
+    }
+  }
+
   "MySqlGroupRepository.getGroupByName" should {
     "retrieve a group" in {
       repo.getGroupByName(groups.head.name).unsafeRunSync() shouldBe Some(groups.head)
@@ -100,6 +118,20 @@ class MySqlGroupRepositoryIntegrationSpec
 
     "returns None when group does not exist" in {
       repo.getGroupByName("no-existo").unsafeRunSync() shouldBe None
+    }
+  }
+
+  "MySqlGroupRepository.getGroupsByName" should {
+    "retrieve a group" in {
+      repo.getGroupsByName(groups.head.name).unsafeRunSync() shouldBe Set(groups.head)
+    }
+
+    "retrieve groups with wildcard character" in {
+      repo.getGroupsByName("*-group-*").unsafeRunSync() shouldBe groups.toSet
+    }
+
+    "returns empty set when group does not exist" in {
+      repo.getGroupsByName("no-existo").unsafeRunSync() shouldBe Set()
     }
   }
 

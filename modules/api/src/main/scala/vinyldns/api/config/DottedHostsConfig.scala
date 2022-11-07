@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.membership
+package vinyldns.api.config
 
-import cats.effect._
-import org.joda.time.DateTime
-import scalikejdbc.DB
-import vinyldns.core.repository.Repository
+import pureconfig.ConfigReader
+import pureconfig.generic.auto._
 
-trait GroupChangeRepository extends Repository {
-  def save(db: DB, groupChange: GroupChange): IO[GroupChange]
+final case class ZoneAuthConfigs(zone: String, userList: List[String], groupList: List[String], recordTypes: List[String], dotsLimit: Int)
+final case class DottedHostsConfig(zoneAuthConfigs: List[ZoneAuthConfigs])
 
-  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]]
-
-  def getGroupChanges(
-      groupId: String,
-      startFrom: Option[String],
-      maxItems: Int
-  ): IO[ListGroupChangesResults]
-
-  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
+object DottedHostsConfig {
+  implicit val configReader: ConfigReader[DottedHostsConfig] =
+    ConfigReader.forProduct1[DottedHostsConfig, List[ZoneAuthConfigs]](
+      "allowed-settings",
+    )(zoneAuthConfigs =>
+      DottedHostsConfig(zoneAuthConfigs))
 }
