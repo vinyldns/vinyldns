@@ -17,7 +17,6 @@
 package vinyldns.core.domain.record
 
 import java.util.UUID
-
 import org.joda.time.DateTime
 import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
