@@ -19,7 +19,7 @@ package vinyldns.api.domain.membership
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
-import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.membership.{Group, GroupChange}
 
 object MembershipValidations {
 
@@ -44,4 +44,9 @@ object MembershipValidations {
     ensuring(NotAuthorizedError("Not authorized")) {
       authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin || canViewGroupDetails
     }
+
+  def isGroupChangePresent(groupChange: Option[GroupChange]): Either[Throwable, Unit] =
+    ensuring(InvalidGroupRequestError("Invalid Group Change ID")) {
+      groupChange.isDefined
+  }
 }

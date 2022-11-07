@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 
 object ZoneChangeStatus extends Enumeration {
   type ZoneChangeStatus = Value
-  val Pending, Complete, Failed, Synced = Value
+  val Pending, Failed, Synced = Value
 }
 
 object ZoneChangeType extends Enumeration {
