@@ -1,0 +1,256 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Contributing</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Contributing" /><meta name="title" property="og:title" content="VinylDNS: Contributing" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Contributing" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="page"><nav id="navigation" aria-labelledby="main-navigation"><div class="navbar-wrapper container"><div class="navigation-brand"><a href="/" class="brand custom-feature-icon"><div class="page-icon-wrapper"></div><span class="brand-title">VinylDNS</span></a></div><div class="navigation-menu"><ul><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="nav-item-icon fa fa-lg fa-github" hidden="true"></i><span class="nav-item-text">GitHub</span></a></li><li><a href="/api"><i class="nav-item-icon fa fa-lg fa-file-text" hidden="true"></i><span class="nav-item-text">API Documentation</span></a></li></ul></div></div></nav><nav class="menu-container" aria-labelledby="section-navigation"><div id="horizontal-menu"><ul class="horizontal-nav"><li><a class="" href="/">Home</a></li><li><a class="" href="/portal/">Portal Guide</a></li><li><a class="" href="/operator/">Operator Guide</a></li><li><a class=" active " href="/extra_md/contributing.html">Contributing</a></li><li><a class="" href="/tools.html">Tools</a></li><li><a class="" href="/faq.html">FAQ</a></li><li><a class="" href="/permissions.html">Permissions Guide</a></li><li><a class="" href="/getting-help.html">Getting Help</a></li></ul></div></nav><main id="site-main" class="page-site-main"><section class="use"><div class="container"><div id="content"><h1 id="contributing-to-vinyldns">Contributing to VinylDNS</h1>
+
+<p>The following are a set of guidelines for contributing to VinylDNS and its associated repositories.</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+  <li><a href="#code-of-conduct">Code of Conduct</a></li>
+  <li><a href="#issues">Issues</a>
+    <ul>
+      <li><a href="#working-on-an-issue">Working on an Issue</a></li>
+      <li><a href="#submitting-an-issue">Submitting an Issue</a></li>
+      <li><a href="#discussion-process">Discussion Process</a></li>
+    </ul>
+  </li>
+  <li><a href="#pull-requests">Pull Requests</a>
+    <ul>
+      <li><a href="#general-flow">General Flow</a></li>
+      <li><a href="#pull-request-requirements">Pull Request Requirements</a>
+        <ul>
+          <li><a href="#commit-messages">Commit Messages</a></li>
+          <li><a href="#testing">Testing</a></li>
+          <li><a href="#documentation-edits">Documentation Edits</a></li>
+          <li><a href="#style-guides">Style Guides</a></li>
+          <li><a href="#license-header-checks">License Header Checks</a></li>
+          <li><a href="#contributor-license-agreement">Contributor License Agreement</a></li>
+        </ul>
+      </li>
+      <li><a href="#modifying-your-pull-requests">Modifying your Pull Request</a></li>
+      <li><a href="#pull-request-approval">Pull Request Approval</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="code-of-conduct">Code of Conduct</h2>
+
+<p>This project and everyone participating in it are governed by the <a href="https://github.com/vinyldns/vinyldns/blob/master/CODE_OF_CONDUCT.md">VinylDNS Code Of Conduct</a>. By
+participating, you agree to this Code.</p>
+
+<h2 id="issues">Issues</h2>
+
+<p>Work on VinylDNS is tracked by <a href="https://guides.github.com/features/issues/">GitHub Issues</a>. To contribute to VinylDNS,
+you can join the discussion on an issue, submit a Pull Request to resolve the issue, or make an issue of your own.
+VinylDNS issues are generally labeled as bug reports, feature requests, or maintenance requests.</p>
+
+<h3 id="working-on-an-issue">Working on an Issue</h3>
+
+<p>If you would like to contribute to VinylDNS, you can look through <code class="language-plaintext highlighter-rouge">good first issue</code> and <code class="language-plaintext highlighter-rouge">help wanted</code> issues. We keep a
+list of these issues around to encourage participation in building the platform. In the issue list, you can chose “
+Labels” and choose a specific label to narrow down the issues to review.</p>
+
+<ul>
+  <li><strong>Beginner issues</strong>: only require a few lines of code to complete, rather isolated to one or two files. A good way to
+get through changing and testing your code, and meet everyone!</li>
+  <li><strong>Help wanted issues</strong>: these are more involved than beginner issues, are items that tend to come near the top of our
+backlog but not necessarily in the current development stream.</li>
+</ul>
+
+<p>Besides those issues, you can sort the issue list by number of comments to find one that may be of interest. You do
+<em>not</em> have to limit yourself to <em>only</em> <code class="language-plaintext highlighter-rouge">good first issue</code> or <code class="language-plaintext highlighter-rouge">help wanted</code> issues.</p>
+
+<p>When resolving an issue, you generally will do so by making a <a href="#pull-requests">Pull Request</a>, and adding a link to the
+issue.</p>
+
+<p>Before choosing an issue, see if anyone is assigned or has indicated they are working on it (either in comment or via
+Pull Request). If that is the case, then instead of making a Pull Request of your own, you can help out by reviewing
+their Pull Request.</p>
+
+<h3 id="submitting-an-issue">Submitting an Issue</h3>
+
+<p>When submitting an issue you will notice there are three issue templates to choose from. Before making any issue, please
+go search the issue list (open and closed issues) and check to see if a similar issue has been made. If so, we ask that
+you do not duplicate an issue, but feel free to comment on the existing issue with additional details.</p>
+
+<ul>
+  <li><strong>Bug report</strong>: If you find a bug in the project you can report it with this template and the VinylDNS team will take
+a look at it. Please be as detailed as possible as it will help us recreate the bug and figure out what exactly is
+going on. If you are unsure whether what you found is a bug, we encourage you to first pop in
+our <a href="https://github.com/vinyldns/vinyldns/discussions">discussion board</a>, and we can help determine if what you’re
+seeing is unexpected behavior, and if it is we will direct to make the bug report.</li>
+  <li><strong>Feature request</strong>: Use this template if you have something you wish to be added to the project. Please be detailed
+when describing why you are requesting the feature, what you want it to do, and alternative solutions you have
+considered.</li>
+</ul>
+
+<h3 id="discussion-process">Discussion Process</h3>
+
+<p>Some issues may require discussion with the community before proceeding to implementation. This can happen if the issue
+is a larger change, for example a big refactoring or new feature. The VinylDNS maintainers may label an issue for **
+Discussion** in order to solicit more detail before proceeding. If the issue is straightforward and/or well documented,
+it can be implemented immediately by the submitter. If the submitter is unable to make the changes required to address
+the issue, the VinylDNS maintainers will prioritize the work in our backlog.</p>
+
+<h2 id="pull-requests">Pull Requests</h2>
+
+<p>Contributions to VinylDNS are generally made
+via <a href="https://help.github.com/articles/about-pull-requests/">Github Pull Requests</a>. Most Pull Requests are related to
+an <a href="#issues">issue</a>, and will have a link to the issue in the Pull Request.</p>
+
+<h3 id="general-flow">General Flow</h3>
+
+<p>We follow the standard <em>GitHub Flow</em> for taking code contributions. The following is the process typically followed:</p>
+
+<ol>
+  <li>Create a fork of the repository that you want to contribute code to</li>
+  <li>Clone your forked repository to your local machine</li>
+  <li>In your local machine, add a remote to the “main” repository, we call this “upstream” by running
+<code class="language-plaintext highlighter-rouge">git remote add upstream https://github.com/vinyldns/vinyldns.git</code>. Note: you can also use <code class="language-plaintext highlighter-rouge">ssh</code> instead of <code class="language-plaintext highlighter-rouge">https</code></li>
+  <li>Create a local branch for your work <code class="language-plaintext highlighter-rouge">git checkout -b your-user-name/user-branch-name</code>. Add whatever your GitHub user
+name is before whatever you want your branch to be.</li>
+  <li>Begin working on your local branch</li>
+  <li>Be sure to add necessary unit, integration, and functional tests, see
+the <a href="https://github.com/vinyldns/vinyldns/blob/master/DEVELOPER_GUIDE.md#testing">Testing</a>
+section of the Developer Guide.</li>
+  <li>Make sure you run all builds before posting a Pull Request! It’s faster to run everything locally rather than waiting
+for the build server to complete its job.
+See <a href="https://github.com/vinyldns/vinyldns/blob/master/DEVELOPER_GUIDE.md">DEVELOPER_GUIDE.md</a> for information on
+local development.</li>
+  <li>When you are ready to contribute your code, run <code class="language-plaintext highlighter-rouge">git push origin your-user-name/user-branch-name</code> to push your
+changes to your <em>own fork</em></li>
+  <li>Go to the <a href="https://github.com/vinyldns/vinyldns.git">VinylDNS main repository</a> (or whatever repo you are contributing
+to)
+and you will see your change waiting and a link to “Create a Pull Request”. Click the link to create a Pull Request.</li>
+  <li>Be as detailed as possible in the description of your Pull Request. Describe what you changed, why you changed it,
+and give a detailed list of changes and impacted files. If your Pull Request is related to an existing issue, be sure
+to link the issue in the Pull Request itself, in addition to the Pull Request description.</li>
+  <li>You will receive comments on your Pull Request. Use the Pull Request as a dialog on your changes.</li>
+</ol>
+
+<h3 id="pull-request-requirements">Pull Request Requirements</h3>
+
+<h4 id="commit-messages">Commit Messages</h4>
+
+<ul>
+  <li>Limit the first line to 72 characters or fewer.</li>
+  <li>Use the present tense (“Add validation” not “Added validation”).</li>
+  <li>Use the imperative mood (“Move database call” not “Moves database call”).</li>
+  <li>Reference issues and other pull requests liberally after the first line.
+Use <a href="https://help.github.com/articles/autolinked-references-and-urls/">GitHub Auto Linking</a>
+to link your Pull Request to other issues.</li>
+  <li>Use markdown syntax as much as you want</li>
+</ul>
+
+<h4 id="testing">Testing</h4>
+
+<p>When making changes to the VinylDNS codebase, be sure to add necessary unit, integration, and functional tests. For
+specifics on our tests, see the <a href="https://github.com/vinyldns/vinyldns/blob/master/DEVELOPER_GUIDE.md#testing">Testing</a>
+section of the Developer Guide.</p>
+
+<h4 id="documentation-edits">Documentation Edits</h4>
+
+<p>Documentation for the VinylDNS project lives in files such as this one in the root of the project directory, as well as
+in <code class="language-plaintext highlighter-rouge">modules/docs/src/main/mdoc</code> for the docs you see on <a href="https://vinyldns.io">vinyldns.io</a>. Many changes, such as those
+that impact an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it
+from going stale. The
+VinylDNS <a href="https://github.com/vinyldns/vinyldns/tree/gh-pages#vinyldns-documentation-site">gh-pages branch README</a> has
+information on how to run and edit the documentation page.</p>
+
+<h4 id="style-guides">Style Guides</h4>
+
+<ul>
+  <li>For Scala code we use <a href="http://www.scalastyle.org/">Scalastyle</a>. The configs are <code class="language-plaintext highlighter-rouge">scalastyle-config.xml</code> and
+<code class="language-plaintext highlighter-rouge">scalastyle-test-config.xml</code> for source code and test code respectively
+    <ul>
+      <li>We have it set to fail builds if the styling rules are not followed. For example, one of our rules is that all
+lines must be &lt;= 120 characters, and a build will fail if that is violated.</li>
+    </ul>
+  </li>
+  <li>For our python code that we use for functional testing, we generally try to
+follow <a href="https://www.python.org/dev/peps/pep-0008/">PEP 8</a></li>
+</ul>
+
+<h4 id="license-header-checks">License Header Checks</h4>
+
+<p>VinylDNS is configured with <a href="https://github.com/sbt/sbt-header">sbt-header</a>. All existing scala files have the
+appropriate header. To add or check for headers, follow these steps:</p>
+
+<h5 id="api">API</h5>
+
+<p>You can check for headers in the API in <code class="language-plaintext highlighter-rouge">sbt</code> with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ;project api;headerCheck;test:headerCheck;it:headerCheck
+</code></pre></div></div>
+
+<p>If you add a new file, you can add the appropriate header in <code class="language-plaintext highlighter-rouge">sbt</code> with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ;project api;headerCreate;test:headerCreate;it:headerCreate
+</code></pre></div></div>
+
+<h5 id="portal">Portal</h5>
+
+<p>You can check for headers in the Portal in <code class="language-plaintext highlighter-rouge">sbt</code> with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ;project portal;headerCheck;test:headerCheck;checkJsHeaders
+</code></pre></div></div>
+
+<p>If you add a new file, you can add the appropriate header in <code class="language-plaintext highlighter-rouge">sbt</code> with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ;project portal;headerCreate;test:headerCreate;createJsHeaders
+</code></pre></div></div>
+
+<h4 id="contributor-license-agreement">Contributor License Agreement</h4>
+
+<p>Before Comcast merges your code into the project you must sign the
+<a href="https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a">Comcast Contributor License Agreement (CLA)</a>.</p>
+
+<p>If you haven’t previously signed a Comcast CLA, you’ll automatically be asked to when you open a pull request.
+Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request
+a PDF version of the CLA.</p>
+
+<h3 id="modifying-your-pull-requests">Modifying your Pull Requests</h3>
+
+<p>Often times, you will need to make revisions to your Pull Requests that you submit. This is part of the standard process
+of code review. There are different ways that you can make revisions, but the following process is pretty standard.</p>
+
+<ol>
+  <li>Sync with upstream
+first.  <code class="language-plaintext highlighter-rouge">git checkout master &amp;&amp; git fetch upstream &amp;&amp; git rebase upstream master &amp;&amp; git push origin master</code></li>
+  <li>Checkout your branch on your local <code class="language-plaintext highlighter-rouge">git checkout your-user-name/user-branch-name</code></li>
+  <li>Sync your branch with latest <code class="language-plaintext highlighter-rouge">git rebase master</code>. Note: If you have merge conflicts, you will have to resolve them</li>
+  <li>Revise your Pull Request, making changes recommended in the comments / code review</li>
+  <li>Stage and commit these changes on top of your existing commits</li>
+  <li>When all tests pass, <code class="language-plaintext highlighter-rouge">git push origin your-user-name/user-branch-name</code> to revise your commit. <em>Note: If you rebased
+or altered the commit history, you will have to force push with a <code class="language-plaintext highlighter-rouge">-f</code> flag.</em> GitHub automatically recognizes the
+update and will re-run verification on your Pull Request!</li>
+</ol>
+
+<h3 id="pull-request-approval">Pull Request Approval</h3>
+
+<p>A pull request must satisfy our <a href="#pull-request-requirements">pull request requirements</a></p>
+
+<p>Afterwards, if a Pull Request is approved, a maintainer of the project will merge it. If you are a maintainer, you can
+merge your Pull Request once you have the approval of at least 2 other maintainers.</p>
+
+<blockquote>
+  <p>Note: The first time you make a Pull Request, add yourself to the authors list <a href="https://github.com/vinyldns/vinyldns/blob/master/AUTHORS.md">here</a> as part of the Pull Request</p>
+</blockquote>
+
+</div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><p>VinylDNS is designed and developed by <a href="" target="_blank" rel="noopener noreferrer">VinylDNS</a></p></div></div></footer><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/version-selector.js"></script><script src="/js/search.js"></script></body></html>
