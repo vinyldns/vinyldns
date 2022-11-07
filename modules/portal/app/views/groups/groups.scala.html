@@ -26,12 +26,12 @@
         <!-- START VERTICAL TABS -->
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
-                <li class="active"><a data-toggle="tab" ng-click="myGroups()">My Groups</a></li>
-                <li><a data-toggle="tab" ng-click="allGroups()">All Groups</a></li>
+                <li class="active"><a href="#myGroups" data-toggle="tab">My Groups</a></li>
+                <li><a id="tab2-button" href="#allGroups" data-toggle="tab">All Groups</a></li>
             </ul>
 
             <div class="panel-body tab-content">
-                <div class="tab-pane active" id="groups">
+                <div class="tab-pane active" id="myGroups">
                     <div class="row">
                         <div class="col-md-12">
 
@@ -66,7 +66,22 @@
                                 <div id="group-list" class="panel-body">
                                     <p ng-if="!groupsLoaded">Loading groups...</p>
                                     <p ng-if="haveNoGroups(groups.items.length)">You don't have any groups yet.</p>
-                                    <p ng-if="searchCriteria(groups.items.length)">No groups match the search criteria.</p>
+                                    <p ng-if="$scope.groupsLoaded && searchCriteria(groups.items.length)">No groups match the search criteria.</p>
+
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getGroupsPageNumber("myGroups") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('myGroups')" ng-click="prevPageMyGroups()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('myGroups')" ng-click="nextPageMyGroups()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+
                                     <table class="table datatable_simple" ng-if="groups.items.length">
                                         <thead>
                                         <tr>
@@ -96,6 +111,118 @@
                                         </tr>
                                         </tbody>
                                     </table>
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getGroupsPageNumber("myGroups") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('myGroups')" ng-click="prevPageMyGroups()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('myGroups')" ng-click="nextPageMyGroups()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+                                </div>
+                            </div>
+                            <!-- END SIMPLE DATATABLE -->
+
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="allGroups">
+                    <div class="row">
+                        <div class="col-md-12">
+
+                            <!-- SIMPLE DATATABLE -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <div class="btn-group">
+                                        <button id="open-group-modal-button" class="btn btn-default" ng-click="openModal($event);">
+                                            <span class="fa fa-plus"></span> New Group
+                                        </button>
+                                        <button id="refresh-group-button" class="btn btn-default" ng-click="refresh();">
+                                            <span class="fa fa-refresh"></span> Refresh
+                                        </button>
+                                    </div>
+
+                                    <!-- SEARCH BOX -->
+                                    <div class="pull-right">
+                                        <form class="input-group" ng-submit="refresh()">
+                                            <div class="input-group">
+                                                <span class="input-group-btn">
+                                                    <button id="group-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                        <span class="fa fa-search"></span>
+                                                    </button>
+                                                </span>
+                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- END SEARCH BOX -->
+
+                                </div>
+                                <div id="group-list" class="panel-body">
+                                    <p ng-if="!allGroupsLoaded">Loading groups...</p>
+                                    <p ng-if="$scope.allGroupsLoaded && searchCriteria(allGroups.items.length)">No groups match the search criteria.</p>
+
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getGroupsPageNumber("allGroups") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('allGroups')" ng-click="prevPageAllGroups()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('allGroups')" ng-click="nextPageAllGroups()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+
+                                    <table class="table datatable_simple" ng-if="allGroup.items.length">
+                                        <thead>
+                                        <tr>
+                                            <th>Group Name</th>
+                                            <th>Email</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr ng-repeat="group in allGroup.items | orderBy:'+name'">
+                                            <td class="wrap-long-text">
+                                                <a ng-href="/groups/{{group.id}}">{{group.name}}</a>
+                                            </td>
+                                            <td class="wrap-long-text">{{group.email}}</td>
+                                            <td class="wrap-long-text">{{group.description}}</td>
+                                            <td>
+                                                <div class="table-form-group">
+                                                    <a class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
+                                                        View</a>
+                                                    <a ng-if="groupAdmin(group)" class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
+                                                        Edit</a>
+                                                    <button ng-if="groupAdmin(group)" id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
+                                                        Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getGroupsPageNumber("allGroups") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('allGroups')" ng-click="prevPageAllGroups()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('allGroups')" ng-click="nextPageAllGroups()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
                                 </div>
                             </div>
                             <!-- END SIMPLE DATATABLE -->

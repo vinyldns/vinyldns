@@ -27,10 +27,19 @@ describe('Service: zoneService', function () {
     }));
 
     it('http backend gets called properly when getting zones', function () {
-        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&ignoreAccess=false').respond('zone returned');
-        this.zonesService.getZones('100', 'start', 'someQuery', false)
+        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false').respond('zone returned');
+        this.zonesService.getZones('100', 'start', 'someQuery', false, false)
             .then(function(response) {
                 expect(response.data).toBe('zone returned');
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('http backend gets called properly when getting zoneChanges', function () {
+        this.$httpBackend.expectGET('/api/zones/zoneid/changes?maxItems=100&startFrom=start').respond('zoneChanges returned');
+        this.zonesService.getZoneChanges('100', 'start', 'zoneid', false)
+            .then(function(response) {
+                expect(response.data).toBe('zoneChanges returned');
             });
         this.$httpBackend.flush();
     });
