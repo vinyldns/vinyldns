@@ -179,6 +179,19 @@ class RecordSetRoute(
         }
       }
     } ~
+    path("recordsetresolution" / Segment ) { fqdn =>
+      (get & monitor("Endpoint.recordsetresolution"))
+      {
+        authenticateAndExecute(
+          recordSetService
+            .getRecordSetResolution(
+              fqdn,
+              _
+            )) { rs =>
+          complete(StatusCodes.OK, rs)
+        }
+      }
+    } ~
     path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
       (get & monitor("Endpoint.getRecordSetByZone")) {
         authenticateAndExecute(recordSetService.getRecordSetByZone(rsId, zoneId, _)) { rs =>

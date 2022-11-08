@@ -2,6 +2,7 @@
 
     <!-- START ACCORDION -->
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
+
 <div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled; defaultTtl = @meta.defaultTtl">
     <div class="panel-heading">
         <h3 class="panel-title">
@@ -55,6 +56,10 @@
 </div>
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
     <!-- END ACCORDION -->
+<modal modal-id="dig" modal-title="Record Resolution">
+        <p id="digResponse"></p>
+</modal>
+
 
     <!-- START RECORD TABLE -->
 <div class="panel panel-default">
@@ -69,8 +74,7 @@
             <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
             <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
         </div>
-
-        <div>
+          <div>
             <form class="input-group" ng-submit="refreshRecords()">
                 <div class="input-group">
                     <span class="input-group-btn">
@@ -116,6 +120,7 @@
                         <th ng-if="zoneInfo.shared">Owner Group Name</th>
                     }
                     <th>Actions</th>
+                    <th>DNS Resolve</th>
                 </tr>
             </thead>
             <tbody>
@@ -331,6 +336,13 @@
                             </div>
                         </span>
                     </td>
+                    <td>
+                        <span>
+                            <button id="dig" class="btn btn-default" ng-click="clickDig(record.fqdn)">
+                                <span style="font-size:24px" class="fa">&#xf021;</span>
+                            </button>
+                        </span>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -375,3 +387,5 @@
     </div>
 </div>
     <!-- END MESSAGE MODAL-->
+
+

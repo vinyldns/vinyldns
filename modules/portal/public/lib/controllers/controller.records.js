@@ -46,6 +46,7 @@ angular.module('controller.records', [])
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
     $scope.profile = {};
+    $scope.dig = {};
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -480,6 +481,25 @@ angular.module('controller.records', [])
             .catch(function (error){
                 handleError(error, 'recordsService::listRecordSetsByZone-failure');
             });
+    };
+
+    $scope.clickDig = function(fqdn) {
+        function success(response) {
+        var dig = response.data;
+        var digString= JSON.stringify(dig)
+        var digReplaceBr = digString.replace(/\\n/g,'<br>')
+        var digReplaceTab =  digReplaceBr.replace(/\\t/g,'    ')
+        var digReplaceSlash =  digReplaceTab.replace(/\\/g,' ')
+        $scope.dig = digReplaceSlash.replace('"',' ')
+        document.getElementById("digResponse").innerHTML = $scope.dig;
+        $("#dig").modal("show");
+        }
+        return recordsService
+                  .dig(fqdn)
+                  .then(success)
+                  .catch(function (error) {
+                  handleError(error, 'dnsChangesService::getRecordSet-failure');
+                  });
     };
 
     function updateRecordDisplay(records) {

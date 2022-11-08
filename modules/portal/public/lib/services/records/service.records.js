@@ -76,6 +76,11 @@ angular.module('service.records', [])
             return $http.get(url);
         };
 
+        this.dig = function (fqdn) {
+                    var url = utilityService.urlBuilder("/api/recordsetresolution/"+fqdn);
+                    return $http.get(url);
+                };
+
         this.getRecordSet = function (rsid) {
             return $http.get("/api/recordsets/"+rsid);
         };

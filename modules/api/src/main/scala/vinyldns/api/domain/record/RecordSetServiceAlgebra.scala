@@ -41,6 +41,11 @@ trait RecordSetServiceAlgebra {
                     authPrincipal: AuthPrincipal
                   ): Result[RecordSetInfo]
 
+  def getRecordSetResolution(
+                              fqdn: String,
+                              authPrincipal: AuthPrincipal
+                       ): Result[String]
+
   def getRecordSetByZone(
                           recordSetId: String,
                           zoneId: String,

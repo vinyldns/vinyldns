@@ -36,6 +36,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 
+import scala.sys.process._
 import scala.util.matching.Regex
 
 object RecordSetService {
@@ -177,6 +178,11 @@ class RecordSetService(
       recordSet <- getRecordSet(recordSetId)
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
+
+  def dig(fqdn: String): Result[String] = {
+    val dig = "dig "+fqdn
+    dig.!! // Captures the dig output
+  }.toResult
 
   def getRecordSetByZone(
                           recordSetId: String,
@@ -511,4 +517,8 @@ class RecordSetService(
       ensureTrailingDot(recordNameFilter)
     }
   }.toResult
+
+   def getRecordSetResolution(fqdn: String, authPrincipal: AuthPrincipal): Result[String] = {
+    for{output <- dig(fqdn)} yield output
+   }
 }
