@@ -175,6 +175,15 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
+                    "acl": {
+                        "rules": [
+                            {
+                                "accessLevel": "Delete",
+                                "description": "some_test_rule",
+                                "userId": "history-id"
+                            }
+                        ]
+                    },
                     "connection": {
                         "name": "dummy.",
                         "keyName": VinylDNSTestContext.dns_key_name,

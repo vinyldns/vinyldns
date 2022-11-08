@@ -59,7 +59,9 @@ final case class GroupChangeInfo(
     userId: String,
     oldGroup: Option[GroupInfo] = None,
     id: String = UUID.randomUUID().toString,
-    created: String = DateTime.now.getMillis.toString
+    created: DateTime = DateTime.now,
+    userName: String,
+    groupChangeMessage: String
 )
 
 object GroupChangeInfo {
@@ -69,7 +71,9 @@ object GroupChangeInfo {
     userId = groupChange.userId,
     oldGroup = groupChange.oldGroup.map(GroupInfo.apply),
     id = groupChange.id,
-    created = groupChange.created.getMillis.toString
+    created = groupChange.created,
+    userName = groupChange.userName.getOrElse("unknown user"),
+    groupChangeMessage = groupChange.groupChangeMessage.getOrElse("")
   )
 }
 
@@ -170,6 +174,8 @@ final case class ListMyGroupsResponse(
 final case class GroupNotFoundError(msg: String) extends Throwable(msg)
 
 final case class GroupAlreadyExistsError(msg: String) extends Throwable(msg)
+
+final case class GroupValidationError(msg: String) extends Throwable(msg)
 
 final case class UserNotFoundError(msg: String) extends Throwable(msg)
 
