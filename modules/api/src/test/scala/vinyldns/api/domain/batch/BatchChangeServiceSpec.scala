@@ -56,7 +56,7 @@ import vinyldns.api.domain.access.AccessValidations
 import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with CatsHelpers
@@ -67,8 +67,8 @@ class BatchChangeServiceSpec
 
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  private val nonFatalError = ZoneDiscoveryError("test")
-  private val fatalError = RecordAlreadyExists("test")
+  private val nonFatalErrorZoneDiscoveryError = ZoneDiscoveryError("test")
+  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test", AData("1.1.1.1"), true)
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
@@ -748,7 +748,7 @@ class BatchChangeServiceSpec
     "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
-      val result =
+      val result = {
         rightResultOf(
           underTestManualEnabled
             .approveBatchChange(
@@ -758,6 +758,7 @@ class BatchChangeServiceSpec
             )
             .value
         )
+      }
 
       result.userId shouldBe batchChangeNeedsApproval.userId
       result.userName shouldBe batchChangeNeedsApproval.userName
@@ -1709,8 +1710,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1746,7 +1747,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(SingleChangeError(nonFatalError)),
+        List(SingleChangeError(nonFatalErrorZoneDiscoveryError)),
         result.changes(1).id
       )
       result.changes(2) shouldBe SingleDeleteRRSetChange(
@@ -1760,7 +1761,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(SingleChangeError(nonFatalError)),
+        List(SingleChangeError(nonFatalErrorZoneDiscoveryError)),
         result.changes(2).id
       )
     }
@@ -1776,8 +1777,8 @@ class BatchChangeServiceSpec
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           allowManualReview = true
@@ -1810,7 +1811,7 @@ class BatchChangeServiceSpec
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L).validNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1826,7 +1827,7 @@ class BatchChangeServiceSpec
       ibcr.changeRequestResponses(1) shouldBe Valid(
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L)
       )
-      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
+      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalErrorZoneDiscoveryError)
     }
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
@@ -1836,8 +1837,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1861,8 +1862,8 @@ class BatchChangeServiceSpec
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1903,8 +1904,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           false
@@ -1927,8 +1928,8 @@ class BatchChangeServiceSpec
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           allowManualReview = false
@@ -1946,7 +1947,7 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -2008,7 +2009,7 @@ class BatchChangeServiceSpec
               asAdds.head,
               7200L
             ).validNel,
-            fatalError.invalidNel
+            nonFatalErrorRecordAlreadyExists.invalidNel
           ),
           reviewInfo
         )

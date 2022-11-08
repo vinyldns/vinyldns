@@ -398,9 +398,9 @@ class DnsConversionsSpec
       verifyMatch(result, testLongTXT)
     }
 
-    "fail to convert a bad SPF record set" in {
-      val result = toDnsRRset(testLongSPF, testZoneName).left.value
-      result shouldBe a[java.lang.IllegalArgumentException]
+    "convert long SPF record set" in {
+      val result = toDnsRRset(testLongSPF, testZoneName).right.value
+      verifyMatch(result, testLongSPF)
     }
   }
 
@@ -513,6 +513,9 @@ class DnsConversionsSpec
     }
     "convert to/from RecordType TXT long TXT record data" in {
       verifyMatch(testLongTXT, roundTrip(testLongTXT))
+    }
+    "convert to/from RecordType SPF long SPF record data" in {
+      verifyMatch(testLongSPF, roundTrip(testLongSPF))
     }
   }
 

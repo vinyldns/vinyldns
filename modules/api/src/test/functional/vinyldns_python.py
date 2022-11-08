@@ -220,7 +220,7 @@ class VinylDNSClient(object):
 
         return data
 
-    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=200, ignore_access=False, **kwargs):
+    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=100, ignore_access=False, **kwargs):
         """
         Retrieves my groups
         :param start_from: the start key of the page
@@ -445,7 +445,7 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_zones(self, name_filter=None, start_from=None, max_items=None, ignore_access=False, **kwargs):
+    def list_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False, ignore_access=False, **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -461,6 +461,9 @@ class VinylDNSClient(object):
 
         if max_items:
             query.append("maxItems=" + str(max_items))
+
+        if search_by_admin_group:
+            query.append("searchByAdminGroup=" + str(search_by_admin_group))
 
         if ignore_access:
             query.append("ignoreAccess=" + str(ignore_access))

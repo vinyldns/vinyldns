@@ -35,7 +35,9 @@ case class GroupChange(
     userId: String,
     oldGroup: Option[Group] = None,
     id: String = UUID.randomUUID().toString,
-    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    userName: Option[String] = None,
+    groupChangeMessage: Option[String] = None
 )
 
 object GroupChange {

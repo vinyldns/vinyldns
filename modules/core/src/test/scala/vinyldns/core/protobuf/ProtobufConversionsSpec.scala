@@ -75,7 +75,7 @@ class ProtobufConversionsSpec
     zone,
     "system",
     ZoneChangeType.Update,
-    ZoneChangeStatus.Complete,
+    ZoneChangeStatus.Synced,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
   )

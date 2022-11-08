@@ -33,7 +33,6 @@ import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
-import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -65,14 +64,24 @@ class RecordSetServiceIntegrationSpec
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
   private val user = User("live-test-user", "key", "secret")
+  private val testUser = User("testuser", "key", "secret")
   private val user2 = User("shared-record-test-user", "key-shared", "secret-shared")
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
+  private val dummyGroup = Group(s"dummy-group", "test@test.com", adminUserIds = Set(testUser.id))
   private val group2 = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id, user2.id))
   private val sharedGroup =
     Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user.id, user2.id))
   private val auth = AuthPrincipal(user, Seq(group.id, sharedGroup.id))
   private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id, group2.id))
+  val dummyAuth: AuthPrincipal = AuthPrincipal(testUser, Seq(dummyGroup.id))
 
+  private val dummyZone = Zone(
+    s"dummy.",
+    "test@test.com",
+    status = ZoneStatus.Active,
+    connection = testConnection,
+    adminGroupId = dummyGroup.id
+  )
   private val zone = Zone(
     s"live-zone-test.",
     "test@test.com",
@@ -98,6 +107,16 @@ class RecordSetServiceIntegrationSpec
     38400,
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    None,
+    List(AAAAData("fd69:27cc:fe91::60"))
+  )
+  private val dottedTestRecord = RecordSet(
+    dummyZone.id,
+    "test.dotted",
+    AAAA,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -255,8 +274,8 @@ class RecordSetServiceIntegrationSpec
         groupRepo.save(db, group)
       }
 
-    List(group, group2, sharedGroup).traverse(g => saveGroupData(groupRepo, g).void).unsafeRunSync()
-    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
+    List(group, group2, sharedGroup, dummyGroup).traverse(g => saveGroupData(groupRepo, g).void).unsafeRunSync()
+    List(zone, dummyZone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
       .traverse(
         z => zoneRepo.save(z)
       )
@@ -274,6 +293,7 @@ class RecordSetServiceIntegrationSpec
     val zoneRecords = List(
       apexTestRecordA,
       apexTestRecordAAAA,
+      dottedTestRecord,
       subTestRecordA,
       subTestRecordAAAA,
       subTestRecordNS,
@@ -301,6 +321,7 @@ class RecordSetServiceIntegrationSpec
       mockBackendResolver,
       false,
       vinyldnsConfig.highValueDomainConfig,
+      vinyldnsConfig.dottedHostsConfig,
       vinyldnsConfig.serverConfig.approvedNameServers,
       useRecordSetCache = true
     )
@@ -337,6 +358,93 @@ class RecordSetServiceIntegrationSpec
         .asInstanceOf[RecordSetChange]
         .recordSet
         .name shouldBe "zone-test-add-records."
+    }
+
+    "create dotted record fails if it doesn't satisfy dotted hosts config" in {
+      val newRecord = RecordSet(
+        zoneTestAddRecords.id,
+        "test.dot",
+        A,
+        38400,
+        RecordSetStatus.Active,
+        DateTime.now,
+        None,
+        List(AData("10.1.1.1"))
+      )
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, auth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "create dotted record succeeds if it satisfies all dotted hosts config" in {
+      val newRecord = RecordSet(
+        dummyZone.id,
+        "testing.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        DateTime.now,
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+      // succeeds as zone, user and record type is allowed as defined in application.conf
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, dummyAuth)
+          .value
+          .unsafeRunSync()
+      rightValue(result)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .name shouldBe "testing.dotted"
+    }
+
+    "fail creating dotted record if it satisfies all dotted hosts config except dots-limit for the zone" in {
+      val newRecord = RecordSet(
+        dummyZone.id,
+        "test.dotted.more.dots.than.allowed",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        DateTime.now,
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      // The number of dots allowed in the record name for this zone as defined in the config is 3.
+      // Creating with 4 dots results in an error
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, dummyAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "update dotted record succeeds if it satisfies all dotted hosts config" in {
+      val newRecord = dottedTestRecord.copy(ttl = 37000)
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "test.dotted"
+      change.recordSet.ttl shouldBe 37000
+    }
+
+    "update dotted record name fails as updating a record name is not allowed" in {
+      val newRecord = dottedTestRecord.copy(name = "trial.dotted")
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+      // We get an "InvalidRequest: Cannot update RecordSet's name."
+      leftValue(result) shouldBe a[InvalidRequest]
     }
 
     "update apex A record and add trailing dot" in {
@@ -548,6 +656,15 @@ class RecordSetServiceIntegrationSpec
 
       rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe
         Some(group2.id)
+    }
+
+    "delete dotted host record successfully for user in record owner group" in {
+      val result = testRecordSetService
+        .deleteRecordSet(dottedTestRecord.id, dottedTestRecord.zoneId, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
     }
 
     "fail deleting for user not in record owner group in shared zone" in {

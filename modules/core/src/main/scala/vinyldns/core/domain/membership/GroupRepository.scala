@@ -31,7 +31,11 @@ trait GroupRepository extends Repository {
 
   def getGroups(groupIds: Set[String]): IO[Set[Group]]
 
+  def getGroupsByName(groupNames: Set[String]): IO[Set[Group]]
+
   def getGroupByName(groupName: String): IO[Option[Group]]
+
+  def getGroupsByName(groupName: String): IO[Set[Group]]
 
   def getAllGroups(): IO[Set[Group]]
 

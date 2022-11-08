@@ -27,7 +27,7 @@ class ZoneChangeSpec extends AnyWordSpec with Matchers {
     Zone("test", "test"),
     "ok",
     ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
+    ZoneChangeStatus.Synced,
     created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
   )
 

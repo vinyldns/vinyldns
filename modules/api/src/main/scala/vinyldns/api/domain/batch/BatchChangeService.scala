@@ -33,19 +33,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.{
-  CnameAtZoneApexError,
-  SingleChangeError,
-  UserIsNotAuthorizedError,
-  ZoneDiscoveryError
-}
-import vinyldns.core.domain.membership.{
-  Group,
-  GroupRepository,
-  ListUsersResults,
-  User,
-  UserRepository
-}
+import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
