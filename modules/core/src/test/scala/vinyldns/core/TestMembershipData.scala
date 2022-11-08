@@ -166,6 +166,6 @@ object TestMembershipData {
     GroupChangeType.Update,
     okUser.id,
     Some(okGroup),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 }

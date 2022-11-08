@@ -116,7 +116,7 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -367,7 +367,7 @@ class RecordSetServiceIntegrationSpec
         A,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )
@@ -386,7 +386,7 @@ class RecordSetServiceIntegrationSpec
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
@@ -409,7 +409,7 @@ class RecordSetServiceIntegrationSpec
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )

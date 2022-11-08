@@ -552,7 +552,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           singleChangesOneDelete,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
