@@ -161,7 +161,7 @@ trait TestApplicationData { this: Mockito =>
       | "oldGroup": {},
       | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
       | "created": "2022-07-22T08:19:22Z",
-      | "userName": "$frodoUser",
+      | "userName": "${frodoUser.userName}",
       | "groupChangeMessage": ""
       | }
     """.stripMargin)
@@ -181,7 +181,7 @@ trait TestApplicationData { this: Mockito =>
        | "oldGroup": {},
        | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
        | "created": "2022-07-22T08:19:22Z",
-       | "userName": "$frodoUser",
+       | "userName": "${frodoUser.userName}",
        | "groupChangeMessage": ""
        | }],
        | "maxItems": 100
