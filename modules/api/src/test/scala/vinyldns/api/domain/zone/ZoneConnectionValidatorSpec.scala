@@ -17,7 +17,8 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -96,7 +97,7 @@ class ZoneConnectionValidatorSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
   )
@@ -107,7 +108,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")))
   )
@@ -118,7 +119,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")), NSData(Fqdn("not.approved.")))
   )
@@ -129,7 +130,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("sub.some.test.ns.")))
   )
@@ -239,6 +240,16 @@ class ZoneConnectionValidatorSpec
       }
       "return failure if the backendId does not exist" in {
         underTest.isValidBackendId(Some("bad")) shouldBe left
+      }
+    }
+
+    "Zone Connection toString" should {
+      "not display key and algorithm" in {
+        zc.toString shouldBe "ZoneConnection: [name=\"zc.\"; keyName=\"zc.\"; primaryServer=\"10.1.1.1\"; ]"
+      }
+      "not display key and algorithm while displaying connection and transferConnection of a Zone" in {
+        val zoneString = s"""Zone: [id="${testZone.id}"; name="vinyldns."; account="system"; adminGroupId="system"; status="Active"; shared="false"; connection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; transferConnection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; reverse="false"; isTest="false"; created="${testZone.created}"; ]"""
+        testZone.toString shouldBe zoneString
       }
     }
   }

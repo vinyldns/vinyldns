@@ -17,7 +17,7 @@
 package vinyldns.core.domain.membership
 
 import cats.effect._
-import org.joda.time.DateTime
+import java.time.Instant
 import scalikejdbc.DB
 import vinyldns.core.repository.Repository
 
@@ -32,5 +32,5 @@ trait GroupChangeRepository extends Repository {
       maxItems: Int
   ): IO[ListGroupChangesResults]
 
-  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
+  implicit def dateTimeOrdering: Ordering[Instant] = Ordering.fromLessThan(_.isBefore(_))
 }

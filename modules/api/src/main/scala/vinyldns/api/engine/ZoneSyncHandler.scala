@@ -18,7 +18,8 @@ package vinyldns.api.engine
 
 import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsConversions
@@ -113,7 +114,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
             )
             IO.pure(
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             )
@@ -160,7 +161,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                 _ <- saveRecordSets
                 _ <- saveRecordSetDatas
               } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             }
