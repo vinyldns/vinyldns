@@ -17,7 +17,8 @@
 package vinyldns.api.domain.record
 
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -386,7 +387,7 @@ class RecordSetValidationsSpec
             SOA,
             200,
             RecordSetStatus.Active,
-            DateTime.now,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
             List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
           )

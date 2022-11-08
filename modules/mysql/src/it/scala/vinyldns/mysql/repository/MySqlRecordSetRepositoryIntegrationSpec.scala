@@ -17,7 +17,7 @@
 package vinyldns.mysql.repository
 import java.util.UUID
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 import vinyldns.mysql.TransactionProvider
+import java.time.temporal.ChronoUnit
 
 class MySqlRecordSetRepositoryIntegrationSpec
     extends AnyWordSpec
@@ -114,7 +115,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val recordForPending = RecordSet(
         "test-create-converter",
@@ -122,7 +123,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Pending,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val recordForFailed = RecordSet(
         "test-create-converter",
@@ -130,7 +131,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
         RecordType.A,
         123,
         RecordSetStatus.Inactive,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
 
       val successfulChange =

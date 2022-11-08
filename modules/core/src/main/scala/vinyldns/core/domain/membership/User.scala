@@ -19,9 +19,10 @@ package vinyldns.core.domain.membership
 import java.util.UUID
 
 import org.apache.commons.lang3.RandomStringUtils
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
+import java.time.temporal.ChronoUnit
 
 object LockStatus extends Enumeration {
   type LockStatus = Value
@@ -35,7 +36,7 @@ final case class User(
     firstName: Option[String] = None,
     lastName: Option[String] = None,
     email: Option[String] = None,
-    created: DateTime = DateTime.now,
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
     lockStatus: LockStatus = LockStatus.Unlocked,

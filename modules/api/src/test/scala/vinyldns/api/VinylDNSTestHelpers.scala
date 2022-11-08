@@ -19,7 +19,8 @@ package vinyldns.api
 import cats.effect.{ContextShift, IO}
 import com.comcast.ip4s.IpAddress
 import fs2.concurrent.SignallingRef
-import org.joda.time.DateTime
+import java.time.{Instant, LocalDateTime, Month, ZoneOffset}
+import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig, ServerConfig}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.core.domain.record._
@@ -89,7 +90,7 @@ trait VinylDNSTestHelpers {
   val batchChangeConfig: BatchChangeConfig =
     BatchChangeConfig(batchChangeLimit, sharedApprovedTypes, v6DiscoveryNibbleBoundaries)
 
-  val fakeTime: DateTime = new DateTime(2010, 1, 1, 0, 0)
+  val fakeTime: Instant = LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC)
 
   def anonymize(recordSet: RecordSet): RecordSet =
     recordSet.copy(id = "a", created = fakeTime, updated = None)
@@ -106,7 +107,7 @@ trait VinylDNSTestHelpers {
   def anonymize(changeSet: ChangeSet): ChangeSet =
     changeSet.copy(
       id = "a",
-      createdTimestamp = fakeTime.getMillis,
+      createdTimestamp = fakeTime.toEpochMilli,
       processingTimestamp = 0,
       changes = changeSet.changes
         .map(anonymize)
