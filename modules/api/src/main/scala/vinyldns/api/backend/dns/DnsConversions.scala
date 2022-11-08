@@ -278,7 +278,7 @@ trait DnsConversions {
 
   def fromSPFRecord(r: DNS.SPFRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(SPFData(data.getStrings.asScala.mkString(",")))
+      List(SPFData(data.getStrings.asScala.mkString))
     }
 
   def fromSRVRecord(r: DNS.SRVRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -393,7 +393,8 @@ trait DnsConversions {
           new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, Hex.decodeHex(fingerprint.toCharArray()))
 
         case SPFData(text) =>
-          new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, text)
+          val texts = text.grouped(255).toList
+          new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, texts.asJava)
 
         case TXTData(text) =>
           val texts = text.grouped(255).toList

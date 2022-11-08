@@ -36,13 +36,15 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
+  private val notExistCompletedMessage: String = "This record does not exist." +
+    "No further action is required."
 
   private def makeSingleAddChange(
-      name: String,
-      recordData: RecordData,
-      typ: RecordType = A,
-      zone: Zone = okZone
-  ) = {
+                                   name: String,
+                                   recordData: RecordData,
+                                   typ: RecordType = A,
+                                   zone: Zone = okZone
+                                 ) = {
     val fqdn = s"$name.${zone.name}"
     SingleAddChange(
       Some(zone.id),
@@ -76,10 +78,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   }
 
   private def makeAddChangeForValidation(
-      recordName: String,
-      recordData: RecordData,
-      typ: RecordType = RecordType.A
-  ): AddChangeForValidation =
+                                          recordName: String,
+                                          recordData: RecordData,
+                                          typ: RecordType = RecordType.A
+                                        ): AddChangeForValidation =
     AddChangeForValidation(
       okZone,
       s"$recordName",
@@ -88,9 +90,9 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     )
 
   private def makeDeleteRRSetChangeForValidation(
-      recordName: String,
-      typ: RecordType = RecordType.A
-  ): DeleteRRSetChangeForValidation =
+                                                  recordName: String,
+                                                  typ: RecordType = RecordType.A
+                                                ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
@@ -157,6 +159,14 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     makeAddChangeForValidation("txtToUpdate", TXTData("update"), TXT),
     makeDeleteRRSetChangeForValidation("mxToUpdate", MX),
     makeAddChangeForValidation("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
+  )
+
+  private val singleChangesOneDelete = List(
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A)
+  )
+
+  private val changeForValidationOneDelete = List(
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A)
   )
 
   private val singleChangesOneBad = List(
@@ -534,6 +544,42 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       savedBatch shouldBe Some(returnedBatch)
     }
 
+    "set status to complete when deleting a record that does not exist" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          singleChangesOneDelete,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result = rightResultOf(
+        underTest
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneDelete.map(_.validNel), existingRecordSets),
+            None
+          )
+          .value
+      )
+
+      val returnedBatch = result.batchChange
+
+      // validate completed status returned
+      val receivedChange = returnedBatch.changes(0)
+      receivedChange.status shouldBe SingleChangeStatus.Complete
+      receivedChange.recordChangeId shouldBe None
+      receivedChange.systemMessage shouldBe Some(notExistCompletedMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(notExistCompletedMessage), status = SingleChangeStatus.Complete)
+
+      // check the update has been made in the DB
+      val savedBatch: Option[BatchChange] =
+        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
+      savedBatch shouldBe Some(returnedBatch)
+    }
+
     "return error if an unsupported record is received" in {
       val batchChangeUnsupported =
         BatchChange(
@@ -676,11 +722,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   }
 
   private def validateRecordSetChange(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange,
-      typ: RecordSetChangeType
-  ) = {
+                                       name: String,
+                                       recordSetChanges: List[RecordSetChange],
+                                       batchChange: BatchChange,
+                                       typ: RecordSetChangeType
+                                     ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true
@@ -707,10 +753,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   }
 
   private def validateRecordDataCombination(
-      name: String,
-      recordSetChanges: List[RecordSetChange],
-      batchChange: BatchChange
-  ) = {
+                                             name: String,
+                                             recordSetChanges: List[RecordSetChange],
+                                             batchChange: BatchChange
+                                           ) = {
     val singleChangesOut = batchChange.changes.filter { change =>
       change.recordName match {
         case Some(rn) if rn == name => true

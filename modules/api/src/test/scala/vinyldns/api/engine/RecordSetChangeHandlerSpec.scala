@@ -151,7 +151,8 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.Complete,
+          systemMessage= None,
+         status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -196,6 +197,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -600,6 +602,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -641,7 +644,7 @@ class RecordSetChangeHandlerSpec
       changeSet.status shouldBe RecordSetChangeStatus.Failed
       changeSet.recordSet.status shouldBe RecordSetStatus.Inactive
       changeSet.systemMessage shouldBe Some(
-        s"Failed validating update to DNS for change ${changeSet.id}:${changeSet.recordSet.name}: " +
+        s"""Failed validating update to DNS for change "${changeSet.id}": "${changeSet.recordSet.name}": """ +
           s"This record set is out of sync with the DNS backend; sync this zone before attempting to " +
           "update this record set."
       )
