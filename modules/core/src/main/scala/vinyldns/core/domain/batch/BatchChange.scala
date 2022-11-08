@@ -18,7 +18,7 @@ package vinyldns.core.domain.batch
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
@@ -27,16 +27,16 @@ case class BatchChange(
     userId: String,
     userName: String,
     comments: Option[String],
-    createdTimestamp: DateTime,
+    createdTimestamp: Instant,
     changes: List[SingleChange],
     ownerGroupId: Option[String] = None,
     approvalStatus: BatchChangeApprovalStatus,
     reviewerId: Option[String] = None,
     reviewComment: Option[String] = None,
-    reviewTimestamp: Option[DateTime] = None,
+    reviewTimestamp: Option[Instant] = None,
     id: String = UUID.randomUUID().toString,
-    scheduledTime: Option[DateTime] = None,
-    cancelledTimestamp: Option[DateTime] = None
+    scheduledTime: Option[Instant] = None,
+    cancelledTimestamp: Option[Instant] = None
 ) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)
@@ -109,7 +109,7 @@ case class BatchChangeInfo(
     userId: String,
     userName: String,
     comments: Option[String],
-    createdTimestamp: DateTime,
+    createdTimestamp: Instant,
     changes: List[SingleChange],
     ownerGroupId: Option[String],
     id: String,
@@ -119,9 +119,9 @@ case class BatchChangeInfo(
     reviewerId: Option[String],
     reviewerUserName: Option[String],
     reviewComment: Option[String],
-    reviewTimestamp: Option[DateTime],
-    scheduledTime: Option[DateTime],
-    cancelledTimestamp: Option[DateTime]
+    reviewTimestamp: Option[Instant],
+    scheduledTime: Option[Instant],
+    cancelledTimestamp: Option[Instant]
 )
 
 object BatchChangeInfo {

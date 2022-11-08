@@ -17,7 +17,8 @@
 package vinyldns.api.engine
 
 import cats.effect.{IO, Timer}
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -95,7 +96,7 @@ class RecordSetChangeHandlerSpec
     "userId",
     "userName",
     None,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     singleChanges,
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )
@@ -153,7 +154,8 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.Complete,
+          systemMessage= None,
+         status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -198,6 +200,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -602,6 +605,7 @@ class RecordSetChangeHandlerSpec
       val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -643,7 +647,7 @@ class RecordSetChangeHandlerSpec
       changeSet.status shouldBe RecordSetChangeStatus.Failed
       changeSet.recordSet.status shouldBe RecordSetStatus.Inactive
       changeSet.systemMessage shouldBe Some(
-        s"Failed validating update to DNS for change ${changeSet.id}:${changeSet.recordSet.name}: " +
+        s"""Failed validating update to DNS for change "${changeSet.id}": "${changeSet.recordSet.name}": """ +
           s"This record set is out of sync with the DNS backend; sync this zone before attempting to " +
           "update this record set."
       )

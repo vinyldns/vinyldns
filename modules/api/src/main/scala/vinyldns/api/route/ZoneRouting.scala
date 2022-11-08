@@ -78,12 +78,14 @@ class ZoneRoute(
           "nameFilter".?,
           "startFrom".as[String].?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "searchByAdminGroup".as[Boolean].?(false),
           "ignoreAccess".as[Boolean].?(false)
         ) {
           (
               nameFilter: Option[String],
               startFrom: Option[String],
               maxItems: Int,
+              searchByAdminGroup: Boolean,
               ignoreAccess: Boolean
           ) =>
             {
@@ -94,7 +96,7 @@ class ZoneRoute(
                 ) {
                   authenticateAndExecute(
                     zoneService
-                      .listZones(_, nameFilter, startFrom, maxItems, ignoreAccess)
+                      .listZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess)
                   ) { result =>
                     complete(StatusCodes.OK, result)
                   }

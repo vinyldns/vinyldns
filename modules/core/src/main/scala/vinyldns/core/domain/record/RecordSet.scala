@@ -18,7 +18,7 @@ package vinyldns.core.domain.record
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 
 object RecordType extends Enumeration {
   type RecordType = Value
@@ -42,8 +42,8 @@ case class RecordSet(
     typ: RecordType,
     ttl: Long,
     status: RecordSetStatus,
-    created: DateTime,
-    updated: Option[DateTime] = None,
+    created: Instant,
+    updated: Option[Instant] = None,
     records: List[RecordData] = List.empty,
     id: String = UUID.randomUUID().toString,
     account: String = "system",

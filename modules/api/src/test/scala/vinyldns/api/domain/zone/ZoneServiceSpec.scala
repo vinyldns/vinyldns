@@ -562,6 +562,45 @@ class ZoneServiceSpec
       result.ignoreAccess shouldBe true
     }
 
+    "name filter must be used to return zones by admin group name, when search by admin group option is true" in {
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroupsByName(any[String])
+      doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
+        .when(mockZoneRepo)
+        .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
+      val result: ListZonesResponse =
+        rightResultOf(underTest.listZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true).value)
+      result.zones shouldBe List(abcZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe Some("abcGroup")
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
+    "name filter must be used to return zone by zone name, when search by admin group option is false" in {
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcZone"))))
+        .when(mockZoneRepo)
+        .listZones(abcAuth, Some("abcZone"), None, 100, true)
+
+      // When searchByAdminGroup is false, zone name given in nameFilter is returned
+      val result: ListZonesResponse =
+        rightResultOf(underTest.listZones(abcAuth, Some("abcZone"), None, 100, searchByAdminGroup = false, ignoreAccess = true).value)
+      result.zones shouldBe List(abcZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe Some("abcZone")
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
     "return Unknown group name if zone admin group cannot be found" in {
       doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
         .when(mockZoneRepo)
