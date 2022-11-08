@@ -126,9 +126,8 @@ class AccessValidationsSpec
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
 
-    "return false if the zone is shared and user does not have other access" in {
-      val error = leftValue(accessValidationTest.canSeeZone(okAuth, sharedZone))
-      error shouldBe a[NotAuthorizedError]
+    "return true if the zone is shared and user does not have other access" in {
+      accessValidationTest.canSeeZone(okAuth, sharedZone) should be(right)
     }
   }
 
@@ -1201,8 +1200,8 @@ class AccessValidationsSpec
       accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
     }
 
-    "return access level NoAccess if zone is shared and user is not an admin" in {
-      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.NoAccess)
+    "return access level Read if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.Read)
     }
 
     "return access level Read if zone is private and user is an ACL rule" in {
