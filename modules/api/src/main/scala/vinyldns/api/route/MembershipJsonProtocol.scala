@@ -145,6 +145,8 @@ trait MembershipJsonProtocol extends JsonValidation {
       ("userId" -> gci.userId) ~
       ("oldGroup" -> Extraction.decompose(gci.oldGroup)) ~
       ("id" -> gci.id) ~
-      ("created" -> gci.created.toString)
+      ("created" -> gci.created.toString) ~
+      ("userName" -> gci.userName) ~
+      ("groupChangeMessage" -> gci.groupChangeMessage)
   }
 }
