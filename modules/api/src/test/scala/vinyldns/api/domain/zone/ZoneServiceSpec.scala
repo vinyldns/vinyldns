@@ -561,7 +561,7 @@ class ZoneServiceSpec
 
       // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
       val result: ListZonesResponse =
-        rightResultOf(underTest.listZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true).value)
+        underTest.listZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary)
       result.maxItems shouldBe 100
       result.startFrom shouldBe None
@@ -580,7 +580,7 @@ class ZoneServiceSpec
 
       // When searchByAdminGroup is false, zone name given in nameFilter is returned
       val result: ListZonesResponse =
-        rightResultOf(underTest.listZones(abcAuth, Some("abcZone"), None, 100, searchByAdminGroup = false, ignoreAccess = true).value)
+        underTest.listZones(abcAuth, Some("abcZone"), None, 100, searchByAdminGroup = false, ignoreAccess = true).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary)
       result.maxItems shouldBe 100
       result.startFrom shouldBe None

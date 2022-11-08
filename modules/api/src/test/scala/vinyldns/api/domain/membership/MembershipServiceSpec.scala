@@ -275,7 +275,7 @@ class MembershipServiceSpec
           .when(underTest)
           .groupValidation(groupInfo.copy(name = "", email = ""))
 
-        val error = leftResultOf(underTest.createGroup(groupInfo.copy(name = "", email = ""), okAuth).value)
+        val error = underTest.createGroup(groupInfo.copy(name = "", email = ""), okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[GroupValidationError]
 
         verify(mockGroupRepo, never()).save(any[DB], any[Group])
@@ -412,7 +412,7 @@ class MembershipServiceSpec
           .when(underTest)
           .groupValidation(existingGroup.copy(name = "", email = ""))
 
-        val error = leftResultOf(
+        val error =
           underTest
             .updateGroup(
               updatedInfo.id,
@@ -423,8 +423,8 @@ class MembershipServiceSpec
               updatedInfo.adminUserIds,
               okAuth
             )
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
+
         error shouldBe a[GroupValidationError]
       }
 
@@ -641,7 +641,7 @@ class MembershipServiceSpec
         doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
-        val result: ListMyGroupsResponse = rightResultOf(
+        val result: ListMyGroupsResponse =
           underTest
             .listMyGroups(
               groupNameFilter = Some("Name-Dummy01"),
@@ -650,8 +650,8 @@ class MembershipServiceSpec
               listOfDummyGroupsAuth,
               false
             )
-            .value
-        )
+            .value.unsafeRunSync().toOption.get
+
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(10, 20),
           groupNameFilter = Some("Name-Dummy01"),
@@ -794,7 +794,7 @@ class MembershipServiceSpec
           listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
 
         val result: GroupChangeInfo =
-          rightResultOf(underTest.getGroupChange(dummyGroup.id, dummyAuth).value)
+          underTest.getGroupChange(dummyGroup.id, dummyAuth).value.unsafeRunSync().toOption.get
         result shouldBe expected
       }
 
@@ -813,7 +813,7 @@ class MembershipServiceSpec
           listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
 
         val result: GroupChangeInfo =
-          rightResultOf(underTest.getGroupChange(dummyGroup.id, okAuth).value)
+          underTest.getGroupChange(dummyGroup.id, okAuth).value.unsafeRunSync().toOption.get
         result shouldBe expected
       }
 
@@ -826,7 +826,7 @@ class MembershipServiceSpec
           .when(mockUserRepo)
           .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-        val result = leftResultOf(underTest.getGroupChange(dummyGroup.id, okAuth).value)
+        val result = underTest.getGroupChange(dummyGroup.id, okAuth).value.unsafeRunSync().swap.toOption.get
         result shouldBe a[InvalidGroupRequestError]
       }
     }
@@ -886,7 +886,7 @@ class MembershipServiceSpec
     "determine group difference" should {
       "return difference between two groups" in {
         val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate, okGroupChange.copy(changeType = GroupChangeType.Delete))
-        val result: Seq[String] = rightResultOf(underTest.determineGroupDifference(groupChange).value)
+        val result: Seq[String] = underTest.determineGroupDifference(groupChange).value.unsafeRunSync().toOption.get
         // Newly created group's change message
         result(0) shouldBe "Group Created."
         // Updated group's change message

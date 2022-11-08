@@ -554,7 +554,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
           singleChangesOneDelete,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchWithBadChange,
@@ -562,8 +562,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
             ChangeForValidationMap(changeForValidationOneDelete.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
 
       val returnedBatch = result.batchChange
 
@@ -576,7 +575,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
       savedBatch shouldBe Some(returnedBatch)
     }
 

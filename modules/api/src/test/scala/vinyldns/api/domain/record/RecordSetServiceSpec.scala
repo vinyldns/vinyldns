@@ -288,7 +288,7 @@ class RecordSetServiceSpec
         .when(mockUserRepo)
         .getUsers(Set.empty, None, None)
 
-      val result = leftResultOf(underTestWithEmptyDottedHostsConfig.addRecordSet(record, okAuth).value)
+      val result = underTestWithEmptyDottedHostsConfig.addRecordSet(record, okAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe an[InvalidRequest]
     }
     "fail if the record is relative with trailing dot" in {
@@ -585,9 +585,8 @@ class RecordSetServiceSpec
       .getUsers(dummyGroup.memberIds, None, None)
 
     // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
-    val result: RecordSetChange = rightResultOf(
-      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value
-    )
+    val result: RecordSetChange =
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
     result.recordSet.name shouldBe record.name
   }
@@ -629,9 +628,8 @@ class RecordSetServiceSpec
       .getUsers(xyzGroup.memberIds, None, None)
 
     // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
-    val result: RecordSetChange = rightResultOf(
-      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value
-    )
+    val result: RecordSetChange =
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
     result.recordSet.name shouldBe record.name
   }
@@ -673,7 +671,7 @@ class RecordSetServiceSpec
       .getUsers(xyzGroup.memberIds, None, None)
 
     // fails as dotted host record name has dot at the end and is not an apex record
-    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
     result shouldBe an[InvalidRequest]
   }
   "fail if the record is dotted and zone, user, record type is allowed but number of dots allowed in config is 0" in {
@@ -714,7 +712,7 @@ class RecordSetServiceSpec
       .getUsers(dummyGroup.memberIds, None, None)
 
     // fails as no.of.dots allowed for the zone in the config is 0
-    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
     result shouldBe an[InvalidRequest]
   }
   "fail if the record is dotted and user, record type is in allowed dotted hosts config except zone" in {
@@ -750,7 +748,7 @@ class RecordSetServiceSpec
       .getUsers(Set.empty, None, None)
 
     // fails as only two properties within dotted hosts config (users and record types) are satisfied while zone is not allowed
-    val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+    val result = underTest.addRecordSet(record, okAuth).value.unsafeRunSync().swap.toOption.get
     result shouldBe an[InvalidRequest]
   }
   "fail if the record is dotted and zone, record type is in allowed dotted hosts config except user" in {
@@ -791,7 +789,7 @@ class RecordSetServiceSpec
       .getUsers(dummyGroup.memberIds, None, None)
 
     // fails as only two properties within dotted hosts config (zones and record types) are satisfied while user is not allowed
-    val result = leftResultOf(underTest.addRecordSet(record, abcAuth).value)
+    val result = underTest.addRecordSet(record, abcAuth).value.unsafeRunSync().swap.toOption.get
     result shouldBe an[InvalidRequest]
   }
   "fail if the record is dotted and zone, user is in allowed dotted hosts config except record type" in {
@@ -834,7 +832,7 @@ class RecordSetServiceSpec
       .getUsers(dummyGroup.memberIds, None, None)
 
     // fails as only two properties within dotted hosts config (zone and user) are satisfied while record type is not allowed
-    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
     result shouldBe an[InvalidRequest]
   }
 
