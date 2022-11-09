@@ -19,8 +19,10 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s._
+import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
 
@@ -91,7 +93,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "memberIds").default[Set[String]](Set.empty),
         (js \ "adminUserIds").default[Set[String]](Set.empty)
@@ -99,28 +101,52 @@ trait MembershipJsonProtocol extends JsonValidation {
   }
 
   case object GroupInfoSerializer extends ValidationSerializer[GroupInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] = {
       (
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
-        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "members").default[Set[UserId]](Set.empty),
         (js \ "admins").default[Set[UserId]](Set.empty)
       ).mapN(GroupInfo.apply)
+    }
+
+    override def toJson(gi: GroupInfo): JValue =
+      ("id" -> gi.id) ~
+      ("name" -> gi.name) ~
+      ("email" -> gi.email) ~
+      ("description" -> gi.description) ~
+      ("created" -> Extraction.decompose(gi.created)) ~
+      ("status" -> Extraction.decompose(gi.status)) ~
+      ("members" -> Extraction.decompose(gi.members)) ~
+      ("admins" -> Extraction.decompose(gi.admins))
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] = {
       (
         (js \ "newGroup").required[GroupInfo]("Missing new group"),
         (js \ "changeType").required(GroupChangeType, "Missing change type"),
         (js \ "userId").required[String]("Missing userId"),
         (js \ "oldGroup").optional[GroupInfo],
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "created").default[String](DateTime.now.getMillis.toString)
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+        (js \ "userName").required[String]("Missing userName"),
+        (js \ "groupChangeMessage").required[String]("Missing groupChangeMessage"),
       ).mapN(GroupChangeInfo.apply)
+    }
+
+    override def toJson(gci: GroupChangeInfo): JValue =
+      ("newGroup" -> Extraction.decompose(gci.newGroup)) ~
+      ("changeType" -> Extraction.decompose(gci.changeType)) ~
+      ("userId" -> gci.userId) ~
+      ("oldGroup" -> Extraction.decompose(gci.oldGroup)) ~
+      ("id" -> gci.id) ~
+      ("created" -> gci.created.toString) ~
+      ("userName" -> gci.userName) ~
+      ("groupChangeMessage" -> gci.groupChangeMessage)
   }
 }

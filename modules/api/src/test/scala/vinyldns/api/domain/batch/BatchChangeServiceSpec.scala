@@ -20,7 +20,8 @@ import cats.data.Validated.Valid
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.matchers.should.Matchers
@@ -55,7 +56,7 @@ import vinyldns.api.domain.access.AccessValidations
 import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
-    extends AnyWordSpec
+  extends AnyWordSpec
     with Matchers
     with MockitoSugar
     with CatsHelpers
@@ -66,8 +67,8 @@ class BatchChangeServiceSpec
 
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  private val nonFatalError = ZoneDiscoveryError("test")
-  private val fatalError = RecordAlreadyExists("test")
+  private val nonFatalErrorZoneDiscoveryError = ZoneDiscoveryError("test")
+  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test", AData("1.1.1.1"), true)
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
@@ -244,7 +245,7 @@ class BatchChangeServiceSpec
       recordData: Option[List[RecordData]] = None
   ): RecordSet = {
     val records = recordData.getOrElse(List())
-    RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, DateTime.now(), records = records)
+    RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS), records = records)
   }
 
   private val existingApex: RecordSet =
@@ -598,7 +599,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -633,7 +634,7 @@ class BatchChangeServiceSpec
           "testuser",
           "testname",
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -655,7 +656,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -677,7 +678,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -699,7 +700,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -719,7 +720,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -739,7 +740,7 @@ class BatchChangeServiceSpec
       auth.userId,
       auth.signedInUser.userName,
       Some("comments in"),
-      DateTime.now,
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       List(singleChangeGood, singleChangeNR),
       Some(authGrp.id),
       BatchChangeApprovalStatus.PendingReview
@@ -747,7 +748,7 @@ class BatchChangeServiceSpec
     "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
-      val result =
+      val result = {
         rightResultOf(
           underTestManualEnabled
             .approveBatchChange(
@@ -757,6 +758,7 @@ class BatchChangeServiceSpec
             )
             .value
         )
+      }
 
       result.userId shouldBe batchChangeNeedsApproval.userId
       result.userName shouldBe batchChangeNeedsApproval.userName
@@ -835,7 +837,7 @@ class BatchChangeServiceSpec
           "someOtherUserId",
           "someUn",
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -859,7 +861,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -884,7 +886,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -902,7 +904,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -924,7 +926,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -948,7 +950,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -970,7 +972,7 @@ class BatchChangeServiceSpec
         "badID",
         "badUN",
         None,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -986,7 +988,7 @@ class BatchChangeServiceSpec
         "badID",
         "badUN",
         None,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -1004,7 +1006,7 @@ class BatchChangeServiceSpec
         "badID",
         "badUN",
         None,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -1023,7 +1025,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           ownerGroupId = Some(okGroup.id),
           BatchChangeApprovalStatus.AutoApproved
@@ -1040,7 +1042,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           ownerGroupId = Some("no-existo"),
           BatchChangeApprovalStatus.AutoApproved
@@ -1057,13 +1059,13 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           ownerGroupId = Some(okGroup.id),
           BatchChangeApprovalStatus.ManuallyApproved,
           Some(superUser.id),
           None,
-          Some(DateTime.now)
+          Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
         )
       batchChangeRepo.save(batchChange)
 
@@ -1634,7 +1636,7 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            scheduledTime = Some(DateTime.now.plusMinutes(1))
+            scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
@@ -1671,7 +1673,7 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             None,
-            scheduledTime = Some(DateTime.now.plusMinutes(1))
+            scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
@@ -1708,8 +1710,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1745,7 +1747,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(SingleChangeError(nonFatalError)),
+        List(SingleChangeError(nonFatalErrorZoneDiscoveryError)),
         result.changes(1).id
       )
       result.changes(2) shouldBe SingleDeleteRRSetChange(
@@ -1759,7 +1761,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(SingleChangeError(nonFatalError)),
+        List(SingleChangeError(nonFatalErrorZoneDiscoveryError)),
         result.changes(2).id
       )
     }
@@ -1771,12 +1773,12 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            Some(DateTime.now.plusMinutes(1))
+            Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           allowManualReview = true
@@ -1809,7 +1811,7 @@ class BatchChangeServiceSpec
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L).validNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1825,7 +1827,7 @@ class BatchChangeServiceSpec
       ibcr.changeRequestResponses(1) shouldBe Valid(
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L)
       )
-      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
+      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalErrorZoneDiscoveryError)
     }
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
@@ -1835,8 +1837,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1856,12 +1858,12 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA, onlyBaseAddAAAA, delete),
             None,
-            Some(DateTime.now.plusMinutes(1))
+            Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1879,7 +1881,7 @@ class BatchChangeServiceSpec
             None,
             List(noZoneAddA, nonApexAddA),
             None,
-            Some(DateTime.now.plusMinutes(1))
+            Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
@@ -1902,8 +1904,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           false
@@ -1922,12 +1924,12 @@ class BatchChangeServiceSpec
             None,
             List(apexAddA),
             Some("owner-group-id"),
-            Some(DateTime.now.plusMinutes(1))
+            Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.MINUTES))
           ),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel,
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           allowManualReview = false
@@ -1945,7 +1947,7 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel,
-            nonFatalError.invalidNel
+            nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
           true
@@ -1960,7 +1962,7 @@ class BatchChangeServiceSpec
       auth.userId,
       auth.signedInUser.userName,
       Some("comments in"),
-      DateTime.now,
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       List(singleChangeGood, singleChangeNR),
       Some(authGrp.id),
       BatchChangeApprovalStatus.PendingReview
@@ -2007,7 +2009,7 @@ class BatchChangeServiceSpec
               asAdds.head,
               7200L
             ).validNel,
-            fatalError.invalidNel
+            nonFatalErrorRecordAlreadyExists.invalidNel
           ),
           reviewInfo
         )
@@ -2022,12 +2024,12 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.ManuallyApproved,
           reviewerId = Some(superUser.id),
           reviewComment = Some("this looks good"),
-          reviewTimestamp = Some(DateTime.now)
+          reviewTimestamp = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
         )
       batchChangeRepo.save(batchChange)
 
@@ -2054,7 +2056,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2064,7 +2066,7 @@ class BatchChangeServiceSpec
         auth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2088,7 +2090,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2098,7 +2100,7 @@ class BatchChangeServiceSpec
         auth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2121,7 +2123,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -2131,7 +2133,7 @@ class BatchChangeServiceSpec
         auth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2162,7 +2164,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2172,7 +2174,7 @@ class BatchChangeServiceSpec
         auth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2196,7 +2198,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2206,7 +2208,7 @@ class BatchChangeServiceSpec
         notAuth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2225,7 +2227,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2235,7 +2237,7 @@ class BatchChangeServiceSpec
         notAuth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2254,7 +2256,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2264,7 +2266,7 @@ class BatchChangeServiceSpec
         notAuth.userId,
         auth.signedInUser.userName,
         None,
-        new DateTime(DateTime.now.getMillis + 1000),
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
@@ -2296,7 +2298,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           ownerGroupId = Some(okGroup.id),
           BatchChangeApprovalStatus.AutoApproved
@@ -2321,7 +2323,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           ownerGroupId = Some("no-existo"),
           BatchChangeApprovalStatus.AutoApproved
@@ -2376,7 +2378,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("checkConverter"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
@@ -2399,7 +2401,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("checkConverter"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -2426,7 +2428,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("checkConverter"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -2450,7 +2452,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("checkConverter"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.ManuallyApproved
         )
@@ -2475,13 +2477,13 @@ class BatchChangeServiceSpec
         auth.userId,
         auth.signedInUser.userName,
         Some("comments in"),
-        DateTime.now.minusDays(1),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS).minus(1, ChronoUnit.DAYS),
         List(singleChangeGood, singleChangeNR),
         Some(authGrp.id),
         BatchChangeApprovalStatus.ManuallyApproved,
         Some("reviewer_id"),
         Some("approved"),
-        Some(DateTime.now)
+        Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       )
 
       val result = underTest.buildResponseForApprover(updatedBatchChange).right.value
@@ -2494,7 +2496,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("check approval status"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(singleChangeGood, singleChangeNR),
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
@@ -2510,7 +2512,7 @@ class BatchChangeServiceSpec
           auth.userId,
           auth.signedInUser.userName,
           Some("check approval status"),
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(singleChangeGood, singleChangeNR),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )

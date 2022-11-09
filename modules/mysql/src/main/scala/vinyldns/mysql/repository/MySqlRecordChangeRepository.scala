@@ -80,7 +80,7 @@ class MySqlRecordChangeRepository
                 Seq(
                   change.id,
                   change.zoneId,
-                  change.created.getMillis,
+                  change.created.toEpochMilli,
                   fromChangeType(change.changeType),
                   toPB(change).toByteArray
                 )
@@ -118,7 +118,7 @@ class MySqlRecordChangeRepository
 
           val nextId =
             if (changes.size < maxItems) None
-            else changes.lastOption.map(_.created.getMillis.toString)
+            else changes.lastOption.map(_.created.toEpochMilli.toString)
 
           ListRecordSetChangesResults(
             changes,
