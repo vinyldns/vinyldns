@@ -1770,7 +1770,7 @@ def test_create_ipv4_ptr_recordset_with_verify_in_classless(shared_zone_test_con
     try:
         new_rs = {
             "zoneId": reverse4_zone["id"],
-            "name": "196",
+            "name": "193",
             "type": "PTR",
             "ttl": 100,
             "records": [
