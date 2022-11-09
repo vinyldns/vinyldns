@@ -1907,7 +1907,7 @@ class RecordSetServiceSpec
 
     "return the record set changes sorted by created date desc" in {
       val rsChange1 = pendingCreateAAAA
-      val rsChange2 = pendingCreateCNAME.copy(created = rsChange1.created.plus(10000))
+      val rsChange2 = pendingCreateCNAME.copy(created = rsChange1.created.plusMillis(10000))
 
       doReturn(IO.pure(ListRecordSetChangesResults(List(rsChange2, rsChange1))))
         .when(mockRecordChangeRepo)

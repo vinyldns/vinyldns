@@ -445,15 +445,21 @@
                 </modal-invalid>
             </modal-element>
 
-            <modal-element label="Record Owner Group" ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
-                <select class="form-control"
+            <modal-element label="Record Owner Group"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                <select name="ownerGroupId"
+                        class="form-control"
                         ng-model="currentRecord.ownerGroupId"
-                        ng-disabled="recordModal.details.readOnly">
-                    <option value=""></option>
-                    <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
-                            ng-selected="currentRecord.ownerGroupId == group.id">
-                        {{group.name}}</option>
+                        ng-disabled="recordModal.details.readOnly"
+                        ng-class="recordModal.details.class"
+                        ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                        required>
+                    <option value="" selected="selected">Please choose a record owner group</option>
                 </select>
+                <modal-invalid>
+                    Record Owner Group is required for records in shared zones
+                </modal-invalid>
             </modal-element>
 
         </modal-body>

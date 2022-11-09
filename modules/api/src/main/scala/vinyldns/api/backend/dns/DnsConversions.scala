@@ -19,7 +19,8 @@ package vinyldns.api.backend.dns
 import java.net.InetAddress
 import cats.syntax.either._
 import org.apache.commons.codec.binary.Hex
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.xbill.DNS
 import scodec.bits.ByteVector
 import vinyldns.api.backend.dns.DnsProtocol._
@@ -203,7 +204,7 @@ trait DnsConversions {
       typ = fromDnsRecordType(r.getType),
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = f(r)
     )
 
@@ -215,7 +216,7 @@ trait DnsConversions {
       typ = fromDnsRecordType(r.getType),
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = Nil
     )
 

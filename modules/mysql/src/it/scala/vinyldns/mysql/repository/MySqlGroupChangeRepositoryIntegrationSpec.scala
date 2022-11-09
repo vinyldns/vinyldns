@@ -17,14 +17,14 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
-import org.joda.time.DateTime
 
 class MySqlGroupChangeRepositoryIntegrationSpec
   extends AnyWordSpec
@@ -54,7 +54,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       group,
       GroupChangeType.Create,
       s"user-$i",
-      created = DateTime.now().plusSeconds(i)
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(i)
     )
   }
 
@@ -79,7 +79,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
 
       val groupChangeUpdate =
-        groupChange.copy(created = DateTime.now().plusSeconds(10000), userId = "updated")
+        groupChange.copy(created = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(10000), userId = "updated")
       saveGroupChangeData(repo, groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
       repo.getGroupChange(groupChangeUpdate.id).unsafeRunSync() shouldBe Some(groupChangeUpdate)
     }
@@ -108,7 +108,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val expectedChanges = changes
-        .sortBy(_.created.getMillis)
+        .sortBy(_.created.toEpochMilli)
         .reverse
 
       val listResponse = repo.getGroupChanges(groupId, None, 100).unsafeRunSync()
@@ -122,7 +122,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val changesSorted = changes
-        .sortBy(_.created.getMillis)
+        .sortBy(_.created.toEpochMilli)
         .reverse
 
       val expectedChanges = Seq(changesSorted(0))
@@ -131,7 +131,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
         repo.getGroupChanges(groupId, startFrom = None, maxItems = 1).unsafeRunSync()
       listResponse.changes shouldBe expectedChanges
       listResponse.lastEvaluatedTimeStamp shouldBe Some(
-        expectedChanges.head.created.getMillis.toString
+        expectedChanges.head.created.toEpochMilli.toString
       )
     }
 
@@ -141,15 +141,15 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
 
       val changesSorted = changes
-        .sortBy(_.created.getMillis)
+        .sortBy(_.created.toEpochMilli)
         .reverse
 
       val expectedPageOne = Seq(changesSorted(0))
-      val expectedPageOneNext = Some(changesSorted(0).created.getMillis.toString)
+      val expectedPageOneNext = Some(changesSorted(0).created.toEpochMilli.toString)
       val expectedPageTwo = Seq(changesSorted(1))
-      val expectedPageTwoNext = Some(changesSorted(1).created.getMillis.toString)
+      val expectedPageTwoNext = Some(changesSorted(1).created.toEpochMilli.toString)
       val expectedPageThree = Seq(changesSorted(2))
-      val expectedPageThreeNext = Some(changesSorted(2).created.getMillis.toString)
+      val expectedPageThreeNext = Some(changesSorted(2).created.toEpochMilli.toString)
 
       // get first page
       val pageOne =

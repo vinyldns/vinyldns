@@ -16,9 +16,10 @@
 
 package vinyldns.core.domain.zone
 
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import java.time.temporal.ChronoUnit
 
 class ZoneChangeSpec extends AnyWordSpec with Matchers {
 
@@ -27,7 +28,7 @@ class ZoneChangeSpec extends AnyWordSpec with Matchers {
     "ok",
     ZoneChangeType.Create,
     ZoneChangeStatus.Synced,
-    created = DateTime.now.minus(1000)
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
   )
 
   "ZoneChange" should {

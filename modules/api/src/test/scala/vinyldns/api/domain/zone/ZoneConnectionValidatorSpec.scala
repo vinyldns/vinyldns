@@ -17,7 +17,8 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -94,7 +95,7 @@ class ZoneConnectionValidatorSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
   )
@@ -105,7 +106,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")))
   )
@@ -116,7 +117,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")), NSData(Fqdn("not.approved.")))
   )
@@ -127,7 +128,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("sub.some.test.ns.")))
   )

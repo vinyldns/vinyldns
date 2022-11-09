@@ -2291,9 +2291,9 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # delegated and non-delegated PTR duplicate name checks
         assert_successful_change_in_error_response(response[4], input_name=f"{ip4_prefix}.196", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[5], input_name=f"196.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
-        assert_failed_change_in_error_response(response[6], input_name=f"196.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f'Record Name "196.192/30.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_failed_change_in_error_response(response[5], input_name=f"196.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
+                                               error_messages=[f'Record Name "196.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_successful_change_in_error_response(response[6], input_name=f"196.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
         assert_successful_change_in_error_response(response[7], input_name=f"{ip4_prefix}.55", record_type="PTR", record_data="test.com.")
         assert_failed_change_in_error_response(response[8], input_name=f"55.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
                                                error_messages=[f'Record Name "55.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])

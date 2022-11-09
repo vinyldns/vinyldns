@@ -17,10 +17,10 @@
 package vinyldns.core.domain.zone
 
 import java.util.UUID
-
 import cats.effect.IO
 import com.typesafe.config.Config
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -38,8 +38,8 @@ final case class Zone(
     name: String,
     email: String,
     status: ZoneStatus = ZoneStatus.Active,
-    created: DateTime = DateTime.now(),
-    updated: Option[DateTime] = None,
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    updated: Option[Instant] = None,
     id: String = UUID.randomUUID().toString,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
@@ -47,7 +47,7 @@ final case class Zone(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
-    latestSync: Option[DateTime] = None,
+    latestSync: Option[Instant] = None,
     isTest: Boolean = false,
     backendId: Option[String] = None
 ) {

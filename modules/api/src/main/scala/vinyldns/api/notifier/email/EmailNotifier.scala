@@ -39,9 +39,10 @@ import vinyldns.core.domain.record.MXData
 import vinyldns.core.domain.record.TXTData
 import vinyldns.core.domain.record.PTRData
 import vinyldns.core.domain.record.RecordData
-import org.joda.time.format.DateTimeFormat
+import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import java.time.ZoneId
 
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
     extends Notifier {
@@ -90,7 +91,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     sb.append(s"""<h1>Batch Change Results</h1>
       | <b>Submitter:</b> ${bc.userName} <br/>
       | ${bc.comments.map(comments => s"<b>Description:</b> $comments</br>").getOrElse("")}
-      | <b>Created:</b> ${bc.createdTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>
+      | <b>Created:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(bc.createdTimestamp)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
       | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
 
@@ -102,7 +103,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       bc.reviewTimestamp.foreach(
         reviewTimestamp =>
           sb.append(
-            s"<b>Time reviewed:</b> ${reviewTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"
+            s"<b>Time reviewed:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(reviewTimestamp)} <br/>"
           )
       )
     }
@@ -110,7 +111,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     bc.cancelledTimestamp.foreach(
       cancelledTimestamp =>
         sb.append(
-          s"<b>Time cancelled:</b> ${cancelledTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"
+          s"<b>Time cancelled:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(cancelledTimestamp)} <br/>"
         )
     )
 
