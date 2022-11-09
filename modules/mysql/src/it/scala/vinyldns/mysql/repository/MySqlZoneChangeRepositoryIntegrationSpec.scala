@@ -87,15 +87,15 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       zone.account,
       ZoneChangeType.Update,
       status= ZoneChangeStatus.Failed,
-      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
     val successChanges
     : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
       zone,
       zone.account,
       ZoneChangeType.Update,
-      status= ZoneChangeStatus.Complete,
-      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+      status= ZoneChangeStatus.Synced,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
   }
 
