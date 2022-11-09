@@ -24,6 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
+import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig}
 import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
@@ -83,6 +84,7 @@ class RecordSetServiceSpec
     mockBackendResolver,
     false,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
@@ -101,9 +103,56 @@ class RecordSetServiceSpec
     mockBackendResolver,
     true,
     VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true
   )
+
+  val underTestWithEmptyDottedHostsConfig = new RecordSetService(
+    mockZoneRepo,
+    mockGroupRepo,
+    mockRecordRepo,
+    mockRecordDataRepo,
+    mockRecordChangeRepo,
+    mockUserRepo,
+    mockMessageQueue,
+    new AccessValidations(
+      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+    ),
+    mockBackendResolver,
+    true,
+    VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.emptyDottedHostsConfig,
+    VinylDNSTestHelpers.approvedNameServers,
+    true
+  )
+
+  def getDottedHostsConfigGroupsAllowed(zone: Zone, config: DottedHostsConfig): List[String] = {
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.substring(0, zoneName.length - 1).matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    val groups = if (isContainWildcardZone || isContainNormalZone) {
+      config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z.]*")
+            if (zoneName.substring(0, zoneName.length - 1).matches(wildcardZone)) x.groupList else List.empty
+          } else {
+            if (x.zone == zoneName) x.groupList else List.empty
+          }
+      }
+    }
+    else {
+      List.empty
+    }
+    groups
+  }
+
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+  val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(okZone, VinylDNSTestHelpers.dottedHostsConfig)
 
   "addRecordSet" should {
     "return the recordSet change as the result" in {
@@ -115,6 +164,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange =
         rightResultOf(
@@ -132,7 +202,6 @@ class RecordSetServiceSpec
       val result = leftResultOf(underTest.getRecordSetByZone(aaaa.id, mockZone.id, okAuth).value)
       result shouldBe a[ZoneNotFoundError]
     }
-
     "fail when the account is not authorized" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
@@ -155,7 +224,7 @@ class RecordSetServiceSpec
       val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
       result shouldBe a[RecordSetAlreadyExists]
     }
-    "fail if the record is dotted" in {
+    "fail if the record is dotted and does not satisfy properties in dotted hosts config" in {
       val record =
         aaaa.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
 
@@ -165,8 +234,64 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+      result shouldBe an[InvalidRequest]
+    }
+    "fail if the record is dotted and dotted hosts config is empty" in {
+      val record =
+        aaaa.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
+
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSets(okZone.id, record.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByNames(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
+
+      val result = leftResultOf(underTestWithEmptyDottedHostsConfig.addRecordSet(record, okAuth).value)
       result shouldBe an[InvalidRequest]
     }
     "fail if the record is relative with trailing dot" in {
@@ -179,6 +304,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result =
         leftResultOf(underTestWithDnsBackendValidations.addRecordSet(record, okAuth).value)
@@ -204,6 +350,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -222,6 +389,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -259,6 +447,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(okGroup)))
         .when(mockGroupRepo)
         .getGroup(okGroup.id)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -312,6 +521,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, record.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(record.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange =
         rightResultOf(
@@ -325,6 +555,296 @@ class RecordSetServiceSpec
       result.changeType shouldBe RecordSetChangeType.Create
       result.status shouldBe RecordSetChangeStatus.Pending
     }
+  }
+  "succeed if the record is dotted and zone, user, record type is in allowed dotted hosts config" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(dottedZone))).when(mockZoneRepo).getZone(dottedZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(dottedZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(dottedZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + dottedZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + dottedZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + dottedZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+
+    // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
+    val result: RecordSetChange = rightResultOf(
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value
+    )
+
+    result.recordSet.name shouldBe record.name
+  }
+  "succeed if the record is dotted and zone, user in group, record type is in allowed dotted hosts config" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = xyzZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(xyzZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(xyzZone))).when(mockZoneRepo).getZone(xyzZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(xyzZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(xyzZone.id, record.name)
+    doReturn(IO.pure(Set(xyzZone, abcZone, xyzZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + xyzZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + xyzZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + xyzZone.name).toSet)
+    doReturn(IO.pure(Set(xyzGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(xyzUser), None)))
+      .when(mockUserRepo)
+      .getUsers(xyzGroup.memberIds, None, None)
+
+    // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
+    val result: RecordSetChange = rightResultOf(
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value
+    )
+
+    result.recordSet.name shouldBe record.name
+  }
+  "fail if the record is dotted and zone, user in group, record type is allowed but record name has dot in the end and is not an apex record" in {
+    val record =
+      cname.copy(name = "new.name.", zoneId = xyzZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(xyzZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(xyzZone))).when(mockZoneRepo).getZone(xyzZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(xyzZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(xyzZone.id, record.name)
+    doReturn(IO.pure(Set(xyzZone, abcZone, xyzZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + xyzZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + xyzZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + xyzZone.name).toSet)
+    doReturn(IO.pure(Set(xyzGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(xyzUser), None)))
+      .when(mockUserRepo)
+      .getUsers(xyzGroup.memberIds, None, None)
+
+    // fails as dotted host record name has dot at the end and is not an apex record
+    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
+  "fail if the record is dotted and zone, user, record type is allowed but number of dots allowed in config is 0" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = dotZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(dotZone))).when(mockZoneRepo).getZone(dotZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(dotZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(dotZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + dotZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + dotZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + dotZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+
+    // fails as no.of.dots allowed for the zone in the config is 0
+    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
+  "fail if the record is dotted and user, record type is in allowed dotted hosts config except zone" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
+
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(okZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(okZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + okZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + okZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + okZone.name).toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(), None)))
+      .when(mockUserRepo)
+      .getUsers(Set.empty, None, None)
+
+    // fails as only two properties within dotted hosts config (users and record types) are satisfied while zone is not allowed
+    val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
+  "fail if the record is dotted and zone, record type is in allowed dotted hosts config except user" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = abcZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(abcZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(abcZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(abcZone.id, record.name)
+    doReturn(IO.pure(Set(abcZone, dottedZone, xyzZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + abcZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + abcZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + abcZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+
+    // fails as only two properties within dotted hosts config (zones and record types) are satisfied while user is not allowed
+    val result = leftResultOf(underTest.addRecordSet(record, abcAuth).value)
+    result shouldBe an[InvalidRequest]
+  }
+  "fail if the record is dotted and zone, user is in allowed dotted hosts config except record type" in {
+    val record =
+      aaaa.copy(name = "new.name", zoneId = dottedZone.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map {
+      case y:ZoneAuthConfigs => y.zone
+    }
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(dottedZone))).when(mockZoneRepo).getZone(dottedZone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(dottedZone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(dottedZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + dottedZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + dottedZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + dottedZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+
+    // fails as only two properties within dotted hosts config (zone and user) are satisfied while record type is not allowed
+    val result = leftResultOf(underTest.addRecordSet(record, xyzAuth).value)
+    result shouldBe an[InvalidRequest]
   }
 
   "updateRecordSet" should {
@@ -341,6 +861,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -377,6 +918,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -416,6 +978,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -438,6 +1021,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -460,6 +1064,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(newRecord.name.split('.').map(x => x + "." + okZone.name).toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value
@@ -595,6 +1220,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(oneUserDummyGroup)))
         .when(mockGroupRepo)
         .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result = rightResultOf(
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
@@ -624,6 +1270,27 @@ class RecordSetServiceSpec
       doReturn(IO.pure(List(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
 
       val result = rightResultOf(
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
@@ -1270,7 +1937,7 @@ class RecordSetServiceSpec
 
     "return the record set changes sorted by created date desc" in {
       val rsChange1 = pendingCreateAAAA
-      val rsChange2 = pendingCreateCNAME.copy(created = rsChange1.created.plus(10000))
+      val rsChange2 = pendingCreateCNAME.copy(created = rsChange1.created.plusMillis(10000))
 
       doReturn(IO.pure(ListRecordSetChangesResults(List(rsChange2, rsChange1))))
         .when(mockRecordChangeRepo)

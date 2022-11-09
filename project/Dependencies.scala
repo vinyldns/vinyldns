@@ -32,7 +32,7 @@ object Dependencies {
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
-    "org.json4s"                %% "json4s-ext"                     % "3.5.3",
+    "org.json4s"                %% "json4s-ext"                     % "3.6.1",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
@@ -58,7 +58,6 @@ object Dependencies {
   lazy val coreDependencies = Seq(
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.typesafe"              %  "config"                         % configV,
-    "joda-time"                 %  "joda-time"                      % "2.8.1",
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
     "org.apache.commons"        %  "commons-text"                   % "1.4",

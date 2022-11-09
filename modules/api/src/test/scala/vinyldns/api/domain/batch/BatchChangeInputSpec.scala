@@ -17,7 +17,8 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
@@ -140,7 +141,7 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
         "userId",
         "userName",
         Some("comments"),
-        DateTime.now(),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(singleAddChange, singleDelChange),
         Some("owner"),
         BatchChangeApprovalStatus.PendingReview

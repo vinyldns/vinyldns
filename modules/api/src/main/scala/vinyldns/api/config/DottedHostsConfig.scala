@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.batch
+package vinyldns.api.config
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import pureconfig.ConfigReader
+import pureconfig.generic.auto._
 
-final case class BatchChangeReviewInfo(
-    reviewerId: String,
-    reviewComment: Option[String],
-    reviewTimestamp: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
-)
+final case class ZoneAuthConfigs(zone: String, userList: List[String], groupList: List[String], recordTypes: List[String], dotsLimit: Int)
+final case class DottedHostsConfig(zoneAuthConfigs: List[ZoneAuthConfigs])
+
+object DottedHostsConfig {
+  implicit val configReader: ConfigReader[DottedHostsConfig] =
+    ConfigReader.forProduct1[DottedHostsConfig, List[ZoneAuthConfigs]](
+      "allowed-settings",
+    )(zoneAuthConfigs =>
+      DottedHostsConfig(zoneAuthConfigs))
+}

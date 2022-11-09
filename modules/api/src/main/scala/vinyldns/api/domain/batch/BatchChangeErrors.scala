@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.batch
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 import vinyldns.core.domain.DomainValidationError
@@ -69,7 +69,7 @@ case object ScheduledTimeMustBeInFuture extends BatchChangeErrorResponse {
   val message: String = "Scheduled time must be in the future."
 }
 
-final case class ScheduledChangeNotDue(scheduledTime: DateTime) extends BatchChangeErrorResponse {
+final case class ScheduledChangeNotDue(scheduledTime: Instant) extends BatchChangeErrorResponse {
   val message: String =
     s"Cannot process scheduled change as it is not past the scheduled date of $scheduledTime"
 }

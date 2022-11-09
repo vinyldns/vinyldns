@@ -19,14 +19,16 @@ describe('Controller: GroupsController', function () {
         module('ngMock'),
         module('service.groups'),
         module('service.profile'),
-        module('service.utility')
+        module('service.utility'),
+        module('service.paging'),
         module('controller.groups')
     });
-    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, utilityService) {
+    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, utilityService, pagingService) {
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.utilityService = utilityService;
         this.q = $q;
+        this.pagingService = pagingService;
 
         profileService.getAuthenticatedUserData = function() {
             return $q.when('data')
@@ -38,6 +40,15 @@ describe('Controller: GroupsController', function () {
                 }
             })
         };
+
+        groupsService.getGroupsAbridged = function () {
+            return $q.when({
+                data: {
+                    groups: ["all my groups"]
+                }
+            });
+        };
+
         this.controller = $controller('GroupsController', {'$scope': this.scope});
 
         this.mockSuccessAlert = 'success';
@@ -64,7 +75,7 @@ describe('Controller: GroupsController', function () {
         this.scope.refresh();
         this.scope.$digest();
 
-        expect(getGroups.calls.count()).toBe(1);
+        expect(getGroups.calls.count()).toBe(2);
         expect(this.scope.groups.items).toBe("all my groups");
     });
 
@@ -111,4 +122,110 @@ describe('Controller: GroupsController', function () {
         expect(this.utilityFailure.calls.count()).toBe(1);
         expect(this.scope.alerts).toEqual([this.mockFailureAlert]);
    });
+
+    it('nextPageMyGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all my groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = false;
+
+        this.scope.nextPageMyGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+          [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
+
+    it('prevPageMyGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all my groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = false;
+
+        this.scope.prevPageMyGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+
+        this.scope.nextPageMyGroups();
+        this.scope.prevPageMyGroups();
+
+        expect(getGroupSets.calls.count()).toBe(3);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
+
+    it('nextPageAllGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = true;
+
+        this.scope.nextPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+          [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
+
+    it('prevPageAllGroups should call getGroupsAbridged with the correct parameters', function () {
+
+        var response = {
+            data: {
+                groups: "all groups"
+            }
+        };
+        var getGroupSets = spyOn(this.groupsService, 'getGroupsAbridged')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = true;
+
+        this.scope.prevPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(1);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+
+        this.scope.nextPageAllGroups();
+        this.scope.prevPageAllGroups();
+
+        expect(getGroupSets.calls.count()).toBe(3);
+        expect(getGroupSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
 });

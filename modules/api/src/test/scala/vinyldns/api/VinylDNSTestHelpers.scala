@@ -16,9 +16,12 @@
 
 package vinyldns.api
 
+import cats.effect.{ContextShift, IO}
 import com.comcast.ip4s.IpAddress
-import org.joda.time.DateTime
+import fs2.concurrent.SignallingRef
+import java.time.{Instant, LocalDateTime, Month, ZoneOffset}
 import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, BatchChangeConfig, HighValueDomainConfig, LimitsConfig, ManualReviewConfig, ScheduledChangesConfig, ServerConfig}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -26,6 +29,12 @@ import vinyldns.core.domain.zone._
 import scala.util.matching.Regex
 
 trait VinylDNSTestHelpers {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  val processingDisabled: SignallingRef[IO, Boolean] =
+    fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   val highValueDomainRegexList: List[Regex] = List(new Regex("high-value-domain.*"))
   val highValueDomainIpList: List[IpAddress] =
@@ -39,6 +48,10 @@ trait VinylDNSTestHelpers {
     HighValueDomainConfig(highValueDomainRegexList, highValueDomainIpList)
 
   val approvedNameServers: List[Regex] = List(new Regex("some.test.ns."))
+
+  val dottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List(ZoneAuthConfigs("dotted.xyz.",List("xyz"),List("dummy"),List("CNAME"), 3), ZoneAuthConfigs("abc.zone.recordsets.",List("locked"),List("dummy"),List("CNAME"), 3), ZoneAuthConfigs("xyz.",List("super"),List("xyz"),List("CNAME"), 3), ZoneAuthConfigs("dot.xyz.",List("super"),List("xyz"),List("CNAME"), 0)))
+
+  val emptyDottedHostsConfig: DottedHostsConfig = DottedHostsConfig(List.empty)
 
   val defaultTtl: Long = 7200
 
@@ -71,10 +84,13 @@ trait VinylDNSTestHelpers {
   val testLimitConfig: LimitsConfig =
     LimitsConfig(100,100,1000,1500,100,100,100)
 
+  val testServerConfig: ServerConfig =
+    ServerConfig(100, 100, 100, 100, true, approvedNameServers, "blue", "unset", "vinyldns.", false, true, true)
+
   val batchChangeConfig: BatchChangeConfig =
     BatchChangeConfig(batchChangeLimit, sharedApprovedTypes, v6DiscoveryNibbleBoundaries)
 
-  val fakeTime: DateTime = new DateTime(2010, 1, 1, 0, 0)
+  val fakeTime: Instant = LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC)
 
   def anonymize(recordSet: RecordSet): RecordSet =
     recordSet.copy(id = "a", created = fakeTime, updated = None)
@@ -91,7 +107,7 @@ trait VinylDNSTestHelpers {
   def anonymize(changeSet: ChangeSet): ChangeSet =
     changeSet.copy(
       id = "a",
-      createdTimestamp = fakeTime.getMillis,
+      createdTimestamp = fakeTime.toEpochMilli,
       processingTimestamp = 0,
       changes = changeSet.changes
         .map(anonymize)
