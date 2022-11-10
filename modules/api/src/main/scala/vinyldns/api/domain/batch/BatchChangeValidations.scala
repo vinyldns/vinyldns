@@ -17,6 +17,8 @@
 package vinyldns.api.domain.batch
 
 import java.net.InetAddress
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import cats.data._
 import cats.implicits._
 import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
@@ -45,10 +47,10 @@ trait BatchChangeValidationsAlgebra {
   ): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -176,7 +178,7 @@ class BatchChangeValidations(
 
   def validateScheduledApproval(batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.scheduledTime match {
-      case Some(dt) if dt.isAfterNow => Left(ScheduledChangeNotDue(dt))
+      case Some(dt) if dt.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Left(ScheduledChangeNotDue(dt))
       case _ => Right(())
     }
 
@@ -273,17 +275,17 @@ class BatchChangeValidations(
   /* context validations */
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation] =
-    // Updates are a combination of an add and delete for a record with the same name and type in a zone.
+  // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
-          if groupedChanges
-            .getLogicalChangeType(add.recordKey)
-            .contains(LogicalChangeType.Add) =>
+        if groupedChanges
+          .getLogicalChangeType(add.recordKey)
+          .contains(LogicalChangeType.Add) =>
         validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
@@ -409,11 +411,11 @@ class BatchChangeValidations(
   }
 
   def validateAddWithContext(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      ownerGroupId: Option[String]
+    change: AddChangeForValidation,
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
@@ -677,7 +679,7 @@ class BatchChangeValidations(
   ): Either[BatchChangeErrorResponse, Unit] =
     (scheduledChangesEnabled, input.scheduledTime) match {
       case (_, None) => Right(())
-      case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
+      case (true, Some(scheduledTime)) if scheduledTime.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
     }

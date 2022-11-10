@@ -18,7 +18,8 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 object TestZoneData {
 
@@ -34,6 +35,8 @@ object TestZoneData {
     adminGroupId = okGroup.id,
     connection = testConnection
   )
+  val dottedZone: Zone = Zone("dotted.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
+  val dotZone: Zone = Zone("dot.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
   val abcZone: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id)
   val xyzZone: Zone = Zone("xyz.", "abc@xyz.com", adminGroupId = xyzGroup.id)
   val zoneIp4: Zone = Zone("0.162.198.in-addr.arpa.", "test@test.com", adminGroupId = abcGroup.id)
@@ -79,11 +82,11 @@ object TestZoneData {
     okZone,
     "ok",
     ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000)
+    ZoneChangeStatus.Synced,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
   )
 
-  val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Complete)
+  val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Synced)
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =
     ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)

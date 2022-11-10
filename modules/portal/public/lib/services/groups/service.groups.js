@@ -56,7 +56,7 @@ angular.module('service.groups', [])
 
         this.getGroupMemberList = function (uuid) {
             var url = '/api/groups/' + uuid + '/members';
-            url = this.urlBuilder(url, { maxItems: 100 });
+            url = this.urlBuilder(url, { maxItems: 1000 });
             return $http.get(url);
         };
 
@@ -75,7 +75,7 @@ angular.module('service.groups', [])
                 query = null;
             }
             var params = {
-                "maxItems": 100,
+                "maxItems": 3000,
                 "groupNameFilter": query,
                 "ignoreAccess": ignoreAccess
             };

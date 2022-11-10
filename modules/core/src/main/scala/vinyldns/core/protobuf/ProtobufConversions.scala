@@ -17,7 +17,8 @@
 package vinyldns.core.protobuf
 
 import com.google.protobuf.ByteString
-import org.joda.time.DateTime
+
+import java.time.Instant
 import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
@@ -80,7 +81,7 @@ trait ProtobufConversions {
       userId = chg.getUserId,
       changeType = RecordSetChangeType.withName(chg.getTyp),
       status = status,
-      created = new DateTime(chg.getCreated),
+      created = Instant.ofEpochMilli(chg.getCreated),
       systemMessage = if (chg.hasSystemMessage) Option(chg.getSystemMessage) else None,
       updates = if (chg.hasUpdates) Option(fromPB(chg.getUpdates)) else None,
       id = chg.getId,
@@ -95,8 +96,8 @@ trait ProtobufConversions {
       typ = RecordType.withName(rs.getTyp),
       ttl = rs.getTtl,
       status = RecordSetStatus.withName(rs.getStatus),
-      created = new DateTime(rs.getCreated),
-      updated = if (rs.hasUpdated) Some(new DateTime(rs.getUpdated)) else None,
+      created = Instant.ofEpochMilli(rs.getCreated),
+      updated = if (rs.hasUpdated) Some(Instant.ofEpochMilli(rs.getUpdated)) else None,
       id = rs.getId,
       records =
         rs.getRecordList.asScala.map(rd => fromPB(rd, RecordType.withName(rs.getTyp))).toList,
@@ -114,8 +115,8 @@ trait ProtobufConversions {
       name = zn.getName,
       email = zn.getEmail,
       status = status,
-      created = new DateTime(zn.getCreated),
-      updated = if (zn.hasUpdated) Some(new DateTime(zn.getUpdated)) else None,
+      created = Instant.ofEpochMilli(zn.getCreated),
+      updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None,
       id = zn.getId,
       connection = if (zn.hasConnection) Some(fromPB(zn.getConnection)) else None,
       transferConnection =
@@ -125,7 +126,7 @@ trait ProtobufConversions {
       allowDottedHosts = zn.getAllowDottedHosts,
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
-      latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None,
+      latestSync = if (zn.hasLatestSync) Some(Instant.ofEpochMilli(zn.getLatestSync)) else None,
       isTest = zn.getIsTest,
       backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None
     )
@@ -146,7 +147,7 @@ trait ProtobufConversions {
       userId = chg.getUserId,
       changeType = ZoneChangeType.withName(chg.getTyp),
       status = ZoneChangeStatus.withName(chg.getStatus),
-      created = new DateTime(chg.getCreated),
+      created = Instant.ofEpochMilli(chg.getCreated),
       systemMessage = if (chg.hasSystemMessage) Option(chg.getSystemMessage) else None,
       id = chg.getId
     )
@@ -154,7 +155,7 @@ trait ProtobufConversions {
   def toPB(chg: RecordSetChange): VinylDNSProto.RecordSetChange = {
     val builder = VinylDNSProto.RecordSetChange
       .newBuilder()
-      .setCreated(chg.created.getMillis)
+      .setCreated(chg.created.toEpochMilli)
       .setId(chg.id)
       .setRecordSet(toPB(chg.recordSet))
       .setStatus(chg.status.toString)
@@ -367,7 +368,7 @@ trait ProtobufConversions {
   def toPB(rs: RecordSet): VinylDNSProto.RecordSet = {
     val builder = VinylDNSProto.RecordSet
       .newBuilder()
-      .setCreated(rs.created.getMillis)
+      .setCreated(rs.created.toEpochMilli)
       .setId(rs.id)
       .setName(rs.name)
       .setStatus(rs.status.toString)
@@ -376,7 +377,7 @@ trait ProtobufConversions {
       .setZoneId(rs.zoneId)
       .setAccount(rs.account)
 
-    rs.updated.foreach(dt => builder.setUpdated(dt.getMillis))
+    rs.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
     rs.ownerGroupId.foreach(id => builder.setOwnerGroupId(id))
 
     // Map the records, first map to bytes, and then map the bytes to a record data instance
@@ -391,7 +392,7 @@ trait ProtobufConversions {
       .setId(zone.id)
       .setName(zone.name)
       .setEmail(zone.email)
-      .setCreated(zone.created.getMillis)
+      .setCreated(zone.created.toEpochMilli)
       .setStatus(zone.status.toString)
       .setAccount(zone.account)
       .setShared(zone.shared)
@@ -400,10 +401,10 @@ trait ProtobufConversions {
       .setAdminGroupId(zone.adminGroupId)
       .setIsTest(zone.isTest)
 
-    zone.updated.foreach(dt => builder.setUpdated(dt.getMillis))
+    zone.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
     zone.connection.foreach(cn => builder.setConnection(toPB(cn)))
     zone.transferConnection.foreach(cn => builder.setTransferConnection(toPB(cn)))
-    zone.latestSync.foreach(dt => builder.setLatestSync(dt.getMillis))
+    zone.latestSync.foreach(dt => builder.setLatestSync(dt.toEpochMilli))
     zone.backendId.foreach(bid => builder.setBackendId(bid))
     builder.build()
   }
@@ -431,7 +432,7 @@ trait ProtobufConversions {
     val builder = VinylDNSProto.ZoneChange
       .newBuilder()
       .setId(zoneChange.id)
-      .setCreated(zoneChange.created.getMillis)
+      .setCreated(zoneChange.created.toEpochMilli)
       .setStatus(zoneChange.status.toString)
       .setTyp(zoneChange.changeType.toString)
       .setUserId(zoneChange.userId)
@@ -450,7 +451,7 @@ trait ProtobufConversions {
       if (data.hasFirstName) Some(data.getFirstName) else None,
       if (data.hasLastName) Some(data.getLastName) else None,
       if (data.hasEmail) Some(data.getEmail) else None,
-      new DateTime(data.getCreated),
+      Instant.ofEpochMilli(data.getCreated),
       data.getId,
       data.getIsSuper,
       LockStatus.withName(data.getLockStatus),
@@ -464,7 +465,7 @@ trait ProtobufConversions {
       .setUserName(user.userName)
       .setAccessKey(user.accessKey)
       .setSecretKey(user.secretKey)
-      .setCreated(user.created.getMillis)
+      .setCreated(user.created.toEpochMilli)
       .setId(user.id)
       .setIsSuper(user.isSuper)
       .setLockStatus(user.lockStatus.toString)
@@ -483,14 +484,14 @@ trait ProtobufConversions {
       CreateUser(
         fromPB(data.getNewUser),
         data.getMadeByUserId,
-        new DateTime(data.getCreated),
+        Instant.ofEpochMilli(data.getCreated),
         data.getId
       )
     } else {
       UpdateUser(
         fromPB(data.getNewUser),
         data.getMadeByUserId,
-        new DateTime(data.getCreated),
+        Instant.ofEpochMilli(data.getCreated),
         fromPB(data.getOldUser),
         data.getId
       )
@@ -500,7 +501,7 @@ trait ProtobufConversions {
     val builder = VinylDNSProto.UserChange
       .newBuilder()
       .setNewUser(toPB(userChange.newUser))
-      .setCreated(userChange.created.getMillis)
+      .setCreated(userChange.created.toEpochMilli)
       .setId(userChange.id)
       .setMadeByUserId(userChange.madeByUserId)
 

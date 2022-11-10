@@ -127,7 +127,7 @@ class ZoneRoutingSpec
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
 
-  private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val listZoneChangeResponse = ListZoneChangesResponse(
     ok.id,
     List(zoneCreate, zoneUpdate),
@@ -160,7 +160,7 @@ class ZoneRoutingSpec
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
-              status = ZoneChangeStatus.Complete,
+              status = ZoneChangeStatus.Synced,
               zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)
             )
           )
@@ -186,7 +186,7 @@ class ZoneRoutingSpec
         case ok.email | connectionOk.email =>
           Right(
             zoneUpdate.copy(
-              status = ZoneChangeStatus.Complete,
+              status = ZoneChangeStatus.Synced,
               zone = Zone(updateZoneInput, zoneUpdate.zone).copy(status = ZoneStatus.Active)
             )
           )
@@ -211,7 +211,7 @@ class ZoneRoutingSpec
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
         case ok.id | connectionOk.id =>
-          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Complete))
+          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Synced))
         case error.id => Left(new RuntimeException("fail"))
         case zone1.id => Left(ZoneUnavailableError(zoneId))
       }
@@ -376,7 +376,7 @@ class ZoneRoutingSpec
                 authPrincipal,
                 NoOpCrypto.instance
               )
-              .copy(status = ZoneChangeStatus.Complete)
+              .copy(status = ZoneChangeStatus.Synced)
           )
         case error.id => Left(new RuntimeException("fail"))
       }
@@ -401,7 +401,7 @@ class ZoneRoutingSpec
                 authPrincipal,
                 NoOpCrypto.instance
               )
-              .copy(status = ZoneChangeStatus.Complete)
+              .copy(status = ZoneChangeStatus.Synced)
           )
         case error.id => Left(new RuntimeException("fail"))
       }
