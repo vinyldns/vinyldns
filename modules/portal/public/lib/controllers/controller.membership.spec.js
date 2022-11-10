@@ -20,14 +20,16 @@ describe('Controller: MembershipController', function () {
         module('service.groups'),
         module('service.profile'),
         module('service.utility'),
+        module('service.paging'),
         module('controller.membership')
     });
-    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, utilityService) {
+    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, utilityService, pagingService) {
         this.rootScope = $rootScope;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.profileService = profileService;
         this.utilityService = utilityService;
+        this.pagingService = pagingService;
         this.q = $q;
         var mockGroup = {
             data: {
@@ -68,6 +70,47 @@ describe('Controller: MembershipController', function () {
         this.groupsService.getGroupMemberList = function() {
             return $q.when(mockGroupList);
         };
+
+        this.groupsService.getGroupChanges = function () {
+            return $q.when({
+                data: {
+                    changes: [
+                        {
+                            newGroup: {
+                                id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                                name: "test-group",
+                                email: "test@test.com",
+                                created: "2022-07-20T10:14:49Z",
+                                status: "Active",
+                                members: [
+                                    {
+                                        id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                    },
+                                    {
+                                        id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                    }
+                                ],
+                                admins: [
+                                    {
+                                        id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                    },
+                                    {
+                                        id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                    }
+                                ]
+                            },
+                            changeType: "Delete",
+                            userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                            id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                            created: "2022-07-20T10:24:28Z",
+                            userName: "professor"
+                        }
+                    ],
+                    maxItems: 100
+                }
+            });
+        };
+
         this.controller = $controller('MembershipController', {'$scope': this.scope});
 
         this.mockSuccessAlert = "success";
@@ -400,5 +443,170 @@ describe('Controller: MembershipController', function () {
         expect(this.scope.membership.group).toEqual(expectedGroup);
         expect(this.scope.membership.members).toEqual(expectedMembership);
         expect(this.scope.isGroupAdmin).toBe(true);
+    });
+
+    it('test that we properly get group change data', function(){
+        this.scope.groupChanges = {};
+        var response = {
+            data: {
+                changes: [
+                    {
+                        newGroup: {
+                            id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                            name: "test-group",
+                            email: "test@test.com",
+                            created: "2022-07-20T10:14:49Z",
+                            status: "Active",
+                            members: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ],
+                            admins: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ]
+                        },
+                        changeType: "Delete",
+                        userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                        id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                        created: "2022-07-20T10:24:28Z",
+                        userName: "professor"
+                    }
+                ],
+                maxItems: 100
+            }
+        };
+        var getGroupChangesSets = spyOn(this.groupsService, 'getGroupChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        this.scope.refresh();
+        this.scope.$digest();
+
+        expect(getGroupChangesSets.calls.count()).toBe(1);
+        expect(this.scope.groupChanges).toEqual(response.data.changes);
+    });
+
+    it('nextPage should call getGroupChanges with the correct parameters', function () {
+
+        var response = {
+            data: {
+                changes: [
+                    {
+                        newGroup: {
+                            id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                            name: "test-group",
+                            email: "test@test.com",
+                            created: "2022-07-20T10:14:49Z",
+                            status: "Active",
+                            members: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ],
+                            admins: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ]
+                        },
+                        changeType: "Delete",
+                        userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                        id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                        created: "2022-07-20T10:24:28Z",
+                        userName: "professor"
+                    }
+                ],
+                maxItems: 100
+            }
+        };
+        var getGroupChangesSets = spyOn(this.groupsService, 'getGroupChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedId = "";
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+
+        this.scope.changeNextPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(1);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+          [expectedId, expectedMaxItems, expectedStartFrom]);
+    });
+
+    it('prevPage should call getGroupChanges with the correct parameters', function () {
+
+        var response = {
+            data: {
+                changes: [
+                    {
+                        newGroup: {
+                            id: "f9329f39-595d-45c9-8cdf-ac36e96e085d",
+                            name: "test-group",
+                            email: "test@test.com",
+                            created: "2022-07-20T10:14:49Z",
+                            status: "Active",
+                            members: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ],
+                            admins: [
+                                {
+                                    id: "ea7ec24e-3cc2-4740-b1b8-acde0158271f"
+                                },
+                                {
+                                    id: "5bda099e-be26-4aac-a310-ecf221ee2451"
+                                }
+                            ]
+                        },
+                        changeType: "Delete",
+                        userId: "ea7ec24e-3cc2-4740-b1b8-acde0158271f",
+                        id: "13516a79-1c61-4b9d-b442-0a773fc9c99f",
+                        created: "2022-07-20T10:24:28Z",
+                        userName: "professor"
+                    }
+                ],
+                maxItems: 100
+            }
+        };
+        var getGroupChangesSets = spyOn(this.groupsService, 'getGroupChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(response));
+
+        var expectedId = "";
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+
+        this.scope.changePrevPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(1);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+            [expectedId, expectedMaxItems, expectedStartFrom]);
+
+        this.scope.changeNextPage();
+        this.scope.changePrevPage();
+
+        expect(getGroupChangesSets.calls.count()).toBe(3);
+        expect(getGroupChangesSets.calls.mostRecent().args).toEqual(
+            [expectedId, expectedMaxItems, expectedStartFrom]);
     });
 });

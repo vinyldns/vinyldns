@@ -27,7 +27,7 @@ import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChange
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.SingleChange
 import vinyldns.core.domain.batch.SingleAddChange
@@ -64,7 +64,7 @@ class SnsNotifierSpec
       "test",
       "testUser",
       description,
-      DateTime.parse("2019-07-22T17:01:19Z"),
+      Instant.parse("2019-07-22T17:01:19Z"),
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,

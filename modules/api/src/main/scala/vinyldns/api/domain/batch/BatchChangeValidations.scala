@@ -17,15 +17,11 @@
 package vinyldns.api.domain.batch
 
 import java.net.InetAddress
-
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import cats.data._
 import cats.implicits._
-import vinyldns.api.config.{
-  BatchChangeConfig,
-  HighValueDomainConfig,
-  ManualReviewConfig,
-  ScheduledChangesConfig
-}
+import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -34,7 +30,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey, RecordKeyData}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -51,10 +47,10 @@ trait BatchChangeValidationsAlgebra {
   ): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -182,7 +178,7 @@ class BatchChangeValidations(
 
   def validateScheduledApproval(batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.scheduledTime match {
-      case Some(dt) if dt.isAfterNow => Left(ScheduledChangeNotDue(dt))
+      case Some(dt) if dt.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Left(ScheduledChangeNotDue(dt))
       case _ => Right(())
     }
 
@@ -211,7 +207,7 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[Unit] = {
     val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
-    val validRecord = validateRecordData(addChangeInput.record)
+    val validRecord = validateRecordData(addChangeInput.record, addChangeInput)
     val validInput = validateInputName(addChangeInput, isApproved)
 
     validTTL |+| validRecord |+| validInput
@@ -222,7 +218,7 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[Unit] = {
     val validRecord = deleteRRSetChangeInput.record match {
-      case Some(recordData) => validateRecordData(recordData)
+      case Some(recordData) => validateRecordData(recordData, deleteRRSetChangeInput)
       case None => ().validNel
     }
     val validInput = validateInputName(deleteRRSetChangeInput, isApproved)
@@ -230,11 +226,18 @@ class BatchChangeValidations(
     validRecord |+| validInput
   }
 
-  def validateRecordData(record: RecordData): SingleValidation[Unit] =
+  def validateRecordData(record: RecordData,change: ChangeInput): SingleValidation[Unit] =
     record match {
       case a: AData => validateIpv4Address(a.address).asUnit
       case aaaa: AAAAData => validateIpv6Address(aaaa.address).asUnit
-      case cname: CNAMEData => validateHostName(cname.cname).asUnit
+      case cname: CNAMEData =>
+        /*
+        To validate the zone is reverse
+         */
+        val isIPv4: Boolean = change.inputName.toLowerCase.endsWith("in-addr.arpa.")
+        val isIPv6: Boolean = change.inputName.toLowerCase.endsWith("ip6.arpa.")
+        val isReverse: Boolean = isIPv4 || isIPv6
+        validateCname(cname.cname,isReverse).asUnit
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
@@ -272,17 +275,17 @@ class BatchChangeValidations(
   /* context validations */
 
   def validateChangesWithContext(
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      batchOwnerGroupId: Option[String]
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    batchOwnerGroupId: Option[String]
   ): ValidatedBatch[ChangeForValidation] =
-    // Updates are a combination of an add and delete for a record with the same name and type in a zone.
+  // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case add: AddChangeForValidation
-          if groupedChanges
-            .getLogicalChangeType(add.recordKey)
-            .contains(LogicalChangeType.Add) =>
+        if groupedChanges
+          .getLogicalChangeType(add.recordKey)
+          .contains(LogicalChangeType.Add) =>
         validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
         validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
@@ -347,7 +350,7 @@ class BatchChangeValidations(
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+        case None => RecordDoesNotExist(change.inputChange.inputName).validNel
       }
     validations.map(_ => change)
   }
@@ -401,18 +404,18 @@ class BatchChangeValidations(
             zoneDoesNotRequireManualReview(change, isApproved) |+|
             ensureRecordExists(change, groupedChanges)
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          RecordDoesNotExist(change.inputChange.inputName).validNel
       }
 
     validations.map(_ => change)
   }
 
   def validateAddWithContext(
-      change: AddChangeForValidation,
-      groupedChanges: ChangeForValidationMap,
-      auth: AuthPrincipal,
-      isApproved: Boolean,
-      ownerGroupId: Option[String]
+    change: AddChangeForValidation,
+    groupedChanges: ChangeForValidationMap,
+    auth: AuthPrincipal,
+    isApproved: Boolean,
+    ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
@@ -435,11 +438,12 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          groupedChanges
+          change.inputChange.record,
+          groupedChanges,
+          isApproved
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
-
     validations.map(_ => change)
   }
 
@@ -477,11 +481,16 @@ class BatchChangeValidations(
       recordName: String,
       inputName: String,
       typ: RecordType,
-      groupedChanges: ChangeForValidationMap
-  ): SingleValidation[Unit] =
-    groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, typ)) match {
-      case Some(_) => RecordAlreadyExists(inputName).invalidNel
-      case None => ().validNel
+      recordData: RecordData,
+      groupedChanges: ChangeForValidationMap,
+      isApproved: Boolean
+  ): SingleValidation[Unit] = {
+    val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
+    if(record.isDefined) {
+      record.get.records.contains(recordData) match {
+        case true => ().validNel
+        case false => RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+    } else ().validNel
     }
 
   def noIncompatibleRecordExists(
@@ -670,7 +679,7 @@ class BatchChangeValidations(
   ): Either[BatchChangeErrorResponse, Unit] =
     (scheduledChangesEnabled, input.scheduledTime) match {
       case (_, None) => Right(())
-      case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
+      case (true, Some(scheduledTime)) if scheduledTime.isAfter(Instant.now.truncatedTo(ChronoUnit.MILLIS)) => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
     }

@@ -17,14 +17,14 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.domain.record._
-import vinyldns.api.ResultHelpers
 import cats.effect._
 import org.mockito.Matchers.any
 import vinyldns.core.domain.Fqdn
@@ -39,7 +39,6 @@ class ZoneConnectionValidatorSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
-    with ResultHelpers
     with EitherMatchers
     with EitherValues {
 
@@ -96,7 +95,7 @@ class ZoneConnectionValidatorSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
   )
@@ -107,7 +106,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")))
   )
@@ -118,7 +117,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("some.test.ns.")), NSData(Fqdn("not.approved.")))
   )
@@ -129,7 +128,7 @@ class ZoneConnectionValidatorSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("sub.some.test.ns.")))
   )
@@ -152,7 +151,7 @@ class ZoneConnectionValidatorSpec
       doReturn(IO.pure(true)).when(mockBackend).zoneExists(any[Zone])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
+      val result = underTest.validateZoneConnections(testZone).value.unsafeRunSync()
       result should be(right)
     }
 
@@ -164,7 +163,7 @@ class ZoneConnectionValidatorSpec
       doReturn(IO.pure(true)).when(mockBackend).zoneExists(any[Zone])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
+      val result = underTest.validateZoneConnections(testZone).value.unsafeRunSync().swap.toOption.get
       result shouldBe ZoneValidationFailed(
         testZone,
         List(s"Name Server not.approved. is not an approved name server."),
@@ -181,7 +180,7 @@ class ZoneConnectionValidatorSpec
       doReturn(IO.pure(true)).when(mockBackend).zoneExists(any[Zone])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
+      val result = underTest.validateZoneConnections(testZone).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[ZoneValidationFailed]
       result shouldBe ZoneValidationFailed(
         testZone,
@@ -202,7 +201,7 @@ class ZoneConnectionValidatorSpec
       doReturn(IO.pure(true)).when(mockBackend).zoneExists(any[Zone])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
+      val result = underTest.validateZoneConnections(badZone).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[ConnectionFailed]
     }
 
@@ -219,7 +218,7 @@ class ZoneConnectionValidatorSpec
       doReturn(IO.pure(true)).when(mockBackend).zoneExists(any[Zone])
       doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
+      val result = underTest.validateZoneConnections(badZone).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("transfer connection failure!")
     }
@@ -239,6 +238,16 @@ class ZoneConnectionValidatorSpec
       }
       "return failure if the backendId does not exist" in {
         underTest.isValidBackendId(Some("bad")) shouldBe left
+      }
+    }
+
+    "Zone Connection toString" should {
+      "not display key and algorithm" in {
+        zc.toString shouldBe "ZoneConnection: [name=\"zc.\"; keyName=\"zc.\"; primaryServer=\"10.1.1.1\"; ]"
+      }
+      "not display key and algorithm while displaying connection and transferConnection of a Zone" in {
+        val zoneString = s"""Zone: [id="${testZone.id}"; name="vinyldns."; account="system"; adminGroupId="system"; status="Active"; shared="false"; connection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; transferConnection="Some(ZoneConnection: [name="vinyldns."; keyName="vinyldns."; primaryServer="10.1.1.1"; ])"; reverse="false"; isTest="false"; created="${testZone.created}"; ]"""
+        testZone.toString shouldBe zoneString
       }
     }
   }

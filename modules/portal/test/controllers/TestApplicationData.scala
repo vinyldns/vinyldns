@@ -18,7 +18,8 @@ package controllers
 import actions.{ApiActionBuilder, FrontendActionBuilder, SecuritySupport}
 import akka.io.dns.RecordType
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.specs2.mock.Mockito
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -45,7 +46,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "frodo-uuid"
   )
 
@@ -56,7 +57,7 @@ trait TestApplicationData { this: Mockito =>
     Some("LockedFrodo"),
     Some("LockedBaggins"),
     Some("lockedfbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "locked-frodo-uuid",
     false,
     LockStatus.Locked
@@ -69,7 +70,7 @@ trait TestApplicationData { this: Mockito =>
     Some("SuperFrodo"),
     Some("SuperBaggins"),
     Some("superfbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "super-frodo-uuid",
     true,
     LockStatus.Unlocked
@@ -79,7 +80,7 @@ trait TestApplicationData { this: Mockito =>
     "frodo-uuid",
     frodoUser,
     "fbaggins",
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     UserChangeType.Create
   ).toOption.get
@@ -87,7 +88,7 @@ trait TestApplicationData { this: Mockito =>
   val serviceAccountDetails =
     LdapUserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
   val serviceAccount =
-    User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
+    User("service", "key", "secret", None, None, None, Instant.now.truncatedTo(ChronoUnit.MILLIS), "service-uuid")
 
   val frodoJsonString: String =
     s"""{
@@ -107,7 +108,7 @@ trait TestApplicationData { this: Mockito =>
     Some("Samwise"),
     Some("Gamgee"),
     Some("sgamgee@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "sam-uuid"
   )
   val samDetails = LdapUserDetails(
@@ -142,6 +143,48 @@ trait TestApplicationData { this: Mockito =>
        | "description": "Hobbits of the shire",
        | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
        | "admins":      [ { "id": "${frodoUser.id}" } ]
+       | }
+    """.stripMargin)
+
+  val hobbitGroupChangeId = "b6018a9b-c893-40e9-aa25-4ccfee460c18"
+  val hobbitGroupChange: JsValue = Json.parse(s"""{
+      | "newGroup": {
+      | "id":          "$hobbitGroupId",
+      | "name":        "hobbits",
+      | "email":       "hobbitAdmin@shire.me",
+      | "description": "Hobbits of the shire",
+      | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+      | "admins":      [ { "id": "${frodoUser.id}" } ]
+      | },
+      | "changeType": "Create",
+      | "userId": "${frodoUser.id}",
+      | "oldGroup": {},
+      | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
+      | "created": "2022-07-22T08:19:22Z",
+      | "userName": "${frodoUser.userName}",
+      | "groupChangeMessage": ""
+      | }
+    """.stripMargin)
+
+  val hobbitGroupChanges: JsValue = Json.parse(s"""{
+       | "changes": [{
+       | "newGroup": {
+       | "id":          "$hobbitGroupId",
+       | "name":        "hobbits",
+       | "email":       "hobbitAdmin@shire.me",
+       | "description": "Hobbits of the shire",
+       | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+       | "admins":      [ { "id": "${frodoUser.id}" } ]
+       | },
+       | "changeType": "Create",
+       | "userId": "${frodoUser.id}",
+       | "oldGroup": {},
+       | "id": "b6018a9b-c893-40e9-aa25-4ccfee460c18",
+       | "created": "2022-07-22T08:19:22Z",
+       | "userName": "${frodoUser.userName}",
+       | "groupChangeMessage": ""
+       | }],
+       | "maxItems": 100
        | }
     """.stripMargin)
 
@@ -194,6 +237,25 @@ trait TestApplicationData { this: Mockito =>
       | "adminGroupName": "hobbits",
       | "adminGroupId":   "$hobbitGroupId"
       | }
+    """.stripMargin)
+
+  val hobbitZoneChange: JsValue = Json.parse(s"""{
+       | "zoneId":         "$hobbitZoneId",
+       | "zoneChanges":
+       |    [{ "zone": {
+       |             "name":           "$hobbitZoneName",
+       |             "email":          "hobbitAdmin@shire.me",
+       |             "status":         "Active",
+       |             "account":        "system",
+       |             "acl":            "rules",
+       |             "adminGroupId":   "$hobbitGroupId",
+       |             "id":             "$hobbitZoneId",
+       |             "shared":         false,
+       |             "status":         "Active",
+       |             "isTest":         true
+       |     }}],
+       | "maxItems":         100
+       | }
     """.stripMargin)
 
   val hobbitZoneRequest: JsValue = Json.parse(s"""{

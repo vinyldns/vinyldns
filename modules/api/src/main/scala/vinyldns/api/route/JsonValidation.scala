@@ -23,7 +23,8 @@ import cats.data._
 import cats.implicits._
 import com.fasterxml.jackson.core.JsonParseException
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import org.joda.time.DateTime
+import java.util.Date
+import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.ext._
@@ -33,29 +34,16 @@ import scala.reflect.ClassTag
 
 case class JsonErrors(errors: List[String])
 
-// TODO: An update to json4s changed the date time formatting.  In order to stay compatible, had to
-// revert the date time formatting here.  When changing to circe (updating to java8 instant),
-// be sure to check the format of date time
-object VinylDateParser {
-  def parse(s: String, format: Formats): Long =
-    format.dateFormat
-      .parse(s)
-      .map(_.getTime)
-      .getOrElse(
-        throw new MappingException(
-          s"Invalid date format $s; provide the date format as YYYY-MM-DDTHH:MM:SSZ"
-        )
-      )
-}
 case object VinylDateTimeSerializer
-    extends CustomSerializer[DateTime](
+    extends CustomSerializer[Instant](
       format =>
         (
           {
-            case JString(s) => new DateTime(VinylDateParser.parse(s, format))
+            case JInt(s) => Instant.ofEpochMilli(s.longValue())
+            case JString(s) => Instant.ofEpochMilli(format.dateFormat.parse(s).map(_.getTime).getOrElse(0L))
             case JNull => null
           }, {
-            case d: DateTime => JString(format.dateFormat.format(d.toDate))
+            case d: Instant => JString(format.dateFormat.format(Date.from(d)))
           }
         )
     )
@@ -65,7 +53,7 @@ trait JsonValidationSupport extends Json4sSupport {
   import scala.collection._
 
   // this is where you define all serializers, custom and validating serializers
-  val serializers: Traversable[Serializer[_]]
+  val serializers: Iterable[Serializer[_]]
 
   // TODO: needed in order to stay backward compatible for date time formatting,
   // should be removed when we upgrade json libs
@@ -87,7 +75,7 @@ trait JsonValidationSupport extends Json4sSupport {
     * @return An adjusted Formats without the serializer passed in
     */
   private[route] def adjustedFormats(ser: Serializer[_]) =
-    DefaultFormats ++ JodaTimeSerializers.all ++ serializers.filterNot(_.equals(ser))
+    DefaultFormats ++ JavaTimeSerializers.all ++ serializers.filterNot(_.equals(ser))
 
   implicit def json4sJacksonFormats: Formats = DefaultFormats ++ dtSerializers ++ serializers
 }
