@@ -28,6 +28,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.ignoreAccess = false;
     $scope.hasGroups = false;
     $scope.query = "";
+    $scope.maxGroupItemsDisplay = 2000;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
@@ -201,7 +202,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         }
 
         return groupsService
-            .getGroups($scope.ignoreAccess, $scope.query)
+            .getGroups($scope.ignoreAccess, $scope.query, $scope.maxGroupItemsDisplay)
             .then(success)
             .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
