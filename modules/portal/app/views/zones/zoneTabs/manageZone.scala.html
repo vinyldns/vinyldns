@@ -89,7 +89,9 @@
                                                 Disallow</option>
                                         </select>
                                     </div>
-                                    <a ng-if="updateZoneInfo.allowDottedHosts==true" href="aclRuleTable">Edit Acl</a>
+                                    <span class="help-block" ng-if="updateZoneInfo.allowDottedHosts==true">
+                                        Add ACL to allow users and record types.
+                                    </span>
                                 </div>
                             </div>
 

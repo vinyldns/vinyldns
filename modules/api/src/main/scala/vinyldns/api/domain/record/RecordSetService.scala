@@ -23,12 +23,12 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
+import vinyldns.core.domain.zone.{AccessLevel, Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -91,6 +91,7 @@ class RecordSetService(
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
+      isAllowed <- getAllowDottedHostZones(zone, auth, recordSet).toResult
       authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
@@ -128,7 +129,8 @@ class RecordSetService(
         recordFqdnDoesNotAlreadyExist,
         allowedZoneList,
         isRecordTypeAndUserAllowed,
-        allowedDotsLimit
+        allowedDotsLimit,
+        isAllowed
       ).toResult
       _ <- if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
@@ -139,6 +141,7 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
+      isAllowed <- getAllowDottedHostZones(zone, auth, recordSet).toResult
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
@@ -178,7 +181,8 @@ class RecordSetService(
         true,
         allowedZoneList,
         isRecordTypeAndUserAllowed,
-        allowedDotsLimit
+        allowedDotsLimit,
+        isAllowed
       ).toResult
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
@@ -586,6 +590,28 @@ class RecordSetService(
       .getZone(zoneId)
       .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
       .toResult[Zone]
+
+  def getAllowDottedHostZones(zone: Zone, auth: AuthPrincipal, rs: RecordSet): Boolean = {
+    val rules = if (zone.allowDottedHosts==true){zone.acl.rules} else null
+    if( rules != null){
+        val allowedUser = rules.map( rules  => if (rules.allowDottedHosts == true && rules.accessLevel==AccessLevel.Write) rules.userId.contains(auth.signedInUser.id) else null)
+        val allowedGroups = rules.map( rules  => if (rules.allowDottedHosts == true && rules.accessLevel==AccessLevel.Write) rules.groupId.getOrElse("empty") else null)
+        val allowedMembers = for{
+          groupsInACL <- groupRepository.getGroups(allowedGroups)
+          memberIds = groupsInACL.flatMap(x => x.memberIds)
+          usersList <- if(memberIds.isEmpty) IO(Seq.empty) else userRepository.getUsers(memberIds, None, None).map(x => x.users)
+          users = if(usersList.isEmpty) Seq.empty else usersList.map(x => x.id)
+          isPresent = users.contains(auth.signedInUser.id)
+        } yield  isPresent.booleanValue()
+        val recordType = rules.map(rules => if (rules.allowDottedHosts == true && rules.accessLevel==AccessLevel.Write) {
+            rules.recordTypes.contains(rs.typ)} else false)
+        val isUserAllowed = allowedMembers.unsafeRunSync() || allowedUser.contains(true)
+      val isRecordTypeAllowed = recordType.contains(true)
+      if(isUserAllowed && isRecordTypeAllowed) true
+      else  false
+      }
+    else false
+  }
 
   def getRecordSet(recordsetId: String): Result[RecordSet] =
     recordSetRepository
