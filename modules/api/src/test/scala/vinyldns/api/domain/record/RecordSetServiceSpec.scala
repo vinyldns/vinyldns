@@ -1943,7 +1943,7 @@ class RecordSetServiceSpec
 
 
       val result: ListFailedRecordSetChangesResponse =
-        rightResultOf(underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value)
+        underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
 
       val changesWithName =
         ListFailedRecordSetChangesResponse(completeRecordSetChanges)
