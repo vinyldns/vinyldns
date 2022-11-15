@@ -81,24 +81,24 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       status,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
-  }
 
-  val failedChanges
-  : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
-    zone,
-    zone.account,
-    ZoneChangeType.Update,
-    status= ZoneChangeStatus.Failed,
-    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
-  )
-  val successChanges
-  : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
-    zone,
-    zone.account,
-    ZoneChangeType.Update,
-    status= ZoneChangeStatus.Synced,
-    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
-  )
+    val failedChanges
+    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
+      zone,
+      zone.account,
+      ZoneChangeType.Update,
+      status= ZoneChangeStatus.Failed,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
+    )
+    val successChanges
+    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
+      zone,
+      zone.account,
+      ZoneChangeType.Update,
+      status= ZoneChangeStatus.Synced,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
+    )
+  }
 
   import TestData._
 

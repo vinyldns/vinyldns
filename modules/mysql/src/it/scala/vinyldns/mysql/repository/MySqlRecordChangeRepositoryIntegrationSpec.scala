@@ -17,13 +17,12 @@
 package vinyldns.mysql.repository
 
 import java.util.UUID
-
 import cats.scalatest.EitherMatchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc._
-import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.TransactionProvider
@@ -162,7 +161,6 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       result shouldBe List()
     }
   }
-}
 }
 
 
