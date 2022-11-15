@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
@@ -28,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
@@ -407,6 +408,12 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+  private val failedChangesWithUserName =
+    List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
+  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
+    failedChangesWithUserName
+  )
+
   class TestService extends RecordSetServiceAlgebra {
 
     def evaluate(
@@ -563,6 +570,15 @@ class RecordSetRoutingSpec
         )
       }
     }.toResult
+
+    def listFailedRecordSetChanges(
+                                    authPrincipal: AuthPrincipal
+                                  ): Result[ListFailedRecordSetChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedRecordSetChangeResponse)
+      }
+      outcome.toResult
+    }
 
     def searchRecordSets(
                            startFrom: Option[String],
@@ -817,6 +833,19 @@ class RecordSetRoutingSpec
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET failed record set changes" should {
+    "return the failed record set changes" in {
+      val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
+      val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
+
+      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+        val changes = responseAs[ListFailedRecordSetChangesResponse]
+        changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
+
       }
     }
   }

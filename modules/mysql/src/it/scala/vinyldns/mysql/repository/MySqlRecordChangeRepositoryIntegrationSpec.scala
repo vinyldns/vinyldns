@@ -61,6 +61,15 @@ class MySqlRecordChangeRepositoryIntegrationSpec
     newRecordSets.map(makeTestAddChange(_, zone)).toList
   }
 
+  def generateFailedInserts(zone: Zone, count: Int): List[RecordSetChange] = {
+    val newRecordSets =
+      for {
+        i <- 1 to count
+      } yield aaaa.copy(zoneId = zone.id, name = s"$i-apply-test", id = UUID.randomUUID().toString)
+
+    newRecordSets.map(makeTestAddChange(_, zone).copy(status= RecordSetChangeStatus.Failed)).toList
+  }
+
   "saving record changes" should {
     "save a batch of inserts" in {
       val inserts = generateInserts(okZone, 1000)
@@ -129,4 +138,31 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       page3.items should contain theSameElementsAs expectedOrder.slice(4, 5)
     }
   }
+
+  "list failed record changes" should {
+    "return records for failed record changes" in {
+      val inserts = generateFailedInserts(okZone, 10)
+      val saveRecChange = executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(inserts))
+      }
+      saveRecChange.attempt.unsafeRunSync() shouldBe right
+      val result = repo.listFailedRecordSetChanges().unsafeRunSync()
+      (result  should have).length(10)
+      result should contain theSameElementsAs(inserts)
+
+    }
+    "return empty for success record changes" in {
+      val inserts = generateInserts(okZone, 10)
+      val saveRecChange = executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(inserts))
+      }
+      saveRecChange.attempt.unsafeRunSync() shouldBe right
+      val result = repo.listFailedRecordSetChanges().unsafeRunSync()
+      (result  should have).length(0)
+      result shouldBe List()
+    }
+  }
 }
+}
+
+

@@ -37,3 +37,7 @@ object ListZoneChangesResponse {
       listResults.maxItems
     )
 }
+
+case class ListFailedZoneChangesResponse(
+                                          failedZoneChanges: List[ZoneChange] = Nil,
+                                        )

@@ -40,6 +40,12 @@ class MySqlRecordChangeRepository
       |  LIMIT {limit}
     """.stripMargin
 
+  private val LIST_RECORD_CHANGES =
+    sql"""
+         |SELECT data
+         |  FROM record_change
+    """.stripMargin
+
   private val LIST_CHANGES_NO_START =
     sql"""
       |SELECT data
@@ -120,6 +126,20 @@ class MySqlRecordChangeRepository
             startFrom,
             maxItems
           )
+        }
+      }
+    }
+
+  def listFailedRecordSetChanges(): IO[List[RecordSetChange]] =
+    monitor("repo.RecordChange.listFailedRecordSetChanges") {
+      IO {
+        DB.readOnly { implicit s =>
+          val queryResult = LIST_RECORD_CHANGES
+            .map(toRecordSetChange)
+            .list()
+            .apply()
+          val maxQueries = queryResult.filter(zc => zc.status == RecordSetChangeStatus.Failed)
+          maxQueries
         }
       }
     }

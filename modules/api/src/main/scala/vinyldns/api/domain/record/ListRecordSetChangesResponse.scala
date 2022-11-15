@@ -17,7 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.domain.zone.RecordSetChangeInfo
-import vinyldns.core.domain.record.ListRecordSetChangesResults
+import vinyldns.core.domain.record.{ListRecordSetChangesResults, RecordSetChange}
 
 case class ListRecordSetChangesResponse(
     zoneId: String,
@@ -41,3 +41,7 @@ object ListRecordSetChangesResponse {
       listResults.maxItems
     )
 }
+
+case class ListFailedRecordSetChangesResponse(
+                                               failedRecordSetChanges: List[RecordSetChange] = Nil,
+                                             )

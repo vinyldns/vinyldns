@@ -163,6 +163,16 @@ class ZoneRoute(
         }
       }
     } ~
+    path("metrics" / "health" / "zonechangesfailure") {
+      (get & monitor("Endpoint.listFailedZoneChanges")) {
+        handleRejections(invalidQueryHandler) {
+          authenticateAndExecute(zoneService.listFailedZoneChanges(_)) {
+            changes =>
+              complete(StatusCodes.OK, changes)
+          }
+        }
+      }
+    } ~
     path("zones" / Segment / "acl" / "rules") { id =>
       (put & monitor("Endpoint.addZoneACLRule")) {
         authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo](
