@@ -35,6 +35,6 @@ object Meta {
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
       config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false),
-      config.getOptional[Int]("vinyldns.api.limits.membership-routing-max-groups-list-limit").getOrElse(2500)
+      config.getOptional[Int]("api.limits.membership-routing-max-groups-list-limit").getOrElse(2500)
     )
 }

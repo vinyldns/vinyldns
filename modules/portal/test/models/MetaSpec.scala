@@ -70,7 +70,7 @@ class MetaSpec extends Specification with Mockito {
       Meta(Configuration.from(config)).maxGroupItemsDisplay must beEqualTo(2500)
     }
     "get the membership-routing-max-groups-list-limit value in config" in {
-      val config = Map("vinyldns.api.limits.membership-routing-max-groups-list-limit" -> 3100)
+      val config = Map("api.limits.membership-routing-max-groups-list-limit" -> 3100)
       Meta(Configuration.from(config)).maxGroupItemsDisplay must beEqualTo(3100)
     }
   }
