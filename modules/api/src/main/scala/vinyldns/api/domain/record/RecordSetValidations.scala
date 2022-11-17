@@ -371,24 +371,21 @@ object RecordSetValidations {
   }
 
   def checkAllowedDots(allowedDotsLimit: Int, recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
-    if(allowedDotsLimit > 0 ) {ensuring(
-      InvalidRequest(
-        s"RecordSet with name ${recordSet.name} has more dots than that is allowed in config for this zone " +
-          s"which is, 'dots-limit = $allowedDotsLimit'."
-      ))(recordSet.name.count(_ == '.') <= allowedDotsLimit || (recordSet.name.count(_ == '.') == 1 &&
-          recordSet.name.takeRight(1) == ".") || recordSet.name == zone.name ||
-      (recordSet.typ == RecordType.PTR || recordSet.typ == RecordType.SRV ||
-        recordSet.typ == RecordType.TXT || recordSet.typ == RecordType.NAPTR)
-    )}else {ensuring(
+    ensuring(
+      if(zone.allowDottedLimits>0) {
         InvalidRequest(
           s"RecordSet with name ${recordSet.name} has more dots than that is allowed for this zone " +
             s"which is, 'dots-limit = ${zone.allowDottedLimits}'."
-        ))(recordSet.name.count(_ == '.') <= zone.allowDottedLimits || (recordSet.name.count(_ == '.') == 1 &&
+        )
+      }else {InvalidRequest(
+        s"RecordSet with name ${recordSet.name} has more dots than that is allowed for this zone " +
+          s"which is, 'dots-limit = ${allowedDotsLimit}'."
+      )}
+    )((recordSet.name.count(_ == '.') <= zone.allowDottedLimits || recordSet.name.count(_ == '.') <= allowedDotsLimit) || (recordSet.name.count(_ == '.') == 1 &&
           recordSet.name.takeRight(1) == ".") || recordSet.name == zone.name ||
           (recordSet.typ == RecordType.PTR || recordSet.typ == RecordType.SRV ||
             recordSet.typ == RecordType.TXT || recordSet.typ == RecordType.NAPTR)
       )
-    }
   }
 
   def isNotApexEndsWithDot(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
