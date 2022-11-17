@@ -295,14 +295,14 @@ class ZoneService(
       .toResult
 
   def allowDottedHostsUpdateZones(authPrincipal: AuthPrincipal, updateZoneInput: UpdateZoneInput): Result[Boolean] =
-    if (updateZoneInput.allowDottedHosts == true){
+    if (updateZoneInput.allowDottedHosts == true || updateZoneInput.allowDottedLimits>0){
     isSuperAdmin(authPrincipal).isRight match {
       case true => updateZoneInput.allowDottedHosts.toResult
       case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
     }} else updateZoneInput.allowDottedHosts.toResult
 
   def allowDottedHostsCreateZones(authPrincipal: AuthPrincipal, createZoneInput: CreateZoneInput): Result[Boolean] =
-    if (createZoneInput.allowDottedHosts == true){
+    if (createZoneInput.allowDottedHosts == true || createZoneInput.allowDottedLimits>0){
       isSuperAdmin(authPrincipal).isRight match {
       case true => createZoneInput.allowDottedHosts.toResult
       case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult

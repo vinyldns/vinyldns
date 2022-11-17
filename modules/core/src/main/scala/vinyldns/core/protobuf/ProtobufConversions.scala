@@ -124,6 +124,7 @@ trait ProtobufConversions {
       account = zn.getAccount,
       shared = zn.getShared,
       allowDottedHosts = zn.getAllowDottedHosts,
+      allowDottedLimits = zn.getAllowDottedLimits,
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
       latestSync = if (zn.hasLatestSync) Some(Instant.ofEpochMilli(zn.getLatestSync)) else None,
@@ -397,6 +398,7 @@ trait ProtobufConversions {
       .setAccount(zone.account)
       .setShared(zone.shared)
       .setAllowDottedHosts(zone.allowDottedHosts)
+      .setAllowDottedLimits(zone.allowDottedLimits)
       .setAcl(toPB(zone.acl))
       .setAdminGroupId(zone.adminGroupId)
       .setIsTest(zone.isTest)

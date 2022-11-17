@@ -93,6 +93,12 @@
                                         Add ACL to allow users and record types.
                                     </span>
                                 </div>
+                                <div class="form-group" ng-if="updateZoneInfo.allowDottedHosts==true">
+                                    <label class="col-md-3 control-label">Dots limit</label>
+                                    <div class="col-md-9">
+                                        <input id="dots-limits" type="number" min="0" max="9" ng-value="updateZoneInfo.allowDottedLimits" class="form-control" ng-model="updateZoneInfo.allowDottedLimits"/>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-group">

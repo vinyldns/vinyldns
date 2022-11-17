@@ -51,6 +51,7 @@ message Zone {
   optional bool isTest = 14 [default = false];
   optional string backendId = 15;
   optional bool allowDottedHosts = 16 [default = false];
+  optional int32 allowDottedLimits = 17 [default = 0];
 }
 
 message AData {
