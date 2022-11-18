@@ -891,11 +891,12 @@ class MembershipServiceSpec
     "determine group difference" should {
       "return difference between two groups" in {
         val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate, okGroupChange.copy(changeType = GroupChangeType.Delete))
-        val result: Seq[String] = rightResultOf(underTest.determineGroupDifference(groupChange).value)
+        val allUserMap = Map("ok" -> "ok", "12345-abcde-6789" -> "dummyName", "56789-edcba-1234" -> "super")
+        val result: Seq[String] = rightResultOf(underTest.determineGroupDifference(groupChange, allUserMap).value)
         // Newly created group's change message
         result(0) shouldBe "Group Created."
         // Updated group's change message
-        result(1) shouldBe "Group name changed to 'dummy-group'. Group email changed to 'dummy@test.com'. Group description changed to 'dummy group'. Group admin/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group admin/s with userId/s (ok) removed. Group member/s with userId/s (12345-abcde-6789,56789-edcba-1234) added. Group member/s with userId/s (ok) removed."
+        result(1) shouldBe "Group name changed to 'dummy-group'. Group email changed to 'dummy@test.com'. Group description changed to 'dummy group'. Group admin/s with user name/s 'dummyName','super' added. Group admin/s with user name/s 'ok' removed. Group member/s with user name/s 'dummyName','super' added. Group member/s with user name/s 'ok' removed."
         // Deleted group's change message
         result(2) shouldBe "Group Deleted."
       }
