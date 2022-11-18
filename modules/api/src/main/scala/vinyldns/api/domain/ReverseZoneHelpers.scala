@@ -17,7 +17,7 @@
 package vinyldns.api.domain
 
 import cats.implicits._
-import com.aaronbedra.orchard.CIDR
+import com.comcast.ip4s.{Cidr, Ipv4Address, Ipv6Address}
 import vinyldns.api.domain.zone.InvalidRequest
 import vinyldns.core.domain.zone.Zone
 import vinyldns.api.backend.dns.DnsConversions._
@@ -30,8 +30,9 @@ object ReverseZoneHelpers {
     if (zone.isIPv4) {
       recordsetIsWithinCidrMaskIpv4(mask: String, zone: Zone, recordName: String)
     } else {
-      val ipAddr = convertPTRtoIPv6(zone, recordName)
-      Try(CIDR.valueOf(mask).contains(ipAddr)).getOrElse(false)
+      val ipAddr = Ipv6Address.fromString(convertPTRtoIPv6(zone, recordName))
+      Try(Cidr(Cidr.fromString6(mask).get.address,Cidr.fromString6(mask).get.prefixBits).contains(ipAddr.get))
+        .getOrElse(false)
     }
 
   // NOTE: this will not work for zones with less than 3 octets
@@ -86,11 +87,12 @@ object ReverseZoneHelpers {
       zone: Zone,
       recordName: String
   ): Boolean = {
-    val recordIpAddr = convertPTRtoIPv4(zone, recordName)
+
+    val recordIpAddr = Ipv4Address.fromString(convertPTRtoIPv4(zone, recordName))
 
     Try {
       // make sure mask contains 4 octets, expand if not
-      val ipMaskOctets = CIDR.parseBlock(mask).head.split('.').toList
+      val ipMaskOctets = Cidr.fromString4(mask).get.address.toString.split('.').toList
 
       val fullIp = ipMaskOctets.length match {
         case 1 => (ipMaskOctets ++ List("0", "0", "0")).mkString(".")
@@ -99,9 +101,8 @@ object ReverseZoneHelpers {
         case 4 => ipMaskOctets.mkString(".")
       }
 
-      val updatedMask = fullIp + "/" + CIDR.valueOf(mask).getMask
-
-      CIDR.valueOf(updatedMask).contains(recordIpAddr)
+      val updatedMask = Cidr(recordIpAddr.get,Cidr.fromString4(mask).get.prefixBits)
+      updatedMask.contains(Ipv4Address.fromString(fullIp).get)
     }.getOrElse(false)
   }
 
