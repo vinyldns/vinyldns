@@ -888,6 +888,14 @@ class MembershipServiceSpec
     }
   }
 
+    "get group user ids" should {
+      "get all users in a group change" in {
+        val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate, okGroupChange.copy(changeType = GroupChangeType.Delete))
+        val result: Set[String] = underTest.getGroupUserIds(groupChange)
+        result shouldBe Set("12345-abcde-6789", "56789-edcba-1234", "ok")
+      }
+    }
+
     "determine group difference" should {
       "return difference between two groups" in {
         val groupChange = Seq(okGroupChange, dummyGroupChangeUpdate, okGroupChange.copy(changeType = GroupChangeType.Delete))
