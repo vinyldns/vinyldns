@@ -2,7 +2,7 @@ logLevel := Level.Warn
 
 resolvers += "Flyway" at "https://flywaydb.org/repo"
 
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.18")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.6")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "1.1.0")
 
@@ -20,7 +20,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.5.0")
 
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.4")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.8.18")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.4")
 
