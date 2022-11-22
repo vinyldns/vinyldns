@@ -576,7 +576,7 @@ def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(s
 
     error = client.create_recordset(dotted_host_a_record, status=422)
     assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
-                           "allowed in config for this zone which is, 'dots-limit = 3'."))
+                           "than that is allowed for this zone which is, 'dots-limit = 3'."))
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
