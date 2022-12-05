@@ -174,15 +174,18 @@ class SharedZoneTestContext(object):
                     "name": f"dummy{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
-                    "allowDottedHost": False,
+                    "allowDottedHost": True,
+                    "allowDottedLimits": 4,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
                     "acl": {
                         "rules": [
                             {
-                                "accessLevel": "Delete",
+                                "accessLevel": "Write",
                                 "description": "some_test_rule",
-                                "userId": "history-id"
+                                "userId": "history-id",
+                                "allowDottedHosts": True,
+                                "recordTypes": "CNAME"
                             }
                         ]
                     },

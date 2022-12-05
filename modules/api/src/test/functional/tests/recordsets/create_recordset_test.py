@@ -557,6 +557,32 @@ def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfied(sh
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
+def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_satisfied(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name succeeds
+    Here the zone, user (in group) and record type is allowed. Hence the test succeeds
+    Config present in reference.conf
+    """
+    client = shared_zone_test_context.history_client
+    zone = shared_zone_test_context.dummy_zone
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+
+    dotted_a_record = None
+    try:
+        dotted_cname_response = client.create_recordset(dotted_host_a_record, status=202)
+        dotted_a_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_a_record["name"], is_(dotted_host_a_record["name"]))
+    finally:
+        if dotted_a_record:
+            delete_result = client.delete_recordset(dotted_a_record["zoneId"], dotted_a_record["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
 def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
     Test that creating a A record set with dotted host record name fails
@@ -576,7 +602,7 @@ def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(s
 
     error = client.create_recordset(dotted_host_a_record, status=422)
     assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
-                           "allowed in config for this zone which is, 'dots-limit = 3'."))
+                           "allowed for this zone which is, 'dots-limit = 3'."))
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
