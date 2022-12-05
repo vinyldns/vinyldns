@@ -594,7 +594,7 @@ class RecordSetService(
   def getAllowDottedHostZones(zone: Zone, auth: AuthPrincipal, rs: RecordSet): Boolean = {
     val rules = if (zone.allowDottedHosts==true && zone.allowDottedLimits !=0){zone.acl.rules} else null
     if( rules != null){
-        val allowedUser = rules.map( rules  => if (rules.allowDottedHosts == true && rules.accessLevel==AccessLevel.Write) rules.userId.contains(auth.signedInUser.id) else null)
+        val allowedUser = rules.map( rules  => if (rules.allowDottedHosts == true && (rules.accessLevel==AccessLevel.Write || rules.accessLevel==AccessLevel.Delete)) rules.userId.contains(auth.signedInUser.id) else null)
         val allowedGroups = rules.map( rules  => if (rules.allowDottedHosts == true && rules.accessLevel==AccessLevel.Write) rules.groupId.getOrElse("empty") else null)
         val allowedMembers = for{
           groupsInACL <- groupRepository.getGroups(allowedGroups)

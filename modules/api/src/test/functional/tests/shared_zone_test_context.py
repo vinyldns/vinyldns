@@ -181,7 +181,7 @@ class SharedZoneTestContext(object):
                     "acl": {
                         "rules": [
                             {
-                                "accessLevel": "Write",
+                                "accessLevel": "Delete",
                                 "description": "some_test_rule",
                                 "userId": "history-id",
                                 "allowDottedHosts": True,
