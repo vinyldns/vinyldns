@@ -18,6 +18,7 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
+import vinyldns.core.domain.record.RecordType
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -36,6 +37,8 @@ object TestZoneData {
     connection = testConnection
   )
   val dottedZone: Zone = Zone("dotted.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
+  val dottedHostAclRuleAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.CNAME))))
+  val dottedZoneAllowed: Zone = Zone("dotted.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id , allowDottedHosts = true,allowDottedLimits= 4, acl= dottedHostAclRuleAllowed)
   val dotZone: Zone = Zone("dot.xyz.", "dotted@xyz.com", adminGroupId = xyzGroup.id)
   val abcZone: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id)
   val xyzZone: Zone = Zone("xyz.", "abc@xyz.com", adminGroupId = xyzGroup.id)
