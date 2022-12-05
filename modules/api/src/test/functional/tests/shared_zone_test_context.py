@@ -175,7 +175,6 @@ class SharedZoneTestContext(object):
                     "email": "test@test.com",
                     "shared": False,
                     "allowDottedHost": True,
-                    "allowDottedLimits": 4,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
                     "acl": {
