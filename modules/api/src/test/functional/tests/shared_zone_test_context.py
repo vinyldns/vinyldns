@@ -183,9 +183,7 @@ class SharedZoneTestContext(object):
                             {
                                 "accessLevel": "Delete",
                                 "description": "some_test_rule",
-                                "userId": "history-id",
-                                "allowDottedHosts": True,
-                                "recordTypes": "CNAME"
+                                "userId": "history-id"
                             }
                         ]
                     },
