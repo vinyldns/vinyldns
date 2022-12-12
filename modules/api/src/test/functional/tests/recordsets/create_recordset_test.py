@@ -626,7 +626,7 @@ def test_create_dotted_a_record_succeeds_if_no_of_dot_not_within_range(shared_zo
         "email": "test@test.com",
         "shared": False,
         "allowDottedHosts": True,
-        "allowDottedLimits": 5,
+        "allowDottedLimits": 4,
         "adminGroupId": shared_zone_test_context.super_group["id"],
         "isTest": True,
         "acl": {
@@ -661,7 +661,7 @@ def test_create_dotted_a_record_succeeds_if_no_of_dot_not_within_range(shared_zo
     try:
         error = client.create_recordset(dotted_host_a_record, status=422)
         assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
-                            "allowed for this zone which is, 'dots-limit = 5'."))
+                            "allowed for this zone which is, 'dots-limit = 4'."))
     finally:
         if "id" in zone:
             client.abandon_zones([zone["id"]], status=202)

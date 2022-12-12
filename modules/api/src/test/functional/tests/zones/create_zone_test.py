@@ -194,8 +194,8 @@ def test_create_dotted_zone_without_super_admin_access(shared_zone_test_context)
         }
     }
 
-    errors = client.create_zone(zone, status=400)["errors"]
-    assert_that(errors, contains_inanyorder("Not Authorised: User is not VinylDNS Admin"))
+    errors = client.create_zone(zone, status=403)
+    assert_that(errors, is_("Not Authorised: User is not VinylDNS Admin"))
 
 
 def test_create_invalid_zone_data(shared_zone_test_context):
