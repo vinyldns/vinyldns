@@ -35,7 +35,7 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData.xyzAuth
 import vinyldns.mysql.TransactionProvider
-import vinyldns.core.TestZoneData.{dottedHostAclRuleAllowed, dottedZoneAllowed, testConnection}
+import vinyldns.core.TestZoneData.{ dottedZoneAllowed, testConnection}
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
