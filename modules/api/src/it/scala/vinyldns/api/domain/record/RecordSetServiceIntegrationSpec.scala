@@ -409,6 +409,7 @@ class RecordSetServiceIntegrationSpec
         None,
         List(AData("10.1.1.1"))
       )
+
       val result =
         testRecordSetService
           .addRecordSet(newRecord, auth)
