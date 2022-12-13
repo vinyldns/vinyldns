@@ -33,9 +33,9 @@ import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
-import vinyldns.core.TestMembershipData.xyzAuth
+import vinyldns.core.TestMembershipData.{xyzAuth, xyzGroup}
 import vinyldns.mysql.TransactionProvider
-import vinyldns.core.TestZoneData.{ dottedZoneAllowed, testConnection}
+import vinyldns.core.TestZoneData.{dottedZoneAllowed, testConnection}
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
@@ -84,6 +84,27 @@ class RecordSetServiceIntegrationSpec
     connection = testConnection,
     adminGroupId = dummyGroup.id
   )
+
+  val dottedHostAclRuleNotAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, false, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleReadAccess: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleWithoutUserAccess: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, true, userId = Some("ok"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleAllowedWithInvalidRecordType: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.A))))
+
+  private val dottedHostZoneWithAllowDottedHostsFalse = dottedZoneAllowed.copy(allowDottedHosts = false)
+  private val dottedHostZoneWithAllowDottedLimitZero = dottedZoneAllowed.copy(allowDottedLimits = 0)
+  private val dottedHostZoneWithAclFalse = dottedZoneAllowed.copy(acl = dottedHostAclRuleNotAllowed)
+  private val dottedHostZoneWithReadOnlyAccess = dottedZoneAllowed.copy(acl = dottedHostAclRuleReadAccess)
+  private val dottedHostZoneWithoutUserAccess =  dottedZoneAllowed.copy(acl = dottedHostAclRuleWithoutUserAccess)
+  private val dottedHostZoneWithInvalidRecordType =  dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowedWithInvalidRecordType)
+
+
+  val dottedHostAclRuleAllowed: ZoneACL =
+    ZoneACL(Set(ACLRule(
+      AccessLevel.Write, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.CNAME, RecordType.AAAA))))
+
+  val dottedZone: Zone =
+    Zone("ok.", "dotted@xyz.com", adminGroupId = xyzGroup.id , allowDottedHosts = true, allowDottedLimits= 4, acl= dottedHostAclRuleAllowed)
+
   private val zone = Zone(
     s"live-zone-test.",
     "test@test.com",
@@ -289,7 +310,9 @@ class RecordSetServiceIntegrationSpec
       }
 
     List(group, group2, sharedGroup, dummyGroup).traverse(g => saveGroupData(groupRepo, g).void).unsafeRunSync()
-    List(zone, dummyZone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
+    List(zone, dottedZone, dummyZone,  dottedHostZoneWithAllowDottedHostsFalse, dottedHostZoneWithAllowDottedLimitZero,
+      dottedHostZoneWithAclFalse, dottedHostZoneWithReadOnlyAccess, dottedHostZoneWithoutUserAccess, dottedHostZoneWithInvalidRecordType,
+      zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
       .traverse(
         z => zoneRepo.save(z)
       )
@@ -419,7 +442,7 @@ class RecordSetServiceIntegrationSpec
 
     "create dotted record succeeds if it satisfies all dotted hosts" in {
       val newRecord = RecordSet(
-        dottedZoneAllowed.id,
+        dottedZone.id,
         "testing.dotted",
         AAAA,
         38400,
@@ -428,12 +451,13 @@ class RecordSetServiceIntegrationSpec
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
-      // succeeds as zone, user and record type is allowed as defined in application.conf
+
       val result =
         testRecordSetService
           .addRecordSet(newRecord, xyzAuth)
           .value
           .unsafeRunSync()
+
       rightValue(result)
         .asInstanceOf[RecordSetChange]
         .recordSet
@@ -452,8 +476,6 @@ class RecordSetServiceIntegrationSpec
         List(AAAAData("fd69:27cc:fe91::60"))
       )
 
-      // The number of dots allowed in the record name for this zone as defined in the config is 3.
-      // Creating with 4 dots results in an error
       val result =
         testRecordSetService
           .addRecordSet(newRecord, dummyAuth)
@@ -483,9 +505,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if it super user not allow dotted hosts for the zone" in {
-      val zone = dottedZoneAllowed.copy(allowDottedHosts = false)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithAllowDottedHostsFalse.id,
         "test.dotted",
         AAAA,
         38400,
@@ -504,9 +525,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if it super user not allow dotted limit more than 0 for the zone" in {
-      val zone = dottedZoneAllowed.copy(allowDottedLimits = 0)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithAllowDottedLimitZero.id,
         "test.dotted",
         AAAA,
         38400,
@@ -525,11 +545,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if it super user not allow dotted hosts for the users" in {
-      val dottedHostAclRuleAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, false, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
-
-      val zone = dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowed)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithAclFalse.id,
         "test.dotted",
         AAAA,
         38400,
@@ -548,11 +565,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if super user not given rights to user for dotted hosts" in {
-      val dottedHostAclRuleAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
-
-      val zone = dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowed)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithReadOnlyAccess.id,
         "test.dotted",
         AAAA,
         38400,
@@ -571,11 +585,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if user does not have access to the dotted hosts" in {
-      val dottedHostAclRuleAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("ok"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
-
-      val zone = dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowed)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithoutUserAccess.id,
         "test.dotted",
         AAAA,
         38400,
@@ -594,11 +605,8 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail creating dotted record if user does not have access to create AAAA with dotted hosts" in {
-      val dottedHostAclRuleAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.A))))
-
-      val zone = dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowed)
       val newRecord = RecordSet(
-        zone.id,
+        dottedHostZoneWithInvalidRecordType.id,
         "test.dotted",
         AAAA,
         38400,
