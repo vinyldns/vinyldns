@@ -186,7 +186,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)) match {
       case Success(s) => Some(s)
       case Failure(e) =>
-        logger.error(s"oidc session token parse error: ${e.getMessage}")
+        logger.error(s"oidc session token parse error: ${e.getMessage.replaceAll("\n",";")}")
         None
     }
 
@@ -260,7 +260,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     Either
       .fromTry(Try(t))
       .leftMap { err =>
-        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage}")
+        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage.replaceAll("\n",";")}")
         ErrorResponse(500, err.getMessage)
       }
 }

@@ -52,7 +52,7 @@ trait Monitored {
           IO(t)
 
         case Left(e) =>
-          logger.error(s"Finished $id; success=false; duration=$duration seconds", e)
+          logger.error(s"Finished $id; success=false; duration=$duration seconds", e.getMessage.replaceAll("\n",";"))
           IO.raiseError(e)
       }
   }

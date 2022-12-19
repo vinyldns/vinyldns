@@ -105,7 +105,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
     IO(SqsMessage.parseSqsMessage(message)).flatMap {
       case Left(e) =>
-        logger.error(s"Failed handling message with id '${message.getMessageId}'", e)
+        logger.error(s"Failed handling message with id '${message.getMessageId}'", e.getMessage.replaceAll("\n",";"))
         delete(message.getReceiptHandle).as(Left(e))
       case Right(ok) => IO.pure(Right(ok))
     }

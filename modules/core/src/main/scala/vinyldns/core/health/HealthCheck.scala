@@ -31,7 +31,7 @@ object HealthCheck {
     def asHealthCheck(caller: Class[_]): HealthCheck =
       io.map {
         case Left(err) =>
-          logger.error(s"HealthCheck for ${caller.getCanonicalName} Failed", err)
+          logger.error(s"HealthCheck for ${caller.getCanonicalName} Failed", err.getMessage.replaceAll("\n",";"))
           val msg = Option(err.getMessage).getOrElse("no message from error")
           Left(
             HealthCheckError(s"${caller.getCanonicalName} health check failed with msg='${msg}'")

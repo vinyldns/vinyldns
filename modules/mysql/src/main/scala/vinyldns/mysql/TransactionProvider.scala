@@ -52,7 +52,7 @@ trait TransactionProvider {
           result
         } catch {
           case e: Throwable =>
-            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction.", e)
+            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction.", e.getMessage.replaceAll("\n",";"))
             db.rollbackIfActive()
             throw e
         } finally {

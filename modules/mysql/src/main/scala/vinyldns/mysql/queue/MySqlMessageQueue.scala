@@ -210,7 +210,7 @@ class MySqlMessageQueue(maxRetries: Int)
           // Errors could not be deserialized, have an invalid type, or exceeded retries
           val errors = claimed.collect {
             case Left((e, id)) =>
-              logger.error(s"Encountered error for message with id $id", e)
+              logger.error(s"Encountered error for message with id $id", e.getMessage.replaceAll("\n",";"))
               id
           }
 

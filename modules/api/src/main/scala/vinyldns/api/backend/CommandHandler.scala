@@ -94,7 +94,7 @@ object CommandHandler {
         )
         .parJoin(maxOpen)
         .handleErrorWith { error =>
-          logger.error("Encountered unexpected error in main flow", error)
+          logger.error("Encountered unexpected error in main flow", error.getMessage.replaceAll("\n",";"))
 
           // just continue, the flow should never stop unless explicitly told to do so
           flow()
@@ -123,7 +123,7 @@ object CommandHandler {
         .handleErrorWith { error =>
           // on error, we make sure we still continue; should only stop when the app stops
           // or processing is disabled
-          logger.error("Encountered error polling message queue", error)
+          logger.error("Encountered error polling message queue", error.getMessage.replaceAll("\n",";"))
 
           // just keep going on the stream
           pollingStream()
@@ -182,7 +182,7 @@ object CommandHandler {
       .attempt
       .map {
         case Left(e) =>
-          logger.warn(s"Failed processing message need to retry; $message", e)
+          logger.warn(s"Failed processing message need to retry; $message. Error: ${e.getMessage.replaceAll("\n",";")}")
           RetryMessage(message)
         case Right(ok) => ok
       }

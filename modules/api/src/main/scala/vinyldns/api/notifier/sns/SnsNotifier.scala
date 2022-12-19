@@ -52,6 +52,6 @@ class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
       sns.publish(request)
       logger.info(s"Sending batch change success; batchChange='${bc.id}'")
     }.handleErrorWith { e =>
-      IO(logger.error(s"Failed sending batch change; batchChange='${bc.id}'", e))
+      IO(logger.error(s"Failed sending batch change; batchChange='${bc.id}'", e.getMessage.replaceAll("\n",";")))
     }.void
 }

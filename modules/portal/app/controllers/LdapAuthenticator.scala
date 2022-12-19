@@ -136,7 +136,7 @@ object LdapAuthenticator {
         case unexpectedError: Throwable =>
           logger.error(
             s"LDAP Unexpected Error searching for user; userName='$lookupUserName'",
-            unexpectedError
+            unexpectedError.getMessage.replaceAll("\n",";")
           )
           Left(LdapServiceException(unexpectedError.getMessage))
       } finally {

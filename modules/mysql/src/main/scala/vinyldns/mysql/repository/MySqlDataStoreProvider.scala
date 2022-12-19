@@ -99,7 +99,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   private def shutdown(): IO[Unit] =
     IO(DBs.close())
-      .handleError(e => logger.error(s"Exception occurred while shutting down", e))
+      .handleError(e => logger.error(s"Exception occurred while shutting down", e.getMessage.replaceAll("\n",";")))
 
   private final val HEALTH_CHECK =
     sql"""

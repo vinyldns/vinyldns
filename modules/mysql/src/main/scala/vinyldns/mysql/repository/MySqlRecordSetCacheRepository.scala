@@ -139,7 +139,7 @@ class MySqlRecordSetCacheRepository
         }
         logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zone_id)")
       }.handleErrorWith { error =>
-        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id)", error)
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id)", error.getMessage.replaceAll("\n",";"))
         IO.raiseError(error)
       }
     }

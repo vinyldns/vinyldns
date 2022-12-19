@@ -171,7 +171,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
         case Left(e: Throwable) =>
           logger.error(
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e
+            e.getMessage.replaceAll("\n",";")
           )
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
