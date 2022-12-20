@@ -20,7 +20,7 @@ import cats.implicits._
 import fs2._
 import org.slf4j.LoggerFactory
 import vinyldns.core.route.Monitored
-
+import java.io.{PrintWriter, StringWriter}
 import scala.concurrent.duration.FiniteDuration
 
 // Interface for all Tasks that need to be run
@@ -91,7 +91,9 @@ object TaskScheduler extends Monitored {
     def runOnceSafely(task: Task): IO[Unit] =
       monitor(s"task.${task.name}") {
         claimTask().bracket(runTask)(releaseTask).handleError { error =>
-          logger.error(s"""Unexpected error running task; taskName="${task.name}" """, error)
+          val errorMessage = new StringWriter
+          error.printStackTrace(new PrintWriter(errorMessage))
+          logger.error(s"""Unexpected error running task; taskName="${task.name}". Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")} """)
         }
       }
 
