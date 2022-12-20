@@ -156,9 +156,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                 recordSetCacheRepository.save(db,changeSet)
               )
 
-              val Str: Option[String] = None
-              println(Str.get)
-
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
