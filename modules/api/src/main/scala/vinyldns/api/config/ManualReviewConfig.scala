@@ -41,7 +41,7 @@ object ManualReviewConfig {
         ManualReviewConfig(
           enabled,
           toCaseIgnoredRegexList(domainsConfig.getStringList("domain-list").asScala.toList),
-          domainsConfig.getStringList("ip-list").asScala.toList.flatMap(IpAddress(_)),
+          domainsConfig.getStringList("ip-list").asScala.toList.flatMap(IpAddress.fromString(_)),
           domainsConfig.getStringList("zone-name-list").asScala.toSet
         )
     }
