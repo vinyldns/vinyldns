@@ -173,7 +173,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
           val errorMessage = new StringWriter
           e.printStackTrace(new PrintWriter(errorMessage))
           logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n",";")}"
+            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"
           )
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(

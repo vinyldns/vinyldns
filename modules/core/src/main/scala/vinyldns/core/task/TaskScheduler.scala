@@ -93,7 +93,7 @@ object TaskScheduler extends Monitored {
         claimTask().bracket(runTask)(releaseTask).handleError { error =>
           val errorMessage = new StringWriter
           error.printStackTrace(new PrintWriter(errorMessage))
-          logger.error(s"""Unexpected error running task; taskName="${task.name}". Error: ${errorMessage.toString.replaceAll("\n",";")} """)
+          logger.error(s"""Unexpected error running task; taskName="${task.name}". Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")} """)
         }
       }
 

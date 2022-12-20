@@ -214,15 +214,15 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
       } yield resp
 
     val receivedResponse = result match {
-      case Right(value) => value.toString.replaceAll("\n",";")
+      case Right(value) => value.toString.replaceAll("\n"," ").replaceAll("\t"," ")
       case Left(e) =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
-        errorMessage.toString.replaceAll("\n",";")
+        errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")
     }
 
     logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";")}. Received response: $receivedResponse"
+      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse"
     )
 
     result

@@ -137,7 +137,7 @@ object LdapAuthenticator {
           val errorMessage = new StringWriter
           unexpectedError.printStackTrace(new PrintWriter(errorMessage))
           logger.error(
-            s"LDAP Unexpected Error searching for user; userName='$lookupUserName'. Error: ${errorMessage.toString.replaceAll("\n",";")}"
+            s"LDAP Unexpected Error searching for user; userName='$lookupUserName'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"
           )
           Left(LdapServiceException(unexpectedError.getMessage))
       } finally {

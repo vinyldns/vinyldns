@@ -34,7 +34,7 @@ object HealthCheck {
         case Left(err) =>
           val errorMessage = new StringWriter
           err.printStackTrace(new PrintWriter(errorMessage))
-          logger.error(s"HealthCheck for ${caller.getCanonicalName} failed. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.error(s"HealthCheck for ${caller.getCanonicalName} failed. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           val msg = Option(err.getMessage).getOrElse("no message from error")
           Left(
             HealthCheckError(s"${caller.getCanonicalName} health check failed with msg='${msg}'")

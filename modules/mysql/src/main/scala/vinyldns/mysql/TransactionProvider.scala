@@ -54,7 +54,7 @@ trait TransactionProvider {
           case e: Throwable =>
             val errorMessage = new StringWriter
             e.printStackTrace(new PrintWriter(errorMessage))
-            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
             db.rollbackIfActive()
             throw e
         } finally {

@@ -189,7 +189,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
       case Failure(e) =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
-        logger.error(s"oidc session token parse error: ${errorMessage.toString.replaceAll("\n",";")}")
+        logger.error(s"oidc session token parse error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         None
     }
 
@@ -265,7 +265,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
       .leftMap { err =>
         val errorMessage = new StringWriter
         err.printStackTrace(new PrintWriter(errorMessage))
-        logger.error(s"Unexpected error in OIDC flow: ${errorMessage.toString.replaceAll("\n",";")}")
+        logger.error(s"Unexpected error in OIDC flow: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         ErrorResponse(500, err.getMessage)
       }
 }

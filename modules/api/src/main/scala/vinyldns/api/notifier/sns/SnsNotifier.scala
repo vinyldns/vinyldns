@@ -55,6 +55,6 @@ class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
     }.handleErrorWith { e =>
       val errorMessage = new StringWriter
       e.printStackTrace(new PrintWriter(errorMessage))
-      IO(logger.error(s"Failed sending batch change; batchChange='${bc.id}'. Error: ${errorMessage.toString.replaceAll("\n",";")}"))
+      IO(logger.error(s"Failed sending batch change; batchChange='${bc.id}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"))
     }.void
 }

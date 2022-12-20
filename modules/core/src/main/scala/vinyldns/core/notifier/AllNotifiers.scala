@@ -38,7 +38,7 @@ final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: Contex
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
         IO {
-          logger.error(s"Notifier ${notifier.getClass.getSimpleName} failed. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.error(s"Notifier ${notifier.getClass.getSimpleName} failed. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         }
       }
     }

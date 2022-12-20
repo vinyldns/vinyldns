@@ -107,7 +107,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       case Left(e) =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
-        logger.error(s"Failed handling message with id '${message.getMessageId}'. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+        logger.error(s"Failed handling message with id '${message.getMessageId}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         delete(message.getReceiptHandle).as(Left(e))
       case Right(ok) => IO.pure(Right(ok))
     }

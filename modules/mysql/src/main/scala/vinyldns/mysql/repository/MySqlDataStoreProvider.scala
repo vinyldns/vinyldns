@@ -103,7 +103,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       .handleError{ e =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
-        logger.error(s"Exception occurred while shutting down. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+        logger.error(s"Exception occurred while shutting down. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
       }
 
   private final val HEALTH_CHECK =

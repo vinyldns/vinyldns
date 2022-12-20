@@ -97,7 +97,7 @@ object CommandHandler {
         .handleErrorWith { error =>
           val errorMessage = new StringWriter
           error.printStackTrace(new PrintWriter(errorMessage))
-          logger.error(s"Encountered unexpected error in main flow. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.error(s"Encountered unexpected error in main flow. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
 
           // just continue, the flow should never stop unless explicitly told to do so
           flow()
@@ -128,7 +128,7 @@ object CommandHandler {
           // or processing is disabled
           val errorMessage = new StringWriter
           error.printStackTrace(new PrintWriter(errorMessage))
-          logger.error(s"Encountered error polling message queue. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.error(s"Encountered error polling message queue. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
 
           // just keep going on the stream
           pollingStream()
@@ -189,7 +189,7 @@ object CommandHandler {
         case Left(e) =>
           val errorMessage = new StringWriter
           e.printStackTrace(new PrintWriter(errorMessage))
-          logger.warn(s"Failed processing message need to retry; $message. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.warn(s"Failed processing message need to retry; $message. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           RetryMessage(message)
         case Right(ok) => ok
       }

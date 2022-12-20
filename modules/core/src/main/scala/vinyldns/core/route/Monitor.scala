@@ -54,7 +54,7 @@ trait Monitored {
         case Left(e) =>
           val errorMessage = new StringWriter
           e.printStackTrace(new PrintWriter(errorMessage))
-          logger.error(s"Finished $id; success=false; duration=$duration seconds. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+          logger.error(s"Finished $id; success=false; duration=$duration seconds. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           IO.raiseError(e)
       }
   }

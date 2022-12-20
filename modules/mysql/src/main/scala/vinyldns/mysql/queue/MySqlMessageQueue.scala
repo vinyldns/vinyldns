@@ -213,7 +213,7 @@ class MySqlMessageQueue(maxRetries: Int)
             case Left((e, id)) =>
               val errorMessage = new StringWriter
               e.printStackTrace(new PrintWriter(errorMessage))
-              logger.error(s"Encountered error for message with id $id. Error: ${errorMessage.toString.replaceAll("\n",";")}")
+              logger.error(s"Encountered error for message with id $id. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
               id
           }
 
