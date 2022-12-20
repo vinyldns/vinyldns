@@ -214,7 +214,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
       } yield resp
 
     val receivedResponse = result match {
-      case Right(value) => value.toString.replaceAll("\n"," ").replaceAll("\t"," ")
+      case Right(value) => value.toString.replaceAll("\n",";").replaceAll("\t"," ")
       case Left(e) =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
