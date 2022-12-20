@@ -28,7 +28,7 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
-
+import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 
 object DnsProtocol {
@@ -215,7 +215,10 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
 
     val receivedResponse = result match {
       case Right(value) => value.toString.replaceAll("\n",";")
-      case Left(e) => e.toString.replaceAll("\n",";")
+      case Left(e) =>
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
+        errorMessage.toString.replaceAll("\n",";")
     }
 
     logger.info(

@@ -29,6 +29,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.route.Monitored
 import vinyldns.mysql.TransactionProvider
+import java.io.{PrintWriter, StringWriter}
 
 object ZoneSyncHandler extends DnsConversions with Monitored with TransactionProvider {
 
@@ -155,6 +156,9 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                 recordSetCacheRepository.save(db,changeSet)
               )
 
+              val Str: Option[String] = None
+              println(Str.get)
+
               // join together the results of saving both the record changes as well as the record sets
               for {
                 _ <- saveRecordChanges
@@ -169,9 +173,10 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
         }
       }.attempt.map {
         case Left(e: Throwable) =>
+          val errorMessage = new StringWriter
+          e.printStackTrace(new PrintWriter(errorMessage))
           logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e.getMessage.replaceAll("\n",";")
+            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n",";")}"
           )
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
