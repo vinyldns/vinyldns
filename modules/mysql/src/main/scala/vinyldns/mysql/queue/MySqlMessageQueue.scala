@@ -34,6 +34,7 @@ import vinyldns.mysql.queue.MessageType.{
   RecordChangeMessageType,
   ZoneChangeMessageType
 }
+import java.io.{PrintWriter, StringWriter}
 import vinyldns.proto.VinylDNSProto
 import java.time.temporal.ChronoUnit
 import scala.concurrent.duration._
@@ -210,7 +211,9 @@ class MySqlMessageQueue(maxRetries: Int)
           // Errors could not be deserialized, have an invalid type, or exceeded retries
           val errors = claimed.collect {
             case Left((e, id)) =>
-              logger.error(s"Encountered error for message with id $id", e)
+              val errorMessage = new StringWriter
+              e.printStackTrace(new PrintWriter(errorMessage))
+              logger.error(s"Encountered error for message with id $id. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
               id
           }
 

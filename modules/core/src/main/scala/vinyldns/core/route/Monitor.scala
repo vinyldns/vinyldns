@@ -20,7 +20,7 @@ import cats.effect._
 import nl.grons.metrics.scala.{Histogram, Meter, MetricName}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.Instrumented
-
+import java.io.{PrintWriter, StringWriter}
 import scala.collection._
 
 trait Monitored {
@@ -52,7 +52,9 @@ trait Monitored {
           IO(t)
 
         case Left(e) =>
-          logger.error(s"Finished $id; success=false; duration=$duration seconds", e)
+          val errorMessage = new StringWriter
+          e.printStackTrace(new PrintWriter(errorMessage))
+          logger.error(s"Finished $id; success=false; duration=$duration seconds. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           IO.raiseError(e)
       }
   }

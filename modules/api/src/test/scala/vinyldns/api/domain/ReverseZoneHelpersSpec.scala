@@ -137,8 +137,8 @@ class ReverseZoneHelpersSpec
     }
     "recordsetIsWithinCidrMask" should {
       "when testing IPv4" should {
-        "filter in/out record set based on CIDR rule of 0 (lower bound for ip4 CIDR rules)" in {
-          val mask = "120.1.2.0/0"
+        "filter in/out record set based on CIDR rule of 1 (lower bound for ip4 CIDR rules)" in {
+          val mask = "120.1.2.0/1"
           val znTrue = Zone("40.120.in-addr.arpa.", "email")
           val rsTrue =
             RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
@@ -151,7 +151,7 @@ class ReverseZoneHelpersSpec
         }
 
         "filter in/out record set based on CIDR rule of 8" in {
-          val mask = "10.10.32/19"
+          val mask = "10.10.32.0/19"
           val zone = Zone("10.10.in-addr.arpa.", "email")
           val recordSet =
             RecordSet("id", "90.44", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))

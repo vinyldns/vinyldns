@@ -116,7 +116,7 @@ class MonitorSpec
         val msgCaptor = ArgumentCaptor.forClass(classOf[String])
         val errorCaptor = ArgumentCaptor.forClass(classOf[String])
         verify(traitTest.logger, times(1)).info(msgCaptor.capture())
-        verify(traitTest.logger, times(1)).error(errorCaptor.capture(), any(classOf[Throwable]))
+        verify(traitTest.logger, times(1)).error(errorCaptor.capture())
 
         msgCaptor.getValue shouldBe "Starting timeSomethingBad"
         errorCaptor.getValue should include("Finished timeSomethingBad; success=false; duration=")
