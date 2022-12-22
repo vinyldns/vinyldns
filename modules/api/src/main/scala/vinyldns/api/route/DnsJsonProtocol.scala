@@ -84,6 +84,18 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
         ).mapN(RecordSetChange.apply)
+
+    override def toJson(rs: RecordSetChange): JValue =
+      ("zone" -> Extraction.decompose(rs.zone)) ~
+        ("recordSet" -> Extraction.decompose(rs.recordSet)) ~
+        ("userId" -> rs.userId) ~
+        ("changeType" -> Extraction.decompose(rs.changeType)) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("systemMessage" -> rs.systemMessage) ~
+        ("updates" -> Extraction.decompose(rs.updates)) ~
+        ("id" -> rs.id) ~
+        ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
   case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
