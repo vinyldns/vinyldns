@@ -187,3 +187,5 @@ final case class UnableToRemoveLastMemberFromGroupError(msg: String) extends Thr
 final case class UnableToRemoveLastAdminUserFromGroupError(msg: String) extends Throwable(msg)
 
 final case class InvalidGroupRequestError(msg: String) extends Throwable(msg)
+
+final case class EmailValidationError(msg: String) extends Throwable(msg)

@@ -123,7 +123,8 @@ object Boot extends App {
         vinyldnsConfig.batchChangeConfig,
         vinyldnsConfig.scheduledChangesConfig
       )
-      val membershipService = MembershipService(repositories)
+
+      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
 
       val connectionValidator =
         new ZoneConnectionValidator(
@@ -150,7 +151,8 @@ object Boot extends App {
         zoneValidations,
         recordAccessValidations,
         backendResolver,
-        vinyldnsConfig.crypto
+        vinyldnsConfig.crypto,
+        vinyldnsConfig.validEmailConfig
       )
       //limits configured in reference.conf passing here
       val limits = LimitsConfig(

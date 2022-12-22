@@ -16,21 +16,18 @@
 
 package vinyldns.api.config
 
-import com.comcast.ip4s.IpAddress
 import pureconfig.ConfigReader
-import vinyldns.api.domain.zone.ZoneRecordValidations
 
-import scala.util.matching.Regex
+ case class ValidEmailConfig(
+    valid_domains : List[String]
+                             )
+object ValidEmailConfig {
+  implicit val configReader: ConfigReader[ValidEmailConfig] =
+    ConfigReader.forProduct1[ValidEmailConfig,List[String]](
+      "email-domains"
 
-final case class HighValueDomainConfig(fqdnRegexes: List[Regex], ipList: List[IpAddress])
-object HighValueDomainConfig {
-  import ZoneRecordValidations.toCaseIgnoredRegexList
-  implicit val configReader: ConfigReader[HighValueDomainConfig] =
-    ConfigReader.forProduct2[HighValueDomainConfig, List[String], List[String]](
-      "regex-list",
-      "ip-list"
     ) {
-      case (regexList, ipList) =>
-        HighValueDomainConfig(toCaseIgnoredRegexList(regexList), ipList.flatMap(IpAddress.fromString(_)))
+      case valid_domains => ValidEmailConfig(valid_domains)
     }
+
 }
