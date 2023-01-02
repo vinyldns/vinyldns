@@ -46,10 +46,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
 import vinyldns.core.repository.DataStoreLoader
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
+
+  // Create a ScheduledExecutorService with a single thread
+  private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val timer: Timer[IO] = IO.timer(ec)
@@ -93,6 +98,11 @@ object Boot extends App {
         repositories.userRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
+      // Schedule the task to be executed every 5 seconds
+      _ <- IO(executor.scheduleAtFixedRate(() => {
+          val zoneChanges = zoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository).unsafeRunSync()
+          zoneChanges.foreach(zone => messageQueue.send(zone).unsafeRunSync())
+      }, 0, 5, TimeUnit.SECONDS))
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,

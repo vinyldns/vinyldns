@@ -28,6 +28,12 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
+import com.cronutils.model.CronType
+import com.cronutils.model.definition.{CronDefinition, CronDefinitionBuilder}
+import com.cronutils.model.time.ExecutionTime
+import com.cronutils.parser.CronParser
+import java.time.{Instant, ZoneId}
+import java.time.temporal.ChronoUnit
 
 object ZoneService {
   def apply(
@@ -101,7 +107,8 @@ class ZoneService(
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
-      zoneWithUpdates = Zone(updateZoneInput, existingZone)
+      updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
+      zoneWithUpdates = Zone(updatedZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)

@@ -48,10 +48,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     */
   private final val PUT_ZONE =
     sql"""
-       |INSERT INTO zone(id, name, admin_group_id, data)
-       |     VALUES ({id}, {name}, {adminGroupId}, {data}) ON DUPLICATE KEY
+       |INSERT INTO zone(id, name, admin_group_id, zone_sync_schedule, data)
+       |     VALUES ({id}, {name}, {adminGroupId}, {recurrenceSchedule}, {data}) ON DUPLICATE KEY
        |     UPDATE name=VALUES(name),
        |            admin_group_id=VALUES(admin_group_id),
+       |            zone_sync_schedule=VALUES(zone_sync_schedule),
        |            data=VALUES(data);
         """.stripMargin
 
@@ -114,6 +115,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     """
       |SELECT data
       |  FROM zone
+       """.stripMargin
+
+  private final val BASE_GET_ALL_ZONES_SQL =
+    """
+      |SELECT data
+      |  FROM zone
+      |  WHERE zone_sync_schedule IS NOT NULL
        """.stripMargin
 
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
@@ -204,6 +212,19 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
               .apply()
           }.toSet
         }
+      }
+    }
+
+  def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+    monitor("repo.ZoneJDBC.getAllZonesWithSyncSchedule") {
+      IO {
+        DB.readOnly { implicit s =>
+          SQL(
+            BASE_GET_ALL_ZONES_SQL
+          ).map(extractZone(1))
+            .list()
+            .apply()
+        }.toSet
       }
     }
 
@@ -414,6 +435,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           'id -> zone.id,
           'name -> zone.name,
           'adminGroupId -> zone.adminGroupId,
+          'recurrenceSchedule -> zone.recurrenceSchedule,
           'data -> toPB(zone).toByteArray
         ): _*
       )
@@ -475,6 +497,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   def saveTx(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     monitor("repo.ZoneJDBC.save") {
       IO {
+        println(zone.recurrenceSchedule)
         DB.localTx { implicit s =>
           getZoneByNameInSession(zone.name) match {
             case Some(foundZone) if zone.id != foundZone.id => DuplicateZoneError(zone.name).asLeft

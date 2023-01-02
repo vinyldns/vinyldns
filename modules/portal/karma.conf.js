@@ -21,6 +21,7 @@ module.exports = function(config) {
       'js/angular.min.js',
       'js/moment.min.js',
       'js/ui.js',
+      'js/angular-cron-jobs.min.js',
       'test_frameworks/*.js',
       'js/vinyldns.js',
       'lib/services/**/*.spec.js',

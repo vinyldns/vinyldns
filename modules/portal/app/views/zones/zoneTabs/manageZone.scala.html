@@ -1,4 +1,4 @@
-@(implicit request: play.api.mvc.Request[Any], meta: models.Meta)
+@(implicit rootAccountCanReview: Boolean, request: play.api.mvc.Request[Any], meta: models.Meta)
 
 <div class="alert-wrapper">
     <div ng-repeat="alert in alerts">
@@ -230,6 +230,17 @@
                                         ng-disabled="updateZoneInfo.transferConnection == undefined &&
                                                      updateZoneInfo.hiddenTransferKey == ''"
                                         ng-click="clearUpdateTransferConnection()" type="button">Clear Connection</button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-15">
+                            <div class="block">
+                                <div class="col-md-9">
+                                    @if(rootAccountCanReview) {
+                                    <h4>Schedule Zone Sync</h4>
+                                    <cron-selection class="col-md-12" ng-model="updateZoneInfo.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
+                                    }
+                                </div>
                             </div>
                         </div>
 

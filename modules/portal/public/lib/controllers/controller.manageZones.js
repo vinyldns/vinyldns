@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-angular.module('controller.manageZones', [])
+angular.module('controller.manageZones', ['angular-cron-jobs'])
     .controller('ManageZonesController', function ($scope, $timeout, $log, recordsService, zonesService, groupsService,
                                                    profileService, utilityService, pagingService) {
 
@@ -93,6 +93,15 @@ angular.module('controller.manageZones', [])
     $scope.confirmDeleteZone = function() {
         $("#delete_zone_connection_modal").modal("show");
     };
+
+    $scope.myZoneSyncScheduleConfig = {
+        allowMultiple: true,
+        quartz: true,
+        options: {
+            allowMinute : false,
+            allowHour : false
+        }
+    }
 
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
@@ -278,6 +287,8 @@ angular.module('controller.manageZones', [])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
+            $log.log('recordsService::getZone-success schedule: ', $scope.updateZoneInfo.recurrenceSchedule);
+            $log.log('recordsService::getZone-success: ', $scope.zoneInfo);
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();

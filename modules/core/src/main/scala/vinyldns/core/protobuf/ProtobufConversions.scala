@@ -125,7 +125,9 @@ trait ProtobufConversions {
       adminGroupId = zn.getAdminGroupId,
       latestSync = if (zn.hasLatestSync) Some(Instant.ofEpochMilli(zn.getLatestSync)) else None,
       isTest = zn.getIsTest,
-      backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None
+      backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None,
+      recurrenceSchedule = if (zn.hasRecurrenceSchedule) Some(zn.getRecurrenceSchedule) else None,
+      scheduleRequestor = if (zn.hasScheduleRequestor) Some(zn.getScheduleRequestor) else None
     )
   }
 
@@ -401,6 +403,8 @@ trait ProtobufConversions {
     zone.transferConnection.foreach(cn => builder.setTransferConnection(toPB(cn)))
     zone.latestSync.foreach(dt => builder.setLatestSync(dt.toEpochMilli))
     zone.backendId.foreach(bid => builder.setBackendId(bid))
+    zone.recurrenceSchedule.foreach(rs => builder.setRecurrenceSchedule(rs))
+    zone.scheduleRequestor.foreach(rs => builder.setScheduleRequestor(rs))
     builder.build()
   }
 

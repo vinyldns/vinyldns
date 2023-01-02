@@ -49,6 +49,8 @@ message Zone {
   optional int64 latestSync = 13;
   optional bool isTest = 14 [default = false];
   optional string backendId = 15;
+  optional string recurrenceSchedule = 16;
+  optional string scheduleRequestor = 17;
 }
 
 message AData {
