@@ -28,12 +28,6 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
-import com.cronutils.model.CronType
-import com.cronutils.model.definition.{CronDefinition, CronDefinitionBuilder}
-import com.cronutils.model.time.ExecutionTime
-import com.cronutils.parser.CronParser
-import java.time.{Instant, ZoneId}
-import java.time.temporal.ChronoUnit
 
 object ZoneService {
   def apply(
