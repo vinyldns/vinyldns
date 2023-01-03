@@ -80,8 +80,10 @@ class ZoneService(
       _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
+      _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      zoneToCreate = Zone(createZoneInput, auth.isTestUser)
+      createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
+      zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
@@ -98,6 +100,7 @@ class ZoneService(
         auth.signedInUser
       ).toResult
       _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
+      _ <- if(updateZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
@@ -289,6 +292,13 @@ class ZoneService(
         case _ => ().asRight
       }
       .toResult
+
+  def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(s"User '${auth.signedInUser.userName}' is not authorized to schedule zone sync in this zone.")
+    )(
+      auth.isSystemAdmin
+    )
 
   def adminGroupExists(groupId: String): Result[Unit] =
     groupRepository

@@ -68,7 +68,48 @@ def test_update_zone_success(shared_zone_test_context):
             client.abandon_zones([result_zone["id"]], status=202)
 
 
-def test_update_zone_schedule_success(shared_zone_test_context):
+def test_update_zone_sync_schedule_fails(shared_zone_test_context):
+    """
+    Test updating a zone with a schedule for zone sync fails when the user is not an admin user
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            },
+            "transferConnection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        # schedule zone sync every 5 seconds
+        result_zone["recurrenceSchedule"] = "0/5 0 0 ? * * *"
+        error = client.update_zone(result_zone, status=403)
+
+        assert_that(error, contains_string("User 'ok' is not authorized to schedule zone sync in this zone."))
+
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
+
+
+def test_update_zone_sync_schedule_success(shared_zone_test_context):
     """
     Test updating a zone with a schedule for zone sync successfully sync zone at scheduled time
     """
@@ -107,11 +148,13 @@ def test_update_zone_schedule_success(shared_zone_test_context):
         # Convert the time to the UTC timezone
         utc_time = now.astimezone(timezone.utc)
 
-        update_result = client.update_zone(result_zone, status=202)
-        client.wait_until_zone_change_status_synced(update_result)
+        super_user_client = shared_zone_test_context.support_user_client
+
+        update_result = super_user_client.update_zone(result_zone, status=202)
+        super_user_client.wait_until_zone_change_status_synced(update_result)
 
         assert_that(update_result["changeType"], is_("Update"))
-        assert_that(update_result["userId"], is_("ok"))
+        assert_that(update_result["userId"], is_("support-user-id"))
         assert_that(update_result, has_key("created"))
 
         get_result = client.get_zone(result_zone["id"])
@@ -120,12 +163,11 @@ def test_update_zone_schedule_success(shared_zone_test_context):
         assert_that(uz["recurrenceSchedule"], is_("0/5 0 0 ? * * *"))
         assert_that(uz["updated"], is_not(none()))
 
-        # Add 5 seconds to the current time as there may be a slight change than the exact scheduled time
-        utc_time_1 = utc_time + timedelta(seconds=1)
-        utc_time_2 = utc_time + timedelta(seconds=2)
-        utc_time_3 = utc_time + timedelta(seconds=3)
-        utc_time_4 = utc_time + timedelta(seconds=4)
-        utc_time_5 = utc_time + timedelta(seconds=5)
+        # Add + or - 2 seconds to the current time as there may be a slight change than the exact scheduled time
+        utc_time_1 = utc_time - timedelta(seconds=1)
+        utc_time_2 = utc_time - timedelta(seconds=2)
+        utc_time_3 = utc_time + timedelta(seconds=1)
+        utc_time_4 = utc_time + timedelta(seconds=2)
 
         # Format the time as a string in the desired format
         time_str = utc_time.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -133,9 +175,8 @@ def test_update_zone_schedule_success(shared_zone_test_context):
         time_str_2 = utc_time_2.strftime('%Y-%m-%dT%H:%M:%SZ')
         time_str_3 = utc_time_3.strftime('%Y-%m-%dT%H:%M:%SZ')
         time_str_4 = utc_time_4.strftime('%Y-%m-%dT%H:%M:%SZ')
-        time_str_5 = utc_time_5.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        time_list = [time_str, time_str_1, time_str_2, time_str_3, time_str_4, time_str_5]
+        time_list = [time_str, time_str_1, time_str_2, time_str_3, time_str_4]
 
         # Check if zone sync was performed at scheduled time
         assert_that(time_list, has_item(uz["latestSync"]))
