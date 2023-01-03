@@ -497,7 +497,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   def saveTx(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     monitor("repo.ZoneJDBC.save") {
       IO {
-        println(zone.recurrenceSchedule)
         DB.localTx { implicit s =>
           getZoneByNameInSession(zone.name) match {
             case Some(foundZone) if zone.id != foundZone.id => DuplicateZoneError(zone.name).asLeft
