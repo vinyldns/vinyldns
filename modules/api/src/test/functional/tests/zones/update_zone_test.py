@@ -97,6 +97,8 @@ def test_update_zone_schedule_success(shared_zone_test_context):
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
+
+        # schedule zone sync every 5 seconds
         result_zone["recurrenceSchedule"] = "0/5 0 0 ? * * *"
 
         # Get the current time in the local timezone
@@ -115,8 +117,6 @@ def test_update_zone_schedule_success(shared_zone_test_context):
         get_result = client.get_zone(result_zone["id"])
 
         uz = get_result["zone"]
-
-        # schedule zone sync every 5 seconds
         assert_that(uz["recurrenceSchedule"], is_("0/5 0 0 ? * * *"))
         assert_that(uz["updated"], is_not(none()))
 
@@ -137,6 +137,7 @@ def test_update_zone_schedule_success(shared_zone_test_context):
 
         time_list = [time_str, time_str_1, time_str_2, time_str_3, time_str_4, time_str_5]
 
+        # Check if zone sync was performed at scheduled time
         assert_that(time_list, has_item(uz["latestSync"]))
 
     finally:
