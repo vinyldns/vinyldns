@@ -20,6 +20,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{Materializer, ActorMaterializer}
 import cats.effect.{Timer, IO, ContextShift}
+import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
@@ -100,8 +101,16 @@ object Boot extends App {
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the task to be executed every 5 seconds
       _ <- IO(executor.scheduleAtFixedRate(() => {
-          val zoneChanges = zoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository).unsafeRunSync()
-          zoneChanges.foreach(zone => messageQueue.send(zone).unsafeRunSync())
+        val zoneChanges = for {
+          zoneChanges <- zoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
+          _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
+        } yield ()
+        zoneChanges.unsafeRunAsync {
+          case Right(_) =>
+            logger.debug("Zone sync scheduler ran successfully!")
+          case Left(error) =>
+            logger.error(s"An error occurred while performing scheduled zone sync $error")
+        }
       }, 0, 5, TimeUnit.SECONDS))
       _ <- CommandHandler.run(
         messageQueue,

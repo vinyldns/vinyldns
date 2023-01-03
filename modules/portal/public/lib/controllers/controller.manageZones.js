@@ -99,7 +99,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         quartz: true,
         options: {
             allowMinute : false,
-            allowHour : false
+            allowHour : true,
+            allowMonth : false,
+            allowYear : false
         }
     }
 
