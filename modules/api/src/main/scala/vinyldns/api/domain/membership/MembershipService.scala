@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.implicits._
 import scalikejdbc.DB
 import vinyldns.api.Interfaces._
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -30,14 +31,15 @@ import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
-      dataAccessor.recordSetRepository
+      dataAccessor.recordSetRepository,
+      emailConfig
     )
 }
 
@@ -47,7 +49,8 @@ class MembershipService(
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
-    recordSetRepo: RecordSetRepository
+    recordSetRepo: RecordSetRepository,
+    validDomains: ValidEmailConfig
 ) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
@@ -58,6 +61,7 @@ class MembershipService(
     val nonAdminMembers = inputGroup.memberIds.diff(adminMembers)
     for {
       _ <- groupValidation(newGroup)
+      _ <- EmailValidation(newGroup.email)
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
@@ -78,6 +82,7 @@ class MembershipService(
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
       _ <- groupValidation(newGroup)
+      _ <- EmailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
       addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
       // new non-admin members ++ admins converted to non-admins
@@ -363,6 +368,19 @@ class MembershipService(
         ().asRight
     }
   }.toResult
+
+  def EmailValidation(email: String): Result[Unit] = {
+
+    val emailDomains = validDomains.valid_domains
+    val emailRegex = ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
+    Option(email) match {
+      case Some(value) if (emailRegex.findFirstIn(value) == None) =>
+        EmailValidationError(EmailValidationErrorMsg + " " + emailDomains.mkString(",")).asLeft
+      case _ =>
+        ().asRight
+    }
+  }.toResult
+
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
     groupRepo

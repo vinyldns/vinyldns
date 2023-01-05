@@ -29,6 +29,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneRepository
 import cats.effect._
 import scalikejdbc.{ConnectionPool, DB}
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -48,6 +49,7 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
+  private val mockValidEmailConfig = mock[ValidEmailConfig]
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -55,7 +57,8 @@ class MembershipServiceSpec
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
-    mockRecordSetRepo
+    mockRecordSetRepo,
+    mockValidEmailConfig
   )
   private val underTest = spy(backingService)
 
@@ -281,6 +284,18 @@ class MembershipServiceSpec
         verify(mockGroupRepo, never()).save(any[DB], any[Group])
         verify(mockMembershipRepo, never())
           .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      }
+
+      "return an error if an invalid email is entered" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(result(EmailValidationError("fail")))
+          .when(underTest)
+          .EmailValidation(email = "test@test.com")
+
+
+        val error = underTest.createGroup(groupInfo.copy(email = "test@test.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+
       }
     }
 

@@ -49,6 +49,7 @@ class MembershipRoute(
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
