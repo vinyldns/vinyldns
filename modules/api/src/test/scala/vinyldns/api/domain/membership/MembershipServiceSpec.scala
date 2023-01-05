@@ -49,7 +49,7 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
-  private val mockValidEmailConfig = mock[ValidEmailConfig]
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com"))
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -85,7 +85,7 @@ class MembershipServiceSpec
   // the update will remove users 3 and 4, add users 5 and 6, as well as a new admin user 7 and remove user2 as admin
   private val updatedInfo = Group(
     name = "new.name",
-    email = "new.email",
+    email = "test@test.com",
     description = Some("new desc"),
     id = "id",
     memberIds = Set("user1", "user2", "user5", "user6", "user7"),
