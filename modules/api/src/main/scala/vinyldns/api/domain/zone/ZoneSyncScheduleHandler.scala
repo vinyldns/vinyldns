@@ -25,13 +25,13 @@ import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneRepository}
 import java.time.{Instant, ZoneId}
 import java.time.temporal.ChronoUnit
 
-object zoneSyncScheduleHandler {
+object ZoneSyncScheduleHandler {
 
   // Define the function you want to repeat
   def zoneSyncScheduler(zoneRepository: ZoneRepository): IO[Set[ZoneChange]] = {
     for {
       zones <- zoneRepository.getAllZonesWithSyncSchedule
-      zoneScheduleIds = getZoneWithSchedule(zones.toList)
+      zoneScheduleIds = getZonesWithSchedule(zones.toList)
       zoneChanges <- getZoneChanges(zoneRepository, zoneScheduleIds)
     } yield zoneChanges
   }
@@ -47,7 +47,7 @@ object zoneSyncScheduleHandler {
     }
   }
 
-  def getZoneWithSchedule(zone: List[Zone]): List[String] = {
+  def getZonesWithSchedule(zone: List[Zone]): List[String] = {
     var zonesWithSchedule: List[String] = List.empty
     for(z <- zone) {
       if (z.recurrenceSchedule.isDefined) {

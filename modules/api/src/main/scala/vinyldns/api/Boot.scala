@@ -102,7 +102,7 @@ object Boot extends App {
       // Schedule the task to be executed every 5 seconds
       _ <- IO(executor.scheduleAtFixedRate(() => {
         val zoneChanges = for {
-          zoneChanges <- zoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
+          zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
           _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
         } yield ()
         zoneChanges.unsafeRunAsync {
