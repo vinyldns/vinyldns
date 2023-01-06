@@ -99,7 +99,7 @@ object Boot extends App {
         repositories.userRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
-      // Schedule the task to be executed every 5 seconds
+      // Schedule the zone sync task to be executed every 5 seconds
       _ <- IO(executor.scheduleAtFixedRate(() => {
         val zoneChanges = for {
           zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
@@ -109,7 +109,7 @@ object Boot extends App {
           case Right(_) =>
             logger.debug("Zone sync scheduler ran successfully!")
           case Left(error) =>
-            logger.error(s"An error occurred while performing scheduled zone sync $error")
+            logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
         }
       }, 0, 5, TimeUnit.SECONDS))
       _ <- CommandHandler.run(
