@@ -289,8 +289,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
-            $log.log('recordsService::getZone-success schedule: ', $scope.updateZoneInfo.recurrenceSchedule);
-            $log.log('recordsService::getZone-success: ', $scope.zoneInfo);
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();

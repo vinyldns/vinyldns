@@ -27,7 +27,6 @@ import java.time.temporal.ChronoUnit
 
 object ZoneSyncScheduleHandler {
 
-  // Define the function you want to repeat
   def zoneSyncScheduler(zoneRepository: ZoneRepository): IO[Set[ZoneChange]] = {
     for {
       zones <- zoneRepository.getAllZonesWithSyncSchedule

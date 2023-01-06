@@ -53,7 +53,7 @@ object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
 
-  // Create a ScheduledExecutorService with a single thread
+  // Create a ScheduledExecutorService with a new single thread
   private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
