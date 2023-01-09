@@ -239,6 +239,12 @@
                                     @if(rootAccountCanReview) {
                                     <h4>Schedule Zone Sync</h4>
                                     <cron-selection class="col-md-12" ng-model="updateZoneInfo.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
+                                    <br>
+                                    <div class="checkbox col-md-12">
+                                        <label ng-if="recurrenceScheduleExist">
+                                            <input type="checkbox" ng-model="updateZoneInfo.removeRecurrenceSchedule"/>Remove Zone Sync Schedule
+                                        </label>
+                                    </div>
                                     }
                                 </div>
                             </div>

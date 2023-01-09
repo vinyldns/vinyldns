@@ -45,6 +45,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         CONFIRM_UPDATE: 1
     };
     $scope.allGroups = [];
+    $scope.recurrenceScheduleExist = false;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
@@ -187,6 +188,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.submitUpdateZone = function () {
+        delete $scope.updateZoneInfo.removeRecurrenceSchedule;
         var zone = angular.copy($scope.updateZoneInfo);
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
@@ -242,6 +244,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.objectsDiffer = function(left, right) {
+        if($scope.updateZoneInfo.removeRecurrenceSchedule){
+           $scope.updateZoneInfo.recurrenceSchedule = undefined;
+        }
         var l = $scope.normalizeZone(left);
         var r = $scope.normalizeZone(right);
         return !angular.equals(l, r);
@@ -289,6 +294,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
+            $scope.recurrenceScheduleExist = $scope.updateZoneInfo.recurrenceSchedule ? true : false;
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
