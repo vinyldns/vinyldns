@@ -122,7 +122,7 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
 
         new_group = {
             "name": "invalid-email",
-            "email": "test@abc.com"
+            "email": "test@abc.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
