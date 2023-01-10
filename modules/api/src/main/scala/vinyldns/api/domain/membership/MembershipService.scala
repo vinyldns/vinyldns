@@ -373,12 +373,10 @@ class MembershipService(
     val emailDomains = validDomains.valid_domains
     println("valid domains",emailDomains);
     val emailRegex = if(emailDomains.mkString(",").contains("*")){
-      println("demo");
       ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString(",").replaceAllLiterally("*","[A-Za-z0-9.]*").replaceAllLiterally(",","|") + "$").r
     } else {
       ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
     }
-    println("email regex",emailRegex);
     Option(email) match {
       case Some(value) if (emailRegex.findFirstIn(value) == None) =>
         EmailValidationError(EmailValidationErrorMsg + " " + validDomains.valid_domains.mkString(",").replace("*","")).asLeft
