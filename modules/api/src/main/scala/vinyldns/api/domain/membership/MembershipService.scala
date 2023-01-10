@@ -370,12 +370,18 @@ class MembershipService(
   }.toResult
 
   def EmailValidation(email: String): Result[Unit] = {
-
     val emailDomains = validDomains.valid_domains
-    val emailRegex = ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
+    println("valid domains",emailDomains);
+    val emailRegex = if(emailDomains.mkString(",").contains("*")){
+      println("demo");
+      ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString(",").replaceAllLiterally("*","[A-Za-z0-9.]*").replaceAllLiterally(",","|") + "$").r
+    } else {
+      ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
+    }
+    println("email regex",emailRegex);
     Option(email) match {
       case Some(value) if (emailRegex.findFirstIn(value) == None) =>
-        EmailValidationError(EmailValidationErrorMsg + " " + emailDomains.mkString(",")).asLeft
+        EmailValidationError(EmailValidationErrorMsg + " " + validDomains.valid_domains.mkString(",").replace("*","")).asLeft
       case _ =>
         ().asRight
     }
