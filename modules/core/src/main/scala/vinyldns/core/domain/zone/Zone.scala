@@ -45,6 +45,8 @@ final case class Zone(
     transferConnection: Option[ZoneConnection] = None,
     account: String = "system",
     shared: Boolean = false,
+    allowDottedHosts: Boolean = false,
+    allowDottedLimits : Int = 0,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
     latestSync: Option[Instant] = None,
@@ -70,6 +72,8 @@ final case class Zone(
     sb.append("adminGroupId=\"").append(adminGroupId).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("shared=\"").append(shared).append("\"; ")
+    sb.append("allowDottedHosts=\"").append(allowDottedHosts).append("\"; ")
+    sb.append("allowDottedLimits=\"").append(allowDottedLimits).append("\"; ")
     sb.append("connection=\"").append(connection.toString).append("\"; ")
     sb.append("transferConnection=\"").append(transferConnection.toString).append("\"; ")
     sb.append("reverse=\"").append(isReverse).append("\"; ")
@@ -92,6 +96,8 @@ object Zone {
       connection = connection,
       transferConnection = transferConnection,
       shared = shared,
+      allowDottedHosts= allowDottedHosts,
+      allowDottedLimits= allowDottedLimits,
       acl = acl,
       adminGroupId = adminGroupId,
       backendId = backendId,
@@ -108,6 +114,8 @@ object Zone {
       connection = connection,
       transferConnection = transferConnection,
       shared = shared,
+      allowDottedHosts = allowDottedHosts,
+      allowDottedLimits= allowDottedLimits,
       acl = acl,
       adminGroupId = adminGroupId,
       backendId = backendId
@@ -121,6 +129,8 @@ final case class CreateZoneInput(
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
+    allowDottedHosts: Boolean = false,
+    allowDottedLimits: Int = 0,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
     backendId: Option[String] = None
@@ -133,6 +143,8 @@ final case class UpdateZoneInput(
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
+    allowDottedHosts: Boolean = false,
+    allowDottedLimits: Int = 0,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
     backendId: Option[String] = None
@@ -262,3 +274,4 @@ object ConfiguredDnsConnections {
       ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
     }
 }
+

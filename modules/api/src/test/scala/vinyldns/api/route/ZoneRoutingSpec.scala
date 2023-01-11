@@ -54,6 +54,7 @@ class ZoneRoutingSpec
 
   private val userAclRule = ACLRule(
     AccessLevel.Read,
+    false,
     Some("desc"),
     Some("johnny"),
     None,
@@ -62,6 +63,7 @@ class ZoneRoutingSpec
   )
   private val userAclRuleInfo = ACLRuleInfo(
     AccessLevel.Read,
+    false,
     Some("desc"),
     Some("johnny"),
     None,
@@ -70,6 +72,7 @@ class ZoneRoutingSpec
   )
   private val groupAclRule = ACLRule(
     AccessLevel.Read,
+    false,
     Some("desc"),
     None,
     Some("group"),
@@ -437,6 +440,7 @@ class ZoneRoutingSpec
   "PUT zone acl rule" should {
     val goodRequest = ACLRuleInfo(
       AccessLevel.Read,
+      false,
       Some("desc"),
       Some("user"),
       None,
@@ -465,6 +469,7 @@ class ZoneRoutingSpec
     "return a 202 Accepted when the acl rule has neither user nor group id" in {
       val requestAllUsers = ACLRuleInfo(
         AccessLevel.Read,
+        false,
         Some("desc"),
         userId = None,
         groupId = None,
@@ -551,6 +556,7 @@ class ZoneRoutingSpec
     "return a 400 Bad Request when given an invalid regex mask" in {
       val badRequest = ACLRuleInfo(
         AccessLevel.Read,
+        false,
         Some("desc"),
         Some("user"),
         None,
@@ -570,6 +576,7 @@ class ZoneRoutingSpec
   "DELETE zone acl rule" should {
     val goodRequest = ACLRuleInfo(
       AccessLevel.Read,
+      false,
       Some("desc"),
       Some("user"),
       None,

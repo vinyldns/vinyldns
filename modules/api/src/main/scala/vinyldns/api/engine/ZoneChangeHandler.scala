@@ -40,7 +40,6 @@ object ZoneChangeHandler {
             )
           )
         case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-
           executeWithinTransaction { db: DB =>
             for {
               _ <- recordSetRepository

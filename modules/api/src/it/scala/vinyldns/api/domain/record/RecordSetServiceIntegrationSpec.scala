@@ -19,6 +19,7 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -32,8 +33,9 @@ import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.core.TestMembershipData.{xyzAuth, xyzGroup}
 import vinyldns.mysql.TransactionProvider
-import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.TestZoneData.{dottedZoneAllowed, testConnection}
 import vinyldns.core.domain.{Fqdn, HighValueDomainError}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
@@ -82,6 +84,27 @@ class RecordSetServiceIntegrationSpec
     connection = testConnection,
     adminGroupId = dummyGroup.id
   )
+
+  val dottedHostAclRuleNotAllowed: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, false, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleReadAccess: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleWithoutUserAccess: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, true, userId = Some("ok"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+  val dottedHostAclRuleAllowedWithInvalidRecordType: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.A))))
+
+  private val dottedHostZoneWithAllowDottedHostsFalse = dottedZoneAllowed.copy(allowDottedHosts = false)
+  private val dottedHostZoneWithAllowDottedLimitZero = dottedZoneAllowed.copy(allowDottedLimits = 0)
+  private val dottedHostZoneWithAclFalse = dottedZoneAllowed.copy(acl = dottedHostAclRuleNotAllowed)
+  private val dottedHostZoneWithReadOnlyAccess = dottedZoneAllowed.copy(acl = dottedHostAclRuleReadAccess)
+  private val dottedHostZoneWithoutUserAccess =  dottedZoneAllowed.copy(acl = dottedHostAclRuleWithoutUserAccess)
+  private val dottedHostZoneWithInvalidRecordType =  dottedZoneAllowed.copy(acl = dottedHostAclRuleAllowedWithInvalidRecordType)
+
+
+  val dottedHostAclRuleAllowed: ZoneACL =
+    ZoneACL(Set(ACLRule(
+      AccessLevel.Write, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.CNAME, RecordType.AAAA))))
+
+  val dottedZone: Zone =
+    Zone("ok.", "dotted@xyz.com", adminGroupId = xyzGroup.id , allowDottedHosts = true, allowDottedLimits= 4, acl= dottedHostAclRuleAllowed)
+
   private val zone = Zone(
     s"live-zone-test.",
     "test@test.com",
@@ -120,6 +143,18 @@ class RecordSetServiceIntegrationSpec
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
+
+  private val dottedHostsTestRecord = RecordSet(
+    dottedZoneAllowed.id,
+    "test.dotted.hosts",
+    AAAA,
+    38400,
+    RecordSetStatus.Active,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    None,
+    List(AAAAData("fd69:27cc:fe91::60"))
+  )
+
   private val subTestRecordA = RecordSet(
     zone.id,
     "a-record",
@@ -275,7 +310,9 @@ class RecordSetServiceIntegrationSpec
       }
 
     List(group, group2, sharedGroup, dummyGroup).traverse(g => saveGroupData(groupRepo, g).void).unsafeRunSync()
-    List(zone, dummyZone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
+    List(zone, dottedZone, dummyZone,  dottedHostZoneWithAllowDottedHostsFalse, dottedHostZoneWithAllowDottedLimitZero,
+      dottedHostZoneWithAclFalse, dottedHostZoneWithReadOnlyAccess, dottedHostZoneWithoutUserAccess, dottedHostZoneWithInvalidRecordType,
+      zoneTestNameConflicts, zoneTestAddRecords, sharedZone)
       .traverse(
         z => zoneRepo.save(z)
       )
@@ -294,6 +331,7 @@ class RecordSetServiceIntegrationSpec
       apexTestRecordA,
       apexTestRecordAAAA,
       dottedTestRecord,
+      dottedHostsTestRecord,
       subTestRecordA,
       subTestRecordAAAA,
       subTestRecordNS,
@@ -371,6 +409,7 @@ class RecordSetServiceIntegrationSpec
         None,
         List(AData("10.1.1.1"))
       )
+
       val result =
         testRecordSetService
           .addRecordSet(newRecord, auth)
@@ -402,6 +441,30 @@ class RecordSetServiceIntegrationSpec
         .name shouldBe "testing.dotted"
     }
 
+    "create dotted record succeeds if it satisfies all dotted hosts" in {
+      val newRecord = RecordSet(
+        dottedZone.id,
+        "testing.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+
+      rightValue(result)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .name shouldBe "testing.dotted"
+    }
+
     "fail creating dotted record if it satisfies all dotted hosts config except dots-limit for the zone" in {
       val newRecord = RecordSet(
         dummyZone.id,
@@ -414,8 +477,6 @@ class RecordSetServiceIntegrationSpec
         List(AAAAData("fd69:27cc:fe91::60"))
       )
 
-      // The number of dots allowed in the record name for this zone as defined in the config is 3.
-      // Creating with 4 dots results in an error
       val result =
         testRecordSetService
           .addRecordSet(newRecord, dummyAuth)
@@ -423,6 +484,147 @@ class RecordSetServiceIntegrationSpec
           .unsafeRunSync()
       leftValue(result) shouldBe a[InvalidRequest]
     }
+
+    "fail creating dotted record if it satisfies all dotted hosts except dots-limit for the zone" in {
+      val newRecord = RecordSet(
+        dottedZoneAllowed.id,
+        "test.dotted.more.dots.than.allowed",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+      testRecordSetService
+        .addRecordSet(newRecord, xyzAuth)
+        .value
+        .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if it super user not allow dotted hosts for the zone" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithAllowDottedHostsFalse.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+      testRecordSetService
+        .addRecordSet(newRecord, xyzAuth)
+        .value
+        .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if it super user not allow dotted limit more than 0 for the zone" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithAllowDottedLimitZero.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if it super user not allow dotted hosts for the users" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithAclFalse.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if super user not given rights to user for dotted hosts" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithReadOnlyAccess.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if user does not have access to the dotted hosts" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithoutUserAccess.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail creating dotted record if user does not have access to create AAAA with dotted hosts" in {
+      val newRecord = RecordSet(
+        dottedHostZoneWithInvalidRecordType.id,
+        "test.dotted",
+        AAAA,
+        38400,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(AAAAData("fd69:27cc:fe91::60"))
+      )
+
+      val result =
+        testRecordSetService
+          .addRecordSet(newRecord, xyzAuth)
+          .value
+          .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
 
     "update dotted record succeeds if it satisfies all dotted hosts config" in {
       val newRecord = dottedTestRecord.copy(ttl = 37000)
@@ -433,6 +635,18 @@ class RecordSetServiceIntegrationSpec
         .unsafeRunSync()
       val change = rightValue(result).asInstanceOf[RecordSetChange]
       change.recordSet.name shouldBe "test.dotted"
+      change.recordSet.ttl shouldBe 37000
+    }
+
+    "update dotted record succeeds if it satisfies all dotted hosts" in {
+      val newRecord = dottedHostsTestRecord.copy(ttl = 37000)
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, xyzAuth)
+        .value
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "test.dotted.hosts"
       change.recordSet.ttl shouldBe 37000
     }
 

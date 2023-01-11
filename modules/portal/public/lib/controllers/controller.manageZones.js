@@ -195,6 +195,7 @@ angular.module('controller.manageZones', [])
 
     $scope.submitAclRule = function(type) {
         if ($scope.addAclRuleForm.$valid) {
+
             $("#acl_modal").modal('hide');
             if ($scope.currentAclRule.priority == 'User') {
                 profileService.getUserDataByUsername($scope.currentAclRule.userName)
@@ -276,6 +277,8 @@ angular.module('controller.manageZones', [])
             $log.log('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
+            $log.log('wqewweq::getZone-success', $scope.updateZoneInfo);
+            $log.log('sfsafd::getZone-success', $scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
