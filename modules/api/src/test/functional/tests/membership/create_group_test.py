@@ -127,8 +127,8 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
         }
-        errors = client.create_group(new_group, status=400)["errors"]
-        assert_that(errors, is_("Please enter a valid Email ID.Valid domains are test.com"))
+        error = client.create_group(new_group, status=400)
+        assert_that(error, is_("Please enter a valid Email ID.Valid domains should end with test.com,comcast.com"))
 
 def test_create_group_without_members_or_admins(shared_zone_test_context):
     """
