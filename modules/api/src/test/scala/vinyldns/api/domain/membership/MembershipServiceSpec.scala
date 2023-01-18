@@ -290,11 +290,12 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(result(EmailValidationError("fail")))
           .when(underTest)
-          .EmailValidation(email = "test@test.com")
+          .EmailValidation(email = "test@ok.com")
 
 
-        val error = underTest.createGroup(groupInfo.copy(email = "test@test.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        val error = underTest.createGroup(groupInfo.copy(email = "test@ok.com"), okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[EmailValidationError]
+        println(error)
 
       }
     }

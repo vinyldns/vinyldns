@@ -371,10 +371,15 @@ class MembershipService(
 
   def EmailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
-    val emailRegex = if(emailDomains.mkString(",").contains("*")){
-      ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString(",").replaceAllLiterally("*","[A-Za-z0-9.]*").replaceAllLiterally(",","|") + "$").r
-    } else {
-      ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
+    val emailRegex = if(emailDomains.isEmpty){
+      """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    }
+    else {
+      if (emailDomains.mkString(",").contains("*")) {
+        ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString(",").replaceAllLiterally("*", "[A-Za-z0-9.]*").replaceAllLiterally(",", "|") + "$").r
+      } else {
+        ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
+      }
     }
     Option(email) match {
       case Some(value) if (emailRegex.findFirstIn(value) == None) =>
