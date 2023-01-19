@@ -475,6 +475,16 @@ sns {
   }
 }
 ```
+### Email Domain Configuration
+ This configuration setting determines the valid domains which are 
+ allowed in the email fields.`*dummy.com` means it will allow any 
+ subdomain within dummy.com like apac.dummy.com. If email-domains is
+ left empty then it will accept any domain name.
+```yaml
+validEmailConfig {
+   email-domains = ["test.com","*dummy.com"]
+}
+  ``` 
 
 ### Batch Manual Review Enabled <a id="manual-review" />
 
