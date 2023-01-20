@@ -49,7 +49,7 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
-  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com"))
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"))
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -291,7 +291,33 @@ class MembershipServiceSpec
         error shouldBe a[EmailValidationError]
       }
     }
+    "Create Group when email has domain *dummy.com" in {
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+      doReturn(().toResult).when(underTest).groupValidation(groupInfo)
+      doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+      doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
+      doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(Set(okUser.id)))
+        .when(mockMembershipRepo)
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
 
+      val result = underTest.createGroup(groupInfo.copy(email = "test@ok.dummy.com"), okAuth).value.unsafeRunSync().toOption.get
+      result shouldBe groupInfo.copy(email = "test@ok.dummy.com")
+
+      val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
+
+      verify(mockMembershipRepo, times(2))
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      verify(mockGroupRepo).save(any[DB], groupCaptor.capture())
+
+      val savedGroup = groupCaptor.getValue
+      (savedGroup.memberIds should contain).only(okUser.id)
+      (savedGroup.adminUserIds should contain).only(okUser.id)
+      savedGroup.name shouldBe groupInfo.name
+      savedGroup.email shouldBe groupInfo.copy(email = "test@ok.dummy.com").email
+      savedGroup.description shouldBe groupInfo.description
+  }
     "update an existing group" should {
       "save the update and add new members and remove deleted members" in {
         doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(any[String])
