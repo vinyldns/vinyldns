@@ -214,9 +214,9 @@ class BatchChangeValidations(
   }
 
   def validateDeleteRRSetChangeInput(
-                                      deleteRRSetChangeInput: DeleteRRSetChangeInput,
-                                      isApproved: Boolean
-                                    ): SingleValidation[Unit] = {
+    deleteRRSetChangeInput: DeleteRRSetChangeInput,
+    isApproved: Boolean
+  ): SingleValidation[Unit] = {
     val validRecord = deleteRRSetChangeInput.record match {
       case Some(recordData) => validateRecordData(recordData, deleteRRSetChangeInput)
       case None => ().validNel
