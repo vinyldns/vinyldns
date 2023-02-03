@@ -318,25 +318,6 @@ class BatchChangeValidations(
       }
     }
 
-  def ensureRecordExists(
-      change: ChangeForValidation,
-      groupedChanges: ChangeForValidationMap
-  ): SingleValidation[Unit] =
-    change match {
-      // For DeleteRecord inputs, need to verify that the record data actually exists
-      case DeleteRRSetChangeForValidation(
-          _,
-          _,
-          DeleteRRSetChangeInput(inputName, _, Some(recordData))
-          )
-          if !groupedChanges
-            .getExistingRecordSet(change.recordKey)
-            .exists(rs => matchRecordData(rs.records, recordData)) =>
-        DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
-      case _ =>
-        ().validNel
-    }
-
   def validateDeleteWithContext(
       change: ChangeForValidation,
       groupedChanges: ChangeForValidationMap,
@@ -359,8 +340,7 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
+            zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           if(isSameRecordUpdateInBatch) InvalidUpdateRequest(change.inputChange.inputName).invalidNel else ().validNel
       }
@@ -425,8 +405,7 @@ class BatchChangeValidations(
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(change.recordKey).toList
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
+            zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           if(isSameRecordUpdateInBatch) InvalidUpdateRequest(change.inputChange.inputName).invalidNel else ().validNel
       }
@@ -459,6 +438,7 @@ class BatchChangeValidations(
     }
 
     val deletes = groupedChanges.getProposedDeletes(change.recordKey)
+    val isDeleteExists = deletes.nonEmpty
     val isSameRecordUpdateInBatch = if(recordData.nonEmpty){
       if(deletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get)) true else false
     } else false
@@ -484,7 +464,8 @@ class BatchChangeValidations(
           change.inputChange.typ,
           change.inputChange.record,
           groupedChanges,
-          isApproved
+          isApproved,
+          isDeleteExists
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
@@ -527,13 +508,14 @@ class BatchChangeValidations(
       typ: RecordType,
       recordData: RecordData,
       groupedChanges: ChangeForValidationMap,
-      isApproved: Boolean
+      isApproved: Boolean,
+      isDeleteExist: Boolean
   ): SingleValidation[Unit] = {
     val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
     if(record.isDefined) {
       record.get.records.contains(recordData) match {
         case true => ().validNel
-        case false => RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
     } else ().validNel
     }
 

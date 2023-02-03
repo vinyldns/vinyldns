@@ -1029,7 +1029,7 @@ class BatchChangeValidationsSpec
     )
   }
 
-  property("validateChangesWithContext: should fail for update if record exist") {
+  property("validateChangesWithContext: should complete for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
     val deleteNonExistentEntry = makeDeleteUpdateDeleteRRSet("ok", Some(AData("1.1.1.1")))
@@ -1053,14 +1053,8 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
     result(1) shouldBe valid
     result(3) shouldBe valid
-    result(4) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(makeAddUpdateRecord("ok").inputChange.inputName, makeAddUpdateRecord("ok").inputChange.record, false)
-    )
-    deleteNonExistentEntry.inputChange.record.foreach { record =>
-      result(5) should haveInvalid[DomainValidationError](
-        DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
-      )
-    }
+    result(4) shouldBe valid
+    result(5) shouldBe valid
   }
 
   property(
