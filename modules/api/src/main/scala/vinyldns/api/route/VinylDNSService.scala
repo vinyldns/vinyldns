@@ -105,7 +105,7 @@ class VinylDNSService(
 
   val unloggedUris = Seq(
     Uri.Path("/health"),
-    Uri.Path("/color"),
+    Uri.Path("/next-color"),
     Uri.Path("/ping"),
     Uri.Path("/metrics/prometheus")
   )

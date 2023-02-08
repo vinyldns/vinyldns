@@ -160,7 +160,7 @@ class VinylDNSClient(object):
         Gets the current color for the application
         :return: the content of the response, which should be "blue" or "green"
         """
-        url = urljoin(self.index_url, "/color")
+        url = urljoin(self.index_url, "/next-color")
         response, data = self.make_request(url)
         return data
 

@@ -30,7 +30,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 trait BlueGreenRoute extends Directives {
 
   def colorRoute(nextColor: String): Route =
-    (get & path("color")) {
+    (get & path("next-color")) {
       complete(nextColor)
     }
 }

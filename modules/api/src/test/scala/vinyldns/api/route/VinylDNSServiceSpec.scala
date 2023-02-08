@@ -265,7 +265,7 @@ class VinylDNSServiceSpec
 
     "return an optional log entry when given both a request and response" in {
       val unloggedUris =
-        Seq(Uri.Path("/health"), Uri.Path("/color"), Uri.Path("/ping"), Uri.Path("/status"))
+        Seq(Uri.Path("/health"), Uri.Path("/next-color"), Uri.Path("/ping"), Uri.Path("/status"))
       val req = buildMockRequest()
       val res = buildMockResponse()
 
@@ -279,7 +279,7 @@ class VinylDNSServiceSpec
     }
     "return a log message even if the response is not a response" in {
       val unloggedUris =
-        Seq(Uri.Path("/health"), Uri.Path("/color"), Uri.Path("/ping"), Uri.Path("/status"))
+        Seq(Uri.Path("/health"), Uri.Path("/next-color"), Uri.Path("/ping"), Uri.Path("/status"))
       val req = buildMockRequest()
       val res = 0
 

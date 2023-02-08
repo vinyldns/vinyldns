@@ -32,7 +32,7 @@ class BlueGreenRoutingSpec
 
   "GET color" should {
     "return blue" in {
-      Get("/color") ~> colorRoute("blue") ~> check {
+      Get("/next-color") ~> colorRoute("blue") ~> check {
         response.status shouldBe StatusCodes.OK
 
         // set in the application.conf in src/test/resources
