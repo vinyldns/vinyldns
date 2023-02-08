@@ -31,7 +31,8 @@ import scala.concurrent.duration._
 
 final case class CurrentStatus(
     processingDisabled: Boolean,
-    color: String,
+    currentColor: String,
+    nextColor: String,
     keyName: String,
     version: String
 )
@@ -72,7 +73,8 @@ class StatusRoute(
           StatusCodes.OK,
           CurrentStatus(
             isProcessingDisabled,
-            serverConfig.color,
+            serverConfig.currentColor,
+            serverConfig.nextColor,
             serverConfig.keyName,
             serverConfig.version
           )
@@ -87,7 +89,8 @@ class StatusRoute(
                 StatusCodes.OK,
                 CurrentStatus(
                   isProcessingDisabled,
-                  serverConfig.color,
+                  serverConfig.currentColor,
+                  serverConfig.nextColor,
                   serverConfig.keyName,
                   serverConfig.version
                 )

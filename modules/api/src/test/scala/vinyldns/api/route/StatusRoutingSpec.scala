@@ -64,7 +64,8 @@ class StatusRoutingSpec
         response.status shouldBe StatusCodes.OK
         val resultStatus = responseAs[CurrentStatus]
         resultStatus.processingDisabled shouldBe false
-        resultStatus.color shouldBe "blue"
+        resultStatus.currentColor shouldBe "green"
+        resultStatus.nextColor shouldBe "blue"
         resultStatus.keyName shouldBe "vinyldns."
         resultStatus.version shouldBe "unset"
       }

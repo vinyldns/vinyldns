@@ -110,7 +110,7 @@ class VinylDNSService(
     Uri.Path("/metrics/prometheus")
   )
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
-    vinyldnsConfig.serverConfig.color
+    vinyldnsConfig.serverConfig.nextColor
   ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~

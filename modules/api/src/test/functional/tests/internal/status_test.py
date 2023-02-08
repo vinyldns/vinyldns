@@ -13,7 +13,8 @@ def test_get_status_success(shared_zone_test_context):
     result = client.get_status()
 
     assert_that([True, False], has_item(result["processingDisabled"]))
-    assert_that(["green", "blue"], has_item(result["color"]))
+    assert_that(["green", "blue"], has_item(result["nextColor"]))
+    assert_that(["green", "blue"], has_item(result["currentColor"]))
     assert_that(result["keyName"], not_none())
     assert_that(result["version"], not_none())
 

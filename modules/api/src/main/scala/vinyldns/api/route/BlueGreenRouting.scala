@@ -16,7 +16,7 @@
 
 package vinyldns.api.route
 
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.{Directives, Route}
 
 /**
   * Used for deployment, determines the current color of this node / cluster
@@ -29,8 +29,8 @@ import akka.http.scaladsl.server.Directives
   */
 trait BlueGreenRoute extends Directives {
 
-  def colorRoute(color: String) =
+  def colorRoute(nextColor: String): Route =
     (get & path("color")) {
-      complete(color)
+      complete(nextColor)
     }
 }

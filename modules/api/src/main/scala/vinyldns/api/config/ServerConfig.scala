@@ -29,7 +29,8 @@ final case class ServerConfig(
                                syncDelay: Int,
                                validateRecordLookupAgainstDnsBackend: Boolean,
                                approvedNameServers: List[Regex],
-                               color: String,
+                               currentColor: String,
+                               nextColor: String,
                                version: String,
                                keyName: String,
                                processingDisabled: Boolean,
@@ -40,7 +41,7 @@ object ServerConfig {
 
   import ZoneRecordValidations.toCaseIgnoredRegexList
 
-  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct12[
+  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct13[
     ServerConfig,
     Int,
     Int,
@@ -48,6 +49,7 @@ object ServerConfig {
     Int,
     Boolean,
     List[String],
+    String,
     String,
     String,
     Config,
@@ -61,7 +63,8 @@ object ServerConfig {
     "sync-delay",
     "validate-record-lookup-against-dns-backend",
     "approved-name-servers",
-    "color",
+    "current-color",
+    "next-color",
     "version",
     "defaultZoneConnection",
     "processing-disabled",
@@ -75,7 +78,8 @@ object ServerConfig {
       syncDelay,
       validateDnsBackend,
       approvedNameServers,
-      color,
+      currentColor,
+      nextColor,
       version,
       zoneConnConfig,
       processingDisabled,
@@ -88,7 +92,8 @@ object ServerConfig {
         syncDelay,
         validateDnsBackend,
         toCaseIgnoredRegexList(approvedNameServers),
-        color,
+        currentColor,
+        nextColor,
         version,
         zoneConnConfig.getString("keyName"),
         processingDisabled,
