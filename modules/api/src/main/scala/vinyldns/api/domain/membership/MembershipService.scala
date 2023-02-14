@@ -245,7 +245,9 @@ class MembershipService(
         .toResult[Option[GroupChange]]
       _ <- isGroupChangePresent(result).toResult
       _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
-      groupChangeMessage <- determineGroupDifference(Seq(result.get))
+      allUserIds = getGroupUserIds(Seq(result.get))
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      groupChangeMessage <- determineGroupDifference(Seq(result.get), allUserMap)
       groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = Seq(result.get).map(_.userId).toSet
       users <- getUsers(userIds).map(_.users)
@@ -263,7 +265,9 @@ class MembershipService(
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
-      groupChangeMessage <- determineGroupDifference(result.changes)
+      allUserIds = getGroupUserIds(result.changes)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      groupChangeMessage <- determineGroupDifference(result.changes, allUserMap)
       groupChanges = (groupChangeMessage, result.changes).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = result.changes.map(_.userId).toSet
       users <- getUsers(userIds).map(_.users)
@@ -275,7 +279,21 @@ class MembershipService(
       maxItems
     )
 
-  def determineGroupDifference(groupChange: Seq[GroupChange]): Result[Seq[String]] = {
+  def getGroupUserIds(groupChange: Seq[GroupChange]): Set[String] = {
+    var userIds: Set[String] = Set.empty[String]
+    for (change <- groupChange) {
+      if (change.oldGroup.isDefined) {
+        val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
+        val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
+        val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
+        val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
+        userIds = userIds ++ adminAddDifference ++ adminRemoveDifference ++ memberAddDifference ++ memberRemoveDifference
+      }
+    }
+    userIds
+  }
+
+  def determineGroupDifference(groupChange: Seq[GroupChange],  allUserMap: Map[String, String]): Result[Seq[String]] = {
     var groupChangeMessage: Seq[String] = Seq.empty[String]
 
     for (change <- groupChange) {
@@ -292,19 +310,19 @@ class MembershipService(
         }
         val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
         if (adminAddDifference.nonEmpty) {
-          sb.append(s"Group admin/s with userId/s (${adminAddDifference.mkString(",")}) added. ")
+          sb.append(s"Group admin/s with user name/s '${adminAddDifference.map(x => allUserMap(x)).mkString("','")}' added. ")
         }
         val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
         if (adminRemoveDifference.nonEmpty) {
-          sb.append(s"Group admin/s with userId/s (${adminRemoveDifference.mkString(",")}) removed. ")
+          sb.append(s"Group admin/s with user name/s '${adminRemoveDifference.map(x => allUserMap(x)).mkString("','")}' removed. ")
         }
         val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
         if (memberAddDifference.nonEmpty) {
-          sb.append(s"Group member/s with userId/s (${memberAddDifference.mkString(",")}) added. ")
+          sb.append(s"Group member/s with user name/s '${memberAddDifference.map(x => allUserMap(x)).mkString("','")}' added. ")
         }
         val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
         if (memberRemoveDifference.nonEmpty) {
-          sb.append(s"Group member/s with userId/s (${memberRemoveDifference.mkString(",")}) removed. ")
+          sb.append(s"Group member/s with user name/s '${memberRemoveDifference.map(x => allUserMap(x)).mkString("','")}' removed. ")
         }
         groupChangeMessage = groupChangeMessage :+ sb.toString().trim
       }
