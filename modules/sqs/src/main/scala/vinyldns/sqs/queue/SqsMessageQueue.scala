@@ -39,7 +39,7 @@ import vinyldns.sqs.queue.SqsMessageType.{
   SqsRecordSetChangeMessage,
   SqsZoneChangeMessage
 }
-
+import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
@@ -105,7 +105,9 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
     IO(SqsMessage.parseSqsMessage(message)).flatMap {
       case Left(e) =>
-        logger.error(s"Failed handling message with id '${message.getMessageId}'", e)
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Failed handling message with id '${message.getMessageId}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         delete(message.getReceiptHandle).as(Left(e))
       case Right(ok) => IO.pure(Right(ok))
     }

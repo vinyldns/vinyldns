@@ -18,6 +18,7 @@ package vinyldns.core.health
 
 import cats.effect.IO
 import org.slf4j.LoggerFactory
+import java.io.{PrintWriter, StringWriter}
 
 object HealthCheck {
 
@@ -31,7 +32,9 @@ object HealthCheck {
     def asHealthCheck(caller: Class[_]): HealthCheck =
       io.map {
         case Left(err) =>
-          logger.error(s"HealthCheck for ${caller.getCanonicalName} Failed", err)
+          val errorMessage = new StringWriter
+          err.printStackTrace(new PrintWriter(errorMessage))
+          logger.error(s"HealthCheck for ${caller.getCanonicalName} failed. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           val msg = Option(err.getMessage).getOrElse("no message from error")
           Left(
             HealthCheckError(s"${caller.getCanonicalName} health check failed with msg='${msg}'")

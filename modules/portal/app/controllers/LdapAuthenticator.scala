@@ -27,7 +27,7 @@ import javax.naming.directory._
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.membership.User
 import vinyldns.core.health.HealthCheck._
-
+import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -134,9 +134,10 @@ object LdapAuthenticator {
         else Left(UserDoesNotExistException(s"[$lookupUserName] LDAP entity does not exist"))
       } catch {
         case unexpectedError: Throwable =>
+          val errorMessage = new StringWriter
+          unexpectedError.printStackTrace(new PrintWriter(errorMessage))
           logger.error(
-            s"LDAP Unexpected Error searching for user; userName='$lookupUserName'",
-            unexpectedError
+            s"LDAP Unexpected Error searching for user; userName='$lookupUserName'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"
           )
           Left(LdapServiceException(unexpectedError.getMessage))
       } finally {

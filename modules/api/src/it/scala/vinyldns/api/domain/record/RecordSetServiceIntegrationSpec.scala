@@ -19,7 +19,8 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
@@ -74,6 +75,13 @@ class RecordSetServiceIntegrationSpec
   private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id, group2.id))
   val dummyAuth: AuthPrincipal = AuthPrincipal(testUser, Seq(dummyGroup.id))
 
+  private val dummyZone = Zone(
+    s"dummy.",
+    "test@test.com",
+    status = ZoneStatus.Active,
+    connection = testConnection,
+    adminGroupId = dummyGroup.id
+  )
   private val zone = Zone(
     s"live-zone-test.",
     "test@test.com",
@@ -88,7 +96,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -98,7 +106,17 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    None,
+    List(AAAAData("fd69:27cc:fe91::60"))
+  )
+  private val dottedTestRecord = RecordSet(
+    dummyZone.id,
+    "test.dotted",
+    AAAA,
+    38400,
+    RecordSetStatus.Active,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -108,7 +126,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -118,7 +136,7 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -128,7 +146,7 @@ class RecordSetServiceIntegrationSpec
     NS,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("172.17.42.1.")))
   )
@@ -146,7 +164,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -156,7 +174,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -169,21 +187,13 @@ class RecordSetServiceIntegrationSpec
     adminGroupId = group.id
   )
 
-  private val dummyZone = Zone(
-    s"dummy.",
-    "test@test.com",
-    status = ZoneStatus.Active,
-    connection = testConnection,
-    adminGroupId = dummyGroup.id
-  )
-
   private val highValueDomainRecord = RecordSet(
     zone.id,
     "high-value-domain-existing",
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1"))
   )
@@ -203,7 +213,7 @@ class RecordSetServiceIntegrationSpec
     A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1")),
     ownerGroupId = Some(sharedGroup.id)
@@ -215,7 +225,7 @@ class RecordSetServiceIntegrationSpec
     A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1")),
     ownerGroupId = Some("non-existent")
@@ -227,7 +237,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1")),
     ownerGroupId = Some(sharedGroup.id)
@@ -283,6 +293,7 @@ class RecordSetServiceIntegrationSpec
     val zoneRecords = List(
       apexTestRecordA,
       apexTestRecordAAAA,
+      dottedTestRecord,
       subTestRecordA,
       subTestRecordAAAA,
       subTestRecordNS,
@@ -334,7 +345,7 @@ class RecordSetServiceIntegrationSpec
         A,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )
@@ -356,7 +367,7 @@ class RecordSetServiceIntegrationSpec
         A,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )
@@ -371,11 +382,11 @@ class RecordSetServiceIntegrationSpec
     "create dotted record succeeds if it satisfies all dotted hosts config" in {
       val newRecord = RecordSet(
         dummyZone.id,
-        "test.dotted",
+        "testing.dotted",
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
@@ -388,7 +399,7 @@ class RecordSetServiceIntegrationSpec
       rightValue(result)
         .asInstanceOf[RecordSetChange]
         .recordSet
-        .name shouldBe "test.dotted"
+        .name shouldBe "testing.dotted"
     }
 
     "fail creating dotted record if it satisfies all dotted hosts config except dots-limit for the zone" in {
@@ -398,7 +409,7 @@ class RecordSetServiceIntegrationSpec
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
@@ -410,6 +421,29 @@ class RecordSetServiceIntegrationSpec
           .addRecordSet(newRecord, dummyAuth)
           .value
           .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "update dotted record succeeds if it satisfies all dotted hosts config" in {
+      val newRecord = dottedTestRecord.copy(ttl = 37000)
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "test.dotted"
+      change.recordSet.ttl shouldBe 37000
+    }
+
+    "update dotted record name fails as updating a record name is not allowed" in {
+      val newRecord = dottedTestRecord.copy(name = "trial.dotted")
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+      // We get an "InvalidRequest: Cannot update RecordSet's name."
       leftValue(result) shouldBe a[InvalidRequest]
     }
 
@@ -624,26 +658,33 @@ class RecordSetServiceIntegrationSpec
         Some(group2.id)
     }
 
+    "delete dotted host record successfully for user in record owner group" in {
+      val result = testRecordSetService
+        .deleteRecordSet(dottedTestRecord.id, dottedTestRecord.zoneId, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
+    }
+
     "fail deleting for user not in record owner group in shared zone" in {
-      val result = leftResultOf(
+      val result =
         testRecordSetService
           .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, dummyAuth)
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe a[NotAuthorizedError]
     }
 
     "fail deleting for user in record owner group in non-shared zone" in {
-      val result = leftResultOf(
+      val result =
         testRecordSetService
           .deleteRecordSet(
             testOwnerGroupRecordInNormalZone.id,
             testOwnerGroupRecordInNormalZone.zoneId,
             auth2
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe a[NotAuthorizedError]
     }
