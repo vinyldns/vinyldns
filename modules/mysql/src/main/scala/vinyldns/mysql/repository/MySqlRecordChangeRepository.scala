@@ -73,7 +73,7 @@ class MySqlRecordChangeRepository
                 Seq(
                   change.id,
                   change.zoneId,
-                  change.created.getMillis,
+                  change.created.toEpochMilli,
                   fromChangeType(change.changeType),
                   toPB(change).toByteArray
                 )

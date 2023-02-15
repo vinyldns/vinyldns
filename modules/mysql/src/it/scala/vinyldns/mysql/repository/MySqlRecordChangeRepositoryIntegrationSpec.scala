@@ -107,7 +107,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         }
 
       // expect to be sorted by created descending so reverse that
-      val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
+      val expectedOrder = timeSpaced.sortBy(_.created.toEpochMilli).reverse
 
       val saveRecChange = executeWithinTransaction { db: DB =>
         repo.save(db, ChangeSet(timeSpaced))
