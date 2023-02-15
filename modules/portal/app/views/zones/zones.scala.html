@@ -59,7 +59,12 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="Zone Name"/>
+                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                            </div>
+                                            <div class="checkbox pull-right">
+                                                <label>
+                                                    <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                </label>
                                             </div>
                                         </form>
                                     </div>
@@ -72,8 +77,8 @@
                                     <p ng-if="hasZones && zonesLoaded && !zones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZones()">Previous</a>
@@ -123,8 +128,8 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZones()">Previous</a>
@@ -168,8 +173,14 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="Zone Name"/>
+                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
                                             </div>
+
+                                                <div class="checkbox pull-right">
+                                                    <label>
+                                                        <input type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                    </label>
+                                                </div>
                                         </form>
                                     </div>
                                     <!-- END SEARCH BOX -->
@@ -180,8 +191,8 @@
                                     <p ng-if="allZonesLoaded && !allZones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allZones") }}</span>
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="prevPageEnabled('allZones')" ng-click="prevPageAllZones()">Previous</a>
@@ -234,8 +245,8 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allZones") }}</span>
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="prevPageEnabled('allZones')" ng-click="prevPageAllZones()">Previous</a>

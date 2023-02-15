@@ -17,7 +17,8 @@
 package vinyldns.api.engine
 
 import cats.effect.{IO, Timer}
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -28,7 +29,6 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
-import vinyldns.api.CatsHelpers
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
@@ -45,7 +45,6 @@ class RecordSetChangeHandlerSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
-    with CatsHelpers
     with EitherValues
     with TransactionProvider {
 
@@ -95,7 +94,7 @@ class RecordSetChangeHandlerSpec
     "userId",
     "userName",
     None,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     singleChanges,
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )
@@ -115,7 +114,7 @@ class RecordSetChangeHandlerSpec
     batchRepo.clear()
 
     // seed the linked batch change in the DB
-    await(batchRepo.save(batchChange))
+    batchRepo.save(batchChange).unsafeRunSync()
 
     doReturn(IO.pure(Nil))
       .when(mockRsRepo)
@@ -150,10 +149,11 @@ class RecordSetChangeHandlerSpec
       savedCs.status shouldBe ChangeSetStatus.Complete
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
-          status = SingleChangeStatus.Complete,
+          systemMessage= None,
+         status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
         )
@@ -195,9 +195,10 @@ class RecordSetChangeHandlerSpec
       verify(mockBackend).applyChange(rsChange)
       verify(mockBackend, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -245,7 +246,7 @@ class RecordSetChangeHandlerSpec
       // make sure we only called resolve once when validating, ensures that verify was not called
       verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Failed,
@@ -291,7 +292,7 @@ class RecordSetChangeHandlerSpec
       // we will retry the verify 3 times based on the mock setup
       verify(mockBackend, times(2)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Failed,
@@ -347,7 +348,7 @@ class RecordSetChangeHandlerSpec
       verify(mockBackend, never()).applyChange(rsChange)
       verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Failed,
@@ -390,7 +391,7 @@ class RecordSetChangeHandlerSpec
       verify(mockBackend, times(1)).applyChange(rsChange)
       verify(mockBackend, times(1)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Failed,
@@ -445,7 +446,7 @@ class RecordSetChangeHandlerSpec
       // make sure we never called resolve, as we skip validate step and verify
       verify(mockBackend, never).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Complete,
@@ -599,9 +600,10 @@ class RecordSetChangeHandlerSpec
       savedCs.status shouldBe ChangeSetStatus.Complete
       savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
+          systemMessage= None,
           status = SingleChangeStatus.Complete,
           recordChangeId = Some(rsChange.id),
           recordSetId = Some(rsChange.recordSet.id)
@@ -643,7 +645,7 @@ class RecordSetChangeHandlerSpec
       changeSet.status shouldBe RecordSetChangeStatus.Failed
       changeSet.recordSet.status shouldBe RecordSetStatus.Inactive
       changeSet.systemMessage shouldBe Some(
-        s"Failed validating update to DNS for change ${changeSet.id}:${changeSet.recordSet.name}: " +
+        s"""Failed validating update to DNS for change "${changeSet.id}": "${changeSet.recordSet.name}": """ +
           s"This record set is out of sync with the DNS backend; sync this zone before attempting to " +
           "update this record set."
       )

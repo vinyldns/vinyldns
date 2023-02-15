@@ -17,8 +17,8 @@
 package vinyldns.core
 
 import java.util.UUID
-
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import vinyldns.core.domain.record._
 import TestZoneData._
 import TestMembershipData._
@@ -35,7 +35,7 @@ object TestRecordSetData {
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -46,7 +46,7 @@ object TestRecordSetData {
     RecordType.AAAA,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8"))
   )
@@ -57,7 +57,7 @@ object TestRecordSetData {
     RecordType.AAAA,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8"))
   )
@@ -68,7 +68,7 @@ object TestRecordSetData {
     RecordType.AAAA,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8"))
   )
@@ -79,7 +79,7 @@ object TestRecordSetData {
     RecordType.CNAME,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname")))
   )
@@ -90,7 +90,7 @@ object TestRecordSetData {
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr")))
   )
@@ -101,7 +101,7 @@ object TestRecordSetData {
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr")))
   )
@@ -112,7 +112,7 @@ object TestRecordSetData {
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target")))
   )
@@ -123,7 +123,7 @@ object TestRecordSetData {
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target")))
   )
@@ -134,7 +134,7 @@ object TestRecordSetData {
     RecordType.MX,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(3, Fqdn("mx")))
   )
@@ -145,7 +145,7 @@ object TestRecordSetData {
     RecordType.NS,
     300,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     records = List(NSData(Fqdn("ns1.test.com")), NSData(Fqdn("ns2.test.com")))
   )
@@ -156,7 +156,7 @@ object TestRecordSetData {
     RecordType.TXT,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("txt"))
   )
@@ -185,7 +185,7 @@ object TestRecordSetData {
     RecordType.DS,
     200,
     RecordSetStatus.Pending,
-    DateTime.now(),
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(dSDataSha1, dSDataSha256)
   )
 
@@ -195,7 +195,7 @@ object TestRecordSetData {
     RecordType.AAAA,
     200,
     RecordSetStatus.Pending,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8")),
     ownerGroupId = Some(okGroup.id)
@@ -217,7 +217,7 @@ object TestRecordSetData {
       RecordType.MX,
       200,
       RecordSetStatus.Pending,
-      DateTime.now,
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       None,
       List(MXData(3, Fqdn("mx")))
     )
@@ -233,7 +233,7 @@ object TestRecordSetData {
       zone,
       recordSet.copy(
         id = UUID.randomUUID().toString,
-        created = DateTime.now,
+        created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
         status = RecordSetStatus.Pending
       ),
       userId,
@@ -252,7 +252,7 @@ object TestRecordSetData {
       newRecordSet.copy(
         id = oldRecordSet.id,
         status = RecordSetStatus.PendingUpdate,
-        updated = Some(DateTime.now)
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       ),
       userId,
       RecordSetChangeType.Update,
@@ -269,7 +269,7 @@ object TestRecordSetData {
     RecordSetChange(
       zone,
       newRecordSet
-        .copy(id = oldRecordSet.id, status = RecordSetStatus.Active, updated = Some(DateTime.now)),
+        .copy(id = oldRecordSet.id, status = RecordSetStatus.Active, updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
       userId,
       RecordSetChangeType.Update,
       RecordSetChangeStatus.Complete,
@@ -285,7 +285,7 @@ object TestRecordSetData {
       zone,
       recordSet.copy(
         status = RecordSetStatus.PendingDelete,
-        updated = Some(DateTime.now)
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       ),
       userId,
       RecordSetChangeType.Delete,

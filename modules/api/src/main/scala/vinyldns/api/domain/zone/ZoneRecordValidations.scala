@@ -19,13 +19,7 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
-import com.comcast.ip4s.interop.cats.implicits._
-import vinyldns.core.domain.{
-  DomainHelpers,
-  DomainValidationError,
-  HighValueDomainError,
-  RecordRequiresManualReview
-}
+import vinyldns.core.domain.{DomainHelpers, DomainValidationError, HighValueDomainError, RecordRequiresManualReview}
 import vinyldns.core.domain.record.{NSData, RecordSet}
 
 import scala.util.matching.Regex
@@ -41,7 +35,7 @@ object ZoneRecordValidations {
 
   /* Checks to see if an ip address is part of the ip address list */
   def isIpInIpList(ipList: List[IpAddress], ipToTest: String): Boolean =
-    IpAddress(ipToTest).exists(ip => ipList.exists(_ === ip))
+    IpAddress.fromString(ipToTest).exists(ip => ipList.exists(_ === ip))
 
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(

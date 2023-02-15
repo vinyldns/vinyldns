@@ -17,7 +17,7 @@
 package vinyldns.core.domain.membership
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 
 sealed abstract class UserChangeType(val value: String)
 object UserChangeType {
@@ -47,19 +47,19 @@ sealed trait UserChange {
   def id: String
   def newUser: User
   def madeByUserId: String
-  def created: DateTime
+  def created: Instant
 }
 object UserChange {
   final case class CreateUser(
       newUser: User,
       madeByUserId: String,
-      created: DateTime,
+      created: Instant,
       id: String = UUID.randomUUID().toString
   ) extends UserChange
   final case class UpdateUser(
       newUser: User,
       madeByUserId: String,
-      created: DateTime,
+      created: Instant,
       oldUser: User,
       id: String = UUID.randomUUID().toString
   ) extends UserChange
@@ -68,7 +68,7 @@ object UserChange {
       id: String,
       newUser: User,
       madeByUserId: String,
-      created: DateTime,
+      created: Instant,
       oldUser: Option[User],
       changeType: UserChangeType
   ): Either[IllegalArgumentException, UserChange] =

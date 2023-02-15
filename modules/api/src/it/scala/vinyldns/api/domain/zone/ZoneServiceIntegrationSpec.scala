@@ -18,7 +18,8 @@ package vinyldns.api.domain.zone
 
 import cats.data.NonEmptyList
 import cats.effect._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito.doReturn
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -72,7 +73,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.SOA,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records =
       List(SOAData(Fqdn("172.17.42.1."), "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
   )
@@ -82,7 +83,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.NS,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(NSData(Fqdn("172.17.42.1.")))
   )
   private val testRecordA = RecordSet(
@@ -91,7 +92,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.A,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("10.1.1.1"))
   )
 
