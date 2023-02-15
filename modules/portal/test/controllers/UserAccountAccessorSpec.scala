@@ -17,7 +17,8 @@
 package controllers
 
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeEach
@@ -33,7 +34,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "frodo-uuid"
   )
 
@@ -41,7 +42,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     "frodo-uuid",
     user,
     "fbaggins",
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     UserChangeType.Create
   ).toOption.get
@@ -106,7 +107,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       val lockedUserChange = UserChange.UpdateUser(
         user.copy(lockStatus = LockStatus.Locked),
         "system",
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         user
       )
       mockRepo.save(List(lockedUser)).returns(IO(List(lockedUser)))

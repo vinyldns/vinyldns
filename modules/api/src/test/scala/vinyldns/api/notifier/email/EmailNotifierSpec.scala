@@ -32,7 +32,8 @@ import org.mockito.ArgumentCaptor
 import cats.effect.IO
 import javax.mail.{Address, Message}
 import _root_.vinyldns.core.domain.batch._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import com.typesafe.config.Config
@@ -89,7 +90,7 @@ class EmailNotifierSpec
       "test",
       "testUser",
       description,
-      DateTime.now(),
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,

@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import cats.scalatest.ValidatedValues
-import org.joda.time.DateTime
+import java.time.{LocalDateTime, Month, ZoneOffset}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.matchers.should.Matchers
@@ -347,7 +347,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.CNAME,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname. ")))
       )
 
@@ -369,7 +369,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.CNAME,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data.")))
       )
 
@@ -405,7 +405,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.MX,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(MXData(1, Fqdn("mx.")))
       )
 
@@ -427,7 +427,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.MX,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(MXData(1, Fqdn("mx.")))
       )
 
@@ -451,7 +451,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.SRV,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(SRVData(1, 20, 5000, Fqdn("srv.")))
       )
 
@@ -473,7 +473,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.SRV,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(SRVData(1, 20, 5000, Fqdn("srv.")))
       )
 
@@ -499,7 +499,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.NAPTR,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr.")))
       )
 
@@ -523,7 +523,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.NAPTR,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", Fqdn("naptr.")))
       )
 
@@ -549,7 +549,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.PTR,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(PTRData(Fqdn("ptr.")))
       )
 
@@ -571,7 +571,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.PTR,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(PTRData(Fqdn("ptr.")))
       )
 
@@ -594,7 +594,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.NS,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(NSData(Fqdn("abs.data")))
       )
 
@@ -623,7 +623,7 @@ class VinylDNSJsonProtocolSpec
         RecordType.DS,
         1000,
         RecordSetStatus.Pending,
-        new DateTime(2010, 1, 1, 0, 0),
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(dSDataSha1)
       )
 

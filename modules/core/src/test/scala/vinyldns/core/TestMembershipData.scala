@@ -16,8 +16,10 @@
 
 package vinyldns.core
 
-import org.joda.time.DateTime
+
 import vinyldns.core.domain.Encrypted
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 
@@ -27,7 +29,7 @@ object TestMembershipData {
   val okUser: User = User(
     userName = "ok",
     id = "ok",
-    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "okAccessKey",
     secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
@@ -46,7 +48,7 @@ object TestMembershipData {
     User(
       userName = "name-dummy%03d".format(runner),
       id = "dummy%03d".format(runner),
-      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
       accessKey = "dummy",
       secretKey = Encrypted("dummy")
     )
@@ -59,7 +61,7 @@ object TestMembershipData {
     Some("a test group"),
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   val dummyGroup: Group = Group(
@@ -76,7 +78,7 @@ object TestMembershipData {
     Some("has two users"),
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id, dummyUser.id),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc", sharedZoneUser.id))
@@ -98,7 +100,7 @@ object TestMembershipData {
       name = "name-dummy%03d".format(i),
       id = "dummy%03d".format(i),
       email = "test@test.com",
-      created = DateTime.now.secondOfDay().roundFloorCopy()
+      created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
     )
   }
 
@@ -132,24 +134,24 @@ object TestMembershipData {
     okGroup,
     GroupChangeType.Create,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
   val okGroupChangeUpdate: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Update,
     okUser.id,
     Some(okGroup),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
   val okGroupChangeDelete: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Delete,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   // changes added in reverse order
-  val now: DateTime = DateTime.now().secondOfDay().roundFloorCopy()
+  val now: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   val listOfDummyGroupChanges: List[GroupChange] = List.range(0, 300).map { i =>
     GroupChange(
       oneUserDummyGroup,
@@ -166,6 +168,6 @@ object TestMembershipData {
     GroupChangeType.Update,
     okUser.id,
     Some(okGroup),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 }

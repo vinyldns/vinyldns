@@ -19,7 +19,8 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
@@ -96,7 +97,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -106,7 +107,7 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -116,7 +117,7 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -126,7 +127,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -136,7 +137,7 @@ class RecordSetServiceIntegrationSpec
     AAAA,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("fd69:27cc:fe91::60"))
   )
@@ -146,7 +147,7 @@ class RecordSetServiceIntegrationSpec
     NS,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("172.17.42.1.")))
   )
@@ -164,7 +165,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -174,7 +175,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -193,7 +194,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1"))
   )
@@ -213,7 +214,7 @@ class RecordSetServiceIntegrationSpec
     A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1")),
     ownerGroupId = Some(sharedGroup.id)
@@ -225,7 +226,7 @@ class RecordSetServiceIntegrationSpec
     A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1")),
     ownerGroupId = Some("non-existent")
@@ -237,7 +238,7 @@ class RecordSetServiceIntegrationSpec
     A,
     38400,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1")),
     ownerGroupId = Some(sharedGroup.id)
@@ -345,7 +346,7 @@ class RecordSetServiceIntegrationSpec
         A,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )
@@ -367,7 +368,7 @@ class RecordSetServiceIntegrationSpec
         A,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )
@@ -386,7 +387,7 @@ class RecordSetServiceIntegrationSpec
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
@@ -409,7 +410,7 @@ class RecordSetServiceIntegrationSpec
         AAAA,
         38400,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AAAAData("fd69:27cc:fe91::60"))
       )
@@ -668,25 +669,23 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail deleting for user not in record owner group in shared zone" in {
-      val result = leftResultOf(
+      val result =
         testRecordSetService
           .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, dummyAuth)
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe a[NotAuthorizedError]
     }
 
     "fail deleting for user in record owner group in non-shared zone" in {
-      val result = leftResultOf(
+      val result =
         testRecordSetService
           .deleteRecordSet(
             testOwnerGroupRecordInNormalZone.id,
             testOwnerGroupRecordInNormalZone.zoneId,
             auth2
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe a[NotAuthorizedError]
     }
