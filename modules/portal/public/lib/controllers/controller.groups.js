@@ -231,48 +231,60 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $("#modal_edit_group").modal("show");
     };
 
+    $scope.getGroupAndUpdate = function(groupId, name, email, description) {
+        function success(response) {
+            $log.debug('groupsService::getGroup-success');
+            $scope.currentGroup = response.data;
+
+            //data from user form values
+            var payload =
+                {
+                    'id': $scope.currentGroup.id,
+                    'name': name,
+                    'email': email,
+                    'members': $scope.currentGroup.members,
+                    'admins': $scope.currentGroup.admins
+                };
+            if (description) {
+                payload['description'] = description;
+            }
+
+            //update group success callback
+            function success(response) {
+                var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
+                $scope.alerts.push(alert);
+                $scope.closeEditModal();
+                $scope.reset();
+                $scope.refresh();
+                return response.data;
+            }
+            return groupsService.updateGroup(groupId, payload)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::updateGroup-failure');
+                });
+        }
+
+        return groupsService
+            .getGroup(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroup-failure');
+            });
+    };
+
     $scope.submitEditGroup = function (name, email, description) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-        $log.log('updateGroup::called', $scope.data);
-
         if ($scope.processing) {
-            $log.log('updateGroup::processing is true; exiting');
+            $log.debug('updateGroup::processing is true; exiting');
             return;
         }
+
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-
-        //data from user form values
-        var payload =
-            {
-                'id': $scope.currentGroup.id,
-                'name': name,
-                'email': email,
-                'members': $scope.currentGroup.members,
-                'admins': $scope.currentGroup.admins
-            };
-
-        if (description) {
-            payload['description'] = description;
-        }
-
-        //update group success callback
-        function success(response) {
-            var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
-            $scope.alerts.push(alert);
-            $scope.closeEditModal();
-            $scope.reset();
-            $scope.refresh();
-            return response.data;
-        }
-
-        return groupsService.updateGroup($scope.currentGroup.id, payload)
-            .then(success)
-            .catch(function (error) {
-                handleError(error, 'groupsService::updateGroup-failure');
-            });
+        $scope.getGroupAndUpdate($scope.currentGroup.id, name, email, description);
     };
 
     $scope.confirmDeleteGroup = function (groupInfo) {
