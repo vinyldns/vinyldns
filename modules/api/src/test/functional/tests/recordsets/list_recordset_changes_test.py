@@ -143,12 +143,12 @@ def test_list_recordset_changes_exhausted(shared_zone_test_context):
 
 def test_list_recordset_returning_no_changes(shared_zone_test_context):
     """
-    Pass in startFrom of 0 should return empty list because start key is created time
+    Pass in startFrom of "2000" should return empty list because start key exceeded number of recordset changes
     """
     client = shared_zone_test_context.history_client
     original_zone = shared_zone_test_context.history_zone
-    response = client.list_recordset_changes(original_zone["id"], start_from="0", max_items=None)
-    check_changes_response(response, recordChanges=False, startFrom="0", nextId=False)
+    response = client.list_recordset_changes(original_zone["id"], start_from=2000, max_items=None)
+    check_changes_response(response, recordChanges=False, startFrom=2000, nextId=False)
 
 
 def test_list_recordset_changes_default_max_items(shared_zone_test_context):

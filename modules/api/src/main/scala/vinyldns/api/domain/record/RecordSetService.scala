@@ -568,7 +568,7 @@ class RecordSetService(
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String] = None,
+                            startFrom: Option[Int] = None,
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
