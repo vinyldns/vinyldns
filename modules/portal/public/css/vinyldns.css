@@ -522,3 +522,22 @@ input[type="file"] {
     top: 0;
     z-index: 1000;
 }
+
+.cron-select-wrap .cron-select {
+    border-radius: 0px !important;
+}
+
+.select-options {
+    vertical-align: bottom;
+}
+
+/** For safari browser, since the settings are different from other browsers */
+@media not all and (min-resolution: 0.001dpcm) {
+.select-options {
+    vertical-align: sub;
+}
+}
+
+.select-options span {
+    vertical-align: super;
+}
