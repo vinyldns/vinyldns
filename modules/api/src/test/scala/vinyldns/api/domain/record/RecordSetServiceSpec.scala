@@ -1257,9 +1257,7 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroup(okGroup.id)
 
-      val result = rightResultOf(
-        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
-      )
+      val result = underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
       result.recordSet.ownerGroupId shouldBe Some(okGroup.id)
     }
@@ -1288,7 +1286,7 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroup(oneUserDummyGroup.id)
 
-      val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
+      val result = underTest.updateRecordSet(newRecord, auth).value.unsafeRunSync().swap.toOption.get
       result shouldBe an[NotAuthorizedError]
     }
     "succeed if user is in owner group and zone is shared and new owner group is none" in {
