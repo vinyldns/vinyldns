@@ -19,7 +19,8 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -60,7 +61,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -71,7 +72,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -82,7 +83,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -93,7 +94,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -104,7 +105,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -115,7 +116,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -126,7 +127,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -137,7 +138,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -148,7 +149,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -159,7 +160,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -170,7 +171,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -181,7 +182,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1")),
     ownerGroupId = Some("my-group")
@@ -193,7 +194,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -204,7 +205,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("example.com")))
   )
@@ -215,7 +216,7 @@ class RecordSetRoutingSpec
     RecordType.AAAA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8"))
   )
@@ -226,7 +227,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname.")))
   )
@@ -237,7 +238,7 @@ class RecordSetRoutingSpec
     RecordType.MX,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(100, Fqdn("exchange.")))
   )
@@ -248,7 +249,7 @@ class RecordSetRoutingSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("nsrecordname")))
   )
@@ -259,7 +260,7 @@ class RecordSetRoutingSpec
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr.")))
   )
@@ -270,7 +271,7 @@ class RecordSetRoutingSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
@@ -281,7 +282,7 @@ class RecordSetRoutingSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("spf"))
   )
@@ -292,7 +293,7 @@ class RecordSetRoutingSpec
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target.")))
   )
@@ -303,7 +304,7 @@ class RecordSetRoutingSpec
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target.")))
   )
@@ -314,7 +315,7 @@ class RecordSetRoutingSpec
     RecordType.SSHFP,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SSHFPData(1, 2, "fingerprint"))
   )
@@ -325,7 +326,7 @@ class RecordSetRoutingSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("text"))
   )
@@ -336,7 +337,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname")), CNAMEData(Fqdn("cname2")))
   )
@@ -425,8 +426,8 @@ class RecordSetRoutingSpec
             recordSet = recordSets(rsId)
               .copy(
                 status = RecordSetStatus.Active,
-                created = DateTime.now,
-                updated = Some(DateTime.now)
+                created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
               ),
             status = RecordSetChangeStatus.Complete,
             changeType = chgType,
@@ -447,7 +448,7 @@ class RecordSetRoutingSpec
                 RecordSetChange(
                   zone = okZone,
                   recordSet = recordSets(other)
-                    .copy(status = RecordSetStatus.Active, created = DateTime.now),
+                    .copy(status = RecordSetStatus.Active, created = Instant.now.truncatedTo(ChronoUnit.MILLIS)),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
                   userId = authPrincipal.userId
@@ -460,8 +461,8 @@ class RecordSetRoutingSpec
                   recordSet = recordSets(other)
                     .copy(
                       status = RecordSetStatus.Active,
-                      created = DateTime.now,
-                      updated = Some(DateTime.now)
+                      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                      updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
                     ),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
@@ -674,7 +675,7 @@ class RecordSetRoutingSpec
 
     def listRecordSetChanges(
                               zoneId: String,
-                              startFrom: Option[String],
+                              startFrom: Option[Int],
                               maxItems: Int,
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {

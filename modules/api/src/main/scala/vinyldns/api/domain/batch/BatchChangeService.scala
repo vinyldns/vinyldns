@@ -20,7 +20,8 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
@@ -32,19 +33,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.{
-  CnameAtZoneApexError,
-  SingleChangeError,
-  UserIsNotAuthorizedError,
-  ZoneDiscoveryError
-}
-import vinyldns.core.domain.membership.{
-  Group,
-  GroupRepository,
-  ListUsersResults,
-  User,
-  UserRepository
-}
+import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
@@ -447,7 +437,7 @@ class BatchChangeService(
         auth.userId,
         auth.signedInUser.userName,
         batchChangeInput.comments,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.PendingReview,
@@ -462,7 +452,7 @@ class BatchChangeService(
         auth.userId,
         auth.signedInUser.userName,
         batchChangeInput.comments,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved,
@@ -631,7 +621,7 @@ class BatchChangeService(
       approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
       reviewerId = Some(reviewerId),
       reviewComment = reviewComment,
-      reviewTimestamp = Some(DateTime.now),
+      reviewTimestamp = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       changes = rejectedSingleChanges
     )
 
@@ -644,7 +634,7 @@ class BatchChangeService(
     // Update rejection attributes and single changes for batch change
     val cancelledBatch = batchChange.copy(
       approvalStatus = BatchChangeApprovalStatus.Cancelled,
-      cancelledTimestamp = Some(DateTime.now),
+      cancelledTimestamp = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       changes = cancelledSingleChanges
     )
 

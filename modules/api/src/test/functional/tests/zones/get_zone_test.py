@@ -34,12 +34,17 @@ def test_get_zone_shared_by_id_as_owner(shared_zone_test_context):
 
 def test_get_zone_shared_by_id_non_owner(shared_zone_test_context):
     """
-    Test get an existing shared zone by id as a zone owner
+    Test get an existing shared zone by id as a non-zone-owner. Non-owner should have read-only access
     """
     client = shared_zone_test_context.dummy_vinyldns_client
+    group_name = shared_zone_test_context.shared_record_group["name"]
+    result = client.get_zone(shared_zone_test_context.shared_zone["id"], status=200)
+    retrieved = result["zone"]
 
-    client.get_zone(shared_zone_test_context.shared_zone["id"], status=403)
-
+    assert_that(retrieved["id"], is_(shared_zone_test_context.shared_zone["id"]))
+    assert_that(retrieved["adminGroupName"], is_(group_name))
+    assert_that(retrieved["shared"], is_(True))
+    assert_that(retrieved["accessLevel"], is_("Read"))
 
 def test_get_zone_private_by_id_fails_without_access(shared_zone_test_context):
     """

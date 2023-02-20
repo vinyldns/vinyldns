@@ -17,7 +17,8 @@
 package vinyldns.api.domain.access
 
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.{ResultHelpers, VinylDNSTestHelpers}
@@ -125,9 +126,8 @@ class AccessValidationsSpec
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
 
-    "return false if the zone is shared and user does not have other access" in {
-      val error = leftValue(accessValidationTest.canSeeZone(okAuth, sharedZone))
-      error shouldBe a[NotAuthorizedError]
+    "return true if the zone is shared and user does not have other access" in {
+      accessValidationTest.canSeeZone(okAuth, sharedZone) should be(right)
     }
   }
 
@@ -831,7 +831,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRuleA =
         ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
@@ -850,7 +850,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRuleA =
         ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.AAAA))
@@ -869,7 +869,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRuleA =
         ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
@@ -893,7 +893,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRuleA =
         ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
@@ -914,7 +914,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRule = userReadAcl.copy(recordMask = Some("rs.*"))
 
@@ -932,7 +932,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRule = userReadAcl.copy(recordMask = Some("bad.*"))
 
@@ -950,7 +950,7 @@ class AccessValidationsSpec
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRuleRM = userReadAcl.copy(recordMask = Some("rs.*"))
       val aclRuleAll = userWriteAcl.copy(recordMask = None)
@@ -965,14 +965,14 @@ class AccessValidationsSpec
 
   "ruleAppliesToRecordNameIPv4" should {
 
-    "filter in/out record set based on CIDR rule of 0 (lower bound for ip4 CIDR rules)" in {
-      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/0"))
+    "filter in/out record set based on CIDR rule of 1 (lower bound for ip4 CIDR rules)" in {
+      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/1"))
       val znTrue = Zone("40.120.in-addr.arpa.", "email")
       val rsTrue =
-        RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
       val znFalse = Zone("255.129.in-addr.arpa.", "email")
       val rsFalse =
-        RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -982,9 +982,9 @@ class AccessValidationsSpec
       val aclRule = userReadAcl.copy(recordMask = Some("202.204.62.208/8"))
       val znTrue = Zone("202.in-addr.arpa.", "email")
       val rsTrue =
-        RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
       val znFalse = Zone("1.23.100.in-addr.arpa.", "email")
-      val rsFalse = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+      val rsFalse = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -993,9 +993,9 @@ class AccessValidationsSpec
     "filter in/out record set based on CIDR rule of 32 (upper bound for ip4 CIDR rules)" in {
       val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/32"))
       val znTrue = Zone("1.120.in-addr.arpa.", "email")
-      val rsTrue = RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+      val rsTrue = RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
       val znFalse = Zone("23.10.in-addr.arpa.", "email")
-      val rsFalse = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+      val rsFalse = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
       accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
@@ -1005,7 +1005,7 @@ class AccessValidationsSpec
       val aclRule = userReadAcl.copy()
       val zn = Zone("202.in-addr.arpa.", "email")
       val rs =
-        RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
       accessValidationTest.ruleAppliesToRecordName(rs.name, rs.typ, zn, aclRule) shouldBe true
     }
@@ -1017,7 +1017,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val aclRule = userReadAcl.copy(recordMask = Some(".*0.*"))
 
@@ -1040,7 +1040,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
@@ -1049,7 +1049,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
@@ -1066,7 +1066,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
@@ -1075,7 +1075,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
@@ -1092,7 +1092,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
       val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
       val rsFalse = RecordSet(
@@ -1101,7 +1101,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
@@ -1117,7 +1117,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         200,
         RecordSetStatus.Active,
-        DateTime.now
+        Instant.now.truncatedTo(ChronoUnit.MILLIS)
       )
 
       accessValidationTest.ruleAppliesToRecordName(rs.name, rs.typ, zn, aclRule) shouldBe true
@@ -1127,7 +1127,7 @@ class AccessValidationsSpec
   "getListAccessLevels" should {
     val multiRecordList = List("rs1", "rs2", "rs3").map { name =>
       RecordSetInfo(
-        RecordSet("zoneId", name, RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
+        RecordSet("zoneId", name, RecordType.A, 100, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         None
       )
     }
@@ -1169,7 +1169,7 @@ class AccessValidationsSpec
     "return the appropriate access level for each RecordSet in the list" in {
       val rs1 =
         RecordSetInfo(
-          RecordSet("zoneId", "rs1", RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
+          RecordSet("zoneId", "rs1", RecordType.A, 100, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS)),
           None
         )
       val rs2 = rs1.copy(name = "rs2")
@@ -1208,8 +1208,8 @@ class AccessValidationsSpec
       accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
     }
 
-    "return access level NoAccess if zone is shared and user is not an admin" in {
-      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.NoAccess)
+    "return access level Read if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.Read)
     }
 
     "return access level Read if zone is private and user is an ACL rule" in {

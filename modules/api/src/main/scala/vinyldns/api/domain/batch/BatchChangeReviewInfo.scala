@@ -16,10 +16,11 @@
 
 package vinyldns.api.domain.batch
 
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 final case class BatchChangeReviewInfo(
     reviewerId: String,
     reviewComment: Option[String],
-    reviewTimestamp: DateTime = DateTime.now()
+    reviewTimestamp: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
 )

@@ -19,7 +19,7 @@ package vinyldns.mysql.queue
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeCommand
@@ -34,8 +34,9 @@ import vinyldns.mysql.queue.MessageType.{
   RecordChangeMessageType,
   ZoneChangeMessageType
 }
+import java.io.{PrintWriter, StringWriter}
 import vinyldns.proto.VinylDNSProto
-
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration._
 
 object MySqlMessageQueue {
@@ -173,7 +174,7 @@ class MySqlMessageQueue(maxRetries: Int)
     commands.toList.map(insertParams)
 
   def insertParams(cmd: ZoneCommand): Seq[(Symbol, Any)] = {
-    val ts = DateTime.now
+    val ts = Instant.now.truncatedTo(ChronoUnit.MILLIS)
     Seq(
       'id -> cmd.id,
       'messageType -> MessageType.fromCommand(cmd).value,
@@ -210,7 +211,9 @@ class MySqlMessageQueue(maxRetries: Int)
           // Errors could not be deserialized, have an invalid type, or exceeded retries
           val errors = claimed.collect {
             case Left((e, id)) =>
-              logger.error(s"Encountered error for message with id $id", e)
+              val errorMessage = new StringWriter
+              e.printStackTrace(new PrintWriter(errorMessage))
+              logger.error(s"Encountered error for message with id $id. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
               id
           }
 
