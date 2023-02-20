@@ -193,7 +193,7 @@ object TestDataLoader extends TransactionProvider {
   final val superUser = User(
     userName = "super-user",
     id = "super-user-id",
-    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "superUserAccessKey",
     secretKey = "superUserSecretKey",
     firstName = Some("super-user"),
