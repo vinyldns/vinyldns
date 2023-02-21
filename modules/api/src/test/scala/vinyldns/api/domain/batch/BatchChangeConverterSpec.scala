@@ -37,9 +37,9 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
-  private val NonExistentRecordDeleteMessage: String = "This record does not exist." +
+  private val nonExistentRecordDeleteMessage: String = "This record does not exist." +
     "No further action is required."
-  private val NonExistentRecordDataDeleteMessage: String = "Record data entered does not exist." +
+  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist." +
     "No further action is required."
 
   private def makeSingleAddChange(
@@ -581,8 +581,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       val receivedChange = returnedBatch.changes(0)
       receivedChange.status shouldBe SingleChangeStatus.Complete
       receivedChange.recordChangeId shouldBe None
-      receivedChange.systemMessage shouldBe Some(NonExistentRecordDeleteMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(NonExistentRecordDeleteMessage), status = SingleChangeStatus.Complete)
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Complete)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
@@ -641,8 +641,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
       // validate the batch change returned
       val receivedChange = result.changes(0)
-      receivedChange.systemMessage shouldBe Some(NonExistentRecordDataDeleteMessage)
-      result.changes(0) shouldBe singleChangesOneDeleteGood(0).copy(systemMessage = Some(NonExistentRecordDataDeleteMessage))
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
+      result.changes(0) shouldBe singleChangesOneDeleteGood(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage))
     }
   }
 
