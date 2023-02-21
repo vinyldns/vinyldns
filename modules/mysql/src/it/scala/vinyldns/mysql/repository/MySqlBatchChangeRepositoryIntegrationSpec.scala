@@ -116,7 +116,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val pendingBatchChange: BatchChange = randomBatchChange().copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
     val completeBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange().changes.map(_.complete(Some("Complete"),"recordChangeId", "recordSetId"))
+      randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
     ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000))
 
     val failedBatchChange: BatchChange =
@@ -124,7 +124,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         .copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(100000))
 
     val partialFailureBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange().changes.take(2).map(_.complete(Some("Complete"),"recordChangeId", "recordSetId"))
+      randomBatchChange().changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
         ++ randomBatchChange().changes.drop(2).map(_.withFailureMessage("failed"))
     ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000000))
 
@@ -411,7 +411,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "update single changes" in {
       val batchChange = randomBatchChange()
-      val completed = batchChange.changes.map(_.complete(Some("Complete"),"aaa", "bbb"))
+      val completed = batchChange.changes.map(_.complete("aaa", "bbb"))
       val f =
         for {
           _ <- repo.save(batchChange)
@@ -430,7 +430,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "update some changes in a batch" in {
       val batchChange = randomBatchChange()
-      val completed = batchChange.changes.take(2).map(_.complete(Some("Complete"),"recordChangeId", "recordSetId"))
+      val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
       val incomplete = batchChange.changes.drop(2)
       val f =
         for {
@@ -444,7 +444,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "return the batch when updating single changes" in {
       val batchChange = randomBatchChange()
-      val completed = batchChange.changes.take(2).map(_.complete(Some("Complete"),"recordChangeId", "recordSetId"))
+      val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
       val f =
         for {
           _ <- repo.save(batchChange)

@@ -106,7 +106,7 @@ object RecordSetChangeHandler extends TransactionProvider {
   ): List[SingleChange] =
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
-        singleChanges.map(_.complete(recordSetChange.systemMessage, recordSetChange.id, recordSetChange.recordSet.id))
+        singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
       case RecordSetChangeStatus.Failed =>
         singleChanges.map(_.withProcessingError(recordSetChange.systemMessage, recordSetChange.id))
       case _ => singleChanges

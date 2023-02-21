@@ -165,9 +165,14 @@
                                         {{error.message ? error.message : error}} </p>{{change.systemMessage}}</div>
                                     <div ng-if="batch.approvalStatus =='ManuallyRejected' || batch.approvalStatus =='Cancelled'">
                                     </div>
-                                    <div ng-if="batch.approvalStatus == 'AutoApproved'
+                                    <div ng-if="change.systemMessage == undefined && batch.approvalStatus == 'AutoApproved'
                                              && change.status =='Complete'">
-                                        ℹ️ No further action is required.</div>
+                                        ℹ️ No further action is required.
+                                    </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && batch.approvalStatus == 'AutoApproved'
+                                             && change.status =='Complete'">
+                                        ℹ️ {{change.systemMessage}}
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>
