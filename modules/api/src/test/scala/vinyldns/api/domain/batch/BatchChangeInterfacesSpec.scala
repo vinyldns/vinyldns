@@ -18,26 +18,25 @@ package vinyldns.api.domain.batch
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import cats.effect._
 import cats.implicits._
 import vinyldns.core.domain.{BatchChangeIsEmpty, ChangeLimitExceeded}
 
-class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers with CatsHelpers {
+class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers {
 
   "toBatchResult" should {
     "work with either success input" in {
       val input = "good"
       val out = input.asRight[BatchChangeErrorResponse].toBatchResult
 
-      rightResultOf(out.value) shouldBe input
+      out.value.unsafeRunSync().toOption.get shouldBe input
     }
     "work with either failure input" in {
       val error = InvalidBatchChangeInput(List(BatchChangeIsEmpty(10)))
       val out = error.asLeft.toBatchResult
 
-      leftResultOf(out.value) shouldBe error
+      out.value.unsafeRunSync().swap.toOption.get shouldBe error
     }
     "work with Future success inputs" in {
       val input = "good"
@@ -49,42 +48,42 @@ class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers with CatsHelpe
       val out2 = futureEitherA.toBatchResult
       val out3 = futureEitherANoType.toBatchResult
 
-      rightResultOf(out1.value) shouldBe input
-      rightResultOf(out2.value) shouldBe input
-      rightResultOf(out3.value) shouldBe input
+      out1.value.unsafeRunSync().toOption.get shouldBe input
+      out2.value.unsafeRunSync().toOption.get shouldBe input
+      out3.value.unsafeRunSync().toOption.get shouldBe input
     }
     "return a BatchChangeIsEmpty error if no changes are found" in {
       val futureError =
         IO.pure(InvalidBatchChangeInput(List(BatchChangeIsEmpty(10))).asLeft)
       val output = futureError.toBatchResult
 
-      leftResultOf(output.value) shouldBe InvalidBatchChangeInput(List(BatchChangeIsEmpty(10)))
+      output.value.unsafeRunSync().swap.toOption.get shouldBe InvalidBatchChangeInput(List(BatchChangeIsEmpty(10)))
     }
     "return a ChangeLimitExceeded error if change limit is exceeded" in {
       val futureError =
         IO.pure(InvalidBatchChangeInput(List(ChangeLimitExceeded(10))).asLeft)
       val output = futureError.toBatchResult
 
-      leftResultOf(output.value) shouldBe InvalidBatchChangeInput(List(ChangeLimitExceeded(10)))
+      output.value.unsafeRunSync().swap.toOption.get shouldBe InvalidBatchChangeInput(List(ChangeLimitExceeded(10)))
     }
     "return a UnknownConversionError if run-time error is encountered during processing" in {
       val futureError = IO.pure(new RuntimeException("bad!").asLeft)
       val output = futureError.toBatchResult
 
-      leftResultOf(output.value) shouldBe an[UnknownConversionError]
+      output.value.unsafeRunSync().swap.toOption.get shouldBe an[UnknownConversionError]
     }
     "return a RuntimeException error if Future fails" in {
       val futureError = IO.raiseError(new RuntimeException("bad!"))
       val output = futureError.toBatchResult
 
-      a[RuntimeException] shouldBe thrownBy(await(output.value))
+      a[RuntimeException] shouldBe thrownBy(output.value.unsafeRunSync())
     }
   }
   "collectSuccesses" should {
     "return a IO[List] of all if all are successful" in {
       val futures = List(1, 2, 3, 4).map(IO.pure)
 
-      val result = await(futures.collectSuccesses)
+      val result = futures.collectSuccesses.unsafeRunSync()
       result shouldBe List(1, 2, 3, 4)
     }
     "filter out unsuccessful futures" in {
@@ -96,7 +95,7 @@ class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers with CatsHelpe
         IO.pure(3)
       )
 
-      val result = await(futures.collectSuccesses)
+      val result = futures.collectSuccesses.unsafeRunSync()
       result shouldBe List(1, 2, 3)
     }
     "return an empty list of all fail" in {
@@ -105,7 +104,7 @@ class BatchChangeInterfacesSpec extends AnyWordSpec with Matchers with CatsHelpe
         IO.raiseError(new RuntimeException("bad again"))
       )
 
-      val result = await(futures.collectSuccesses)
+      val result = futures.collectSuccesses.unsafeRunSync()
       result shouldBe List()
     }
   }
