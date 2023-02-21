@@ -37,6 +37,7 @@ DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZon
 POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(id: String)
 
 GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)
+GET           /api/recordsetresolution/:fqdn     @controllers.VinylDNS.getRecordSetResolution(fqdn: String)
 POST          /api/zones/:id/recordsets          @controllers.VinylDNS.addRecordSet(id: String)
 DELETE        /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.deleteRecordSet(zid: String, rid:String)
 PUT           /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.updateRecordSet(zid: String, rid:String)

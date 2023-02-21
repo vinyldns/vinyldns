@@ -522,3 +522,8 @@ input[type="file"] {
     top: 0;
     z-index: 1000;
 }
+
+#digResponse {
+  background-color: #000000; /* Fallback color */
+  color: #ffffff;
+}
