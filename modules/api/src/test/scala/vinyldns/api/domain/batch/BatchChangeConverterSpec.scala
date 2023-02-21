@@ -646,6 +646,20 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     }
   }
 
+  "matchRecordData" should {
+    "check if the record data given matches the record data present" in {
+      val recordDatas = List(AData("1.2.3.5"), AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      val result1 = underTest.matchRecordData(recordDatas, AData("1.2.3.5"))
+      result1 shouldBe true
+      val result2 = underTest.matchRecordData(recordDatas, AData("1.2.3.4"))
+      result2 shouldBe false
+      val result3 = underTest.matchRecordData(recordDatas, AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      result3 shouldBe true
+      val result4 = underTest.matchRecordData(recordDatas, AAAAData("abcd:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      result4 shouldBe false
+    }
+  }
+
   "generateAddChange" should {
     val singleAddChange = makeSingleAddChange("shared-rs", AData("1.2.3.4"), A, sharedZone)
     val ownerGroupId = Some("some-owner-group-id")
