@@ -523,34 +523,19 @@ input[type="file"] {
     z-index: 1000;
 }
 
-/* Starting of css override for cron library used in zone sync scheduling */
+/* Starting of css override for cron library and it's associated elements used in zone sync scheduling */
 .cron-select-wrap .cron-select {
     border-radius: 0px !important;
 }
 
-.select-options {
-    vertical-align: bottom;
+#cron-lib {
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-top: 15px;
 }
 
-.select-options span {
-    vertical-align: super;
-    position: relative;
-    bottom: 0.5rem;
+#cron-lib-check {
+    padding: 0px;
+    margin: 0px;
 }
-
-.cron-wrap > span + .cron-select-wrap > .cron-select {
-    margin-bottom: 0.2rem;
-}
-
-/* For safari browser, since the settings are different from other browsers */
-@media not all and (min-resolution: 0.001dpcm) {
-.select-options {
-    vertical-align: sub;
-}
-
-.select-options span {
-    position: initial;
-    bottom: 0px;
-}
-}
-/* Ending of css override for cron library used in zone sync scheduling */
+/* Ending of css override for cron library and it's associated elements used in zone sync scheduling */

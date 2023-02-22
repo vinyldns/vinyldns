@@ -40,6 +40,10 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
+    $scope.zoneSyncRecurrenceSchedule = undefined;
+    $scope.removeZoneSyncSchedule = {
+        isChecked: false
+    };
     $scope.manageZoneState = {
         UPDATE: 0,
         CONFIRM_UPDATE: 1
@@ -96,11 +100,11 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     };
 
     $scope.myZoneSyncScheduleConfig = {
-        allowMultiple: true,
+        allowMultiple: false,
         quartz: true,
         options: {
             allowMinute : false,
-            allowHour : true,
+            allowHour : false,
             allowMonth : false,
             allowYear : false
         }
@@ -188,7 +192,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.submitUpdateZone = function () {
-        delete $scope.updateZoneInfo.removeRecurrenceSchedule;
         var zone = angular.copy($scope.updateZoneInfo);
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
@@ -197,6 +200,13 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
         $scope.updateZone(zone, 'Zone Update');
     };
+
+    $scope.submitUpdateZoneSyncSchedule = function () {
+        var newZone = angular.copy($scope.zoneInfo);
+        newZone = zonesService.normalizeZoneDates(newZone);
+        newZone.recurrenceSchedule = $scope.zoneSyncRecurrenceSchedule;
+        $scope.updateZone(newZone, 'Zone Sync Schedule');
+    }
 
     $scope.submitDeleteAclRule = function() {
         var newZone = angular.copy($scope.zoneInfo);
@@ -244,12 +254,19 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.objectsDiffer = function(left, right) {
-        if($scope.updateZoneInfo.removeRecurrenceSchedule){
-           $scope.updateZoneInfo.recurrenceSchedule = undefined;
-        }
         var l = $scope.normalizeZone(left);
         var r = $scope.normalizeZone(right);
         return !angular.equals(l, r);
+    };
+
+    $scope.zoneSyncScheduleDiffer = function(left, right) {
+        var updatedZoneSchedule = left;
+        var existingZoneSchedule = right;
+        if($scope.removeZoneSyncSchedule.isChecked){
+           $scope.zoneSyncRecurrenceSchedule = undefined;
+           updatedZoneSchedule = $scope.zoneSyncRecurrenceSchedule;
+        }
+        return !angular.equals(updatedZoneSchedule, existingZoneSchedule);
     };
 
     $scope.normalizeZone = function(zone) {
@@ -294,7 +311,10 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
-            $scope.recurrenceScheduleExist = $scope.updateZoneInfo.recurrenceSchedule ? true : false;
+            $scope.recurrenceScheduleExist = $scope.zoneInfo.recurrenceSchedule ? true : false;
+            if($scope.recurrenceScheduleExist){
+                $scope.zoneSyncRecurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            }
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();

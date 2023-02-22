@@ -232,24 +232,6 @@
                                         ng-click="clearUpdateTransferConnection()" type="button">Clear Connection</button>
                             </div>
                         </div>
-
-                        <div class="col-md-15">
-                            <div class="block">
-                                <div class="col-md-9">
-                                    @if(rootAccountCanReview) {
-                                    <h4>Schedule Zone Sync</h4>
-                                    <cron-selection class="col-md-12" ng-model="updateZoneInfo.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
-                                    <br>
-                                    <div class="checkbox col-md-12">
-                                        <label ng-if="recurrenceScheduleExist">
-                                            <input type="checkbox" ng-model="updateZoneInfo.removeRecurrenceSchedule"/>Remove Zone Sync Schedule
-                                        </label>
-                                    </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
 
@@ -365,6 +347,44 @@
     </div>
 </div>
     <!-- END ACL TABLE -->
+
+    <!-- START ZONE SYNC SCHEDULE -->
+@if(rootAccountCanReview) {
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            Schedule Zone Sync
+        </h3>
+    </div>
+    <div class="panel-body" >
+        <div class="btn-group">
+            <button id="refresh-zone-sync-button" class="btn btn-default" ng-click="refreshZone()">
+                <span class="fa fa-refresh"></span> Refresh
+            </button>
+        </div>
+        <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncRecurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
+        <span class="help-block">
+            Schedule for automatic zone sync at the provided time.
+        </span>
+        <div class="checkbox col-md-12" id="cron-lib-check">
+            <label ng-if="recurrenceScheduleExist">
+                <input type="checkbox" ng-model="removeZoneSyncSchedule.isChecked" ng-init="removeZoneSyncSchedule.isChecked=false"/>Remove Zone Sync Schedule
+            </label>
+        </div>
+    </div>
+    <div class="form-group panel-footer">
+        <div class="vinyldns-flex-right">
+            <button id="zone-sync-button" type="button"
+                    ng-disabled="!zoneSyncScheduleDiffer(zoneSyncRecurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
+                    class="btn btn-primary"
+                    ng-click="submitUpdateZoneSyncSchedule()">
+                Update Zone Sync Schedule
+            </button>
+        </div>
+    </div>
+</div>
+}
+    <!-- END ZONE SYNC SCHEDULE -->
 
     <!-- START ACL MODAL -->
 <form name="addAclRuleForm" role="form" class="form-horizontal" novalidate>
