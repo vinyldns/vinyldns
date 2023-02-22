@@ -105,6 +105,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         options: {
             allowMinute : false,
             allowHour : false,
+            allowWeek : false,
             allowMonth : false,
             allowYear : false
         }
