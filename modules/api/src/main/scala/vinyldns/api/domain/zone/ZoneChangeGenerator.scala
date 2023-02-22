@@ -65,7 +65,7 @@ object ZoneChangeGenerator {
     ZoneChange(
       zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Syncing),
       zone.scheduleRequestor.get,
-      ZoneChangeType.Sync,
+      ZoneChangeType.AutomatedSync,
       ZoneChangeStatus.Pending
     )
 
