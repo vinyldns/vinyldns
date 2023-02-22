@@ -35,9 +35,9 @@ import java.net.InetAddress
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val nonExistentRecordDeleteMessage: String = "This record does not exist." +
+  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
     "No further action is required."
-  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist." +
+  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist. " +
     "No further action is required."
   private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
