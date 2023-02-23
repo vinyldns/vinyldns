@@ -196,7 +196,7 @@ object TestDataLoader extends TransactionProvider {
     id = "super-user-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "superUserAccessKey",
-    secretKey = "superUserSecretKey",
+    secretKey = Encrypted("superUserSecretKey"),
     firstName = Some("super-user"),
     lastName = Some("super-user"),
     email = Some("test@test.com"),
