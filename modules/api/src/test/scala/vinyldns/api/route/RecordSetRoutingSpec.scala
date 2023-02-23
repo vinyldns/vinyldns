@@ -675,7 +675,7 @@ class RecordSetRoutingSpec
 
     def listRecordSetChanges(
                               zoneId: String,
-                              startFrom: Option[String],
+                              startFrom: Option[Int],
                               maxItems: Int,
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {

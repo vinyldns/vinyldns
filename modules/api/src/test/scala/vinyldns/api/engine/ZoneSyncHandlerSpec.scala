@@ -30,7 +30,7 @@ import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -181,16 +181,16 @@ class ZoneSyncHandlerSpec
     zoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testReverseZone = Zone(
     reverseZoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testRecord1 = RecordSet(

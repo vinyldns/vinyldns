@@ -27,7 +27,7 @@ import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
@@ -40,6 +40,7 @@ trait DnsJsonProtocol extends JsonValidation {
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     AlgorithmSerializer,
+    EncryptedSerializer,
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
@@ -142,12 +143,22 @@ trait DnsJsonProtocol extends JsonValidation {
     override def toJson(a: Algorithm): JValue = JString(a.name)
   }
 
+  case object EncryptedSerializer extends ValidationSerializer[Encrypted] {
+    override def fromJson(js: JValue): ValidatedNel[String, Encrypted] =
+      js match {
+        case JString(value) => EncryptFromJson.fromString(value).toValidatedNel
+        case _ => "Unsupported type for zone connection key, must be a string".invalidNel
+      }
+
+    override def toJson(a: Encrypted): JValue = JString(a.value)
+  }
+
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
         (js \ "name").required[String]("Missing ZoneConnection.name"),
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
-        (js \ "key").required[String]("Missing ZoneConnection.key"),
+        (js \ "key").required[Encrypted]("Missing ZoneConnection.key"),
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
         ).mapN(ZoneConnection.apply)

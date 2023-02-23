@@ -23,6 +23,14 @@ angular.module('controller.zones', [])
     $scope.allZonesLoaded = false;
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
     $scope.allGroups = [];
+    $scope.ignoreAccess = false;
+    $scope.allZonesAccess = function () {
+        $scope.ignoreAccess = true;
+    }
+
+    $scope.myZonesAccess = function () {
+        $scope.ignoreAccess = false;
+    }
 
     $scope.query = "";
 
@@ -80,6 +88,77 @@ angular.module('controller.zones', [])
             return false;
         }
     };
+
+    // Autocomplete for zone search
+    $(".zone-search-text").autocomplete({
+      source: function( request, response ) {
+        $.ajax({
+          url: "/api/zones?maxItems=100",
+          dataType: "json",
+          data: {nameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
+          success: function(data) {
+              const search =  JSON.parse(JSON.stringify(data));
+              response($.map(search.zones, function(zone) {
+              return {value: zone.name, label: zone.name}
+              }))
+          }
+        });
+      },
+      minLength: 1,
+      select: function (event, ui) {
+          $scope.query = ui.item.value;
+          $(".zone-search-text").val(ui.item.value);
+          return false;
+        },
+      open: function() {
+        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+      },
+      close: function() {
+        $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+      }
+    });
+
+    // Autocomplete text-highlight
+    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
+            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+            return $("<li></li>")
+                  .data("ui-autocomplete-item", item.value)
+                  .append("<div>" + txt + "</div>")
+                  .appendTo(ul);
+    };
+
+    $('.isGroupSearch').change(function() {
+        if(this.checked) {
+            // Autocomplete for search by admin group
+            $(".zone-search-text").autocomplete({
+              source: function( request, response ) {
+                $.ajax({
+                  url: "/api/groups?maxItems=100&abridged=true",
+                  dataType: "json",
+                  data: {groupNameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
+                  success: function(data) {
+                      const search =  JSON.parse(JSON.stringify(data));
+                      response($.map(search.groups, function(group) {
+                      return {value: group.name, label: group.name}
+                      }))
+                  }
+                });
+              },
+              minLength: 1,
+              select: function (event, ui) {
+                  $scope.query = ui.item.value;
+                  $(".zone-search-text").val(ui.item.value);
+                  return false;
+                },
+              open: function() {
+                $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+              },
+              close: function() {
+                $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+              }
+            });
+        }
+    });
 
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {
