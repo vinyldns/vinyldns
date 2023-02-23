@@ -357,25 +357,26 @@
         </h3>
     </div>
     <div class="panel-body" >
-        <div class="btn-group">
-            <button id="refresh-zone-sync-button" class="btn btn-default" ng-click="refreshZone()">
-                <span class="fa fa-refresh"></span> Refresh
-            </button>
-        </div>
-        <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncRecurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
+        <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncSchedule.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
         <span class="help-block">
             Schedule for zone sync at the provided time.
         </span>
         <div class="checkbox col-md-12" id="cron-lib-check">
             <label ng-if="recurrenceScheduleExist">
-                <input type="checkbox" ng-model="removeZoneSyncSchedule.isChecked" ng-init="removeZoneSyncSchedule.isChecked=false"/>Remove Zone Sync Schedule
+                <input type="checkbox" ng-model="zoneSyncSchedule.isChecked"/>Remove Zone Sync Schedule
             </label>
         </div>
     </div>
     <div class="form-group panel-footer">
+        <div class="col-md-3">
+            <button ng-disabled="!zoneSyncScheduleDiffer(zoneSyncSchedule.recurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
+                    id="refresh-zone-sync-button" type="button" class="btn btn-primary" ng-click="refreshZone()">
+                Reset
+            </button>
+        </div>
         <div class="vinyldns-flex-right">
             <button id="zone-sync-button" type="button"
-                    ng-disabled="!zoneSyncScheduleDiffer(zoneSyncRecurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
+                    ng-disabled="!zoneSyncScheduleDiffer(zoneSyncSchedule.recurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
                     class="btn btn-primary"
                     ng-click="submitUpdateZoneSyncSchedule()">
                 Update Zone Sync Schedule

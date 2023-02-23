@@ -56,7 +56,7 @@ object ZoneSyncScheduleHandler {
         val executionTime: ExecutionTime = ExecutionTime.forCron(parser.parse(z.recurrenceSchedule.get))
         val nextExecution = executionTime.nextExecution(now.atZone(ZoneId.systemDefault())).get()
         val diff = ChronoUnit.SECONDS.between(now, nextExecution)
-        if (diff <= 5) {
+        if (diff < 5) {
           zonesWithSchedule = zonesWithSchedule :+ z.id
         } else {
           List.empty

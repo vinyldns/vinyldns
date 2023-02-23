@@ -40,9 +40,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
-    $scope.zoneSyncRecurrenceSchedule = undefined;
-    $scope.removeZoneSyncSchedule = {
-        isChecked: false
+    $scope.zoneSyncSchedule = {
+        isChecked: false,
+        recurrenceSchedule: ''
     };
     $scope.manageZoneState = {
         UPDATE: 0,
@@ -105,7 +105,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         options: {
             allowMinute : false,
             allowHour : false,
-            allowWeek : false,
+            allowWeek : true,
             allowMonth : false,
             allowYear : false
         }
@@ -205,7 +205,10 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.submitUpdateZoneSyncSchedule = function () {
         var newZone = angular.copy($scope.zoneInfo);
         newZone = zonesService.normalizeZoneDates(newZone);
-        newZone.recurrenceSchedule = $scope.zoneSyncRecurrenceSchedule;
+        if($scope.zoneSyncSchedule.isChecked){
+           $scope.zoneSyncSchedule.recurrenceSchedule = undefined;
+        }
+        newZone.recurrenceSchedule = $scope.zoneSyncSchedule.recurrenceSchedule;
         $scope.updateZone(newZone, 'Zone Sync Schedule');
     }
 
@@ -263,9 +266,8 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.zoneSyncScheduleDiffer = function(left, right) {
         var updatedZoneSchedule = left;
         var existingZoneSchedule = right;
-        if($scope.removeZoneSyncSchedule.isChecked){
-           $scope.zoneSyncRecurrenceSchedule = undefined;
-           updatedZoneSchedule = $scope.zoneSyncRecurrenceSchedule;
+        if($scope.zoneSyncSchedule.isChecked){
+           updatedZoneSchedule = undefined;
         }
         return !angular.equals(updatedZoneSchedule, existingZoneSchedule);
     };
@@ -312,9 +314,13 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
+            $scope.zoneSyncSchedule.isChecked = false;
             $scope.recurrenceScheduleExist = $scope.zoneInfo.recurrenceSchedule ? true : false;
             if($scope.recurrenceScheduleExist){
-                $scope.zoneSyncRecurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            } else {
+                $scope.zoneInfo.recurrenceSchedule = '';
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
             }
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
