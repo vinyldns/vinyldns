@@ -561,6 +561,7 @@ class BatchChangeValidations(
         input.inputChange.typ,
         input.zone,
         ownerGroupId,
+        false,
         addRecords
       )
     result
