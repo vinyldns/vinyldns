@@ -176,6 +176,34 @@ class ZoneServiceSpec
       resultChange.changeType shouldBe ZoneChangeType.Create
     }
 
+    "return a NotAuthorizedError when zone recurrence schedule is set by a non-superuser" in {
+      doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[NotAuthorizedError]
+    }
+
+    "allow the zone to be created when zone recurrence schedule is set by a superuser" in {
+      doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      val resultChange: ZoneChange = underTest.connectToZone(newZone, superUserAuth).map(_.asInstanceOf[ZoneChange]).value.unsafeRunSync().toOption.get
+
+      resultChange.changeType shouldBe ZoneChangeType.Create
+      resultChange.zone.recurrenceSchedule shouldBe Some("0/5 0 0 ? * * *")
+    }
+
+    "return a InvalidRequest when zone recurrence schedule cron expression is invalid" in {
+      doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(recurrenceSchedule = Some("abcd"))
+      val error = underTest.connectToZone(newZone, superUserAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
+    }
+
     "return an error if the zone create includes a bad acl rule" in {
       val badAcl = ACLRule(baseAclRuleInfo.copy(recordMask = Some("x{5,-3}")))
       val newZone = createZoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
@@ -250,6 +278,42 @@ class ZoneServiceSpec
       resultChange.changeType shouldBe ZoneChangeType.Update
       resultChange.zone.adminGroupId shouldBe updateZoneInput.adminGroupId
       resultChange.zone.adminGroupId should not be updateZoneAuthorized.adminGroupId
+    }
+
+    "return a NotAuthorizedError when zone recurrence schedule is updated by a non-superuser" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(twoUserGroup.id, okGroup.id))
+      val updateZoneInput = updateZoneAuthorized.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      val error = underTest
+        .updateZone(updateZoneInput, doubleAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[NotAuthorizedError]
+    }
+
+    "return a InvalidRequest when zone recurrence schedule cron expression is invalid" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val updateZoneInput = updateZoneAuthorized.copy(recurrenceSchedule = Some("abcd"))
+      val error = underTest
+        .updateZone(updateZoneInput, superUserAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
+    }
+
+    "allow the zone to be created when zone recurrence schedule is set by a superuser" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val updateZoneInput = updateZoneAuthorized.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      val resultChange: ZoneChange =
+        underTest
+          .updateZone(updateZoneInput, superUserAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value.unsafeRunSync().toOption.get
+
+      resultChange.zone.id shouldBe okZone.id
+      resultChange.changeType shouldBe ZoneChangeType.Update
+      resultChange.zone.recurrenceSchedule shouldBe updateZoneInput.recurrenceSchedule
     }
 
     "not validate connection if unchanged" in {

@@ -48,6 +48,8 @@ final case class Zone(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None,
     latestSync: Option[Instant] = None,
     isTest: Boolean = false,
     backendId: Option[String] = None
@@ -76,6 +78,8 @@ final case class Zone(
     sb.append("reverse=\"").append(isReverse).append("\"; ")
     sb.append("isTest=\"").append(isTest).append("\"; ")
     sb.append("created=\"").append(created).append("\"; ")
+    recurrenceSchedule.map(sb.append("recurrenceSchedule=\"").append(_).append("\"; "))
+    scheduleRequestor.map(sb.append("scheduleRequestor=\"").append(_).append("\"; "))
     updated.map(sb.append("updated=\"").append(_).append("\"; "))
     latestSync.map(sb.append("latestSync=\"").append(_).append("\"; "))
     sb.append("]")
@@ -96,7 +100,9 @@ object Zone {
       acl = acl,
       adminGroupId = adminGroupId,
       backendId = backendId,
-      isTest = isTest
+      isTest = isTest,
+      recurrenceSchedule = recurrenceSchedule,
+      scheduleRequestor = scheduleRequestor
     )
   }
 
@@ -111,7 +117,9 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      backendId = backendId
+      backendId = backendId,
+      recurrenceSchedule = recurrenceSchedule,
+      scheduleRequestor = scheduleRequestor
     )
   }
 }
@@ -124,7 +132,9 @@ final case class CreateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
-    backendId: Option[String] = None
+    backendId: Option[String] = None,
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None
 )
 
 final case class UpdateZoneInput(
@@ -136,6 +146,8 @@ final case class UpdateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
 )
 
