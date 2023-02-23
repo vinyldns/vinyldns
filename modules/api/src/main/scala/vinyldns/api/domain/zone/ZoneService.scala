@@ -28,6 +28,10 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
+import com.cronutils.model.definition.CronDefinition
+import com.cronutils.model.definition.CronDefinitionBuilder
+import com.cronutils.parser.CronParser
+import com.cronutils.model.CronType
 
 object ZoneService {
   def apply(
@@ -81,6 +85,8 @@ class ZoneService(
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
       _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
+      _ <- validateCronString(isCronStringValid).toResult
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
       createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
       zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
@@ -101,6 +107,8 @@ class ZoneService(
       ).toResult
       _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
       _ <- if(updateZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(updateZoneInput.recurrenceSchedule.isDefined) isValidCronString(updateZoneInput.recurrenceSchedule.get) else true
+      _ <- validateCronString(isCronStringValid).toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
@@ -279,6 +287,28 @@ class ZoneService(
 
   def getBackendIds(): Result[List[String]] =
     backendResolver.ids.toList.toResult
+
+  def isValidCronString(maybeString: String): Boolean = {
+    val isValid = try {
+      val cronDefinition: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
+      val parser: CronParser = new CronParser(cronDefinition)
+      val quartzCron = parser.parse(maybeString)
+      quartzCron.validate
+      true
+    }
+    catch {
+      case _: Exception =>
+        false
+    }
+    isValid
+  }
+
+  def validateCronString(isValid: Boolean): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest(s"Invalid cron expression. Please enter a valid cron expression in `recurrenceSchedule`.")
+    )(
+      isValid
+    )
 
   def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository

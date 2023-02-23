@@ -194,6 +194,15 @@ class ZoneServiceSpec
       resultChange.zone.recurrenceSchedule shouldBe Some("0/5 0 0 ? * * *")
     }
 
+    "return a InvalidRequest when zone recurrence schedule cron expression is invalid" in {
+      doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(recurrenceSchedule = Some("abcd"))
+      val error = underTest.connectToZone(newZone, superUserAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
+    }
+
     "return an error if the zone create includes a bad acl rule" in {
       val badAcl = ACLRule(baseAclRuleInfo.copy(recordMask = Some("x{5,-3}")))
       val newZone = createZoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
@@ -279,6 +288,16 @@ class ZoneServiceSpec
         .updateZone(updateZoneInput, doubleAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe an[NotAuthorizedError]
+    }
+
+    "return a InvalidRequest when zone recurrence schedule cron expression is invalid" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val updateZoneInput = updateZoneAuthorized.copy(recurrenceSchedule = Some("abcd"))
+      val error = underTest
+        .updateZone(updateZoneInput, superUserAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
     }
 
     "allow the zone to be created when zone recurrence schedule is set by a superuser" in {
