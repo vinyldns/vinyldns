@@ -125,7 +125,7 @@ object TestMembershipData {
 
   val supportUserAuth: AuthPrincipal = AuthPrincipal(supportUser, Seq(okGroup.id))
 
-  val superUserAuth = AuthPrincipal(superUser, Seq.empty)
+  val superUserAuth: AuthPrincipal = AuthPrincipal(superUser, Seq.empty)
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(
