@@ -178,7 +178,7 @@ final case class GroupAlreadyExistsError(msg: String) extends Throwable(msg)
 
 final case class GroupValidationError(msg: String) extends Throwable(msg)
 
-final case class EmailValidationError(msg: String) extends Throwable(msg)
+final case class emailValidationError(msg: String) extends Throwable(msg)
 
 final case class UserNotFoundError(msg: String) extends Throwable(msg)
 
