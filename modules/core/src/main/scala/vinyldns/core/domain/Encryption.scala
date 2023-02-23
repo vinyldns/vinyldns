@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.record
+package vinyldns.core.domain
 
-import cats.effect._
-import scalikejdbc.DB
-import vinyldns.core.repository.Repository
+import vinyldns.core.crypto.CryptoAlgebra
 
-trait RecordChangeRepository extends Repository {
+final case class Encrypted private (value: String) extends AnyVal
 
-  def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
+object Encryption {
+  def apply(crypto: CryptoAlgebra, value: String): Encrypted = Encrypted(crypto.encrypt(value))
+  def decrypt(crypto: CryptoAlgebra, x: Encrypted): String = crypto.decrypt(x.value)
+}
 
-  def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[Int] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults]
-
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
+object EncryptFromJson {
+  def fromString(name: String): Either[String, Encrypted] =
+    Option(Encrypted(name)).toRight[String](s"Unsupported format")
 }

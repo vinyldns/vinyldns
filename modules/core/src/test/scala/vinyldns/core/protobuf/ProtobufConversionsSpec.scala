@@ -19,7 +19,7 @@ package vinyldns.core.protobuf
 import java.time.Instant
 import org.scalatest.{Assertion, OptionValues}
 import vinyldns.core.TestRecordSetData.ds
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
@@ -37,7 +37,7 @@ class ProtobufConversionsSpec
     with ProtobufConversions
     with OptionValues {
 
-  private val zoneConnection = ZoneConnection("name", "keyName", "key", "server")
+  private val zoneConnection = ZoneConnection("name", "keyName", Encrypted("key"), "server")
 
   private val zoneId = "test.zone.id"
 
@@ -64,8 +64,8 @@ class ProtobufConversionsSpec
   private val zone = Zone(
     "test.zone.actor.zone",
     "test@test.com",
-    connection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1")),
-    transferConnection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.2")),
+    connection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1")),
+    transferConnection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.2")),
     shared = true,
     id = zoneId,
     acl = zoneAcl,
@@ -270,7 +270,7 @@ class ProtobufConversionsSpec
       val pbconn = pb.getConnection
       val conn = zn.connection.get
       pbconn.getName shouldBe conn.name
-      pbconn.getKey shouldBe conn.key
+      pbconn.getKey shouldBe conn.key.value
       pbconn.getKeyName shouldBe conn.keyName
       pbconn.getPrimaryServer shouldBe conn.primaryServer
     } else {
@@ -280,7 +280,7 @@ class ProtobufConversionsSpec
       val pbTransConn = pb.getTransferConnection
       val transConn = zn.transferConnection.get
       pbTransConn.getName shouldBe transConn.name
-      pbTransConn.getKey shouldBe transConn.key
+      pbTransConn.getKey shouldBe transConn.key.value
       pbTransConn.getKeyName shouldBe transConn.keyName
       pbTransConn.getPrimaryServer shouldBe transConn.primaryServer
     } else {
@@ -369,7 +369,7 @@ class ProtobufConversionsSpec
     "convert from ZoneConnection" in {
       val pb = toPB(zoneConnection)
 
-      pb.getKey shouldBe zoneConnection.key
+      pb.getKey shouldBe zoneConnection.key.value
       pb.getKeyName shouldBe zoneConnection.keyName
       pb.getPrimaryServer shouldBe zoneConnection.primaryServer
       pb.getName shouldBe zoneConnection.name
@@ -808,12 +808,12 @@ class ProtobufConversionsSpec
 
   "User conversion" should {
     "convert to/from protobuf with user defaults" in {
-      val user = User("testName", "testAccess", "testSecret")
+      val user = User("testName", "testAccess", Encrypted("testSecret"))
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
@@ -831,7 +831,7 @@ class ProtobufConversionsSpec
       val user = User(
         "testName",
         "testAccess",
-        "testSecret",
+        Encrypted("testSecret"),
         firstName = Some("testFirstName"),
         lastName = Some("testLastName"),
         email = Some("testEmail"),
@@ -841,7 +841,7 @@ class ProtobufConversionsSpec
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       Some(pb.getFirstName) shouldBe user.firstName
       Some(pb.getLastName) shouldBe user.lastName
       Some(pb.getEmail) shouldBe user.email
@@ -856,12 +856,12 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with superUser true" in {
-      val user = User("testName", "testAccess", "testSecret", isSuper = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isSuper = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
@@ -875,12 +875,12 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with locked user" in {
-      val user = User("testName", "testAccess", "testSecret", lockStatus = LockStatus.Locked)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), lockStatus = LockStatus.Locked)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
@@ -894,12 +894,12 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with test user" in {
-      val user = User("testName", "testAccess", "testSecret", isTest = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isTest = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
@@ -913,12 +913,12 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with supportAdmin true" in {
-      val user = User("testName", "testAccess", "testSecret", isSupport = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isSupport = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
@@ -934,7 +934,7 @@ class ProtobufConversionsSpec
 
   "User change conversion" should {
     "convert to/from protobuf for CreateUser" in {
-      val user = User("createUser", "createUserAccess", "createUserSecret")
+      val user = User("createUser", "createUserAccess", Encrypted("createUserSecret"))
       val createChange = CreateUser(user, "createUserId", user.created)
       val pb = toPb(createChange)
 
@@ -943,7 +943,7 @@ class ProtobufConversionsSpec
       new User(
         pb.getNewUser.getUserName,
         pb.getNewUser.getAccessKey,
-        pb.getNewUser.getSecretKey,
+        Encrypted(pb.getNewUser.getSecretKey),
         created = user.created,
         id = user.id
       ) shouldBe user
@@ -956,7 +956,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf for UpdateUser" in {
-      val oldUser = User("updateUser", "updateUserAccess", "updateUserSecret")
+      val oldUser = User("updateUser", "updateUserAccess", Encrypted("updateUserSecret"))
       val newUser = oldUser.copy(userName = "updateUserNewName")
       val updateChange = UpdateUser(newUser, "createUserId", newUser.created, oldUser)
       val pb = toPb(updateChange)
@@ -966,7 +966,7 @@ class ProtobufConversionsSpec
       new User(
         pb.getNewUser.getUserName,
         pb.getNewUser.getAccessKey,
-        pb.getNewUser.getSecretKey,
+        Encrypted(pb.getNewUser.getSecretKey),
         created = newUser.created,
         id = newUser.id
       ) shouldBe newUser
@@ -977,7 +977,7 @@ class ProtobufConversionsSpec
       new User(
         pb.getOldUser.getUserName,
         pb.getOldUser.getAccessKey,
-        pb.getOldUser.getSecretKey,
+        Encrypted(pb.getOldUser.getSecretKey),
         created = oldUser.created,
         id = oldUser.id
       ) shouldBe oldUser

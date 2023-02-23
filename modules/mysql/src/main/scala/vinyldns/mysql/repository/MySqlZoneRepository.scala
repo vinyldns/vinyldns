@@ -333,10 +333,17 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-            startFrom.map(os => s"z.name > '$os'")
-          ).flatten
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          }
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")

@@ -22,8 +22,8 @@ import vinyldns.core.domain.record.ListRecordSetChangesResults
 case class ListRecordSetChangesResponse(
     zoneId: String,
     recordSetChanges: List[RecordSetChangeInfo] = Nil,
-    nextId: Option[String],
-    startFrom: Option[String],
+    nextId: Option[Int],
+    startFrom: Option[Int],
     maxItems: Int
 )
 
