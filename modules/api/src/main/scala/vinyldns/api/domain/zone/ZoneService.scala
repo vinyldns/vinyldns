@@ -305,7 +305,7 @@ class ZoneService(
 
   def validateCronString(isValid: Boolean): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(s"Invalid cron expression. Please enter a valid cron expression in `recurrenceSchedule`.")
+      InvalidRequest("Invalid cron expression. Please enter a valid cron expression in 'recurrenceSchedule'.")
     )(
       isValid
     )
