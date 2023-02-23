@@ -1955,6 +1955,30 @@ class RecordSetServiceSpec
       result shouldBe expectedResults
     }
 
+    "listFailedRecordSetChanges" should {
+      "retrieve the recordset changes" in {
+        val completeRecordSetChanges: List[RecordSetChange] = List(
+          pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+        )
+        //val recordSetChange= List[RecordSetChange]
+        doReturn(IO.pure(completeRecordSetChanges))
+          .when(mockRecordChangeRepo)
+          .listFailedRecordSetChanges()
+
+
+        val result: ListFailedRecordSetChangesResponse =
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+
+        val changesWithName =
+          ListFailedRecordSetChangesResponse(completeRecordSetChanges)
+
+        result shouldBe changesWithName
+      }
+    }
+
     "return a NotAuthorizedError" in {
       val error =
         underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get

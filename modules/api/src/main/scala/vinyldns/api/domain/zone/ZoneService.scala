@@ -238,6 +238,25 @@ class ZoneService(
         .toResult[ListZoneChangesResults]
     } yield ListZoneChangesResponse(zone.id, zoneChangesResults)
 
+  def listFailedZoneChanges(
+                             authPrincipal: AuthPrincipal
+                           ): Result[ListFailedZoneChangesResponse] =
+    for {
+      zoneChangesFailedResults <- zoneChangeRepository
+        .listFailedZoneChanges()
+        .toResult[List[ZoneChange]]
+      _ <- zoneAccess(zoneChangesFailedResults, authPrincipal).toResult
+    } yield {
+      ListFailedZoneChangesResponse(zoneChangesFailedResults)}
+
+  def zoneAccess(
+                  zoneCh: List[ZoneChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    zoneCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
+
   def addACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,

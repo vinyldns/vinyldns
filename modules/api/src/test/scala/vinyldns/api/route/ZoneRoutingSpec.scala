@@ -134,6 +134,10 @@ class ZoneRoutingSpec
     maxItems = 100
   )
 
+  private val listFailedZoneChangeResponse = ListFailedZoneChangesResponse(
+    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed))
+  )
+
   val crypto = new JavaCrypto(
     ConfigFactory.parseString(
       """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
@@ -350,6 +354,15 @@ class ZoneRoutingSpec
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listZoneChangeResponse)
+      }
+      outcome.toResult
+    }
+
+    def listFailedZoneChanges(
+                               authPrincipal: AuthPrincipal
+                             ): Result[ListFailedZoneChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedZoneChangeResponse)
       }
       outcome.toResult
     }
@@ -989,6 +1002,18 @@ class ZoneRoutingSpec
       }
       Get(s"/zones/${ok.id}/changes?maxItems=0") ~> zoneRoute ~> check {
         status shouldBe BadRequest
+      }
+    }
+  }
+
+  "GET failed zone changes" should {
+    "return the failed zone changes" in {
+      val zoneCreateFailed = zoneCreate.copy(status = ZoneChangeStatus.Failed)
+      val zoneUpdateFailed = zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      Get(s"/metrics/health/zonechangesfailure") ~> zoneRoute ~> check {
+        val changes = responseAs[ListFailedZoneChangesResponse]
+        changes.failedZoneChanges.map(_.id) shouldBe List(zoneCreateFailed.id, zoneUpdateFailed.id)
+
       }
     }
   }

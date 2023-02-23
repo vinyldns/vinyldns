@@ -824,6 +824,23 @@ class ZoneServiceSpec
     }
   }
 
+  "listFailedZoneChanges" should {
+    "retrieve the zone changes" in {
+
+      doReturn(IO.pure(List[ZoneChange](
+        zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      )))
+        .when(mockZoneChangeRepo)
+        .listFailedZoneChanges()
+
+      val result: ListFailedZoneChangesResponse =
+        underTest.listFailedZoneChanges(okAuth).value.unsafeRunSync().toOption.get
+
+      result.failedZoneChanges shouldBe List(
+        zoneUpdate.copy(status = ZoneChangeStatus.Failed))
+    }
+  }
+
   "AddAclRule" should {
     "fail if the user is not authorized for the zone" in {
       doReturn(IO.pure(Some(zoneNotAuthorized))).when(mockZoneRepo).getZone(anyString)
