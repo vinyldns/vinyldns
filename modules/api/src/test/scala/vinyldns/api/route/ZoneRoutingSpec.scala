@@ -33,6 +33,7 @@ import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.{JavaCrypto, NoOpCrypto}
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
@@ -86,18 +87,18 @@ class ZoneRoutingSpec
   private val connectionOk = Zone(
     "connection.ok.",
     "connection-ok@test.com",
-    connection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1")),
-    transferConnection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1")),
+    transferConnection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val connectionFailed = Zone(
     "connection.fail",
     "connection-failed@test.com",
-    connection = Some(ZoneConnection("connection.fail", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("connection.fail", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val zoneValidationFailed = Zone(
     "validation.fail",
     "zone-validation-failed@test.com",
-    connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("validation.fail", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
@@ -678,10 +679,10 @@ class ZoneRoutingSpec
         val resultKey = result.zone.connection.get.key
         val resultTCKey = result.zone.transferConnection.get.key
 
-        val decrypted = crypto.decrypt(resultKey)
-        val decryptedTC = crypto.decrypt(resultTCKey)
-        decrypted shouldBe connectionOk.connection.get.key
-        decryptedTC shouldBe connectionOk.transferConnection.get.key
+        val decrypted = crypto.decrypt(resultKey.value)
+        val decryptedTC = crypto.decrypt(resultTCKey.value)
+        decrypted shouldBe connectionOk.connection.get.key.value
+        decryptedTC shouldBe connectionOk.transferConnection.get.key.value
       }
     }
 

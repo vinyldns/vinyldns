@@ -71,7 +71,8 @@ class FrontendController @Inject() (
   }
 
   def viewZone(zoneId: String): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.zones.zoneDetail(request.user.userName, zoneId)))
+    val canReview = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.zones.zoneDetail(request.user.userName, canReview, zoneId)))
   }
 
   def viewRecordSets(): Action[AnyContent] = userAction.async { implicit request =>

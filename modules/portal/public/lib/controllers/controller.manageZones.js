@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-angular.module('controller.manageZones', [])
+angular.module('controller.manageZones', ['angular-cron-jobs'])
     .controller('ManageZonesController', function ($scope, $timeout, $log, recordsService, zonesService, groupsService,
                                                    profileService, utilityService, pagingService) {
 
@@ -40,11 +40,16 @@ angular.module('controller.manageZones', [])
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
+    $scope.zoneSyncSchedule = {
+        isChecked: false,
+        recurrenceSchedule: ''
+    };
     $scope.manageZoneState = {
         UPDATE: 0,
         CONFIRM_UPDATE: 1
     };
     $scope.allGroups = [];
+    $scope.recurrenceScheduleExist = false;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
@@ -93,6 +98,18 @@ angular.module('controller.manageZones', [])
     $scope.confirmDeleteZone = function() {
         $("#delete_zone_connection_modal").modal("show");
     };
+
+    $scope.myZoneSyncScheduleConfig = {
+        allowMultiple: false,
+        quartz: true,
+        options: {
+            allowMinute : false,
+            allowHour : false,
+            allowWeek : true,
+            allowMonth : false,
+            allowYear : false
+        }
+    }
 
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
@@ -185,6 +202,16 @@ angular.module('controller.manageZones', [])
         $scope.updateZone(zone, 'Zone Update');
     };
 
+    $scope.submitUpdateZoneSyncSchedule = function () {
+        var newZone = angular.copy($scope.zoneInfo);
+        newZone = zonesService.normalizeZoneDates(newZone);
+        if($scope.zoneSyncSchedule.isChecked){
+           $scope.zoneSyncSchedule.recurrenceSchedule = undefined;
+        }
+        newZone.recurrenceSchedule = $scope.zoneSyncSchedule.recurrenceSchedule;
+        $scope.updateZone(newZone, 'Zone Sync Schedule');
+    }
+
     $scope.submitDeleteAclRule = function() {
         var newZone = angular.copy($scope.zoneInfo);
         newZone = zonesService.normalizeZoneDates(newZone);
@@ -236,6 +263,15 @@ angular.module('controller.manageZones', [])
         return !angular.equals(l, r);
     };
 
+    $scope.zoneSyncScheduleDiffer = function(left, right) {
+        var updatedZoneSchedule = left;
+        var existingZoneSchedule = right;
+        if($scope.zoneSyncSchedule.isChecked){
+           updatedZoneSchedule = undefined;
+        }
+        return !angular.equals(updatedZoneSchedule, existingZoneSchedule);
+    };
+
     $scope.normalizeZone = function(zone) {
         var vinyldnsZone = angular.copy(zone);
         delete vinyldnsZone.adminGroupName;
@@ -278,6 +314,14 @@ angular.module('controller.manageZones', [])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
+            $scope.zoneSyncSchedule.isChecked = false;
+            $scope.recurrenceScheduleExist = $scope.zoneInfo.recurrenceSchedule ? true : false;
+            if($scope.recurrenceScheduleExist){
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            } else {
+                $scope.zoneInfo.recurrenceSchedule = '';
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            }
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();

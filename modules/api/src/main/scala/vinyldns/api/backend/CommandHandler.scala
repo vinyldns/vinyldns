@@ -142,7 +142,7 @@ object CommandHandler {
     _.evalMap[IO, Any] { message =>
       message.command match {
         case sync: ZoneChange
-            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
+            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
           logger.info(s"Updating visibility timeout for zone change; changeId=${sync.id}")
           mq.changeMessageTimeout(message, 1.hour)
 
@@ -163,7 +163,7 @@ object CommandHandler {
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
-            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
+            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
           outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>

@@ -31,6 +31,7 @@ import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.domain.Encrypted
 import vinyldns.mysql.TestMySqlInstance
 
 import scala.concurrent.duration._
@@ -61,7 +62,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         systemMessage = Some("test")
       )
 
-    val goodUser: User = User(s"live-test-acct", "key", "secret")
+    val goodUser: User = User(s"live-test-acct", "key", Encrypted("secret"))
 
     val zones: IndexedSeq[Zone] = for { i <- 1 to 3 } yield Zone(
       s"${goodUser.userName}.zone$i.",
