@@ -139,6 +139,7 @@ object Boot extends App {
           backendResolver,
           vinyldnsConfig.serverConfig.validateRecordLookupAgainstDnsBackend,
           vinyldnsConfig.highValueDomainConfig,
+          vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
           vinyldnsConfig.serverConfig.useRecordSetCache
         )

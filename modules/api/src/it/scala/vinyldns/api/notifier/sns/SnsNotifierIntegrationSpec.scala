@@ -22,7 +22,7 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sns.AmazonSNSClientBuilder
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 import com.typesafe.config.{Config, ConfigFactory}
-import org.joda.time.DateTime
+import java.time.Instant
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +56,7 @@ class SnsNotifierIntegrationSpec
         okUser.id,
         okUser.userName,
         None,
-        DateTime.parse("2019-07-22T19:38:23Z"),
+        Instant.parse("2019-07-22T19:38:23Z"),
         List(
           SingleAddChange(
             Some("some-zone-id"),

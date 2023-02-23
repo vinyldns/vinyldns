@@ -18,7 +18,8 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.syntax.list._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -27,12 +28,15 @@ import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordType.{RecordType, UNKNOWN}
 import vinyldns.core.queue.MessageQueue
 
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
+  private val notExistCompletedMessage: String = "This record does not exist." +
+    "No further action is required."
+  private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
   def sendBatchForProcessing(
@@ -67,15 +71,20 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       recordSetChanges: List[RecordSetChange]
   ): BatchResult[Unit] = {
     val convertedIds = recordSetChanges.flatMap(_.singleBatchChangeIds).toSet
-
     singleChanges.find(ch => !convertedIds.contains(ch.id)) match {
-      case Some(change) => BatchConversionError(change).toLeftBatchResult
-      case None =>
+      // Each single change has a corresponding recordset id
+      // If they're not equal, then there's a delete request for a record that doesn't exist. So we allow this to process
+      case Some(_) if singleChanges.map(_.id).length != recordSetChanges.map(_.id).length && !singleChanges.map(_.typ).contains(UNKNOWN) =>
         logger.info(s"Successfully converted SingleChanges [${singleChanges
           .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
         ().toRightBatchResult
+      case Some(change) => BatchConversionError(change).toLeftBatchResult
+      case None =>
+          logger.info(s"Successfully converted SingleChanges [${singleChanges
+            .map(_.id)}] to RecordSetChanges [${recordSetChanges.map(_.id)}]")
+          ().toRightBatchResult
+        }
     }
-  }
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange],
@@ -104,7 +113,6 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val idsMap = recordSetChanges.flatMap { rsChange =>
       rsChange.singleBatchChangeIds.map(batchId => (batchId, rsChange.id))
     }.toMap
-
     val withStatus = batchChange.changes.map { change =>
       idsMap
         .get(change.id)
@@ -113,19 +121,26 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           change
         }
         .getOrElse {
-          // failure here means there was a message queue issue for this change
-          change.withFailureMessage("Error queueing RecordSetChange for processing")
+          // Match and check if it's a delete change for a record that doesn't exists.
+          change match {
+            case _: SingleDeleteRRSetChange if change.recordSetId.isEmpty =>
+              // Mark as Complete since we don't want to throw it as an error
+              change.withDoesNotExistMessage(notExistCompletedMessage)
+            case _ =>
+              // Failure here means there was a message queue issue for this change
+              change.withFailureMessage(failedMessage)
+          }
         }
     }
-
     batchChange.copy(changes = withStatus)
   }
 
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
-    val failedChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed => change
+    // Update if Single change is Failed or if a record that does not exist is deleted
+    val failedAndNotExistsChanges = batchChange.changes.collect {
+      case change if change.status == SingleChangeStatus.Failed || change.systemMessage.contains(notExistCompletedMessage) => change
     }
-    batchChangeRepo.updateSingleChanges(failedChanges).as(())
+    batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
   }.toBatchResult
 
   def createRecordSetChangesForBatch(
@@ -219,7 +234,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             recordType,
             ttl,
             RecordSetStatus.Pending,
-            DateTime.now,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
             proposedRecordData.toList,
             ownerGroupId = setOwnerGroupId

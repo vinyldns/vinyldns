@@ -16,7 +16,7 @@
 
 package vinyldns.api.repository
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.batch._
 
 import scala.collection.concurrent
@@ -26,20 +26,20 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalS
 
 class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
-  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
+  implicit def dateTimeOrdering: Ordering[Instant] = Ordering.fromLessThan(_.isAfter(_))
 
   case class StoredBatchChange(
       userId: String,
       userName: String,
       comments: Option[String],
-      createdTimestamp: DateTime,
+      createdTimestamp: Instant,
       changes: List[String],
       ownerGroupId: Option[String],
       id: String,
       approvalStatus: BatchChangeApprovalStatus,
       reviewerId: Option[String],
       reviewComment: Option[String],
-      reviewTimestamp: Option[DateTime]
+      reviewTimestamp: Option[Instant]
   )
   object StoredBatchChange {
     def apply(batchChange: BatchChange): StoredBatchChange =

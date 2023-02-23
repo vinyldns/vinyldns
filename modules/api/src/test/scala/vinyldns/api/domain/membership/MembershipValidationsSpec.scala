@@ -94,6 +94,23 @@ class MembershipValidationsSpec
         val nonSuperAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, nonSuperAuth) should be(right)
       }
+    }
+
+    "User toString" should {
+      "not display access and secret keys" in {
+        val userString = s"""User: [id="ok"; userName="ok"; firstName="Some(ok)"; lastName="Some(ok)"; email="Some(test@test.com)"; created="${okUser.created}"; isSuper="false"; isSupport="false"; isTest="false"; lockStatus="Unlocked"; ]"""
+        okUser.toString shouldBe userString
+      }
+    }
+
+    "isGroupChangePresent" should {
+      "return true when there is a group change present for the requested group change id" in {
+        isGroupChangePresent(Some(okGroupChange)) should be(right)
+      }
+      "return an error when there is a group change present for the requested group change id" in {
+        val error = leftValue(isGroupChangePresent(None))
+        error shouldBe an[InvalidGroupRequestError]
+      }
 
     }
   }

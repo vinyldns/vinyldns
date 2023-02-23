@@ -75,7 +75,7 @@ angular.module('service.groups', [])
                 query = null;
             }
             var params = {
-                "maxItems": 1500,
+                "maxItems": 3000,
                 "groupNameFilter": query,
                 "ignoreAccess": ignoreAccess
             };
@@ -84,12 +84,13 @@ angular.module('service.groups', [])
             return $http.get(url);
         };
 
-        this.getGroupsAbridged = function (ignoreAccess, query) {
+        this.getGroupsAbridged = function (limit, startFrom, ignoreAccess, query) {
             if (query == "") {
                 query = null;
             }
             var params = {
-                "maxItems": 1500,
+                "maxItems": limit,
+                "startFrom": startFrom,
                 "groupNameFilter": query,
                 "ignoreAccess": ignoreAccess,
                 "abridged": true
@@ -102,6 +103,12 @@ angular.module('service.groups', [])
         this.getGroupListChanges = function (id, count, groupId) {
             var url = '/api/groups/' + groupId + '/changes';
             url = this.urlBuilder(url, { 'startFrom': id, 'maxItems': count });
+            return $http.get(url);
+        };
+
+        this.getGroupChanges = function (groupId, count, startFrom) {
+            var url = '/api/groups/' + groupId + '/groupchanges';
+            url = this.urlBuilder(url, { 'startFrom': startFrom, 'maxItems': count });
             return $http.get(url);
         };
 

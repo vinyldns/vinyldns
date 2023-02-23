@@ -16,7 +16,7 @@
 
 package vinyldns.core.protobuf
 
-import org.joda.time.DateTime
+import java.time._
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, GroupStatus}
 import vinyldns.proto.VinylDNSProto
 
@@ -30,7 +30,7 @@ trait GroupProtobufConversions {
       name = pb.getName,
       email = pb.getEmail,
       description = if (pb.hasDescription) Option(pb.getDescription) else None,
-      created = new DateTime(pb.getCreated),
+      created = Instant.ofEpochMilli(pb.getCreated),
       status = GroupStatus.withName(pb.getStatus),
       memberIds = pb.getMemberIdsList.asScala.toSet,
       adminUserIds = pb.getAdminUserIdsList.asScala.toSet
@@ -44,7 +44,7 @@ trait GroupProtobufConversions {
       id = groupChange.getGroupChangeId,
       changeType = GroupChangeType.withName(groupChange.getChangeType),
       userId = groupChange.getUserId,
-      created = new DateTime(groupChange.getCreated),
+      created = Instant.ofEpochMilli(groupChange.getCreated),
       newGroup = newGroup,
       oldGroup = oldGroup
     )
@@ -55,7 +55,7 @@ trait GroupProtobufConversions {
     pb.setId(group.id)
     pb.setName(group.name)
     pb.setEmail(group.email)
-    pb.setCreated(group.created.getMillis)
+    pb.setCreated(group.created.toEpochMilli)
     pb.setStatus(group.status.toString)
 
     group.memberIds.foreach(pb.addMemberIds)
@@ -72,7 +72,7 @@ trait GroupProtobufConversions {
       .setGroupId(groupChange.newGroup.id)
       .setChangeType(groupChange.changeType.toString)
       .setUserId(groupChange.userId)
-      .setCreated(groupChange.created.getMillis)
+      .setCreated(groupChange.created.toEpochMilli)
       .setNewGroup(toPB(groupChange.newGroup))
     groupChange.oldGroup.foreach(oldGroup => pb.setOldGroup(toPB(oldGroup)))
 

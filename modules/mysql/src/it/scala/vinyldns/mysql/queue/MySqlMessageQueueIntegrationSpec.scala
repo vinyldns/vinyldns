@@ -21,7 +21,7 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
 import com.typesafe.config.{Config, ConfigFactory}
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -43,15 +43,15 @@ import vinyldns.mysql.queue.MySqlMessageQueue.{
   MessageAttemptsExceeded,
   QUEUE_CONNECTION_NAME
 }
-
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration._
 
 final case class RowData(
     id: String,
     messageType: Int,
     inFlight: Boolean,
-    createdTime: DateTime,
-    updatedTime: DateTime,
+    createdTime: Instant,
+    updatedTime: Instant,
     timeoutSecs: Int,
     attempts: Int
 )
@@ -101,8 +101,8 @@ class MySqlMessageQueueIntegrationSpec
       messageType: Int,
       inFlight: Boolean,
       data: Array[Byte],
-      created: DateTime,
-      updated: DateTime,
+      created: Instant,
+      updated: Instant,
       timeoutSeconds: Int,
       attempts: Int
   ): Unit = {
@@ -136,8 +136,8 @@ class MySqlMessageQueueIntegrationSpec
             rs.string(1),
             rs.int(2),
             rs.boolean(3),
-            new DateTime(rs.timestamp(4).getTime),
-            new DateTime(rs.timestamp(5).getTime),
+            Instant.ofEpochMilli(rs.timestamp(4).getTime),
+            Instant.ofEpochMilli(rs.timestamp(5).getTime),
             rs.int(6),
             rs.int(7)
           )
@@ -251,7 +251,7 @@ class MySqlMessageQueueIntegrationSpec
 
   "receive" should {
     "drop messages that have an invalid message type" in {
-      insert("foo", 23, false, rsChangeBytes, DateTime.now, DateTime.now, 100, 0)
+      insert("foo", 23, false, rsChangeBytes, Instant.now.truncatedTo(ChronoUnit.MILLIS), Instant.now.truncatedTo(ChronoUnit.MILLIS), 100, 0)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       findMessage("foo") should not be defined
@@ -262,8 +262,8 @@ class MySqlMessageQueueIntegrationSpec
         RecordChangeMessageType.value,
         false,
         "blah".getBytes,
-        DateTime.now,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         100,
         0
       )
@@ -277,8 +277,8 @@ class MySqlMessageQueueIntegrationSpec
         RecordChangeMessageType.value,
         false,
         "blah".getBytes,
-        DateTime.now,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         100,
         101
       )
@@ -288,7 +288,7 @@ class MySqlMessageQueueIntegrationSpec
     }
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
-      val initialTs = DateTime.now.minusSeconds(20)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(20)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,
@@ -305,12 +305,12 @@ class MySqlMessageQueueIntegrationSpec
 
       val msg = findMessage(rsChange.id).getOrElse(fail)
       msg.attempts shouldBe oldMsg.attempts + 1
-      msg.updatedTime.getMillis should be > oldMsg.updatedTime.getMillis
+      msg.updatedTime.toEpochMilli should be > oldMsg.updatedTime.toEpochMilli
       msg.inFlight shouldBe true
     }
     "grab messages that are in flight but expired" in {
       // put a message in whose updated timestamp was 100 seconds ago, set the timeout to 30 seconds
-      val initialTs = DateTime.now.minusSeconds(100)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(100)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,
@@ -368,7 +368,7 @@ class MySqlMessageQueueIntegrationSpec
 
   "requeue" should {
     "reset the message in the database" in {
-      val initialTs = DateTime.now.minusSeconds(20)
+      val initialTs = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(20)
       insert(
         rsChange.id,
         RecordChangeMessageType.value,

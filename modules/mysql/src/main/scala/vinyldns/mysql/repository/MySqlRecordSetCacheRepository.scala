@@ -28,8 +28,8 @@ import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.mysql.repository.MySqlRecordSetRepository.{PagingKey, fromRecordType, toFQDN}
 import vinyldns.proto.VinylDNSProto
-
-import scala.util.{Try, Success, Failure}
+import java.io.{PrintWriter, StringWriter}
+import scala.util.{Failure, Success, Try}
 
 class MySqlRecordSetCacheRepository
   extends RecordSetCacheRepository
@@ -139,7 +139,9 @@ class MySqlRecordSetCacheRepository
         }
         logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zone_id)")
       }.handleErrorWith { error =>
-        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id)", error)
+        val errorMessage = new StringWriter
+        error.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id). Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         IO.raiseError(error)
       }
     }

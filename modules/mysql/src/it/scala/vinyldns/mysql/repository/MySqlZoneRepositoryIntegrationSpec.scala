@@ -29,14 +29,16 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
-import vinyldns.mysql.TestMySqlInstance
+import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
+import vinyldns.mysql.TestMySqlInstance.groupRepository
 
 class MySqlZoneRepositoryIntegrationSpec
     extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
-    with Inspectors {
+    with Inspectors
+    with TransactionProvider {
 
   private var repo: ZoneRepository = _
 
@@ -221,6 +223,32 @@ class MySqlZoneRepositoryIntegrationSpec
       (repo.listZones(dummyAuth).unsafeRunSync().zones should contain).only(testZones.head)
     }
 
+    "get authorized zone by admin group name" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup.copy(id = testZoneAdminGroupId))
+      }.unsafeRunSync()
+
+      // store all of the zones
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+      repo.listZonesByAdminGroupIds(okUserAuth, None, 100, Set(testZoneAdminGroupId)).unsafeRunSync().zones should contain theSameElementsAs testZones
+
+      // dummy user only has access to one zone
+      (repo.listZonesByAdminGroupIds(dummyAuth, None, 100, Set(testZoneAdminGroupId)).unsafeRunSync().zones should contain).only(testZones.head)
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
+    }
+
     "get all zones" in {
       // store all of the zones
       val privateZone = okZone.copy(
@@ -257,6 +285,82 @@ class MySqlZoneRepositoryIntegrationSpec
         .listZones(dummyAuth, ignoreAccess = true)
         .unsafeRunSync()
         .zones should contain theSameElementsAs testZones
+    }
+
+    "get all zones by admin group name" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup)
+      }.unsafeRunSync()
+
+      val group = groupRepository.getGroupsByName(okGroup.name).unsafeRunSync()
+      val groupId = group.head.id
+
+      // store all of the zones
+      val privateZone = okZone.copy(
+        name = "private-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        adminGroupId = groupId
+      )
+
+      val sharedZone = okZone.copy(
+        name = "shared-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        shared = true,
+        adminGroupId = groupId
+      )
+
+      val testZones = Seq(privateZone, sharedZone)
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, should have all of the zones returned
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+
+      repo
+        .listZonesByAdminGroupIds(okUserAuth, None, 100, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+        .zones should contain theSameElementsAs testZones
+
+      // dummy user only have all of the zones returned
+      repo
+        .listZonesByAdminGroupIds(dummyAuth, None, 100, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+        .zones should contain theSameElementsAs testZones
+
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
+    }
+
+    "get empty list when no matching admin group name is found while filtering zones by group name" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup.copy(id = testZoneAdminGroupId))
+      }.unsafeRunSync()
+
+      // store all of the zones
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+      repo.listZonesByAdminGroupIds(okUserAuth, None, 100, Set()).unsafeRunSync().zones shouldBe empty
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
     }
 
     "get zones that are accessible by everyone" in {
@@ -506,6 +610,27 @@ class MySqlZoneRepositoryIntegrationSpec
         for {
           _ <- saveZones(testZones)
           retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"))
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
+    "support case insensitivity in the zone filter" in {
+
+      val testZones = Seq(
+        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("SyStEm*"))
         } yield retrieved
 
       (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)

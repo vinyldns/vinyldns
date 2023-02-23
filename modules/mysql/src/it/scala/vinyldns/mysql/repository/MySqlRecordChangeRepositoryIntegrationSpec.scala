@@ -107,19 +107,19 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         }
 
       // expect to be sorted by created descending so reverse that
-      val expectedOrder = timeSpaced.sortBy(_.created.getMillis).reverse
+      val expectedOrder = timeSpaced.sortBy(_.created.toEpochMilli).reverse
 
       val saveRecChange = executeWithinTransaction { db: DB =>
         repo.save(db, ChangeSet(timeSpaced))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
       val page1 = repo.listRecordSetChanges(okZone.id, None, 2).unsafeRunSync()
-      page1.nextId shouldBe Some(expectedOrder(1).created.getMillis.toString)
+      page1.nextId shouldBe Some(2)
       page1.maxItems shouldBe 2
       (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
 
       val page2 = repo.listRecordSetChanges(okZone.id, page1.nextId, 2).unsafeRunSync()
-      page2.nextId shouldBe Some(expectedOrder(3).created.getMillis.toString)
+      page2.nextId shouldBe Some(4)
       page2.maxItems shouldBe 2
       (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(2, 4))
 

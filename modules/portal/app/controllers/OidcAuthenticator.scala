@@ -46,6 +46,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
 import pureconfig.ConfigSource
+import java.io.{PrintWriter, StringWriter}
 
 object OidcAuthenticator {
   final case class OidcConfig(
@@ -186,7 +187,9 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)) match {
       case Success(s) => Some(s)
       case Failure(e) =>
-        logger.error(s"oidc session token parse error: ${e.getMessage}")
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"oidc session token parse error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         None
     }
 
@@ -260,7 +263,9 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
     Either
       .fromTry(Try(t))
       .leftMap { err =>
-        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage}")
+        val errorMessage = new StringWriter
+        err.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Unexpected error in OIDC flow: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         ErrorResponse(500, err.getMessage)
       }
 }

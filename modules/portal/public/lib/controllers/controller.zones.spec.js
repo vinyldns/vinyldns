@@ -39,7 +39,7 @@ describe('Controller: ZonesController', function () {
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
         };
-        groupsService.getGroupsAbridged = function () {
+        groupsService.getGroups = function () {
             return $q.when({
                 data: {
                     groups: [{id: "all my groups", members: [{id: "userId"}]}]
@@ -76,6 +76,7 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
         var expectedincludeReverse = true;
 
@@ -83,7 +84,7 @@ describe('Controller: ZonesController', function () {
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess, expectedincludeReverse]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 
     it('prevPageMyZones should call getZones with the correct parameters', function () {
@@ -94,6 +95,7 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
         var expectedincludeReverse = true;
 
@@ -101,13 +103,13 @@ describe('Controller: ZonesController', function () {
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess, expectedincludeReverse]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
 
         this.scope.nextPageMyZones();
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess, expectedincludeReverse]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 });

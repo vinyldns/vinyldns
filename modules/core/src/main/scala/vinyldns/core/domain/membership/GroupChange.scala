@@ -18,8 +18,9 @@ package vinyldns.core.domain.membership
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.auth.AuthPrincipal
+import java.time.temporal.ChronoUnit
 
 object GroupChangeType extends Enumeration {
   type GroupChangeType = Value
@@ -34,7 +35,9 @@ case class GroupChange(
     userId: String,
     oldGroup: Option[Group] = None,
     id: String = UUID.randomUUID().toString,
-    created: DateTime = DateTime.now
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    userName: Option[String] = None,
+    groupChangeMessage: Option[String] = None
 )
 
 object GroupChange {

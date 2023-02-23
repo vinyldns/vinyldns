@@ -34,7 +34,7 @@ class AccessValidations(
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'")
     )(
-      auth.isSystemAdmin || auth
+      auth.isSystemAdmin || zone.shared || auth
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
     )
 

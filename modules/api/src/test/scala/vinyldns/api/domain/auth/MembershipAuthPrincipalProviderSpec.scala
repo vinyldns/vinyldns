@@ -21,17 +21,14 @@ import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
 import cats.effect._
-import vinyldns.core.domain.auth.AuthPrincipal
 
 class MembershipAuthPrincipalProviderSpec
     extends AnyWordSpec
     with Matchers
-    with MockitoSugar
-    with ResultHelpers {
+    with MockitoSugar {
 
   "MembershipAuthPrincipalProvider" should {
     "return the AuthPrincipal" in {
@@ -65,7 +62,7 @@ class MembershipAuthPrincipalProviderSpec
         .when(mockUserRepo)
         .getUserByAccessKey(any[String])
 
-      val result = await[Option[AuthPrincipal]](underTest.getAuthPrincipal("None"))
+      val result = underTest.getAuthPrincipal("None").unsafeRunSync()
       result shouldBe None
     }
     "return an empty list of groups if there are no matching groups" in {
@@ -83,7 +80,7 @@ class MembershipAuthPrincipalProviderSpec
         .when(mockMembershipRepo)
         .getGroupsForUser(any[String])
 
-      val result = await[Option[AuthPrincipal]](underTest.getAuthPrincipal(accessKey))
+      val result = underTest.getAuthPrincipal(accessKey).unsafeRunSync()
       result.map { authPrincipal =>
         authPrincipal.signedInUser shouldBe okUser
         authPrincipal.memberGroupIds shouldBe Seq()

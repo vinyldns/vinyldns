@@ -233,6 +233,65 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     * This is somewhat complicated due to how we need to build the SQL.
     *
     * - Dynamically build the accessor list combining the user id and group ids
+    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
+    *
+    * @return a ListZonesResults
+    */
+  def listZonesByAdminGroupIds(
+       authPrincipal: AuthPrincipal,
+       startFrom: Option[String] = None,
+       maxItems: Int = 100,
+       adminGroupIds: Set[String],
+       ignoreAccess: Boolean = false
+  ): IO[ListZonesResults] =
+    monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
+      IO {
+        DB.readOnly { implicit s =>
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          if(adminGroupIds.nonEmpty) {
+            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          } else {
+            sb.append(s" WHERE admin_group_id IN ('') ")
+          }
+
+          sb.append(s" GROUP BY z.name ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+
+          val results: List[Zone] = SQL(query)
+            .bind(accessors: _*)
+            .map(extractZone(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.name))
+            else (results, None)
+
+
+          ListZonesResults(
+            zones = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = None,
+            ignoreAccess = ignoreAccess,
+          )
+        }
+      }
+    }
+
+  /**
+    * This is somewhat complicated due to how we need to build the SQL.
+    *
+    * - Dynamically build the accessor list combining the user id and group ids
     * - Do not include a zone name filter if there is no filter applied
     * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
     *
@@ -259,10 +318,17 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
               """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
             else None
 
-          val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-            startFrom.map(os => s"z.name > '$os'")
-          ).flatten
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          }
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")

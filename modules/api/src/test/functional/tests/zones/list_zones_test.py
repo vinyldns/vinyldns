@@ -23,6 +23,44 @@ def test_list_zones_success(list_zone_context, shared_zone_test_context):
     assert_that(result["nameFilter"], is_(f"*{shared_zone_test_context.partition_id}"))
 
 
+def test_list_zones_by_admin_group_name(list_zone_context, shared_zone_test_context):
+    """
+    Test that we can retrieve list of zones by searching with admin group name
+    """
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"list-zones-group{shared_zone_test_context.partition_id}", search_by_admin_group=True, status=200)
+    retrieved = result["zones"]
+
+    assert_that(retrieved, has_length(5))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone1["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone2["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone3["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.non_search_zone1["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.non_search_zone2["name"])))
+    assert_that(retrieved, has_item(has_entry("adminGroupName", list_zone_context.list_zones_group["name"])))
+    assert_that(retrieved, has_item(has_entry("backendId", "func-test-backend")))
+
+    assert_that(result["nameFilter"], is_(f"list-zones-group{shared_zone_test_context.partition_id}"))
+
+
+def test_list_zones_by_admin_group_name_with_wildcard(list_zone_context, shared_zone_test_context):
+    """
+    Test that we can retrieve list of zones by searching with admin group name with wildcard character
+    """
+    result = shared_zone_test_context.list_zones_client.list_zones(name_filter=f"*group{shared_zone_test_context.partition_id}", search_by_admin_group=True, status=200)
+    retrieved = result["zones"]
+
+    assert_that(retrieved, has_length(5))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone1["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone2["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.search_zone3["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.non_search_zone1["name"])))
+    assert_that(retrieved, has_item(has_entry("name", list_zone_context.non_search_zone2["name"])))
+    assert_that(retrieved, has_item(has_entry("adminGroupName", list_zone_context.list_zones_group["name"])))
+    assert_that(retrieved, has_item(has_entry("backendId", "func-test-backend")))
+
+    assert_that(result["nameFilter"], is_(f"*group{shared_zone_test_context.partition_id}"))
+
+
 def test_list_zones_max_items_100(shared_zone_test_context):
     """
     Test that the default max items for a list zones request is 100
@@ -178,11 +216,11 @@ def test_list_zones_ignore_access_success(shared_zone_test_context):
 
 def test_list_zones_ignore_access_success_with_name_filter(shared_zone_test_context):
     """
-    Test that we can retrieve a list of all zones with a name filter
+    Test that we can retrieve a list of all zones with a name filter. Should have Read access to shared zone
     """
     result = shared_zone_test_context.list_zones_client.list_zones(name_filter=shared_zone_test_context.shared_zone["name"].rstrip("."), ignore_access=True, status=200)
     retrieved = result["zones"]
 
     assert_that(result["ignoreAccess"], is_(True))
     assert_that(retrieved, has_item(has_entry("name", shared_zone_test_context.shared_zone["name"])))
-    assert_that(retrieved, has_item(has_entry("accessLevel", "NoAccess")))
+    assert_that(retrieved, has_item(has_entry("accessLevel", "Read")))

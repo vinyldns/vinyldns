@@ -42,6 +42,7 @@ trait ZoneServiceAlgebra {
       nameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
+      searchByAdminGroup: Boolean,
       ignoreAccess: Boolean,
       includeReverse: Boolean
   ): Result[ListZonesResponse]

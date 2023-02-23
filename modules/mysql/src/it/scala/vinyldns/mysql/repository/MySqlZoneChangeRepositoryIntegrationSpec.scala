@@ -20,7 +20,8 @@ import java.util.UUID
 
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -76,7 +77,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       zone.account,
       ZoneChangeType.Update,
       status,
-      created = DateTime.now().minusSeconds(Random.nextInt(1000))
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
   }
 
@@ -136,7 +137,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val expectedChanges =
         changes
           .filter(_.zoneId == zones(1).id)
-          .sortBy(_.created.getMillis)
+          .sortBy(_.created.toEpochMilli)
           .reverse
 
       // nextId should be none since default maxItems > 3
@@ -156,10 +157,10 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)
-        .sortBy(_.created.getMillis)
+        .sortBy(_.created.toEpochMilli)
         .reverse
       val expectedChanges = List(zoneOneChanges(0))
-      val expectedNext = Some(zoneOneChanges(1).created.getMillis.toString)
+      val expectedNext = Some(zoneOneChanges(1).created.toEpochMilli.toString)
 
       val listResponse =
         repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeRunSync()
@@ -179,12 +180,12 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)
-        .sortBy(_.created.getMillis)
+        .sortBy(_.created.toEpochMilli)
         .reverse
       val expectedPageOne = List(zoneOneChanges(0))
-      val expectedPageOneNext = Some(zoneOneChanges(1).created.getMillis.toString)
+      val expectedPageOneNext = Some(zoneOneChanges(1).created.toEpochMilli.toString)
       val expectedPageTwo = List(zoneOneChanges(1))
-      val expectedPageTwoNext = Some(zoneOneChanges(2).created.getMillis.toString)
+      val expectedPageTwoNext = Some(zoneOneChanges(2).created.toEpochMilli.toString)
       val expectedPageThree = List(zoneOneChanges(2))
 
       // get first page
