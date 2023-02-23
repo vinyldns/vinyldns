@@ -26,7 +26,7 @@ import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetLis
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
@@ -95,7 +95,7 @@ class AccessValidationsSpec
     VinylDNSTestHelpers.sharedApprovedTypes
   )
 
-  private val testUser = User("test", "test", "test", isTest = true)
+  private val testUser = User("test", "test", Encrypted("test"), isTest = true)
 
   "canSeeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {

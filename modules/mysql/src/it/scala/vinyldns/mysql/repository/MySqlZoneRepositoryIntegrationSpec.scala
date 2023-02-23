@@ -28,6 +28,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import vinyldns.mysql.TestMySqlInstance.groupRepository
@@ -435,7 +436,7 @@ class MySqlZoneRepositoryIntegrationSpec
 
     "return an empty list of zones if the user is not authorized to any" in {
       val unauthorized = AuthPrincipal(
-        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        signedInUser = User("not-authorized", "not-authorized", Encrypted("not-authorized")),
         memberGroupIds = Seq.empty
       )
 
