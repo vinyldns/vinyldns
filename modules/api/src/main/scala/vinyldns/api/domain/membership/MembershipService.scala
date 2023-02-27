@@ -372,7 +372,7 @@ class MembershipService(
   def emailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
     val emailRegex = if(emailDomains.isEmpty){
-      """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+      """(?=[^\s]+)(?=(\w+)@([\w\.]+))""".r
     }
     else {
       if (emailDomains.mkString(",").contains("*")) {
