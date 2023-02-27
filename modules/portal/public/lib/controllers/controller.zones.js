@@ -89,34 +89,39 @@ angular.module('controller.zones', [])
         }
     };
 
-    // Autocomplete for zone search
-    $(".zone-search-text").autocomplete({
-      source: function( request, response ) {
-        $.ajax({
-          url: "/api/zones?maxItems=100",
-          dataType: "json",
-          data: {nameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
-          success: function(data) {
-              const search =  JSON.parse(JSON.stringify(data));
-              response($.map(search.zones, function(zone) {
-              return {value: zone.name, label: zone.name}
-              }))
+    $.zoneAutocompleteSearch = function() {
+        // Autocomplete for zone search
+        $(".zone-search-text").autocomplete({
+          source: function( request, response ) {
+            $.ajax({
+              url: "/api/zones?maxItems=100",
+              dataType: "json",
+              data: {nameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
+              success: function(data) {
+                  const search =  JSON.parse(JSON.stringify(data));
+                  response($.map(search.zones, function(zone) {
+                  return {value: zone.name, label: zone.name}
+                  }))
+              }
+            });
+          },
+          minLength: 1,
+          select: function (event, ui) {
+              $scope.query = ui.item.value;
+              $(".zone-search-text").val(ui.item.value);
+              return false;
+            },
+          open: function() {
+            $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+          },
+          close: function() {
+            $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
           }
         });
-      },
-      minLength: 1,
-      select: function (event, ui) {
-          $scope.query = ui.item.value;
-          $(".zone-search-text").val(ui.item.value);
-          return false;
-        },
-      open: function() {
-        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
-      },
-      close: function() {
-        $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
-      }
-    });
+    };
+
+    // Should be the default autocomplete search result option
+    $.zoneAutocompleteSearch();
 
     $('.isGroupSearch').change(function() {
         if(this.checked) {
@@ -149,33 +154,7 @@ angular.module('controller.zones', [])
               }
             });
         } else {
-            $(".zone-search-text").autocomplete({
-                  source: function( request, response ) {
-                    $.ajax({
-                      url: "/api/zones?maxItems=100",
-                      dataType: "json",
-                      data: {nameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
-                      success: function(data) {
-                          const search =  JSON.parse(JSON.stringify(data));
-                          response($.map(search.zones, function(zone) {
-                          return {value: zone.name, label: zone.name}
-                          }))
-                      }
-                    });
-                  },
-                  minLength: 1,
-                  select: function (event, ui) {
-                      $scope.query = ui.item.value;
-                      $(".zone-search-text").val(ui.item.value);
-                      return false;
-                    },
-                  open: function() {
-                    $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
-                  },
-                  close: function() {
-                    $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
-                  }
-                });
+            $.zoneAutocompleteSearch();
         }
     });
 
