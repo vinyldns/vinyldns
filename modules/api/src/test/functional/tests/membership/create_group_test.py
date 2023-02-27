@@ -41,7 +41,7 @@ def test_create_group_success_wildcard(shared_zone_test_context):
     try:
         new_group = {
             "name": "test-create-group-success{shared_zone_test_context.partition_id}",
-            "email": "test@dummy.com",
+            "email": "test@ok.dummy.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
             "admins": [{"id": "ok"}]
