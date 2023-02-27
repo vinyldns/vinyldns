@@ -391,7 +391,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     /**
      * Get User name and Group Name with Ids for Zone history
      */
-
     function getZoneGroup(groupId, length) {
         function success(response) {
             $log.log('groupsService::getZoneGroup-success');
@@ -401,7 +400,8 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
                     .getGroup(groupId)
                     .then(success)
                     .catch(function (error) {
-                        handleError(error, 'groupsService::getZoneGroup-failure');
+                        $scope.zoneChanges[length].zone.adminGroupName = undefined;
+                        $log.warn(error, 'groupsService::getZoneGroup-failure');
                     });
     }
 
