@@ -111,7 +111,7 @@ object Boot extends App {
           case Left(error) =>
             logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
         }
-      }, 0, 5, TimeUnit.SECONDS))
+      }, 0, 1, TimeUnit.SECONDS))
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,
