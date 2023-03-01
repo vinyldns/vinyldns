@@ -21,11 +21,13 @@ import com.cronutils.model.CronType
 import com.cronutils.model.definition.{CronDefinition, CronDefinitionBuilder}
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
+import org.slf4j.LoggerFactory
 import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneRepository}
 import java.time.{Instant, ZoneId}
 import java.time.temporal.ChronoUnit
 
 object ZoneSyncScheduleHandler {
+  private val logger = LoggerFactory.getLogger("ZoneSyncScheduleHandler")
 
   def zoneSyncScheduler(zoneRepository: ZoneRepository): IO[Set[ZoneChange]] = {
     for {
@@ -50,14 +52,15 @@ object ZoneSyncScheduleHandler {
     var zonesWithSchedule: List[String] = List.empty
     for(z <- zone) {
       if (z.recurrenceSchedule.isDefined) {
-        val now = Instant.now()
+        val now = Instant.now().atZone(ZoneId.of("UTC"))
         val cronDefinition: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
         val parser: CronParser = new CronParser(cronDefinition)
         val executionTime: ExecutionTime = ExecutionTime.forCron(parser.parse(z.recurrenceSchedule.get))
-        val nextExecution = executionTime.nextExecution(now.atZone(ZoneId.systemDefault())).get()
+        val nextExecution = executionTime.nextExecution(now).get()
         val diff = ChronoUnit.SECONDS.between(now, nextExecution)
-        if (diff < 5) {
+        if (diff == 1) {
           zonesWithSchedule = zonesWithSchedule :+ z.id
+          logger.info("Zones with sync schedule: " + zonesWithSchedule)
         } else {
           List.empty
         }
