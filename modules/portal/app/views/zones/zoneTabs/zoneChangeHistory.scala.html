@@ -30,7 +30,10 @@
                     <td>{{ zoneChange.zone.created }}</td>
                     <td>{{ zoneChange.zone.updated }}</td>
                     <td>{{ zoneChange.changeType == "AutomatedSync" ? "Automated Sync" : zoneChange.changeType }}</td>
-                    <td><a ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                    <td ng-switch="zoneChange.zone.adminGroupName || '_undefined_'">
+                        <p ng-switch-when="_undefined_">Group has been deleted now.</p>
+                        <a ng-switch-default ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                    </td>
                     </td>
                     <td>
                         <button class="btn btn-info btn-sm"
