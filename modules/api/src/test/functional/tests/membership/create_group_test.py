@@ -143,7 +143,7 @@ def test_create_group_without_name_or_email(shared_zone_test_context):
         "Missing Group.name",
         "Missing Group.email"
     ))
-def test_create_group_with_invalid_email(shared_zone_test_context):
+def test_create_group_with_invalid_email_domain(shared_zone_test_context):
         """
         Tests that creating a group With Invalid email fails
         """
@@ -157,8 +157,22 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
             "admins": [{"id": "ok"}]
         }
         error = client.create_group(new_group, status=400)
-        assert_that(error, is_("Please enter a valid Email ID.Valid domains should end with test.com,dummy.com"))
+        assert_that(error, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
+def test_create_group_with_invalid_email(shared_zone_test_context):
+    """
+    Tests that creating a group With Invalid email fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
 
+    new_group = {
+        "name": "invalid-email",
+        "email": "test.abc.com",
+        "description": "this is a description",
+        "members": [{"id": "ok"}],
+        "admins": [{"id": "ok"}]
+    }
+    error = client.create_group(new_group, status=400)
+    assert_that(error, is_("Please enter a valid Email ID."))
 def test_create_group_without_members_or_admins(shared_zone_test_context):
     """
     Tests that creating a group without members or admins fails

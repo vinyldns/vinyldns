@@ -82,5 +82,7 @@ object Messages {
   // Error displayed when group name or email is empty
   val GroupValidationErrorMsg = "Group name and email cannot be empty."
 
-  val emailValidationErrorMsg = "Please enter a valid Email ID.Valid domains should end with"
+  val emailValidationErrorMsg = "Please enter a valid Email ID. Valid domains should end with"
+
+  val invalidEmailValidationErrorMsg = "Please enter a valid Email ID."
 }

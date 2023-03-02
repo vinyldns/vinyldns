@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.membership
 
+
 import cats.effect.IO
 import cats.implicits._
 import scalikejdbc.DB
@@ -368,26 +369,27 @@ class MembershipService(
         ().asRight
     }
   }.toResult
-
+   // Validate email details.Email domains details are fetched from the config file.
   def emailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
-    val emailRegex = if(emailDomains.isEmpty){
-      """(?=[^\s]+)(?=(\w+)@([\w\.]+))""".r
-    }
-    else {
-      if (emailDomains.mkString(",").contains("*")) {
-        ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString(",").replaceAllLiterally("*", "[A-Za-z0-9.]*").replaceAllLiterally(",", "|") + "$").r
-      } else {
-        ("^[A-Za-z0-9._%+-]+@" + emailDomains.mkString("|") + "$").r
-      }
-    }
+    val splitEmailDomains = emailDomains.mkString(",")
+    val emailRegex ="""(?=[^\s]+)(?=(\w+)@([\w\.]+))""".r
+    val index = email.indexOf('@');
+    val emailSplit = if(index != -1){
+      email.substring(index+1,email.length)}
+    val wildcardEmailDomains=if(splitEmailDomains.contains("*")){
+      emailDomains.map(x=>x.replaceAllLiterally("*",""))}
+    else emailDomains
+
     Option(email) match {
-      case Some(value) if (emailRegex.findFirstIn(value) == None) =>
-        emailValidationError(emailValidationErrorMsg + " " + validDomains.valid_domains.mkString(",").replace("*","")).asLeft
-      case _ =>
+      case Some(value) if (emailRegex.findFirstIn(value) != None)=>
+        if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
         ().asRight
-    }
-  }.toResult
+        else
+          emailValidationError(emailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+      case _ =>
+        emailValidationError(invalidEmailValidationErrorMsg ).asLeft
+    }}.toResult
 
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
