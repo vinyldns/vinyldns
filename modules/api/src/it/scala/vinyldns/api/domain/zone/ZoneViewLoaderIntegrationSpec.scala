@@ -58,6 +58,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
             Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))
         )
         val backend = backendResolver.resolve(zone).asInstanceOf[DnsBackend]
+        println(s"${backend.id}, ${backend.xfrInfo}, ${backend.resolver.getAddress}")
         DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
           .load()
           .unsafeRunSync()
