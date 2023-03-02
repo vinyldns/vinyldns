@@ -27,6 +27,7 @@ angular.module('controller.records', [])
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.recordSetGroupApprovalStatus = ['AutoApproved', 'Cancelled', 'ManuallyApproved', 'ManuallyRejected', 'Requested', 'PendingReview'];
     $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.selectedRecordTypes = [];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
@@ -49,6 +50,10 @@ angular.module('controller.records', [])
 
     var loadZonesPromise;
     var loadRecordsPromise;
+
+
+   	$scope.recordSetGroupApproverStatus = ['ManuallyApproved', 'ManuallyRejected'];
+	$scope.recordSetGroupRequestorStatus = ['Cancelled', 'Requested'];
 
     $scope.recordModalState = {
         CREATE: 0,
@@ -82,6 +87,21 @@ angular.module('controller.records', [])
 
     // paging status for record changes
     var changePaging = pagingService.getNewPagingParams(100);
+
+    $scope.recordSetGroupApprovalStatus = function(groupId, profileId) {
+        function success(response) {
+           if (response.data.members.some(x => x.id === profileId)){
+           $scope.recordSetGroupApprovalStatus = $scope.recordSetGroupApproverStatus;}
+           else{$scope.recordSetGroupApprovalStatus = $scope.recordSetGroupRequestorStatus;}
+         return $scope.recordSetGroupApprovalStatus
+        }
+        return groupsService
+            .getGroupMemberList(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroupMemberList-failure');
+            });
+    };
 
     /**
       * Modal control functions
@@ -125,6 +145,7 @@ angular.module('controller.records', [])
 
     $scope.editRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
+        $scope.currentRecord.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
         $scope.recordModal = {
             previous: angular.copy(record),
             action: $scope.recordModalState.UPDATE,
@@ -134,6 +155,15 @@ angular.module('controller.records', [])
             sharedZone: $scope.zoneInfo.shared,
             sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
+        var currentRecordOwnerGroupId = $scope.currentRecord.ownerGroupId;
+        $scope.recordSetGroupApprover = "";
+        $scope.recordSetGroupRequestor = "";
+
+        $scope.recordSetGroupApprovalStatus(currentRecordOwnerGroupId, $scope.profile.id)
+        if ($scope.recordSetGroupApproverStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
+        {$scope.recordSetGroupApprover = true}else{$scope.recordSetGroupApprover = false}
+        if ($scope.recordSetGroupRequestorStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
+        {$scope.recordSetGroupRequestor = true}else{$scope.recordSetGroupRequestor = false}
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
     };
@@ -184,10 +214,8 @@ angular.module('controller.records', [])
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
-
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);
-
             $scope.addRecordForm.$setPristine();
             $("#record_modal").modal('hide');
         }

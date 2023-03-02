@@ -21,7 +21,7 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, RecordSetGroupApproval}
 import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
@@ -129,6 +129,7 @@ case class RecordSetListInfo(
                               accessLevel: AccessLevel,
                               ownerGroupId: Option[String],
                               ownerGroupName: Option[String],
+                              recordSetGroupChange: Option[RecordSetGroupApproval],
                               fqdn: Option[String]
                             )
 
@@ -148,6 +149,7 @@ object RecordSetListInfo {
       accessLevel = accessLevel,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = recordSet.ownerGroupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn
     )
 }
@@ -165,6 +167,7 @@ case class RecordSetInfo(
                           account: String,
                           ownerGroupId: Option[String],
                           ownerGroupName: Option[String],
+                          recordSetGroupChange: Option[RecordSetGroupApproval],
                           fqdn: Option[String]
                         )
 
@@ -183,6 +186,7 @@ object RecordSetInfo {
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = groupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn
     )
 }
@@ -200,6 +204,7 @@ case class RecordSetGlobalInfo(
                                 account: String,
                                 ownerGroupId: Option[String],
                                 ownerGroupName: Option[String],
+                                recordSetGroupChange: Option[RecordSetGroupApproval],
                                 fqdn: Option[String],
                                 zoneName: String,
                                 zoneShared: Boolean
@@ -225,6 +230,7 @@ object RecordSetGlobalInfo {
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = groupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn,
       zoneName = zoneName,
       zoneShared = zoneShared
