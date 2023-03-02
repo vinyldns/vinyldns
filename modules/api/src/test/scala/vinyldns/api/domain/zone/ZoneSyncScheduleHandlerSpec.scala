@@ -29,8 +29,8 @@ class ZoneSyncScheduleHandlerSpec extends AnyWordSpec with Matchers with Validat
   import vinyldns.api.domain.zone.ZoneSyncScheduleHandler._
 
   private val mockZoneRepo = mock[ZoneRepository]
-  private val okZoneWithSchedule = okZone.copy(recurrenceSchedule = Some("0/2 * * ? * *"), scheduleRequestor = Some("okUser"))
-  private val xyzZoneWithSchedule = xyzZone.copy(recurrenceSchedule = Some("0/2 * * ? * *"), scheduleRequestor = Some("xyzUser"))
+  private val okZoneWithSchedule = okZone.copy(recurrenceSchedule = Some("0/1 * * ? * *"), scheduleRequestor = Some("okUser"))
+  private val xyzZoneWithSchedule = xyzZone.copy(recurrenceSchedule = Some("0/1 * * ? * *"), scheduleRequestor = Some("xyzUser"))
 
 
   "getZoneWithSchedule" should {
