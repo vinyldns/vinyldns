@@ -461,7 +461,48 @@
                     Record Owner Group is required for records in shared zones
                 </modal-invalid>
             </modal-element>
+            <modal-element label="Record Owner Group Request"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                <select name="requestedOwnerGroupId"
+                        class="form-control"
+                        ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
+                        ng-disabled="recordModal.details.readOnly"
+                        ng-class="recordModal.details.class"
+                        ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                        required>
+                    <option value="" selected="selected">Please choose a record owner group</option>
+                </select>
+                <modal-invalid>
+                    Record Owner Group is required for records in shared zones
+                </modal-invalid>
+            </modal-element>
 
+            <modal-element label="Record Owner Group Status"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                <select name="ownerGroupStatus"
+                        class="form-control"
+                        ng-model="currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus"
+                        ng-class="recordModal.details.class"
+                        ng-options="recordSetGroupApproverStatus for recordSetGroupApproverStatus in recordSetGroupApprovalStatus">
+                </select>
+                <modal-invalid>
+                    Record Owner Group is required for records in shared zones
+                </modal-invalid>
+            </modal-element>
+            <modal-element label="Record Status" invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                <input id="record-status-text" type="text" name="recordStatus" class="form-control"
+                       ng-model="currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.basics.readOnly"
+                       placeholder=""
+                       required>
+                <modal-invalid>
+                    Record name is required
+                </modal-invalid>
+            </modal-element>
         </modal-body>
         <modal-footer>
             <span ng-if="recordModal.action == recordModalState.CREATE">

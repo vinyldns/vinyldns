@@ -317,7 +317,7 @@
                     @if(meta.sharedDisplayEnabled) {
                         <td ng-if="zoneInfo.shared">
                             <a ng-if="record.ownerGroupName && canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
-                            <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName"></span>
+                            <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" ></span>
                             <span ng-if="!record.ownerGroupId">Unowned</span>
                             <span ng-if="record.ownerGroupId && !record.ownerGroupName" class="text-danger" data-toggle="tooltip" data-placement="top"
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>

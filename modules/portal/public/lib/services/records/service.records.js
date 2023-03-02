@@ -244,7 +244,8 @@ angular.module('service.records', [])
                 "id": record.id,
                 "name": record.name,
                 "type": record.type,
-                "ttl": Number(record.ttl)
+                "ttl": Number(record.ttl),
+                "recordSetGroupChange": record.recordSetGroupChange
             };
             switch (record.type) {
                 case 'A':

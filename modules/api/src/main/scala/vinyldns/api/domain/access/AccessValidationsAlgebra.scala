@@ -48,7 +48,7 @@ trait AccessValidationsAlgebra {
       zone: Zone,
       recordOwnerGroupId: Option[String],
       newRecordData: List[RecordData] = List.empty
-  ): Either[Throwable, Unit]
+      ): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,

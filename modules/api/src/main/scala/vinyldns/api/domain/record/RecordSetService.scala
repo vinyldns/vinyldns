@@ -28,7 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -88,6 +88,9 @@ class RecordSetService(
   import RecordSetValidations._
   import accessValidation._
 
+  val approverRecordSetGroupApprovalStatus = List(RecordSetGroupApprovalStatus.ManuallyApproved , RecordSetGroupApprovalStatus.AutoApproved, RecordSetGroupApprovalStatus.ManuallyRejected)
+  val requestorRecordSetGroupApprovalStatus = List(RecordSetGroupApprovalStatus.Cancelled , RecordSetGroupApprovalStatus.Requested, RecordSetGroupApprovalStatus.PendingReview)
+
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
@@ -136,17 +139,21 @@ class RecordSetService(
     } yield change
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
-    for {
+  for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
+        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+      recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(null))
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
+              ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
@@ -183,7 +190,8 @@ class RecordSetService(
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
-    } yield change
+    } yield
+      change
 
   def deleteRecordSet(
                        recordSetId: String,
@@ -200,6 +208,44 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
+
+  def recordSetGroupStatus(recordSet: RecordSet , recordSetGroupApproval: RecordSetGroupApproval): Result[RecordSet] = {
+    if (recordSet.recordSetGroupChange != None) {
+      if(approverRecordSetGroupApprovalStatus.contains(recordSetGroupApproval.recordSetGroupApprovalStatus)) {
+      val recordSetOwnerApproval =
+        recordSetGroupApproval.recordSetGroupApprovalStatus match {
+          case RecordSetGroupApprovalStatus.ManuallyApproved =>
+            recordSet.copy(ownerGroupId = recordSetGroupApproval.requestedOwnerGroupId,
+              recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.ManuallyApproved)))
+          case RecordSetGroupApprovalStatus.AutoApproved => recordSet.copy(
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved
+              )))
+          case RecordSetGroupApprovalStatus.ManuallyRejected => recordSet.copy(
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.ManuallyRejected
+             )))
+          case _ => recordSet.copy(
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.AutoApproved
+              )))
+        }
+      for {
+        recordSet <- recordSetOwnerApproval.toResult
+      } yield recordSet
+    }
+    else {
+      val recordSetOwnerRequest =
+        recordSetGroupApproval.recordSetGroupApprovalStatus match {
+          case RecordSetGroupApprovalStatus.Cancelled => recordSet.copy(
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled
+            )))
+          case RecordSetGroupApprovalStatus.Requested => recordSet.copy(
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.PendingReview)))
+        }
+      for {
+        recordSet <- recordSetOwnerRequest.toResult
+      } yield recordSet
+    }}
+    else recordSet.toResult
+    }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {

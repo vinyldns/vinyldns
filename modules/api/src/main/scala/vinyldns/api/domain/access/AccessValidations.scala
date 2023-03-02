@@ -74,9 +74,10 @@ class AccessValidations(
       zone: Zone,
       recordOwnerGroupId: Option[String],
       newRecordData: List[RecordData] = List.empty
-  ): Either[Throwable, Unit] = {
-    val accessLevel =
+      ): Either[Throwable, Unit] = {
+    val accessLevel = {
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
+    }
     ensuring(
       NotAuthorizedError(
         s"User ${auth.signedInUser.userName} does not have access to update " +

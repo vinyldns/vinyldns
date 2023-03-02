@@ -415,6 +415,24 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's record type.")
     )
 
+  def unchangedRecordSet(
+                           existing: RecordSet,
+                           updates: RecordSet,
+                         ): Either[Throwable, Unit] = {
+    Either.cond(
+      (
+        updates.typ == existing.typ &&
+        updates.records == existing.records &&
+        updates.id == existing.id &&
+        updates.zoneId == existing.zoneId &&
+        updates.name == existing.name &&
+        updates.ownerGroupId == existing.ownerGroupId &&
+        updates.ttl == existing.ttl),
+      (),
+      InvalidRequest("Cannot update RecordSet's.")
+    )
+  }
+
   def unchangedZoneId(
       existing: RecordSet,
       updates: RecordSet

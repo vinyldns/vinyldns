@@ -237,7 +237,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
             proposedRecordData.toList,
-            ownerGroupId = setOwnerGroupId
+            ownerGroupId = setOwnerGroupId,
+            recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved))
           )
       }
     }

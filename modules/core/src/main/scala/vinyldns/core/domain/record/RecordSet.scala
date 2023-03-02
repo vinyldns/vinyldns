@@ -16,8 +16,10 @@
 
 package vinyldns.core.domain.record
 
-import java.util.UUID
 
+import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
+
+import java.util.UUID
 import java.time.Instant
 
 object RecordType extends Enumeration {
@@ -32,6 +34,11 @@ object RecordSetStatus extends Enumeration {
   type RecordSetStatus = Value
   val Active, Inactive, Pending, PendingUpdate, PendingDelete = Value
 }
+
+object RecordSetGroupApprovalStatus extends Enumeration {
+   type RecordSetGroupApprovalStatus = Value
+     val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview  = Value
+  }
 
 import RecordSetStatus._
 import RecordType._
@@ -48,6 +55,7 @@ case class RecordSet(
     id: String = UUID.randomUUID().toString,
     account: String = "system",
     ownerGroupId: Option[String] = None,
+    recordSetGroupChange: Option[RecordSetGroupApproval] = None,
     fqdn: Option[String] = None
 ) {
 
@@ -69,10 +77,25 @@ case class RecordSet(
     sb.append("account=\"").append(account).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("records=\"").append(records.toString).append("\"; ")
-    sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"")
+    sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"; ")
+    sb.append("recordSetGroupChange=\"").append(recordSetGroupChange.toString).append("\"; ")
     sb.append("fqdn=\"").append(fqdn).append("\"")
     sb.append("]")
 
     sb.toString
   }
 }
+
+case class RecordSetGroupApproval(
+                                   recordSetGroupApprovalStatus: RecordSetGroupApprovalStatus,
+                                   requestedOwnerGroupId: Option[String] = None
+                   ){
+
+  override def toString: String = {
+  val sb = new StringBuilder
+  sb.append("RecordSetGroupApproval: [")
+  sb.append("recordSetGroupApprovalStatus=\"").append(recordSetGroupApprovalStatus.toString).append("\"; ")
+  sb.append("requestedOwnerGroupId=\"").append(requestedOwnerGroupId.toString).append("\"")
+  sb.append("]")
+  sb.toString
+}}

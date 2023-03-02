@@ -19,6 +19,7 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
@@ -31,6 +32,7 @@ import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
+import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
 
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
@@ -41,11 +43,13 @@ trait DnsJsonProtocol extends JsonValidation {
     ZoneConnectionSerializer,
     AlgorithmSerializer,
     RecordSetSerializer,
+    RecordSetGroupApprovalSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
+    JsonEnumV(RecordSetGroupApprovalStatus),
     JsonEnumV(ZoneChangeStatus),
     JsonEnumV(RecordSetStatus),
     JsonEnumV(RecordSetChangeStatus),
@@ -202,6 +206,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system"),
         (js \ "ownerGroupId").optional[String],
+        (js \ "recordSetGroupChange").optional[RecordSetGroupApproval],
         (js \ "fqdn").optional[String]
         ).mapN(RecordSet.apply)
 
@@ -226,7 +231,20 @@ trait DnsJsonProtocol extends JsonValidation {
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("recordSetGroupChange" -> Extraction.decompose(rs.recordSetGroupChange)) ~
         ("fqdn" -> rs.fqdn)
+  }
+
+  case object RecordSetGroupApprovalSerializer extends ValidationSerializer[RecordSetGroupApproval] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetGroupApproval] =
+      (
+        (js \ "recordSetGroupApprovalStatus").required[RecordSetGroupApprovalStatus]("Missing RecordSetGroupApproval.recordSetGroupApprovalStatus"),
+        (js \ "requestedOwnerGroupId").optional[String],
+        ).mapN(RecordSetGroupApproval.apply)
+
+    override def toJson(rsa: RecordSetGroupApproval): JValue =
+        ("recordSetGroupApprovalStatus" -> Extraction.decompose(rsa.recordSetGroupApprovalStatus)) ~
+        ("requestedOwnerGroupId" -> Extraction.decompose(rsa.requestedOwnerGroupId))
   }
 
   case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
@@ -250,13 +268,18 @@ trait DnsJsonProtocol extends JsonValidation {
         ("accessLevel" -> rs.accessLevel.toString) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
         ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("recordSetGroupChange" -> Extraction.decompose(rs.recordSetGroupChange)) ~
         ("fqdn" -> rs.fqdn)
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
+
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
-      (RecordSetSerializer.fromJson(js), (js \ "ownerGroupName").optional[String])
-        .mapN(RecordSetInfo.apply)
+      (RecordSetSerializer.fromJson(js),
+        (js \ "ownerGroupName").optional[String]
+        ).mapN(RecordSetInfo.apply)
+
+
 
     override def toJson(rs: RecordSetInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
@@ -271,6 +294,7 @@ trait DnsJsonProtocol extends JsonValidation {
         ("account" -> rs.account) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
         ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("recordSetGroupChange" -> Extraction.decompose(rs.recordSetGroupChange)) ~
         ("fqdn" -> rs.fqdn)
   }
 
@@ -296,6 +320,7 @@ trait DnsJsonProtocol extends JsonValidation {
         ("account" -> rs.account) ~
         ("ownerGroupId" -> rs.ownerGroupId) ~
         ("ownerGroupName" -> rs.ownerGroupName) ~
+        ("recordSetGroupChange" -> Extraction.decompose(rs.recordSetGroupChange)) ~
         ("fqdn" -> rs.fqdn) ~
         ("zoneName" -> rs.zoneName) ~
         ("zoneShared" -> rs.zoneShared)
