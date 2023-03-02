@@ -359,7 +359,7 @@
     <div class="panel-body" >
         <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncSchedule.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
         <span class="help-block">
-            Schedule for zone sync at the provided time.
+            Schedule for zone sync at the provided time. Scheduled zone sync follows <b>UTC timezone</b>.
         </span>
         <div class="checkbox col-md-12" id="cron-lib-check">
             <label ng-if="recurrenceScheduleExist">
