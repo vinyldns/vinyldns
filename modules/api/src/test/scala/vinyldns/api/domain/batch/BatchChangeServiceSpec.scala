@@ -27,7 +27,6 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
-import vinyldns.api._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -59,7 +58,6 @@ class BatchChangeServiceSpec
   extends AnyWordSpec
     with Matchers
     with MockitoSugar
-    with CatsHelpers
     with BeforeAndAfterEach
     with EitherMatchers
     with EitherValues
@@ -308,6 +306,10 @@ class BatchChangeServiceSpec
   }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
+
+    override def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+      IO.pure(Set(Zone("dummyZone", "test@test.com")))
+
     override def getZones(zoneIds: Set[String]): IO[Set[Zone]] = {
       val zones = zoneIds.map(Zone(_, "test@test.com"))
       IO.pure(zones)
@@ -354,6 +356,9 @@ class BatchChangeServiceSpec
         ipv6PTR17Zone,
         ipv6PTR18Zone
       )
+
+    override def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+      IO.pure(dbZones.filter(zn => zn.recurrenceSchedule.isDefined))
 
     override def getZones(zoneIds: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneIds.contains(zn.id)))
@@ -458,7 +463,7 @@ class BatchChangeServiceSpec
     "succeed if all inputs are good" in {
       val input = BatchChangeInput(None, List(apexAddA, nonApexAddA))
 
-      val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
+      val result = underTest.applyBatchChange(input, auth, true).value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 2
     }
@@ -488,7 +493,7 @@ class BatchChangeServiceSpec
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
 
-      val result = rightResultOf(underTest.applyBatchChange(input, auth, false).value)
+      val result = underTest.applyBatchChange(input, auth, false).value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 1
       result.changes.head.zoneId shouldBe Some(ipv6PTR17Zone.id)
@@ -519,7 +524,7 @@ class BatchChangeServiceSpec
 
       val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
 
-      val result = rightResultOf(underTest.applyBatchChange(input, auth, false).value)
+      val result = underTest.applyBatchChange(input, auth, false).value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 1
       result.changes.head.zoneId shouldBe Some(ipv6PTR16Zone.id)
@@ -527,7 +532,7 @@ class BatchChangeServiceSpec
 
     "fail if conversion cannot process" in {
       val input = BatchChangeInput(Some("conversionError"), List(apexAddA, nonApexAddA))
-      val result = leftResultOf(underTest.applyBatchChange(input, auth, true).value)
+      val result = underTest.applyBatchChange(input, auth, true).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe an[BatchConversionError]
     }
@@ -535,7 +540,7 @@ class BatchChangeServiceSpec
     "fail with GroupDoesNotExist if owner group ID is provided for a non-existent group" in {
       val ownerGroupId = "non-existent-group-id"
       val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
-      val result = leftResultOf(underTest.applyBatchChange(input, auth, true).value)
+      val result = underTest.applyBatchChange(input, auth, true).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe InvalidBatchChangeInput(List(GroupDoesNotExist(ownerGroupId)))
     }
@@ -543,7 +548,7 @@ class BatchChangeServiceSpec
     "fail with UserDoesNotBelongToOwnerGroup if normal user does not belong to group specified by owner group ID" in {
       val ownerGroupId = "user-is-not-member"
       val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
-      val result = leftResultOf(underTest.applyBatchChange(input, notAuth, true).value)
+      val result = underTest.applyBatchChange(input, notAuth, true).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe
         InvalidBatchChangeInput(
@@ -553,7 +558,7 @@ class BatchChangeServiceSpec
 
     "succeed if owner group ID is provided and user is a member of the group" in {
       val input = BatchChangeInput(None, List(apexAddA), Some(okGroup.id))
-      val result = rightResultOf(underTest.applyBatchChange(input, okAuth, true).value)
+      val result = underTest.applyBatchChange(input, okAuth, true).value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 1
     }
@@ -562,11 +567,9 @@ class BatchChangeServiceSpec
       val ownerGroupId = Some("user-is-not-member")
       val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
       val result =
-        rightResultOf(
           underTest
             .applyBatchChange(input, AuthPrincipal(superUser, Seq(baseZone.adminGroupId)), true)
-            .value
-        )
+            .value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 1
     }
@@ -580,7 +583,7 @@ class BatchChangeServiceSpec
         AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
 
       val input = BatchChangeInput(None, List(noTtl, withTtl, noTtlDel, noTtlUpdate))
-      val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
+      val result = underTest.applyBatchChange(input, auth, true).value.unsafeRunSync().toOption.get
 
       result.changes.length shouldBe 4
       result
@@ -608,15 +611,13 @@ class BatchChangeServiceSpec
       doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result =
-        rightResultOf(
           underTest
             .rejectBatchChange(
               batchChange.id,
               supportUserAuth,
               RejectBatchChangeInput(Some("review comment"))
             )
-            .value
-        )
+            .value.unsafeRunSync().toOption.get
 
       result.status shouldBe BatchChangeStatus.Rejected
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
@@ -642,11 +643,9 @@ class BatchChangeServiceSpec
       val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
       val result =
-        rightResultOf(
           underTestManualEnabled
             .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
-            .value
-        )
+            .value.unsafeRunSync().toOption.get
 
       result.status shouldBe BatchChangeStatus.Rejected
     }
@@ -664,11 +663,9 @@ class BatchChangeServiceSpec
       val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
       val result =
-        leftResultOf(
           underTestManualEnabled
             .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -685,11 +682,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
           underTest
             .rejectBatchChange(batchChange.id, supportUserAuth, RejectBatchChangeInput())
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -707,9 +702,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
-          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value
-        )
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -727,9 +720,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
-          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value
-        )
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -748,17 +739,14 @@ class BatchChangeServiceSpec
     "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
-      val result = {
-        rightResultOf(
+      val result =
           underTestManualEnabled
             .approveBatchChange(
               batchChangeNeedsApproval.id,
               supportUserAuth,
               ApproveBatchChangeInput(Some("reviewed!"))
             )
-            .value
-        )
-      }
+            .value.unsafeRunSync().toOption.get
 
       result.userId shouldBe batchChangeNeedsApproval.userId
       result.userName shouldBe batchChangeNeedsApproval.userName
@@ -778,15 +766,13 @@ class BatchChangeServiceSpec
       val auth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
       val result =
-        leftResultOf(
           underTestManualEnabled
             .approveBatchChange(
               batchChangeNeedsApproval.id,
               auth,
               ApproveBatchChangeInput(Some("reviewed!"))
             )
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
@@ -796,11 +782,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
           underTest
             .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -809,11 +793,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChangeNeedsApproval)
 
       val result =
-        leftResultOf(
           underTest
             .approveBatchChange(batchChangeNeedsApproval.id, auth, ApproveBatchChangeInput())
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
@@ -824,9 +806,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
-          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value
-        )
+          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -844,11 +824,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
           underTest
             .approveBatchChange(batchChange.id, superUserAuth, ApproveBatchChangeInput())
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchRequesterNotFound("someOtherUserId", "someUn")
     }
@@ -868,11 +846,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        rightResultOf(
           underTest
             .cancelBatchChange(batchChange.id, auth)
-            .value
-        )
+            .value.unsafeRunSync().toOption.get
 
       result.status shouldBe BatchChangeStatus.Cancelled
       result.approvalStatus shouldBe BatchChangeApprovalStatus.Cancelled
@@ -893,7 +869,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.cancelBatchChange(batchChange.id, supportUserAuth).value)
+        underTest.cancelBatchChange(batchChange.id, supportUserAuth).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -911,11 +887,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
           underTest
             .cancelBatchChange(batchChange.id, auth)
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -933,11 +907,9 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(
           underTest
             .cancelBatchChange(batchChange.id, supportUserAuth)
-            .value
-        )
+            .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
@@ -956,13 +928,13 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      val result = underTest.getBatchChange(batchChange.id, auth).value.unsafeRunSync().toOption.get
 
       result shouldBe BatchChangeInfo(batchChange)
     }
 
     "Fail if batchChange id does not exist" in {
-      val result = leftResultOf(underTest.getBatchChange("badId", auth).value)
+      val result = underTest.getBatchChange("badId", auth).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe BatchChangeNotFound("badId")
     }
@@ -978,7 +950,7 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChange)
 
-      val result = leftResultOf(underTest.getBatchChange(batchChange.id, notAuth).value)
+      val result = underTest.getBatchChange(batchChange.id, notAuth).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -996,7 +968,7 @@ class BatchChangeServiceSpec
 
       val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSuper = true))
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
+      val result = underTest.getBatchChange(batchChange.id, authSuper).value.unsafeRunSync().toOption.get
 
       result shouldBe BatchChangeInfo(batchChange)
     }
@@ -1014,7 +986,7 @@ class BatchChangeServiceSpec
 
       val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSupport = true))
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
+      val result = underTest.getBatchChange(batchChange.id, authSuper).value.unsafeRunSync().toOption.get
 
       result shouldBe BatchChangeInfo(batchChange)
     }
@@ -1032,7 +1004,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      val result = underTest.getBatchChange(batchChange.id, auth).value.unsafeRunSync().toOption.get
       result shouldBe BatchChangeInfo(batchChange, Some(okGroup.name))
     }
 
@@ -1049,7 +1021,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      val result = underTest.getBatchChange(batchChange.id, auth).value.unsafeRunSync().toOption.get
       result shouldBe BatchChangeInfo(batchChange)
     }
 
@@ -1069,7 +1041,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      val result = underTest.getBatchChange(batchChange.id, auth).value.unsafeRunSync().toOption.get
       result shouldBe BatchChangeInfo(batchChange, Some(okGroup.name), Some(superUser.userName))
     }
   }
@@ -1088,7 +1060,7 @@ class BatchChangeServiceSpec
         error
       )
       val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, delegatedPTRZone, ipv6PTRZone))
-      val result = await(underTest.getExistingRecordSets(in, zoneMap))
+      val result = underTest.getExistingRecordSets(in, zoneMap).unsafeRunSync()
 
       val expected =
         List(existingApex, existingNonApex, existingPtr, existingPtrDelegated, existingPtrV6)
@@ -1105,7 +1077,7 @@ class BatchChangeServiceSpec
         error
       )
       val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, ipv6PTRZone))
-      val result = await(underTest.getExistingRecordSets(in, zoneMap))
+      val result = underTest.getExistingRecordSets(in, zoneMap).unsafeRunSync()
 
       val expected =
         List(existingApex, existingNonApex, existingPtr, existingPtrV6)
@@ -1115,7 +1087,7 @@ class BatchChangeServiceSpec
     "not fail if gets all lefts" in {
       val errors = List(error)
       val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, delegatedPTRZone, ipv6PTRZone))
-      val result = await(underTest.getExistingRecordSets(errors, zoneMap))
+      val result = underTest.getExistingRecordSets(errors, zoneMap).unsafeRunSync()
 
       result.recordSets.length shouldBe 0
     }
@@ -1124,42 +1096,42 @@ class BatchChangeServiceSpec
   "getZonesForRequest" should {
     "return names for the apex and base zones if they both exist" in {
       val underTestBaseApexZoneList: ExistingZones =
-        await(underTest.getZonesForRequest(List(apexAddA.validNel)))
+        underTest.getZonesForRequest(List(apexAddA.validNel)).unsafeRunSync()
 
       (underTestBaseApexZoneList.zones should contain).allOf(apexZone, baseZone)
     }
 
     "return only the apex zone if only the apex zone exists or A or AAAA records" in {
       val underTestOnlyApexZoneList: ExistingZones =
-        await(underTest.getZonesForRequest(List(onlyApexAddA.validNel)))
+        underTest.getZonesForRequest(List(onlyApexAddA.validNel)).unsafeRunSync()
 
       (underTestOnlyApexZoneList.zones should contain).only(onlyApexZone)
     }
 
     "return only the base zone if only the base zone exists" in {
       val underTestOnlyBaseZoneList: ExistingZones =
-        await(underTest.getZonesForRequest(List(onlyBaseAddAAAA.validNel)))
+        underTest.getZonesForRequest(List(onlyBaseAddAAAA.validNel)).unsafeRunSync()
 
       (underTestOnlyBaseZoneList.zones should contain).only(onlyBaseZone)
     }
 
     "return no zones if neither the apex nor base zone exist" in {
       val underTestOnlyNoZonesList: ExistingZones =
-        await(underTest.getZonesForRequest(List(noZoneAddA.validNel)))
+        underTest.getZonesForRequest(List(noZoneAddA.validNel)).unsafeRunSync()
 
       underTestOnlyNoZonesList.zones shouldBe Set()
     }
 
     "return all possible zones for a dotted host" in {
       val underTestZonesList: ExistingZones =
-        await(underTest.getZonesForRequest(List(dottedAddA.validNel)))
+        underTest.getZonesForRequest(List(dottedAddA.validNel)).unsafeRunSync()
 
       (underTestZonesList.zones should contain).allOf(apexZone, baseZone)
     }
 
     "return all possible zones given an IPv4 PTR" in {
       val underTestPTRZonesList: ExistingZones =
-        await(underTest.getZonesForRequest(List(ptrAdd.validNel)))
+        underTest.getZonesForRequest(List(ptrAdd.validNel)).unsafeRunSync()
 
       (underTestPTRZonesList.zones should contain).allOf(ptrZone, delegatedPTRZone)
     }
@@ -1199,7 +1171,7 @@ class BatchChangeServiceSpec
       )
 
       val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
-      val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
+      val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(List(ptr)).unsafeRunSync()
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
       zoneNames should contain theSameElementsAs possibleZones
@@ -1225,7 +1197,7 @@ class BatchChangeServiceSpec
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
-      val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
+      val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(List(ptr)).unsafeRunSync()
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
       zoneNames shouldBe Set("0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.")
@@ -1274,7 +1246,7 @@ class BatchChangeServiceSpec
         AddChangeInput(v6Name, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
       }
 
-      val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(ptrs))
+      val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(ptrs).unsafeRunSync()
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
       zoneNames should contain theSameElementsAs (possibleZones1 ++ possibleZones2)
@@ -1282,7 +1254,7 @@ class BatchChangeServiceSpec
 
     "return a set of distinct zones, given duplicates" in {
       val underTestDistinctZonesList: ExistingZones =
-        await(underTest.getZonesForRequest(List(cnameReverseAdd.validNel, ptrAdd.validNel)))
+        underTest.getZonesForRequest(List(cnameReverseAdd.validNel, ptrAdd.validNel)).unsafeRunSync()
 
       underTestDistinctZonesList.zones.count(_.id == "nonDelegatedPTR") shouldBe 1
     }
@@ -2033,7 +2005,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+      val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2072,7 +2044,7 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
-      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+      val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2106,7 +2078,7 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
-      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 1).value)
+      val result = underTest.listBatchChangeSummaries(auth, maxItems = 1).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 1
       result.nextId shouldBe Some(1)
@@ -2139,14 +2111,13 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
-      val result = rightResultOf(
+      val result =
         underTest
           .listBatchChangeSummaries(
             auth,
             approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2181,7 +2152,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChangeTwo)
 
       val result =
-        rightResultOf(underTest.listBatchChangeSummaries(auth, startFrom = Some(1)).value)
+        underTest.listBatchChangeSummaries(auth, startFrom = Some(1)).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2215,7 +2186,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
-        rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value).batchChanges
+        underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
 
       result.length shouldBe 1
       result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
@@ -2244,7 +2215,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
-        rightResultOf(underTest.listBatchChangeSummaries(auth, ignoreAccess = true).value).batchChanges
+        underTest.listBatchChangeSummaries(auth, ignoreAccess = true).value.unsafeRunSync().toOption.get.batchChanges
 
       result.length shouldBe 1
       result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
@@ -2273,7 +2244,7 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChangeUserTwo)
 
       val result =
-        rightResultOf(underTest.listBatchChangeSummaries(superUserAuth, ignoreAccess = true).value)
+        underTest.listBatchChangeSummaries(superUserAuth, ignoreAccess = true).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2287,7 +2258,7 @@ class BatchChangeServiceSpec
 
     "return an empty list of batchChangeSummaries if none exist" in {
       val result =
-        rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value).batchChanges
+        underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
 
       result.length shouldBe 0
     }
@@ -2305,7 +2276,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+      val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2330,7 +2301,7 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
-      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+      val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
@@ -2345,29 +2316,29 @@ class BatchChangeServiceSpec
 
   "getOwnerGroup" should {
     "return None if owner group ID is None" in {
-      rightResultOf(underTest.getOwnerGroup(None).value) shouldBe None
+      underTest.getOwnerGroup(None).value.unsafeRunSync().toOption.get shouldBe None
     }
 
     "return None if group does not exist for owner group ID" in {
-      rightResultOf(underTest.getOwnerGroup(Some("non-existent-group-id")).value) shouldBe None
+      underTest.getOwnerGroup(Some("non-existent-group-id")).value.unsafeRunSync().toOption.get shouldBe None
     }
 
     "return the group if the group exists for the owner group ID" in {
-      rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
+      underTest.getOwnerGroup(Some(okGroup.id)).value.unsafeRunSync().toOption.get shouldBe Some(okGroup)
     }
   }
 
   "getReviewer" should {
     "return None if reviewer ID is None" in {
-      rightResultOf(underTest.getReviewer(None).value) shouldBe None
+      underTest.getReviewer(None).value.unsafeRunSync().toOption.get shouldBe None
     }
 
     "return None if reviewer does not exist for the given reviewer ID" in {
-      rightResultOf(underTest.getReviewer(Some("non-existent-user-id")).value) shouldBe None
+      underTest.getReviewer(Some("non-existent-user-id")).value.unsafeRunSync().toOption.get shouldBe None
     }
 
     "return the reviewer if the reviewer exists for the given reviewer ID" in {
-      rightResultOf(underTest.getReviewer(Some(superUser.id)).value) shouldBe Some(superUser)
+      underTest.getReviewer(Some(superUser.id)).value.unsafeRunSync().toOption.get shouldBe Some(superUser)
     }
   }
 
@@ -2383,7 +2354,7 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
 
-      val result = rightResultOf(
+      val result =
         underTestManualEnabled
           .convertOrSave(
             batchChange,
@@ -2391,8 +2362,8 @@ class BatchChangeServiceSpec
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       result.reviewComment shouldBe Some("batchSentToConverter")
     }
     "not send to the converter, save the change if PendingReview and MA enabled" in {
@@ -2406,7 +2377,7 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
 
-      val result = rightResultOf(
+      val result =
         underTestManualEnabled
           .convertOrSave(
             batchChange,
@@ -2414,8 +2385,7 @@ class BatchChangeServiceSpec
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
 
       // not sent to converter
       result.reviewComment shouldBe None
@@ -2433,7 +2403,7 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.PendingReview
         )
 
-      val result = leftResultOf(
+      val result =
         underTest
           .convertOrSave(
             batchChange,
@@ -2441,8 +2411,7 @@ class BatchChangeServiceSpec
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
 
       result shouldBe an[UnknownConversionError]
     }
@@ -2457,7 +2426,7 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.ManuallyApproved
         )
 
-      val result = leftResultOf(
+      val result =
         underTest
           .convertOrSave(
             batchChange,
@@ -2465,8 +2434,8 @@ class BatchChangeServiceSpec
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
+
       result shouldBe an[UnknownConversionError]
     }
   }
@@ -2530,7 +2499,7 @@ class BatchChangeServiceSpec
     "combine gets for each valid record" in {
       val in = List(apexAddForVal.validNel, error)
 
-      val result = rightResultOf(underTest.getGroupIdsFromUnauthorizedErrors(in).value)
+      val result = underTest.getGroupIdsFromUnauthorizedErrors(in).value.unsafeRunSync().toOption.get
 
       result shouldBe Set(okGroup)
     }

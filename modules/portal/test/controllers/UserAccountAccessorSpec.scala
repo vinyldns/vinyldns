@@ -22,6 +22,7 @@ import java.time.Instant
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeEach
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 
 class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach {
@@ -29,7 +30,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
   private val user = User(
     "fbaggins",
     "key",
-    "secret",
+    Encrypted("secret"),
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
@@ -62,7 +63,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     }
 
     "return the new user when storing a user that already exists in the store" in {
-      val newUser = user.copy(accessKey = "new-key", secretKey = "new-secret")
+      val newUser = user.copy(accessKey = "new-key", secretKey = Encrypted("new-secret"))
       mockRepo.save(any[User]).returns(IO.pure(newUser))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
       underTest.update(newUser, user).unsafeRunSync() must beEqualTo(newUser)

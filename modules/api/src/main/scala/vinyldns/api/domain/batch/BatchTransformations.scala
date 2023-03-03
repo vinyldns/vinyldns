@@ -180,6 +180,9 @@ object BatchTransformations {
     def getProposedAdds(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten
 
+    def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
+
     // The new, net record data factoring in existing records, deletes and adds
     // If record is not edited in batch, will fallback to look up record in existing
     // records
@@ -237,10 +240,11 @@ object BatchTransformations {
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
 
-      // Note: "Update" where an Add and DeleteRecordSet is provided for a DNS record that does not exist will be
-      // treated as a logical Add since the delete validation will fail (on record does not exist)
+      // Note: "Add" where an Add and DeleteRecordSet is provided for a DNS record that does not exist.
+      // Adds the record if it doesn't exist and ignores the delete.
       val logicalChangeType = (addChangeRecordDataSet.nonEmpty, deleteChangeSet.nonEmpty) match {
-        case (true, true) => LogicalChangeType.Update
+        case (true, true) =>
+          if((deleteChangeSet -- existingRecords).nonEmpty) LogicalChangeType.Add else LogicalChangeType.Update
         case (true, false) => LogicalChangeType.Add
         case (false, true) =>
           if ((existingRecords -- deleteChangeSet).isEmpty) {
@@ -251,12 +255,13 @@ object BatchTransformations {
         case (false, false) => LogicalChangeType.NotEditedInBatch
       }
 
-      new ValidationChanges(addChangeRecordDataSet, proposedRecordData, logicalChangeType)
+      new ValidationChanges(addChangeRecordDataSet, deleteChangeSet, proposedRecordData, logicalChangeType)
     }
   }
 
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
+      proposedDeletes: Set[RecordData],
       proposedRecordData: Set[RecordData],
       logicalChangeType: LogicalChangeType
   )

@@ -26,7 +26,7 @@ import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.Messages._
 
 class VinylDNSJsonProtocolSpec
@@ -43,7 +43,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "primaryConnection",
         "primaryConnectionKeyName",
-        "primaryConnectionKey",
+        Encrypted("primaryConnectionKey"),
         "10.1.1.1"
       )
     ),
@@ -51,7 +51,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
-        "transferConnectionKey",
+        Encrypted("transferConnectionKey"),
         "10.1.1.2"
       )
     ),
@@ -66,7 +66,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "primaryConnection",
         "primaryConnectionKeyName",
-        "primaryConnectionKey",
+        Encrypted("primaryConnectionKey"),
         "10.1.1.1"
       )
     ),
@@ -74,7 +74,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
-        "transferConnectionKey",
+        Encrypted("transferConnectionKey"),
         "10.1.1.2"
       )
     ),
@@ -309,6 +309,25 @@ class VinylDNSJsonProtocolSpec
           ("adminGroupId" -> true)
 
       assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+  }
+
+  "EncryptedSerializer" should {
+    "parse a secret key to Encrypted type" in {
+      val secretKeyInput: JValue = "primaryConnectionKey"
+
+      val actual = secretKeyInput.extract[Encrypted]
+      val expected = Encrypted("primaryConnectionKey")
+      actual shouldBe expected
+    }
+
+    "throw an error if there is a type mismatch during deserialization" in {
+      val secretKeyInput: JObject =
+        "key" -> List(
+          "primaryConnectionKey"
+        )
+
+      assertThrows[MappingException](secretKeyInput.extract[Encrypted])
     }
   }
 

@@ -26,7 +26,7 @@ import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetLis
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
@@ -95,7 +95,7 @@ class AccessValidationsSpec
     VinylDNSTestHelpers.sharedApprovedTypes
   )
 
-  private val testUser = User("test", "test", "test", isTest = true)
+  private val testUser = User("test", "test", Encrypted("test"), isTest = true)
 
   "canSeeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
@@ -255,6 +255,7 @@ class AccessValidationsSpec
       ) should be(right)
     }
   }
+
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
@@ -290,6 +291,13 @@ class AccessValidationsSpec
       accessValidationTest.canUpdateRecordSet(userAuth, "test", RecordType.A, zoneIn, None) should be(
         right
       )
+    }
+
+    "return true if the user has AccessLevel.Read or AccessLevel.NoAccess and superUserCanUpdateOwnerGroup is true" in {
+      accessValidationTest.canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead,
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
+      accessValidationTest.canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone,
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
@@ -365,7 +373,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData(Fqdn("test.foo.comcast.net")))
+        newRecordData = List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }
@@ -957,8 +965,8 @@ class AccessValidationsSpec
 
   "ruleAppliesToRecordNameIPv4" should {
 
-    "filter in/out record set based on CIDR rule of 0 (lower bound for ip4 CIDR rules)" in {
-      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/0"))
+    "filter in/out record set based on CIDR rule of 1 (lower bound for ip4 CIDR rules)" in {
+      val aclRule = userReadAcl.copy(recordMask = Some("120.1.2.0/1"))
       val znTrue = Zone("40.120.in-addr.arpa.", "email")
       val rsTrue =
         RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))

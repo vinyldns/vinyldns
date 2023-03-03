@@ -151,9 +151,10 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
+      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
-              ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+              ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
@@ -614,7 +615,7 @@ class RecordSetService(
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String] = None,
+                            startFrom: Option[Int] = None,
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
@@ -626,6 +627,25 @@ class RecordSetService(
         .toResult[ListRecordSetChangesResults]
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
     } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal
+                                ): Result[ListFailedRecordSetChangesResponse] =
+    for {
+      recordSetChangesFailedResults <- recordChangeRepository
+        .listFailedRecordSetChanges()
+        .toResult[List[RecordSetChange]]
+      _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
+    } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)
+
+  def zoneAccess(
+                  RecordSetCh: List[RecordSetChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    RecordSetCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
 
   def getZone(zoneId: String): Result[Zone] =
     zoneRepository

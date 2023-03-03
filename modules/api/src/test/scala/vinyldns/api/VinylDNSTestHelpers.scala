@@ -38,9 +38,9 @@ trait VinylDNSTestHelpers {
 
   val highValueDomainRegexList: List[Regex] = List(new Regex("high-value-domain.*"))
   val highValueDomainIpList: List[IpAddress] =
-    (IpAddress("192.0.2.252") ++ IpAddress("192.0.2.253") ++ IpAddress(
+    (IpAddress.fromString("192.0.2.252") ++ IpAddress.fromString("192.0.2.253") ++ IpAddress.fromString(
       "fd69:27cc:fe91:0:0:0:0:ffff"
-    ) ++ IpAddress(
+    ) ++ IpAddress.fromString(
       "fd69:27cc:fe91:0:0:0:ffff:0"
     )).toList
 
@@ -58,9 +58,9 @@ trait VinylDNSTestHelpers {
   val manualReviewDomainList: List[Regex] = List(new Regex("needs-review.*"))
 
   val manualReviewIpList: List[IpAddress] =
-    (IpAddress("192.0.2.254") ++ IpAddress("192.0.2.255") ++ IpAddress(
+    (IpAddress.fromString("192.0.2.254") ++ IpAddress.fromString("192.0.2.255") ++ IpAddress.fromString(
       "fd69:27cc:fe91:0:0:0:ffff:1"
-    ) ++ IpAddress("fd69:27cc:fe91:0:0:0:ffff:2")).toList
+    ) ++ IpAddress.fromString("fd69:27cc:fe91:0:0:0:ffff:2")).toList
 
   val manualReviewZoneNameList: Set[String] = Set("zone.needs.review.")
 
