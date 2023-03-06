@@ -61,6 +61,14 @@ object ZoneChangeGenerator {
       ZoneChangeStatus.Pending
     )
 
+  def forSyncs(zone: Zone): ZoneChange =
+    ZoneChange(
+      zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Syncing),
+      zone.scheduleRequestor.get,
+      ZoneChangeType.AutomatedSync,
+      ZoneChangeStatus.Pending
+    )
+
   def forDelete(zone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
     ZoneChange(
       zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Deleted),

@@ -30,6 +30,7 @@ import org.xbill.DNS
 import org.xbill.DNS.{Lookup, Name, TSIG}
 import vinyldns.api.backend.dns.DnsProtocol._
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResponse
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -47,7 +48,7 @@ class DnsBackendSpec
     with EitherValues {
 
   private val zoneConnection =
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+    ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
   private val testZone = Zone("vinyldns", "test@test.com")
   private val testA = RecordSet(
     testZone.id,
