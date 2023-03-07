@@ -207,6 +207,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
   }
 
   private def send(msg: DNS.Message): Either[Throwable, DnsResponse] = {
+    val resolver_debug_message =  s"Resolver address=${resolver.getAddress}, Port=${resolver.getPort}, Timeout=${resolver.getTimeout}"
     val result =
       for {
         resp <- Either.catchNonFatal(resolver.send(msg))
@@ -222,7 +223,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     }
 
     logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse"
+      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse. Resolver Info: $resolver_debug_message"
     )
 
     result
