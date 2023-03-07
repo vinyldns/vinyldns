@@ -168,7 +168,7 @@ object RecordSetValidations {
     val isNotIPv4inCname = {
       ensuring(
         RecordSetValidation(
-          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid cname cannot not be an IP address"""
+          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid CNAME record data cannot be an IP address."""
         )
       )(
         validateIpv4Address(newRecordSet.records.head.toString.dropRight(1)).isInvalid

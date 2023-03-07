@@ -613,7 +613,7 @@ def test_create_IPv4_cname_record_fails(shared_zone_test_context):
     }
 
     error = client.create_recordset(apex_cname_rs, status=400)
-    assert_that(error, is_(f'Invalid CNAME: 1.2.3.4, valid cname cannot not be an IP address'))
+    assert_that(error, is_(f'Invalid CNAME: 1.2.3.4, valid CNAME record data cannot be an IP address.'))
 
 def test_create_cname_with_multiple_records(shared_zone_test_context):
     """
