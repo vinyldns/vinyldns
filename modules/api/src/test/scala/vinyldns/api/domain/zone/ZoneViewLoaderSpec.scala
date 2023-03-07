@@ -17,7 +17,6 @@
 package vinyldns.api.domain.zone
 
 import java.net.InetAddress
-import org.joda.time.DateTime
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import org.mockito.Matchers._
