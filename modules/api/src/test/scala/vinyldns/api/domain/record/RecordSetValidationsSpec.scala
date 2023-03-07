@@ -487,7 +487,7 @@ class RecordSetValidationsSpec
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set fqdn is IPv4 address" in {
-        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("1.2.3.4")))), List(), okZone))
+        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("1.2.3.4")))), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set name is dotted" in {
