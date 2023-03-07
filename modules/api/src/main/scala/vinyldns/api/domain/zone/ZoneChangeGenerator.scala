@@ -17,8 +17,8 @@
 package vinyldns.api.domain.zone
 
 import java.util.UUID
-
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
@@ -34,7 +34,7 @@ object ZoneChangeGenerator {
   ): ZoneChange =
     ZoneChange(
       zone
-        .copy(id = UUID.randomUUID().toString, created = DateTime.now, status = ZoneStatus.Syncing),
+        .copy(id = UUID.randomUUID().toString, created = Instant.now.truncatedTo(ChronoUnit.MILLIS), status = ZoneStatus.Syncing),
       authPrincipal.userId,
       ZoneChangeType.Create,
       status
@@ -47,7 +47,7 @@ object ZoneChangeGenerator {
       crypto: CryptoAlgebra
   ): ZoneChange =
     ZoneChange(
-      newZone.copy(updated = Some(DateTime.now), connection = fixConn(oldZone, newZone, crypto)),
+      newZone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), connection = fixConn(oldZone, newZone, crypto)),
       authPrincipal.userId,
       ZoneChangeType.Update,
       ZoneChangeStatus.Pending
@@ -55,15 +55,23 @@ object ZoneChangeGenerator {
 
   def forSync(zone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
     ZoneChange(
-      zone.copy(updated = Some(DateTime.now), status = ZoneStatus.Syncing),
+      zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Syncing),
       authPrincipal.userId,
       ZoneChangeType.Sync,
       ZoneChangeStatus.Pending
     )
 
+  def forSyncs(zone: Zone): ZoneChange =
+    ZoneChange(
+      zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Syncing),
+      zone.scheduleRequestor.get,
+      ZoneChangeType.AutomatedSync,
+      ZoneChangeStatus.Pending
+    )
+
   def forDelete(zone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
     ZoneChange(
-      zone.copy(updated = Some(DateTime.now), status = ZoneStatus.Deleted),
+      zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), status = ZoneStatus.Deleted),
       authPrincipal.userId,
       ZoneChangeType.Delete,
       ZoneChangeStatus.Pending

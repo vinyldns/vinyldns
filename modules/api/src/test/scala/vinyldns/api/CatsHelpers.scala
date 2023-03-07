@@ -16,46 +16,14 @@
 
 package vinyldns.api
 
-import cats.effect._
 import cats.implicits._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 
-import scala.concurrent.duration._
 import org.scalatest.Assertions._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-import scala.concurrent.ExecutionContext
-
 trait CatsHelpers {
-  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
-
-  def await[E, T](f: => IO[T], duration: FiniteDuration = 60.seconds): T = {
-    val i: IO[Either[E, T]] = f.attempt.map {
-      case Right(ok) => Right(ok.asInstanceOf[T])
-      case Left(e) => Left(e.asInstanceOf[E])
-    }
-    awaitResultOf[E, T](i, duration).toOption.get
-  }
-
-  // Waits for the future to complete, then returns the value as an Either[Throwable, T]
-  def awaitResultOf[E, T](
-      f: => IO[Either[E, T]],
-      duration: FiniteDuration = 60.seconds
-  ): Either[E, T] = {
-    val timeOut = IO.sleep(duration) *> IO(new RuntimeException("Timed out waiting for result"))
-    IO.race(timeOut, f).unsafeRunSync().toOption.get
-  }
-
-  // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 60.seconds): T =
-    rightValue(awaitResultOf[E, T](f, duration))
-
-  // Assumes that the result of the future operation will fail, this will error on a right disjunction
-  def leftResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 60.seconds): E =
-    leftValue(awaitResultOf(f, duration))
 
   def leftValue[E, T](t: Either[E, T]): E = t match {
     case Right(x) => fail(s"expected left value, got right: $x")

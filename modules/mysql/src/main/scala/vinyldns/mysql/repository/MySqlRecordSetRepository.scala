@@ -26,7 +26,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
-
+import java.io.{PrintWriter, StringWriter}
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -380,7 +380,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
         logger.debug(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
       }.handleErrorWith { error =>
-        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
+        val errorMessage = new StringWriter
+        error.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId). Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         IO.raiseError(error)
       }
     }

@@ -19,7 +19,8 @@ package vinyldns.api.backend.dns
 import java.net.InetAddress
 import cats.syntax.either._
 import org.apache.commons.codec.binary.Hex
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.xbill.DNS
 import scodec.bits.ByteVector
 import vinyldns.api.backend.dns.DnsProtocol._
@@ -203,7 +204,7 @@ trait DnsConversions {
       typ = fromDnsRecordType(r.getType),
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = f(r)
     )
 
@@ -215,7 +216,7 @@ trait DnsConversions {
       typ = fromDnsRecordType(r.getType),
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = Nil
     )
 
@@ -278,7 +279,7 @@ trait DnsConversions {
 
   def fromSPFRecord(r: DNS.SPFRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(SPFData(data.getStrings.asScala.mkString(",")))
+      List(SPFData(data.getStrings.asScala.mkString))
     }
 
   def fromSRVRecord(r: DNS.SRVRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
@@ -393,7 +394,8 @@ trait DnsConversions {
           new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, Hex.decodeHex(fingerprint.toCharArray()))
 
         case SPFData(text) =>
-          new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, text)
+          val texts = text.grouped(255).toList
+          new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, texts.asJava)
 
         case TXTData(text) =>
           val texts = text.grouped(255).toList

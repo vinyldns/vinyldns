@@ -22,7 +22,8 @@ import com.amazonaws.services.route53.model.{
   ResourceRecord,
   ResourceRecordSet
 }
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record.{NSData, RecordData, RecordSet, RecordSetStatus, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -78,8 +79,8 @@ trait Route53Conversions {
       typ,
       r53RecordSet.getTTL,
       RecordSetStatus.Active,
-      DateTime.now,
-      Some(DateTime.now),
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
+      Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       r53RecordSet.getResourceRecords.asScala.toList.flatMap(toVinyl(typ, _)),
       fqdn = Some(r53RecordSet.getName)
     )
@@ -106,8 +107,8 @@ trait Route53Conversions {
       RecordType.NS,
       7200,
       RecordSetStatus.Active,
-      DateTime.now,
-      Some(DateTime.now),
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
+      Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       nsData,
       fqdn = Some(Fqdn(zoneName).fqdn)
     )

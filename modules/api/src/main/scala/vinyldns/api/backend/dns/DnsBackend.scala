@@ -28,7 +28,7 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
-
+import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 
 object DnsProtocol {
@@ -213,8 +213,16 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
         resp <- toDnsResponse(resp)
       } yield resp
 
+    val receivedResponse = result match {
+      case Right(value) => value.toString.replaceAll("\n",";").replaceAll("\t"," ")
+      case Left(e) =>
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
+        errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")
+    }
+
     logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString}\n...received response $result"
+      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse"
     )
 
     result
@@ -234,10 +242,10 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
         // so if we can parse the error into an rcode, then we need to handle it properly; otherwise, we can try again
         // The DNS.Rcode.value function will return -1 if the error cannot be parsed into an integer
         if (DNS.Rcode.value(query.error) >= 0) {
-          logger.info(s"Received TRY_AGAIN from DNS lookup; converting error: ${query.error}")
+          logger.warn(s"Received TRY_AGAIN from DNS lookup; converting error: ${query.error.replaceAll("\n",";")}")
           fromDnsRcodeToError(DNS.Rcode.value(query.error), query.error)
         } else {
-          logger.warn(s"Unparseable error code returned from DNS: ${query.error}")
+          logger.warn(s"Unparseable error code returned from DNS: ${query.error.replaceAll("\n",";")}")
           Left(TryAgain(query.error))
         }
 
@@ -293,7 +301,7 @@ object DnsBackend {
     new DNS.TSIG(
       parseAlgorithm(conn.algorithm),
       decryptedConnection.keyName,
-      decryptedConnection.key
+      decryptedConnection.key.value
     )
   }
 

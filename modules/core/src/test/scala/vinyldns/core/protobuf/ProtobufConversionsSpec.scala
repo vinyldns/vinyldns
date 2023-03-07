@@ -16,10 +16,10 @@
 
 package vinyldns.core.protobuf
 
-import org.joda.time.DateTime
+import java.time.Instant
 import org.scalatest.{Assertion, OptionValues}
 import vinyldns.core.TestRecordSetData.ds
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
@@ -29,6 +29,7 @@ import vinyldns.proto.VinylDNSProto
 import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import java.time.temporal.ChronoUnit
 
 class ProtobufConversionsSpec
     extends AnyWordSpec
@@ -36,7 +37,7 @@ class ProtobufConversionsSpec
     with ProtobufConversions
     with OptionValues {
 
-  private val zoneConnection = ZoneConnection("name", "keyName", "key", "server")
+  private val zoneConnection = ZoneConnection("name", "keyName", Encrypted("key"), "server")
 
   private val zoneId = "test.zone.id"
 
@@ -63,8 +64,8 @@ class ProtobufConversionsSpec
   private val zone = Zone(
     "test.zone.actor.zone",
     "test@test.com",
-    connection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1")),
-    transferConnection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.2")),
+    connection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1")),
+    transferConnection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.2")),
     shared = true,
     id = zoneId,
     acl = zoneAcl,
@@ -74,8 +75,8 @@ class ProtobufConversionsSpec
     zone,
     "system",
     ZoneChangeType.Update,
-    ZoneChangeStatus.Complete,
-    DateTime.now,
+    ZoneChangeStatus.Synced,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
   )
   private val aRs = RecordSet(
@@ -84,8 +85,8 @@ class ProtobufConversionsSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
-    Some(DateTime.now),
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
     List(AData("10.1.1.1"), AData("10.2.2.2"))
   )
   private val aaaa = RecordSet(
@@ -94,7 +95,7 @@ class ProtobufConversionsSpec
     RecordType.AAAA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("10.1.1.1"))
   )
@@ -104,7 +105,7 @@ class ProtobufConversionsSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname")))
   )
@@ -114,7 +115,7 @@ class ProtobufConversionsSpec
     RecordType.MX,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(100, Fqdn("exchange")))
   )
@@ -124,7 +125,7 @@ class ProtobufConversionsSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("nsrecordname")))
   )
@@ -134,7 +135,7 @@ class ProtobufConversionsSpec
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr")))
   )
@@ -144,7 +145,7 @@ class ProtobufConversionsSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
@@ -154,7 +155,7 @@ class ProtobufConversionsSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("spf"))
   )
@@ -164,7 +165,7 @@ class ProtobufConversionsSpec
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target")))
   )
@@ -174,7 +175,7 @@ class ProtobufConversionsSpec
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target")))
   )
@@ -184,7 +185,7 @@ class ProtobufConversionsSpec
     RecordType.SSHFP,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SSHFPData(1, 2, "fingerprint"))
   )
@@ -194,7 +195,7 @@ class ProtobufConversionsSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("text"))
   )
@@ -208,7 +209,7 @@ class ProtobufConversionsSpec
       "system",
       RecordSetChangeType.Update,
       RecordSetChangeStatus.Pending,
-      DateTime.now,
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       Some("hello"),
       Some(rs),
       singleBatchChangeIds = singleBatchChangeIds
@@ -257,7 +258,7 @@ class ProtobufConversionsSpec
   def zoneMatches(pb: VinylDNSProto.Zone, zn: Zone): Unit = {
     pb.getName shouldBe zn.name
     pb.getEmail shouldBe zn.email
-    pb.getCreated shouldBe zn.created.getMillis
+    pb.getCreated shouldBe zn.created.toEpochMilli
     pb.hasUpdated shouldBe false
     pb.getStatus shouldBe zn.status.toString
     pb.getId shouldBe zn.id
@@ -269,7 +270,7 @@ class ProtobufConversionsSpec
       val pbconn = pb.getConnection
       val conn = zn.connection.get
       pbconn.getName shouldBe conn.name
-      pbconn.getKey shouldBe conn.key
+      pbconn.getKey shouldBe conn.key.value
       pbconn.getKeyName shouldBe conn.keyName
       pbconn.getPrimaryServer shouldBe conn.primaryServer
     } else {
@@ -279,7 +280,7 @@ class ProtobufConversionsSpec
       val pbTransConn = pb.getTransferConnection
       val transConn = zn.transferConnection.get
       pbTransConn.getName shouldBe transConn.name
-      pbTransConn.getKey shouldBe transConn.key
+      pbTransConn.getKey shouldBe transConn.key.value
       pbTransConn.getKeyName shouldBe transConn.keyName
       pbTransConn.getPrimaryServer shouldBe transConn.primaryServer
     } else {
@@ -294,7 +295,7 @@ class ProtobufConversionsSpec
   }
 
   def rsMatches(pb: VinylDNSProto.RecordSet, rs: RecordSet): Assertion = {
-    pb.getCreated shouldBe rs.created.getMillis
+    pb.getCreated shouldBe rs.created.toEpochMilli
     pb.getId shouldBe rs.id
     pb.getName shouldBe rs.name
     pb.getStatus shouldBe rs.status.toString
@@ -368,7 +369,7 @@ class ProtobufConversionsSpec
     "convert from ZoneConnection" in {
       val pb = toPB(zoneConnection)
 
-      pb.getKey shouldBe zoneConnection.key
+      pb.getKey shouldBe zoneConnection.key.value
       pb.getKeyName shouldBe zoneConnection.keyName
       pb.getPrimaryServer shouldBe zoneConnection.primaryServer
       pb.getName shouldBe zoneConnection.name
@@ -400,7 +401,7 @@ class ProtobufConversionsSpec
         .setId(zone.id)
         .setName(zone.name)
         .setEmail(zone.email)
-        .setCreated(zone.created.getMillis)
+        .setCreated(zone.created.toEpochMilli)
         .setStatus("Pending")
         .setAccount(zone.account)
         .setShared(zone.shared)
@@ -417,7 +418,7 @@ class ProtobufConversionsSpec
         .setId(zone.id)
         .setName(zone.name)
         .setEmail(zone.email)
-        .setCreated(zone.created.getMillis)
+        .setCreated(zone.created.toEpochMilli)
         .setStatus("PendingUpdate")
         .setAccount(zone.account)
         .setShared(zone.shared)
@@ -435,7 +436,7 @@ class ProtobufConversionsSpec
         .setId(zone.id)
         .setName(zone.name)
         .setEmail(zone.email)
-        .setCreated(zone.created.getMillis)
+        .setCreated(zone.created.toEpochMilli)
         .setStatus(zone.status.toString)
         .setAccount(zone.account)
 
@@ -459,18 +460,18 @@ class ProtobufConversionsSpec
     }
 
     "convert to protobuf for a Zone with an update date" in {
-      val z = zone.copy(updated = Some(DateTime.now))
+      val z = zone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
       val pb = toPB(z)
 
-      pb.getUpdated shouldBe z.updated.get.getMillis
+      pb.getUpdated shouldBe z.updated.get.toEpochMilli
       fromPB(pb).updated shouldBe defined
     }
 
     "convert to protobuf for a Zone with a latest sync date" in {
-      val z = zone.copy(latestSync = Some(DateTime.now))
+      val z = zone.copy(latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
       val pb = toPB(z)
 
-      pb.getLatestSync shouldBe z.latestSync.get.getMillis
+      pb.getLatestSync shouldBe z.latestSync.get.toEpochMilli
       fromPB(pb).latestSync shouldBe defined
     }
 
@@ -487,7 +488,7 @@ class ProtobufConversionsSpec
     "convert to protobuf for a recordset" in {
       val pb = toPB(aRs)
 
-      pb.getCreated shouldBe aRs.created.getMillis
+      pb.getCreated shouldBe aRs.created.toEpochMilli
       pb.getId shouldBe aRs.id
       pb.getName shouldBe aRs.name
       pb.getStatus shouldBe aRs.status.toString
@@ -748,7 +749,7 @@ class ProtobufConversionsSpec
   "ZoneChange conversion" should {
     "convert to protobuf from ZoneChange" in {
       val pb = toPB(zoneChange)
-      pb.getCreated shouldBe zoneChange.created.getMillis
+      pb.getCreated shouldBe zoneChange.created.toEpochMilli
       pb.getId shouldBe zoneChange.id
       pb.getStatus shouldBe zoneChange.status.toString
       pb.getSystemMessage shouldBe zoneChange.systemMessage.get.toString
@@ -772,7 +773,7 @@ class ProtobufConversionsSpec
       val chg = rsChange(aRs)
       val pb = toPB(chg)
 
-      pb.getCreated shouldBe chg.created.getMillis
+      pb.getCreated shouldBe chg.created.toEpochMilli
       pb.getId shouldBe chg.id
       pb.getStatus shouldBe chg.status.toString
       pb.getSystemMessage shouldBe chg.systemMessage.get
@@ -807,16 +808,16 @@ class ProtobufConversionsSpec
 
   "User conversion" should {
     "convert to/from protobuf with user defaults" in {
-      val user = User("testName", "testAccess", "testSecret")
+      val user = User("testName", "testAccess", Encrypted("testSecret"))
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
@@ -830,7 +831,7 @@ class ProtobufConversionsSpec
       val user = User(
         "testName",
         "testAccess",
-        "testSecret",
+        Encrypted("testSecret"),
         firstName = Some("testFirstName"),
         lastName = Some("testLastName"),
         email = Some("testEmail"),
@@ -840,11 +841,11 @@ class ProtobufConversionsSpec
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       Some(pb.getFirstName) shouldBe user.firstName
       Some(pb.getLastName) shouldBe user.lastName
       Some(pb.getEmail) shouldBe user.email
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
@@ -855,16 +856,16 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with superUser true" in {
-      val user = User("testName", "testAccess", "testSecret", isSuper = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isSuper = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
@@ -874,16 +875,16 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with locked user" in {
-      val user = User("testName", "testAccess", "testSecret", lockStatus = LockStatus.Locked)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), lockStatus = LockStatus.Locked)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Locked"
@@ -893,16 +894,16 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with test user" in {
-      val user = User("testName", "testAccess", "testSecret", isTest = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isTest = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe false
       pb.getLockStatus shouldBe "Unlocked"
@@ -912,16 +913,16 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with supportAdmin true" in {
-      val user = User("testName", "testAccess", "testSecret", isSupport = true)
+      val user = User("testName", "testAccess", Encrypted("testSecret"), isSupport = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName
       pb.getAccessKey shouldBe user.accessKey
-      pb.getSecretKey shouldBe user.secretKey
+      pb.getSecretKey shouldBe user.secretKey.value
       pb.hasFirstName shouldBe false
       pb.hasLastName shouldBe false
       pb.hasEmail shouldBe false
-      pb.getCreated shouldBe user.created.getMillis
+      pb.getCreated shouldBe user.created.toEpochMilli
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
@@ -933,7 +934,7 @@ class ProtobufConversionsSpec
 
   "User change conversion" should {
     "convert to/from protobuf for CreateUser" in {
-      val user = User("createUser", "createUserAccess", "createUserSecret")
+      val user = User("createUser", "createUserAccess", Encrypted("createUserSecret"))
       val createChange = CreateUser(user, "createUserId", user.created)
       val pb = toPb(createChange)
 
@@ -942,20 +943,20 @@ class ProtobufConversionsSpec
       new User(
         pb.getNewUser.getUserName,
         pb.getNewUser.getAccessKey,
-        pb.getNewUser.getSecretKey,
+        Encrypted(pb.getNewUser.getSecretKey),
         created = user.created,
         id = user.id
       ) shouldBe user
 
       pb.getMadeByUserId shouldBe createChange.madeByUserId
-      pb.getCreated shouldBe createChange.created.getMillis
+      pb.getCreated shouldBe createChange.created.toEpochMilli
       pb.getId shouldBe createChange.id
 
       fromPb(pb) shouldBe createChange
     }
 
     "convert to/from protobuf for UpdateUser" in {
-      val oldUser = User("updateUser", "updateUserAccess", "updateUserSecret")
+      val oldUser = User("updateUser", "updateUserAccess", Encrypted("updateUserSecret"))
       val newUser = oldUser.copy(userName = "updateUserNewName")
       val updateChange = UpdateUser(newUser, "createUserId", newUser.created, oldUser)
       val pb = toPb(updateChange)
@@ -965,18 +966,18 @@ class ProtobufConversionsSpec
       new User(
         pb.getNewUser.getUserName,
         pb.getNewUser.getAccessKey,
-        pb.getNewUser.getSecretKey,
+        Encrypted(pb.getNewUser.getSecretKey),
         created = newUser.created,
         id = newUser.id
       ) shouldBe newUser
 
       pb.getMadeByUserId shouldBe updateChange.madeByUserId
-      pb.getCreated shouldBe updateChange.created.getMillis
+      pb.getCreated shouldBe updateChange.created.toEpochMilli
 
       new User(
         pb.getOldUser.getUserName,
         pb.getOldUser.getAccessKey,
-        pb.getOldUser.getSecretKey,
+        Encrypted(pb.getOldUser.getSecretKey),
         created = oldUser.created,
         id = oldUser.id
       ) shouldBe oldUser

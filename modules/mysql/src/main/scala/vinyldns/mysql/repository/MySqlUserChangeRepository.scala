@@ -70,7 +70,7 @@ class MySqlUserChangeRepository
               'changeId -> change.id,
               'userId -> change.madeByUserId,
               'data -> toPb(change).toByteArray,
-              'createdTimestamp -> change.created.getMillis
+              'createdTimestamp -> change.created.toEpochMilli
             )
             .update()
             .apply()

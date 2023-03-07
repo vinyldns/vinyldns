@@ -19,7 +19,9 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.joda.time.DateTime
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -27,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
@@ -60,7 +62,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -71,7 +73,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -82,7 +84,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -93,7 +95,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -104,7 +106,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -115,7 +117,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -126,7 +128,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -137,7 +139,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -148,7 +150,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -159,7 +161,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -170,7 +172,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -181,7 +183,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1")),
     ownerGroupId = Some("my-group")
@@ -193,7 +195,7 @@ class RecordSetRoutingSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -204,7 +206,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("example.com")))
   )
@@ -215,7 +217,7 @@ class RecordSetRoutingSpec
     RecordType.AAAA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8"))
   )
@@ -226,7 +228,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname.")))
   )
@@ -237,7 +239,7 @@ class RecordSetRoutingSpec
     RecordType.MX,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(100, Fqdn("exchange.")))
   )
@@ -248,7 +250,7 @@ class RecordSetRoutingSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("nsrecordname")))
   )
@@ -259,7 +261,7 @@ class RecordSetRoutingSpec
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr.")))
   )
@@ -270,7 +272,7 @@ class RecordSetRoutingSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("name"), "name", 1, 2, 3, 4, 5))
   )
@@ -281,7 +283,7 @@ class RecordSetRoutingSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("spf"))
   )
@@ -292,7 +294,7 @@ class RecordSetRoutingSpec
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target.")))
   )
@@ -303,7 +305,7 @@ class RecordSetRoutingSpec
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target.")))
   )
@@ -314,7 +316,7 @@ class RecordSetRoutingSpec
     RecordType.SSHFP,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SSHFPData(1, 2, "fingerprint"))
   )
@@ -325,7 +327,7 @@ class RecordSetRoutingSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("text"))
   )
@@ -336,7 +338,7 @@ class RecordSetRoutingSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname")), CNAMEData(Fqdn("cname2")))
   )
@@ -406,6 +408,12 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+  private val failedChangesWithUserName =
+    List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
+  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
+    failedChangesWithUserName
+  )
+
   class TestService extends RecordSetServiceAlgebra {
 
     def evaluate(
@@ -425,8 +433,8 @@ class RecordSetRoutingSpec
             recordSet = recordSets(rsId)
               .copy(
                 status = RecordSetStatus.Active,
-                created = DateTime.now,
-                updated = Some(DateTime.now)
+                created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
               ),
             status = RecordSetChangeStatus.Complete,
             changeType = chgType,
@@ -447,7 +455,7 @@ class RecordSetRoutingSpec
                 RecordSetChange(
                   zone = okZone,
                   recordSet = recordSets(other)
-                    .copy(status = RecordSetStatus.Active, created = DateTime.now),
+                    .copy(status = RecordSetStatus.Active, created = Instant.now.truncatedTo(ChronoUnit.MILLIS)),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
                   userId = authPrincipal.userId
@@ -460,8 +468,8 @@ class RecordSetRoutingSpec
                   recordSet = recordSets(other)
                     .copy(
                       status = RecordSetStatus.Active,
-                      created = DateTime.now,
-                      updated = Some(DateTime.now)
+                      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                      updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
                     ),
                   status = RecordSetChangeStatus.Complete,
                   changeType = chgType,
@@ -562,6 +570,15 @@ class RecordSetRoutingSpec
         )
       }
     }.toResult
+
+    def listFailedRecordSetChanges(
+                                    authPrincipal: AuthPrincipal
+                                  ): Result[ListFailedRecordSetChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedRecordSetChangeResponse)
+      }
+      outcome.toResult
+    }
 
     def searchRecordSets(
                            startFrom: Option[String],
@@ -674,7 +691,7 @@ class RecordSetRoutingSpec
 
     def listRecordSetChanges(
                               zoneId: String,
-                              startFrom: Option[String],
+                              startFrom: Option[Int],
                               maxItems: Int,
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
@@ -816,6 +833,19 @@ class RecordSetRoutingSpec
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET failed record set changes" should {
+    "return the failed record set changes" in {
+      val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
+      val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
+
+      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+        val changes = responseAs[ListFailedRecordSetChangesResponse]
+        changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
+
       }
     }
   }

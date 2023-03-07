@@ -18,7 +18,8 @@ package vinyldns.api.domain.batch
 
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
-import org.joda.time.DateTime
+
+import java.time.Instant
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.EitherValues
@@ -38,10 +39,11 @@ import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, Owner
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
+import java.time.temporal.ChronoUnit
 import scala.util.Random
 
 class BatchChangeValidationsSpec
-    extends AnyPropSpec
+  extends AnyPropSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
     with EitherMatchers
@@ -177,7 +179,7 @@ class BatchChangeValidationsSpec
     okUser.id,
     okUser.userName,
     None,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(),
     approvalStatus = BatchChangeApprovalStatus.PendingReview
   )
@@ -186,15 +188,15 @@ class BatchChangeValidationsSpec
     okUser.id,
     okUser.userName,
     None,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     List(),
     approvalStatus = BatchChangeApprovalStatus.AutoApproved
   )
 
   private def makeAddUpdateRecord(
-      recordName: String,
-      aData: AData = AData("1.2.3.4")
-  ): AddChangeForValidation =
+                                   recordName: String,
+                                   aData: AData = AData("1.2.3.4")
+                                 ): AddChangeForValidation =
     AddChangeForValidation(
       okZone,
       s"$recordName",
@@ -203,9 +205,9 @@ class BatchChangeValidationsSpec
     )
 
   private def makeDeleteUpdateDeleteRRSet(
-      recordName: String,
-      recordData: Option[RecordData] = None
-  ): DeleteRRSetChangeForValidation =
+                                           recordName: String,
+                                           recordData: Option[RecordData] = None
+                                         ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
@@ -234,7 +236,7 @@ class BatchChangeValidationsSpec
   property(
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled"
   ) {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
     validateScheduledChange(input, scheduledChangesEnabled = false) should
       beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
   }
@@ -242,7 +244,7 @@ class BatchChangeValidationsSpec
   property(
     "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled"
   ) {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now.plusHours(1)))
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(1, ChronoUnit.HOURS)))
     validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
   }
 
@@ -347,7 +349,7 @@ class BatchChangeValidationsSpec
     val input = BatchChangeInput(
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
-      scheduledTime = Some(DateTime.now)
+      scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
     )
     val bcv =
       new BatchChangeValidations(
@@ -368,7 +370,7 @@ class BatchChangeValidationsSpec
     val input = BatchChangeInput(
       None,
       List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
-      scheduledTime = Some(DateTime.now.minusHours(1))
+      scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).minus(1, ChronoUnit.HOURS))
     )
     val bcv =
       new BatchChangeValidations(
@@ -393,13 +395,13 @@ class BatchChangeValidationsSpec
   }
 
   property("validateScheduledApproval: should fail if scheduled time is not due") {
-    val dt = DateTime.now.plusDays(2)
+    val dt = Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(2, ChronoUnit.DAYS)
     val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
     validateScheduledApproval(change) shouldBe Left(ScheduledChangeNotDue(dt))
   }
 
   property("validateScheduledApproval: should succeed if scheduled time is due") {
-    val dt = DateTime.now.minusDays(2)
+    val dt = Instant.now.truncatedTo(ChronoUnit.MILLIS).minus(2, ChronoUnit.DAYS)
     val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
     validateScheduledApproval(change) should be(right)
   }
@@ -524,7 +526,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a HighValueDomainError
-      |if inputName is a High Value Domain""".stripMargin) {
+             |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, ttl, AData("1.1.1.1"))
     val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, ttl, PTRData(Fqdn("test.")))
     val changeIpV6 =
@@ -569,7 +571,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""zoneDoesNotRequireManualReview: should fail with RecordRequiresManualReview
-              |if zone name matches domain requiring manual review""".stripMargin) {
+             |if zone name matches domain requiring manual review""".stripMargin) {
     val addChangeInput =
       AddChangeInput("not-allowed.zone.NEEDS.review", RecordType.A, ttl, AData("1.1.1.1"))
     val addChangeForValidation = AddChangeForValidation(
@@ -597,14 +599,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteRRSetChangeInput("invalidDomainName$", RecordType.A)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteRRSetChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change, false)
@@ -613,7 +615,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidIp.111"
     val change = DeleteRRSetChangeInput(invalidIp, RecordType.PTR)
     val result = validateInputName(change, false)
@@ -637,14 +639,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
@@ -666,7 +668,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidIpv4Address
-      |if validateRecordData fails for an invalid ipv4 address""".stripMargin) {
+             |if validateRecordData fails for an invalid ipv4 address""".stripMargin) {
     val invalidIpv4 = "invalidIpv4:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.A, ttl, AData(invalidIpv4))
     val result = validateAddChangeInput(change, false)
@@ -674,7 +676,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidIpv6Address
-      |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
+             |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
     val invalidIpv6 = "invalidIpv6:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, ttl, AAAAData(invalidIpv6))
     val result = validateAddChangeInput(change, false)
@@ -701,7 +703,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidDomainName
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "$$$"
     val change =
       AddChangeInput(
@@ -731,7 +733,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidLength
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "s" * 256
     val change =
       AddChangeInput(
@@ -748,7 +750,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: PTR should fail with InvalidIPAddress
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidip.111."
     val change = AddChangeInput(invalidIp, RecordType.PTR, ttl, PTRData(Fqdn("test.comcast.com")))
     val result = validateAddChangeInput(change, false)
@@ -839,10 +841,10 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName)
+      RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
     )
     result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName)
+      RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
@@ -1019,7 +1021,30 @@ class BatchChangeValidationsSpec
     )
   }
 
-  property("validateChangesWithContext: should fail for update if record does not exist") {
+  property("validateChangesWithContext: should fail for update if same record data is provided for add and delete") {
+    val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.2.3.4")))
+    val result = validateChangesWithContext(
+      ChangeForValidationMap(
+        List(
+          makeAddUpdateRecord("deleteRecord"), // Record does not exist
+          deleteRecord
+        ).map(_.validNel),
+        ExistingRecordSets(List(rsOk))
+      ),
+      okAuth,
+      false,
+      None
+    )
+
+    result(0) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(makeAddUpdateRecord("deleteRecord").inputChange.inputName)
+    )
+    result(1) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(deleteRecord.inputChange.inputName)
+    )
+  }
+
+  property("validateChangesWithContext: should complete for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
     val deleteNonExistentEntry = makeDeleteUpdateDeleteRRSet("ok", Some(AData("1.1.1.1")))
@@ -1041,26 +1066,15 @@ class BatchChangeValidationsSpec
     )
 
     result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRRSet.inputChange.inputName)
-    )
-    result(3) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
-    result(3) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
+    result(1) shouldBe valid
+    result(3) shouldBe valid
     result(4) shouldBe valid
-    deleteNonExistentEntry.inputChange.record.foreach { record =>
-      result(5) should haveInvalid[DomainValidationError](
-        DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
-      )
-    }
+    result(5) shouldBe valid
   }
 
   property(
     """validateChangesWithContext: should succeed for update in shared zone if user belongs to record
-             | owner group""".stripMargin
+      | owner group""".stripMargin
   ) {
     val existingRecord =
       sharedZoneRecord.copy(
@@ -1095,7 +1109,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should succeed adding a record
-      |if an existing CNAME with the same name exists but is being deleted""".stripMargin) {
+             |if an existing CNAME with the same name exists but is being deleted""".stripMargin) {
     val existingCname = rsOk.copy(name = "deleteRRSet", typ = RecordType.CNAME)
     val existingCname2 =
       existingCname.copy(name = "deleteRecord", records = List(CNAMEData(Fqdn("cname.data."))))
@@ -1204,7 +1218,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName)
+        RecordAlreadyExists(input.inputChange.inputName, input.inputChange.record, false)
       )
     }
   }
@@ -1240,7 +1254,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should fail with CnameIsNotUniqueError
-      |if CNAME record name already exists""".stripMargin) {
+             |if CNAME record name already exists""".stripMargin) {
     val addCname = AddChangeForValidation(
       validZone,
       "existingCname",
@@ -1262,7 +1276,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should succeed for CNAME record
-      |if there's a duplicate PTR ipv4 record that is being deleted""".stripMargin) {
+             |if there's a duplicate PTR ipv4 record that is being deleted""".stripMargin) {
     val addCname = AddChangeForValidation(
       validIp4ReverseZone,
       "30",
@@ -1290,7 +1304,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should fail with CnameIsNotUniqueError for CNAME record
-      |if there's a duplicate PTR ipv6 record""".stripMargin) {
+             |if there's a duplicate PTR ipv6 record""".stripMargin) {
     val addCname = AddChangeForValidation(
       validZone,
       "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
@@ -1316,7 +1330,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: CNAME record should pass
-      |if no other changes in batch change have same record name""".stripMargin) {
+             |if no other changes in batch change have same record name""".stripMargin) {
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1351,7 +1365,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: CNAME record should fail
-      |if another add change in batch change has the same record name""".stripMargin) {
+             |if another add change in batch change has the same record name""".stripMargin) {
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1391,7 +1405,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: both CNAME records should fail
-      |if there are duplicate CNAME add change inputs""".stripMargin) {
+             |if there are duplicate CNAME add change inputs""".stripMargin) {
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1433,7 +1447,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: both PTR records should succeed
-      |if there are duplicate PTR add change inputs""".stripMargin) {
+             |if there are duplicate PTR add change inputs""".stripMargin) {
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1466,7 +1480,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should succeed for AddChangeForValidation
-      |if user has group admin access""".stripMargin) {
+             |if user has group admin access""".stripMargin) {
     val addA = AddChangeForValidation(
       validZone,
       "valid",
@@ -1555,7 +1569,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should fail with RecordNameNotUniqueInBatch for PTR record
-      |if valid CNAME with same name exists in batch""".stripMargin) {
+             |if valid CNAME with same name exists in batch""".stripMargin) {
     val addCname = AddChangeForValidation(
       validZone,
       "existing",
@@ -1604,7 +1618,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
+    """validateChangesWithContext: should complete DeleteChangeForValidation
       |if record does not exist""".stripMargin
   ) {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("record-does-not-exist")
@@ -1621,16 +1635,12 @@ class BatchChangeValidationsSpec
         None
       )
 
-    result(0) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRRSet.inputChange.inputName)
-    )
-    result(1) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteRecord.inputChange.inputName)
-    )
+    result(0) shouldBe valid
+    result(1) shouldBe valid
   }
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
-      |if record set status is Active""".stripMargin) {
+             |if record set status is Active""".stripMargin) {
     val deleteA = DeleteRRSetChangeForValidation(
       validZone,
       "Active-record-status",
@@ -1655,7 +1665,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
-      |if user has group admin access"""".stripMargin) {
+             |if user has group admin access"""".stripMargin) {
     val deleteA =
       DeleteRRSetChangeForValidation(
         validZone,
@@ -1677,7 +1687,7 @@ class BatchChangeValidationsSpec
   }
 
   property(""" validateChangesWithContext: should fail for DeleteChangeForValidation
-      | if user is superUser with no other access""".stripMargin) {
+             | if user is superUser with no other access""".stripMargin) {
     val deleteA =
       DeleteRRSetChangeForValidation(
         validZone,
@@ -1760,7 +1770,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should properly process batch that contains
-      |a CNAME and different type record with the same name""".stripMargin) {
+             |a CNAME and different type record with the same name""".stripMargin) {
     val addDuplicateA = AddChangeForValidation(
       okZone,
       "test",
@@ -2179,7 +2189,7 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIp))
   }
 
-  property("validateChangesWithContext: should fail if MX record in batch already exists") {
+  property("validateChangesWithContext: should Success if MX record in batch already exists") {
     val existingMX = rsOk.copy(
       zoneId = okZone.id,
       name = "name-conflict",
@@ -2200,7 +2210,7 @@ class BatchChangeValidationsSpec
         false,
         None
       )
-    result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
+    result(0) shouldBe valid
   }
 
   property("validateChangesWithContext: should succeed if duplicate MX records in batch") {
@@ -2471,7 +2481,7 @@ class BatchChangeValidationsSpec
 
   property(
     """validateChangesWithContext: should fail validateAddWithContext with
-             |ZoneDiscoveryError if new record is dotted host but not a TXT record type""".stripMargin
+      |ZoneDiscoveryError if new record is dotted host but not a TXT record type""".stripMargin
   ) {
     val addA = AddChangeForValidation(
       okZone,

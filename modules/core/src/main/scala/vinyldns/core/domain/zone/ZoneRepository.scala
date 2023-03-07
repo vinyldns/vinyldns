@@ -29,11 +29,21 @@ trait ZoneRepository extends Repository {
 
   def getZones(zoneId: Set[String]): IO[Set[Zone]]
 
+  def getAllZonesWithSyncSchedule: IO[Set[Zone]]
+
   def getZoneByName(zoneName: String): IO[Option[Zone]]
 
   def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]]
 
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]]
+
+  def listZonesByAdminGroupIds(
+       authPrincipal: AuthPrincipal,
+       startFrom: Option[String] = None,
+       maxItems: Int = 100,
+       adminGroupIds: Set[String],
+       ignoreAccess: Boolean = false
+     ): IO[ListZonesResults]
 
   def listZones(
       authPrincipal: AuthPrincipal,
