@@ -2023,7 +2023,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                record_type="CNAME", record_data="test.com.",
                                                error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
         assert_failed_change_in_error_response(response[17], input_name=f"invalid-ipv4-{parent_zone_name}", record_type="CNAME", record_data="1.2.3.4.",
-                                               error_messages=[f'Invalid Cname: "Fqdn(1.2.3.4.)", valid cname should not be IP address'])
+                                               error_messages=[f'Invalid Cname: "Fqdn(1.2.3.4.)", Valid CNAME record data should not be an IP address'])
 
     finally:
         clear_recordset_list(to_delete, client)

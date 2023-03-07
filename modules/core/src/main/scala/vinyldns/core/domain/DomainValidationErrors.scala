@@ -54,7 +54,7 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
 
 final case class InvalidIPv4CName(param: String) extends DomainValidationError {
   def message: String =
-    s"""Invalid Cname: "$param", valid cname should not be IP address"""
+    s"""Invalid Cname: "$param", Valid CNAME record data should not be an IP address"""
 }
 
 final case class InvalidCname(param: String, isReverseZone: Boolean) extends DomainValidationError {
