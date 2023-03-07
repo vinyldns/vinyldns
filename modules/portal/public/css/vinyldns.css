@@ -434,12 +434,12 @@ input[type="file"] {
     vertical-align: top;
 }
 
-.vinyldns_zones_paginate {
+.vinyldns_paginate {
     display: flex;
     align-items: center;
 }
 
-.vinyldns_zones_page_number {
+.vinyldns_page_number {
     margin-right: 10px;
 }
 
@@ -522,3 +522,20 @@ input[type="file"] {
     top: 0;
     z-index: 1000;
 }
+
+/* Starting of css override for cron library and it's associated elements used in zone sync scheduling */
+.cron-select-wrap .cron-select {
+    border-radius: 0px !important;
+}
+
+#cron-lib {
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-top: 15px;
+}
+
+#cron-lib-check {
+    padding: 0px;
+    margin: 0px;
+}
+/* Ending of css override for cron library and it's associated elements used in zone sync scheduling */

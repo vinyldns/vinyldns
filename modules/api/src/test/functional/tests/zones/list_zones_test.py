@@ -216,11 +216,11 @@ def test_list_zones_ignore_access_success(shared_zone_test_context):
 
 def test_list_zones_ignore_access_success_with_name_filter(shared_zone_test_context):
     """
-    Test that we can retrieve a list of all zones with a name filter
+    Test that we can retrieve a list of all zones with a name filter. Should have Read access to shared zone
     """
     result = shared_zone_test_context.list_zones_client.list_zones(name_filter=shared_zone_test_context.shared_zone["name"].rstrip("."), ignore_access=True, status=200)
     retrieved = result["zones"]
 
     assert_that(result["ignoreAccess"], is_(True))
     assert_that(retrieved, has_item(has_entry("name", shared_zone_test_context.shared_zone["name"])))
-    assert_that(retrieved, has_item(has_entry("accessLevel", "NoAccess")))
+    assert_that(retrieved, has_item(has_entry("accessLevel", "Read")))

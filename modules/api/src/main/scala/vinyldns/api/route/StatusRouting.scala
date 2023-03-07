@@ -17,10 +17,15 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
+import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.api.Interfaces.{EitherImprovements, Result, ensuring}
+import vinyldns.api.config.ServerConfig
+import vinyldns.api.domain.zone.NotAuthorizedError
+import vinyldns.core.domain.auth.AuthPrincipal
 
 import scala.concurrent.duration._
 
@@ -31,39 +36,63 @@ final case class CurrentStatus(
     version: String
 )
 
-trait StatusRoute extends Directives {
-  this: VinylDNSJsonProtocol =>
+class StatusRoute(
+  serverConfig: ServerConfig,
+  val vinylDNSAuthenticator: VinylDNSAuthenticator,
+  val processingDisabled: SignallingRef[IO, Boolean]
+) extends VinylDNSJsonProtocol
+  with VinylDNSDirectives[Throwable] {
 
-  implicit val timeout = Timeout(10.seconds)
+  def getRoutes: Route = statusRoute
 
-  def processingDisabled: SignallingRef[IO, Boolean]
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
-  def statusRoute(color: String, version: String, keyName: String) =
+  def logger: Logger = LoggerFactory.getLogger(classOf[StatusRoute])
+
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
+  }
+
+  def postStatus(isProcessingDisabled: Boolean, authPrincipal: AuthPrincipal): Result[Boolean] = {
+    for {
+      _ <- isAdmin(authPrincipal).toResult
+      isDisabled = isProcessingDisabled
+    } yield isDisabled
+  }
+
+  def isAdmin(authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(NotAuthorizedError(s"Not authorized. User '${authPrincipal.signedInUser.userName}' cannot make the requested change.")) {
+      authPrincipal.isSystemAdmin
+    }
+
+  val statusRoute: Route =
     (get & path("status")) {
       onSuccess(processingDisabled.get.unsafeToFuture()) { isProcessingDisabled =>
         complete(
           StatusCodes.OK,
           CurrentStatus(
             isProcessingDisabled,
-            color,
-            keyName,
-            version
+            serverConfig.color,
+            serverConfig.keyName,
+            serverConfig.version
           )
         )
       }
     } ~
       (post & path("status")) {
         parameters("processingDisabled".as[Boolean]) { isProcessingDisabled =>
-          onSuccess(processingDisabled.set(isProcessingDisabled).unsafeToFuture()) {
-            complete(
-              StatusCodes.OK,
-              CurrentStatus(
-                isProcessingDisabled,
-                color,
-                keyName,
-                version
+          authenticateAndExecute(postStatus(isProcessingDisabled, _)){ isProcessingDisabled =>
+            onSuccess(processingDisabled.set(isProcessingDisabled).unsafeToFuture()) {
+              complete(
+                StatusCodes.OK,
+                CurrentStatus(
+                  isProcessingDisabled,
+                  serverConfig.color,
+                  serverConfig.keyName,
+                  serverConfig.version
+                )
               )
-            )
+            }
           }
         }
       }

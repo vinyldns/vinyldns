@@ -18,10 +18,10 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
@@ -36,7 +36,11 @@ import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
-class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelpers {
+class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
+  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
+    "No further action is required."
+  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist. " +
+    "No further action is required."
 
   private def makeSingleAddChange(
                                    name: String,
@@ -160,6 +164,22 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     makeAddChangeForValidation("mxToUpdate", MXData(1, Fqdn("update.com.")), MX)
   )
 
+  private val singleChangesOneDelete = List(
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A)
+  )
+
+  private val singleChangesOneDeleteGood = List(
+    makeSingleDeleteRRSetChange("aToDelete", A).copy(recordData = Some(AData("2.3.4.6"))),
+  )
+
+  private val changeForValidationOneDelete = List(
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A)
+  )
+
+  private val changeForValidationOneDeleteGood = List(
+    makeDeleteRRSetChangeForValidation("aToDelete", A)
+  )
+
   private val singleChangesOneBad = List(
     makeSingleAddChange("one", AData("1.1.1.1")),
     makeSingleAddChange("two", AData("1.1.1.2")),
@@ -192,7 +212,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     A,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1"))
   )
@@ -202,7 +222,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     CNAME,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("old.com.")))
   )
@@ -212,7 +232,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     A,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1"))
   )
@@ -222,7 +242,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     CNAME,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("old.com.")))
   )
@@ -232,7 +252,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     TXT,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("old"))
   )
@@ -242,7 +262,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     TXT,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("test"))
   )
@@ -252,7 +272,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     MX,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(1, Fqdn("old.com.")))
   )
@@ -262,7 +282,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
     MX,
     123,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(1, Fqdn("delete.com.")))
   )
@@ -290,11 +310,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           addSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -302,8 +322,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(addChangeForValidationGood.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -324,11 +344,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           deleteSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -339,8 +359,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset change basics generated from batch
@@ -373,11 +393,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           updateSingleChangesGood,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -388,8 +408,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -420,11 +440,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           changes,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -432,8 +452,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(changeForValidation.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -460,7 +480,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
       // check the batch has been stored in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchChange.id))
+        batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync()
 
       savedBatch shouldBe Some(batchChange)
     }
@@ -471,11 +491,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChange,
@@ -483,8 +503,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(List(), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
 
       result.batchChange shouldBe batchChange
     }
@@ -495,11 +515,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           singleChangesOneBad,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = rightResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchWithBadChange,
@@ -507,8 +527,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ChangeForValidationMap(changeForValidationOneBad.map(_.validNel), existingRecordSets),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().toOption.get
+
       val rsChanges = result.recordSetChanges
 
       rsChanges.length shouldBe 3
@@ -531,7 +551,42 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
+      savedBatch shouldBe Some(returnedBatch)
+    }
+
+    "set status to complete when deleting a record that does not exist" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          singleChangesOneDelete,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result =
+        underTest
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneDelete.map(_.validNel), existingRecordSets),
+            None
+          )
+          .value.unsafeRunSync().toOption.get
+
+      val returnedBatch = result.batchChange
+
+      // validate completed status returned
+      val receivedChange = returnedBatch.changes(0)
+      receivedChange.status shouldBe SingleChangeStatus.Complete
+      receivedChange.recordChangeId shouldBe None
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Complete)
+
+      // check the update has been made in the DB
+      val savedBatch: Option[BatchChange] =
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
       savedBatch shouldBe Some(returnedBatch)
     }
 
@@ -541,11 +596,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
           okUser.id,
           okUser.userName,
           None,
-          DateTime.now,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
           singleChangesOneUnsupported,
           approvalStatus = BatchChangeApprovalStatus.AutoApproved
         )
-      val result = leftResultOf(
+      val result =
         underTest
           .sendBatchForProcessing(
             batchChangeUnsupported,
@@ -556,13 +611,52 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers with CatsHelper
             ),
             None
           )
-          .value
-      )
+          .value.unsafeRunSync().swap.toOption.get
+
       result shouldBe an[BatchConversionError]
 
       val notSaved: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchChangeUnsupported.id))
+        batchChangeRepo.getBatchChange(batchChangeUnsupported.id).unsafeRunSync()
       notSaved shouldBe None
+    }
+  }
+
+  "updateBatchChange" should {
+    "update the batch change system message when there is a delete request with non-existent record data" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          singleChangesOneDeleteGood,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result =
+        underTest
+          .updateBatchChange(
+            batchWithBadChange,
+            ChangeForValidationMap(changeForValidationOneDeleteGood.map(_.validNel), existingRecordSets),
+          )
+
+      // validate the batch change returned
+      val receivedChange = result.changes(0)
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
+      result.changes(0) shouldBe singleChangesOneDeleteGood(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage))
+    }
+  }
+
+  "matchRecordData" should {
+    "check if the record data given matches the record data present" in {
+      val recordData = List(AData("1.2.3.5"), AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      val result1 = underTest.matchRecordData(recordData, AData("1.2.3.5"))
+      result1 shouldBe true
+      val result2 = underTest.matchRecordData(recordData, AData("1.2.3.4"))
+      result2 shouldBe false
+      val result3 = underTest.matchRecordData(recordData, AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      result3 shouldBe true
+      val result4 = underTest.matchRecordData(recordData, AAAAData("abcd:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
+      result4 shouldBe false
     }
   }
 

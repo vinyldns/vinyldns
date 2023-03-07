@@ -28,11 +28,14 @@ class SharedZoneTestContext(object):
         self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "dummyAccessKey", "dummySecretKey")
         self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "sharedZoneUserAccessKey", "sharedZoneUserSecretKey")
         self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "supportUserAccessKey", "supportUserSecretKey")
+        self.super_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "superUserAccessKey", "superUserSecretKey")
         self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "listGroupAccessKey", "listGroupSecretKey")
         self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "testUserAccessKey", "testUserSecretKey")
         self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "history-key", "history-secret")
-        self.clients = [self.ok_vinyldns_client, self.dummy_vinyldns_client, self.shared_zone_vinyldns_client, self.support_user_client,
-                        self.unassociated_client, self.test_user_client, self.history_client]
+        self.non_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "not-exist-key", "not-exist-secret")
+        self.clients = [self.ok_vinyldns_client, self.dummy_vinyldns_client, self.shared_zone_vinyldns_client,
+                        self.support_user_client, self.super_user_client, self.unassociated_client,
+                        self.test_user_client, self.history_client, self.non_user_client]
         self.list_zones = ListZonesTestContext(partition_id)
         self.list_zones_client = self.list_zones.client
         self.list_records_context = ListRecordSetsTestContext(partition_id)
@@ -174,6 +177,15 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.dummy_group["id"],
                     "isTest": True,
+                    "acl": {
+                        "rules": [
+                            {
+                                "accessLevel": "Delete",
+                                "description": "some_test_rule",
+                                "userId": "history-id"
+                            }
+                        ]
+                    },
                     "connection": {
                         "name": "dummy.",
                         "keyName": VinylDNSTestContext.dns_key_name,

@@ -29,6 +29,7 @@ import vinyldns.core.repository._
 import vinyldns.core.health.HealthCheck._
 import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
 import vinyldns.mysql.MySqlConnector._
+import java.io.{PrintWriter, StringWriter}
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
@@ -99,7 +100,11 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   private def shutdown(): IO[Unit] =
     IO(DBs.close())
-      .handleError(e => logger.error(s"Exception occurred while shutting down", e))
+      .handleError{ e =>
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Exception occurred while shutting down. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
+      }
 
   private final val HEALTH_CHECK =
     sql"""

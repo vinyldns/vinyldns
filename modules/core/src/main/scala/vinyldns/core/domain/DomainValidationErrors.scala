@@ -137,6 +137,12 @@ final case class RecordDoesNotExist(name: String) extends DomainValidationError 
     s"""Record "$name" Does Not Exist: cannot delete a record that does not exist."""
 }
 
+final case class InvalidUpdateRequest(name: String) extends DomainValidationError {
+  def message: String =
+    s"""Cannot perform request for the record "$name". """ +
+      "Add and Delete for the record with same record data exists in the batch."
+}
+
 final case class CnameIsNotUniqueError(name: String, typ: RecordType)
     extends DomainValidationError {
   def message: String =

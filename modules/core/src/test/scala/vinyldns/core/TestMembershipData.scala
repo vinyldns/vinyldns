@@ -16,7 +16,10 @@
 
 package vinyldns.core
 
-import org.joda.time.DateTime
+
+import vinyldns.core.domain.Encrypted
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 
@@ -26,27 +29,28 @@ object TestMembershipData {
   val okUser: User = User(
     userName = "ok",
     id = "ok",
-    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "okAccessKey",
-    secretKey = "okSecretKey",
+    secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
     lastName = Some("ok"),
     email = Some("test@test.com")
   )
 
-  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
-  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
-  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
-  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
-  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
+  val dummyUser = User("dummyName", "dummyAccess", Encrypted("dummySecret"))
+  val superUser = User("super", "superAccess", Encrypted("superSecret"), isSuper = true)
+  val xyzUser = User("xyz", "xyzAccess", Encrypted("xyzSecret"))
+  val supportUser = User("support", "supportAccess", Encrypted("supportSecret"), isSupport = true)
+  val lockedUser = User("locked", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", Encrypted("sharedSecret"))
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
       userName = "name-dummy%03d".format(runner),
       id = "dummy%03d".format(runner),
-      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
       accessKey = "dummy",
-      secretKey = "dummy"
+      secretKey = Encrypted("dummy")
     )
   }
 
@@ -57,7 +61,7 @@ object TestMembershipData {
     Some("a test group"),
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   val dummyGroup: Group = Group(
@@ -74,7 +78,7 @@ object TestMembershipData {
     Some("has two users"),
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id, dummyUser.id),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc", sharedZoneUser.id))
@@ -96,7 +100,7 @@ object TestMembershipData {
       name = "name-dummy%03d".format(i),
       id = "dummy%03d".format(i),
       email = "test@test.com",
-      created = DateTime.now.secondOfDay().roundFloorCopy()
+      created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
     )
   }
 
@@ -117,37 +121,37 @@ object TestMembershipData {
 
   val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
 
-  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
+  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", Encrypted("secret")), Seq.empty)
 
   val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
 
   val supportUserAuth: AuthPrincipal = AuthPrincipal(supportUser, Seq(okGroup.id))
 
-  val superUserAuth = AuthPrincipal(superUser, Seq.empty)
+  val superUserAuth: AuthPrincipal = AuthPrincipal(superUser, Seq.empty)
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Create,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
   val okGroupChangeUpdate: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Update,
     okUser.id,
     Some(okGroup),
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
   val okGroupChangeDelete: GroupChange = GroupChange(
     okGroup,
     GroupChangeType.Delete,
     okUser.id,
-    created = DateTime.now.secondOfDay().roundFloorCopy()
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   )
 
   // changes added in reverse order
-  val now: DateTime = DateTime.now().secondOfDay().roundFloorCopy()
+  val now: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
   val listOfDummyGroupChanges: List[GroupChange] = List.range(0, 300).map { i =>
     GroupChange(
       oneUserDummyGroup,
@@ -157,4 +161,13 @@ object TestMembershipData {
       id = s"$i"
     )
   }
+  val dummyGroupChangeUpdate: GroupChange = GroupChange(
+    okGroup.copy(name = "dummy-group", email = "dummy@test.com", description = Some("dummy group"),
+      memberIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id),
+      adminUserIds = Set(dummyUser.copy(id="12345-abcde-6789").id, superUser.copy(id="56789-edcba-1234").id)),
+    GroupChangeType.Update,
+    okUser.id,
+    Some(okGroup),
+    created = Instant.now.truncatedTo(ChronoUnit.SECONDS)
+  )
 }

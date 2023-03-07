@@ -16,19 +16,14 @@
 
 package vinyldns.api.backend.dns
 
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.backend.dns.DnsProtocol.NoError
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.record.{
-  AData,
-  RecordSet,
-  RecordSetChange,
-  RecordSetChangeType,
-  RecordSetStatus,
-  RecordType
-}
+import vinyldns.core.domain.Encrypted
+import vinyldns.core.domain.record.{AData, RecordSet, RecordSetChange, RecordSetChangeType, RecordSetStatus, RecordType}
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
 
 class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
@@ -36,7 +31,7 @@ class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
   private val testConnection = ZoneConnection(
     "vinyldns.",
     "vinyldns.",
-    "nzisn+4G2ldMn0q1CV3vsg==",
+    Encrypted("nzisn+4G2ldMn0q1CV3vsg=="),
     sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001"),
     Algorithm.HMAC_MD5
   )
@@ -74,7 +69,7 @@ class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )

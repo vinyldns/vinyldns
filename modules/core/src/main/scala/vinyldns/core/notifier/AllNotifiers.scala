@@ -20,6 +20,7 @@ import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import vinyldns.core.route.Monitored
+import java.io.{PrintWriter, StringWriter}
 
 final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: ContextShift[IO])
     extends Monitored {
@@ -34,8 +35,10 @@ final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: Contex
   def notify(notifier: Notifier, notification: Notification[_]): IO[Unit] =
     monitor(notifier.getClass.getSimpleName) {
       notifier.notify(notification).handleErrorWith { e =>
+        val errorMessage = new StringWriter
+        e.printStackTrace(new PrintWriter(errorMessage))
         IO {
-          logger.error(s"Notifier ${notifier.getClass.getSimpleName} failed.", e)
+          logger.error(s"Notifier ${notifier.getClass.getSimpleName} failed. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         }
       }
     }

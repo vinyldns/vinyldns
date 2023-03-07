@@ -18,7 +18,7 @@ package vinyldns.core.domain.batch
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 
@@ -26,7 +26,7 @@ case class BatchChangeSummary(
     userId: String,
     userName: String,
     comments: Option[String],
-    createdTimestamp: DateTime,
+    createdTimestamp: Instant,
     totalChanges: Int,
     status: BatchChangeStatus,
     ownerGroupId: Option[String],
@@ -36,9 +36,9 @@ case class BatchChangeSummary(
     reviewerId: Option[String],
     reviewerName: Option[String],
     reviewComment: Option[String],
-    reviewTimestamp: Option[DateTime],
-    scheduledTime: Option[DateTime] = None,
-    cancelledTimestamp: Option[DateTime] = None
+    reviewTimestamp: Option[Instant],
+    scheduledTime: Option[Instant] = None,
+    cancelledTimestamp: Option[Instant] = None
 )
 
 object BatchChangeSummary {

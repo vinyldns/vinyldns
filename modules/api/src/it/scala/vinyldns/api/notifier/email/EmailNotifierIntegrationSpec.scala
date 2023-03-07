@@ -25,7 +25,8 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.TestMembershipData._
 import java.nio.file.{Files, Path, Paths}
 
@@ -61,7 +62,7 @@ class EmailNotifierIntegrationSpec
         okUser.id,
         okUser.userName,
         None,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(
           SingleAddChange(
             Some("some-zone-id"),

@@ -98,9 +98,13 @@ trait RecordSetServiceAlgebra {
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String],
+                            startFrom: Option[Int],
                             maxItems: Int,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse]
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal
+                                ): Result[ListFailedRecordSetChangesResponse]
 
 }

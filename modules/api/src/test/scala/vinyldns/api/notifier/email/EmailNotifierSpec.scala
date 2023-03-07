@@ -22,22 +22,23 @@ import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
-
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.{User, UserRepository}
 import vinyldns.core.notifier.Notification
+
 import javax.mail.internet.InternetAddress
 import org.mockito.Matchers.{eq => eqArg, _}
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
 import javax.mail.{Address, Message}
-import vinyldns.core.domain.membership.User
 import _root_.vinyldns.core.domain.batch._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import vinyldns.core.domain.Encrypted
 
 import scala.collection.JavaConverters._
 import vinyldns.core.notifier.NotifierConfig
@@ -89,7 +90,7 @@ class EmailNotifierSpec
       "test",
       "testUser",
       description,
-      DateTime.now(),
+      Instant.now.truncatedTo(ChronoUnit.MILLIS),
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,
@@ -122,7 +123,7 @@ class EmailNotifierSpec
         mockUserRepository
       )
 
-      doReturn(IO.pure(Some(User("testUser", "access", "secret"))))
+      doReturn(IO.pure(Some(User("testUser", "access", Encrypted("secret")))))
         .when(mockUserRepository)
         .getUser("test")
 
@@ -156,7 +157,7 @@ class EmailNotifierSpec
       )
 
       doReturn(
-        IO.pure(Some(User("testUser", "access", "secret", None, None, Some("testuser@test.com"))))
+        IO.pure(Some(User("testUser", "access", Encrypted("secret"), None, None, Some("testuser@test.com"))))
       ).when(mockUserRepository)
         .getUser("test")
 

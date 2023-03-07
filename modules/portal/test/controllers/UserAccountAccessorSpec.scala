@@ -17,10 +17,12 @@
 package controllers
 
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeEach
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 
 class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach {
@@ -28,11 +30,11 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
   private val user = User(
     "fbaggins",
     "key",
-    "secret",
+    Encrypted("secret"),
     Some("Frodo"),
     Some("Baggins"),
     Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "frodo-uuid"
   )
 
@@ -40,7 +42,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     "frodo-uuid",
     user,
     "fbaggins",
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     UserChangeType.Create
   ).toOption.get
@@ -61,7 +63,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     }
 
     "return the new user when storing a user that already exists in the store" in {
-      val newUser = user.copy(accessKey = "new-key", secretKey = "new-secret")
+      val newUser = user.copy(accessKey = "new-key", secretKey = Encrypted("new-secret"))
       mockRepo.save(any[User]).returns(IO.pure(newUser))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
       underTest.update(newUser, user).unsafeRunSync() must beEqualTo(newUser)
@@ -105,7 +107,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       val lockedUserChange = UserChange.UpdateUser(
         user.copy(lockStatus = LockStatus.Locked),
         "system",
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         user
       )
       mockRepo.save(List(lockedUser)).returns(IO(List(lockedUser)))

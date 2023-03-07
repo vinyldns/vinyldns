@@ -43,6 +43,15 @@ angular.module('service.zones', [])
             return promis
         };
 
+        this.getZoneChanges = function (limit, startFrom, zoneId) {
+                    var params = {
+                        "maxItems": limit,
+                        "startFrom": startFrom
+                        }
+                    var url = utilityService.urlBuilder ( "/api/zones/" + zoneId + "/changes", params);
+                    return $http.get(url);
+        };
+
         this.getBackendIds = function() {
             var url = "/api/zones/backendids";
             return $http.get(url);

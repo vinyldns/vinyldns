@@ -19,14 +19,15 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
@@ -39,6 +40,7 @@ trait DnsJsonProtocol extends JsonValidation {
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     AlgorithmSerializer,
+    EncryptedSerializer,
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
@@ -77,12 +79,24 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "userId").required[String]("Missing RecordSetChange.userId"),
         (js \ "changeType").required(RecordSetChangeType, "Missing RecordSetChange.changeType"),
         (js \ "status").default(RecordSetChangeStatus, RecordSetChangeStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "systemMessage").optional[String],
         (js \ "updates").optional[RecordSet],
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
         ).mapN(RecordSetChange.apply)
+
+    override def toJson(rs: RecordSetChange): JValue =
+      ("zone" -> Extraction.decompose(rs.zone)) ~
+        ("recordSet" -> Extraction.decompose(rs.recordSet)) ~
+        ("userId" -> rs.userId) ~
+        ("changeType" -> Extraction.decompose(rs.changeType)) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("systemMessage" -> rs.systemMessage) ~
+        ("updates" -> Extraction.decompose(rs.updates)) ~
+        ("id" -> rs.id) ~
+        ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
   case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
@@ -98,7 +112,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
-        (js \ "backendId").optional[String]
+        (js \ "backendId").optional[String],
+        (js \ "recurrenceSchedule").optional[String],
+        (js \ "scheduleRequestor").optional[String],
         ).mapN(CreateZoneInput.apply)
   }
 
@@ -115,7 +131,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
-        (js \ "backendId").optional[String]
+        (js \ "recurrenceSchedule").optional[String],
+        (js \ "scheduleRequestor").optional[String],
+        (js \ "backendId").optional[String],
         ).mapN(UpdateZoneInput.apply)
   }
 
@@ -129,12 +147,22 @@ trait DnsJsonProtocol extends JsonValidation {
     override def toJson(a: Algorithm): JValue = JString(a.name)
   }
 
+  case object EncryptedSerializer extends ValidationSerializer[Encrypted] {
+    override def fromJson(js: JValue): ValidatedNel[String, Encrypted] =
+      js match {
+        case JString(value) => EncryptFromJson.fromString(value).toValidatedNel
+        case _ => "Unsupported type for zone connection key, must be a string".invalidNel
+      }
+
+    override def toJson(a: Encrypted): JValue = JString(a.value)
+  }
+
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
         (js \ "name").required[String]("Missing ZoneConnection.name"),
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
-        (js \ "key").required[String]("Missing ZoneConnection.key"),
+        (js \ "key").required[Encrypted]("Missing ZoneConnection.key"),
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
         ).mapN(ZoneConnection.apply)
@@ -194,8 +222,8 @@ trait DnsJsonProtocol extends JsonValidation {
             "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
           ),
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
-        (js \ "updated").optional[DateTime],
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+        (js \ "updated").optional[Instant],
         recordType
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),

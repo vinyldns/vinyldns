@@ -28,6 +28,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import vinyldns.mysql.TestMySqlInstance.groupRepository
@@ -435,7 +436,7 @@ class MySqlZoneRepositoryIntegrationSpec
 
     "return an empty list of zones if the user is not authorized to any" in {
       val unauthorized = AuthPrincipal(
-        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        signedInUser = User("not-authorized", "not-authorized", Encrypted("not-authorized")),
         memberGroupIds = Seq.empty
       )
 
@@ -847,6 +848,22 @@ class MySqlZoneRepositoryIntegrationSpec
         } yield zones
 
       f.unsafeRunSync() shouldBe None
+    }
+
+    "return zones which have zone sync scheduled" in {
+      // okZone with recurrence schedule
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      val updatedOkZone = okZone.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      repo.save(updatedOkZone).unsafeRunSync() shouldBe Right(updatedOkZone)
+      repo.getZoneByName(updatedOkZone.name).unsafeRunSync().get.recurrenceSchedule shouldBe Some("0/5 0 0 ? * * *")
+
+      // dummyZone without recurrence schedule
+      val dummyZone = okZone.copy(name = "dummy.", id = "5615c19c-cb00-4734-9acd-fbfdca0e6fce")
+      repo.save(dummyZone).unsafeRunSync() shouldBe Right(dummyZone)
+      repo.getZoneByName(dummyZone.name).unsafeRunSync().get.recurrenceSchedule shouldBe None
+
+      // Only get zone with recurrence schedule
+      repo.getAllZonesWithSyncSchedule.unsafeRunSync() shouldBe Set(updatedOkZone)
     }
   }
 }
