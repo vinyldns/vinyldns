@@ -39,6 +39,8 @@ trait MembershipServiceAlgebra {
 
   def getGroup(id: String, authPrincipal: AuthPrincipal): Result[Group]
 
+  def getGroupChange(id: String, authPrincipal: AuthPrincipal): Result[GroupChangeInfo]
+
   def listMyGroups(
       groupNameFilter: Option[String],
       startFrom: Option[String],

@@ -17,19 +17,20 @@
 package vinyldns.core.domain.membership
 
 import cats.effect._
-import org.joda.time.DateTime
+import java.time.Instant
 import scalikejdbc.DB
 import vinyldns.core.repository.Repository
 
 trait GroupChangeRepository extends Repository {
   def save(db: DB, groupChange: GroupChange): IO[GroupChange]
 
-  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
+  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]]
+
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
       maxItems: Int
   ): IO[ListGroupChangesResults]
 
-  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
+  implicit def dateTimeOrdering: Ordering[Instant] = Ordering.fromLessThan(_.isBefore(_))
 }

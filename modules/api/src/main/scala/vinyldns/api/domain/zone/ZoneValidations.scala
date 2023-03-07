@@ -17,8 +17,9 @@
 package vinyldns.api.domain.zone
 
 import cats.syntax.either._
-import com.aaronbedra.orchard.CIDR
-import org.joda.time.DateTime
+import com.comcast.ip4s.Cidr
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
@@ -30,7 +31,7 @@ class ZoneValidations(syncDelayMillis: Int) {
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
-      case Some(time) if DateTime.now.getMillis - time.getMillis < syncDelayMillis => {
+      case Some(time) if Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli - time.toEpochMilli < syncDelayMillis => {
         RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
       }
       case _ => Right(())
@@ -56,10 +57,10 @@ class ZoneValidations(syncDelayMillis: Int) {
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
     rule.recordMask match {
       case Some(mask) if rule.recordTypes == Set(RecordType.PTR) =>
-        Try(CIDR.valueOf(mask)) match {
+        Try(Cidr.fromString(mask).get) match {
           case Success(_) => Right(())
-          case Failure(e) =>
-            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").asLeft
+          case Failure(_) =>
+            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: Invalid CIDR block").asLeft
         }
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
         InvalidRequest("Multiple record types including PTR must have no mask").asLeft

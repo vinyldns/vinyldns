@@ -31,6 +31,6 @@ object HighValueDomainConfig {
       "ip-list"
     ) {
       case (regexList, ipList) =>
-        HighValueDomainConfig(toCaseIgnoredRegexList(regexList), ipList.flatMap(IpAddress(_)))
+        HighValueDomainConfig(toCaseIgnoredRegexList(regexList), ipList.flatMap(IpAddress.fromString(_)))
     }
 }

@@ -33,6 +33,7 @@ import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.{JavaCrypto, NoOpCrypto}
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
@@ -86,18 +87,18 @@ class ZoneRoutingSpec
   private val connectionOk = Zone(
     "connection.ok.",
     "connection-ok@test.com",
-    connection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1")),
-    transferConnection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1")),
+    transferConnection = Some(ZoneConnection("connection.ok", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val connectionFailed = Zone(
     "connection.fail",
     "connection-failed@test.com",
-    connection = Some(ZoneConnection("connection.fail", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("connection.fail", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val zoneValidationFailed = Zone(
     "validation.fail",
     "zone-validation-failed@test.com",
-    connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1"))
+    connection = Some(ZoneConnection("validation.fail", "keyName", Encrypted("key"), "10.1.1.1"))
   )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
@@ -124,13 +125,17 @@ class ZoneRoutingSpec
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
 
-  private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val listZoneChangeResponse = ListZoneChangesResponse(
     ok.id,
     List(zoneCreate, zoneUpdate),
     nextId = None,
     startFrom = None,
     maxItems = 100
+  )
+
+  private val listFailedZoneChangeResponse = ListFailedZoneChangesResponse(
+    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed))
   )
 
   val crypto = new JavaCrypto(
@@ -157,7 +162,7 @@ class ZoneRoutingSpec
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
-              status = ZoneChangeStatus.Complete,
+              status = ZoneChangeStatus.Synced,
               zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)
             )
           )
@@ -183,7 +188,7 @@ class ZoneRoutingSpec
         case ok.email | connectionOk.email =>
           Right(
             zoneUpdate.copy(
-              status = ZoneChangeStatus.Complete,
+              status = ZoneChangeStatus.Synced,
               zone = Zone(updateZoneInput, zoneUpdate.zone).copy(status = ZoneStatus.Active)
             )
           )
@@ -208,7 +213,7 @@ class ZoneRoutingSpec
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
         case ok.id | connectionOk.id =>
-          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Complete))
+          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Synced))
         case error.id => Left(new RuntimeException("fail"))
         case zone1.id => Left(ZoneUnavailableError(zoneId))
       }
@@ -252,6 +257,7 @@ class ZoneRoutingSpec
         nameFilter: Option[String],
         startFrom: Option[String],
         maxItems: Int,
+        searchByAdminGroup: Boolean = false,
         ignoreAccess: Boolean = false
     ): Result[ListZonesResponse] = {
 
@@ -352,6 +358,15 @@ class ZoneRoutingSpec
       outcome.toResult
     }
 
+    def listFailedZoneChanges(
+                               authPrincipal: AuthPrincipal
+                             ): Result[ListFailedZoneChangesResponse] = {
+      val outcome = authPrincipal match {
+        case _ => Right(listFailedZoneChangeResponse)
+      }
+      outcome.toResult
+    }
+
     def addACLRule(
         zoneId: String,
         aclRuleInfo: ACLRuleInfo,
@@ -372,7 +387,7 @@ class ZoneRoutingSpec
                 authPrincipal,
                 NoOpCrypto.instance
               )
-              .copy(status = ZoneChangeStatus.Complete)
+              .copy(status = ZoneChangeStatus.Synced)
           )
         case error.id => Left(new RuntimeException("fail"))
       }
@@ -397,7 +412,7 @@ class ZoneRoutingSpec
                 authPrincipal,
                 NoOpCrypto.instance
               )
-              .copy(status = ZoneChangeStatus.Complete)
+              .copy(status = ZoneChangeStatus.Synced)
           )
         case error.id => Left(new RuntimeException("fail"))
       }
@@ -664,10 +679,10 @@ class ZoneRoutingSpec
         val resultKey = result.zone.connection.get.key
         val resultTCKey = result.zone.transferConnection.get.key
 
-        val decrypted = crypto.decrypt(resultKey)
-        val decryptedTC = crypto.decrypt(resultTCKey)
-        decrypted shouldBe connectionOk.connection.get.key
-        decryptedTC shouldBe connectionOk.transferConnection.get.key
+        val decrypted = crypto.decrypt(resultKey.value)
+        val decryptedTC = crypto.decrypt(resultTCKey.value)
+        decrypted shouldBe connectionOk.connection.get.key.value
+        decryptedTC shouldBe connectionOk.transferConnection.get.key.value
       }
     }
 
@@ -920,6 +935,20 @@ class ZoneRoutingSpec
       }
     }
 
+    "return zones by admin group name when searchByAdminGroup is true" in {
+      Get(s"/zones?nameFilter=ok&startFrom=zone4.&maxItems=4&searchByAdminGroup=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(zone1.id, zone2.id, zone3.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("ok")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
     "return all zones when list all is true" in {
       Get(s"/zones?maxItems=5&ignoreAccess=true") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
@@ -973,6 +1002,18 @@ class ZoneRoutingSpec
       }
       Get(s"/zones/${ok.id}/changes?maxItems=0") ~> zoneRoute ~> check {
         status shouldBe BadRequest
+      }
+    }
+  }
+
+  "GET failed zone changes" should {
+    "return the failed zone changes" in {
+      val zoneCreateFailed = zoneCreate.copy(status = ZoneChangeStatus.Failed)
+      val zoneUpdateFailed = zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      Get(s"/metrics/health/zonechangesfailure") ~> zoneRoute ~> check {
+        val changes = responseAs[ListFailedZoneChangesResponse]
+        changes.failedZoneChanges.map(_.id) shouldBe List(zoneCreateFailed.id, zoneUpdateFailed.id)
+
       }
     }
   }

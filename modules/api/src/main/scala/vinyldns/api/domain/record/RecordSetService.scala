@@ -28,7 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -46,6 +46,7 @@ object RecordSetService {
              backendResolver: BackendResolver,
              validateRecordLookupAgainstDnsBackend: Boolean,
              highValueDomainConfig: HighValueDomainConfig,
+             dottedHostsConfig: DottedHostsConfig,
              approvedNameServers: List[Regex],
              useRecordSetCache: Boolean
            ): RecordSetService =
@@ -61,6 +62,7 @@ object RecordSetService {
       backendResolver,
       validateRecordLookupAgainstDnsBackend,
       highValueDomainConfig,
+      dottedHostsConfig,
       approvedNameServers,
       useRecordSetCache
     )
@@ -78,6 +80,7 @@ class RecordSetService(
                         backendResolver: BackendResolver,
                         validateRecordLookupAgainstDnsBackend: Boolean,
                         highValueDomainConfig: HighValueDomainConfig,
+                        dottedHostsConfig: DottedHostsConfig,
                         approvedNameServers: List[Regex],
                         useRecordSetCache: Boolean
                       ) extends RecordSetServiceAlgebra {
@@ -88,6 +91,7 @@ class RecordSetService(
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
+      authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -107,13 +111,27 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
+      isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
+      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
+      isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
+      isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
+      allowedDotsLimit = getAllowedDotsLimit(zone, dottedHostsConfig)
+      recordFqdnDoesNotAlreadyExist <- recordFQDNDoesNotExist(rsForValidations, zone).toResult[Boolean]
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         None,
-        approvedNameServers
+        approvedNameServers,
+        recordFqdnDoesNotAlreadyExist,
+        allowedZoneList,
+        isRecordTypeAndUserAllowed,
+        allowedDotsLimit
       ).toResult
+      _ <- if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
+      _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -127,8 +145,9 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
+      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
@@ -143,13 +162,27 @@ class RecordSetService(
         validateRecordLookupAgainstDnsBackend
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
+      authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+      allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
+      isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
+      isUserInAllowedGroups <- checkIfInAllowedGroups(zone, dottedHostsConfig, auth).toResult[Boolean]
+      isAllowedUser = isInAllowedUsers || isUserInAllowedGroups
+      isRecordTypeAllowed = checkIfInAllowedRecordType(zone, dottedHostsConfig, rsForValidations)
+      isRecordTypeAndUserAllowed = isAllowedUser && isRecordTypeAllowed
+      allowedDotsLimit = getAllowedDotsLimit(zone, dottedHostsConfig)
       _ <- typeSpecificValidations(
         rsForValidations,
         existingRecordsWithName,
         zone,
         Some(existing),
-        approvedNameServers
+        approvedNameServers,
+        true,
+        allowedZoneList,
+        isRecordTypeAndUserAllowed,
+        allowedDotsLimit
       ).toResult
+      _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
+      _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -168,6 +201,178 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
+
+  // For dotted hosts. Check if a record that may conflict with dotted host exist or not
+  def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
+    // Use fqdn for searching through `recordset` mysql table to see if it already exist
+    val newRecordFqdn = if(newRecordSet.name != zone.name) newRecordSet.name + "." + zone.name else newRecordSet.name
+
+    for {
+      record <- recordSetRepository.getRecordSetsByFQDNs(Set(newRecordFqdn))
+      isRecordAlreadyExist = doesRecordWithSameTypeExist(record, newRecordSet)
+      doesNotExist = if(isRecordAlreadyExist) false else true
+    } yield doesNotExist
+  }
+
+  // Check if a record with same type already exist in 'recordset' mysql table
+  def doesRecordWithSameTypeExist(oldRecord: List[RecordSet], newRecord: RecordSet): Boolean = {
+    if(oldRecord.nonEmpty) {
+      val typeExists = oldRecord.map(x => x.typ == newRecord.typ)
+      if (typeExists.contains(true)) true else false
+    }
+    else {
+      false
+    }
+  }
+
+  // Get zones that are allowed to create dotted hosts using the zones present in dotted hosts config
+  def  getAllowedZones(zones: List[String]): IO[Set[String]] = {
+    if(zones.isEmpty){
+      val noZones: IO[Set[String]] = IO(Set.empty)
+      noZones
+    }
+    else {
+      // Wildcard zones needs to be passed to a separate method
+      val wildcardZones = zones.filter(_.contains("*")).map(_.replace("*", "%"))
+      // Zones without wildcard character are passed to a separate function
+      val namedZones = zones.filter(zone => !zone.contains("*"))
+      for{
+        namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
+        wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
+        zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
+      } yield zoneResult.map(x => x.name)
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def getAllowedDotsLimit(zone: Zone, config: DottedHostsConfig): Int = {
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainNormalZone){
+      config.zoneAuthConfigs.filter(x => x.zone == zoneName).head.dotsLimit
+    }
+    else if(isContainWildcardZone){
+      config.zoneAuthConfigs.filter(x => zoneName.matches(x.zone.replace("*", "[A-Za-z0-9.]*"))).head.dotsLimit
+    }
+    else {
+      0
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
+  def checkIfInAllowedUsers(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): Boolean = {
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainNormalZone){
+      val users = config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone == zoneName) x.userList else List.empty
+      }
+      if(users.contains(auth.signedInUser.userName)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else if(isContainWildcardZone){
+      val users = config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.userList else List.empty
+          } else List.empty
+      }
+      if(users.contains(auth.signedInUser.userName)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else {
+      false
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the record types present in dotted hosts config
+  def checkIfInAllowedRecordType(zone: Zone, config: DottedHostsConfig, rs: RecordSet): Boolean = {
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    if(isContainNormalZone){
+      val rType = config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone == zoneName) x.recordTypes else List.empty
+      }
+      if(rType.contains(rs.typ.toString)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else if(isContainWildcardZone){
+      val rType = config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.recordTypes else List.empty
+          } else List.empty
+      }
+      if(rType.contains(rs.typ.toString)){
+        true
+      }
+      else {
+        false
+      }
+    }
+    else {
+      false
+    }
+  }
+
+  // Check if user is allowed to create dotted hosts using the groups present in dotted hosts config
+  def checkIfInAllowedGroups(zone: Zone, config: DottedHostsConfig, auth: AuthPrincipal): IO[Boolean] = {
+    val configZones = config.zoneAuthConfigs.map(x => x.zone)
+    val zoneName = if(zone.name.takeRight(1) != ".") zone.name + "." else zone.name
+    val dottedZoneConfig = configZones.filter(_.contains("*")).map(_.replace("*", "[A-Za-z0-9.]*"))
+    val isContainWildcardZone = dottedZoneConfig.exists(x => zoneName.matches(x))
+    val isContainNormalZone = configZones.contains(zoneName)
+    val groups = if(isContainNormalZone){
+      config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone == zoneName) x.groupList else List.empty
+      }
+    }
+    else if(isContainWildcardZone){
+      config.zoneAuthConfigs.flatMap {
+        x: ZoneAuthConfigs =>
+          if (x.zone.contains("*")) {
+            val wildcardZone = x.zone.replace("*", "[A-Za-z0-9.]*")
+            if (zoneName.matches(wildcardZone)) x.groupList else List.empty
+          } else List.empty
+      }
+    }
+    else {
+      List.empty
+    }
+    for{
+      groupsInConfig <- groupRepository.getGroupsByName(groups.toSet)
+      members = groupsInConfig.flatMap(x => x.memberIds)
+      usersList <- if(members.isEmpty) IO(Seq.empty) else userRepository.getUsers(members, None, None).map(x => x.users)
+      users = if(usersList.isEmpty) Seq.empty else usersList.map(x => x.userName)
+      isPresent = users.contains(auth.signedInUser.userName)
+    } yield isPresent
+  }
 
   def getRecordSet(
                     recordSetId: String,
@@ -364,7 +569,7 @@ class RecordSetService(
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String] = None,
+                            startFrom: Option[Int] = None,
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
@@ -376,6 +581,25 @@ class RecordSetService(
         .toResult[ListRecordSetChangesResults]
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
     } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal
+                                ): Result[ListFailedRecordSetChangesResponse] =
+    for {
+      recordSetChangesFailedResults <- recordChangeRepository
+        .listFailedRecordSetChanges()
+        .toResult[List[RecordSetChange]]
+      _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
+    } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)
+
+  def zoneAccess(
+                  RecordSetCh: List[RecordSetChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    RecordSetCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
 
   def getZone(zoneId: String): Result[Zone] =
     zoneRepository

@@ -48,10 +48,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     */
   private final val PUT_ZONE =
     sql"""
-       |INSERT INTO zone(id, name, admin_group_id, data)
-       |     VALUES ({id}, {name}, {adminGroupId}, {data}) ON DUPLICATE KEY
+       |INSERT INTO zone(id, name, admin_group_id, zone_sync_schedule, data)
+       |     VALUES ({id}, {name}, {adminGroupId}, {recurrenceSchedule}, {data}) ON DUPLICATE KEY
        |     UPDATE name=VALUES(name),
        |            admin_group_id=VALUES(admin_group_id),
+       |            zone_sync_schedule=VALUES(zone_sync_schedule),
        |            data=VALUES(data);
         """.stripMargin
 
@@ -114,6 +115,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     """
       |SELECT data
       |  FROM zone
+       """.stripMargin
+
+  private final val BASE_GET_ALL_ZONES_SQL =
+    """
+      |SELECT data
+      |  FROM zone
+      |  WHERE zone_sync_schedule IS NOT NULL
        """.stripMargin
 
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
@@ -207,6 +215,19 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+    monitor("repo.ZoneJDBC.getAllZonesWithSyncSchedule") {
+      IO {
+        DB.readOnly { implicit s =>
+          SQL(
+            BASE_GET_ALL_ZONES_SQL
+          ).map(extractZone(1))
+            .list()
+            .apply()
+        }.toSet
+      }
+    }
+
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] =
     if (zoneNames.isEmpty) {
       IO.pure(Set())
@@ -225,6 +246,65 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
                 " WHERE " + whereClause
             ).bind(zn: _*).map(extractZone(1)).list().apply()
           }.toSet
+        }
+      }
+    }
+
+  /**
+    * This is somewhat complicated due to how we need to build the SQL.
+    *
+    * - Dynamically build the accessor list combining the user id and group ids
+    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
+    *
+    * @return a ListZonesResults
+    */
+  def listZonesByAdminGroupIds(
+       authPrincipal: AuthPrincipal,
+       startFrom: Option[String] = None,
+       maxItems: Int = 100,
+       adminGroupIds: Set[String],
+       ignoreAccess: Boolean = false
+  ): IO[ListZonesResults] =
+    monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
+      IO {
+        DB.readOnly { implicit s =>
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          if(adminGroupIds.nonEmpty) {
+            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          } else {
+            sb.append(s" WHERE admin_group_id IN ('') ")
+          }
+
+          sb.append(s" GROUP BY z.name ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+
+          val results: List[Zone] = SQL(query)
+            .bind(accessors: _*)
+            .map(extractZone(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.name))
+            else (results, None)
+
+
+          ListZonesResults(
+            zones = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = None,
+            ignoreAccess = ignoreAccess,
+          )
         }
       }
     }
@@ -253,10 +333,17 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-            startFrom.map(os => s"z.name > '$os'")
-          ).flatten
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          }
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")
@@ -355,6 +442,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           'id -> zone.id,
           'name -> zone.name,
           'adminGroupId -> zone.adminGroupId,
+          'recurrenceSchedule -> zone.recurrenceSchedule,
           'data -> toPB(zone).toByteArray
         ): _*
       )
