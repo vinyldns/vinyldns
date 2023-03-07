@@ -626,7 +626,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zone.id, newRecord.name)
 
       val result = rightResultOf(
-        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
+         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value
       )
 
       result.recordSet.ttl shouldBe newRecord.ttl
