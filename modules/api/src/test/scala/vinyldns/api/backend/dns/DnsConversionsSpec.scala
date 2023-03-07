@@ -17,8 +17,8 @@
 package vinyldns.api.backend.dns
 
 import java.net.InetAddress
-
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.mockito.Mockito._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -50,7 +50,7 @@ class DnsConversionsSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -60,7 +60,7 @@ class DnsConversionsSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("1.1.1.1"), AData("2.2.2.2"))
   )
@@ -70,7 +70,7 @@ class DnsConversionsSpec
     RecordType.AAAA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("2001:db8:0:0:0:0:0:3"))
   )
@@ -80,7 +80,7 @@ class DnsConversionsSpec
     RecordType.CNAME,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(CNAMEData(Fqdn("cname.foo.vinyldns.")))
   )
@@ -90,7 +90,7 @@ class DnsConversionsSpec
     RecordType.MX,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(MXData(100, Fqdn("exchange.vinyldns.")))
   )
@@ -100,7 +100,7 @@ class DnsConversionsSpec
     RecordType.NS,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NSData(Fqdn("nsdname.vinyldns.")))
   )
@@ -110,7 +110,7 @@ class DnsConversionsSpec
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(PTRData(Fqdn("ptr.vinyldns.")))
   )
@@ -120,7 +120,7 @@ class DnsConversionsSpec
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SOAData(Fqdn("mname.vinyldns."), "rname.vinyldns.", 1L, 2L, 3L, 4L, 5L))
   )
@@ -130,7 +130,7 @@ class DnsConversionsSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("spf"))
   )
@@ -140,7 +140,7 @@ class DnsConversionsSpec
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SPFData("s" * 256))
   )
@@ -150,7 +150,7 @@ class DnsConversionsSpec
     RecordType.SRV,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SRVData(1, 2, 3, Fqdn("target.vinyldns.")))
   )
@@ -160,7 +160,7 @@ class DnsConversionsSpec
     RecordType.NAPTR,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", Fqdn("target.vinyldns.")))
   )
@@ -170,7 +170,7 @@ class DnsConversionsSpec
     RecordType.SSHFP,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(SSHFPData(2, 1, "123456789ABCDEF67890123456789ABCDEF67890"))
   )
@@ -180,7 +180,7 @@ class DnsConversionsSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("text"))
   )
@@ -190,7 +190,7 @@ class DnsConversionsSpec
     RecordType.TXT,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(TXTData("a" * 64763))
   )
@@ -200,7 +200,7 @@ class DnsConversionsSpec
     RecordType.A,
     200,
     RecordSetStatus.Active,
-    DateTime.now,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1"))
   )
@@ -398,9 +398,9 @@ class DnsConversionsSpec
       verifyMatch(result, testLongTXT)
     }
 
-    "fail to convert a bad SPF record set" in {
-      val result = toDnsRRset(testLongSPF, testZoneName).left.value
-      result shouldBe a[java.lang.IllegalArgumentException]
+    "convert long SPF record set" in {
+      val result = toDnsRRset(testLongSPF, testZoneName).right.value
+      verifyMatch(result, testLongSPF)
     }
   }
 
@@ -513,6 +513,9 @@ class DnsConversionsSpec
     }
     "convert to/from RecordType TXT long TXT record data" in {
       verifyMatch(testLongTXT, roundTrip(testLongTXT))
+    }
+    "convert to/from RecordType SPF long SPF record data" in {
+      verifyMatch(testLongSPF, roundTrip(testLongSPF))
     }
   }
 

@@ -508,9 +508,11 @@ def test_create_invalid_record_data(shared_zone_test_context):
     ))
 
 
-def test_create_dotted_a_record_not_apex_fails(shared_zone_test_context):
+def test_create_dotted_a_record_not_apex_fails_when_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
-    Test that creating a dotted host name A record set fails.
+    Test that creating a dotted host name A record set fails
+    Here the zone and user (individual) is allowed but record type is not allowed. Hence the test fails
+    Config present in reference.conf
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
@@ -524,8 +526,57 @@ def test_create_dotted_a_record_not_apex_fails(shared_zone_test_context):
 
     zone_name = shared_zone_test_context.parent_zone["name"]
     error = client.create_recordset(dotted_host_a_record, status=422)
-    assert_that(error, is_("Record with name " + dotted_host_a_record["name"] + " and type A is a dotted host which "
-                                                                                "is not allowed in zone " + zone_name))
+    assert_that(error, is_("Record type is not allowed or the user is not authorized to create a dotted host in the "
+                           "zone '" + zone_name + "'"))
+
+
+def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfied(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name succeeds
+    Here the zone, user (in group) and record type is allowed. Hence the test succeeds
+    Config present in reference.conf
+    """
+    client = shared_zone_test_context.history_client
+    zone = shared_zone_test_context.dummy_zone
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+
+    dotted_a_record = None
+    try:
+        dotted_cname_response = client.create_recordset(dotted_host_a_record, status=202)
+        dotted_a_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_a_record["name"], is_(dotted_host_a_record["name"]))
+    finally:
+        if dotted_a_record:
+            delete_result = client.delete_recordset(dotted_a_record["zoneId"], dotted_a_record["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
+def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name fails
+    Here the zone, user (in group) and record type is allowed.
+    But the record name has more dots than the number of dots allowed for this zone. Hence the test fails
+    The 'dots-limit' config from dotted-hosts config is not satisfied. Config present in reference.conf
+    """
+    client = shared_zone_test_context.history_client
+    zone = shared_zone_test_context.dummy_zone
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted.trial.test.host",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+
+    error = client.create_recordset(dotted_host_a_record, status=422)
+    assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
+                           "allowed in config for this zone which is, 'dots-limit = 3'."))
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
@@ -581,13 +632,15 @@ def test_create_dotted_a_record_apex_with_trailing_dot_succeeds(shared_zone_test
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
-def test_create_dotted_cname_record_fails(shared_zone_test_context):
+def test_create_dotted_cname_record_fails_when_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with dotted host record name returns an error.
+    Test that creating a CNAME record set with dotted host record name returns an error
+    Here the zone is allowed but user (individual or in group) and record type is not allowed. Hence the test fails
+    Config present in reference.conf
     """
-    client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-    apex_cname_rs = {
+    client = shared_zone_test_context.dummy_vinyldns_client
+    zone = shared_zone_test_context.dummy_zone
+    dotted_host_cname_record = {
         "zoneId": zone["id"],
         "name": "dot.ted",
         "type": "CNAME",
@@ -595,8 +648,37 @@ def test_create_dotted_cname_record_fails(shared_zone_test_context):
         "records": [{"cname": "foo.bar."}]
     }
 
-    error = client.create_recordset(apex_cname_rs, status=422)
-    assert_that(error, is_(f'Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone {zone["name"]}'))
+    error = client.create_recordset(dotted_host_cname_record, status=422)
+    assert_that(error, is_("Record type is not allowed or the user is not authorized to create a dotted host in the "
+                           "zone '" + zone["name"] + "'"))
+
+
+def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfied(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set with dotted host record name succeeds.
+    Here the zone, user (individual) and record type is allowed. Hence the test succeeds
+    Config present in reference.conf
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    dotted_host_cname_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    dotted_cname_record = None
+    try:
+        dotted_cname_response = client.create_recordset(dotted_host_cname_record, status=202)
+        dotted_cname_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_cname_record["name"], is_(dotted_host_cname_record["name"]))
+    finally:
+        if dotted_cname_record:
+            delete_result = client.delete_recordset(dotted_cname_record["zoneId"], dotted_cname_record["id"],
+                                                    status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
 def test_create_cname_with_multiple_records(shared_zone_test_context):
@@ -701,7 +783,8 @@ def test_create_cname_with_existing_record_with_name_fails(shared_zone_test_cont
         a_record = client.wait_until_recordset_change_status(a_create, "Complete")["recordSet"]
 
         error = client.create_recordset(cname_rs, status=409)
-        assert_that(error, is_(f'RecordSet with name duplicate-test-name already exists in zone {zone["name"]}, CNAME record cannot use duplicate name'))
+        assert_that(error,
+                    is_(f'RecordSet with name duplicate-test-name already exists in zone {zone["name"]}, CNAME record cannot use duplicate name'))
     finally:
         if a_record:
             delete_result = client.delete_recordset(a_record["zoneId"], a_record["id"], status=202)
@@ -744,7 +827,8 @@ def test_create_record_with_existing_cname_fails(shared_zone_test_context):
         cname_record = client.wait_until_recordset_change_status(cname_create, "Complete")["recordSet"]
 
         error = client.create_recordset(a_rs, status=409)
-        assert_that(error, is_(f'RecordSet with name duplicate-test-name and type CNAME already exists in zone {zone["name"]}'))
+        assert_that(error,
+                    is_(f'RecordSet with name duplicate-test-name and type CNAME already exists in zone {zone["name"]}'))
     finally:
         if cname_record:
             delete_result = client.delete_recordset(cname_record["zoneId"], cname_record["id"], status=202)
@@ -1368,7 +1452,6 @@ def test_at_create_recordset(shared_zone_test_context):
         }
         result = client.create_recordset(new_rs, status=202)
 
-
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -1417,7 +1500,6 @@ def test_create_record_with_escape_characters_in_record_data_succeeds(shared_zon
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-
 
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
@@ -1554,6 +1636,29 @@ def test_create_long_txt_record_succeeds(shared_zone_test_context):
             pass
 
 
+def test_create_long_spf_record_succeeds(shared_zone_test_context):
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone = shared_zone_test_context.system_test_zone
+
+    # Anything larger than 255 will test the limits of SPF, 4000 is the value used by R53
+    # (https://aws.amazon.com/premiumsupport/knowledge-center/route-53-configure-long-spf-txt-records/)
+    record_data = "a" * 4000
+    long_spf_rs = create_recordset(zone, "long-spf-record", "SPF", [{"text": record_data}])
+
+    try:
+        rs_create = client.create_recordset(long_spf_rs, status=202)
+        rs = client.wait_until_recordset_change_status(rs_create, "Complete")["recordSet"]
+        assert_that(rs["records"][0]["text"], is_(record_data))
+    finally:
+        try:
+            delete_result = client.delete_recordset(rs["zoneId"], rs["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+        except Exception:
+            traceback.print_exc()
+            pass
+
+
 def test_txt_dotted_host_create_succeeds(shared_zone_test_context):
     """
     Tests that a TXT dotted host recordset create succeeds
@@ -1665,7 +1770,7 @@ def test_create_ipv4_ptr_recordset_with_verify_in_classless(shared_zone_test_con
     try:
         new_rs = {
             "zoneId": reverse4_zone["id"],
-            "name": "196",
+            "name": "193",
             "type": "PTR",
             "ttl": 100,
             "records": [
@@ -1743,7 +1848,8 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
     }
 
     error = client.create_recordset(new_rs, status=422)
-    assert_that(error, is_(f'Record name "high-value-domain.{zone["name"]}" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(error,
+                is_(f'Record name "high-value-domain.{zone["name"]}" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_high_value_domain_fails_case_insensitive(shared_zone_test_context):
@@ -1765,7 +1871,8 @@ def test_create_high_value_domain_fails_case_insensitive(shared_zone_test_contex
     }
 
     error = client.create_recordset(new_rs, status=422)
-    assert_that(error, is_(f'Record name "hIgH-vAlUe-dOmAiN.{zone["name"]}" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(error,
+                is_(f'Record name "hIgH-vAlUe-dOmAiN.{zone["name"]}" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
@@ -1786,7 +1893,8 @@ def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
     }
 
     error_ptr = client.create_recordset(ptr, status=422)
-    assert_that(error_ptr, is_(f'Record name "{shared_zone_test_context.ip4_classless_prefix}.252" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(error_ptr,
+                is_(f'Record name "{shared_zone_test_context.ip4_classless_prefix}.252" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
@@ -1807,7 +1915,8 @@ def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
     }
 
     error_ptr = client.create_recordset(ptr, status=422)
-    assert_that(error_ptr, is_(f'Record name "{shared_zone_test_context.ip6_prefix}:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))
+    assert_that(error_ptr,
+                is_(f'Record name "{shared_zone_test_context.ip6_prefix}:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_with_owner_group_in_private_zone_by_admin_passes(shared_zone_test_context):
@@ -1874,7 +1983,8 @@ def test_create_with_owner_group_in_private_zone_by_acl_passes(shared_zone_test_
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
         if create_rs:
-            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(zone["id"], create_rs["id"], status=202)
+            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(zone["id"], create_rs["id"],
+                                                                                         status=202)
             shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
@@ -1900,8 +2010,11 @@ def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_c
     finally:
         clear_shared_zone_acl_rules(shared_zone_test_context)
         if create_rs:
-            delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone["id"], create_rs["id"], status=202)
-            shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, "Complete")
+            delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone["id"],
+                                                                                                  create_rs["id"],
+                                                                                                  status=202)
+            shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result,
+                                                                                                    "Complete")
 
 
 def test_create_in_shared_zone_without_owner_group_id_succeeds(shared_zone_test_context):
@@ -1955,10 +2068,12 @@ def test_create_in_shared_zone_by_unassociated_user_fails_if_record_type_is_not_
     zone = shared_zone_test_context.shared_zone
     group = shared_zone_test_context.dummy_group
 
-    record_json = create_recordset(zone, "test_shared_not_approved_record_type", "MX", [{"preference": 3, "exchange": "mx"}])
+    record_json = create_recordset(zone, "test_shared_not_approved_record_type", "MX",
+                                   [{"preference": 3, "exchange": "mx"}])
     record_json["ownerGroupId"] = group["id"]
     error = client.create_recordset(record_json, status=403)
-    assert_that(error, is_(f'User dummy does not have access to create test-shared-not-approved-record-type.{zone["name"]}'))
+    assert_that(error,
+                is_(f'User dummy does not have access to create test-shared-not-approved-record-type.{zone["name"]}'))
 
 
 def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
@@ -1997,7 +2112,8 @@ def test_create_ds_success(shared_zone_test_context):
     zone = shared_zone_test_context.ds_zone
     record_data = [
         {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"},
-        {"keytag": 60485, "algorithm": 5, "digesttype": 2, "digest": "D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"}
+        {"keytag": 60485, "algorithm": 5, "digesttype": 2,
+         "digest": "D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"}
     ]
     record_json = create_recordset(zone, "dskey", "DS", record_data, ttl=3600)
     result_rs = None
@@ -2039,7 +2155,8 @@ def test_create_ds_unknown_algorithm(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 0, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 0, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "dskey", "DS", record_data)
     errors = client.create_recordset(record_json, status=400)["errors"]
     assert_that(errors, contains_inanyorder("Algorithm 0 is not a supported DNSSEC algorithm"))
@@ -2051,7 +2168,8 @@ def test_create_ds_unknown_digest_type(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 0, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 5, "digesttype": 0, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "dskey", "DS", record_data)
     errors = client.create_recordset(record_json, status=400)["errors"]
     assert_that(errors, contains_inanyorder("Digest Type 0 is not a supported DS record digest type"))
@@ -2063,10 +2181,12 @@ def test_create_ds_no_ns_fails(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "no-ns-exists", "DS", record_data, ttl=3600)
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_(f'DS record [no-ns-exists] is invalid because there is no NS record with that name in the zone [{zone["name"]}]'))
+    assert_that(error,
+                is_(f'DS record [no-ns-exists] is invalid because there is no NS record with that name in the zone [{zone["name"]}]'))
 
 
 def test_create_apex_ds_fails(shared_zone_test_context):
@@ -2075,7 +2195,8 @@ def test_create_apex_ds_fails(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "@", "DS", record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
     assert_that(error, is_(f'Record with name [{zone["name"]}] is an DS record at apex and cannot be added'))
@@ -2087,7 +2208,9 @@ def test_create_dotted_ds_fails(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
+    record_data = [
+        {"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53B0A98631FAD1A292118"}]
     record_json = create_recordset(zone, "dotted.ds", "DS", record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_(f'Record with name dotted.ds and type DS is a dotted host which is not allowed in zone {zone["name"]}'))
+    assert_that(error,
+                is_(f'Record with name dotted.ds and type DS is a dotted host which is not allowed in zone {zone["name"]}'))

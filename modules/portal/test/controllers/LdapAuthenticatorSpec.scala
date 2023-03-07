@@ -24,6 +24,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.ArgumentCapture
 import org.specs2.mutable.Specification
 import play.api.{Configuration, Environment}
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.health.HealthCheck._
 import vinyldns.core.domain.membership.User
 import vinyldns.core.health.HealthCheck.HealthCheckError
@@ -65,7 +66,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
 
   val testDomain1 = LdapSearchDomain("someDomain", "DC=test,DC=test,DC=com")
   val testDomain2 = LdapSearchDomain("anotherDomain", "DC=test,DC=com")
-  val nonexistentUser = User("does-not-exist", "accessKey", "secretKey")
+  val nonexistentUser = User("does-not-exist", "accessKey", Encrypted("secretKey"))
 
   "LdapAuthenticator" should {
     "apply method must create an LDAP Authenticator" in {

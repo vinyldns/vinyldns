@@ -169,5 +169,33 @@ class MySqlZoneRepositorySpec
       result shouldEqual Right(zoneInput)
     }
   }
+  "MySqlZoneRepository.getAllZonesWithSyncSchedule" should {
+    "get zones which have zone sync scheduled" in {
+      // save a zone with recurrence schedule
+      val zoneInput1 = Zone("ok.", "test@test.com", ZoneStatus.Active, recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      doReturn(IO.pure(Right(zoneInput1)))
+        .when(repo)
+        .saveTx(zoneInput1)
+      val zone1 = repo.save(zoneInput1).unsafeRunSync()
+      verify(repo).save(zoneInput1)
+      zone1 shouldEqual Right(zoneInput1)
+
+      // save a zone without recurrence schedule
+      val zoneInput2 = Zone("dummy.", "test@test.com", ZoneStatus.Active)
+      doReturn(IO.pure(Right(zoneInput2)))
+        .when(repo)
+        .saveTx(zoneInput2)
+      val zone2 = repo.save(zoneInput2).unsafeRunSync()
+      verify(repo).save(zoneInput2)
+      zone2 shouldEqual Right(zoneInput2)
+
+      // Only get zones with schedule
+      doReturn(IO.pure(Set(zoneInput1)))
+        .when(repo)
+        .getAllZonesWithSyncSchedule
+      val result = repo.getAllZonesWithSyncSchedule.unsafeRunSync()
+      result shouldEqual Set(zoneInput1)
+    }
+  }
 
 }

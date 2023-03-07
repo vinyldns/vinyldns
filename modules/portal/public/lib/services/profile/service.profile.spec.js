@@ -43,6 +43,10 @@ describe('Service: profileService', function () {
         expect(this.profileService.getUserDataByUsername).toBeDefined();
     });
 
+    it('should have getUserDataById method', function () {
+        expect(this.profileService.getUserDataByUsername).toBeDefined();
+    });
+
     it('should have regenerateCredentials method', function () {
         expect(this.profileService.regenerateCredentials()).toBeDefined();
     });
@@ -118,6 +122,39 @@ describe('Service: profileService', function () {
             });
         this.$httpBackend.flush();
     });
+
+
+    it('getUserDataByUserId method should return 200 with valid user', function (done) {
+        this.$httpBackend.expectGET('/api/users/userId').respond('success');
+        this.profileService.getUserDataById('userId')
+            .then(function (response) {
+                expect(response.status).toBe(200);
+                expect(response.data).toBe('success');
+                done();
+            }, function (error) {
+                fail('lookupUserAccount expected 200, but got ' + error.status.toString());
+                done();
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('getUserDataByUserId method should return 400 with invalid user', function (done) {
+        var url = '/api/users/:userId';
+        this.$httpBackend.whenRoute('GET', url)
+            .respond(function () {
+                return [400, 'response body', {}, 'TestPhrase'];
+            });
+        this.profileService.getUserDataById('badUserId')
+            .then(function (response) {
+                fail('lookupUserAccount expected 400, but got ' + response.status.toString());
+                done();
+            }, function (error) {
+                expect(error.status).toBe(400);
+                done();
+            });
+        this.$httpBackend.flush();
+    });
+
 
     it('regenerateCredentials method should return 400 with invalid user', function (done) {
         var url = '/regenerate-creds';

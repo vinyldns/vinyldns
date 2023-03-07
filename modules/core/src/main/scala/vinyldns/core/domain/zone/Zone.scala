@@ -17,14 +17,15 @@
 package vinyldns.core.domain.zone
 
 import java.util.UUID
-
 import cats.effect.IO
 import com.typesafe.config.Config
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.{Encrypted, Encryption}
 import scala.collection.JavaConverters._
 
 object ZoneStatus extends Enumeration {
@@ -38,8 +39,8 @@ final case class Zone(
     name: String,
     email: String,
     status: ZoneStatus = ZoneStatus.Active,
-    created: DateTime = DateTime.now(),
-    updated: Option[DateTime] = None,
+    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    updated: Option[Instant] = None,
     id: String = UUID.randomUUID().toString,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
@@ -47,7 +48,9 @@ final case class Zone(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
-    latestSync: Option[DateTime] = None,
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None,
+    latestSync: Option[Instant] = None,
     isTest: Boolean = false,
     backendId: Option[String] = None
 ) {
@@ -75,6 +78,8 @@ final case class Zone(
     sb.append("reverse=\"").append(isReverse).append("\"; ")
     sb.append("isTest=\"").append(isTest).append("\"; ")
     sb.append("created=\"").append(created).append("\"; ")
+    recurrenceSchedule.map(sb.append("recurrenceSchedule=\"").append(_).append("\"; "))
+    scheduleRequestor.map(sb.append("scheduleRequestor=\"").append(_).append("\"; "))
     updated.map(sb.append("updated=\"").append(_).append("\"; "))
     latestSync.map(sb.append("latestSync=\"").append(_).append("\"; "))
     sb.append("]")
@@ -95,7 +100,9 @@ object Zone {
       acl = acl,
       adminGroupId = adminGroupId,
       backendId = backendId,
-      isTest = isTest
+      isTest = isTest,
+      recurrenceSchedule = recurrenceSchedule,
+      scheduleRequestor = scheduleRequestor
     )
   }
 
@@ -110,7 +117,9 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      backendId = backendId
+      backendId = backendId,
+      recurrenceSchedule = recurrenceSchedule,
+      scheduleRequestor = scheduleRequestor
     )
   }
 }
@@ -123,7 +132,9 @@ final case class CreateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
-    backendId: Option[String] = None
+    backendId: Option[String] = None,
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None
 )
 
 final case class UpdateZoneInput(
@@ -135,6 +146,8 @@ final case class UpdateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
+    recurrenceSchedule: Option[String] = None,
+    scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
 )
 
@@ -178,16 +191,26 @@ object Algorithm {
 case class ZoneConnection(
     name: String,
     keyName: String,
-    key: String,
+    key: Encrypted,
     primaryServer: String,
     algorithm: Algorithm = Algorithm.HMAC_MD5
 ) {
 
   def encrypted(crypto: CryptoAlgebra): ZoneConnection =
-    copy(key = crypto.encrypt(key))
+    copy(key = Encryption.apply(crypto, key.value))
 
   def decrypted(crypto: CryptoAlgebra): ZoneConnection =
-    copy(key = crypto.decrypt(key))
+    copy(key = Encrypted(Encryption.decrypt(crypto, key)))
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append("ZoneConnection: [")
+    sb.append("name=\"").append(name).append("\"; ")
+    sb.append("keyName=\"").append(keyName).append("\"; ")
+    sb.append("primaryServer=\"").append(primaryServer).append("\"; ")
+    sb.append("]")
+    sb.toString
+  }
 }
 
 final case class LegacyDnsBackend(
@@ -220,7 +243,7 @@ object ConfiguredDnsConnections {
           if (connectionConfig.hasPath("algorithm"))
             Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
           else Algorithm.HMAC_MD5
-        ZoneConnection(name, keyName, key, primaryServer, algorithm).encrypted(crypto)
+        ZoneConnection(name, keyName, Encrypted(key), primaryServer, algorithm).encrypted(crypto)
       }
 
       val defaultTransferConnection = {
@@ -233,7 +256,7 @@ object ConfiguredDnsConnections {
           if (connectionConfig.hasPath("algorithm"))
             Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
           else Algorithm.HMAC_MD5
-        ZoneConnection(name, keyName, key, primaryServer, algorithm).encrypted(crypto)
+        ZoneConnection(name, keyName, Encrypted(key), primaryServer, algorithm).encrypted(crypto)
       }
 
       val dnsBackends = {

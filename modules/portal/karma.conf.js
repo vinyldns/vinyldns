@@ -15,10 +15,13 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       'js/jquery.min.js',
+      'js/jquery-ui-dist.js',
+      'js/jquery-ui.js',
       'js/bootstrap.min.js',
       'js/angular.min.js',
       'js/moment.min.js',
       'js/ui.js',
+      'js/angular-cron-jobs.min.js',
       'test_frameworks/*.js',
       'js/vinyldns.js',
       'lib/services/**/*.spec.js',

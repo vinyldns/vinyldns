@@ -4,6 +4,7 @@ import pytest
 
 from utils import *
 from vinyldns_context import VinylDNSTestContext
+from datetime import datetime, timezone, timedelta
 
 
 @pytest.mark.serial
@@ -62,6 +63,124 @@ def test_update_zone_success(shared_zone_test_context):
 
         acl = uz["acl"]
         verify_acl_rule_is_present_once(acl_rule, acl)
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
+
+
+def test_update_zone_sync_schedule_fails(shared_zone_test_context):
+    """
+    Test updating a zone with a schedule for zone sync fails when the user is not an admin user
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            },
+            "transferConnection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        # schedule zone sync every 5 seconds
+        result_zone["recurrenceSchedule"] = "0/5 0 0 ? * * *"
+        error = client.update_zone(result_zone, status=403)
+
+        assert_that(error, contains_string("User 'ok' is not authorized to schedule zone sync in this zone."))
+
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
+
+
+def test_update_zone_sync_schedule_success(shared_zone_test_context):
+    """
+    Test updating a zone with a schedule for zone sync successfully sync zone at scheduled time
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            },
+            "transferConnection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        # schedule zone sync every 5 seconds
+        result_zone["recurrenceSchedule"] = "0/5 0 0 ? * * *"
+
+        # Get the current time in the local timezone
+        now = datetime.now()
+
+        # Convert the time to the UTC timezone
+        utc_time = now.astimezone(timezone.utc)
+
+        super_user_client = shared_zone_test_context.support_user_client
+
+        update_result = super_user_client.update_zone(result_zone, status=202)
+        super_user_client.wait_until_zone_change_status_synced(update_result)
+
+        assert_that(update_result["changeType"], is_("Update"))
+        assert_that(update_result["userId"], is_("support-user-id"))
+        assert_that(update_result, has_key("created"))
+
+        get_result = client.get_zone(result_zone["id"])
+
+        uz = get_result["zone"]
+        assert_that(uz["recurrenceSchedule"], is_("0/5 0 0 ? * * *"))
+        assert_that(uz["updated"], is_not(none()))
+
+        # Add + or - 2 seconds to the current time as there may be a slight change than the exact scheduled time
+        utc_time_1 = utc_time - timedelta(seconds=1)
+        utc_time_2 = utc_time - timedelta(seconds=2)
+        utc_time_3 = utc_time + timedelta(seconds=1)
+        utc_time_4 = utc_time + timedelta(seconds=2)
+
+        # Format the time as a string in the desired format
+        time_str = utc_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        time_str_1 = utc_time_1.strftime('%Y-%m-%dT%H:%M:%SZ')
+        time_str_2 = utc_time_2.strftime('%Y-%m-%dT%H:%M:%SZ')
+        time_str_3 = utc_time_3.strftime('%Y-%m-%dT%H:%M:%SZ')
+        time_str_4 = utc_time_4.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        time_list = [time_str, time_str_1, time_str_2, time_str_3, time_str_4]
+
+        # Check if zone sync was performed at scheduled time
+        assert_that(time_list, has_item(uz["latestSync"]))
+
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -318,12 +437,12 @@ def test_create_acl_user_rule_invalid_cidr_failure(shared_zone_test_context):
         "accessLevel": "Read",
         "description": "test-acl-user-id",
         "userId": "789",
-        "recordMask": "10.0.0.0/50",
+        "recordMask": "10.0.0/50",
         "recordTypes": ["PTR"]
     }
 
     errors = client.add_zone_acl_rule(shared_zone_test_context.ip4_reverse_zone["id"], acl_rule, status=400)
-    assert_that(errors, contains_string("PTR types must have no mask or a valid CIDR mask: IPv4 mask must be between 0 and 32"))
+    assert_that(errors, contains_string("PTR types must have no mask or a valid CIDR mask: Invalid CIDR block"))
 
 
 @pytest.mark.serial
@@ -830,6 +949,7 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
 
     error = shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=403)
     assert_that(error, contains_string("Not authorized to update zone shared status from false to true."))
+
 
 @pytest.mark.serial
 def test_update_connection_info_success(shared_zone_test_context):

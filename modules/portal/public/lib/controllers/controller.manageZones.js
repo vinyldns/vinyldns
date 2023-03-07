@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-angular.module('controller.manageZones', [])
+angular.module('controller.manageZones', ['angular-cron-jobs'])
     .controller('ManageZonesController', function ($scope, $timeout, $log, recordsService, zonesService, groupsService,
-                                                   profileService, utilityService) {
+                                                   profileService, utilityService, pagingService) {
 
     groupsService.getGroupsStored()
         .then(function (results) {
@@ -38,12 +38,18 @@ angular.module('controller.manageZones', [])
 
     $scope.alerts = [];
     $scope.zoneInfo = {};
+    $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
+    $scope.zoneSyncSchedule = {
+        isChecked: false,
+        recurrenceSchedule: ''
+    };
     $scope.manageZoneState = {
         UPDATE: 0,
         CONFIRM_UPDATE: 1
     };
     $scope.allGroups = [];
+    $scope.recurrenceScheduleExist = false;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
@@ -60,7 +66,8 @@ angular.module('controller.manageZones', [])
         CREATE: 0,
         UPDATE: 1,
         CONFIRM_UPDATE: 2,
-        CONFIRM_DELETE: 3
+        CONFIRM_DELETE: 3,
+        VIEW_DETAILS: 4
     };
     $scope.aclModalParams = {
         readOnly: {
@@ -73,6 +80,8 @@ angular.module('controller.manageZones', [])
         }
     };
     $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+
+    var zoneHistoryPaging = pagingService.getNewPagingParams(100);
 
     /**
      * Zone modal control functions
@@ -89,6 +98,18 @@ angular.module('controller.manageZones', [])
     $scope.confirmDeleteZone = function() {
         $("#delete_zone_connection_modal").modal("show");
     };
+
+    $scope.myZoneSyncScheduleConfig = {
+        allowMultiple: false,
+        quartz: true,
+        options: {
+            allowMinute : false,
+            allowHour : false,
+            allowWeek : true,
+            allowMonth : false,
+            allowYear : false
+        }
+    }
 
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
@@ -181,6 +202,16 @@ angular.module('controller.manageZones', [])
         $scope.updateZone(zone, 'Zone Update');
     };
 
+    $scope.submitUpdateZoneSyncSchedule = function () {
+        var newZone = angular.copy($scope.zoneInfo);
+        newZone = zonesService.normalizeZoneDates(newZone);
+        if($scope.zoneSyncSchedule.isChecked){
+           $scope.zoneSyncSchedule.recurrenceSchedule = undefined;
+        }
+        newZone.recurrenceSchedule = $scope.zoneSyncSchedule.recurrenceSchedule;
+        $scope.updateZone(newZone, 'Zone Sync Schedule');
+    }
+
     $scope.submitDeleteAclRule = function() {
         var newZone = angular.copy($scope.zoneInfo);
         newZone = zonesService.normalizeZoneDates(newZone);
@@ -232,6 +263,15 @@ angular.module('controller.manageZones', [])
         return !angular.equals(l, r);
     };
 
+    $scope.zoneSyncScheduleDiffer = function(left, right) {
+        var updatedZoneSchedule = left;
+        var existingZoneSchedule = right;
+        if($scope.zoneSyncSchedule.isChecked){
+           updatedZoneSchedule = undefined;
+        }
+        return !angular.equals(updatedZoneSchedule, existingZoneSchedule);
+    };
+
     $scope.normalizeZone = function(zone) {
         var vinyldnsZone = angular.copy(zone);
         delete vinyldnsZone.adminGroupName;
@@ -274,8 +314,17 @@ angular.module('controller.manageZones', [])
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
+            $scope.zoneSyncSchedule.isChecked = false;
+            $scope.recurrenceScheduleExist = $scope.zoneInfo.recurrenceSchedule ? true : false;
+            if($scope.recurrenceScheduleExist){
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            } else {
+                $scope.zoneInfo.recurrenceSchedule = '';
+                $scope.zoneSyncSchedule.recurrenceSchedule = $scope.zoneInfo.recurrenceSchedule;
+            }
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
+            $scope.refreshZoneChange();
         }
         return recordsService
             .getZone($scope.zoneId)
@@ -285,11 +334,161 @@ angular.module('controller.manageZones', [])
             });
     };
 
+    $scope.refreshZoneChange = function() {
+        zoneHistoryPaging = pagingService.resetPaging(zoneHistoryPaging);
+         function success(response) {
+            $log.log('zonesService::getZoneChanges-success');
+            zoneHistoryPaging.next = response.data.nextId;
+            $scope.zoneChanges = response.data.zoneChanges;
+            $scope.updateZoneChangeDisplay(response.data.zoneChanges);
+         }
+         return zonesService
+               .getZoneChanges(zoneHistoryPaging.maxItems, undefined, $scope.zoneId)
+               .then(success)
+               .catch(function (error) {
+                    handleError(error, 'zonesService::getZoneChanges-failure');
+               });
+    };
+
+    $scope.refreshAclRule = function (index) {
+        $scope.allAclRules = [];
+        $scope.aclRulesModal = {
+            action: $scope.aclModalState.VIEW_DETAILS,
+            title: "ACL Rules Info",
+            basics: $scope.aclModalParams.readOnly,
+            details: $scope.aclModalParams.readOnly,
+        };
+        if ($scope.zoneChanges[index].zone.acl.rules.length!=0){
+            for (var length = 0; length < $scope.zoneChanges[index].zone.acl.rules.length; length++) {
+                $scope.allAclRules.push($scope.zoneChanges[index].zone.acl.rules[length]);
+                if ($scope.allAclRules[length].hasOwnProperty('userId')){
+                getAclUser($scope.allAclRules[length].userId, length); }
+                else{ getAclGroup($scope.allAclRules[length].groupId, length);}
+            }
+        $scope.aclModalViewForm.$setPristine();
+        $("#aclModalView").modal("show");}
+        else{$("#aclModalView").modal("hide");}
+    };
+
+    $scope.closeAclModalView = function() {
+        $scope.aclModalViewForm.$setPristine();
+    };
+
+    $scope.updateZoneChangeDisplay = function (zoneChange) {
+            for (var length = 0; length < zoneChange.length; length++) {
+                getZoneGroup(zoneChange[length].zone.adminGroupId, length);
+                 getZoneUser(zoneChange[length].userId, length);
+            }
+        };
+
     $scope.refreshAclRuleDisplay = function() {
         $scope.aclRules = [];
         angular.forEach($scope.zoneInfo.acl.rules, function (rule) {
             $scope.aclRules.push(zonesService.toDisplayAclRule(rule));
         });
+    };
+
+    /**
+     * Get User name and Group Name with Ids for Zone history
+     */
+    function getZoneGroup(groupId, length) {
+        function success(response) {
+            $log.log('groupsService::getZoneGroup-success');
+            $scope.zoneChanges[length].zone.adminGroupName = response.data.name;
+        }
+            return groupsService
+                    .getGroup(groupId)
+                    .then(success)
+                    .catch(function (error) {
+                        $scope.zoneChanges[length].zone.adminGroupName = undefined;
+                        $log.warn(error, 'groupsService::getZoneGroup-failure');
+                    });
+    }
+
+    function getZoneUser(userId, length) {
+        function success(response) {
+            $log.log('profileService::getZoneUserDataById-success');
+            $scope.zoneChanges[length].userName = response.data.userName;
+        }
+        return profileService
+            .getUserDataById(userId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'profileService::getZoneUserDataById-failure');
+            });
+    };
+
+    function getAclGroup(groupId, length) {
+        function success(response) {
+            $log.log('groupsService::getAclGroup-success');
+            $scope.allAclRules[length].groupName = response.data.name;
+        }
+        return groupsService
+                .getGroup(groupId)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getAclGroup-failure');
+                });
+    }
+
+    function getAclUser(userId, length) {
+        function success(response) {
+            $log.log('profileService::getAclUserDataById-success');
+            $scope.allAclRules[length].userName = response.data.userName;
+        }
+        return profileService
+            .getUserDataById(userId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'profileService::getAclUserDataById-failure');
+            });
+    };
+
+    /**
+     * Zone history Pagination
+     */
+
+    $scope.getZoneHistoryPageNumber = function() {
+       return pagingService.getPanelTitle(zoneHistoryPaging);
+    };
+
+    $scope.prevPageEnabled = function() {
+        return pagingService.prevPageEnabled(zoneHistoryPaging);
+    };
+
+    $scope.nextPageEnabled = function(tab) {
+        return pagingService.nextPageEnabled(zoneHistoryPaging);
+    };
+
+    $scope.nextPageZoneHistory = function () {
+        return zonesService
+            .getZoneChanges(zoneHistoryPaging.maxItems, zoneHistoryPaging.next, $scope.zoneId )
+            .then(function(response) {
+                var zoneChanges = response.data.zoneChanges;
+                zoneHistoryPaging = pagingService.nextPageUpdate(zoneChanges, response.data.nextId, zoneHistoryPaging);
+
+                if (zoneChanges.length > 0) {
+                    $scope.zoneChanges = response.data.zoneChanges;
+                    $scope.updateZoneChangeDisplay(response.data.zoneChanges)
+                }
+            })
+            .catch(function (error) {
+               handleError(error,'zonesService::nextPage-failure')
+            });
+    };
+
+    $scope.prevPageZoneHistory = function() {
+        var startFrom = pagingService.getPrevStartFrom(zoneHistoryPaging);
+        return zonesService
+            .getZoneChanges(zoneHistoryPaging.maxItems, startFrom, $scope.zoneId )
+            .then(function(response) {
+                zoneHistoryPaging = pagingService.prevPageUpdate(response.data.nextId, zoneHistoryPaging);
+                $scope.zoneChanges = response.data.zoneChanges;
+                $scope.updateZoneChangeDisplay(response.data.zoneChanges);
+            })
+            .catch(function (error) {
+                handleError(error,'zonesService::prevPage-failure');
+            });
     };
 
     /**

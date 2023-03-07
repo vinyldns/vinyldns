@@ -158,10 +158,21 @@
                                     <span ng-if="change.status == 'Cancelled'" class="label label-default">{{batch.status}}</span>
                                 </td>
                                 <td class="wrap-long-text">
-                                    <p ng-repeat="error in change.validationErrors">
-                                        {{error.message ? error.message : error}}
-                                    </p>
-                                    {{change.systemMessage}}
+                                    <div ng-if="batch.approvalStatus != 'AutoApproved'
+                                             && change.status != 'Rejected'
+                                             && change.status != 'Cancelled'">
+                                        <p ng-repeat="error in change.validationErrors">
+                                        {{error.message ? error.message : error}} </p>{{change.systemMessage}}</div>
+                                    <div ng-if="batch.approvalStatus =='ManuallyRejected' || batch.approvalStatus =='Cancelled'">
+                                    </div>
+                                    <div ng-if="change.systemMessage == undefined && batch.approvalStatus == 'AutoApproved'
+                                             && change.status =='Complete'">
+                                        ℹ️ No further action is required.
+                                    </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && batch.approvalStatus == 'AutoApproved'
+                                             && change.status =='Complete'">
+                                        ℹ️ {{change.systemMessage}}
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>

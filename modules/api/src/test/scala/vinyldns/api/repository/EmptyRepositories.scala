@@ -86,6 +86,14 @@ trait EmptyZoneRepo extends ZoneRepository {
 
   def getZoneByName(zoneName: String): IO[Option[Zone]] = IO.pure(None)
 
+  def listZonesByAdminGroupIds(
+     authPrincipal: AuthPrincipal,
+     startFrom: Option[String] = None,
+     maxItems: Int = 100,
+     adminGroupIds: Set[String],
+     ignoreAccess: Boolean = false
+   ): IO[ListZonesResults] = IO.pure(ListZonesResults())
+
   def listZones(
                  authPrincipal: AuthPrincipal,
                  zoneNameFilter: Option[String] = None,
@@ -113,7 +121,11 @@ trait EmptyGroupRepo extends GroupRepository {
 
   def getGroups(groupIds: Set[String]): IO[Set[Group]] = IO.pure(Set())
 
+  def getGroupsByName(groupNames: Set[String]): IO[Set[Group]] = IO.pure(Set())
+
   def getGroupByName(groupName: String): IO[Option[Group]] = IO.pure(None)
+
+  def getGroupsByName(groupName: String): IO[Set[Group]] = IO.pure(Set())
 
   def getAllGroups(): IO[Set[Group]] = IO.pure(Set())
 }
