@@ -9,4 +9,6 @@
     <root level="OFF">
         <appender-ref ref="CONSOLE"/>
     </root>
+
+    <logger name="org.apache.zookeeper" level="ERROR" />
 </configuration>

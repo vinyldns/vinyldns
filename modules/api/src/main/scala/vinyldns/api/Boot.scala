@@ -71,6 +71,9 @@ object Boot extends App {
       true
     } catch {
       case _: NodeExistsException => false
+      case _: Exception =>
+        ()
+        false
     }
   }
   def releaseLock(path: String): Unit = {
