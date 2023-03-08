@@ -254,7 +254,6 @@ object RecordSetValidations {
       )
       _ <- noRecordWithName
       _ <- RDataWithConsecutiveDots
-      _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
       _ <- isNotIPv4inCname
       _ <- checkForDot(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed, allowedDotsLimit)
     } yield ()
