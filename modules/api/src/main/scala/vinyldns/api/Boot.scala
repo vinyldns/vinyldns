@@ -18,47 +18,65 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.{Materializer, ActorMaterializer}
-import cats.effect.{Timer, IO, ContextShift}
+import akka.stream.{ActorMaterializer, Materializer}
 import cats.data.NonEmptyList
+import cats.effect.{ContextShift, IO, Timer}
 import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
+import org.apache.zookeeper.KeeperException.NodeExistsException
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
 import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
-import vinyldns.api.domain.access.{GlobalAcls, AccessValidations}
+import vinyldns.api.domain.access.{AccessValidations, GlobalAcls}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
-import vinyldns.api.domain.batch.{BatchChangeService, BatchChangeConverter, BatchChangeValidations}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.metrics.APIMetrics
-import vinyldns.api.repository.{ApiDataAccessorProvider, ApiDataAccessor, TestDataLoader}
+import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.health.HealthService
-import vinyldns.core.queue.{MessageQueueLoader, MessageCount}
+import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
 import vinyldns.core.repository.DataStoreLoader
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import org.apache.zookeeper.{CreateMode, WatchedEvent, ZooDefs, ZooKeeper}
+
+import scala.concurrent.duration._
 
 object Boot extends App {
 
-  private val logger = LoggerFactory.getLogger("Boot")
-
-  // Create a ScheduledExecutorService with a new single thread
-  private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+  private val logger = LoggerFactory.getLogger("Boot")
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val timer: Timer[IO] = IO.timer(ec)
+
+  // ZooKeeper would listen on port 2181, which we use to put on a lock and release accordingly
+  private val connectionString = "localhost:2181"
+  private val sessionTimeout = 3000
+  private val zk = new ZooKeeper(connectionString, sessionTimeout, (event: WatchedEvent) => {
+    logger.info("Received event: " + event.getType)
+  })
+  def acquireLock(path: String): Boolean = {
+    try {
+      zk.create(path, Array[Byte](), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
+      true
+    } catch {
+      case _: NodeExistsException => false
+    }
+  }
+  def releaseLock(path: String): Unit = {
+    zk.delete(path, -1)
+  }
+  private val lockPath = "/lock"
 
   def vinyldnsBanner(): IO[String] = IO {
     val stream = getClass.getResourceAsStream("/vinyldns-ascii.txt")
@@ -99,19 +117,28 @@ object Boot extends App {
         repositories.userRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
-      // Schedule the zone sync task to be executed every 5 seconds
-      _ <- IO(executor.scheduleAtFixedRate(() => {
-        val zoneChanges = for {
-          zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
-          _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
-        } yield ()
-        zoneChanges.unsafeRunAsync {
-          case Right(_) =>
-            logger.debug("Zone sync scheduler ran successfully!")
-          case Left(error) =>
-            logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
+      // Schedule the zone sync task to be executed every second
+      _ <- IO(system.scheduler.schedule(0.seconds, 1.seconds){
+        if (acquireLock(lockPath)) {
+          try {
+            // run the scheduled task
+            val zoneChanges = for {
+              zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
+              _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
+            } yield ()
+            zoneChanges.unsafeRunAsync {
+              case Right(_) =>
+                logger.debug("Zone sync scheduler ran successfully!")
+              case Left(error) =>
+                logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
+            }
+          } finally {
+            releaseLock(lockPath)
+          }
+        } else {
+          logger.debug("Lock acquired by another instance.")
         }
-      }, 0, 1, TimeUnit.SECONDS))
+      })
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,

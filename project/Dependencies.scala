@@ -53,7 +53,8 @@ object Dependencies {
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
     "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources(),
     "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
-    "com.cronutils"             %  "cron-utils"                     % "9.1.6"
+    "com.cronutils"             %  "cron-utils"                     % "9.1.6",
+    "org.apache.zookeeper"      % "zookeeper"                       % "3.4.6",
   )
 
   lazy val coreDependencies = Seq(
