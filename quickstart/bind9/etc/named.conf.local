@@ -29,6 +29,10 @@ key "vinyldns-sha512." {
   secret "xfKA0DYb88tiUGND+cWddwUg3/SugYSsdvCfBOJ1jr8MEdgbVRyrlVDEXLsfTUGorQ3ShENdymw2yw+rTr+lwA==";
 };
 
+options {
+	request-nsid true;
+};
+
 include "/etc/bind/named.conf.default";
 include "/etc/bind/named.conf.partition1";
 include "/etc/bind/named.conf.partition2";

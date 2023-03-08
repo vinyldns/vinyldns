@@ -21,13 +21,14 @@ import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
-import org.xbill.DNS.Name
+import org.xbill.DNS.{EDNSOption, Name}
 import vinyldns.api.domain.zone.ZoneTooLargeError
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
+
 import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 
@@ -165,6 +166,12 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     val dnsName = recordDnsName(name, zoneName)
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
+
+    // enable NSID
+    val data = Array[Byte](0, 3, 0, 2, 0, 1)
+    val option = EDNSOption.fromWire(data)
+    Either.catchNonFatal(resolver.setEDNS(0, 0, 0, option))
+
     lookup.setResolver(resolver)
     lookup.setSearchPath(List(Name.empty).asJava)
     lookup.setCache(null)
@@ -213,7 +220,18 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
         resp <- toDnsResponse(resp)
       } yield resp
 
-    val resolver_debug_message =  s"DNS Resolver: ${resolver.toString}, Resolver Address=${resolver.getAddress.getAddress}, Resolver Host=${resolver.getAddress.getHostName}, Resolver Port=${resolver.getPort}, Timeout=${resolver.getTimeout.toString}"
+    val message =
+      for {
+        str <- Either.catchNonFatal(s"DNS Resolver: ${resolver.toString}, " +
+          s"Resolver Address=${resolver.getAddress.getAddress}, Resolver Host=${resolver.getAddress.getHostName}, " +
+          s"Resolver Port=${resolver.getPort}, Timeout=${resolver.getTimeout.toString}, EDNS=${resolver.getEDNS.getOptions}, ${resolver.getEDNS.getFlags}, ${resolver.getEDNS.getPayloadSize}"
+        )
+      } yield str
+
+    val resolver_debug_message = message match {
+      case Right(value) => value
+      case Left(_) => s"DNS Resolver: ${resolver.toString}"
+    }
 
     val receivedResponse = result match {
       case Right(value) => value.toString.replaceAll("\n",";").replaceAll("\t"," ")
