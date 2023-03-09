@@ -312,12 +312,36 @@ class MembershipServiceSpec
         error shouldBe a[emailValidationError]
       }
     }
-    "return an error if an email is invalid" in {
+    "return an error if an email is invalid test case 1" in {
       val error = underTest.emailValidation(email = "test.ok.com").value.unsafeRunSync().swap.toOption.get
       error shouldBe a[emailValidationError]
     }
-    "return an error if a domain is invalid" in {
+    "return an error if a domain is invalid test case 1" in {
       val error = underTest.emailValidation(email = "test@ok.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 2" in {
+      val error = underTest.emailValidation(email = "test@.@.test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 3" in {
+      val error = underTest.emailValidation(email = "test@.@@.test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 4" in {
+      val error = underTest.emailValidation(email = "@te@st@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 5" in {
+      val error = underTest.emailValidation(email = ".test@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 6" in {
+      val error = underTest.emailValidation(email = "te.....st@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[emailValidationError]
+    }
+    "return an error if an email is invalid test case 7" in {
+      val error = underTest.emailValidation(email = "test@test.com.").value.unsafeRunSync().swap.toOption.get
       error shouldBe a[emailValidationError]
     }
     "Check whether *dummy.com is a valid email" in {

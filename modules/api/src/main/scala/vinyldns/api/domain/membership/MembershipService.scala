@@ -373,7 +373,7 @@ class MembershipService(
   def emailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
     val splitEmailDomains = emailDomains.mkString(",")
-    val emailRegex ="""^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
     val index = email.indexOf('@');
     val emailSplit = if(index != -1){
       email.substring(index+1,email.length)}
@@ -383,6 +383,7 @@ class MembershipService(
 
     Option(email) match {
       case Some(value) if (emailRegex.findFirstIn(value) != None)=>
+
         if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
         ().asRight
         else
