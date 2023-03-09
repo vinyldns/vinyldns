@@ -1232,6 +1232,63 @@ class RecordSetServiceSpec
       result.recordSet.ttl shouldBe newRecord.ttl
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
     }
+    "succeed if user is a superuser and zone is shared and the only record attribute being changed is the record owner group." in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = superUserAuth
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-success",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
+
+      val newRecord = oldRecord.copy(ownerGroupId = Some(okGroup.id))
+
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
+
+      val result = underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+
+      result.recordSet.ownerGroupId shouldBe Some(okGroup.id)
+    }
+    "fail if user is a superuser and zone is shared and attributes other than record owner group are changed." in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = superUserAuth
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-success",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
+
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000, ownerGroupId = Some(okGroup.id))
+
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Some(oneUserDummyGroup)))
+        .when(mockGroupRepo)
+        .getGroup(oneUserDummyGroup.id)
+
+      val result = underTest.updateRecordSet(newRecord, auth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe an[NotAuthorizedError]
+    }
     "succeed if user is in owner group and zone is shared and new owner group is none" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
@@ -1896,6 +1953,30 @@ class RecordSetServiceSpec
         maxItems = 100
       )
       result shouldBe expectedResults
+    }
+
+    "listFailedRecordSetChanges" should {
+      "retrieve the recordset changes" in {
+        val completeRecordSetChanges: List[RecordSetChange] = List(
+          pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+        )
+        //val recordSetChange= List[RecordSetChange]
+        doReturn(IO.pure(completeRecordSetChanges))
+          .when(mockRecordChangeRepo)
+          .listFailedRecordSetChanges()
+
+
+        val result: ListFailedRecordSetChangesResponse =
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+
+        val changesWithName =
+          ListFailedRecordSetChangesResponse(completeRecordSetChanges)
+
+        result shouldBe changesWithName
+      }
     }
 
     "return a NotAuthorizedError" in {

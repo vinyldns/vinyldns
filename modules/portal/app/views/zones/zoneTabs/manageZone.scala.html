@@ -1,4 +1,4 @@
-@(implicit request: play.api.mvc.Request[Any], meta: models.Meta)
+@(implicit rootAccountCanReview: Boolean, request: play.api.mvc.Request[Any], meta: models.Meta)
 
 <div class="alert-wrapper">
     <div ng-repeat="alert in alerts">
@@ -232,7 +232,6 @@
                                         ng-click="clearUpdateTransferConnection()" type="button">Clear Connection</button>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
@@ -348,6 +347,45 @@
     </div>
 </div>
     <!-- END ACL TABLE -->
+
+    <!-- START ZONE SYNC SCHEDULE -->
+@if(rootAccountCanReview) {
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            Schedule Zone Sync
+        </h3>
+    </div>
+    <div class="panel-body" >
+        <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncSchedule.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
+        <span class="help-block">
+            Schedule for zone sync at the provided time. Scheduled zone sync follows <b>UTC timezone</b>.
+        </span>
+        <div class="checkbox col-md-12" id="cron-lib-check">
+            <label ng-if="recurrenceScheduleExist">
+                <input type="checkbox" ng-model="zoneSyncSchedule.isChecked"/>Remove Zone Sync Schedule
+            </label>
+        </div>
+    </div>
+    <div class="form-group panel-footer">
+        <div class="col-md-3">
+            <button ng-disabled="!zoneSyncScheduleDiffer(zoneSyncSchedule.recurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
+                    id="refresh-zone-sync-button" type="button" class="btn btn-primary" ng-click="refreshZone()">
+                Reset
+            </button>
+        </div>
+        <div class="vinyldns-flex-right">
+            <button id="zone-sync-button" type="button"
+                    ng-disabled="!zoneSyncScheduleDiffer(zoneSyncSchedule.recurrenceSchedule, zoneInfo.recurrenceSchedule) && !removeZoneSyncSchedule.isChecked"
+                    class="btn btn-primary"
+                    ng-click="submitUpdateZoneSyncSchedule()">
+                Update Zone Sync Schedule
+            </button>
+        </div>
+    </div>
+</div>
+}
+    <!-- END ZONE SYNC SCHEDULE -->
 
     <!-- START ACL MODAL -->
 <form name="addAclRuleForm" role="form" class="form-horizontal" novalidate>

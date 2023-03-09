@@ -1425,8 +1425,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         content must contain("NT ID")
         content must contain(frodoUser.userName)
         content must contain(frodoUser.accessKey)
-        content must contain(frodoUser.secretKey)
-        there.was(one(crypto).decrypt(frodoUser.secretKey))
+        content must contain(frodoUser.secretKey.value)
+        there.was(one(crypto).decrypt(frodoUser.secretKey.value))
       }
       "redirect to login if user is not logged in" in new WithApplication(app) {
         import play.api.mvc.Result
