@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.membership
 
-
 import cats.effect.IO
 import cats.implicits._
 import scalikejdbc.DB
@@ -405,9 +404,9 @@ class MembershipService(
         if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
         ().asRight
         else
-          emailValidationError(emailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+          emailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
       case _ =>
-        emailValidationError(invalidEmailValidationErrorMsg ).asLeft
+        emailValidationError(InvalidEmailValidationErrorMsg).asLeft
     }}.toResult
 
 

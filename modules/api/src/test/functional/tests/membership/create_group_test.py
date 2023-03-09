@@ -31,6 +31,7 @@ def test_create_group_success(shared_zone_test_context):
     finally:
         if result:
             client.delete_group(result["id"], status=(200, 404))
+
 def test_create_group_success_wildcard(shared_zone_test_context):
     """
     Tests that creating a group works
