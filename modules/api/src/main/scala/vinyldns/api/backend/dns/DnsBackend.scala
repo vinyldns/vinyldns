@@ -21,7 +21,7 @@ import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
-import org.xbill.DNS.{EDNSOption, Name}
+import org.xbill.DNS.{ExtendedFlags, NSIDOption, Name}
 import vinyldns.api.domain.zone.ZoneTooLargeError
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
@@ -167,10 +167,29 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
 
-    // enable NSID
-    val data = Array[Byte](0, 3, 0, 2, 0, 1)
-    val option = EDNSOption.fromWire(data)
-    Either.catchNonFatal(resolver.setEDNS(0, 0, 0, option))
+//    // enable NSID
+//    val data = Array[Byte](0, 3, 0, 2, 0, 1)
+//    val nsid_opt = new NSIDOption(Array[Byte](0, 3, 0, 2, 0, 1))
+//    val nsid_opt = new NSIDOption(null)
+//    logger.info(s"NSID: $nsid_opt")
+//    val nsidOption = new GenericEDNSOption(3, new Array[Byte](0))
+//    val opt_list = List(nsid_opt)
+//    val option = List(new NSIDOption(Array[Byte](0, 3, 0, 2, 0, 1)))
+//    val option = EDNSOption.fromWire(data)
+//    Either.catchNonFatal(resolver.setEDNS()
+//    resolver.setEDNS(0, 0, 0, nsid_opt)
+//    logger.info(s"EDNS INFO: ${resolver.getEDNS}")
+//    val ednsPayloadSize = 0
+//    val ednsVersion = 0
+//    val ednsFlags = ExtendedFlags.DO
+//    val nsidOption = new NSIDOption(Array[Byte]())
+//    val ednsOptions = List(new GenericEDNSOption(3, new Array[Byte](0)))
+//    val ednsOptions = List(nsidOption)
+//    resolver.setEDNS(ednsPayloadSize, ednsVersion, ednsFlags, nsidOption)
+//    val nsidOption = new GenericEDNSOption(3, new Array[Byte](0))
+//    resolver.setEDNS(0, 0, 0, nsidOption)
+//    logger.info(s"EDNS: ${resolver.getEDNS}")
+
 
     lookup.setResolver(resolver)
     lookup.setSearchPath(List(Name.empty).asJava)
