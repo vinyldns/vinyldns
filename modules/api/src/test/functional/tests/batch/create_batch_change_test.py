@@ -1938,7 +1938,8 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
             get_change_CNAME_json(existing_forward_fqdn),
             get_change_CNAME_json(existing_cname_fqdn),
             get_change_CNAME_json(f"0.{ip4_zone_name}", cname="duplicate.in.db."),
-            get_change_CNAME_json(f"user-add-unauthorized.{dummy_zone_name}")
+            get_change_CNAME_json(f"user-add-unauthorized.{dummy_zone_name}"),
+            get_change_CNAME_json(f"invalid-ipv4-{parent_zone_name}", cname="1.2.3.4")
         ]
     }
 
@@ -2014,6 +2015,9 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[16], input_name=f"user-add-unauthorized.{dummy_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
                                                error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[17], input_name=f"invalid-ipv4-{parent_zone_name}", record_type="CNAME", record_data="1.2.3.4.",
+                                               error_messages=[f'Invalid Cname: "Fqdn(1.2.3.4.)", Valid CNAME record data should not be an IP address'])
+
     finally:
         clear_recordset_list(to_delete, client)
 
