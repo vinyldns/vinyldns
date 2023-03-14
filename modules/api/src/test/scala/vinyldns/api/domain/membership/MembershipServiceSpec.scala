@@ -299,58 +299,58 @@ class MembershipServiceSpec
 
       "return an error if an invalid domain is entered" in {
         val error = underTest.createGroup(groupInfo.copy(email = "test@ok.com"), okAuth).value.unsafeRunSync().swap.toOption.get
-        error shouldBe a[emailValidationError]
+        error shouldBe a[EmailValidationError]
       }
 
       "return an error if an invalid email is entered" in {
         val error = underTest.createGroup(groupInfo.copy(email = "test.ok.com"), okAuth).value.unsafeRunSync().swap.toOption.get
-        error shouldBe a[emailValidationError]
+        error shouldBe a[EmailValidationError]
       }
 
       "return an error if an invalid email with * is entered" in {
         val error = underTest.createGroup(groupInfo.copy(email = "test@*dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
-        error shouldBe a[emailValidationError]
+        error shouldBe a[EmailValidationError]
       }
     }
 
     "return an error if an email is invalid test case 1" in {
       val error = underTest.emailValidation(email = "test.ok.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if a domain is invalid test case 1" in {
       val error = underTest.emailValidation(email = "test@ok.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 2" in {
       val error = underTest.emailValidation(email = "test@.@.test.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 3" in {
       val error = underTest.emailValidation(email = "test@.@@.test.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 4" in {
       val error = underTest.emailValidation(email = "@te@st@test.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 5" in {
       val error = underTest.emailValidation(email = ".test@test.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 6" in {
       val error = underTest.emailValidation(email = "te.....st@test.com").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "return an error if an email is invalid test case 7" in {
       val error = underTest.emailValidation(email = "test@test.com.").value.unsafeRunSync().swap.toOption.get
-      error shouldBe a[emailValidationError]
+      error shouldBe a[EmailValidationError]
     }
 
     "Check whether *dummy.com is a valid email" in {

@@ -404,9 +404,9 @@ class MembershipService(
         if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
         ().asRight
         else
-          emailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+          EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
       case _ =>
-        emailValidationError(InvalidEmailValidationErrorMsg).asLeft
+        EmailValidationError(InvalidEmailValidationErrorMsg).asLeft
     }}.toResult
 
 
