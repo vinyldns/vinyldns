@@ -526,7 +526,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a HighValueDomainError
-      |if inputName is a High Value Domain""".stripMargin) {
+             |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, ttl, AData("1.1.1.1"))
     val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, ttl, PTRData(Fqdn("test.")))
     val changeIpV6 =
@@ -571,7 +571,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""zoneDoesNotRequireManualReview: should fail with RecordRequiresManualReview
-              |if zone name matches domain requiring manual review""".stripMargin) {
+             |if zone name matches domain requiring manual review""".stripMargin) {
     val addChangeInput =
       AddChangeInput("not-allowed.zone.NEEDS.review", RecordType.A, ttl, AData("1.1.1.1"))
     val addChangeForValidation = AddChangeForValidation(
@@ -599,14 +599,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteRRSetChangeInput("invalidDomainName$", RecordType.A)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteRRSetChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change, false)
@@ -615,7 +615,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidIp.111"
     val change = DeleteRRSetChangeInput(invalidIp, RecordType.PTR)
     val result = validateInputName(change, false)
@@ -639,14 +639,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
@@ -676,7 +676,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidIpv6Address
-      |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
+             |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
     val invalidIpv6 = "invalidIpv6:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, ttl, AAAAData(invalidIpv6))
     val result = validateAddChangeInput(change, false)
@@ -703,7 +703,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidDomainName
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "$$$"
     val change =
       AddChangeInput(
@@ -717,8 +717,23 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidCname(s"$invalidCNAMERecordData.",false))
   }
 
+  property("""validateAddChangeInput: should fail with Invalid CNAME
+             |if validateRecordData fails for IPv4 Address in CNAME record data""".stripMargin) {
+    val invalidCNAMERecordData = "1.2.3.4"
+    val change =
+      AddChangeInput(
+        "test.comcast.com.",
+        RecordType.CNAME,
+        ttl,
+        CNAMEData(Fqdn(invalidCNAMERecordData))
+      )
+    val result = validateAddChangeInput(change, false)
+
+    result should haveInvalid[DomainValidationError](InvalidIPv4CName(s"Fqdn($invalidCNAMERecordData.)"))
+  }
+
   property("""validateAddChangeInput: should fail with InvalidLength
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "s" * 256
     val change =
       AddChangeInput(
@@ -735,7 +750,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: PTR should fail with InvalidIPAddress
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidip.111."
     val change = AddChangeInput(invalidIp, RecordType.PTR, ttl, PTRData(Fqdn("test.comcast.com")))
     val result = validateAddChangeInput(change, false)
@@ -1006,6 +1021,29 @@ class BatchChangeValidationsSpec
     )
   }
 
+  property("validateChangesWithContext: should fail for update if same record data is provided for add and delete") {
+    val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.2.3.4")))
+    val result = validateChangesWithContext(
+      ChangeForValidationMap(
+        List(
+          makeAddUpdateRecord("deleteRecord"), // Record does not exist
+          deleteRecord
+        ).map(_.validNel),
+        ExistingRecordSets(List(rsOk))
+      ),
+      okAuth,
+      false,
+      None
+    )
+
+    result(0) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(makeAddUpdateRecord("deleteRecord").inputChange.inputName)
+    )
+    result(1) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(deleteRecord.inputChange.inputName)
+    )
+  }
+
   property("validateChangesWithContext: should complete for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
@@ -1031,11 +1069,7 @@ class BatchChangeValidationsSpec
     result(1) shouldBe valid
     result(3) shouldBe valid
     result(4) shouldBe valid
-    deleteNonExistentEntry.inputChange.record.foreach { record =>
-      result(5) should haveInvalid[DomainValidationError](
-        DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
-      )
-    }
+    result(5) shouldBe valid
   }
 
   property(

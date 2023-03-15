@@ -18,6 +18,7 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
+import vinyldns.core.domain.Encrypted
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -25,7 +26,7 @@ object TestZoneData {
 
   /* ZONE CONNECTIONS */
   val testConnection: Option[ZoneConnection] = Some(
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+    ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
   )
 
   /* ZONES */

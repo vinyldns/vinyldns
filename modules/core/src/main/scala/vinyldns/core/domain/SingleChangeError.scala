@@ -32,11 +32,11 @@ object DomainValidationErrorType extends Enumeration {
   val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
   InvalidDomainName, InvalidCname, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
-  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
+  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist, InvalidUpdateRequest,
   CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
   NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
-  DeleteRecordDataDoesNotExist = Value
+  DeleteRecordDataDoesNotExist, InvalidIPv4CName  = Value
 
   // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
@@ -60,6 +60,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: ZoneDiscoveryError => ZoneDiscoveryError
       case _: RecordAlreadyExists => RecordAlreadyExists
       case _: RecordDoesNotExist => RecordDoesNotExist
+      case _: InvalidUpdateRequest => InvalidUpdateRequest
       case _: CnameIsNotUniqueError => CnameIsNotUniqueError
       case _: UserIsNotAuthorized => UserIsNotAuthorized
       case _: UserIsNotAuthorizedError => UserIsNotAuthorizedError
@@ -73,6 +74,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: RecordRequiresManualReview => RecordRequiresManualReview
       case _: UnsupportedOperation => UnsupportedOperation
       case _: DeleteRecordDataDoesNotExist => DeleteRecordDataDoesNotExist
+      case _: InvalidIPv4CName => InvalidIPv4CName
     }
   // $COVERAGE-ON$
 }

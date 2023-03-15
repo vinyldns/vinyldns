@@ -316,7 +316,7 @@ object DnsBackend {
     new DNS.TSIG(
       parseAlgorithm(conn.algorithm),
       decryptedConnection.keyName,
-      decryptedConnection.key
+      decryptedConnection.key.value
     )
   }
 

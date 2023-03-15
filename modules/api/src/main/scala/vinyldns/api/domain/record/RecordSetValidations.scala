@@ -20,6 +20,7 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.domain.DomainValidations.validateIpv4Address
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
@@ -236,6 +237,16 @@ object RecordSetValidations {
       )
     }
 
+    val isNotIPv4inCname = {
+      ensuring(
+        RecordSetValidation(
+          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid CNAME record data cannot be an IP address."""
+        )
+      )(
+        validateIpv4Address(newRecordSet.records.head.toString.dropRight(1)).isInvalid
+      )
+    }
+
     for {
       _ <- isNotOrigin(
         newRecordSet,
@@ -243,6 +254,7 @@ object RecordSetValidations {
         "CNAME RecordSet cannot have name '@' because it points to zone origin"
       )
       _ <- noRecordWithName
+      _ <- isNotIPv4inCname
       _ <- RDataWithConsecutiveDots
       _ <- checkForDot(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed, allowedDotsLimit)
     } yield ()
@@ -424,6 +436,25 @@ object RecordSetValidations {
       (),
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )
+
+  /**
+   * Checks of the user is a superuser, the zone is shared, and the only record attribute being changed
+   * is the record owner group.
+   */
+  def canSuperUserUpdateOwnerGroup(
+    existing: RecordSet,
+    updates: RecordSet,
+    zone: Zone,
+    auth: AuthPrincipal
+  ): Boolean =
+    (updates.ownerGroupId != existing.ownerGroupId
+        && updates.zoneId == existing.zoneId
+        && updates.name == existing.name
+        && updates.typ == existing.typ
+        && updates.ttl == existing.ttl
+        && updates.records == existing.records
+        && zone.shared
+        && auth.isSuper)
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
