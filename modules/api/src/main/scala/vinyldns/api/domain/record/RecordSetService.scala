@@ -35,6 +35,7 @@ import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
+import vinyldns.core.notifier.{AllNotifiers, Notification}
 
 import scala.util.matching.Regex
 
@@ -48,7 +49,8 @@ object RecordSetService {
              highValueDomainConfig: HighValueDomainConfig,
              dottedHostsConfig: DottedHostsConfig,
              approvedNameServers: List[Regex],
-             useRecordSetCache: Boolean
+             useRecordSetCache: Boolean,
+             notifiers: AllNotifiers
            ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
@@ -64,7 +66,8 @@ object RecordSetService {
       highValueDomainConfig,
       dottedHostsConfig,
       approvedNameServers,
-      useRecordSetCache
+      useRecordSetCache,
+      notifiers
     )
 }
 
@@ -82,7 +85,8 @@ class RecordSetService(
                         highValueDomainConfig: HighValueDomainConfig,
                         dottedHostsConfig: DottedHostsConfig,
                         approvedNameServers: List[Regex],
-                        useRecordSetCache: Boolean
+                        useRecordSetCache: Boolean,
+                        notifiers: AllNotifiers
                       ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
@@ -155,6 +159,9 @@ class RecordSetService(
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
               ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
+      _ <- if(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.AutoApproved){
+        notifiers.notify(Notification(change)).toResult
+      }else{change.toResult}
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult

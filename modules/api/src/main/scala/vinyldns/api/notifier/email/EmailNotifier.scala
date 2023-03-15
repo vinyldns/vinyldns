@@ -18,33 +18,22 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  BatchChangeApprovalStatus,
-  SingleAddChange,
-  SingleChange,
-  SingleDeleteRRSetChange
-}
-import vinyldns.core.domain.membership.UserRepository
-import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
+import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import org.slf4j.LoggerFactory
+
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
-
 import scala.util.Try
-import vinyldns.core.domain.record.AData
-import vinyldns.core.domain.record.AAAAData
-import vinyldns.core.domain.record.CNAMEData
-import vinyldns.core.domain.record.MXData
-import vinyldns.core.domain.record.TXTData
-import vinyldns.core.domain.record.PTRData
-import vinyldns.core.domain.record.RecordData
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, TXTData}
+
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+
 import java.time.ZoneId
 
-class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
+class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository,  groupRepository: GroupRepository)
     extends Notifier {
 
   private val logger = LoggerFactory.getLogger(classOf[EmailNotifier])
@@ -52,6 +41,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
       case bc: BatchChange => sendBatchChangeNotification(bc)
+      case rsc: RecordSetChange => sendRecordSetChangeNotification(rsc)
       case _ => IO.unit
     }
 
@@ -67,12 +57,37 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     transport.close()
   }
 
-  def sendBatchChangeNotification(bc: BatchChange): IO[Unit] =
-    userRepository.getUser(bc.userId).flatMap {
+  def sendBatchChangeNotification(bc: BatchChange): IO[Unit] = {
+
+      userRepository.getUser(bc.userId).flatMap {
+        case Some(UserWithEmail(email)) =>
+          send(email) { message =>
+            message.setSubject(s"VinylDNS Batch change ${bc.id} results")
+            message.setContent(formatBatchChange(bc), "text/html")
+            message
+          }
+        case Some(user: User) if user.email.isDefined =>
+          IO {
+            logger.warn(
+              s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
+            )
+          }
+        case None => IO {
+          logger.warn(s"Unable to find user: ${bc.userId}")
+        }
+        case _ => IO.unit
+      }
+  }
+
+  def sendRecordSetChangeNotification(rsc: RecordSetChange): IO[Unit] = {
+  userRepository.getUser(
+    userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
+      map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id).
+    flatMap {
       case Some(UserWithEmail(email)) =>
         send(email) { message =>
-          message.setSubject(s"VinylDNS Batch change ${bc.id} results")
-          message.setContent(formatBatchChange(bc), "text/html")
+          message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
+          message.setContent(formatRecordSetChange(rsc), "text/html")
           message
         }
       case Some(user: User) if user.email.isDefined =>
@@ -81,10 +96,14 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
             s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
           )
         }
-      case None => IO { logger.warn(s"Unable to find user: ${bc.userId}") }
-      case _ => IO.unit
+      case None =>
+        IO {
+        logger.warn(s"Unable to find user: ${rsc.userId}")
+      }
+      case _ =>
+        IO.unit
     }
-
+}
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
     // Batch change info
@@ -122,6 +141,15 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       |   ${bc.changes.zipWithIndex.map((formatSingleChange _).tupled).mkString("\n")}
       | </table>
      """.stripMargin)
+    sb.toString
+  }
+
+  def formatRecordSetChange(rsc: RecordSetChange): String = {
+    val sb = new StringBuilder
+    sb.append(s"""<h1>Record Set Change Results</h1>
+                 | <b>Submitter:</b>  ${rsc.recordSet}""".stripMargin)
+
+
     sb.toString
   }
 

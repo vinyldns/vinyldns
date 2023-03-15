@@ -146,8 +146,8 @@ message RecordSet {
 }
 
 message RecordSetGroupApproval {
- required string requestedOwnerGroupId = 1;
- required string recordSetGroupApprovalStatus = 2;
+ optional string requestedOwnerGroupId = 1;
+ optional string recordSetGroupApprovalStatus = 2;
 }
 
 message RecordSetChange {
