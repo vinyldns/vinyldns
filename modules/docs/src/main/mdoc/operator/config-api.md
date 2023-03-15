@@ -483,6 +483,16 @@ sns {
   }
 }
 ```
+### Email Domain Configuration
+ This configuration setting determines the valid domains which are 
+ allowed in the email fields. `*dummy.com` means it will allow any 
+ subdomain within dummy.com like apac.dummy.com. If email-domains is
+ left empty then it will accept any domain name.
+```yaml
+valid-email-config {
+   email-domains = ["test.com","*dummy.com"]
+}
+  ``` 
 
 ### Batch Manual Review Enabled <a id="manual-review" />
 
@@ -759,6 +769,11 @@ dotted-hosts = {
         host = "example.host"
      }
   }
+
+  # Valid Email Domains
+  valid-email-config {
+    email-domains = ["test.com","*dummy.com"]
+  } 
 
   sns {
      # Path to notifier provider implementation
