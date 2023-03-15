@@ -226,7 +226,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             if ($scope.currentAclRule.priority == 'User') {
                 profileService.getUserDataByUsername($scope.currentAclRule.userName)
                     .then(function (profile) {
-                        $log.log('profileService::getUserDataByUsername-success');
+                        $log.debug('profileService::getUserDataByUsername-success');
                         $scope.currentAclRule.userId = profile.data.id;
                         $scope.postUserLookup(type);
                     })
@@ -309,7 +309,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.refreshZone = function() {
         function success(response) {
-            $log.log('recordsService::getZone-success');
+            $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
