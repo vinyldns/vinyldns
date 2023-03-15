@@ -103,4 +103,8 @@ trait RecordSetServiceAlgebra {
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse]
 
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal
+                                ): Result[ListFailedRecordSetChangesResponse]
+
 }

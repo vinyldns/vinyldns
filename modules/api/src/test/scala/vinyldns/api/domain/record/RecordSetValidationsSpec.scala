@@ -486,6 +486,10 @@ class RecordSetValidationsSpec
         val error = leftValue(cnameValidations(invalid, List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
+      "return an InvalidRequest if a cname record set fqdn is IPv4 address" in {
+        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("1.2.3.4")))), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
+        error shouldBe an[RecordSetValidation]
+      }
       "return an InvalidRequest if a cname record set name is dotted" in {
         val error = leftValue(cnameValidations(cname.copy(name = "dot.ted"), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
@@ -686,6 +690,36 @@ class RecordSetValidationsSpec
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
         error.getMessage() shouldBe RecordNameFilterError
+      }
+    }
+    
+    "canSuperUserUpdateOwnerGroup" should {
+      "return true when record owner group is the only field changed in the updated record, the zone is shared, " +
+        "and user is a superuser" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(true)
+      }
+      "return false when record owner group is the only field changed in the updated record, the zone is shared, " +
+        "and user is NOT a superuser" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, okAuth) should be(false)
+      }
+      "return false when record owner group is the only field changed in the updated record, the zone is NOT shared, " +
+        "and user is a superuser" in {
+        val zone = okZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
+      }
+      "return false when record owner group is NOT the only field changed in the updated record" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
       }
     }
   }

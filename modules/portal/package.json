@@ -32,7 +32,8 @@
     "karma-phantomjs-launcher": "^1.0.0",
     "karma-spec-reporter": "^0.0.26",
     "malihu-custom-scrollbar-plugin": "^3.1.5",
-    "phantomjs-prebuilt": "^2.1.16"
+    "phantomjs-prebuilt": "^2.1.16",
+    "angular-cron-jobs": "^3.2.1"
   },
   "scripts": {
     "test": "unit"

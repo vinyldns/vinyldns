@@ -35,6 +35,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{BodyWritable, InMemoryBody, WSClient}
 import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.logging.RequestTracing
@@ -308,7 +309,7 @@ class VinylDNS @Inject() (
         .format(
           user.userName,
           user.accessKey,
-          crypto.decrypt(user.secretKey),
+          crypto.decrypt(user.secretKey.value),
           vinyldnsServiceBackend
         )
     ).as("text/csv")
@@ -350,7 +351,7 @@ class VinylDNS @Inject() (
       User(
         details.username,
         User.generateKey,
-        User.generateKey,
+        Encrypted(User.generateKey),
         details.firstName,
         details.lastName,
         details.email
@@ -672,7 +673,7 @@ class VinylDNS @Inject() (
     implicit userRequest: UserRequest[_]
   ) = {
     val signableRequest = new SignableVinylDNSRequest(request)
-    val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
+    val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey.value))
     signer.sign(signableRequest, credentials)
     logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
 

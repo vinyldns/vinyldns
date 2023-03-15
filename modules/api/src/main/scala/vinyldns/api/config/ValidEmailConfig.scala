@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.record
+package vinyldns.api.config
 
-import cats.effect._
-import scalikejdbc.DB
-import vinyldns.core.repository.Repository
+import pureconfig.ConfigReader
 
-trait RecordChangeRepository extends Repository {
+ case class ValidEmailConfig(
+    valid_domains : List[String]
+                             )
+object ValidEmailConfig {
+  implicit val configReader: ConfigReader[ValidEmailConfig] =
+    ConfigReader.forProduct1[ValidEmailConfig,List[String]](
+      "email-domains"
 
-  def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
-
-  def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[Int] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults]
-
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
-
-  def listFailedRecordSetChanges(): IO[List[RecordSetChange]]
+    ) {
+      case valid_domains => ValidEmailConfig(valid_domains)
+    }
 
 }
