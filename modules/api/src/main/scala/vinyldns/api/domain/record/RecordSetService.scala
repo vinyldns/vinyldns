@@ -149,7 +149,7 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
         unchangedRecordSet(existing, recordSet).toResult else ().toResult
       recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(null))
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
@@ -157,11 +157,11 @@ class RecordSetService(
       rsForValidations = change.recordSet
       superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus))
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") ))
               ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
-      _ <- if(recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.AutoApproved){
-        notifiers.notify(Notification(change)).toResult
-      }else{change.toResult}
+      _ <- if(recordSet.recordSetGroupChange != None && recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") != RecordSetGroupApprovalStatus.AutoApproved){
+        notifiers.notify(Notification(change)).toResult}
+        else {().toResult}
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
