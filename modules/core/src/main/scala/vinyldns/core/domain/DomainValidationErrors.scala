@@ -52,6 +52,11 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
       "joined by dots, and terminated with a dot."
 }
 
+final case class InvalidIPv4CName(param: String) extends DomainValidationError {
+  def message: String =
+    s"""Invalid Cname: "$param", Valid CNAME record data should not be an IP address"""
+}
+
 final case class InvalidCname(param: String, isReverseZone: Boolean) extends DomainValidationError {
   def message: String =
     isReverseZone match {
