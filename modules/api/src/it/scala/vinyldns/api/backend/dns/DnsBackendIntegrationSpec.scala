@@ -16,7 +16,8 @@
 
 package vinyldns.api.backend.dns
 
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.backend.dns.DnsProtocol.NoError
@@ -74,7 +75,7 @@ class DnsBackendIntegrationSpec extends AnyWordSpec with Matchers {
         RecordType.A,
         200,
         RecordSetStatus.Active,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         None,
         List(AData("10.1.1.1"))
       )

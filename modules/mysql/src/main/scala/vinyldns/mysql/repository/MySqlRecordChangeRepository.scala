@@ -33,20 +33,19 @@ class MySqlRecordChangeRepository
   private val LIST_CHANGES_WITH_START =
     sql"""
       |SELECT data
-      |  FROM record_change
+      | FROM record_change
       | WHERE zone_id = {zoneId}
-      |   AND created < {created}
-      |  ORDER BY created DESC
-      |  LIMIT {limit}
+      | ORDER BY created DESC
+      | LIMIT {limit} OFFSET {startFrom}
     """.stripMargin
 
   private val LIST_CHANGES_NO_START =
     sql"""
       |SELECT data
-      |  FROM record_change
+      | FROM record_change
       | WHERE zone_id = {zoneId}
-      |  ORDER BY created DESC
-      |  LIMIT {limit}
+      | ORDER BY created DESC
+      | LIMIT {limit}
     """.stripMargin
 
   private val GET_CHANGE =
@@ -74,7 +73,7 @@ class MySqlRecordChangeRepository
                 Seq(
                   change.id,
                   change.zoneId,
-                  change.created.getMillis,
+                  change.created.toEpochMilli,
                   fromChangeType(change.changeType),
                   toPB(change).toByteArray
                 )
@@ -89,7 +88,7 @@ class MySqlRecordChangeRepository
 
   def listRecordSetChanges(
       zoneId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int
   ): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.listRecordSetChanges") {
@@ -98,7 +97,7 @@ class MySqlRecordChangeRepository
           val changes = startFrom match {
             case Some(start) =>
               LIST_CHANGES_WITH_START
-                .bindByName('zoneId -> zoneId, 'created -> start.toLong, 'limit -> maxItems)
+                .bindByName('zoneId -> zoneId, 'startFrom -> start, 'limit -> maxItems)
                 .map(toRecordSetChange)
                 .list()
                 .apply()
@@ -110,9 +109,8 @@ class MySqlRecordChangeRepository
                 .apply()
           }
 
-          val nextId =
-            if (changes.size < maxItems) None
-            else changes.lastOption.map(_.created.getMillis.toString)
+          val startValue = startFrom.getOrElse(0)
+          val nextId = if (changes.size < maxItems) None else Some(startValue + maxItems)
 
           ListRecordSetChangesResults(
             changes,

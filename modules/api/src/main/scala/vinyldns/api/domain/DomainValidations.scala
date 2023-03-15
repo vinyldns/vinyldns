@@ -27,6 +27,10 @@ import scala.util.matching.Regex
   Object to house common domain validations
  */
 object DomainValidations {
+  val validReverseZoneFQDNRegex: Regex =
+    """^(?:([0-9a-zA-Z\-\/_]{1,63}|[0-9a-zA-Z\-\/_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z\-\/_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z\-\/_]{1})\.)*$""".r
+  val validForwardZoneFQDNRegex: Regex =
+    """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-_]{0,61}[0-9a-zA-Z_]{1}|[*.]{2}[0-9a-zA-Z\-_]{0,60}[0-9a-zA-Z_]{1})\.)*$""".r
   val validFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z_]{1})\.)*$""".r
   val validIpv4Regex: Regex =
@@ -60,6 +64,30 @@ object DomainValidations {
   def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateHostName(name.fqdn).map(_ => name)
 
+  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+      validateCname(name.fqdn, isReverse).map(_ => name)
+
+  def validateCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
+    isReverse match {
+      case true =>
+        val checkRegex = validReverseZoneFQDNRegex
+          .findFirstIn(name)
+          .map(_.validNel)
+          .getOrElse(InvalidCname(name,isReverse).invalidNel)
+        val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
+
+        checkRegex.combine(checkLength).map(_ => name)
+      case false =>
+        val checkRegex = validForwardZoneFQDNRegex
+          .findFirstIn(name)
+          .map(_.validNel)
+          .getOrElse(InvalidCname(name,isReverse).invalidNel)
+        val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
+
+        checkRegex.combine(checkLength).map(_ => name)
+    }
+  }
+
   def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
       Label rules are as follows (from RFC 952; detailed in RFC 1034):
@@ -84,6 +112,8 @@ object DomainValidations {
 
     checkRegex.combine(checkLength).map(_ => name)
   }
+
+
 
   def validateIpv4Address(address: String): ValidatedNel[DomainValidationError, String] =
     validIpv4Regex

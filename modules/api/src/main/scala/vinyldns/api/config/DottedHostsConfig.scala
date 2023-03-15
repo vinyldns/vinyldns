@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.record
+package vinyldns.api.config
 
-import cats.effect._
-import scalikejdbc.DB
-import vinyldns.core.repository.Repository
+import pureconfig.ConfigReader
+import pureconfig.generic.auto._
 
-trait RecordChangeRepository extends Repository {
+final case class ZoneAuthConfigs(zone: String, userList: List[String], groupList: List[String], recordTypes: List[String], dotsLimit: Int)
+final case class DottedHostsConfig(zoneAuthConfigs: List[ZoneAuthConfigs])
 
-  def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
-
-  def listRecordSetChanges(
-      zoneId: String,
-      startFrom: Option[Int] = None,
-      maxItems: Int = 100
-  ): IO[ListRecordSetChangesResults]
-
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
+object DottedHostsConfig {
+  implicit val configReader: ConfigReader[DottedHostsConfig] =
+    ConfigReader.forProduct1[DottedHostsConfig, List[ZoneAuthConfigs]](
+      "allowed-settings",
+    )(zoneAuthConfigs =>
+      DottedHostsConfig(zoneAuthConfigs))
 }

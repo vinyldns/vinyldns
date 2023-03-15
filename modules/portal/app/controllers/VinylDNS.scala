@@ -214,6 +214,32 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getGroupChange(gcid: String): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/change/$gcid")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      logger.info(s"group change [$gcid] retrieved with status [${response.status}]")
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
+  def listGroupChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = new VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"groups/$id/activity",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getUser(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"users/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
@@ -425,6 +451,23 @@ class VinylDNS @Inject() (
   def getZoneByName(name: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/name/$name")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
+  def getZoneChange(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest =
+      new VinylDNSRequest(
+        "GET",
+        s"$vinyldnsServiceBackend",
+        s"zones/$id/changes",
+        parameters = queryParameters)
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)

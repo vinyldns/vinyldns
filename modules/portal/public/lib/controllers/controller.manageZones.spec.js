@@ -22,16 +22,18 @@ describe('Controller: ManageZonesController', function () {
         module('service.utility'),
         module('service.zones'),
         module('service.profile'),
+        module('service.paging'),
         module('controller.manageZones')
     });
     beforeEach(inject(function ($rootScope, $controller, $q, groupsService, recordsService, zonesService,
-        profileService) {
+        profileService, pagingService) {
         this.rootScope = $rootScope;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.zonesService = zonesService;
         this.recordsService = recordsService;
         this.profileService = profileService;
+        this.pagingService = pagingService;
         this.q = $q;
         this.groupsService.getGroups = function () {
             return $q.when({
@@ -205,11 +207,14 @@ describe('Controller: ManageZonesController', function () {
                 }
             }
         };
+
         var getZone = spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when(mockResponse));
         var refreshAclRuleDisplay = spyOn(this.scope, 'refreshAclRuleDisplay')
             .and.stub();
+        var refreshZoneChange = spyOn(this.scope, 'refreshZoneChange')
+                    .and.stub();
         this.scope.currentManageZoneState = this.scope.manageZoneState.CONFIRM_UPDATE;
         this.scope.updateZoneInfo.hiddenKey = 'some key';
         this.scope.updateZoneInfo.hiddenTransferKey = 'some key';
@@ -217,6 +222,7 @@ describe('Controller: ManageZonesController', function () {
         this.scope.$digest();
         expect(getZone.calls.count()).toBe(1);
         expect(refreshAclRuleDisplay.calls.count()).toBe(1);
+        expect(refreshZoneChange.calls.count()).toBe(1);
         expect(this.scope.zoneInfo).toEqual(mockResponse.data.zone);
         expect(this.scope.updateZoneInfo. adminGroupId).toEqual('id101112');
         expect(this.scope.updateZoneInfo.hiddenKey).toEqual('');
@@ -553,5 +559,100 @@ describe('Controller: ManageZonesController', function () {
         this.scope.refreshAclRuleDisplay();
         expect(toDisplayAclRule.calls.count()).toBe(3);
         expect(this.scope.aclRules).toEqual(this.scope.zoneInfo.acl.rules);
+    });
+
+    it('next page should call listZoneChangesByZoneId with the correct parameters', function () {
+        var mockZoneChange = {data: {
+                                zoneId: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                zoneChanges: [{ zone: {
+                                    name: "dummy.",
+                                    email: "test@test.com",
+                                    status: "Active",
+                                    created: "2017-02-15T14:58:39Z",
+                                    account: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    acl: {rules: []},
+                                    adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                    shared: false,
+                                    status: "Active",
+                                    latestSync: "2017-02-15T14:58:39Z",
+                                    isTest: true
+                                }}],maxItems: 100}};
+
+        var getZoneChanges = spyOn(this.zonesService, 'getZoneChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(mockZoneChange));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedZoneId = this.scope.zoneId;
+
+        this.scope.nextPageZoneHistory();
+
+        expect(getZoneChanges.calls.count()).toBe(1);
+        expect(getZoneChanges.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedZoneId]);
+    });
+
+    it('prev page should call getZoneChanges with the correct parameters', function () {
+        var mockZoneChange = {data: {
+                                zoneId: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                zoneChanges: [{ zone: {
+                                    name: "dummy.",
+                                    email: "test@test.com",
+                                    status: "Active",
+                                    created: "2017-02-15T14:58:39Z",
+                                    account: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    acl: {rules: []},
+                                    adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                    shared: false,
+                                    status: "Active",
+                                    latestSync: "2017-02-15T14:58:39Z",
+                                    isTest: true
+                                }}],maxItems: 100}};
+
+        var getZoneChanges = spyOn(this.zonesService, 'getZoneChanges')
+            .and.stub()
+            .and.returnValue(this.q.when(mockZoneChange));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom =  undefined;
+        var expectedZoneId = this.scope.zoneId;
+
+        this.scope.prevPageZoneHistory();
+
+        expect(getZoneChanges.calls.count()).toBe(1);
+        expect(getZoneChanges.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedZoneId]);
+    });
+
+    it('test that we properly get Zone History data', function(){
+        this.scope.zoneChanges = {};
+        var mockZoneChange = {data: {
+                                zoneId: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                zoneChanges: [{ zone: {
+                                    name: "dummy.",
+                                    email: "test@test.com",
+                                    status: "Active",
+                                    created: "2017-02-15T14:58:39Z",
+                                    account: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    acl: {rules: []},
+                                    adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                    id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                    shared: false,
+                                    status: "Active",
+                                    latestSync: "2017-02-15T14:58:39Z",
+                                    isTest: true
+                                }}],maxItems: 100}};
+        var updateZoneChangeDisplay = spyOn(this.scope, 'updateZoneChangeDisplay')
+            .and.stub();
+        var getZoneChanges = spyOn(this.zonesService, 'getZoneChanges')
+                    .and.stub()
+                    .and.returnValue(this.q.when(mockZoneChange));
+        this.scope.refreshZoneChange();
+        this.scope.$digest();
+        expect(getZoneChanges.calls.count()).toBe(1);
+        expect(this.scope.zoneChanges).toEqual(mockZoneChange.data.zoneChanges);
     });
 });

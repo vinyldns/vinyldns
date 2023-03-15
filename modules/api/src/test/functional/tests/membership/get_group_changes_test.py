@@ -1,5 +1,5 @@
 import pytest
-
+from datetime import datetime
 from hamcrest import *
 
 
@@ -28,14 +28,16 @@ def test_list_group_activity_start_from_success(group_activity_context, shared_z
 
     # our start from will align with the created on the 3rd change in the list
     start_from_index = 2
-    start_from = page_one["changes"][start_from_index]["created"]  # start from a known good timestamp
-
+    # using epoch time to start from a timestamp
+    epoch = datetime.utcfromtimestamp(0)
+    # start from a known good timestamp
+    start_from = str(int((datetime.strptime(page_one["changes"][start_from_index]["created"], "%Y-%m-%dT%H:%M:%S.%fZ") - epoch).total_seconds() * 1000))
     # now, we say give me all changes since the start_from, which should yield 8-7-6-5-4
-    result = client.get_group_changes(created_group["id"], start_from=start_from, max_items=5, status=200)
+    result = client.get_group_changes(created_group["id"], start_from=page_one["nextId"], max_items=5, status=200)
 
     assert_that(result["changes"], has_length(5))
     assert_that(result["maxItems"], is_(5))
-    assert_that(result["startFrom"], is_(start_from))
+    assert_that(result["startFrom"], is_(page_one["nextId"]))
     assert_that(result["nextId"], is_not(none()))
 
     # we should have, in order, changes 8 7 6 5 4

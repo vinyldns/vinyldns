@@ -22,8 +22,8 @@ import javax.crypto.spec.SecretKeySpec
 import javax.crypto.{Mac, SecretKey}
 
 import akka.http.scaladsl.model.HttpRequest
-import org.joda.time.DateTime
-import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 
 import scala.collection.SortedSet
@@ -60,23 +60,21 @@ class Aws4Authenticator {
 
   type Credentials = String
 
-  val iso8601Format =
-    ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
+  val iso8601Format = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssz").withZone(ZoneId.of("UTC"))
 
-  val rfc822Format =
-    DateTimeFormat.forPattern("EEE, d MMM yyyy HH:mm:ss z").withZoneUTC()
+  val rfc822Format = DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm:ss z").withZone(ZoneId.of("UTC"))
 
   val logger = LoggerFactory.getLogger("Aws4Authenticator")
 
-  def getDate(req: HttpRequest): Option[DateTime] = {
+  def getDate(req: HttpRequest): Option[Instant] = {
     val xAmzDate = getHeader(req, "X-Amz-Date")
     val dateHeader = getHeader(req, "Date")
 
     if (xAmzDate.isDefined) {
-      Try(iso8601Format.parseDateTime(xAmzDate.get)).toOption
+      Try(ZonedDateTime.parse(xAmzDate.get, iso8601Format).toInstant).toOption
     } else {
-      Try(iso8601Format.parseDateTime(dateHeader.get))
-        .orElse(Try(rfc822Format.parseDateTime(dateHeader.get)))
+      Try(ZonedDateTime.parse(dateHeader.get, iso8601Format).toInstant)
+        .orElse(Try(ZonedDateTime.parse(dateHeader.get, rfc822Format).toInstant))
         .toOption
     }
   }
@@ -110,7 +108,7 @@ class Aws4Authenticator {
     ) = authorization
     val signedHeaders = Set() ++ signatureHeaders.split(';')
     // convert Date header to canonical form required by AWS
-    val dateTime = iso8601Format.print(getDate(req).get)
+    val dateTime = iso8601Format.format(getDate(req).get).replace("UTC", "Z")
     // get canonical headers, but only those that were in the signed set
     val headers = canonicalHeaders(req, signedHeaders).toSeq
     // create a canonical representation of the request

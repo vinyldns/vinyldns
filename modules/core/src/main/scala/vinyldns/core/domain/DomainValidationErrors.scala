@@ -52,6 +52,18 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
       "joined by dots, and terminated with a dot."
 }
 
+final case class InvalidCname(param: String, isReverseZone: Boolean) extends DomainValidationError {
+  def message: String =
+    isReverseZone match {
+      case true =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, slashes, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+      case false =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+    }
+}
+
 final case class InvalidLength(param: String, minLengthInclusive: Int, maxLengthInclusive: Int)
     extends DomainValidationError {
   def message: String =
@@ -109,10 +121,15 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
       "If zone exists, then it must be connected to in VinylDNS."
 }
 
-final case class RecordAlreadyExists(name: String) extends DomainValidationError {
-  def message: String =
-    s"""Record "$name" Already Exists: cannot add an existing record; to update it, """ +
-      "issue a DeleteRecordSet then an Add."
+final case class RecordAlreadyExists(name: String, recordData: RecordData, isApproved:Boolean,
+                                     fatal: Boolean = false) extends DomainValidationError(fatal) {
+  def message: String = {
+    if (isApproved == false)
+      s"""RecordName "$name" already exists. Your request will be manually reviewed. """ +
+        "If you intended to update this record, you can avoid manual review by adding " +
+        " a DeleteRecordSet entry followed by an Add."
+    else s"""ℹ️ Record data "$recordData" is does not exists.
+         Complete the request in DNS and give approve. """ }
 }
 
 final case class RecordDoesNotExist(name: String) extends DomainValidationError {

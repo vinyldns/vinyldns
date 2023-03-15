@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.IO
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
@@ -142,33 +143,59 @@ class ZoneService(
       accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
+  // List zones. Uses zone name as default while using search to list zones or by admin group name if selected.
   def listZones(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
+      searchByAdminGroup: Boolean = false,
       ignoreAccess: Boolean = false
   ): Result[ListZonesResponse] = {
-    for {
-      listZonesResult <- zoneRepository.listZones(
-        authPrincipal,
-        nameFilter,
-        startFrom,
-        maxItems,
-        ignoreAccess
+    if(!searchByAdminGroup || nameFilter.isEmpty){
+      for {
+        listZonesResult <- zoneRepository.listZones(
+          authPrincipal,
+          nameFilter,
+          startFrom,
+          maxItems,
+          ignoreAccess
+        )
+        zones = listZonesResult.zones
+        groupIds = zones.map(_.adminGroupId).toSet
+        groups <- groupRepository.getGroups(groupIds)
+        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
+      } yield ListZonesResponse(
+        zoneSummaryInfos,
+        listZonesResult.zonesFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
       )
-      zones = listZonesResult.zones
-      groupIds = zones.map(_.adminGroupId).toSet
-      groups <- groupRepository.getGroups(groupIds)
-      zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
-    } yield ListZonesResponse(
-      zoneSummaryInfos,
-      listZonesResult.zonesFilter,
-      listZonesResult.startFrom,
-      listZonesResult.nextId,
-      listZonesResult.maxItems,
-      listZonesResult.ignoreAccess
-    )
+    }
+    else {
+      for {
+        groupIds <- getGroupsIdsByName(nameFilter.get)
+        listZonesResult <- zoneRepository.listZonesByAdminGroupIds(
+          authPrincipal,
+          startFrom,
+          maxItems,
+          groupIds,
+          ignoreAccess
+        )
+        zones = listZonesResult.zones
+        groups <- groupRepository.getGroups(groupIds)
+        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
+      } yield ListZonesResponse(
+        zoneSummaryInfos,
+        nameFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
+      )
+    }
   }.toResult
 
   def zoneSummaryInfoMapping(
@@ -240,6 +267,10 @@ class ZoneService(
         .toResult
       _ <- messageQueue.send(zoneChange).toResult[Unit]
     } yield zoneChange
+  }
+
+  def getGroupsIdsByName(groupName: String): IO[Set[String]] = {
+    groupRepository.getGroupsByName(groupName).map(x => x.map(_.id))
   }
 
   def getBackendIds(): Result[List[String]] =

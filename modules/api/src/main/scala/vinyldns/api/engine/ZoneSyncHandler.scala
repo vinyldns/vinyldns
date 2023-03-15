@@ -18,7 +18,8 @@ package vinyldns.api.engine
 
 import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsConversions
@@ -28,6 +29,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.route.Monitored
 import vinyldns.mysql.TransactionProvider
+import java.io.{PrintWriter, StringWriter}
 
 object ZoneSyncHandler extends DnsConversions with Monitored with TransactionProvider {
 
@@ -113,7 +115,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
             )
             IO.pure(
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             )
@@ -160,7 +162,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                 _ <- saveRecordSets
                 _ <- saveRecordSetDatas
               } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             }
@@ -168,9 +170,10 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
         }
       }.attempt.map {
         case Left(e: Throwable) =>
+          val errorMessage = new StringWriter
+          e.printStackTrace(new PrintWriter(errorMessage))
           logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e
+            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"
           )
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(

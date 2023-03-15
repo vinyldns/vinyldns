@@ -19,7 +19,8 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
@@ -77,12 +78,24 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "userId").required[String]("Missing RecordSetChange.userId"),
         (js \ "changeType").required(RecordSetChangeType, "Missing RecordSetChange.changeType"),
         (js \ "status").default(RecordSetChangeStatus, RecordSetChangeStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "systemMessage").optional[String],
         (js \ "updates").optional[RecordSet],
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
         ).mapN(RecordSetChange.apply)
+
+    override def toJson(rs: RecordSetChange): JValue =
+      ("zone" -> Extraction.decompose(rs.zone)) ~
+        ("recordSet" -> Extraction.decompose(rs.recordSet)) ~
+        ("userId" -> rs.userId) ~
+        ("changeType" -> Extraction.decompose(rs.changeType)) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("systemMessage" -> rs.systemMessage) ~
+        ("updates" -> Extraction.decompose(rs.updates)) ~
+        ("id" -> rs.id) ~
+        ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
   case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
@@ -194,8 +207,8 @@ trait DnsJsonProtocol extends JsonValidation {
             "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
           ),
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
-        (js \ "updated").optional[DateTime],
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+        (js \ "updated").optional[Instant],
         recordType
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),

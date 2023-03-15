@@ -318,12 +318,12 @@ def test_create_acl_user_rule_invalid_cidr_failure(shared_zone_test_context):
         "accessLevel": "Read",
         "description": "test-acl-user-id",
         "userId": "789",
-        "recordMask": "10.0.0.0/50",
+        "recordMask": "10.0.0/50",
         "recordTypes": ["PTR"]
     }
 
     errors = client.add_zone_acl_rule(shared_zone_test_context.ip4_reverse_zone["id"], acl_rule, status=400)
-    assert_that(errors, contains_string("PTR types must have no mask or a valid CIDR mask: IPv4 mask must be between 0 and 32"))
+    assert_that(errors, contains_string("PTR types must have no mask or a valid CIDR mask: Invalid CIDR block"))
 
 
 @pytest.mark.serial

@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-angular.module('controller.groups', []).controller('GroupsController', function ($scope, $log, $location, groupsService, profileService, utilityService) {
+angular.module('controller.groups', []).controller('GroupsController', function ($scope, $log, $location, groupsService, profileService, utilityService, pagingService, $timeout) {
     //registering bootstrap modal close event to refresh data after create group action
     angular.element('#modal_new_group').one('hide.bs.modal', function () {
         $scope.closeModal();
     });
 
     $scope.groups = {items: []};
+    $scope.allGroup = {items: []};
     $scope.groupsLoaded = false;
+    $scope.allGroupsLoaded = false;
     $scope.alerts = [];
     $scope.ignoreAccess = false;
-    $scope.hasGroups = false; // Re-assigned each time groups are fetched without a query
+    $scope.hasGroups = false;
     $scope.query = "";
+
+    // Paging status for group sets
+    var groupsPaging = pagingService.getNewPagingParams(100);
+    var allGroupsPaging = pagingService.getNewPagingParams(100);
 
     function handleError(error, type) {
         var alert = utilityService.failure(error, type);
@@ -62,6 +68,44 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.reset();
         $scope.refresh();
         return true;
+    };
+
+    // Autocomplete for group search
+    $("#group-search-text").autocomplete({
+      source: function( request, response ) {
+        $.ajax({
+          url: "/api/groups?maxItems=100&abridged=true",
+          dataType: "json",
+          data: {groupNameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
+          success: function(data) {
+              const search =  JSON.parse(JSON.stringify(data));
+              response($.map(search.groups, function(group) {
+              return {value: group.name, label: group.name}
+              }))
+          }
+        });
+      },
+      minLength: 1,
+      select: function (event, ui) {
+          $scope.query = ui.item.value;
+          $("#group-search-text").val(ui.item.value);
+          return false;
+        },
+      open: function() {
+        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+      },
+      close: function() {
+        $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+      }
+    });
+
+    // Autocomplete text-highlight
+    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
+            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+            return $("<li></li>")
+                  .data("ui-autocomplete-item", item.value)
+                  .append("<div>" + txt + "</div>")
+                  .appendTo(ul);
     };
 
     $scope.createGroup = function (name, email, description) {
@@ -104,30 +148,33 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
-    $scope.allGroups = function () {
-        $scope.ignoreAccess = true;
-        $scope.refresh();
-    }
-
-    $scope.myGroups = function () {
-        $scope.ignoreAccess = false;
-        $scope.refresh();
-    }
-
     $scope.refresh = function () {
-        function success(result) {
-            $log.debug('getGroups:refresh-success', result);
-            //update groups
-            $scope.groups.items = result.groups;
-            $scope.groupsLoaded = true;
-            if (!$scope.query.length) {
-                $scope.hasGroups = $scope.groups.items.length > 0;
-            }
-            return result;
-        }
+        groupsPaging = pagingService.resetPaging(groupsPaging);
+        allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
 
-        getGroupsAbridged($scope.ignoreAccess)
-            .then(success)
+        groupsService
+            .getGroupsAbridged(groupsPaging.maxItems, undefined, false, $scope.query)
+            .then(function (result) {
+                  $log.debug('getGroups:refresh-success', result);
+                  //update groups
+                  groupsPaging.next = result.data.nextId;
+                  updateGroupDisplay(result.data.groups);
+                  if (!$scope.query.length) {
+                      $scope.hasGroups = $scope.groups.items.length > 0;
+                  }
+            })
+            .catch(function (error) {
+                handleError(error, 'getGroups::refresh-failure');
+            });
+
+        groupsService
+            .getGroupsAbridged(allGroupsPaging.maxItems, undefined, true, $scope.query)
+            .then(function (result) {
+                $log.debug('getGroups:refresh-success', result);
+                //update groups
+                allGroupsPaging.next = result.data.nextId;
+                updateAllGroupDisplay(result.data.groups);
+            })
             .catch(function (error) {
                 handleError(error, 'getGroups::refresh-failure');
             });
@@ -161,20 +208,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     }
 
-    function getGroupsAbridged() {
-        function success(response) {
-            $log.debug('groupsService::getGroups-success');
-            return response.data;
-        }
-
-        return groupsService
-            .getGroupsAbridged($scope.ignoreAccess, $scope.query)
-            .then(success)
-            .catch(function (error) {
-                handleError(error, 'groupsService::getGroups-failure');
-            });
-    }
-
     // Return true if there are no groups created by the user
     $scope.haveNoGroups = function (groupLength) {
         if (!$scope.hasGroups && !groupLength && $scope.groupsLoaded && $scope.query.length == "") {
@@ -186,7 +219,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     // Return true if no groups are found related to the search query
     $scope.searchCriteria = function (groupLength) {
-        if ($scope.groupsLoaded && !groupLength && $scope.query.length != "") {
+        if (!groupLength && $scope.query.length != "") {
             return true
         } else {
             return false
@@ -198,48 +231,60 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $("#modal_edit_group").modal("show");
     };
 
+    $scope.getGroupAndUpdate = function(groupId, name, email, description) {
+        function success(response) {
+            $log.debug('groupsService::getGroup-success');
+            $scope.currentGroup = response.data;
+
+            //data from user form values
+            var payload =
+                {
+                    'id': $scope.currentGroup.id,
+                    'name': name,
+                    'email': email,
+                    'members': $scope.currentGroup.members,
+                    'admins': $scope.currentGroup.admins
+                };
+            if (description) {
+                payload['description'] = description;
+            }
+
+            //update group success callback
+            function success(response) {
+                var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
+                $scope.alerts.push(alert);
+                $scope.closeEditModal();
+                $scope.reset();
+                $scope.refresh();
+                return response.data;
+            }
+            return groupsService.updateGroup(groupId, payload)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::updateGroup-failure');
+                });
+        }
+
+        return groupsService
+            .getGroup(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroup-failure');
+            });
+    };
+
     $scope.submitEditGroup = function (name, email, description) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-        $log.debug('updateGroup::called', $scope.data);
-
         if ($scope.processing) {
             $log.debug('updateGroup::processing is true; exiting');
             return;
         }
+
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-
-        //data from user form values
-        var payload =
-            {
-                'id': $scope.currentGroup.id,
-                'name': name,
-                'email': email,
-                'members': $scope.currentGroup.members,
-                'admins': $scope.currentGroup.admins
-            };
-
-        if (description) {
-            payload['description'] = description;
-        }
-
-        //update group success callback
-        function success(response) {
-            var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
-            $scope.alerts.push(alert);
-            $scope.closeEditModal();
-            $scope.reset();
-            $scope.refresh();
-            return response.data;
-        }
-
-        return groupsService.updateGroup($scope.currentGroup.id, payload)
-            .then(success)
-            .catch(function (error) {
-                handleError(error, 'groupsService::updateGroup-failure');
-            });
+        $scope.getGroupAndUpdate($scope.currentGroup.id, name, email, description);
     };
 
     $scope.confirmDeleteGroup = function (groupInfo) {
@@ -298,4 +343,115 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         .then(profileSuccess, profileFailure)
         .catch(profileFailure);
 
+    function updateGroupDisplay (groups) {
+        $scope.groups.items = groups;
+        $scope.groupsLoaded = true;
+        $log.debug("Displaying my groups: ", $scope.groups.items);
+        if($scope.groups.items.length > 0) {
+            $("td.dataTables_empty").hide();
+        } else {
+            $("td.dataTables_empty").show();
+        }
+    }
+
+    function updateAllGroupDisplay (groups) {
+        $scope.allGroup.items = groups;
+        $scope.allGroupsLoaded = true;
+        $log.debug("Displaying all groups: ", $scope.allGroup.items);
+        if($scope.allGroup.items.length > 0) {
+            $("td.dataTables_empty").hide();
+        } else {
+            $("td.dataTables_empty").show();
+        }
+    }
+
+    /*
+     * Group set paging
+     */
+     $scope.getGroupsPageNumber = function(tab) {
+         switch(tab) {
+             case 'myGroups':
+                 return pagingService.getPanelTitle(groupsPaging);
+             case 'allGroups':
+                 return pagingService.getPanelTitle(allGroupsPaging);
+         }
+     };
+
+     $scope.prevPageEnabled = function(tab) {
+        switch(tab) {
+            case 'myGroups':
+                return pagingService.prevPageEnabled(groupsPaging);
+            case 'allGroups':
+                return pagingService.prevPageEnabled(allGroupsPaging);
+        }
+    };
+
+    $scope.nextPageEnabled = function(tab) {
+        switch(tab) {
+            case 'myGroups':
+                return pagingService.nextPageEnabled(groupsPaging);
+            case 'allGroups':
+                return pagingService.nextPageEnabled(allGroupsPaging);
+        }
+    };
+
+    $scope.prevPageMyGroups = function() {
+        var startFrom = pagingService.getPrevStartFrom(groupsPaging);
+        return groupsService
+                    .getGroupsAbridged(groupsPaging.maxItems, startFrom, false, $scope.query)
+                    .then(function(response) {
+                        groupsPaging = pagingService.prevPageUpdate(response.data.nextId, groupsPaging);
+                        updateGroupDisplay(response.data.groups);
+                    })
+                    .catch(function (error) {
+                        handleError(error,'groupsService::prevPageMyGroups-failure');
+                    });
+    }
+
+    $scope.prevPageAllGroups = function() {
+        var startFrom = pagingService.getPrevStartFrom(allGroupsPaging);
+        return groupsService
+                    .getGroupsAbridged(allGroupsPaging.maxItems, startFrom, true, $scope.query)
+                    .then(function(response) {
+                        allGroupsPaging = pagingService.prevPageUpdate(response.data.nextId, allGroupsPaging);
+                        updateAllGroupDisplay(response.data.groups);
+                    })
+                    .catch(function (error) {
+                        handleError(error,'groupsService::prevPageAllGroups-failure');
+                    });
+    }
+
+    $scope.nextPageMyGroups = function () {
+        return groupsService
+                    .getGroupsAbridged(groupsPaging.maxItems, groupsPaging.next, false, $scope.query)
+                    .then(function(response) {
+                        var groupSets = response.data.groups;
+                        groupsPaging = pagingService.nextPageUpdate(groupSets, response.data.nextId, groupsPaging);
+
+                        if (groupSets.length > 0) {
+                            updateGroupDisplay(response.data.groups);
+                        }
+                    })
+                    .catch(function (error) {
+                       handleError(error,'groupsService::nextPageMyGroups-failure')
+                    });
+    };
+
+    $scope.nextPageAllGroups = function () {
+        return groupsService
+                    .getGroupsAbridged(allGroupsPaging.maxItems, allGroupsPaging.next, true, $scope.query)
+                    .then(function(response) {
+                        var groupSets = response.data.groups;
+                        allGroupsPaging = pagingService.nextPageUpdate(groupSets, response.data.nextId, allGroupsPaging);
+
+                        if (groupSets.length > 0) {
+                            updateAllGroupDisplay(response.data.groups);
+                        }
+                    })
+                    .catch(function (error) {
+                       handleError(error,'groupsService::nextPageAllGroups-failure')
+                    });
+    };
+
+    $timeout($scope.refresh, 0);
 });
