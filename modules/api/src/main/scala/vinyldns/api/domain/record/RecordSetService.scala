@@ -159,9 +159,10 @@ class RecordSetService(
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") ))
               ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
-      _ <- if(recordSet.recordSetGroupChange != None && recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") != RecordSetGroupApprovalStatus.AutoApproved){
-        notifiers.notify(Notification(change)).toResult}
-        else {().toResult}
+      _ <- if(recordSet.recordSetGroupChange != None &&
+        recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") != RecordSetGroupApprovalStatus.AutoApproved)
+        notifiers.notify(Notification(change)).toResult
+        else ().toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult

@@ -30,6 +30,7 @@ import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData,
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
 
 import java.time.ZoneId
 
@@ -58,7 +59,6 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendBatchChangeNotification(bc: BatchChange): IO[Unit] = {
-
       userRepository.getUser(bc.userId).flatMap {
         case Some(UserWithEmail(email)) =>
           send(email) { message =>
@@ -80,10 +80,11 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendRecordSetChangeNotification(rsc: RecordSetChange): IO[Unit] = {
-  userRepository.getUser(
-    userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
-      map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id).
-    flatMap {
+    val user= userRepository.getUser(
+      userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
+        map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id)
+
+    user.flatMap {
       case Some(UserWithEmail(email)) =>
         send(email) { message =>
           message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
@@ -112,7 +113,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       | ${bc.comments.map(comments => s"<b>Description:</b> $comments</br>").getOrElse("")}
       | <b>Created:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(bc.createdTimestamp)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
-      | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
+      | <b>Status:</b> ${formatBatchStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
 
     // For manually reviewed e-mails, add additional info; e-mails are not sent for pending batch changes
     if (bc.approvalStatus != AutoApproved) {
@@ -146,14 +147,15 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
 
   def formatRecordSetChange(rsc: RecordSetChange): String = {
     val sb = new StringBuilder
-    sb.append(s"""<h1>Record Set Change Results</h1>
-                 | <b>Submitter:</b>  ${rsc.recordSet}""".stripMargin)
-
-
+    sb.append(s"""<h1>RecordSet Ownership Transfer Change</h1>
+                 | <b>Submitter:</b>  ${ userRepository.getUser(rsc.userId).map(_.get.userName)}
+                 | <b>Id:</b> ${rsc.id}<br/>
+                 | <b>OwnerShip Transfer Status:</b> ${rsc.recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus}<br/>
+                 """.stripMargin)
     sb.toString
   }
 
-  def formatStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
+  def formatBatchStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
     (approval, status) match {
       case (ManuallyRejected, _) => "Rejected"
       case (BatchChangeApprovalStatus.PendingReview, _) => "Pending Review"
