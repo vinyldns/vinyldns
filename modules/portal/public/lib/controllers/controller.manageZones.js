@@ -36,6 +36,8 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      * Zone scope data initial setup
      */
 
+    $scope.time = undefined;
+    $scope.utcTime = undefined;
     $scope.alerts = [];
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
@@ -97,6 +99,23 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.confirmDeleteZone = function() {
         $("#delete_zone_connection_modal").modal("show");
+    };
+
+    $scope.openTimeConverter = function() {
+        $("#time_converter_modal").modal("show");
+    };
+
+    $scope.getLocalTimeZone = function() {
+        return new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
+    };
+
+    $scope.getUtcTime = function() {
+        $scope.utcTime = moment($scope.time, 'hh:mm A').utc().format('hh:mm A');
+    };
+
+    $scope.resetTime = function () {
+        $scope.time = undefined;
+        $scope.utcTime = undefined;
     };
 
     $scope.myZoneSyncScheduleConfig = {
@@ -338,6 +357,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         zoneHistoryPaging = pagingService.resetPaging(zoneHistoryPaging);
          function success(response) {
             $log.log('zonesService::getZoneChanges-success');
+            $log.log('zonesService::getZoneChanges: ', response.data.zoneChanges);
             zoneHistoryPaging.next = response.data.nextId;
             $scope.zoneChanges = response.data.zoneChanges;
             $scope.updateZoneChangeDisplay(response.data.zoneChanges);
@@ -504,6 +524,17 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
                 handleError(error, 'zonesService::updateZone-failure');
             });
     };
+
+    $('input[name="time"]').daterangepicker({
+        singleDatePicker: true,
+        startDate: moment().startOf('day'),
+        minDate: moment().startOf('day'),
+        maxDate: moment().endOf('day'),
+        timePicker: true,
+        locale: {
+          format: 'hh:mm A'
+        }
+    });
 
     $timeout($scope.refreshZone, 0);
 });
