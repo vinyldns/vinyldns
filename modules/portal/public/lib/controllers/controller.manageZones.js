@@ -338,6 +338,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         zoneHistoryPaging = pagingService.resetPaging(zoneHistoryPaging);
          function success(response) {
             $log.log('zonesService::getZoneChanges-success');
+            $log.log('zonesService::getZoneChanges: ', response.data.zoneChanges);
             zoneHistoryPaging.next = response.data.nextId;
             $scope.zoneChanges = response.data.zoneChanges;
             $scope.updateZoneChangeDisplay(response.data.zoneChanges);
