@@ -356,8 +356,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.refreshZoneChange = function() {
         zoneHistoryPaging = pagingService.resetPaging(zoneHistoryPaging);
          function success(response) {
-            $log.log('zonesService::getZoneChanges-success');
-            $log.log('zonesService::getZoneChanges: ', response.data.zoneChanges);
+            $log.debug('zonesService::getZoneChanges-success');
             zoneHistoryPaging.next = response.data.nextId;
             $scope.zoneChanges = response.data.zoneChanges;
             $scope.updateZoneChangeDisplay(response.data.zoneChanges);
@@ -413,7 +412,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
     function getZoneGroup(groupId, length) {
         function success(response) {
-            $log.log('groupsService::getZoneGroup-success');
+            $log.debug('groupsService::getZoneGroup-success');
             $scope.zoneChanges[length].zone.adminGroupName = response.data.name;
         }
             return groupsService
@@ -427,7 +426,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getZoneUser(userId, length) {
         function success(response) {
-            $log.log('profileService::getZoneUserDataById-success');
+            $log.debug('profileService::getZoneUserDataById-success');
             $scope.zoneChanges[length].userName = response.data.userName;
         }
         return profileService
@@ -440,7 +439,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getAclGroup(groupId, length) {
         function success(response) {
-            $log.log('groupsService::getAclGroup-success');
+            $log.debug('groupsService::getAclGroup-success');
             $scope.allAclRules[length].groupName = response.data.name;
         }
         return groupsService
@@ -453,7 +452,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getAclUser(userId, length) {
         function success(response) {
-            $log.log('profileService::getAclUserDataById-success');
+            $log.debug('profileService::getAclUserDataById-success');
             $scope.allAclRules[length].userName = response.data.userName;
         }
         return profileService
@@ -530,9 +529,11 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         startDate: moment().startOf('day'),
         minDate: moment().startOf('day'),
         maxDate: moment().endOf('day'),
+        timePicker24Hour: true,
         timePicker: true,
+        timePickerIncrement: 5,
         locale: {
-          format: 'hh:mm A'
+          format: 'HH:mm A'
         }
     });
 
