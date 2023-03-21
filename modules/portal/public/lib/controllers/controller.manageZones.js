@@ -130,6 +130,12 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         }
     }
 
+    // Hide calendar as it's not necessary here and override css
+    $('#local-time').focusin(function(){
+      $('.calendar-table').css("display","none");
+      $('.calendar-time').css("margin-left","1.1rem");
+    });
+
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
             .then(function (response) {
