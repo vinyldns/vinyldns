@@ -129,7 +129,7 @@ class ZoneServiceSpec
   private val updateZoneAuthorized = UpdateZoneInput(
     okZone.id,
     "ok.zone.recordsets.",
-    "updated-test@test.com",
+    "test@test.com",
     connection = testConnection,
     adminGroupId = okGroup.id
   )
