@@ -46,7 +46,7 @@ def test_update_zone_success(shared_zone_test_context):
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
 
-        result_zone["email"] = "foo@bar.com"
+        result_zone["email"] = "test@dummy.com"
         result_zone["acl"]["rules"] = [acl_rule]
         update_result = client.update_zone(result_zone, status=202)
         client.wait_until_zone_change_status_synced(update_result)
@@ -58,7 +58,7 @@ def test_update_zone_success(shared_zone_test_context):
         get_result = client.get_zone(result_zone["id"])
 
         uz = get_result["zone"]
-        assert_that(uz["email"], is_("foo@bar.com"))
+        assert_that(uz["email"], is_("test@dummy.com"))
         assert_that(uz["updated"], is_not(none()))
 
         acl = uz["acl"]
@@ -745,7 +745,7 @@ def test_update_reverse_v4_zone(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     zone = copy.deepcopy(shared_zone_test_context.ip4_reverse_zone)
-    zone["email"] = "update-test@bar.com"
+    zone["email"] = "test@test.com"
 
     update_result = client.update_zone(zone, status=202)
     client.wait_until_zone_change_status_synced(update_result)
@@ -757,7 +757,7 @@ def test_update_reverse_v4_zone(shared_zone_test_context):
     get_result = client.get_zone(zone["id"])
 
     uz = get_result["zone"]
-    assert_that(uz["email"], is_("update-test@bar.com"))
+    assert_that(uz["email"], is_("test@test.com"))
     assert_that(uz["updated"], is_not(none()))
 
 
@@ -768,7 +768,7 @@ def test_update_reverse_v6_zone(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     zone = copy.deepcopy(shared_zone_test_context.ip6_reverse_zone)
-    zone["email"] = "update-test@bar.com"
+    zone["email"] = "test@test.com"
 
     update_result = client.update_zone(zone, status=202)
     client.wait_until_zone_change_status_synced(update_result)
@@ -780,7 +780,7 @@ def test_update_reverse_v6_zone(shared_zone_test_context):
     get_result = client.get_zone(zone["id"])
 
     uz = get_result["zone"]
-    assert_that(uz["email"], is_("update-test@bar.com"))
+    assert_that(uz["email"], is_("test@test.com"))
     assert_that(uz["updated"], is_not(none()))
 
 
