@@ -25,7 +25,11 @@ import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
+import vinyldns.core.domain.record.RecordSetRepository
+//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
@@ -53,6 +57,20 @@ class ZoneServiceSpec
   private val badConnection = ZoneConnection("bad", "bad", Encrypted("bad"), "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name, AccessLevel.Delete)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name, AccessLevel.NoAccess)
+  private val mockMembershipRepo = mock[MembershipRepository]
+  private val mockGroupChangeRepo = mock[GroupChangeRepository]
+  private val mockRecordSetRepo = mock[RecordSetRepository]
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"))
+  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List())
+  private val mockMembershipService = new MembershipService(mockGroupRepo,
+    mockUserRepo,
+    mockMembershipRepo,
+    mockZoneRepo,
+    mockGroupChangeRepo,
+    mockRecordSetRepo,
+    mockValidEmailConfig)
+
+
 
   object TestConnectionValidator extends ZoneConnectionValidatorAlgebra {
     def validateZoneConnections(zone: Zone): Result[Unit] =
@@ -78,7 +96,27 @@ class ZoneServiceSpec
     new ZoneValidations(1000),
     new AccessValidations(),
     mockBackendResolver,
-    NoOpCrypto.instance
+    NoOpCrypto.instance,
+    mockMembershipService
+  )
+  private val underTestNew = new ZoneService(
+    mockZoneRepo,
+    mockGroupRepo,
+    mockUserRepo,
+    mockZoneChangeRepo,
+    TestConnectionValidator,
+    mockMessageQueue,
+    new ZoneValidations(1000),
+    new AccessValidations(),
+    mockBackendResolver,
+    NoOpCrypto.instance,
+    new MembershipService(mockGroupRepo,
+      mockUserRepo,
+      mockMembershipRepo,
+      mockZoneRepo,
+      mockGroupChangeRepo,
+      mockRecordSetRepo,
+      mockValidEmailConfigNew)
   )
 
   private val createZoneAuthorized = CreateZoneInput(
@@ -210,6 +248,99 @@ class ZoneServiceSpec
 
       val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
+    }
+    "return the result if the zone created includes an valid email" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(email ="test@ok.dummy.com")
+      val resultChange: ZoneChange =
+        underTest.connectToZone(newZone, okAuth).map(_.asInstanceOf[ZoneChange]).value.unsafeRunSync().toOption.get
+      resultChange.changeType shouldBe ZoneChangeType.Create
+      Option(resultChange.created) shouldBe defined
+      resultChange.status shouldBe ZoneChangeStatus.Pending
+      resultChange.userId shouldBe okAuth.userId
+
+      val resultZone = resultChange.zone
+      Option(resultZone.id) shouldBe defined
+      resultZone.email shouldBe newZone.email
+      resultZone.name shouldBe newZone.name
+      resultZone.status shouldBe ZoneStatus.Syncing
+      resultZone.connection shouldBe newZone.connection
+      resultZone.shared shouldBe false
+    }
+    "return the result if the zone created includes empty Domain" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(email = "test@abc.com")
+      val resultChange: ZoneChange =
+        underTestNew.connectToZone(newZone, okAuth).map(_.asInstanceOf[ZoneChange]).value.unsafeRunSync().toOption.get
+      resultChange.changeType shouldBe ZoneChangeType.Create
+      Option(resultChange.created) shouldBe defined
+      resultChange.status shouldBe ZoneChangeStatus.Pending
+      resultChange.userId shouldBe okAuth.userId
+
+      val resultZone = resultChange.zone
+      Option(resultZone.id) shouldBe defined
+      resultZone.email shouldBe newZone.email
+      resultZone.name shouldBe newZone.name
+      resultZone.status shouldBe ZoneStatus.Syncing
+      resultZone.connection shouldBe newZone.connection
+      resultZone.shared shouldBe false
+    }
+    "return an EmailValidationError if an email is invalid" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test@my.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 1" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test.ok.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if a domain is invalid test case 1" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test@ok.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 2" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test@.@.test.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 3" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test@.@@.test.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 4" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "@te@st@test.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 5" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = ".test@test.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 6" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "te.....st@test.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
     }
 
     "succeed if zone is shared and user is a super user" in {
@@ -363,6 +494,40 @@ class ZoneServiceSpec
       val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
     }
+    "return the result if the zone updated includes an valid email" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(twoUserGroup.id, okGroup.id))
+      val updateZoneInput = updateZoneAuthorized.copy(adminGroupId = twoUserGroup.id,email="test@dummy.com")
+
+      val resultChange: ZoneChange =
+        underTest
+          .updateZone(updateZoneInput, doubleAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value.unsafeRunSync().toOption.get
+
+      resultChange.zone.id shouldBe okZone.id
+      resultChange.changeType shouldBe ZoneChangeType.Update
+      resultChange.zone.adminGroupId shouldBe updateZoneInput.adminGroupId
+      resultChange.zone.adminGroupId should not be updateZoneAuthorized.adminGroupId
+    }
+    "return the result if the zone updated includes an empty domain" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(twoUserGroup.id, okGroup.id))
+      val updateZoneInput = updateZoneAuthorized.copy(adminGroupId = twoUserGroup.id, email = "test@ok.com")
+
+      val resultChange: ZoneChange =
+        underTestNew
+          .updateZone(updateZoneInput, doubleAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value.unsafeRunSync().toOption.get
+
+      resultChange.zone.id shouldBe okZone.id
+      resultChange.changeType shouldBe ZoneChangeType.Update
+      resultChange.zone.adminGroupId shouldBe updateZoneInput.adminGroupId
+      resultChange.zone.adminGroupId should not be updateZoneAuthorized.adminGroupId
+    }
 
     "succeed if zone shared flag is updated and user is a super user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
@@ -417,6 +582,46 @@ class ZoneServiceSpec
 
       val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
+    }
+    "return an EmailValidationError if an invalid email is entered while updating the zone" in {
+      val newZone = updateZoneAuthorized.copy(email ="test.ok.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe an[EmailValidationError]
+    }
+    "return an EmailValidationError if a domain is invalid test case 1" in {
+      val newZone = updateZoneAuthorized.copy(email = "test@ok.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe an[EmailValidationError]
+    }
+
+    "return an EmailValidationError if an email is invalid test case 2" in {
+      val newZone = updateZoneAuthorized.copy(email = "test@.@.test.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 3" in {
+      val newZone = updateZoneAuthorized.copy(email = "test@.@@.test.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 4" in {
+      val newZone=updateZoneAuthorized.copy(email = "@te@st@test.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 5" in {
+      val newZone = updateZoneAuthorized.copy(email = ".test@test.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 6" in {
+      val newZone = updateZoneAuthorized.copy(email = "te.....st@test.com")
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
     }
   }
 
