@@ -136,6 +136,12 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
       $('.calendar-time').css("margin-left","1.1rem");
     });
 
+    // Override minute values to have trialing zero
+    $('.panel').focusin(function(){
+      $(".minute-value option[value='number:0']").attr("label", "00");
+      $(".minute-value option[value='number:5']").attr("label", "05");
+    });
+
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
             .then(function (response) {
