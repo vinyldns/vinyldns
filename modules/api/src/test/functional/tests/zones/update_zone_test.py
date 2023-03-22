@@ -171,6 +171,49 @@ def test_create_invalid_domain(shared_zone_test_context):
 
 def test_create_invalid_email(shared_zone_test_context):
     """
+    Test that updating a zone with invalid Email
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+
+        acl_rule = {
+            "accessLevel": "Read",
+            "description": "test-acl-updated-by-updatezn",
+            "userId": "ok",
+            "recordMask": "www-*",
+            "recordTypes": ["A", "AAAA", "CNAME"]
+        }
+
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            },
+            "transferConnection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        result_zone["email"] = "test.abc.com"
+        result_zone["acl"]["rules"] = [acl_rule]
+        errors = client.update_zone(result_zone, status=400)
+        client.wait_until_zone_change_status_synced(errors)
+        assert_that(errors, is_("Please enter a valid Email ID."))
+
+def test_create_invalid_email(shared_zone_test_context):
+    """
     Test that creating a zone with invalid email
     """
     client = shared_zone_test_context.ok_vinyldns_client
