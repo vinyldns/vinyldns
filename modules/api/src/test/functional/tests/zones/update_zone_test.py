@@ -126,7 +126,7 @@ def test_update_zone_success_wildcard(shared_zone_test_context):
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
 
-def test_create_invalid_domain(shared_zone_test_context):
+def test_update_invalid_domain(shared_zone_test_context):
     """
     Test that updating a zone with invalid domain
     """
@@ -169,7 +169,7 @@ def test_create_invalid_domain(shared_zone_test_context):
         client.wait_until_zone_change_status_synced(errors)
         assert_that(errors, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
 
-def test_create_invalid_email(shared_zone_test_context):
+def test_update_invalid_email(shared_zone_test_context):
     """
     Test that updating a zone with invalid Email
     """
@@ -211,24 +211,6 @@ def test_create_invalid_email(shared_zone_test_context):
         errors = client.update_zone(result_zone, status=400)
         client.wait_until_zone_change_status_synced(errors)
         assert_that(errors, is_("Please enter a valid Email ID."))
-
-def test_create_invalid_email(shared_zone_test_context):
-    """
-    Test that creating a zone with invalid email
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-
-    zone_name = f"one-time{shared_zone_test_context.partition_id} "
-
-    zone = {
-        "name": zone_name,
-        "email": "test.abc.com",
-        "adminGroupId": shared_zone_test_context.ok_group["id"],
-        "backendId": "func-test-backend"
-    }
-
-    errors = client.update_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email ID."))
 
 def test_update_zone_sync_schedule_fails(shared_zone_test_context):
     """
