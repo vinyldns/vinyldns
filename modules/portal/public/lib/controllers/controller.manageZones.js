@@ -110,7 +110,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     };
 
     $scope.getUtcTime = function() {
-        $scope.utcTime = moment($scope.time, 'hh:mm A').utc().format('hh:mm A');
+        $scope.utcTime = moment($scope.time, 'hh:mm A').utc().format('HH:mm');
     };
 
     $scope.resetTime = function () {
@@ -545,7 +545,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         timePicker: true,
         timePickerIncrement: 5,
         locale: {
-          format: 'HH:mm A'
+          format: 'HH:mm'
         }
     });
 
