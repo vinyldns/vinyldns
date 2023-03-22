@@ -227,13 +227,13 @@ def test_create_invalid_email(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "test.zone.invalid."
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
 
     zone = {
         "name": zone_name,
         "email": "test.abc.com",
-        "shared": "invalid_value",
-        "adminGroupId": "admin-group-id"
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
     }
 
     errors = client.create_zone(zone, status=400)["errors"]
@@ -245,13 +245,13 @@ def test_create_invalid_domain(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    zone_name = "test.zone.invalid."
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
 
     zone = {
         "name": zone_name,
         "email": "test@abc.com",
-        "shared": "invalid_value",
-        "adminGroupId": "admin-group-id"
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
     }
 
     errors = client.create_zone(zone, status=400)["errors"]
