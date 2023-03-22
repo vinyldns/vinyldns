@@ -236,7 +236,7 @@ def test_create_invalid_email(shared_zone_test_context):
         "backendId": "func-test-backend"
     }
 
-    errors = client.create_zone(zone, status=400)["errors"]
+    errors = client.create_zone(zone, status=400)
     assert_that(errors, is_("Please enter a valid Email ID."))
 
 def test_create_invalid_domain(shared_zone_test_context):
@@ -254,7 +254,7 @@ def test_create_invalid_domain(shared_zone_test_context):
         "backendId": "func-test-backend"
     }
 
-    errors = client.create_zone(zone, status=400)["errors"]
+    errors = client.create_zone(zone, status=400)
     assert_that(errors, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
 
 @pytest.mark.serial
