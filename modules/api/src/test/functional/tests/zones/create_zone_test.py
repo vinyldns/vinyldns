@@ -237,7 +237,7 @@ def test_create_invalid_email(shared_zone_test_context):
     }
 
     errors = client.create_zone(zone, status=400)["errors"]
-    assert_that(error, is_("Please enter a valid Email ID."))
+    assert_that(errors, is_("Please enter a valid Email ID."))
 
 def test_create_invalid_domain(shared_zone_test_context):
     """
@@ -255,7 +255,7 @@ def test_create_invalid_domain(shared_zone_test_context):
     }
 
     errors = client.create_zone(zone, status=400)["errors"]
-    assert_that(error, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
+    assert_that(errors, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
 
 @pytest.mark.serial
 def test_create_zone_with_connection_failure(shared_zone_test_context):
