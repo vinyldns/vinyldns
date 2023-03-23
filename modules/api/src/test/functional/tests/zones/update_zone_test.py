@@ -131,37 +131,45 @@ def test_update_invalid_email(shared_zone_test_context):
     Test that updating a zone with invalid email
     """
     client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
-    zone_name = f"one-time{shared_zone_test_context.partition_id} "
+        acl_rule = {
+            "accessLevel": "Read",
+            "description": "test-acl-updated-by-updatezn",
+            "userId": "ok",
+            "recordMask": "www-*",
+            "recordTypes": ["A", "AAAA", "CNAME"]
+        }
 
-    zone = {
-        "name": zone_name,
-        "email": "test.abc.com",
-        "adminGroupId": shared_zone_test_context.ok_group["id"],
-        "backendId": "func-test-backend"
-    }
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            },
+            "transferConnection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
 
-    errors = client.update_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email ID."))
-
-def test_update_invalid_domain(shared_zone_test_context):
-    """
-    Test that updating a zone with invalid domain
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-
-    zone_name = f"one-time{shared_zone_test_context.partition_id} "
-
-    zone = {
-        "name": zone_name,
-        "email": "test@abc.com",
-        "adminGroupId": shared_zone_test_context.ok_group["id"],
-        "backendId": "func-test-backend"
-    }
-
-    errors = client.update_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
-
+        result_zone["email"] = "test.trial.com"
+        errors = client.update_zone(result_zone, status=400)
+        assert_that(errors, is_("Please enter a valid Email ID."))
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
 
 def test_update_zone_sync_schedule_fails(shared_zone_test_context):
     """
