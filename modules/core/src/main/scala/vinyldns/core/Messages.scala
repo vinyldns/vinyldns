@@ -85,4 +85,6 @@ object Messages {
   val EmailValidationErrorMsg = "Please enter a valid Email ID. Valid domains should end with"
 
   val InvalidEmailValidationErrorMsg = "Please enter a valid Email ID."
+
+  val DotsValidationErrorMsg = "Please enter a valid Email ID. Number of dots allowed after @ is"
 }
