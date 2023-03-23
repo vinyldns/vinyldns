@@ -49,8 +49,8 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
-  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"))
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List())
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
+  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
 
   private val backingService = new MembershipService(
     mockGroupRepo,
