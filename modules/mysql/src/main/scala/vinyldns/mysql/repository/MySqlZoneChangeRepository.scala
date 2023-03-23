@@ -57,7 +57,7 @@ class MySqlZoneChangeRepository
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       IO {
-        logger.info(s"Saving zone change '${zoneChange.id}'. Zone name: '${zoneChange.zone.name}', change type: '${zoneChange.changeType}', status: '${zoneChange.status}'")
+        logger.debug(s"Saving zone change '${zoneChange.id}' for zone '${zoneChange.zone.name}'")
         DB.localTx { implicit s =>
           PUT_ZONE_CHANGE
             .bindByName(
