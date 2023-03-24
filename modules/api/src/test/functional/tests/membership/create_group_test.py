@@ -174,6 +174,23 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
     }
     error = client.create_group(new_group, status=400)
     assert_that(error, is_("Please enter a valid Email ID."))
+
+def test_create_group_with_invalid_email_number_of_dots(shared_zone_test_context):
+    """
+    Tests that creating a group With Invalid email fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    new_group = {
+        "name": "invalid-email",
+        "email": "test@ok.ok.dummy.com",
+        "description": "this is a description",
+        "members": [{"id": "ok"}],
+        "admins": [{"id": "ok"}]
+    }
+    error = client.create_group(new_group, status=400)
+    assert_that(error, is_("Please enter a valid Email ID. Number of dots allowed after @ is 2"))
+
 def test_create_group_without_members_or_admins(shared_zone_test_context):
     """
     Tests that creating a group without members or admins fails

@@ -307,6 +307,11 @@ class MembershipServiceSpec
         error shouldBe a[EmailValidationError]
       }
 
+      "return an error if an invalid email with number of dots is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test@ok.ok.dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
+
       "return an error if an invalid email with * is entered" in {
         val error = underTest.createGroup(groupInfo.copy(email = "test@*dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[EmailValidationError]

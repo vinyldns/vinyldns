@@ -294,6 +294,13 @@ class ZoneServiceSpec
       error shouldBe a[EmailValidationError]
     }
 
+    "return an error if an email is invalid test case with number of dots" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+      val newZone = createZoneAuthorized.copy(email = "test@ok.ok.dummy.com")
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
     "return an error if an email is invalid test case 1" in {
       doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
       val newZone = createZoneAuthorized.copy(email = "test.ok.com")

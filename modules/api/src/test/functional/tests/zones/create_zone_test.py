@@ -239,6 +239,24 @@ def test_create_invalid_email(shared_zone_test_context):
     errors = client.create_zone(zone, status=400)
     assert_that(errors, is_("Please enter a valid Email ID."))
 
+def test_create_invalid_email_number_of_dots(shared_zone_test_context):
+    """
+    Test that creating a zone with invalid email
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
+
+    zone = {
+        "name": zone_name,
+        "email": "test@abc.ok.dummy.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
+    }
+
+    errors = client.create_zone(zone, status=400)
+    assert_that(errors, is_("Please enter a valid Email ID. Number of dots allowed after @ is 2"))
+
 def test_create_invalid_domain(shared_zone_test_context):
     """
     Test that creating a zone with invalid domain
