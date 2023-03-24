@@ -268,6 +268,27 @@ class ZoneServiceSpec
       resultZone.connection shouldBe newZone.connection
       resultZone.shared shouldBe false
     }
+
+    "return the result if the zone created includes an valid email with number of dots " in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val newZone = createZoneAuthorized.copy(email = "test@ok.dummy.com")
+      val resultChange: ZoneChange =
+        underTest.connectToZone(newZone, okAuth).map(_.asInstanceOf[ZoneChange]).value.unsafeRunSync().toOption.get
+      resultChange.changeType shouldBe ZoneChangeType.Create
+      Option(resultChange.created) shouldBe defined
+      resultChange.status shouldBe ZoneChangeStatus.Pending
+      resultChange.userId shouldBe okAuth.userId
+
+      val resultZone = resultChange.zone
+      Option(resultZone.id) shouldBe defined
+      resultZone.email shouldBe newZone.email
+      resultZone.name shouldBe newZone.name
+      resultZone.status shouldBe ZoneStatus.Syncing
+      resultZone.connection shouldBe newZone.connection
+      resultZone.shared shouldBe false
+    }
+
     "return the result if the zone created includes empty Domain" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 

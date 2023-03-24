@@ -94,7 +94,8 @@ def test_create_zone_success(shared_zone_test_context):
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
 
-def test_create_zone_success_wildcard(shared_zone_test_context):
+
+def test_create_zone_success_number_of_dots(shared_zone_test_context):
     """
     Test successfully creating a zone
     """

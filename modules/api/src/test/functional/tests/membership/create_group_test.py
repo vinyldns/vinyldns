@@ -63,6 +63,37 @@ def test_create_group_success_wildcard(shared_zone_test_context):
         if result:
             client.delete_group(result["id"], status=(200, 404))
 
+def test_create_group_success_number_of_dots(shared_zone_test_context):
+    """
+    Tests that creating a group works
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result = None
+
+    try:
+        new_group = {
+            "name": "test-create-group-success_wildcard{shared_zone_test_context.partition_id}",
+            "email": "test@ok.dummy.com",
+            "description": "this is a description",
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
+        }
+        result = client.create_group(new_group, status=200)
+
+        assert_that(result["name"], is_(new_group["name"]))
+        assert_that(result["email"], is_(new_group["email"]))
+        assert_that(result["description"], is_(new_group["description"]))
+        assert_that(result["status"], is_("Active"))
+        assert_that(result["created"], not_none())
+        assert_that(result["id"], not_none())
+        assert_that(result["members"], has_length(1))
+        assert_that(result["members"][0]["id"], is_("ok"))
+        assert_that(result["admins"], has_length(1))
+        assert_that(result["admins"][0]["id"], is_("ok"))
+    finally:
+        if result:
+            client.delete_group(result["id"], status=(200, 404))
+
 def test_creator_is_an_admin(shared_zone_test_context):
     """
     Tests that the creator is an admin

@@ -368,6 +368,11 @@ class MembershipServiceSpec
       result shouldBe Right(())
     }
 
+    "Check whether test.com is a valid email with number of dots" in {
+      val result = underTest.emailValidation(email = "test@ok.dummy.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
     "Check whether it is allowing any domain when the config is empty" in {
       val result = underTestNew.emailValidation(email = "test@abc.com").value.unsafeRunSync()
       result shouldBe Right(())
