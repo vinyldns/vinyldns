@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{RecordSet, RecordSetGroupApprovalStatus, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -415,24 +415,6 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's record type.")
     )
 
-  def unchangedRecordSet(
-                           existing: RecordSet,
-                           updates: RecordSet,
-                         ): Either[Throwable, Unit] = {
-    Either.cond(
-      (
-        updates.typ == existing.typ &&
-        updates.records == existing.records &&
-        updates.id == existing.id &&
-        updates.zoneId == existing.zoneId &&
-        updates.name == existing.name &&
-        updates.ownerGroupId == existing.ownerGroupId &&
-        updates.ttl == existing.ttl),
-      (),
-      InvalidRequest("Cannot update RecordSet's.")
-    )
-  }
-
   def unchangedZoneId(
       existing: RecordSet,
       updates: RecordSet
@@ -468,4 +450,32 @@ object RecordSetValidations {
       val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
       searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty
     }
+
+  def unchangedRecordSet(
+                          existing: RecordSet,
+                          updates: RecordSet,
+                        ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.typ == existing.typ &&
+        updates.records == existing.records &&
+        updates.id == existing.id &&
+        updates.zoneId == existing.zoneId &&
+        updates.name == existing.name &&
+        updates.ownerGroupId == existing.ownerGroupId &&
+        updates.ttl == existing.ttl,
+      (),
+      InvalidRequest("Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer")
+    )
+
+  def recordSetOwnerShipApproveStatus(
+                       updates: RecordSet,
+                       ): Either[Throwable, Unit] =
+    Either.cond(
+        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.AutoApproved &&
+        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.ManuallyRejected,
+      (),
+      InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
+    )
+
 }

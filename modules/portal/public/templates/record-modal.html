@@ -463,7 +463,7 @@
             </modal-element>
             <modal-element label="Record Owner Group Request"
                            invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
-                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.isCurrentRecordOwnerGroup">
                 <select name="requestedOwnerGroupId"
                         class="form-control"
                         ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
@@ -480,7 +480,8 @@
 
             <modal-element label="Record Owner Group Status"
                            invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
-                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.isCurrentRecordOwnerGroup
+                           && currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus != 'Cancelled'" >
                 <select name="ownerGroupStatus"
                         class="form-control"
                         ng-model="currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus"
@@ -492,7 +493,7 @@
                 </modal-invalid>
             </modal-element>
             <modal-element label="Record Status" invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
-                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.isCurrentRecordOwnerGroup">
                 <input id="record-status-text" type="text" name="recordStatus" class="form-control"
                        ng-model="currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus"
                        ng-class="recordModal.details.class"

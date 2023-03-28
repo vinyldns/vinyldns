@@ -88,12 +88,13 @@ angular.module('controller.records', [])
     // paging status for record changes
     var changePaging = pagingService.getNewPagingParams(100);
 
-    $scope.recordSetGroupApprovalStatus = function(groupId, profileId) {
+    function recordSetGroupOwnerShipStatus(groupId, profileId) {
         function success(response) {
+        var recordSetGroupApprovalStatus;
            if (response.data.members.some(x => x.id === profileId)){
-           $scope.recordSetGroupApprovalStatus = $scope.recordSetGroupApproverStatus;}
-           else{$scope.recordSetGroupApprovalStatus = $scope.recordSetGroupRequestorStatus;}
-         return $scope.recordSetGroupApprovalStatus
+           recordSetGroupApprovalStatus = $scope.recordSetGroupApproverStatus;}
+           else{recordSetGroupApprovalStatus = $scope.recordSetGroupRequestorStatus;}
+         return  $scope.recordSetGroupApprovalStatus = recordSetGroupApprovalStatus
         }
         return groupsService
             .getGroupMemberList(groupId)
@@ -153,17 +154,25 @@ angular.module('controller.records', [])
             basics: $scope.recordModalParams.readOnly,
             details: $scope.recordModalParams.editable,
             sharedZone: $scope.zoneInfo.shared,
-            sharedDisplayEnabled: $scope.sharedDisplayEnabled
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled,
+            isCurrentRecordOwnerGroup : false
         };
         var currentRecordOwnerGroupId = $scope.currentRecord.ownerGroupId;
         $scope.recordSetGroupApprover = "";
         $scope.recordSetGroupRequestor = "";
 
-        $scope.recordSetGroupApprovalStatus(currentRecordOwnerGroupId, $scope.profile.id)
-        if ($scope.recordSetGroupApproverStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
-        {$scope.recordSetGroupApprover = true}else{$scope.recordSetGroupApprover = false}
-        if ($scope.recordSetGroupRequestorStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
-        {$scope.recordSetGroupRequestor = true}else{$scope.recordSetGroupRequestor = false}
+        if (currentRecordOwnerGroupId != undefined){$scope.recordModal.isCurrentRecordOwnerGroup = true
+        }else{ $scope.recordModal.isCurrentRecordOwnerGroup = false }
+
+        if ($scope.zoneInfo.shared == true && $scope.recordModal.isCurrentRecordOwnerGroup){
+            recordSetGroupOwnerShipStatus(currentRecordOwnerGroupId, $scope.profile.id);
+            if ($scope.recordSetGroupApproverStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
+                {$scope.recordSetGroupApprover = true}else{$scope.recordSetGroupApprover = false}
+            if ($scope.recordSetGroupRequestorStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
+            {$scope.recordSetGroupRequestor = true}else{$scope.recordSetGroupRequestor = false}
+        }else{
+            $log.log('zoneService: NonSharedZones');
+        }
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
     };
