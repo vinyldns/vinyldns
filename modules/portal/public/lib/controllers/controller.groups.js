@@ -28,6 +28,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.ignoreAccess = false;
     $scope.hasGroups = false;
     $scope.query = "";
+    $scope.validEmailDomains= [];
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
@@ -44,12 +45,15 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     var modalDialog;
 
     $scope.openModal = function (evt) {
+     $log.log('First entry');
         $scope.currentGroup = {};
+        $scope.validDomains();
         void (evt && evt.preventDefault());
         if (!modalDialog) {
             modalDialog = angular.element('#modal_new_group').modal();
         }
         modalDialog.modal('show');
+
     };
 
     $scope.closeModal = function (evt) {
@@ -69,7 +73,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.refresh();
         return true;
     };
-
     // Autocomplete for group search
     $("#group-search-text").autocomplete({
       source: function( request, response ) {
@@ -207,6 +210,21 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 handleError(error, 'groupsService::getGroups-failure');
             });
     }
+     $scope.validDomains=function getValidEmailDomains() {
+      $log.log('Function Entry');
+            function success(response) {
+                $log.log('groupsService::listEmailDomains-success');
+                return $scope.validEmailDomains = response.data;
+            }
+
+            return groupsService
+                .listEmailDomains($scope.ignoreAccess, $scope.query)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::listEmailDomains-failure');
+                });
+        }
+
 
     // Return true if there are no groups created by the user
     $scope.haveNoGroups = function (groupLength) {
@@ -228,6 +246,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     $scope.editGroup = function (groupInfo) {
         $scope.currentGroup = groupInfo;
+        $scope.validDomains();
         $("#modal_edit_group").modal("show");
     };
 

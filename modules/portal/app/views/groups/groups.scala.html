@@ -281,6 +281,24 @@
                                    type="text"
                                    required>
                             </input>
+                            <div>
+                                <h5>
+                                    <a data-toggle="collapse" data-target="#collapseNewGroupInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                                        <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                    </a>
+                                </h5>
+                            </div>
+                            <div class="collapse" id="collapseNewGroupInstruction">
+                                <div class="well">
+                                    <p>
+                                        <strong>List Of Valid Email Domains:</strong>
+                                    <li ng-repeat="validDomains in validEmailDomains">
+                                    <strong>{{validDomains}} </strong>
+                                    </li>
+                                    </p>
+                                    <hr/>
+                                </div>
+                            </div>
                             <span class="help-block">The email distribution list for the group.</span>
                         </modal-element>
                         <modal-element label="Description">
@@ -297,9 +315,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="clear-group-button" type="button" class="btn btn-default pull-left" ng-click="reset()">Clear Form</button>
-                    <button id="create-group-button" class="btn btn-primary pull-right">Create</button>
-                    <button type="button" class="btn btn-default" ng-click="closeModal($evt);">Close</button>
+                    <button id="clear-group-button" type="button" class="btn btn-default pull-left" ng-click="reset()"
+                            data-toggle="collapse" data-target="#collapseNewGroupInstruction">Clear Form</button>
+                    <button id="create-group-button" class="btn btn-primary pull-right"
+                            data-toggle="collapse" data-target="#collapseNewGroupInstruction">Create</button>
+                    <button type="button" class="btn btn-default" ng-click="closeModal($evt);"
+                            data-toggle="collapse" data-target="#collapseNewGroupInstruction">Close</button>
                 </div>
             </div>
         </form>
@@ -343,6 +364,24 @@
                                    type="text"
                                    required>
                             </input>
+                            <div>
+                                <h5>
+                                    <a data-toggle="collapse" data-target="#collapseEditGroupInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                                        <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                    </a>
+                                </h5>
+                            </div>
+                            <div class="collapse" id="collapseEditGroupInstruction">
+                                <div class="well">
+                                    <p>
+                                        <strong>List Of Valid Email Domains:</strong>
+                                    <li ng-repeat="validDomains in validEmailDomains">
+                                        <strong>{{validDomains}} </strong>
+                                    </li>
+                                    </p>
+                                    <hr/>
+                                </div>
+                            </div>
                             <span class="help-block">The email distribution list for the group.</span>
                         </modal-element>
                         <modal-element label="Description">
@@ -360,8 +399,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="edit-group-button" class="btn btn-primary pull-right">Update</button>
-                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeEditModal()">Close</button>
+                    <button id="edit-group-button" class="btn btn-primary pull-right"
+                            data-toggle="collapse" data-target="#collapseEditGroupInstruction">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeEditModal()"
+                            data-toggle="collapse" data-target="#collapseEditGroupInstruction">Close</button>
                 </div>
             </div>
         </form>
