@@ -1966,7 +1966,7 @@ class RecordSetServiceSpec
         //val recordSetChange= List[RecordSetChange]
         doReturn(IO.pure(completeRecordSetChanges))
           .when(mockRecordChangeRepo)
-          .listFailedRecordSetChanges()
+          .listFailedRecordSetChanges(100)
 
 
         val result: ListFailedRecordSetChangesResponse =

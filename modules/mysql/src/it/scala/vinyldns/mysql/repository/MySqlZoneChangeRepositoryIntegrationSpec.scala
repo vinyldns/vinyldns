@@ -183,7 +183,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val expectedChanges =
         failedChanges.toList
 
-      val listResponse = repo.listFailedZoneChanges().unsafeRunSync()
+      val listResponse = repo.listFailedZoneChanges(100).unsafeRunSync()
       listResponse should contain theSameElementsAs(expectedChanges)
     }
 
@@ -195,7 +195,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
           fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
         )
 
-      val listResponse = repo.listFailedZoneChanges().unsafeRunSync()
+      val listResponse = repo.listFailedZoneChanges(100).unsafeRunSync()
       listResponse shouldBe List()
     }
 

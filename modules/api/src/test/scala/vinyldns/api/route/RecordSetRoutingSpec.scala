@@ -572,7 +572,8 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listFailedRecordSetChanges(
-                                    authPrincipal: AuthPrincipal
+                                    authPrincipal: AuthPrincipal,
+                                    maxItems: Int,
                                   ): Result[ListFailedRecordSetChangesResponse] = {
       val outcome = authPrincipal match {
         case _ => Right(listFailedRecordSetChangeResponse)

@@ -145,7 +145,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges().unsafeRunSync()
+      val result = repo.listFailedRecordSetChanges(100).unsafeRunSync()
       (result  should have).length(10)
       result should contain theSameElementsAs(inserts)
 
@@ -156,7 +156,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges().unsafeRunSync()
+      val result = repo.listFailedRecordSetChanges(100).unsafeRunSync()
       (result  should have).length(0)
       result shouldBe List()
     }

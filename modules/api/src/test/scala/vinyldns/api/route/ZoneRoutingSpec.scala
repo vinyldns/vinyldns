@@ -359,7 +359,8 @@ class ZoneRoutingSpec
     }
 
     def listFailedZoneChanges(
-                               authPrincipal: AuthPrincipal
+                               authPrincipal: AuthPrincipal,
+                               maxItems: Int
                              ): Result[ListFailedZoneChangesResponse] = {
       val outcome = authPrincipal match {
         case _ => Right(listFailedZoneChangeResponse)

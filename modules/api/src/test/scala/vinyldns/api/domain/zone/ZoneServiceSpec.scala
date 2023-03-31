@@ -831,7 +831,7 @@ class ZoneServiceSpec
         zoneUpdate.copy(status = ZoneChangeStatus.Failed)
       )))
         .when(mockZoneChangeRepo)
-        .listFailedZoneChanges()
+        .listFailedZoneChanges(100)
 
       val result: ListFailedZoneChangesResponse =
         underTest.listFailedZoneChanges(okAuth).value.unsafeRunSync().toOption.get
