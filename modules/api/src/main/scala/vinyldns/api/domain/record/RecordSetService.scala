@@ -568,19 +568,33 @@ class RecordSetService(
     } yield change
 
   def listRecordSetChanges(
-                            zoneId: String,
+                            zoneId: Option[String] = None,
                             startFrom: Option[Int] = None,
                             maxItems: Int = 100,
+                            fqdn: Option[String] = None,
+                            recordType: Option[RecordType] = None,
                             authPrincipal: AuthPrincipal
-                          ): Result[ListRecordSetChangesResponse] =
-    for {
-      zone <- getZone(zoneId)
-      _ <- canSeeZone(authPrincipal, zone).toResult
-      recordSetChangesResults <- recordChangeRepository
-        .listRecordSetChanges(zone.id, startFrom, maxItems)
-        .toResult[ListRecordSetChangesResults]
-      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-    } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+                          ): Result[ListRecordSetChangesResponse] = {
+    println("In listRecordSetChanges")
+    if(zoneId.isDefined) {
+      for {
+        zone <- getZone(zoneId.get)
+        _ <- canSeeZone(authPrincipal, zone).toResult
+        recordSetChangesResults <- recordChangeRepository
+          .listRecordSetChanges(Some(zone.id), startFrom, maxItems)
+          .toResult[ListRecordSetChangesResults]
+        recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+      } yield ListRecordSetChangesResponse(zoneId.get, recordSetChangesResults, recordSetChangesInfo)
+    } else {
+      for {
+        recordSetChangesResults <- recordChangeRepository
+          .listRecordSetChanges(zoneId, startFrom, maxItems, fqdn, recordType)
+          .toResult[ListRecordSetChangesResults]
+        recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+        zoneId = recordSetChangesResults.items.map(x => x.zone.id).head
+      } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+    }
+  }
 
 
   def listFailedRecordSetChanges(

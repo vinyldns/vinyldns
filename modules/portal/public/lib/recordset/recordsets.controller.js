@@ -28,6 +28,11 @@
             $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
             $scope.selectedRecordTypes = [];
             $scope.groups = [];
+            $scope.recordFqdn = undefined;
+            $scope.recordType = undefined;
+
+             // paging status for record changes
+             var changePaging = pagingService.getNewPagingParams(100);
 
             // paging status for recordsets
             var recordsPaging = pagingService.getNewPagingParams(100);
@@ -66,6 +71,15 @@
                           .data("ui-autocomplete-item", item.value)
                           .append("<div>" + recordSet + "</div>")
                           .appendTo(ul); };
+
+            $scope.viewRecordHistory = function(recordFqdn, recordType) {
+               $log.log("recordFqdn: ", recordFqdn);
+               $log.log("recordType: ", recordType);
+               $scope.recordFqdn = recordFqdn;
+               $scope.recordType = recordType;
+               $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType);
+               $("#record_history_modal").modal("show");
+            };
 
             $scope.refreshRecords = function() {
             if($scope.query.includes("|")) {
@@ -182,6 +196,81 @@
                     .catch(function (error){
                         handleError(error, 'recordsService::nextPage-failure');
                     });
+            };
+
+            $scope.refreshRecordChangeHistory = function(recordFqdn, recordType) {
+                changePaging = pagingService.resetPaging(changePaging);
+                function success(response) {
+                    $log.log('recordsService::getRecordSetChangeHistory-success');
+                    changePaging.next = response.data.nextId;
+                    updateChangeDisplay(response.data.recordSetChanges)
+                }
+                return recordsService
+                    .listRecordSetChangeHistory(changePaging.maxItems, undefined, recordFqdn, recordType)
+                    .then(success)
+                    .catch(function (error){
+                        handleError(error, 'recordsService::getRecordSetChangeHistory-failure');
+                    });
+            };
+
+            /**
+             * Record change history paging
+             */
+
+            $scope.changeHistoryPrevPageEnabled = function() {
+                return pagingService.prevPageEnabled(changePaging);
+            };
+
+            $scope.changeHistoryNextPageEnabled = function() {
+                return pagingService.nextPageEnabled(changePaging);
+            };
+
+            $scope.changeHistoryPrevPage = function() {
+                var startFrom = pagingService.getPrevStartFrom(changePaging);
+                return recordsService
+                    .listRecordSetChangeHistory(undefined, changePaging.maxItems, undefined, $scope.recordFqdn, $scope.recordType)
+                    .then(function(response) {
+                        changePaging = pagingService.prevPageUpdate(response.data.nextId, changePaging);
+                        updateChangeDisplay(response.data.recordSetChanges);
+                    })
+                    .catch(function (error) {
+                        handleError(error, 'recordsService::changePrevPage-failure');
+                    });
+            };
+
+            $scope.changeHistoryNextPage = function() {
+                return recordsService
+                    .listRecordSetChangeHistory(undefined, changePaging.maxItems, undefined, $scope.recordFqdn, $scope.recordType)
+                    .then(function(response) {
+                        var changes = response.data.recordSetChanges;
+                        changePaging = pagingService.nextPageUpdate(changes, response.data.nextId, changePaging);
+
+                        if(changes.length > 0 ){
+                            updateChangeDisplay(changes);
+                        }
+                    })
+                    .catch(function (error) {
+                        handleError(error, 'recordsService::changeNextPage-failure');
+                    });
+            };
+
+            function updateChangeDisplay(changes) {
+                var newChanges = [];
+                angular.forEach(changes, function(change) {
+                    newChanges.push(change);
+                });
+                $scope.recordsetChanges = newChanges;
+            }
+
+            $scope.getRecordChangeStatusLabel = function(status) {
+                switch(status) {
+                    case 'Complete':
+                        return 'success';
+                    case 'Failed':
+                        return 'danger';
+                    default:
+                        return 'info';
+                }
             };
     });
 })();

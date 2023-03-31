@@ -19,6 +19,7 @@ package vinyldns.mysql.repository
 import cats.effect._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -37,6 +38,24 @@ class MySqlRecordChangeRepository
       | WHERE zone_id = {zoneId}
       | ORDER BY created DESC
       | LIMIT {limit} OFFSET {startFrom}
+    """.stripMargin
+
+  private val LIST_CHANGES_WITH_START_FQDN_TYPE =
+    sql"""
+       |SELECT data
+       | FROM record_change
+       | WHERE fqdn = {fqdn}
+       | ORDER BY created DESC
+       | LIMIT {limit} OFFSET {startFrom}
+    """.stripMargin
+
+  private val LIST_CHANGES_WITHOUT_START_FQDN_TYPE =
+    sql"""
+         |SELECT data
+         | FROM record_change
+         | WHERE fqdn = {fqdn}
+         | ORDER BY created DESC
+         | LIMIT {limit}
     """.stripMargin
 
   private val LIST_RECORD_CHANGES =
@@ -62,7 +81,7 @@ class MySqlRecordChangeRepository
     """.stripMargin
 
   private val INSERT_CHANGES =
-    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, data) VALUES (?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, fqdn, data) VALUES (?, ?, ?, ?, ?, ?)"
 
   /**
     * We have the same issue with changes as record sets, namely we may have to save millions of them
@@ -70,6 +89,9 @@ class MySqlRecordChangeRepository
     */
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
+      println("fqdn: ", changeSet.changes.map(x => x.recordSet.fqdn))
+      println("name: ", changeSet.changes.map(x => x.recordSet.name))
+      println("zone: ", changeSet.changes.map(x => x.zone.name))
       IO {
         db.withinTx { implicit session =>
           changeSet.changes
@@ -81,7 +103,8 @@ class MySqlRecordChangeRepository
                   change.zoneId,
                   change.created.toEpochMilli,
                   fromChangeType(change.changeType),
-                  toPB(change).toByteArray
+                  if(change.recordSet.name == change.zone.name) change.zone.name else change.recordSet.name + "." + change.zone.name,
+                  toPB(change).toByteArray,
                 )
               }
             }
@@ -93,33 +116,57 @@ class MySqlRecordChangeRepository
     }
 
   def listRecordSetChanges(
-      zoneId: String,
+      zoneId: Option[String],
       startFrom: Option[Int],
-      maxItems: Int
+      maxItems: Int,
+      fqdn: Option[String],
+      recordType: Option[RecordType]
   ): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.listRecordSetChanges") {
+      println("zoneId: ", zoneId)
+      println("fqdn: ", fqdn)
+      println("recordType: ", recordType)
+      println("startFrom: ", startFrom)
       IO {
         DB.readOnly { implicit s =>
-          val changes = startFrom match {
-            case Some(start) =>
-              LIST_CHANGES_WITH_START
-                .bindByName('zoneId -> zoneId, 'startFrom -> start, 'limit -> maxItems)
-                .map(toRecordSetChange)
-                .list()
-                .apply()
-            case None =>
-              LIST_CHANGES_NO_START
-                .bindByName('zoneId -> zoneId, 'limit -> maxItems)
-                .map(toRecordSetChange)
-                .list()
-                .apply()
+          val changes = if(fqdn.isDefined && recordType.isDefined){
+            println("In 1st")
+            LIST_CHANGES_WITHOUT_START_FQDN_TYPE
+              .bindByName('fqdn -> fqdn.get, 'limit -> maxItems)
+              .map(toRecordSetChange)
+              .list()
+              .apply()
+          } else if(startFrom.isDefined && fqdn.isDefined && recordType.isDefined){
+            println("In 2nd")
+            LIST_CHANGES_WITH_START_FQDN_TYPE
+              .bindByName('fqdn -> fqdn.get, 'startFrom -> startFrom.get, 'limit -> maxItems)
+              .map(toRecordSetChange)
+              .list()
+              .apply()
+          } else if(startFrom.isDefined){
+            println("In 3rd")
+            LIST_CHANGES_WITH_START
+              .bindByName('zoneId -> zoneId.get, 'startFrom -> startFrom.get, 'limit -> maxItems)
+              .map(toRecordSetChange)
+              .list()
+              .apply()
+          } else {
+            println("In 4th")
+            LIST_CHANGES_NO_START
+              .bindByName('zoneId -> zoneId.get, 'limit -> maxItems)
+              .map(toRecordSetChange)
+              .list()
+              .apply()
           }
 
+          val finalChanges = if(recordType.isDefined) changes.filter(rec => rec.recordSet.typ == recordType.get) else changes
+          println("finalChanges: ", finalChanges)
+
           val startValue = startFrom.getOrElse(0)
-          val nextId = if (changes.size < maxItems) None else Some(startValue + maxItems)
+          val nextId = if (finalChanges.size < maxItems) None else Some(startValue + maxItems)
 
           ListRecordSetChangesResults(
-            changes,
+            finalChanges,
             nextId,
             startFrom,
             maxItems

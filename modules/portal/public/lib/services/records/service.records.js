@@ -104,7 +104,21 @@ angular.module('service.records', [])
             var url = '/api/zones/' + zid + '/recordsetchanges';
             var params = {
                 "maxItems": maxItems,
-                "startFrom": startFrom
+                "startFrom": startFrom,
+                "fqdn": undefined,
+                "recordType": undefined
+            };
+            url = utilityService.urlBuilder(url, params);
+            return $http.get(url);
+        };
+
+        this.listRecordSetChangeHistory = function (maxItems, startFrom, fqdn, recordType) {
+            var url = '/api/recordsetchange/history';
+            var params = {
+                "maxItems": maxItems,
+                "startFrom": startFrom,
+                "fqdn": fqdn,
+                "recordType": recordType
             };
             url = utilityService.urlBuilder(url, params);
             return $http.get(url);

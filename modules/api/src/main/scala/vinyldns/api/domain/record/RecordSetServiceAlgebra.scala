@@ -97,9 +97,11 @@ trait RecordSetServiceAlgebra {
                         ): Result[RecordSetChange]
 
   def listRecordSetChanges(
-                            zoneId: String,
+                            zoneId: Option[String],
                             startFrom: Option[Int],
                             maxItems: Int,
+                            fqdn: Option[String],
+                            recordType: Option[RecordType],
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse]
 
