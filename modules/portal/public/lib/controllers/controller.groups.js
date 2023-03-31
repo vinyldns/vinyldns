@@ -209,7 +209,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
             });
-    }
+
+    //Function for fetching list of valid domains
+
      $scope.validDomains=function getValidEmailDomains() {
       $log.log('Function Entry');
             function success(response) {
