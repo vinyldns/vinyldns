@@ -43,6 +43,7 @@ class MySqlRecordChangeRepository
     sql"""
          |SELECT data
          |  FROM record_change
+         |  LIMIT {limit}
     """.stripMargin
 
   private val LIST_CHANGES_NO_START =
@@ -128,11 +129,12 @@ class MySqlRecordChangeRepository
       }
     }
 
-  def listFailedRecordSetChanges(): IO[List[RecordSetChange]] =
+  def listFailedRecordSetChanges(maxItems: Int): IO[List[RecordSetChange]] =
     monitor("repo.RecordChange.listFailedRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
           val queryResult = LIST_RECORD_CHANGES
+            .bindByName('limit -> maxItems)
             .map(toRecordSetChange)
             .list()
             .apply()

@@ -30,5 +30,6 @@ trait ZoneChangeRepository extends Repository {
   ): IO[ListZoneChangesResults]
 
   def listFailedZoneChanges(
+                             maxItems: Int = 100
                            ): IO[List[ZoneChange]]
 }

@@ -239,11 +239,12 @@ class ZoneService(
     } yield ListZoneChangesResponse(zone.id, zoneChangesResults)
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal
+                             authPrincipal: AuthPrincipal,
+                             maxItems: Int = 100
                            ): Result[ListFailedZoneChangesResponse] =
     for {
       zoneChangesFailedResults <- zoneChangeRepository
-        .listFailedZoneChanges()
+        .listFailedZoneChanges(maxItems)
         .toResult[List[ZoneChange]]
       _ <- zoneAccess(zoneChangesFailedResults, authPrincipal).toResult
     } yield {

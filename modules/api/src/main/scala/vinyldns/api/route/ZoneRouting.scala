@@ -165,11 +165,19 @@ class ZoneRoute(
     } ~
     path("metrics" / "health" / "zonechangesfailure") {
       (get & monitor("Endpoint.listFailedZoneChanges")) {
-        handleRejections(invalidQueryHandler) {
-          authenticateAndExecute(zoneService.listFailedZoneChanges(_)) {
-            changes =>
-              complete(StatusCodes.OK, changes)
-          }
+        parameters("maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $DEFAULT_MAX_ITEMS inclusive"
+              ) {
+                authenticateAndExecute(zoneService.listFailedZoneChanges(_, maxItems)) {
+                  changes =>
+                    complete(StatusCodes.OK, changes)
+                }
+              }
+            }
         }
       }
     } ~

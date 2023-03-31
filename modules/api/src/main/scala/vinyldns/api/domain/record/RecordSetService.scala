@@ -584,11 +584,12 @@ class RecordSetService(
 
 
   def listFailedRecordSetChanges(
-                                  authPrincipal: AuthPrincipal
+                                  authPrincipal: AuthPrincipal,
+                                  maxItems: Int = 100
                                 ): Result[ListFailedRecordSetChangesResponse] =
     for {
       recordSetChangesFailedResults <- recordChangeRepository
-        .listFailedRecordSetChanges()
+        .listFailedRecordSetChanges(maxItems)
         .toResult[List[RecordSetChange]]
       _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
     } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)

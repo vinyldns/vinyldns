@@ -52,6 +52,7 @@ class MySqlZoneChangeRepository
          |SELECT zc.data
          |  FROM zone_change zc
          |  JOIN zone z ON z.id = zc.zone_id
+         |  LIMIT {maxItems}
     """.stripMargin
 
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
@@ -109,11 +110,12 @@ class MySqlZoneChangeRepository
       }
     }
 
-  def listFailedZoneChanges(): IO[List[ZoneChange]] =
+  def listFailedZoneChanges(maxItems: Int): IO[List[ZoneChange]] =
     monitor("repo.ZoneChange.listFailedZoneChanges") {
       IO {
         DB.readOnly { implicit s =>
           val queryResult = LIST_ZONES_CHANGES_DATA
+            .bindByName('maxItems -> maxItems)
             .map(extractZoneChange(1))
             .list()
             .apply()
