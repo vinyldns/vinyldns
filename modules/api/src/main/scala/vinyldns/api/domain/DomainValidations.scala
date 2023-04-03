@@ -27,6 +27,7 @@ import scala.util.matching.Regex
   Object to house common domain validations
  */
 object DomainValidations {
+
   val validReverseZoneFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z\-\/_]{1,63}|[0-9a-zA-Z\-\/_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z\-\/_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z\-\/_]{1})\.)*$""".r
   val validForwardZoneFQDNRegex: Regex =
@@ -61,13 +62,20 @@ object DomainValidations {
   val MX_PREFERENCE_MIN_VALUE: Int = 0
   val MX_PREFERENCE_MAX_VALUE: Int = 65535
 
+  // Cname check - Cname should not be IP address
+  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+    validateIpv4Address(name.fqdn.dropRight(1)).isValid match {
+      case true => InvalidIPv4CName(name.toString).invalidNel
+      case false => validateIsReverseCname(name, isReverse)
+    }
+
   def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateHostName(name.fqdn).map(_ => name)
 
-  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
-      validateCname(name.fqdn, isReverse).map(_ => name)
+  def validateIsReverseCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+    validateIsReverseCname(name.fqdn, isReverse).map(_ => name)
 
-  def validateCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
+  def validateIsReverseCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
     isReverse match {
       case true =>
         val checkRegex = validReverseZoneFQDNRegex

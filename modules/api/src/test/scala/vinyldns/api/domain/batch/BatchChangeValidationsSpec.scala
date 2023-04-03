@@ -717,6 +717,21 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidCname(s"$invalidCNAMERecordData.",false))
   }
 
+  property("""validateAddChangeInput: should fail with Invalid CNAME
+             |if validateRecordData fails for IPv4 Address in CNAME record data""".stripMargin) {
+    val invalidCNAMERecordData = "1.2.3.4"
+    val change =
+      AddChangeInput(
+        "test.comcast.com.",
+        RecordType.CNAME,
+        ttl,
+        CNAMEData(Fqdn(invalidCNAMERecordData))
+      )
+    val result = validateAddChangeInput(change, false)
+
+    result should haveInvalid[DomainValidationError](InvalidIPv4CName(s"Fqdn($invalidCNAMERecordData.)"))
+  }
+
   property("""validateAddChangeInput: should fail with InvalidLength
              |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "s" * 256
