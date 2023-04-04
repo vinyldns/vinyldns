@@ -79,6 +79,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
           )
         )
       case Right(_) =>
+        logger.info(s"Saving zone sync details for zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
         zoneChangeRepository.save(zoneChange)
     }
 

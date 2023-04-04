@@ -402,7 +402,7 @@ angular.module('controller.records', [])
 
     $scope.refreshZone = function() {
         function success(response) {
-            $log.log('recordsService::getZone-success');
+            $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             // Get current user's groups and determine if they're an admin of this zone
             getMembership()
@@ -417,7 +417,7 @@ angular.module('controller.records', [])
 
     $scope.syncZone = function() {
         function success(response) {
-            $log.log('recordsService::syncZone-success');
+            $log.debug('recordsService::syncZone-success');
             location.reload();
         }
         return recordsService
@@ -430,7 +430,7 @@ angular.module('controller.records', [])
 
     $scope.refreshRecordChangesPreview = function() {
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             var newChanges = [];
             angular.forEach(response.data.recordSetChanges, function(change) {
                 newChanges.push(change);
@@ -448,7 +448,7 @@ angular.module('controller.records', [])
     $scope.refreshRecordChanges = function() {
         changePaging = pagingService.resetPaging(changePaging);
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             changePaging.next = response.data.nextId;
             updateChangeDisplay(response.data.recordSetChanges)
         }
@@ -471,7 +471,7 @@ angular.module('controller.records', [])
     $scope.refreshRecords = function() {
         recordsPaging = pagingService.resetPaging(recordsPaging);
         function success(response) {
-            $log.log('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
+            $log.debug('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
             recordsPaging.next = response.data.nextId;
             updateRecordDisplay(response.data.recordSets);
         }
@@ -622,7 +622,7 @@ angular.module('controller.records', [])
     function profileSuccess(results) {
         if (results.data) {
             $scope.profile = results.data;
-            $log.log('profileService::getAuthenticatedUserData-success');
+            $log.debug('profileService::getAuthenticatedUserData-success');
         }
     }
 
