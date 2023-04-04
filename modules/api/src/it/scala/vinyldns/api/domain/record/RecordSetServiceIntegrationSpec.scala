@@ -19,6 +19,7 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -41,6 +42,9 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.notifier.{AllNotifiers, Notifier}
+
+import scala.concurrent.ExecutionContext
 
 class RecordSetServiceIntegrationSpec
   extends AnyWordSpec
@@ -52,11 +56,14 @@ class RecordSetServiceIntegrationSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with TransactionProvider {
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
   private val recordSetRepo = recordSetRepository
   private val recordSetCacheRepo = recordSetCacheRepository
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
 
   private val zoneRepo: ZoneRepository = zoneRepository
   private val groupRepo: GroupRepository = groupRepository
@@ -324,7 +331,8 @@ class RecordSetServiceIntegrationSpec
       vinyldnsConfig.highValueDomainConfig,
       vinyldnsConfig.dottedHostsConfig,
       vinyldnsConfig.serverConfig.approvedNameServers,
-      useRecordSetCache = true
+      useRecordSetCache = true,
+      mockNotifiers
     )
   }
 

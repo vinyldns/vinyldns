@@ -151,9 +151,9 @@ class RecordSetService(
       _ <- unchangedZoneId(existing, recordSet).toResult
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
         unchangedRecordSet(existing, recordSet).toResult else ().toResult
-      _ <- if(existing.recordSetGroupChange.get.recordSetGroupApprovalStatus == RecordSetGroupApprovalStatus.Cancelled)
+      _ <- if(existing.recordSetGroupChange.map(_.recordSetGroupApprovalStatus) == RecordSetGroupApprovalStatus.Cancelled)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
-      recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(null))
+      recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(RecordSetGroupApproval.apply(RecordSetGroupApprovalStatus.AutoApproved,Some("none"))))
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -252,10 +252,7 @@ class RecordSetService(
         recordSet <- recordSetOwnerRequest.toResult
       } yield recordSet
     }}
-    else
-      recordSet.copy(
-      recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.AutoApproved
-      ))).toResult
+    else recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval)).toResult
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {

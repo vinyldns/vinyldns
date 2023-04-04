@@ -84,7 +84,7 @@ class EmailNotifierIntegrationSpec
       val program = for {
         _ <- userRepository.save(okUser)
         notifier <- new EmailNotifierProvider()
-          .load(NotifierConfig("", emailConfig), userRepository)
+          .load(NotifierConfig("", emailConfig), userRepository, groupRepository)
         _ <- notifier.notify(Notification(batchChange))
         emailFiles <- retrieveEmailFiles(targetDirectory)
       } yield emailFiles

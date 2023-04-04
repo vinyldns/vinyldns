@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.VinylDNSTestHelpers
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig}
+import vinyldns.api.config.{DottedHostsConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -39,7 +39,10 @@ import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.notifier.{AllNotifiers, Notifier}
 import vinyldns.core.queue.MessageQueue
+
+import scala.concurrent.ExecutionContext
 
 class RecordSetServiceSpec
   extends AnyWordSpec
@@ -47,6 +50,7 @@ class RecordSetServiceSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach {
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
@@ -58,6 +62,8 @@ class RecordSetServiceSpec
   private val mockBackend =
     mock[Backend]
   private val mockBackendResolver = mock[BackendResolver]
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
 
   doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(okZone.id)
   doReturn(IO.pure(Some(zoneNotAuthorized)))
@@ -85,7 +91,8 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
-    true
+    true,
+    mockNotifiers
   )
 
   val underTestWithDnsBackendValidations = new RecordSetService(
@@ -104,7 +111,8 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
-    true
+    true,
+    mockNotifiers
   )
 
   val underTestWithEmptyDottedHostsConfig = new RecordSetService(
@@ -123,7 +131,8 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.emptyDottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
-    true
+    true,
+    mockNotifiers
   )
 
   def getDottedHostsConfigGroupsAllowed(zone: Zone, config: DottedHostsConfig): List[String] = {

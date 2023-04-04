@@ -20,9 +20,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
+
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
-import vinyldns.core.domain.membership.{User, UserRepository}
+import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import vinyldns.core.notifier.Notification
 
 import javax.mail.internet.InternetAddress
@@ -30,8 +31,10 @@ import org.mockito.Matchers.{eq => eqArg, _}
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
+
 import javax.mail.{Address, Message}
 import _root_.vinyldns.core.domain.batch._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.record.RecordType
@@ -68,6 +71,7 @@ class EmailNotifierSpec
   import MockTransport._
 
   val mockUserRepository: UserRepository = mock[UserRepository]
+  val mockGroupRepository: GroupRepository = mock[GroupRepository]
   val session: Session = Session.getInstance(new Properties())
   session.setProvider(
     new Provider(
@@ -110,7 +114,7 @@ class EmailNotifierSpec
         ).asJava
       )
       val notifier = new EmailNotifierProvider()
-        .load(NotifierConfig("", emailConfig), mockUserRepository)
+        .load(NotifierConfig("", emailConfig), mockUserRepository, mockGroupRepository)
         .unsafeRunSync()
 
       notifier.notify(new Notification("this won't be supported ever")) should be(IO.unit)
@@ -120,7 +124,8 @@ class EmailNotifierSpec
       val notifier = new EmailNotifier(
         EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
       doReturn(IO.pure(Some(User("testUser", "access", Encrypted("secret")))))
@@ -136,7 +141,8 @@ class EmailNotifierSpec
       val notifier = new EmailNotifier(
         EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
       doReturn(IO.pure(None))
@@ -153,7 +159,8 @@ class EmailNotifierSpec
       val notifier = new EmailNotifier(
         EmailNotifierConfig(fromAddress, new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
       doReturn(
