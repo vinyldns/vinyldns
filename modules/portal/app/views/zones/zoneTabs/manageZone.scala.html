@@ -33,6 +33,24 @@
                                 <div class="col-md-9">
                                     <div>
                                         <input id="zone-update-email" type="text" ng-model="updateZoneInfo.email" class="form-control" ng-disabled="!isZoneAdmin"/>
+                                        <div>
+                                            <h5>
+                                                <a data-toggle="collapse" data-target="#collapseUpdateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                                                    <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                                </a>
+                                            </h5>
+                                        </div>
+                                        <div class="collapse" id="collapseUpdateZoneInstruction">
+                                            <div class="well">
+                                                <p>
+                                                    <strong>List Of Valid Email Domains:</strong>
+                                                <li ng-repeat="validDomains in validEmailDomains">
+                                                    <strong>{{validDomains}} </strong>
+                                                </li>
+                                                </p>
+                                                <hr/>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

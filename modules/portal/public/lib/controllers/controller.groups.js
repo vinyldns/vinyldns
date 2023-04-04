@@ -29,6 +29,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.hasGroups = false;
     $scope.query = "";
     $scope.validEmailDomains= [];
+    $scope.isCollapsed = false;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
@@ -39,11 +40,11 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.alerts.push(alert);
         $scope.processing = false;
     }
-
     //views
     //shared modal
     var modalDialog;
-
+    var modalCollapsedDialog;
+    var modalOpenCollapsedDialog
     $scope.openModal = function (evt) {
      $log.log('First entry');
         $scope.currentGroup = {};
@@ -55,6 +56,15 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         modalDialog.modal('show');
 
     };
+    $scope.openCollapsedModal = function (evt) {
+            void (evt && evt.preventDefault());
+            if (!modalOpenCollapsedDialog) {
+                modalOpenCollapsedDialog = angular.element('#collapseNewGroupInstruction').modal();
+
+            }
+          modalOpenCollapsedDialog.modal('show');
+        };
+
 
     $scope.closeModal = function (evt) {
         void (evt && evt.preventDefault());
@@ -209,11 +219,10 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
             });
-
+  }
     //Function for fetching list of valid domains
 
      $scope.validDomains=function getValidEmailDomains() {
-      $log.log('Function Entry');
             function success(response) {
                 $log.log('groupsService::listEmailDomains-success');
                 return $scope.validEmailDomains = response.data;

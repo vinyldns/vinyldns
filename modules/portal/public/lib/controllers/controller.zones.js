@@ -24,6 +24,7 @@ angular.module('controller.zones', [])
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
     $scope.allGroups = [];
     $scope.ignoreAccess = false;
+    $scope.validEmailDomains= [];
     $scope.allZonesAccess = function () {
         $scope.ignoreAccess = true;
     }
@@ -52,7 +53,7 @@ angular.module('controller.zones', [])
 
     $scope.resetCurrentZone = function () {
         $scope.currentZone = {};
-
+        $scope.validDomains();
         if($scope.myGroups && $scope.myGroups.length) {
             $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
@@ -220,7 +221,20 @@ angular.module('controller.zones', [])
             $("td.dataTables_empty").show();
         }
     }
+    $scope.validDomains=function getValidEmailDomains() {
+          $log.log('Function Entry');
+                function success(response) {
+                    $log.log('zonesService::listEmailDomains-success');
+                    return $scope.validEmailDomains = response.data;
+                }
 
+                return zonesService
+                    .listEmailDomains($scope.ignoreAccess, $scope.query)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'zonesService::listEmailDomains-failure');
+                    });
+            }
     /* Set total number of zones  */
 
     $scope.addZoneConnection = function () {

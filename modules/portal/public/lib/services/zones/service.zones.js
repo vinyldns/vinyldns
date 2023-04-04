@@ -72,6 +72,10 @@ angular.module('service.zones', [])
             $log.info("service.zones: updating zone", sanitizedPayload);
             return $http.put("/api/zones/"+id, sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
+        this.listEmailDomains = function () {
+                            var url = '/api/groups/valid/domains'
+                            return $http.get(url);
+                        };
 
         this.sanitizeConnections = function(payload) {
             var sanitizedPayload = {};
