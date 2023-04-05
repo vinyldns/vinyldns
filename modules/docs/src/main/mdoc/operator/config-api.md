@@ -388,6 +388,14 @@ Version of the application that is deployed. Currently, this is a configuration 
 **Note: You can get installation information including color, version, default key name, and processing-disabled by
 hitting the _status_ endpoint GET /status**
 
+### Is Zone Sync Schedule Allowed
+
+Used while deploying. Should be set to `true` only on one api server/instance and `false` on every other api servers/instances. 
+Thus automated sync will be done only once on a single server/instance instead of every api servers/instances.
+Set it to `true` while running locally or when we have only a single api server/instance.
+
+`is-zone-sync-schedule-allowed = true`
+
 ### HTTP Host and Port
 
 To specify what host and port to bind to when starting up the API server, default is 9000.
@@ -475,6 +483,16 @@ sns {
   }
 }
 ```
+### Email Domain Configuration
+ This configuration setting determines the valid domains which are 
+ allowed in the email fields. `*dummy.com` means it will allow any 
+ subdomain within dummy.com like apac.dummy.com. If email-domains is
+ left empty then it will accept any domain name.
+```yaml
+valid-email-config {
+   email-domains = ["test.com","*dummy.com"]
+}
+  ``` 
 
 ### Batch Manual Review Enabled <a id="manual-review" />
 
@@ -751,6 +769,11 @@ dotted-hosts = {
         host = "example.host"
      }
   }
+
+  # Valid Email Domains
+  valid-email-config {
+    email-domains = ["test.com","*dummy.com"]
+  } 
 
   sns {
      # Path to notifier provider implementation

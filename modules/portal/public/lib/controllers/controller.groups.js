@@ -112,10 +112,10 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-        $log.log('createGroup::called', $scope.data);
+        $log.debug('createGroup::called', $scope.data);
 
         if ($scope.processing) {
-            $log.log('createGroup::processing is true; exiting');
+            $log.debug('createGroup::processing is true; exiting');
             return;
         }
         //flag to prevent multiple clicks until previous promise has resolved.
@@ -196,7 +196,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     function getGroups() {
         function success(response) {
-            $log.log('groupsService::getGroups-success');
+            $log.debug('groupsService::getGroups-success');
             return response.data;
         }
 
@@ -313,7 +313,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             //update user profile data
             //make user profile available to page
             $scope.profile = results.data;
-            $log.log($scope.profile);
+            $log.debug($scope.profile);
             //load data in grid
             $scope.refresh();
         }

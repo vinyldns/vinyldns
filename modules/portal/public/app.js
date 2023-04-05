@@ -13,7 +13,7 @@ angular.module('vinyldns', [
             });
         $animateProvider
             .classNameFilter(/toshow/);
-        //turning off $log
+        // turning off $log. Change to true for local development and testing
         $logProvider.debugEnabled(false);
     })
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
