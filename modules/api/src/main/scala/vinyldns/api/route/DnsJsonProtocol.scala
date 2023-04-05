@@ -54,6 +54,7 @@ trait DnsJsonProtocol extends JsonValidation {
     JsonEnumV(ZoneChangeType),
     JsonEnumV(RecordSetChangeType),
     JsonEnumV(NameSort),
+    JsonEnumV(RecordTypeSort),
     ASerializer,
     AAAASerializer,
     CNAMESerializer,
