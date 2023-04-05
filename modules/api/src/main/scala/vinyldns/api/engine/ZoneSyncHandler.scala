@@ -108,7 +108,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
           case (dnsZoneView, vinylDnsZoneView) => vinylDnsZoneView.diff(dnsZoneView)
         }
         recordSetChanges.flatMap { allChanges =>
-          val changesWithUserIds = allChanges.map(_.withUserId(zoneChange.userId))
+          val changesWithUserIds = if(zone.shared) {
+            allChanges.map(_.withUserId(zoneChange.userId))
+          } else {
+            allChanges.map(_.withUserId(zoneChange.userId)).map(_.withGroupId(Some(zone.adminGroupId)))
+          }
 
           if (changesWithUserIds.isEmpty) {
             logger.info(

@@ -89,9 +89,6 @@ class MySqlRecordChangeRepository
     */
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
-      println("fqdn: ", changeSet.changes.map(x => x.recordSet.fqdn))
-      println("name: ", changeSet.changes.map(x => x.recordSet.name))
-      println("zone: ", changeSet.changes.map(x => x.zone.name))
       IO {
         db.withinTx { implicit session =>
           changeSet.changes

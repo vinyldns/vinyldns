@@ -92,10 +92,12 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
-      change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
+      isShared = zone.shared
+      newRecordSet = if(isShared) recordSet else recordSet.copy(ownerGroupId = Some(zone.adminGroupId))
+      change <- RecordSetChangeGenerator.forAdd(newRecordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
+      _ <- isNotHighValueDomain(newRecordSet, zone, highValueDomainConfig).toResult
       _ <- recordSetDoesNotExist(
         backendResolver.resolve,
         zone,
@@ -142,11 +144,13 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
+      isShared = zone.shared
+      newRecordSet = if(isShared) recordSet else recordSet.copy(ownerGroupId = Some(zone.adminGroupId))
+      change <- RecordSetChangeGenerator.forUpdate(existing, newRecordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
-      _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
+      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, newRecordSet, zone, auth)
+      _ <- isNotHighValueDomain(newRecordSet, zone, highValueDomainConfig).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
@@ -575,7 +579,6 @@ class RecordSetService(
                             recordType: Option[RecordType] = None,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] = {
-    println("In listRecordSetChanges")
     if(zoneId.isDefined) {
       for {
         zone <- getZone(zoneId.get)

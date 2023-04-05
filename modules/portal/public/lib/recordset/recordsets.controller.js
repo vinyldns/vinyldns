@@ -30,6 +30,45 @@
             $scope.groups = [];
             $scope.recordFqdn = undefined;
             $scope.recordType = undefined;
+            $scope.recordsetChanges = {};
+            $scope.currentRecord = {};
+            $scope.zoneInfo = {};
+            $scope.profile = {};
+            $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT', 'SOA'];
+            $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
+                {name: '(4) Ed25519', number: 4}];
+            $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
+            $scope.dsAlgorithms = [{name: '(3) DSA', number: 3}, {name: '(5) RSASHA1', number: 5},
+                {name: '(6) DSA_NSEC3_SHA1', number: 6}, {name: '(7) RSASHA1_NSEC3_SHA1' , number: 7},
+                {name: '(8) RSASHA256', number: 8}, {name: '(10) RSASHA512' , number: 10},
+                {name: '(12) ECC_GOST', number: 12}, {name: '(13) ECDSAP256SHA256' , number: 13},
+                {name: '(14) ECDSAP384SHA384', number: 14}, {name: '(15) ED25519', number: 15},
+                {name: '(16) ED448', number: 16},{name: '(253) PRIVATEDNS', number: 253},
+                {name: '(254) PRIVATEOID', number: 254}]
+            $scope.dsDigestTypes = [{name: '(1) SHA1', number: 1}, {name: '(2) SHA256', number: 2}, {name: '(3) GOSTR341194', number: 3}, {name: '(4) SHA384', number: 4}]
+            $scope.isZoneAdmin = false;
+            $scope.canReadZone = false;
+            $scope.canCreateRecords = false;
+            $scope.zoneId = undefined;
+            $scope.recordModalState = {
+                CREATE: 0,
+                UPDATE: 1,
+                DELETE: 2,
+                CONFIRM_UPDATE: 3,
+                CONFIRM_DELETE: 4,
+                VIEW_DETAILS: 5
+            };
+            // read-only data for setting various classes/attributes in record modal
+            $scope.recordModalParams = {
+                readOnly: {
+                    class: "",
+                    readOnly: true
+                },
+                editable: {
+                    class: "record-edit",
+                    readOnly: false
+                }
+            };
 
              // paging status for record changes
              var changePaging = pagingService.getNewPagingParams(100);
@@ -73,8 +112,6 @@
                           .appendTo(ul); };
 
             $scope.viewRecordHistory = function(recordFqdn, recordType) {
-               $log.log("recordFqdn: ", recordFqdn);
-               $log.log("recordType: ", recordType);
                $scope.recordFqdn = recordFqdn;
                $scope.recordType = recordType;
                $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType);
@@ -93,6 +130,7 @@
                 function success(response) {
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
+                    getMembership();
                 }
                 return recordsService
                     .listRecordSetData(recordsPaging.maxItems, undefined, recordName, recordType, $scope.nameSort, $scope.ownerGroupFilter)
@@ -201,7 +239,8 @@
             $scope.refreshRecordChangeHistory = function(recordFqdn, recordType) {
                 changePaging = pagingService.resetPaging(changePaging);
                 function success(response) {
-                    $log.log('recordsService::getRecordSetChangeHistory-success');
+                    $scope.zoneId = response.data.zoneId;
+                    $scope.refreshZone();
                     changePaging.next = response.data.nextId;
                     updateChangeDisplay(response.data.recordSetChanges)
                 }
@@ -271,6 +310,51 @@
                     default:
                         return 'info';
                 }
+            };
+
+            $scope.viewRecordInfo = function(record) {
+                $scope.currentRecord = recordsService.toDisplayRecord(record);
+                $scope.recordModal = {
+                    action: $scope.recordModalState.VIEW_DETAILS,
+                    title: "Record Info",
+                    basics: $scope.recordModalParams.readOnly,
+                    details: $scope.recordModalParams.readOnly,
+                    sharedZone: $scope.zoneInfo.shared,
+                    sharedDisplayEnabled: $scope.sharedDisplayEnabled
+                };
+                $("#record_modal").modal("show");
+            };
+
+            $scope.refreshZone = function() {
+                function success(response) {
+                    $log.debug('recordsService::getZone-success');
+                    $scope.zoneInfo = response.data.zone;
+                    // Get current user's groups and determine if they're an admin of this zone
+                    getMembership()
+                }
+                return recordsService
+                    .getZone($scope.zoneId)
+                    .then(success)
+                    .catch(function (error){
+                        handleError(error, 'recordsService::getZone-catch');
+                    });
+            };
+
+            function getMembership(){
+                groupsService
+                .getGroupsStored()
+                .then(
+                    function (results) {
+                        $scope.myGroups = results.groups;
+                        $scope.myGroupIds = results.groups.map(function(grp) {return grp['id']});
+                    })
+                .catch(function (error){
+                    handleError(error, 'groupsService::getGroupsStored-failure');
+                });
+            }
+
+            $scope.canAccessGroup = function(groupId) {
+                 return $scope.myGroupIds !== undefined &&  $scope.myGroupIds.indexOf(groupId) > -1;
             };
     });
 })();

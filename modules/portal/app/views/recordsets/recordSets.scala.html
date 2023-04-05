@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
     <!-- PAGE CONTENT -->
@@ -80,8 +80,8 @@
                     <div class="vinyldns-panel-top">
                         <div class="btn-group">
                             <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
-                            <button id="create-record-button" class="btn btn-default" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
-                            <button id="zone-sync-button" class="btn btn-default mb-control" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+                            <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
+                            <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
                         </div>
 
                         <div>
@@ -164,7 +164,9 @@
                             @if(meta.sharedDisplayEnabled) {
                                 <th>Owner Group Name</th>
                             }
+                            @if(rootAccountCanReview) {
                             <th>Record History</th>
+                            }
                         </tr>
                         </thead>
                         <tbody>
@@ -372,9 +374,11 @@
                                       title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                             </td>
                             }
+                            @if(rootAccountCanReview) {
                             <td>
                                 <span><button class="btn btn-info btn-sm" ng-click="viewRecordHistory(record.fqdn, record.type)">View History</button></span>
                             </td>
+                            }
                         </tr>
                         </tbody>
                     </table>
@@ -420,7 +424,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="btn-group">
-                                <button class="btn btn-default" ng-click="refreshRecordChangeHistory()"><span class="fa fa-refresh"></span>Refresh</button>
+                                <button class="btn btn-default" ng-click="refreshRecordChangeHistory(recordFqdn, recordType)"><span class="fa fa-refresh"></span> Refresh</button>
                             </div>
 
                             <!-- PAGINATION -->
@@ -460,13 +464,13 @@
                                     </td>
                                     <td class="col-md-3 wrap-long-text">
                                         {{change.systemMessage}}
-<!--                                        <div ng-if="change.status !='Failed'">-->
-<!--                                            <a ng-if="change.changeType =='Create'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View created recordset</a>-->
-<!--                                            <a ng-if="change.changeType =='Delete'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View deleted recordset</a>-->
+                                        <div ng-if="change.status !='Failed'">
+                                            <a ng-if="change.changeType =='Create'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View created recordset</a>
+                                            <a ng-if="change.changeType =='Delete'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View deleted recordset</a>
 
-<!--                                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View new recordset</a></div>-->
-<!--                                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.updates)" class="force-cursor">View old recordset</a></div>-->
-<!--                                        </div>-->
+                                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View new recordset</a></div>
+                                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.updates)" class="force-cursor">View old recordset</a></div>
+                                        </div>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -497,6 +501,8 @@
             </div>
         </div>
     </div>
+
+    <recordmodal></recordmodal>
 }
 
 @plugins = {

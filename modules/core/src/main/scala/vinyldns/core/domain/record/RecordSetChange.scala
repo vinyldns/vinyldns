@@ -76,6 +76,12 @@ case class RecordSetChange(
 
   def withUserId(newUserId: String): RecordSetChange = this.copy(userId = newUserId)
 
+  def withGroupId(adminGroupId: Option[String]): RecordSetChange =
+    copy(
+      recordSet = recordSet
+        .copy(ownerGroupId = adminGroupId)
+    )
+
   override def toString: String = {
     val sb = new StringBuilder
     sb.append("RecordSetChange: [")
