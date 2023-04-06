@@ -29,7 +29,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.hasGroups = false;
     $scope.query = "";
     $scope.validEmailDomains= [];
-    $scope.isCollapsed = false;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
