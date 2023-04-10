@@ -228,7 +228,7 @@ angular.module('controller.zones', [])
                     return $scope.validEmailDomains = response.data;
                 }
 
-                return zonesService
+                return groupsService
                     .listEmailDomains($scope.ignoreAccess, $scope.query)
                     .then(success)
                     .catch(function (error) {

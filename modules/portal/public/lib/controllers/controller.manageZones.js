@@ -163,7 +163,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
        $log.log('manageZonesService::listEmailDomains-success');
        return $scope.validEmailDomains = response.data;
        }
-        return zonesService
+        return groupsService
         .listEmailDomains($scope.ignoreAccess, $scope.query)
         .then(success)
         .catch(function (error) {

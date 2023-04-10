@@ -45,7 +45,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     var modalCollapsedDialog;
     var modalOpenCollapsedDialog
     $scope.openModal = function (evt) {
-     $log.log('First entry');
         $scope.currentGroup = {};
         $scope.validDomains();
         void (evt && evt.preventDefault());
@@ -226,7 +225,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 $log.log('groupsService::listEmailDomains-success');
                 return $scope.validEmailDomains = response.data;
             }
-
             return groupsService
                 .listEmailDomains($scope.ignoreAccess, $scope.query)
                 .then(success)
