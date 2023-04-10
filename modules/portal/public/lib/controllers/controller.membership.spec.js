@@ -40,7 +40,7 @@ describe('Controller: MembershipController', function () {
         };
           var mockDomains = {
                     data:{
-                     "test.com",
+                     "test.com"
                      "*dummy.com"
                     }
           };
