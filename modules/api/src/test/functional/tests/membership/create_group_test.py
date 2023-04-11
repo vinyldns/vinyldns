@@ -189,7 +189,7 @@ def test_create_group_with_invalid_email_domain(shared_zone_test_context):
             "admins": [{"id": "ok"}]
         }
         error = client.create_group(new_group, status=400)
-        assert_that(error, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
+        assert_that(error, is_("Please enter a valid Email. Valid domains should end with test.com,dummy.com"))
 def test_create_group_with_invalid_email(shared_zone_test_context):
     """
     Tests that creating a group With Invalid email fails
@@ -204,7 +204,7 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
         "admins": [{"id": "ok"}]
     }
     error = client.create_group(new_group, status=400)
-    assert_that(error, is_("Please enter a valid Email ID."))
+    assert_that(error, is_("Please enter a valid Email."))
 
 def test_create_group_with_invalid_email_number_of_dots(shared_zone_test_context):
     """
@@ -220,7 +220,7 @@ def test_create_group_with_invalid_email_number_of_dots(shared_zone_test_context
         "admins": [{"id": "ok"}]
     }
     error = client.create_group(new_group, status=400)
-    assert_that(error, is_("Please enter a valid Email ID. Number of dots allowed after @ is 2"))
+    assert_that(error, is_("Please enter a valid Email. Number of dots allowed after @ is 2"))
 
 def test_create_group_without_members_or_admins(shared_zone_test_context):
     """

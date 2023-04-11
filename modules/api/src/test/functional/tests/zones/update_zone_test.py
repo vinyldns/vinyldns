@@ -225,7 +225,7 @@ def test_update_invalid_email(shared_zone_test_context):
 
         result_zone["email"] = "test.trial.com"
         errors = client.update_zone(result_zone, status=400)
-        assert_that(errors, is_("Please enter a valid Email ID."))
+        assert_that(errors, is_("Please enter a valid Email."))
     finally:
         if result_zone:
             client.abandon_zones([result_zone["id"]], status=202)
@@ -270,7 +270,7 @@ def test_update_invalid_domain(shared_zone_test_context):
 
         result_zone["email"] = "test@trial.com"
         errors = client.update_zone(result_zone, status=400)
-        assert_that(errors, is_("Please enter a valid Email ID. Valid domains should end with test.com,dummy.com"))
+        assert_that(errors, is_("Please enter a valid Email. Valid domains should end with test.com,dummy.com"))
 
     finally:
         if result_zone:
@@ -316,7 +316,7 @@ def test_update_invalid_email_number_of_dots(shared_zone_test_context):
 
         result_zone["email"] = "test@ok.ok.dummy.com"
         errors = client.update_zone(result_zone, status=400)
-        assert_that(errors, is_("Please enter a valid Email ID. Number of dots allowed after @ is 2"))
+        assert_that(errors, is_("Please enter a valid Email. Number of dots allowed after @ is 2"))
 
     finally:
         if result_zone:
