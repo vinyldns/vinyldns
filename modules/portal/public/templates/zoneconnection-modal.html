@@ -20,16 +20,16 @@
                 <div>
                     <h5>
                         <a data-toggle="collapse" data-target="#collapseConnectZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
-                            <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                            <span class="badge" id="validDomainsConnectZone">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                         </a>
                     </h5>
                 </div>
                 <div class="collapse" id="collapseConnectZoneInstruction">
                     <div class="well">
                         <p>
-                            <strong>List Of Valid Email Domains:</strong>
+                            List Of Valid Email Domains:
                         <li ng-repeat="validDomains in validEmailDomains">
-                            <strong>{{validDomains}} </strong>
+                            {{validDomains}}
                         </li>
                         </p>
                         <hr/>

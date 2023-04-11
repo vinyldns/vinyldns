@@ -5,7 +5,13 @@
         <notification ng-model="alert"></notification>
     </div>
 </div>
-
+<center>
+    <h3 class="blink">
+        <i class="fa fa-info-circle" style="font-size:24px;color:red">
+            If your email id is invalid please enter a valid email id.If your email id is valid please ignore.
+        </i>
+    </h3>
+</center>
 <!-- START ZONE INFO FORM -->
 <div>
     <form class="form-horizontal">
@@ -36,16 +42,16 @@
                                         <div>
                                             <h5>
                                                 <a data-toggle="collapse" data-target="#collapseUpdateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
-                                                    <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                                    <span class="badge" id="validDomainsUpdateZone">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                                                 </a>
                                             </h5>
                                         </div>
                                         <div class="collapse" id="collapseUpdateZoneInstruction">
                                             <div class="well">
                                                 <p>
-                                                    <strong>List Of Valid Email Domains:</strong>
+                                                    List Of Valid Email Domains:
                                                 <li ng-repeat="validDomains in validEmailDomains">
-                                                    <strong>{{validDomains}} </strong>
+                                                    {{validDomains}}
                                                 </li>
                                                 </p>
                                                 <hr/>

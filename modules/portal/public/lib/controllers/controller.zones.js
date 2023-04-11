@@ -40,7 +40,7 @@ angular.module('controller.zones', [])
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
     var allZonesPaging = pagingService.getNewPagingParams(100);
-
+    var modalCollapsedDialogConnectZone;
     profileService.getAuthenticatedUserData().then(function (results) {
         if (results.data) {
             $scope.profile = results.data;
@@ -54,6 +54,7 @@ angular.module('controller.zones', [])
     $scope.resetCurrentZone = function () {
         $scope.currentZone = {};
         $scope.validDomains();
+        $scope.CollapsedModalConnectZone();
         if($scope.myGroups && $scope.myGroups.length) {
             $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
@@ -235,6 +236,19 @@ angular.module('controller.zones', [])
                         handleError(error, 'zonesService::listEmailDomains-failure');
                     });
             }
+
+       $scope.CollapsedModalConnectZone = function (evt) {
+                  void (evt && evt.preventDefault());
+                  if (!modalCollapsedDialogConnectZone) {
+                      modalCollapsedDialogConnectZone = angular.element('#validDomainsConnectZone').modal();
+                    }
+                    if($scope.validEmailDomains.length==0){
+                       modalCollapsedDialogConnectZone.modal('hide')
+                    }
+                    else{
+                       modalCollapsedDialogConnectZone.modal('show')
+                    }
+            };
     /* Set total number of zones  */
 
     $scope.addZoneConnection = function () {

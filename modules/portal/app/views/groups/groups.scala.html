@@ -293,16 +293,16 @@
                                 <h5>
                                     <a data-toggle="collapse" data-target="#collapseNewGroupInstruction" aria-expanded="false"
                                        aria-controls="collapseInstruction">
-                                        <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                        <span class="badge" id="validDomainsNewGroup">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                                     </a>
                                 </h5>
                             </div>
                             <div class="collapse" id="collapseNewGroupInstruction">
                                 <div class="well">
                                     <p>
-                                        <strong>List Of Valid Email Domains:</strong>
+                                        List Of Valid Email Domains:
                                     <li ng-repeat="validDomains in validEmailDomains">
-                                    <strong>{{validDomains}} </strong>
+                                         {validDomains}}
                                     </li>
                                     </p>
                                     <hr/>
@@ -374,16 +374,16 @@
                             <div>
                                 <h5>
                                     <a data-toggle="collapse" data-target="#collapseEditGroupInstruction" aria-expanded="false" aria-controls="collapseInstruction">
-                                        <span class="badge">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                        <span class="badge" id="validDomainsEditGroup">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                                     </a>
                                 </h5>
                             </div>
                             <div class="collapse" id="collapseEditGroupInstruction">
                                 <div class="well">
                                     <p>
-                                        <strong>List Of Valid Email Domains:</strong>
+                                        List Of Valid Email Domains:
                                     <li ng-repeat="validDomains in validEmailDomains">
-                                        <strong>{{validDomains}} </strong>
+                                        {{validDomains}}
                                     </li>
                                     </p>
                                     <hr/>
