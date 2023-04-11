@@ -388,6 +388,14 @@ Version of the application that is deployed. Currently, this is a configuration 
 **Note: You can get installation information including color, version, default key name, and processing-disabled by
 hitting the _status_ endpoint GET /status**
 
+### Is Zone Sync Schedule Allowed
+
+Used while deploying. Should be set to `true` only on one api server/instance and `false` on every other api servers/instances. 
+Thus automated sync will be done only once on a single server/instance instead of every api servers/instances.
+Set it to `true` while running locally or when we have only a single api server/instance.
+
+`is-zone-sync-schedule-allowed = true`
+
 ### HTTP Host and Port
 
 To specify what host and port to bind to when starting up the API server, default is 9000.
