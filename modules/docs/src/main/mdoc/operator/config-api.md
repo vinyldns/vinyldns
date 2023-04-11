@@ -479,10 +479,12 @@ sns {
  This configuration setting determines the valid domains which are 
  allowed in the email fields. `*dummy.com` means it will allow any 
  subdomain within dummy.com like apac.dummy.com. If email-domains is
- left empty then it will accept any domain name.
+ left empty then it will accept any domain name. The number of dots refers 
+ to the number of dots allowed after @ in an email.
 ```yaml
 valid-email-config {
    email-domains = ["test.com","*dummy.com"]
+   number-of-dots= 2
 }
   ``` 
 
