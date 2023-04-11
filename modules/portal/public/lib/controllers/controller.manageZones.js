@@ -170,7 +170,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         });
         }
 
-         $scope.CollapsedModalUpdateZone = function (evt) {
+/*         $scope.CollapsedModalUpdateZone = function (evt) {
                           void (evt && evt.preventDefault());
                           if (!modalCollapsedDialogUpdateZone) {
                               modalCollapsedDialogUpdateZone = angular.element('#validDomainsUpdateZone').modal();
@@ -183,7 +183,8 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
                                $log.log('show entry');
                                modalCollapsedDialogUpdateZone.modal('show')
                             }
-                    };
+                    };*/
+
     $scope.clickUpdateAclRule = function(index) {
         $scope.currentAclRuleIndex = index;
         $scope.currentAclRule = angular.copy($scope.aclRules[index]);
@@ -353,7 +354,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
             $scope.validDomains();
-            $scope.CollapsedModalUpdateZone();
+           /* $scope.CollapsedModalUpdateZone();*/
         }
         return recordsService
             .getZone($scope.zoneId)
