@@ -93,7 +93,7 @@ class RecordSetService(
       zone <- getZone(recordSet.zoneId)
       authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
       isShared = zone.shared
-      newRecordSet = if(isShared) recordSet else recordSet.copy(ownerGroupId = Some(zone.adminGroupId))
+      newRecordSet = if(isShared || recordSet.ownerGroupId.isDefined) recordSet else recordSet.copy(ownerGroupId = Some(zone.adminGroupId))
       change <- RecordSetChangeGenerator.forAdd(newRecordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -111,7 +111,7 @@ class RecordSetService(
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, isShared, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       allowedZoneList <- getAllowedZones(authZones).toResult[Set[String]]
       isInAllowedUsers = checkIfInAllowedUsers(zone, dottedHostsConfig, auth)
@@ -153,7 +153,7 @@ class RecordSetService(
       _ <- isNotHighValueDomain(newRecordSet, zone, highValueDomainConfig).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, isShared, auth).toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
@@ -584,7 +584,7 @@ class RecordSetService(
         zone <- getZone(zoneId.get)
         _ <- canSeeZone(authPrincipal, zone).toResult
         recordSetChangesResults <- recordChangeRepository
-          .listRecordSetChanges(Some(zone.id), startFrom, maxItems)
+          .listRecordSetChanges(Some(zone.id), startFrom, maxItems, fqdn, recordType)
           .toResult[ListRecordSetChangesResults]
         recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
       } yield ListRecordSetChangesResponse(zoneId.get, recordSetChangesResults, recordSetChangesInfo)

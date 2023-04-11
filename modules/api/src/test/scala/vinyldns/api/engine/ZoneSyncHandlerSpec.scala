@@ -554,7 +554,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordChangeRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
     "save the record changes to the recordSetCacheRepo" in {
@@ -564,7 +565,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetCacheRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
 
@@ -575,7 +577,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetRepo).apply(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
     }
 
     "returns the zone as active and sets the latest sync" in {
@@ -608,7 +611,7 @@ class ZoneSyncHandlerSpec
 
       runSync.unsafeRunSync()
 
-      captor.getValue.changes should contain theSameElementsAs expectedChanges
+      captor.getValue.changes should contain theSameElementsAs expectedChanges.map(x => x.withGroupId(Some(testZone.adminGroupId)))
     }
 
     "allow for dots in reverse zone PTR, SOA, NS records" in {
@@ -643,7 +646,7 @@ class ZoneSyncHandlerSpec
         )
         .unsafeRunSync()
 
-      captor.getValue.changes should contain theSameElementsAs expectedChanges
+      captor.getValue.changes should contain theSameElementsAs expectedChanges.map(x => x.withGroupId(Some(testZone.adminGroupId)))
     }
 
     "handles errors by moving the zone back to an active status and failing the zone change" in {
