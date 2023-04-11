@@ -14,14 +14,7 @@
     <!-- PAGE TITLE -->
     <div class="page-title"><h3><span class="fa fa-group"></span> Groups</h3></div>
     <!-- END PAGE TITLE -->
-        <center>
-            <h3 class="blink">
-                <i class="fa fa-info-circle" style="font-size:24px;color:red">
-                    If your email id is invalid please enter a valid email id.If your email id is valid please ignore.
-                </i>
-            </h3>
-        </center>
-
+    
     <!-- PAGE CONTENT WRAPPER -->
     <div class="page-content-wrap">
         <div class="alert-wrapper">
@@ -302,7 +295,7 @@
                                     <p>
                                         List Of Valid Email Domains:
                                     <li ng-repeat="validDomains in validEmailDomains">
-                                         {validDomains}}
+                                         {{validDomains}}
                                     </li>
                                     </p>
                                     <hr/>

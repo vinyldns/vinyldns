@@ -39,7 +39,7 @@ describe('Controller: MembershipController', function () {
             }
         };
           var mockDomains = {
-                    data: "test.com"
+                    data: {"test.com"}
           };
 
         var mockGroupList = {
