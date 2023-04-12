@@ -370,7 +370,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
             $scope.validDomains();
-            //$scope.CollapsedModalUpdateZone();
         }
         return recordsService
             .getZone($scope.zoneId)

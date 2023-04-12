@@ -42,8 +42,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     //views
     //shared modal
     var modalDialog;
-    //var modalCollapsedDialogNewGroup;
-    //var modalCollapsedDialogEditGroup;
+
     $scope.openModal = function (evt) {
         $scope.currentGroup = {};
         $scope.validDomains();
