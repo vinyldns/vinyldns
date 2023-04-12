@@ -14,7 +14,7 @@
     <!-- PAGE TITLE -->
     <div class="page-title"><h3><span class="fa fa-group"></span> Groups</h3></div>
     <!-- END PAGE TITLE -->
-    
+
     <!-- PAGE CONTENT WRAPPER -->
     <div class="page-content-wrap">
         <div class="alert-wrapper">
@@ -286,7 +286,7 @@
                                 <h5>
                                     <a data-toggle="collapse" data-target="#collapseNewGroupInstruction" aria-expanded="false"
                                        aria-controls="collapseInstruction">
-                                        <span class="badge" id="validDomainsNewGroup">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                        <span class="badge" id="validDomainsNewGroup"ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                                     </a>
                                 </h5>
                             </div>
@@ -367,7 +367,7 @@
                             <div>
                                 <h5>
                                     <a data-toggle="collapse" data-target="#collapseEditGroupInstruction" aria-expanded="false" aria-controls="collapseInstruction">
-                                        <span class="badge" id="validDomainsEditGroup">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                        <span class="badge" id="validDomainsEditGroup" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
                                     </a>
                                 </h5>
                             </div>

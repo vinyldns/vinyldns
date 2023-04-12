@@ -405,7 +405,7 @@ class MembershipService(
     else emailDomains
 
     Option(email) match {
-      case Some(value) if (emailRegex.findFirstIn(value) != None)=>
+      case Some(value) if (emailRegex.findFirstIn(value) != None && emailSplit.toString.count(_ == '.')>0)=>
 
         if ((emailDomains.contains(emailSplit) || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))&&
               emailSplit.toString.count(_ == '.')<=numberOfDots)

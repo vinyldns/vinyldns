@@ -42,12 +42,11 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     //views
     //shared modal
     var modalDialog;
-    var modalCollapsedDialogNewGroup;
-    var modalCollapsedDialogEditGroup;
+    //var modalCollapsedDialogNewGroup;
+    //var modalCollapsedDialogEditGroup;
     $scope.openModal = function (evt) {
         $scope.currentGroup = {};
         $scope.validDomains();
-        $scope.CollapsedModalNewGroup();
         void (evt && evt.preventDefault());
         if (!modalDialog) {
 
@@ -57,32 +56,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         modalDialog.modal('show');
 
     };
-    $scope.CollapsedModalNewGroup = function (evt) {
-            void (evt && evt.preventDefault());
-            if (!modalCollapsedDialogNewGroup) {
-                modalCollapsedDialogNewGroup = angular.element('#validDomainsNewGroup').modal();
-              }
-              if($scope.validEmailDomains.length==0){
-                 modalCollapsedDialogNewGroup.modal('hide')
-              }
-              else{
-                 modalCollapsedDialogNewGroup.modal('show')
-              }
-      };
-       $scope.CollapsedModalEditGroup = function (evt) {
-            void (evt && evt.preventDefault());
-            if (!modalCollapsedDialogNewGroup) {
-                modalCollapsedDialogEditGroup = angular.element('#validDomainsEditGroup').modal();
-              }
-              if($scope.validEmailDomains.length==0){
-                 modalCollapsedDialogEditGroup.modal('hide')
-              }
-              else{
-                 modalCollapsedDialogEditGroup.modal('show')
-              }
-      };
-
-
     $scope.closeModal = function (evt) {
         void (evt && evt.preventDefault());
         if (!modalDialog) {
@@ -243,6 +216,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             function success(response) {
                 $log.log('groupsService::listEmailDomains-success');
                  $scope.validEmailDomains = response.data;
+                 $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
                  $log.log('scope.validEmailDomains',$scope.validEmailDomains);
                  return $scope.validEmailDomains
             }
@@ -276,7 +250,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.editGroup = function (groupInfo) {
         $scope.currentGroup = groupInfo;
         $scope.validDomains();
-        $scope.CollapsedModalEditGroup();
         $("#modal_edit_group").modal("show");
     };
 

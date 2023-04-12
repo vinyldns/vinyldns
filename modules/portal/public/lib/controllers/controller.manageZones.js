@@ -85,7 +85,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
 
     var zoneHistoryPaging = pagingService.getNewPagingParams(100);
-    var modalCollapsedDialogUpdateZone;
     /**
      * Zone modal control functions
      */
@@ -191,6 +190,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.validDomains=function getValidEmailDomains() {
        function success(response) {
        $log.log('manageZonesService::listEmailDomains-success');
+       $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
        return $scope.validEmailDomains = response.data;
        }
         return groupsService
@@ -200,21 +200,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         handleError(error, 'manageZonesService::listEmailDomains-failure');
         });
         }
-
-                $scope.CollapsedModalUpdateZone = function (evt) {
-                          void (evt && evt.preventDefault());
-                          if (!modalCollapsedDialogUpdateZone) {
-                              modalCollapsedDialogUpdateZone = angular.element('#validDomainsUpdateZone').modal();
-                            }
-                            if($scope.validEmailDomains.length==0){
-                             $log.log('hide entry');
-                               modalCollapsedDialogUpdateZone.modal('hide')
-                            }
-                            else{
-                               $log.log('show entry');
-                               modalCollapsedDialogUpdateZone.modal('show')
-                            }
-                    };
 
     $scope.clickUpdateAclRule = function(index) {
         $scope.currentAclRuleIndex = index;
@@ -385,7 +370,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
             $scope.validDomains();
-            $scope.CollapsedModalUpdateZone();
+            //$scope.CollapsedModalUpdateZone();
         }
         return recordsService
             .getZone($scope.zoneId)
