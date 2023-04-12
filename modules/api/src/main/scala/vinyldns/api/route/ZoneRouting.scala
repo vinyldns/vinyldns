@@ -21,6 +21,7 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.config.LimitsConfig
+import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
@@ -62,6 +63,7 @@ class ZoneRoute(
     case RecentSyncError(msg) => complete(StatusCodes.Forbidden, msg)
     case ZoneInactiveError(msg) => complete(StatusCodes.BadRequest, msg)
     case InvalidRequest(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val zoneRoute: Route = path("zones") {

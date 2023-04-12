@@ -187,6 +187,13 @@ class MembershipRoute(
         }
       }
     } ~
+    path("groups" / "valid" / "domains") {
+      (get & monitor("Endpoint.validdomains")) {
+        authenticateAndExecute(membershipService.listEmailDomains) { emailDomains =>
+          complete(StatusCodes.OK, emailDomains)
+        }
+      }
+    } ~
     path("users" / Segment / "lock") { id =>
       (put & monitor("Endpoint.lockUser")) {
         authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Locked, _)) {

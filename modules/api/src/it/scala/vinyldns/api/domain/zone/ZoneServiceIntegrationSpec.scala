@@ -18,6 +18,7 @@ package vinyldns.api.domain.zone
 
 import cats.data.NonEmptyList
 import cats.effect._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito.doReturn
@@ -29,6 +30,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.membership.MembershipService
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
@@ -62,7 +64,7 @@ class ZoneServiceIntegrationSpec
 
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
-
+  private val mockMembershipService = mock[MembershipService]
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
@@ -127,7 +129,8 @@ class ZoneServiceIntegrationSpec
       new ZoneValidations(1000),
       new AccessValidations(),
       mockBackendResolver,
-      NoOpCrypto.instance
+      NoOpCrypto.instance,
+      mockMembershipService
     )
   }
 
