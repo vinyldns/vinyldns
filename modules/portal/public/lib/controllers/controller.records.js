@@ -489,6 +489,7 @@ angular.module('controller.records', [])
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
                 $scope.records = newRecords;
+                $scope.showLengthRecords = $scope.records.length;
                 if($scope.records.length > 0) {
                   $("td.dataTables_empty").hide();
                 } else {
