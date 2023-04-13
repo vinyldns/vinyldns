@@ -96,6 +96,10 @@ angular.module('service.records', [])
             return $http.get("/api/zones/"+zid);
         };
 
+        this.getCommonZoneDetails = function (zid) {
+            return $http.get("/api/zones/"+zid+"/details");
+        };
+
         this.syncZone = function (zid) {
             return $http.post("/api/zones/"+zid+"/sync", {}, {headers: utilityService.getCsrfHeader()});
         };

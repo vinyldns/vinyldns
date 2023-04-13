@@ -388,6 +388,17 @@ class VinylDNSClient(object):
 
         return data
 
+    def get_common_zone_details(self, zone_id, **kwargs):
+        """
+        Gets common zone details which can be seen by all users for the given zone id
+        :param zone_id: the id of the zone to retrieve
+        :return: the zone, or will 404 if not found
+        """
+        url = urljoin(self.index_url, "/zones/{0}/details".format(zone_id))
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
     def get_zone_by_name(self, zone_name, **kwargs):
         """
         Gets a zone for the given zone name

@@ -147,6 +147,12 @@ class ZoneService(
       accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
+  def getCommonZoneDetails(zoneId: String, auth: AuthPrincipal): Result[ZoneDetails] =
+    for {
+      zone <- getZoneOrFail(zoneId)
+      groupName <- getGroupName(zone.adminGroupId)
+    } yield ZoneDetails(zone, groupName)
+
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
       zone <- getZoneByNameOrFail(ensureTrailingDot(zoneName))

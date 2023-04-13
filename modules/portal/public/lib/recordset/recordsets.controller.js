@@ -69,6 +69,7 @@
                     readOnly: false
                 }
             };
+            $scope.userCanAccessGroup = false;
 
              // paging status for record changes
              var changePaging = pagingService.getNewPagingParams(100);
@@ -180,6 +181,11 @@
                     newRecords.push(recordsService.toDisplayRecord(record, ''));
                 });
                 $scope.records = newRecords;
+                for(var i = 0; i < $scope.records.length; i++) {
+                  if (!$scope.records[i].zoneShared){
+                    getZone($scope.records[i].zoneId, i);
+                  }
+                }
                 if ($scope.records.length > 0) {
                     $("#ShowNoRec").modal("hide");
                     $("td.dataTables_empty").hide();
@@ -339,6 +345,23 @@
                         handleError(error, 'recordsService::getZone-catch');
                     });
             };
+
+            function getZone(zoneId, index){
+                recordsService
+                .getCommonZoneDetails(zoneId)
+                .then(
+                    function (results) {
+                        $scope.zoneDetails = results;
+                        $scope.records[index].ownerGroupId = results.data.zone.adminGroupId;
+                        $scope.records[index].ownerGroupName = results.data.zone.adminGroupName;
+                        if($scope.records[index].ownerGroupName && $scope.canAccessGroup($scope.records[index].ownerGroupId)){
+                            $scope.userCanAccessGroup = true;
+                        }
+                    })
+                .catch(function (error){
+                   handleError(error, 'recordsService::getCommonZoneDetails-catch');
+                });
+            }
 
             function getMembership(){
                 groupsService

@@ -554,7 +554,7 @@ class ZoneSyncHandlerSpec
 
       verify(recordChangeRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      val expectedRecordSetChanges = testChangeSet.changes
       anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
@@ -565,7 +565,7 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetCacheRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      val expectedRecordSetChanges = testChangeSet.changes
       anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
@@ -577,7 +577,7 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetRepo).apply(any[DB], captor.capture())
       val req = captor.getValue
-      val expectedRecordSetChanges = testChangeSet.changes.map(_.withGroupId(Some(testZone.adminGroupId)))
+      val expectedRecordSetChanges = testChangeSet.changes
       anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
     }
 
@@ -611,7 +611,7 @@ class ZoneSyncHandlerSpec
 
       runSync.unsafeRunSync()
 
-      captor.getValue.changes should contain theSameElementsAs expectedChanges.map(x => x.withGroupId(Some(testZone.adminGroupId)))
+      captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
 
     "allow for dots in reverse zone PTR, SOA, NS records" in {
@@ -646,7 +646,7 @@ class ZoneSyncHandlerSpec
         )
         .unsafeRunSync()
 
-      captor.getValue.changes should contain theSameElementsAs expectedChanges.map(x => x.withGroupId(Some(testZone.adminGroupId)))
+      captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
 
     "handles errors by moving the zone back to an active status and failing the zone change" in {
