@@ -204,6 +204,13 @@ class RecordSetRoute(
           }
         }
     } ~
+    path("zones" / Segment / "recordsetcount") { zoneId =>
+      (get & monitor("Endpoint.getRecordSetCount")) {
+        authenticateAndExecute(recordSetService.getRecordSetCount(zoneId, _)) { count =>
+          complete(StatusCodes.OK, count)
+        }
+      }
+    } ~
     path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
       (zoneId, _, changeId) =>
         (get & monitor("Endpoint.getRecordSetChange")) {

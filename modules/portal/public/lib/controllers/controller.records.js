@@ -46,6 +46,7 @@ angular.module('controller.records', [])
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
     $scope.profile = {};
+    $scope.showRecordCount = 0;
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -489,7 +490,7 @@ angular.module('controller.records', [])
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
                 $scope.records = newRecords;
-                $scope.showLengthRecords = $scope.records.length;
+                $scope.showLengthRecords();
                 if($scope.records.length > 0) {
                   $("td.dataTables_empty").hide();
                 } else {
@@ -497,6 +498,20 @@ angular.module('controller.records', [])
                 }
             });
     };
+
+ $scope.showLengthRecords=function getTotalRecordCount() {
+             function success(response) {
+                 $log.log('RecordService::getTotalRecordCount-success',  response.data);
+                 return $scope.showRecordCount = response.data.count
+
+             }
+             return recordsService
+                 .recordSetCount($scope.zoneId)
+                 .then(success)
+                 .catch(function (error) {
+                     handleError(error, 'groupsService::getTotalRecordCount-failure');
+                 });
+         }
 
     /**
      * Recordset paging

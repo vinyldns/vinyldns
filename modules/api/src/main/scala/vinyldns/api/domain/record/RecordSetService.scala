@@ -28,7 +28,7 @@ import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -734,5 +734,11 @@ class RecordSetService(
     } else {
       ensureTrailingDot(recordNameFilter)
     }
+  }.toResult
+
+  def getRecordSetCount(zoneId: String, authPrincipal: AuthPrincipal): Result[RecordSetCount] = {
+    for {
+      count  <- recordSetRepository.getRecordSetCount(zoneId)
+    } yield RecordSetCount(count)
   }.toResult
 }

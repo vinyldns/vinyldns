@@ -95,6 +95,9 @@ angular.module('service.records', [])
         this.getZone = function (zid) {
             return $http.get("/api/zones/"+zid);
         };
+       this.recordSetCount = function (zid) {
+                   return $http.get("/api/zones/"+zid+"/recordsetcount");
+               };
 
         this.syncZone = function (zid) {
             return $http.post("/api/zones/"+zid+"/sync", {}, {headers: utilityService.getCsrfHeader()});

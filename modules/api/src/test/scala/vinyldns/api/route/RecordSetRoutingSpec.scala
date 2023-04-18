@@ -30,7 +30,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.zone.{RecordSetCount, _}
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -39,7 +39,6 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-
 import scala.util.Random
 
 class RecordSetRoutingSpec
@@ -408,6 +407,7 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+  private val RecordCount = RecordSetCount(5)
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
   private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
@@ -699,6 +699,18 @@ class RecordSetRoutingSpec
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
+      }
+    }.toResult
+
+
+    def getRecordSetCount(
+                              zoneId: String,
+                              authPrincipal: AuthPrincipal
+                            ): Result[RecordSetCount] = {
+      zoneId match {
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(RecordCount)
       }
     }.toResult
 

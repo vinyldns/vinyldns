@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.VinylDNSTestHelpers
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig}
+import vinyldns.api.config.{DottedHostsConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -2038,6 +2038,15 @@ class RecordSetServiceSpec
       val error =
         underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
+    }
+
+    "return Total RecordCount" in {
+      doReturn(IO.pure(10))
+        .when(mockRecordRepo).getRecordSetCount(okZone.id)
+
+      val result = underTest.getRecordSetCount(okZone.id,authPrincipal = sharedAuth).value.unsafeRunSync().toOption.get
+      result shouldBe RecordSetCount(10)
+
     }
 
     "return a NotAuthorizedError if the user is not authorized to access the zone" in {

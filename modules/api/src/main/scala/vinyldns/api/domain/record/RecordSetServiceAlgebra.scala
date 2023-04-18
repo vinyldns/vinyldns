@@ -17,7 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.Result
-import vinyldns.api.domain.zone.RecordSetInfo
+import vinyldns.api.domain.zone.{RecordSetCount, RecordSetInfo}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneCommandResult
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
@@ -107,4 +107,5 @@ trait RecordSetServiceAlgebra {
                                   authPrincipal: AuthPrincipal
                                 ): Result[ListFailedRecordSetChangesResponse]
 
+  def getRecordSetCount(zoneId: String, authPrincipal: AuthPrincipal): Result[RecordSetCount]
 }

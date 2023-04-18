@@ -276,6 +276,9 @@ case class ListZonesResponse(
                               maxItems: Int = 100,
                               ignoreAccess: Boolean = false
                             )
+case class RecordSetCount(
+                           count: Int = 0
+                         )
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
