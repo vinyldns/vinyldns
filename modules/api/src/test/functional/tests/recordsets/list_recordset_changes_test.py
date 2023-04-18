@@ -265,6 +265,19 @@ def test_list_recordset_history_paging(shared_zone_test_context):
     check_change_history_response(response_2, fqdn, type, recordChanges=True, nextId=True, startFrom=response_1["nextId"], maxItems=1)
 
 
+def test_list_recordset_history_returning_no_changes(shared_zone_test_context):
+    """
+    Pass in startFrom of "2000" should return empty list because start key exceeded number of recordset change history
+    """
+    client = shared_zone_test_context.history_client
+    fqdn = "test-create-cname-ok.system-test-history1."
+    type = "CNAME"
+    response = client.list_recordset_change_history(fqdn, type, start_from=2000, max_items=None)
+    assert_that(response["recordSetChanges"], has_length(0))
+    assert_that(response["startFrom"], is_(2000))
+    assert_that(response["maxItems"], is_(100))
+
+
 def test_list_recordset_history_default_max_items(shared_zone_test_context):
     """
     Test default max items is 100

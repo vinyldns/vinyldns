@@ -574,8 +574,7 @@ class RecordSetService(
                             fqdn: Option[String] = None,
                             recordType: Option[RecordType] = None,
                             authPrincipal: AuthPrincipal
-                          ): Result[ListRecordSetChangesResponse] = {
-    if(zoneId.isDefined) {
+                          ): Result[ListRecordSetChangesResponse] =
       for {
         zone <- getZone(zoneId.get)
         _ <- canSeeZone(authPrincipal, zone).toResult
@@ -584,18 +583,23 @@ class RecordSetService(
           .toResult[ListRecordSetChangesResults]
         recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
       } yield ListRecordSetChangesResponse(zoneId.get, recordSetChangesResults, recordSetChangesInfo)
-    } else {
-      for {
-        recordSetChangesResults <- recordChangeRepository
-          .listRecordSetChanges(zoneId, startFrom, maxItems, fqdn, recordType)
-          .toResult[ListRecordSetChangesResults]
-        recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-        _ <- canSeeZone(authPrincipal, recordSetChangesInfo.map(_.zone).head).toResult
-        zoneId = recordSetChangesResults.items.map(x => x.zone.id).head
-      } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
-    }
-  }
 
+  def listRecordSetChangeHistory(
+                            zoneId: Option[String] = None,
+                            startFrom: Option[Int] = None,
+                            maxItems: Int = 100,
+                            fqdn: Option[String] = None,
+                            recordType: Option[RecordType] = None,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetHistoryResponse] =
+    for {
+      recordSetChangesResults <- recordChangeRepository
+        .listRecordSetChanges(zoneId, startFrom, maxItems, fqdn, recordType)
+        .toResult[ListRecordSetChangesResults]
+      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+      _ <- if(recordSetChangesResults.items.nonEmpty) canSeeZone(authPrincipal, recordSetChangesInfo.map(_.zone).head).toResult else ().toResult
+      zoneId = if(recordSetChangesResults.items.nonEmpty) Some(recordSetChangesResults.items.map(x => x.zone.id).head) else None
+    } yield ListRecordSetHistoryResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
   def listFailedRecordSetChanges(
                                   authPrincipal: AuthPrincipal
