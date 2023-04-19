@@ -99,7 +99,7 @@ def test_get_recordsetcount_error(shared_zone_test_context):
     Test getting a new recordset that doesn't exist should return a 404
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    client.get_recordset_count(shared_zone_test_context.ok_zone["id"],status=404)
+    client.get_recordset_count("999",status=404)
 
 @pytest.mark.serial
 def test_at_get_recordset(shared_zone_test_context):
