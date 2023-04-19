@@ -531,8 +531,13 @@ class VinylDNSClient(object):
         """
         url = urljoin(self.index_url, "/api/zones/{0}/recordsetcount".format(zone_id))
 
-        response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
-        return data
+        response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True,status=(200,404), **kwargs)
+
+        assert_that(response, equal_to(200), data)
+        if response == 200:
+            return data
+
+        return response == 200
 
     def get_recordset_change(self, zone_id, rs_id, change_id, **kwargs):
         """
