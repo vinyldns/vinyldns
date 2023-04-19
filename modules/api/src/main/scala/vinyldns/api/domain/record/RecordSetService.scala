@@ -738,7 +738,8 @@ class RecordSetService(
 
   def getRecordSetCount(zoneId: String, authPrincipal: AuthPrincipal): Result[RecordSetCount] = {
     for {
-      count  <- recordSetRepository.getRecordSetCount(zoneId)
+      _ <- getZone(zoneId)
+      count  <- recordSetRepository.getRecordSetCount(zoneId).toResult
     } yield RecordSetCount(count)
-  }.toResult
+  }
 }
