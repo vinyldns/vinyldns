@@ -45,9 +45,22 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case _ => IO.unit
     }
 
-  def send(addresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
+  def send(fromAddresses: Address*)(toAddresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
     val message = new MimeMessage(session)
-    message.setRecipients(Message.RecipientType.TO, addresses.toArray)
+    message.setRecipients(Message.RecipientType.TO, fromAddresses.toArray)
+    message.setRecipients(Message.RecipientType.CC, toAddresses.toArray)
+    message.setFrom(config.from)
+    buildMessage(message)
+    message.saveChanges()
+    val transport = session.getTransport("smtp")
+    transport.connect()
+    transport.sendMessage(message, message.getAllRecipients)
+    transport.close()
+  }
+
+  def sendInCC(addresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
+    val message = new MimeMessage(session)
+    message.setRecipients(Message.RecipientType.CC, addresses.toArray)
     message.setFrom(config.from)
     buildMessage(message)
     message.saveChanges()
@@ -58,9 +71,9 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendBatchChangeNotification(bc: BatchChange): IO[Unit] = {
-      userRepository.getUser(bc.userId).flatMap {
-        case Some(UserWithEmail(email)) =>
-          send(email) { message =>
+    userRepository.getUser(bc.userId).flatMap {
+        case Some(UserWithEmail(email))  =>
+          send(email)() { message =>
             message.setSubject(s"VinylDNS Batch change ${bc.id} results")
             message.setContent(formatBatchChange(bc), "text/html")
             message
@@ -79,17 +92,18 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendRecordSetChangeNotification(rsc: RecordSetChange): IO[Unit] = {
-    val user= userRepository.getUser(
+    val toUser= userRepository.getUser(
       userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
         map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id)
-
-    user.flatMap {
+    val cCUser= userRepository.getUser(rsc.userId).map(user => new InternetAddress(user.get.email.get))
+    toUser.flatMap {
       case Some(UserWithEmail(email)) =>
-        send(email) { message =>
+        cCUser.flatMap{ ccEmail =>
+        send(email)(ccEmail) {message =>
           message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
           message.setContent(formatRecordSetChange(rsc), "text/html")
           message
-        }
+        }}
       case Some(user: User) if user.email.isDefined =>
         IO {
           logger.warn(

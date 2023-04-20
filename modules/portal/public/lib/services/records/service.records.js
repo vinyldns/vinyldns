@@ -41,7 +41,6 @@ angular.module('service.records', [])
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
 
-
             let loader = $("#loader");
             loader.modal({
                              backdrop: "static", //remove ability to close modal with click
@@ -245,6 +244,7 @@ angular.module('service.records', [])
                 "name": record.name,
                 "type": record.type,
                 "ttl": Number(record.ttl),
+                "isCurrentRecordSetOwner": record.isCurrentRecordSetOwner,
                 "recordSetGroupChange": record.recordSetGroupChange
             };
             switch (record.type) {

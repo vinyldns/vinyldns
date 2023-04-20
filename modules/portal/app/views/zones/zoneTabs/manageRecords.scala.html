@@ -64,7 +64,7 @@
 
     <div class="panel-body">
       <div class="vinyldns-panel-top">
-        <div class="btn-group">
+        <div  class="btn-group">
             <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
             <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
             <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
@@ -101,7 +101,7 @@
       </div>
       <!-- END PAGINATION -->
 
-      <table id="recordDataTable" class="table table-hover table-striped">
+      <table id="recordDataTable" class="table table-hover table-striped" >
             <thead>
                 <tr>
                     <th class="col-md-4">
@@ -329,6 +329,20 @@
                                 <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
                                 <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>
                             </div>
+                        </span>
+
+                            <span ng-if="zoneInfo.shared && record.ownerGroupId == undefined && !canReadZone">
+                            <button class="btn btn-info btn-sm" ng-click="requestOwnerShip(record)">Request</button>
+                            </span>
+                        <span
+                              ng-if="zoneInfo.shared && record.ownerGroupId != undefined && !canReadZone"
+                              ng-switch="record.isCurrentRecordSetOwner">
+                            <span ng-switch-when="false">
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Request</button>
+                            </span>
+                            <span ng-switch-when="true">
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Approve</button>
+                            </span>
                         </span>
                     </td>
                 </tr>
