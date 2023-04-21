@@ -384,7 +384,7 @@ object RecordSetValidations {
       ownerGroupId: Option[String],
       group: Option[Group],
       authPrincipal: AuthPrincipal
-  ): Either[Throwable, Unit] =
+  ): Either[Throwable, Unit] = {
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>
@@ -393,6 +393,7 @@ object RecordSetValidations {
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
+  }
 
   def unchangedRecordName(
       existing: RecordSet,

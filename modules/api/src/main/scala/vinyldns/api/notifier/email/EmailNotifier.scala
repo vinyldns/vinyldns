@@ -95,7 +95,9 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     val toUser= userRepository.getUser(
       userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
         map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id)
-    val cCUser= userRepository.getUser(rsc.userId).map(user => new InternetAddress(user.get.email.get))
+    val cCUser= userRepository.getUser(
+      userRepository.getUser(groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get).
+        map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id).map(user => new InternetAddress(user.get.email.get))
     toUser.flatMap {
       case Some(UserWithEmail(email)) =>
         cCUser.flatMap{ ccEmail =>

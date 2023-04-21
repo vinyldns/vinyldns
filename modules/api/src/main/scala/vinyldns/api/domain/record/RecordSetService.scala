@@ -166,9 +166,9 @@ class RecordSetService(
         notifiers.notify(Notification(change)).toResult
         else ().toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <-
-        if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
-          ().toResult else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
+          canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult else
+          canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
