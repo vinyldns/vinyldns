@@ -45,10 +45,10 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case _ => IO.unit
     }
 
-  def send(fromAddresses: Address*)(toAddresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
+  def send(toAddresses: Address*)(ccAddresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
     val message = new MimeMessage(session)
-    message.setRecipients(Message.RecipientType.TO, fromAddresses.toArray)
-    message.setRecipients(Message.RecipientType.CC, toAddresses.toArray)
+    message.setRecipients(Message.RecipientType.TO, toAddresses.toArray)
+    message.setRecipients(Message.RecipientType.CC, ccAddresses.toArray)
     message.setFrom(config.from)
     buildMessage(message)
     message.saveChanges()
