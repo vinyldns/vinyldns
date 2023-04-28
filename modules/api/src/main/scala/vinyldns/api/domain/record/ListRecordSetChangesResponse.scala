@@ -17,7 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.domain.zone.RecordSetChangeInfo
-import vinyldns.core.domain.record.{ListRecordSetChangesResults, RecordSetChange}
+import vinyldns.core.domain.record.{ListFailedRecordSetChangesResults, ListRecordSetChangesResults, RecordSetChange}
 
 case class ListRecordSetChangesResponse(
     zoneId: String,
@@ -44,4 +44,17 @@ object ListRecordSetChangesResponse {
 
 case class ListFailedRecordSetChangesResponse(
                                                failedRecordSetChanges: List[RecordSetChange] = Nil,
+                                               nextId: Int,
+                                               startFrom: Int,
+                                               maxItems: Int
                                              )
+
+object ListFailedRecordSetChangesResponse {
+  def apply(
+             ListFailedRecordSetChanges: ListFailedRecordSetChangesResults
+           ): ListFailedRecordSetChangesResponse =
+    ListFailedRecordSetChangesResponse(
+      ListFailedRecordSetChanges.items,
+      ListFailedRecordSetChanges.nextId,
+      ListFailedRecordSetChanges.startFrom,
+      ListFailedRecordSetChanges.maxItems)}

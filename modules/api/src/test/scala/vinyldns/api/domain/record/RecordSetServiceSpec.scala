@@ -1956,24 +1956,53 @@ class RecordSetServiceSpec
     }
 
     "listFailedRecordSetChanges" should {
-      "retrieve the recordset changes" in {
+      "retrieve the recordset changes with default maxItems and startFrom" in {
         val completeRecordSetChanges: List[RecordSetChange] = List(
           pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
           pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
           completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
           completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
         )
-        //val recordSetChange= List[RecordSetChange]
-        doReturn(IO.pure(completeRecordSetChanges))
+
+        doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
           .when(mockRecordChangeRepo)
-          .listFailedRecordSetChanges(100)
+          .listFailedRecordSetChanges(100,0)
 
 
         val result: ListFailedRecordSetChangesResponse =
           underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
 
         val changesWithName =
-          ListFailedRecordSetChangesResponse(completeRecordSetChanges)
+          ListFailedRecordSetChangesResponse(
+            completeRecordSetChanges,
+            nextId = 0,
+            startFrom = 0,
+            maxItems = 100)
+
+        result shouldBe changesWithName
+      }
+      "retrieve the recordset changes with maxItems 3 and startFrom 2" in {
+        val completeRecordSetChanges: List[RecordSetChange] = List(
+          pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+        )
+
+        doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
+          .when(mockRecordChangeRepo)
+          .listFailedRecordSetChanges(3,2)
+
+
+        val result: ListFailedRecordSetChangesResponse =
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,2,3).value.unsafeRunSync().toOption.get
+
+        val changesWithName =
+          ListFailedRecordSetChangesResponse(
+            completeRecordSetChanges,
+            nextId = 0,
+            startFrom = 2,
+            maxItems = 3)
 
         result shouldBe changesWithName
       }

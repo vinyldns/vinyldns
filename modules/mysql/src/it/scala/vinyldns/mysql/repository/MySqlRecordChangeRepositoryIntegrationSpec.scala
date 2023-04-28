@@ -145,9 +145,10 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges(100).unsafeRunSync()
-      (result  should have).length(10)
-      result should contain theSameElementsAs(inserts)
+      val result = repo.listFailedRecordSetChanges(10, 0).unsafeRunSync()
+      (result.items  should have).length(10)
+      result.maxItems shouldBe 10
+      result.items should contain theSameElementsAs(inserts)
 
     }
     "return empty for success record changes" in {
@@ -156,9 +157,40 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges(100).unsafeRunSync()
-      (result  should have).length(0)
-      result shouldBe List()
+      val result = repo.listFailedRecordSetChanges(5, 0).unsafeRunSync()
+      (result.items  should have).length(0)
+      result.items shouldBe List()
+      result.nextId shouldBe 0
+      result.maxItems shouldBe 5
+    }
+    "page through failed record changes" in {
+      // sort by created desc, so adding additional seconds makes it more current, the last
+      val timeSpaced =
+        generateFailedInserts(okZone, 5).zipWithIndex.map {
+          case (c, i) => c.copy(created = c.created.plusSeconds(i))
+        }
+
+      // expect to be sorted by created descending so reverse that
+      val expectedOrder = timeSpaced.sortBy(_.created.toEpochMilli).reverse
+
+      val saveRecChange = executeWithinTransaction { db: DB =>
+        repo.save(db, ChangeSet(timeSpaced))
+      }
+      saveRecChange.attempt.unsafeRunSync() shouldBe right
+      val page1 = repo.listFailedRecordSetChanges(2, 0).unsafeRunSync()
+      page1.nextId shouldBe 2
+      page1.maxItems shouldBe 2
+      (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
+
+      val page2 = repo.listFailedRecordSetChanges(2, page1.nextId).unsafeRunSync()
+      page2.nextId shouldBe 4
+      page2.maxItems shouldBe 2
+      (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(2, 4))
+
+      val page3 = repo.listFailedRecordSetChanges(2, page2.nextId).unsafeRunSync()
+      page3.nextId shouldBe 0
+      page3.maxItems shouldBe 2
+      page3.items should contain theSameElementsAs expectedOrder.slice(4, 5)
     }
   }
 }

@@ -32,6 +32,8 @@ trait RecordChangeRepository extends Repository {
 
   def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
 
-  def listFailedRecordSetChanges(maxItems: Int = 100): IO[List[RecordSetChange]]
+  def listFailedRecordSetChanges(maxItems: Int = 100,
+                                 startFrom: Int = 0
+                                ): IO[ListFailedRecordSetChangesResults]
 
 }
