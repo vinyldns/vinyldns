@@ -114,6 +114,7 @@
                     <th class="col-md-4">Record Data</th>
                     @if(meta.sharedDisplayEnabled) {
                         <th ng-if="zoneInfo.shared">Owner Group Name</th>
+                        <th ng-if="zoneInfo.shared">OwnerShip Transfer Status</th>
                     }
                     <th>Actions</th>
                 </tr>
@@ -322,6 +323,9 @@
                             <span ng-if="record.ownerGroupId && !record.ownerGroupName" class="text-danger" data-toggle="tooltip" data-placement="top"
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                         </td>
+                    <td ng-if="zoneInfo.shared">
+                        {{record.recordSetGroupChange.recordSetGroupApprovalStatus}}
+                    </td>
                     }
                     <td>
                         <span ng-if="(canReadZone && record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
@@ -340,7 +344,7 @@
                             <span ng-switch-when="false">
                                 <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Request</button>
                             </span>
-                            <span ng-switch-when="true">
+                            <span ng-switch-when="true" ng-if= record.recordSetGroupChange.recordSetGroupApprovalStatus=="PendingReview">
                                 <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Approve</button>
                             </span>
                         </span>

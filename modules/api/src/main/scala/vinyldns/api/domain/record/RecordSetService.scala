@@ -149,11 +149,11 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
-        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+      _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>"))
+              && !auth.isSuper) unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.recordSetGroupApprovalStatus) == RecordSetGroupApprovalStatus.Cancelled)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
-      recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(RecordSetGroupApproval.apply(RecordSetGroupApprovalStatus.AutoApproved,Some("none"))))
+      recordSet <- recordSetGroupStatus(recordSet, recordSet.recordSetGroupChange.getOrElse(RecordSetGroupApproval.apply(RecordSetGroupApprovalStatus.None,Some("none"))))
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -162,13 +162,13 @@ class RecordSetService(
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") ))
               ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       _ <- if(recordSet.recordSetGroupChange != None &&
+        recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") != RecordSetGroupApprovalStatus.None &&
         recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>") != RecordSetGroupApprovalStatus.AutoApproved)
-        notifiers.notify(Notification(change)).toResult
-        else ().toResult
+        notifiers.notify(Notification(change)).toResult else ().toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- if(requestorRecordSetGroupApprovalStatus.contains(recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).getOrElse("<none>")))
-          canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult else
-          canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
+          canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
+      else canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
@@ -222,7 +222,8 @@ class RecordSetService(
     } yield change
 
   def recordSetGroupStatus(recordSet: RecordSet, recordSetGroupApproval: RecordSetGroupApproval): Result[RecordSet] =
-    if (recordSet.recordSetGroupChange != None) {
+    if (recordSet.recordSetGroupChange != None &&
+        recordSetGroupApproval.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.None) {
       if(approverRecordSetGroupApprovalStatus.contains(recordSetGroupApproval.recordSetGroupApprovalStatus)) {
       val recordSetOwnerApproval =
         recordSetGroupApproval.recordSetGroupApprovalStatus match {
@@ -233,10 +234,12 @@ class RecordSetService(
             recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.ManuallyRejected)))
           case RecordSetGroupApprovalStatus.AutoApproved =>
-            recordSet.copy(
+            recordSet.copy(ownerGroupId = recordSetGroupApproval.requestedOwnerGroupId,
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved)))
           case _ => recordSet.copy(
-            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.AutoApproved)))
+            recordSetGroupChange = Some(recordSetGroupApproval.copy(
+              recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.None,
+              requestedOwnerGroupId = None)))
         }
       for {
         recordSet <- recordSetOwnerApproval.toResult
@@ -246,7 +249,9 @@ class RecordSetService(
       val recordSetOwnerRequest =
         recordSetGroupApproval.recordSetGroupApprovalStatus match {
           case RecordSetGroupApprovalStatus.Cancelled =>
-            recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled)))
+            recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval.copy(
+              recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled,
+              requestedOwnerGroupId = None)))
           case RecordSetGroupApprovalStatus.Requested => recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.PendingReview)))
         }
@@ -254,7 +259,10 @@ class RecordSetService(
         recordSet <- recordSetOwnerRequest.toResult
       } yield recordSet
     }}
-    else recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval)).toResult
+    else recordSet.copy(
+      recordSetGroupChange = Some(recordSetGroupApproval.copy(
+        recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.None,
+        requestedOwnerGroupId = None))).toResult
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {

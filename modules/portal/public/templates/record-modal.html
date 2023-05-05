@@ -461,6 +461,19 @@
                     Record Owner Group is required for records in shared zones
                 </modal-invalid>
             </modal-element>
+            <modal-element label="Requested Record Owner Group"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.ownerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.previous.recordSetGroupChange.recordSetGroupApprovalStatus=='PendingReview'">
+                <input name="requestedOwnerGroupId"
+                       class="form-control"
+                       ng-model="recordSetRequestedOwnerShipName"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.basics.readOnly"
+                       placeholder="">
+                <modal-invalid>
+                    Record Owner Group is required for records in shared zones
+                </modal-invalid>
+            </modal-element>
         </modal-body>
         <modal-footer>
             <span ng-if="recordModal.action == recordModalState.CREATE">

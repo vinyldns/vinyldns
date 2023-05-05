@@ -37,7 +37,7 @@ object RecordSetStatus extends Enumeration {
 
 object RecordSetGroupApprovalStatus extends Enumeration {
    type RecordSetGroupApprovalStatus = Value
-     val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview  = Value
+     val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None  = Value
   }
 
 import RecordSetStatus._

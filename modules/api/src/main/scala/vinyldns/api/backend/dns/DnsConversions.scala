@@ -206,7 +206,7 @@ trait DnsConversions {
       status = RecordSetStatus.Active,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = f(r),
-      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved))
+      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.None))
     )
 
   // if we do not know the record type, then we cannot parse the records, but we should be able to get everything else
@@ -219,7 +219,7 @@ trait DnsConversions {
       status = RecordSetStatus.Active,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = Nil,
-      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved))
+      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.None))
     )
 
   def fromARecord(r: DNS.ARecord, zoneName: DNS.Name, zoneId: String): RecordSet =

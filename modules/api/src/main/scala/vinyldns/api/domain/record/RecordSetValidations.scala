@@ -454,7 +454,7 @@ object RecordSetValidations {
 
   def unchangedRecordSet(
                           existing: RecordSet,
-                          updates: RecordSet,
+                          updates: RecordSet
                         ): Either[Throwable, Unit] =
     Either.cond(
       updates.typ == existing.typ &&
