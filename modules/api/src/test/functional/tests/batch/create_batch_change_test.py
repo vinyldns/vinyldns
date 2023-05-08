@@ -14,7 +14,7 @@ def validate_change_error_response_basics(input_json, change_type, input_name, r
     assert_that(input_json["changeType"], is_(change_type))
     assert_that(input_json["inputName"], is_(input_name))
     assert_that(input_json["type"], is_(record_type))
-    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX"]))
+    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX", "NS", "NAPTR", "SRV"]))
     if change_type == "Add":
         assert_that(input_json["ttl"], is_(ttl))
         if record_type in ["A", "AAAA"]:
@@ -28,6 +28,20 @@ def validate_change_error_response_basics(input_json, change_type, input_name, r
         elif record_type == "MX":
             assert_that(input_json["record"]["preference"], is_(record_data["preference"]))
             assert_that(input_json["record"]["exchange"], is_(record_data["exchange"]))
+        elif record_type == "NS" and change_type == "Add":
+            assert_that(input_json["record"]["nsdname"], is_(record_data))
+        elif record_type == "NAPTR" and change_type == "Add":
+            assert_that(input_json["record"]["order"], is_(record_data["order"]))
+            assert_that(input_json["record"]["preference"], is_(record_data["preference"]))
+            assert_that(input_json["record"]["flags"], is_(record_data["flags"]))
+            assert_that(input_json["record"]["service"], is_(record_data["service"]))
+            assert_that(input_json["record"]["regexp"], is_(record_data["regexp"]))
+            assert_that(input_json["record"]["replacement"], is_(record_data["replacement"]))
+        elif record_type == "SRV" and change_type == "Add":
+            assert_that(input_json["record"]["priority"], is_(record_data["priority"]))
+            assert_that(input_json["record"]["weight"], is_(record_data["weight"]))
+            assert_that(input_json["record"]["port"], is_(record_data["port"]))
+            assert_that(input_json["record"]["target"], is_(record_data["target"]))
     return
 
 
@@ -56,7 +70,7 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
     assert_that(changes_json[index]["type"], is_(record_type))
     assert_that(changes_json[index]["id"], is_not(none()))
     assert_that(changes_json[index]["changeType"], is_(change_type))
-    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX"]))
+    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX", "NS", "NAPTR", "SRV"]))
     if record_type in ["A", "AAAA"] and change_type == "Add":
         assert_that(changes_json[index]["record"]["address"], is_(record_data))
     elif record_type == "CNAME" and change_type == "Add":
@@ -68,6 +82,20 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
     elif record_type == "MX" and change_type == "Add":
         assert_that(changes_json[index]["record"]["preference"], is_(record_data["preference"]))
         assert_that(changes_json[index]["record"]["exchange"], is_(record_data["exchange"]))
+    elif record_type == "NS" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["nsdname"], is_(record_data))
+    elif record_type == "NAPTR" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["order"], is_(record_data["order"]))
+        assert_that(changes_json[index]["record"]["preference"], is_(record_data["preference"]))
+        assert_that(changes_json[index]["record"]["flags"], is_(record_data["flags"]))
+        assert_that(changes_json[index]["record"]["service"], is_(record_data["service"]))
+        assert_that(changes_json[index]["record"]["regexp"], is_(record_data["regexp"]))
+        assert_that(changes_json[index]["record"]["replacement"], is_(record_data["replacement"]))
+    elif record_type == "SRV" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["priority"], is_(record_data["priority"]))
+        assert_that(changes_json[index]["record"]["weight"], is_(record_data["weight"]))
+        assert_that(changes_json[index]["record"]["port"], is_(record_data["port"]))
+        assert_that(changes_json[index]["record"]["target"], is_(record_data["target"]))
     return
 
 
@@ -113,7 +141,10 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_TXT_json(f"txt-unique-characters.{ok_zone_name}", text='a\\\\`=` =\\"Cat\\"\nattr=val'),
             get_change_TXT_json(f"txt.{ip4_zone_name}"),
             get_change_MX_json(f"mx.{ok_zone_name}", preference=0),
-            get_change_MX_json(f"{ok_zone_name}", preference=1000, exchange="bar.foo.")
+            get_change_MX_json(f"{ok_zone_name}", preference=1000, exchange="bar.foo."),
+            get_change_NS_json(f"ns.{ok_zone_name}", nsdname="ns1.parent.com."),
+            get_change_NAPTR_json(f"naptr.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_SRV_json(f"srv.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo.")
         ]
     }
 
@@ -161,6 +192,12 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                               record_name="mx", input_name=f"mx.{ok_zone_name}", record_data={"preference": 0, "exchange": "foo.bar."}, record_type="MX")
         assert_change_success(result["changes"], zone=ok_zone, index=14,
                               record_name=f"{ok_zone_name}", input_name=f"{ok_zone_name}", record_data={"preference": 1000, "exchange": "bar.foo."}, record_type="MX")
+        assert_change_success(result["changes"], zone=ok_zone, index=15,
+                              record_name=f"ns", input_name=f"ns.{ok_zone_name}", record_data="ns1.parent.com.", record_type="NS")
+        assert_change_success(result["changes"], zone=ok_zone, index=16,
+                              record_name=f"naptr", input_name=f"naptr.{ok_zone_name}", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, record_type="NAPTR")
+        assert_change_success(result["changes"], zone=ok_zone, index=17,
+                              record_name=f"srv", input_name=f"srv.{ok_zone_name}", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, record_type="SRV")
 
         completed_status = [change["status"] == "Complete" for change in completed_batch["changes"]]
         assert_that(all(completed_status), is_(True))
@@ -285,6 +322,30 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       "ttl": 200,
                       "records": [{"preference": 1000, "exchange": "bar.foo."}]}
         verify_recordset(rs16, expected16)
+
+        rs17 = client.get_recordset(record_set_list[15][0], record_set_list[15][1])["recordSet"]
+        expected17 = {"name": f"ns",
+                      "zoneId": ok_zone["id"],
+                      "type": "NS",
+                      "ttl": 200,
+                      "records": [{"nsdname": "ns1.parent.com."}]}
+        verify_recordset(rs17, expected17)
+
+        rs18 = client.get_recordset(record_set_list[16][0], record_set_list[16][1])["recordSet"]
+        expected18 = {"name": f"naptr",
+                      "zoneId": ok_zone["id"],
+                      "type": "NAPTR",
+                      "ttl": 200,
+                      "records": [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}]}
+        verify_recordset(rs18, expected18)
+
+        rs19 = client.get_recordset(record_set_list[17][0], record_set_list[17][1])["recordSet"]
+        expected19 = {"name": f"srv",
+                      "zoneId": ok_zone["id"],
+                      "type": "SRV",
+                      "ttl": 200,
+                      "records": [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}]}
+        verify_recordset(rs19, expected19)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
