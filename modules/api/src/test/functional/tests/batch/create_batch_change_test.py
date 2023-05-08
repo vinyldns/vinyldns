@@ -890,7 +890,7 @@ def test_create_batch_change_with_unsupported_record_type_fails(shared_zone_test
     errors = client.create_batch_change(batch_change_input, status=400)
 
     assert_error(errors,
-                 error_messages=["Unsupported type UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"])
+                 error_messages=["Unsupported type UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR"])
 
 
 def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_context):

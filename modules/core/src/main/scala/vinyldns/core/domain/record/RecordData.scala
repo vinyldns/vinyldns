@@ -175,21 +175,17 @@ object SRVData {
   def fromString(value: String): Option[SRVData] =
     Option(value).flatMap { v =>
       val parts = v.split(' ')
-      if (parts.length != 7) {
-        None
-      } else {
-        for {
-          priority <- toInt(parts(0))
-          weight <- toInt(parts(1))
-          port <- toInt(parts(2))
-          target = Fqdn(parts(3))
-        } yield SRVData(
-          priority,
-          weight,
-          port,
-          target
-        )
-      }
+      for {
+        priority <- toInt(parts(0))
+        weight <- toInt(parts(1))
+        port <- toInt(parts(2))
+        target = Fqdn(parts(3))
+      } yield SRVData(
+        priority,
+        weight,
+        port,
+        target
+      )
     }
 }
 

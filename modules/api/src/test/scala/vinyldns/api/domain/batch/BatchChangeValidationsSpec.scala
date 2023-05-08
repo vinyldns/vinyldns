@@ -65,7 +65,8 @@ class BatchChangeValidationsSpec
       VinylDNSTestHelpers.highValueDomainConfig,
       VinylDNSTestHelpers.manualReviewConfig,
       VinylDNSTestHelpers.batchChangeConfig,
-      VinylDNSTestHelpers.scheduledChangesConfig
+      VinylDNSTestHelpers.scheduledChangesConfig,
+      VinylDNSTestHelpers.approvedNameServers
     )
 
   import underTest._
@@ -357,7 +358,8 @@ class BatchChangeValidationsSpec
         VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
         VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = false)
+        ScheduledChangesConfig(enabled = false),
+        VinylDNSTestHelpers.approvedNameServers
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled
@@ -378,7 +380,8 @@ class BatchChangeValidationsSpec
         VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
         VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = true)
+        ScheduledChangesConfig(enabled = true),
+        VinylDNSTestHelpers.approvedNameServers
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture
@@ -2136,15 +2139,15 @@ class BatchChangeValidationsSpec
     resultSmall should haveInvalid[DomainValidationError](
       InvalidMxPreference(
         -1,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE
       )
     )
     resultLarge should haveInvalid[DomainValidationError](
       InvalidMxPreference(
         1000000,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE
       )
     )
   }
@@ -2163,8 +2166,8 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](
       InvalidMxPreference(
         -1,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE
       )
     )
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))

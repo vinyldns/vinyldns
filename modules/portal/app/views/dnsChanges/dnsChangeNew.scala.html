@@ -113,6 +113,9 @@
                                             <option>PTR</option>
                                             <option>TXT</option>
                                             <option>MX</option>
+                                            <option>NS</option>
+                                            <option>SRV</option>
+                                            <option>NAPTR</option>
                                         </select>
                                     </td>
                                     <td>
@@ -204,6 +207,107 @@
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.required" class="batch-change-error-help">Exchange data is required!</span>
                                             <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.fqdn" class="batch-change-error-help">Exchange data must be absolute!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+                                    </td>
+                                    <td ng-if="change.type=='NS'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.nsdname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1.1.1.1">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+                                    </td>
+                                    <td ng-if="change.type=='SRV'">
+                                        <label class="batch-label">Priority</label>
+                                        <input name="record_srv_priority_{{$index}}" type="number" ng-model="change.record.priority" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_srv_priority_{{$index}}.$error.required" class="batch-change-error-help">Priority is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_priority_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_priority_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+                                        <br />
+
+                                        <label class="batch-label">Weight</label>
+                                        <input name="record_srv_weight_{{$index}}" type="number" ng-model="change.record.weight" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_srv_weight_{{$index}}.$error.required" class="batch-change-error-help">Weight is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_weight_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_weight_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Port</label>
+                                        <input name="record_srv_port_{{$index}}" type="number" ng-model="change.record.port" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_srv_port_{{$index}}.$error.required" class="batch-change-error-help">Port is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_port_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_srv_port_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Target</label>
+                                        <input name="record_srv_target_{{$index}}" type="text" ng-model="change.record.target" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.com">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_srv_target_{{$index}}.$error.required" class="batch-change-error-help">Target is required!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+                                    </td>
+                                    <td ng-if="change.type=='NAPTR'">
+                                        <label class="batch-label">Order</label>
+                                        <input name="record_naptr_order_{{$index}}" type="number" ng-model="change.record.order" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_naptr_order_{{$index}}.$error.required" class="batch-change-error-help">Order is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_naptr_order_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_naptr_order_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Preference</label>
+                                        <input name="record_naptr_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_naptr_preference_{{$index}}.$error.required" class="batch-change-error-help">Preference is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_naptr_preference_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_naptr_preference_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Flags</label>
+                                        <input name="record_naptr_flags_{{$index}}" type="text" ng-model="change.record.flags" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. empty or U, S, A, P">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_naptr_flags_{{$index}}.$error.required" class="batch-change-error-help">Flags is required!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Service</label>
+                                        <input name="record_naptr_service_{{$index}}" type="text" ng-model="change.record.service" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. someservice">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_naptr_service_{{$index}}.$error.required" class="batch-change-error-help">Service is required!</span>
+                                        </p>
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Regexp</label>
+                                        <input name="record_naptr_regexp_{{$index}}" type="text" ng-model="change.record.regexp" class="form-control" placeholder="e.g. someregex">
+                                        <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
+
+                                        <br />
+
+                                        <label class="batch-label">Replacement</label>
+                                        <input name="record_naptr_replacement_{{$index}}" type="text" ng-model="change.record.replacement" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. somerep">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_naptr_replacement_{{$index}}.$error.required" class="batch-change-error-help">Replacement is required!</span>
                                         </p>
                                         <p class="help-block" ng-if="change.changeType=='DeleteRecordSet'">Record Data is optional.</p>
                                     </td>

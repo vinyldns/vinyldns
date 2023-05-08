@@ -59,8 +59,8 @@ object DomainValidations {
   val TTL_MIN_LENGTH: Int = 30
   val TXT_TEXT_MIN_LENGTH: Int = 1
   val TXT_TEXT_MAX_LENGTH: Int = 64764
-  val MX_PREFERENCE_MIN_VALUE: Int = 0
-  val MX_PREFERENCE_MAX_VALUE: Int = 65535
+  val INTEGER_MIN_VALUE: Int = 0
+  val INTEGER_MAX_VALUE: Int = 65535
 
   // Cname check - Cname should not be IP address
   def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
@@ -160,7 +160,7 @@ object DomainValidations {
   def validateTxtTextLength(value: String): ValidatedNel[DomainValidationError, String] =
     validateStringLength(value, Some(TXT_TEXT_MIN_LENGTH), TXT_TEXT_MAX_LENGTH)
 
-  def validateMxPreference(pref: Int): ValidatedNel[DomainValidationError, Int] =
-    if (pref >= MX_PREFERENCE_MIN_VALUE && pref <= MX_PREFERENCE_MAX_VALUE) pref.validNel
-    else InvalidMxPreference(pref, MX_PREFERENCE_MIN_VALUE, MX_PREFERENCE_MAX_VALUE).invalidNel[Int]
+  def validateMX_NAPTR_SRVData(number: Int): ValidatedNel[DomainValidationError, Int] =
+    if (number >= INTEGER_MIN_VALUE && number <= INTEGER_MAX_VALUE) number.validNel
+    else InvalidMxPreference(number, INTEGER_MIN_VALUE, INTEGER_MAX_VALUE).invalidNel[Int]
 }

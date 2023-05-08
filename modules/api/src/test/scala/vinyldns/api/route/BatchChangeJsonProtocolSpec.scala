@@ -180,7 +180,7 @@ class BatchChangeJsonProtocolSpec
       val result = ChangeInputSerializer.fromJson(json)
 
       result should haveInvalid(
-        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"
+        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR"
       )
     }
 

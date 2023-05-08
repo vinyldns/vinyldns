@@ -205,6 +205,17 @@ final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false
       .replaceAll("\n", " ")
 }
 
+final case class InvalidBatchRequest(msg: String) extends DomainValidationError {
+  def message: String =
+    s"""$msg"""
+      .replaceAll("\n", " ")
+}
+
+final case class NotApprovedNSError(nsData: String) extends DomainValidationError {
+  def message: String =
+    s"Name Server $nsData is not an approved name server."
+}
+
 final case class UnsupportedOperation(operation: String) extends DomainValidationError {
   def message: String = s"$operation is not yet implemented/supported in VinylDNS."
 }

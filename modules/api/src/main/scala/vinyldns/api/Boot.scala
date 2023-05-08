@@ -140,7 +140,8 @@ object Boot extends App {
         vinyldnsConfig.highValueDomainConfig,
         vinyldnsConfig.manualReviewConfig,
         vinyldnsConfig.batchChangeConfig,
-        vinyldnsConfig.scheduledChangesConfig
+        vinyldnsConfig.scheduledChangesConfig,
+        vinyldnsConfig.serverConfig.approvedNameServers
       )
       val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
 

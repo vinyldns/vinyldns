@@ -30,7 +30,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType
 
 object SupportedBatchChangeRecordTypes {
-  val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX)
+  val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX, NS, SRV, NAPTR)
   def get: Set[RecordType] = supportedTypes
 }
 
