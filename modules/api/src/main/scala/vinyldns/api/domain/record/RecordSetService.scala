@@ -239,7 +239,7 @@ class RecordSetService(
           case _ => recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(
               recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.None,
-              requestedOwnerGroupId = None)))
+              requestedOwnerGroupId = Some("null"))))
         }
       for {
         recordSet <- recordSetOwnerApproval.toResult
@@ -251,7 +251,7 @@ class RecordSetService(
           case RecordSetGroupApprovalStatus.Cancelled =>
             recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval.copy(
               recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled,
-              requestedOwnerGroupId = None)))
+              requestedOwnerGroupId = Some("null"))))
           case RecordSetGroupApprovalStatus.Requested => recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.PendingReview)))
         }
@@ -262,7 +262,7 @@ class RecordSetService(
     else recordSet.copy(
       recordSetGroupChange = Some(recordSetGroupApproval.copy(
         recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.None,
-        requestedOwnerGroupId = None))).toResult
+        requestedOwnerGroupId = Some("null")))).toResult
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {

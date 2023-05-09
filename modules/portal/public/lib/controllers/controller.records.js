@@ -51,8 +51,11 @@ angular.module('controller.records', [])
     var loadRecordsPromise;
 
 
-   	$scope.recordSetGroupApproverStatus = ['ManuallyApproved', 'ManuallyRejected'];
-	$scope.recordSetGroupRequestorStatus = ['Cancelled', 'Requested'];
+   	$scope.recordSetGroupApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                           {value: 'ManuallyRejected',  label: 'Reject'}];
+
+	$scope.recordSetGroupRequestorStatus = [{value: 'Requested',  label: 'Request'},
+	                                        {value: 'Cancelled',  label: 'Cancel'}];
 
     $scope.recordModalState = {
         CREATE: 0,
@@ -109,7 +112,7 @@ angular.module('controller.records', [])
     };
 
     function getGroup(groupId) {
-        if (groupId != undefined){
+        if (groupId != undefined && groupId != "null"){
             $log.log('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnerShipName = response.data.name;
@@ -219,9 +222,10 @@ angular.module('controller.records', [])
 
         if ($scope.zoneInfo.shared == true && $scope.recordModal.isCurrentRecordOwnerGroup){
             $scope.recordSetGroupOwnerShipStatus(currentRecordOwnerGroupId, $scope.profile.id, record);
-            if ($scope.recordSetGroupApproverStatus.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
-                {$scope.recordSetGroupApprover = true}else{$scope.recordSetGroupRequestor = true}
-        }else{$log.log('zoneService: NonSharedZones');}
+            $scope.recordSetGroupApproverStatus.forEach(function(recordSetGroupApproverStatus, index) {
+                if (recordSetGroupApproverStatus.value.indexOf($scope.currentRecord.recordSetGroupChange.recordSetGroupApprovalStatus) > -1)
+                    {$scope.recordSetGroupApprover = true}else{$scope.recordSetGroupRequestor = true}})
+        }
         $scope.addRecordForm.$setPristine();
             $("#record_modal_ownership_transfer").modal("show");
         };
@@ -289,10 +293,12 @@ angular.module('controller.records', [])
 
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
+       if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
          if (record.ownerGroupId != $scope.recordModal.previous.ownerGroupId && $scope.isZoneAdmin){
                 record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
                 record.recordSetGroupChange.recordSetGroupApprovalStatus = angular.copy("ManuallyApproved");
-                }
+          }
+       }
         record['onlyFour'] = true;
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);

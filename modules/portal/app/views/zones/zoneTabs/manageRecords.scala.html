@@ -335,11 +335,11 @@
                             </div>
                         </span>
 
-                            <span ng-if="zoneInfo.shared && record.ownerGroupId == undefined && !canReadZone">
+                            <span ng-if="zoneInfo.shared && record.ownerGroupId == undefined && !canReadZone && record.canBeEdited">
                             <button class="btn btn-info btn-sm" ng-click="requestOwnerShip(record)">Request</button>
                             </span>
                         <span
-                              ng-if="zoneInfo.shared && record.ownerGroupId != undefined && !canReadZone"
+                              ng-if="zoneInfo.shared && record.ownerGroupId != undefined && !canReadZone && record.canBeEdited"
                               ng-switch="record.isCurrentRecordSetOwner">
                             <span ng-switch-when="false">
                                 <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Request</button>
