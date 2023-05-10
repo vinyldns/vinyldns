@@ -235,6 +235,61 @@ class BatchChangeValidationsSpec
   }
 
   property(
+    "isApprovedNameServer: should be valid if the name server is on approved name server list"
+  ) {
+    isApprovedNameServer(VinylDNSTestHelpers.approvedNameServers, NSData(Fqdn("some.test.ns."))) shouldBe ().validNel
+  }
+
+  property(
+    "isApprovedNameServer: should throw an error if the name server is not on approved name server list"
+  ) {
+    val nsData = NSData(Fqdn("not.valid."))
+    isApprovedNameServer(VinylDNSTestHelpers.approvedNameServers, nsData) shouldBe NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
+  }
+
+  property(
+    "containsApprovedNameServers: should be valid if the name server is on approved name server list"
+  ) {
+    containsApprovedNameServers(NSData(Fqdn("some.test.ns.")), VinylDNSTestHelpers.approvedNameServers) shouldBe ().validNel
+  }
+
+  property(
+    "containsApprovedNameServers: should throw an error if the name server is not on approved name server list"
+  ) {
+    val nsData = NSData(Fqdn("not.valid."))
+    containsApprovedNameServers(nsData, VinylDNSTestHelpers.approvedNameServers) shouldBe NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
+  }
+
+  property(
+    "isOriginRecord: should return true if the record is origin"
+  ) {
+    isOriginRecord("@", "ok.") shouldBe true
+    isOriginRecord("ok.", "ok.") shouldBe true
+  }
+
+  property(
+    "isOriginRecord: should return false if the record is not origin"
+  ) {
+    isOriginRecord("dummy.ok.", "ok.") shouldBe false
+  }
+
+  property(
+    "isNotOrigin: should be valid if the record is not origin"
+  ) {
+    val recordSetName = "ok.zone.recordsets."
+    val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
+    isNotOrigin(recordSetName, okZone, error) shouldBe InvalidBatchRequest(error).invalidNel
+  }
+
+  property(
+    "isNotOrigin: should throw an error if the record is origin"
+  ) {
+    val recordSetName = "test."
+    val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
+    isNotOrigin(recordSetName, okZone, error) shouldBe ().validNel
+  }
+
+  property(
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled"
   ) {
     val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))

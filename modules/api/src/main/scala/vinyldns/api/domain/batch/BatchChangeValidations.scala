@@ -432,7 +432,7 @@ class BatchChangeValidations(
       case A | AAAA | MX | SRV | NAPTR =>
         newRecordSetIsNotDotted(change)
       case NS =>
-        nsValidations(change.inputChange.record, change.recordName, change.zone, approvedNameServers)
+        newRecordSetIsNotDotted(change) |+| nsValidations(change.inputChange.record, change.recordName, change.zone, approvedNameServers)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
@@ -750,19 +750,19 @@ class BatchChangeValidations(
       containsApprovedNameServers(newRecordSetData, approvedNameServers)
   }
 
-  private def isNotOrigin(recordSet: String, zone: Zone, err: String): SingleValidation[Unit] =
+  def isNotOrigin(recordSet: String, zone: Zone, err: String): SingleValidation[Unit] =
     if(!isOriginRecord(recordSet, omitTrailingDot(zone.name))) ().validNel else InvalidBatchRequest(err).invalidNel
 
-  private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
+  def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
 
-  private def containsApprovedNameServers(
+  def containsApprovedNameServers(
      nsRecordSet: RecordData,
      approvedNameServers: List[Regex]
   ): SingleValidation[Unit] = {
     val nsData = nsRecordSet match {
       case ns: NSData => ns
-      case _ => ???
+      case _ => ??? // this would never be the case
     }
     isApprovedNameServer(approvedNameServers, nsData)
   }
