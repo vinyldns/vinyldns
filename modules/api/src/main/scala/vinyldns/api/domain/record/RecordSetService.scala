@@ -250,8 +250,7 @@ class RecordSetService(
         recordSetGroupApproval.recordSetGroupApprovalStatus match {
           case RecordSetGroupApprovalStatus.Cancelled =>
             recordSet.copy(recordSetGroupChange = Some(recordSetGroupApproval.copy(
-              recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled,
-              requestedOwnerGroupId = Some("null"))))
+              recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.Cancelled)))
           case RecordSetGroupApprovalStatus.Requested => recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.PendingReview)))
         }

@@ -324,7 +324,12 @@
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                         </td>
                     <td ng-if="zoneInfo.shared">
-                        {{record.recordSetGroupChange.recordSetGroupApprovalStatus}}
+                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'ManuallyApproved' ||
+                                      record.recordSetGroupChange.recordSetGroupApprovalStatus == 'AutoApproved'">Approved</span>
+                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'ManuallyRejected'">Rejected</span>
+                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'None'"></span>
+                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'Cancelled'">Cancelled</span>
+                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'PendingReview'">Pending Review</span>
                     </td>
                     }
                     <td>

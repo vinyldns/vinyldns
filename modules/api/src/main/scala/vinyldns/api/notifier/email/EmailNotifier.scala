@@ -25,11 +25,12 @@ import org.slf4j.LoggerFactory
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
 import scala.util.Try
-import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, TXTData}
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, RecordSetGroupApprovalStatus, TXTData}
 
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.domain.record.RecordSetGroupApprovalStatus._
 
 import java.time.ZoneId
 
@@ -92,16 +93,24 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendRecordSetChangeNotification(rsc: RecordSetChange): IO[Unit] = {
-    val toUser= userRepository.getUser(
-      userRepository.getUser(groupRepository.getGroup(rsc.recordSet.ownerGroupId.get).
-        map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id)
-    val cCUser= userRepository.getUser(
-      userRepository.getUser(groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get).
-        map(_.get.memberIds.head).unsafeRunSync()).unsafeRunSync().get.id).map(user => new InternetAddress(user.get.email.get))
+    val toUser =
+      for{
+          group  <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
+          member <- userRepository.getUser(group.map(_.memberIds.head).getOrElse("<none>"))
+          user  <- userRepository.getUser(member.get.id)}
+      yield user
+
+    val cCUser =
+      for{
+          group  <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
+          member <- userRepository.getUser(group.map(_.memberIds.head).getOrElse("<none>"))
+          user  <- userRepository.getUser(member.get.id)}
+      yield user
+
     toUser.flatMap {
       case Some(UserWithEmail(email)) =>
         cCUser.flatMap{ ccEmail =>
-        send(email)(ccEmail) {message =>
+        send(email)(new InternetAddress(ccEmail.get.email.get)) {message =>
           message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
           message.setContent(formatRecordSetChange(rsc), "text/html")
           message
@@ -120,6 +129,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         IO.unit
     }
 }
+
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
     // Batch change info
@@ -162,13 +172,23 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
 
   def formatRecordSetChange(rsc: RecordSetChange): String = {
     val sb = new StringBuilder
-    sb.append(s"""<h1>RecordSet Ownership Transfer Change</h1>
+    sb.append(s"""<h1>RecordSet Ownership Transfer</h1>
                  | <b>Submitter:</b>  ${ userRepository.getUser(rsc.userId).map(_.get.userName)}
                  | <b>Id:</b> ${rsc.id}<br/>
-                 | <b>OwnerShip Transfer Status:</b> ${rsc.recordSet.recordSetGroupChange.get.recordSetGroupApprovalStatus}<br/>
+                 | <b>Submitted time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/>
+                 | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId} <br/>
+                 | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId).get} <br/>
+                 | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).get)}<br/>
                  """.stripMargin)
     sb.toString
   }
+  def formatOwnerShipStatus(status: RecordSetGroupApprovalStatus): String =
+    status match {
+      case RecordSetGroupApprovalStatus.ManuallyRejected => "Rejected"
+      case RecordSetGroupApprovalStatus.PendingReview => "Pending Review"
+      case  RecordSetGroupApprovalStatus.ManuallyApproved=> "Approved"
+      case  RecordSetGroupApprovalStatus.Cancelled=> "Cancelled"
+    }
 
   def formatBatchStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
     (approval, status) match {
