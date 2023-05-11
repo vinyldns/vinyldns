@@ -30,7 +30,7 @@ import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData,
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.record.RecordSetGroupApprovalStatus._
+import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
 
 import java.time.ZoneId
 
