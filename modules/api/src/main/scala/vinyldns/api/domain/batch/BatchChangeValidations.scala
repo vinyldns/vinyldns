@@ -246,10 +246,10 @@ class BatchChangeValidations(
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
-        validateMX_NAPTR_SRVData(mx.preference).asUnit |+| validateHostName(mx.exchange).asUnit
+        validateMX_NAPTR_SRVData(mx.preference, "preference", "MX").asUnit |+| validateHostName(mx.exchange).asUnit
       case ns: NSData => validateHostName(ns.nsdname).asUnit
-      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference).asUnit |+| validateMX_NAPTR_SRVData(naptr.order).asUnit |+| validateHostName(naptr.replacement).asUnit
-      case srv: SRVData => validateMX_NAPTR_SRVData(srv.priority).asUnit |+| validateMX_NAPTR_SRVData(srv.port).asUnit |+| validateMX_NAPTR_SRVData(srv.weight).asUnit |+| validateHostName(srv.target).asUnit
+      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference, "preference", "NAPTR").asUnit |+| validateMX_NAPTR_SRVData(naptr.order, "order", "NAPTR").asUnit |+| validateHostName(naptr.replacement).asUnit
+      case srv: SRVData => validateMX_NAPTR_SRVData(srv.priority, "priority", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.port, "port", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.weight, "weight", "SRV").asUnit |+| validateHostName(srv.target).asUnit
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }

@@ -160,7 +160,7 @@ object DomainValidations {
   def validateTxtTextLength(value: String): ValidatedNel[DomainValidationError, String] =
     validateStringLength(value, Some(TXT_TEXT_MIN_LENGTH), TXT_TEXT_MAX_LENGTH)
 
-  def validateMX_NAPTR_SRVData(number: Int): ValidatedNel[DomainValidationError, Int] =
+  def validateMX_NAPTR_SRVData(number: Int, recordDataType: String, recordType: String): ValidatedNel[DomainValidationError, Int] =
     if (number >= INTEGER_MIN_VALUE && number <= INTEGER_MAX_VALUE) number.validNel
-    else InvalidMxPreference(number, INTEGER_MIN_VALUE, INTEGER_MAX_VALUE).invalidNel[Int]
+    else InvalidMX_NAPTR_SRVData(number, INTEGER_MIN_VALUE, INTEGER_MAX_VALUE, recordDataType, recordType).invalidNel[Int]
 }

@@ -565,6 +565,12 @@ class BatchChangeValidationsSpec
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {
+    val goodNSInput = AddChangeInput("test-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.test.ns.")))
+    val goodNAPTRInput = AddChangeInput("test-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target")))
+    val goodSRVInput = AddChangeInput("test-srv.example.com.", RecordType.SRV, ttl, SRVData(1, 2, 3, Fqdn("target.vinyldns.")))
+    val badNSInput = AddChangeInput("test-bad-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.te$st.ns.")))
+    val badNAPTRInput = AddChangeInput("test-bad-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(99999, 2, "S", "E2U+sip", "", Fqdn("target")))
+    val badSRVInput = AddChangeInput("test-bad-srv.example.com.", RecordType.SRV, ttl, SRVData(99999, 2, 3, Fqdn("target.vinyldns.")))
     val goodInput = AddChangeInput("test.example.com.", RecordType.A, ttl, AData("1.1.1.1"))
     val goodAAAAInput =
       AddChangeInput("testAAAA.example.com.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
@@ -574,13 +580,19 @@ class BatchChangeValidationsSpec
       AddChangeInput("testbad.example.com.", RecordType.AAAA, ttl, AAAAData("invalidIpv6:123"))
     val result =
       validateInputChanges(
-        List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input),
+        List(goodNSInput, goodNAPTRInput, goodSRVInput, goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input, badNSInput, badNAPTRInput, badSRVInput),
         false
       )
     result(0) shouldBe valid
     result(1) shouldBe valid
-    result(2) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
-    result(3) should haveInvalid[DomainValidationError](InvalidIpv6Address("invalidIpv6:123"))
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) shouldBe valid
+    result(5) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
+    result(6) should haveInvalid[DomainValidationError](InvalidIpv6Address("invalidIpv6:123"))
+    result(7) should haveInvalid[DomainValidationError](InvalidDomainName("some.te$st.ns."))
+    result(8) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "order", "NAPTR"))
+    result(9) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "priority", "SRV"))
   }
 
   property("""validateInputName: should fail with a HighValueDomainError
@@ -829,6 +841,24 @@ class BatchChangeValidationsSpec
   ) {
     val authZone = okZone
     val reverseZone = okZone.copy(name = "2.0.192.in-addr.arpa.")
+    val addNsRecord = AddChangeForValidation(
+      okZone,
+      "ns-add",
+      AddChangeInput("ns-add.ok.", RecordType.NS, ttl, NSData(Fqdn("some.test.ns."))),
+      defaultTtl
+    )
+    val addNaptrRecord = AddChangeForValidation(
+      okZone,
+      "naptr-add",
+      AddChangeInput("naptr-add.ok.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target"))),
+      defaultTtl
+    )
+    val addSrvRecord = AddChangeForValidation(
+      okZone,
+      "srv-add",
+      AddChangeInput("srv-add.ok.", RecordType.SRV, ttl, SRVData(1, 2, 3, Fqdn("target.vinyldns."))),
+      defaultTtl
+    )
     val addA1 = AddChangeForValidation(
       authZone,
       "valid",
@@ -883,6 +913,9 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       ChangeForValidationMap(
         List(
+          addNsRecord.validNel,
+          addNaptrRecord.validNel,
+          addSrvRecord.validNel,
           addA1.validNel,
           existingA.validNel,
           existingCname.validNel,
@@ -898,21 +931,24 @@ class BatchChangeValidationsSpec
     )
 
     result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
+    result(1) shouldBe valid
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) should haveInvalid[DomainValidationError](
       RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
     )
-    result(2) should haveInvalid[DomainValidationError](
+    result(5) should haveInvalid[DomainValidationError](
       RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
       )
     )
-    result(3) shouldBe valid
-    result(4) should haveInvalid[DomainValidationError](
+    result(6) shouldBe valid
+    result(7) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("199.2.0.192.in-addr.arpa.", RecordType.CNAME)
     )
-    result(5) shouldBe valid
+    result(8) shouldBe valid
   }
 
   property("validateChangesWithContext: should succeed for valid update inputs") {
@@ -2192,17 +2228,21 @@ class BatchChangeValidationsSpec
     val resultLarge = validateAddChangeInput(inputLarge, false)
 
     resultSmall should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         -1,
         DomainValidations.INTEGER_MIN_VALUE,
-        DomainValidations.INTEGER_MAX_VALUE
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
     resultLarge should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         1000000,
         DomainValidations.INTEGER_MIN_VALUE,
-        DomainValidations.INTEGER_MAX_VALUE
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
   }
@@ -2219,10 +2259,12 @@ class BatchChangeValidationsSpec
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, Fqdn("foo$.bar.")))
     val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         -1,
         DomainValidations.INTEGER_MIN_VALUE,
-        DomainValidations.INTEGER_MAX_VALUE
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
