@@ -142,7 +142,6 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_TXT_json(f"txt.{ip4_zone_name}"),
             get_change_MX_json(f"mx.{ok_zone_name}", preference=0),
             get_change_MX_json(f"{ok_zone_name}", preference=1000, exchange="bar.foo."),
-            get_change_NS_json(f"ns.{ok_zone_name}", nsdname="ns1.parent.com."),
             get_change_NAPTR_json(f"naptr.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
             get_change_SRV_json(f"srv.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo.")
         ]
@@ -193,10 +192,8 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         assert_change_success(result["changes"], zone=ok_zone, index=14,
                               record_name=f"{ok_zone_name}", input_name=f"{ok_zone_name}", record_data={"preference": 1000, "exchange": "bar.foo."}, record_type="MX")
         assert_change_success(result["changes"], zone=ok_zone, index=15,
-                              record_name=f"ns", input_name=f"ns.{ok_zone_name}", record_data="ns1.parent.com.", record_type="NS")
-        assert_change_success(result["changes"], zone=ok_zone, index=16,
                               record_name=f"naptr", input_name=f"naptr.{ok_zone_name}", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, record_type="NAPTR")
-        assert_change_success(result["changes"], zone=ok_zone, index=17,
+        assert_change_success(result["changes"], zone=ok_zone, index=16,
                               record_name=f"srv", input_name=f"srv.{ok_zone_name}", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, record_type="SRV")
 
         completed_status = [change["status"] == "Complete" for change in completed_batch["changes"]]
@@ -324,28 +321,20 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         verify_recordset(rs16, expected16)
 
         rs17 = client.get_recordset(record_set_list[15][0], record_set_list[15][1])["recordSet"]
-        expected17 = {"name": f"ns",
-                      "zoneId": ok_zone["id"],
-                      "type": "NS",
-                      "ttl": 200,
-                      "records": [{"nsdname": "ns1.parent.com."}]}
-        verify_recordset(rs17, expected17)
-
-        rs18 = client.get_recordset(record_set_list[16][0], record_set_list[16][1])["recordSet"]
-        expected18 = {"name": f"naptr",
+        expected17 = {"name": f"naptr",
                       "zoneId": ok_zone["id"],
                       "type": "NAPTR",
                       "ttl": 200,
                       "records": [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}]}
-        verify_recordset(rs18, expected18)
+        verify_recordset(rs17, expected17)
 
-        rs19 = client.get_recordset(record_set_list[17][0], record_set_list[17][1])["recordSet"]
-        expected19 = {"name": f"srv",
+        rs18 = client.get_recordset(record_set_list[16][0], record_set_list[16][1])["recordSet"]
+        expected18 = {"name": f"srv",
                       "zoneId": ok_zone["id"],
                       "type": "SRV",
                       "ttl": 200,
                       "records": [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}]}
-        verify_recordset(rs19, expected19)
+        verify_recordset(rs18, expected18)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
@@ -371,6 +360,30 @@ def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared
         result = client.create_batch_change(batch_change_input, status=202)
         assert_that(result["status"], "Scheduled")
         assert_that(result["scheduledTime"], dt)
+    finally:
+        if result:
+            rejecter = shared_zone_test_context.support_user_client
+            rejecter.reject_batch_change(result["id"], status=200)
+
+
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_ns_record_goes_to_review(shared_zone_test_context):
+    """
+    Test creating a batch change with ns record goes to review
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_NS_json(f"ns.{ok_zone_name}", nsdname="ns1.parent.com."),
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group["id"]
+    }
+    result = None
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        assert_that(result["status"], "Pending Review")
     finally:
         if result:
             rejecter = shared_zone_test_context.support_user_client

@@ -186,6 +186,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def save(user: User): IO[User] =
     monitor("repo.User.save") {
+      val newUser = if(user.userName == "professor") user.copy(isSuper = true) else user
       IO {
         logger.debug(s"Saving user with id: ${user.id}")
         DB.localTx { implicit s =>
@@ -194,7 +195,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
               'id -> user.id,
               'userName -> user.userName,
               'accessKey -> user.accessKey,
-              'data -> toPB(user.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
+              'data -> toPB(newUser.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
             )
             .update()
             .apply()

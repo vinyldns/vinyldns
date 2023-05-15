@@ -471,14 +471,15 @@ class BatchChangeService(
     val hardErrorsPresent = allErrors.exists(_.isFatal)
     val noErrors = allErrors.isEmpty
     val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+    val isNSRecordsPresent = batchChangeInput.changes.exists(_.typ == NS)
 
     if (hardErrorsPresent) {
       // Always error out
       errorResponse
-    } else if (noErrors && !isScheduled) {
+    } else if (noErrors && !isScheduled && !isNSRecordsPresent) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else if (this.manualReviewEnabled && allowManualReview) {
+    } else if (this.manualReviewEnabled && allowManualReview || isNSRecordsPresent) {
       if ((noErrors && isScheduled) || batchChangeInput.ownerGroupId.isDefined) {
         // There are no errors and this is scheduled
         // or we have soft errors and owner group is defined
