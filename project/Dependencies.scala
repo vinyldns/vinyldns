@@ -27,7 +27,7 @@ object Dependencies {
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
-    "com.google.protobuf"       %  "protobuf-java"                  % "3.21.7",
+    "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
     "dnsjava"                   %  "dnsjava"                        % "3.4.2",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
@@ -37,7 +37,7 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
-    "org.slf4j"                 %  "slf4j-api"                      % "1.8.0-beta4",
+    "org.slf4j"                 %  "slf4j-api"                      % "1.7.25",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
@@ -67,7 +67,7 @@ object Dependencies {
     "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.4.6",
+    "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
@@ -83,7 +83,7 @@ object Dependencies {
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
-    "com.zaxxer"                %  "HikariCP"                       % "5.0.1",
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
     "com.h2database"            %  "h2"                             % "1.4.200"
   )
 
