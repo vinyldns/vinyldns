@@ -234,8 +234,9 @@ class RecordSetService(
             recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.ManuallyRejected)))
           case RecordSetGroupApprovalStatus.AutoApproved =>
-            recordSet.copy(ownerGroupId = recordSetGroupApproval.requestedOwnerGroupId,
-            recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved)))
+            recordSet.copy(
+              recordSetGroupChange = Some(recordSetGroupApproval.copy(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved,
+              requestedOwnerGroupId = recordSet.ownerGroupId)))
           case _ => recordSet.copy(
             recordSetGroupChange = Some(recordSetGroupApproval.copy(
               recordSetGroupApprovalStatus =  RecordSetGroupApprovalStatus.None,
@@ -287,7 +288,7 @@ class RecordSetService(
   }
 
   // Get zones that are allowed to create dotted hosts using the zones present in dotted hosts config
-  def  getAllowedZones(zones: List[String]): IO[Set[String]] = {
+  def  getAllowedZones(zones: List[String]): IO[Set[String]] =
     if(zones.isEmpty){
       val noZones: IO[Set[String]] = IO(Set.empty)
       noZones
@@ -301,9 +302,7 @@ class RecordSetService(
         namedZoneResult <- zoneRepository.getZonesByNames(namedZones.toSet)
         wildcardZoneResult <- zoneRepository.getZonesByFilters(wildcardZones.toSet)
         zoneResult = namedZoneResult ++ wildcardZoneResult // Combine the zones
-      } yield zoneResult.map(x => x.name)
-    }
-  }
+      } yield zoneResult.map(x => x.name)}
 
   // Check if user is allowed to create dotted hosts using the users present in dotted hosts config
   def getAllowedDotsLimit(zone: Zone, config: DottedHostsConfig): Int = {

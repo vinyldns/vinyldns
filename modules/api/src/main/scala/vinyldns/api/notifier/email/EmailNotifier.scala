@@ -59,18 +59,6 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     transport.close()
   }
 
-  def sendInCC(addresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
-    val message = new MimeMessage(session)
-    message.setRecipients(Message.RecipientType.CC, addresses.toArray)
-    message.setFrom(config.from)
-    buildMessage(message)
-    message.saveChanges()
-    val transport = session.getTransport("smtp")
-    transport.connect()
-    transport.sendMessage(message, message.getAllRecipients)
-    transport.close()
-  }
-
   def sendBatchChangeNotification(bc: BatchChange): IO[Unit] = {
     userRepository.getUser(bc.userId).flatMap {
         case Some(UserWithEmail(email))  =>
