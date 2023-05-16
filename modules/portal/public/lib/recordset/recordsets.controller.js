@@ -273,7 +273,7 @@
             $scope.changeHistoryPrevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(changePaging);
                 return recordsService
-                    .listRecordSetChangeHistory(undefined, changePaging.maxItems, undefined, $scope.recordFqdn, $scope.recordType)
+                    .listRecordSetChangeHistory(changePaging.maxItems, startFrom, $scope.recordFqdn, $scope.recordType)
                     .then(function(response) {
                         changePaging = pagingService.prevPageUpdate(response.data.nextId, changePaging);
                         updateChangeDisplay(response.data.recordSetChanges);
@@ -285,12 +285,11 @@
 
             $scope.changeHistoryNextPage = function() {
                 return recordsService
-                    .listRecordSetChangeHistory(undefined, changePaging.maxItems, undefined, $scope.recordFqdn, $scope.recordType)
+                    .listRecordSetChangeHistory(changePaging.maxItems, changePaging.next, $scope.recordFqdn, $scope.recordType)
                     .then(function(response) {
                         var changes = response.data.recordSetChanges;
                         changePaging = pagingService.nextPageUpdate(changes, response.data.nextId, changePaging);
-
-                        if(changes.length > 0 ){
+                        if(changes.length > 0){
                             updateChangeDisplay(changes);
                         }
                     })
