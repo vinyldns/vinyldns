@@ -279,8 +279,8 @@ trait TestApplicationData { this: Mockito =>
       | "status":        "${RecordSetStatus.Active}",
       | "records":       [ { "address": "10.1.1.1" } ],
       | "recordSetGroupChange": {
-      |                        "recordSetGroupApprovalStatus" =  "None",
-      |                        "requestedOwnerGroupId" = "null"},
+      |                        "recordSetGroupApprovalStatus" :  "None",
+      |                        "requestedOwnerGroupId" : "null"},
       | "id":            "$hobbitRecordSetId"
       | }
     """.stripMargin)
