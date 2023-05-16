@@ -104,7 +104,9 @@ describe('Service: recordsService', function () {
             "sshfpItems": [{algorithm: '1', type: '1', fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: '2', type: '1', fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-            "recordSetGroupApprovalStatus" =  'None',
+            "recordSetGroupChange": {
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'},
             "requestedOwnerGroupId" = 'null'}
         };
         expectedRecord = {
@@ -115,8 +117,8 @@ describe('Service: recordsService', function () {
             "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-            "recordSetGroupApprovalStatus" =  'None',
-            "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         var actualRecord = this.recordsService.toVinylRecord(sentRecord);
@@ -132,8 +134,8 @@ describe('Service: recordsService', function () {
             "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         displayRecord = {
@@ -145,8 +147,8 @@ describe('Service: recordsService', function () {
             "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'},
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'},
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true
@@ -165,8 +167,8 @@ describe('Service: recordsService', function () {
             "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         displayRecord = {
@@ -178,8 +180,8 @@ describe('Service: recordsService', function () {
             "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'},
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'},
             "onlyFour": true,
             "isDotted": true,
             "canBeEdited": true
@@ -198,8 +200,8 @@ describe('Service: recordsService', function () {
             "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         displayRecord = {
@@ -210,7 +212,9 @@ describe('Service: recordsService', function () {
             "records": undefined,
             "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
-            "recordSetGroupChange": 'None',
+            "recordSetGroupChange": {
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'},
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true
@@ -228,8 +232,8 @@ describe('Service: recordsService', function () {
             "ttl": 300,
             "records": [{nsdname: "ns1.com."}, {nsdname: "ns2.com."}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         displayRecord = {
@@ -240,8 +244,8 @@ describe('Service: recordsService', function () {
             "records": undefined,
             "nsRecordData": ["ns1.com.", "ns2.com."],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'},
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'},
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": false
@@ -260,8 +264,8 @@ describe('Service: recordsService', function () {
             "records": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'}
+                                    "recordSetGroupApprovalStatus" :  'None',
+                                    "requestedOwnerGroupId" : 'null'}
         };
 
         displayRecord = {
@@ -273,8 +277,8 @@ describe('Service: recordsService', function () {
             "sshfpItems": [{algorithm: 1, type: 1, fingerprint: '123456789ABCDEF67890123456789ABCDEF67890'},
                 {algorithm: 2, type: 1, fingerprint: 'F23456789ABCDEF67890123456789ABCDEF67890'}],
             "recordSetGroupChange": {
-                        "recordSetGroupApprovalStatus" =  'None',
-                        "requestedOwnerGroupId" = 'null'},
+                        "recordSetGroupApprovalStatus" :  'None',
+                        "requestedOwnerGroupId" : 'null'},
             "onlyFour": true,
             "isDotted": false,
             "canBeEdited": true
