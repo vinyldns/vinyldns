@@ -281,6 +281,27 @@
                                    type="text"
                                    required>
                             </input>
+                          <div>
+                            <div>
+                                <h5>
+                                    <a data-toggle="collapse" data-target="#collapseNewGroupInstruction" aria-expanded="false"
+                                       aria-controls="collapseInstruction">
+                                        <span class="badge" id="validDomainsNewGroup"ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                    </a>
+                                </h5>
+                            </div>
+                            <div class="collapse" id="collapseNewGroupInstruction">
+                                <div class="well">
+                                    <p>
+                                        List Of Valid Email Domains:
+                                    <li ng-repeat="validDomains in validEmailDomains">
+                                         {{validDomains}}
+                                    </li>
+                                    </p>
+                                    <hr/>
+                                </div>
+                            </div>
+                          </div>
                             <span class="help-block">The email distribution list for the group.</span>
                         </modal-element>
                         <modal-element label="Description">
@@ -343,6 +364,24 @@
                                    type="text"
                                    required>
                             </input>
+                            <div>
+                                <h5>
+                                    <a data-toggle="collapse" data-target="#collapseEditGroupInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                                        <span class="badge" id="validDomainsEditGroup" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                    </a>
+                                </h5>
+                            </div>
+                            <div class="collapse" id="collapseEditGroupInstruction">
+                                <div class="well">
+                                    <p>
+                                        List Of Valid Email Domains:
+                                    <li ng-repeat="validDomains in validEmailDomains">
+                                        {{validDomains}}
+                                    </li>
+                                    </p>
+                                    <hr/>
+                                </div>
+                            </div>
                             <span class="help-block">The email distribution list for the group.</span>
                         </modal-element>
                         <modal-element label="Description">

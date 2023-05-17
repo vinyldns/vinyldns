@@ -42,6 +42,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
+    $scope.validEmailDomains= [];
     $scope.zoneSyncSchedule = {
         isChecked: false,
         recurrenceSchedule: ''
@@ -84,7 +85,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
 
     var zoneHistoryPaging = pagingService.getNewPagingParams(100);
-
     /**
      * Zone modal control functions
      */
@@ -187,6 +187,19 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         };
         $('#acl_modal').modal('show');
     };
+    $scope.validDomains=function getValidEmailDomains() {
+       function success(response) {
+       $log.log('manageZonesService::listEmailDomains-success');
+       $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
+       return $scope.validEmailDomains = response.data;
+       }
+        return groupsService
+        .listEmailDomains($scope.ignoreAccess, $scope.query)
+        .then(success)
+        .catch(function (error) {
+        handleError(error, 'manageZonesService::listEmailDomains-failure');
+        });
+        }
 
     $scope.clickUpdateAclRule = function(index) {
         $scope.currentAclRuleIndex = index;
@@ -362,6 +375,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
+            $scope.validDomains();
         }
         return recordsService
             .getZone($scope.zoneId)
