@@ -69,6 +69,11 @@ class MembershipService(
     } yield newGroup
   }
 
+  def listEmailDomains(authPrincipal: AuthPrincipal): Result[List[String]] = {
+    val validEmailDomains = validDomains.valid_domains
+    IO(validEmailDomains).toResult
+  }
+
   def updateGroup(
       groupId: String,
       name: String,
@@ -389,8 +394,9 @@ class MembershipService(
    // Validate email details.Email domains details are fetched from the config file.
   def emailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
+    val numberOfDots=  validDomains.number_of_dots
     val splitEmailDomains = emailDomains.mkString(",")
-    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._+!&-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
     val index = email.indexOf('@');
     val emailSplit = if(index != -1){
       email.substring(index+1,email.length)}
@@ -399,12 +405,19 @@ class MembershipService(
     else emailDomains
 
     Option(email) match {
-      case Some(value) if (emailRegex.findFirstIn(value) != None)=>
+      case Some(value) if (emailRegex.findFirstIn(value) != None && emailSplit.toString.count(_ == '.')>0)=>
 
-        if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
+        if ((emailDomains.contains(emailSplit) || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))&&
+              emailSplit.toString.count(_ == '.')<=numberOfDots)
         ().asRight
-        else
-          EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+        else {
+          if(emailSplit.toString.count(_ == '.')>numberOfDots){
+            EmailValidationError(DotsValidationErrorMsg + " " + numberOfDots).asLeft
+          }
+          else {
+            EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+          }
+        }
       case _ =>
         EmailValidationError(InvalidEmailValidationErrorMsg).asLeft
     }}.toResult
