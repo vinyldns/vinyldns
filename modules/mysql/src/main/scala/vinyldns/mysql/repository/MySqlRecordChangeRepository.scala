@@ -126,35 +126,41 @@ class MySqlRecordChangeRepository
         DB.readOnly { implicit s =>
           val changes = if(startFrom.isDefined && fqdn.isDefined && recordType.isDefined){
           LIST_CHANGES_WITH_START_FQDN_TYPE
-            .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'startFrom -> startFrom.get, 'limit -> maxItems)
+            .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'startFrom -> startFrom.get, 'limit -> (maxItems + 1))
             .map(toRecordSetChange)
             .list()
             .apply()
           } else if(fqdn.isDefined && recordType.isDefined){
             LIST_CHANGES_WITHOUT_START_FQDN_TYPE
-              .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'limit -> maxItems)
+              .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'limit -> (maxItems + 1))
               .map(toRecordSetChange)
               .list()
               .apply()
           } else if(startFrom.isDefined){
             LIST_CHANGES_WITH_START
-              .bindByName('zoneId -> zoneId.get, 'startFrom -> startFrom.get, 'limit -> maxItems)
+              .bindByName('zoneId -> zoneId.get, 'startFrom -> startFrom.get, 'limit -> (maxItems + 1))
               .map(toRecordSetChange)
               .list()
               .apply()
           } else {
             LIST_CHANGES_NO_START
-              .bindByName('zoneId -> zoneId.get, 'limit -> maxItems)
+              .bindByName('zoneId -> zoneId.get, 'limit -> (maxItems + 1))
               .map(toRecordSetChange)
               .list()
               .apply()
           }
 
+          val maxQueries = changes.take(maxItems)
           val startValue = startFrom.getOrElse(0)
-          val nextId = if(changes.size < maxItems) None else Some(startValue + maxItems)
+
+          // earlier maxItems was incremented, if the (maxItems + 1) size is not reached then pages are exhausted
+          val nextId = changes match {
+            case _ if changes.size <= maxItems | changes.isEmpty => None
+            case _ => Some(startValue + maxItems)
+          }
 
           ListRecordSetChangesResults(
-            changes,
+            maxQueries,
             nextId,
             startFrom,
             maxItems
