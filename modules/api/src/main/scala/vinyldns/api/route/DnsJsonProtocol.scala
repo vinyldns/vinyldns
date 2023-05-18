@@ -32,7 +32,8 @@ import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
-import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
+import vinyldns.core.domain.record.OwnerShipTransferStatus
+import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
 
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
@@ -44,13 +45,13 @@ trait DnsJsonProtocol extends JsonValidation {
     AlgorithmSerializer,
     EncryptedSerializer,
     RecordSetSerializer,
-    RecordSetGroupApprovalSerializer,
+    ownerShipTransferSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
-    JsonEnumV(RecordSetGroupApprovalStatus),
+    JsonEnumV(OwnerShipTransferStatus),
     JsonEnumV(ZoneChangeStatus),
     JsonEnumV(RecordSetStatus),
     JsonEnumV(RecordSetChangeStatus),
@@ -233,7 +234,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system"),
         (js \ "ownerGroupId").optional[String],
-        (js \ "recordSetGroupChange").optional[RecordSetGroupApproval],
+        (js \ "recordSetGroupChange").optional[OwnerShipTransfer],
         (js \ "fqdn").optional[String]
         ).mapN(RecordSet.apply)
 
@@ -262,15 +263,15 @@ trait DnsJsonProtocol extends JsonValidation {
         ("fqdn" -> rs.fqdn)
   }
 
-  case object RecordSetGroupApprovalSerializer extends ValidationSerializer[RecordSetGroupApproval] {
-    override def fromJson(js: JValue): ValidatedNel[String, RecordSetGroupApproval] =
+  case object ownerShipTransferSerializer extends ValidationSerializer[OwnerShipTransfer] {
+    override def fromJson(js: JValue): ValidatedNel[String, OwnerShipTransfer] =
       (
-        (js \ "recordSetGroupApprovalStatus").required[RecordSetGroupApprovalStatus]("Missing RecordSetGroupApproval.recordSetGroupApprovalStatus"),
+        (js \ "ownerShipTransferStatus").required[OwnerShipTransferStatus]("Missing ownerShipTransfer.ownerShipTransferStatus"),
         (js \ "requestedOwnerGroupId").optional[String],
-        ).mapN(RecordSetGroupApproval.apply)
+        ).mapN(OwnerShipTransfer.apply)
 
-    override def toJson(rsa: RecordSetGroupApproval): JValue =
-        ("recordSetGroupApprovalStatus" -> Extraction.decompose(rsa.recordSetGroupApprovalStatus)) ~
+    override def toJson(rsa: OwnerShipTransfer): JValue =
+        ("ownerShipTransferStatus" -> Extraction.decompose(rsa.ownerShipTransferStatus)) ~
         ("requestedOwnerGroupId" -> Extraction.decompose(rsa.requestedOwnerGroupId))
   }
 

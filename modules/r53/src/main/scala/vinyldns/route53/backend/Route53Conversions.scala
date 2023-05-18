@@ -21,7 +21,7 @@ import com.amazonaws.services.route53.model.{DelegationSet, RRType, ResourceReco
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import vinyldns.core.domain.Fqdn
-import vinyldns.core.domain.record.{NSData, RecordData, RecordSet, RecordSetGroupApproval, RecordSetGroupApprovalStatus, RecordSetStatus, RecordType}
+import vinyldns.core.domain.record.{NSData, OwnerShipTransfer, OwnerShipTransferStatus, RecordData, RecordSet, RecordSetStatus, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
@@ -78,7 +78,7 @@ trait Route53Conversions {
       Instant.now.truncatedTo(ChronoUnit.MILLIS),
       Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       r53RecordSet.getResourceRecords.asScala.toList.flatMap(toVinyl(typ, _)),
-      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved)),
+      recordSetGroupChange=Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved)),
       fqdn = Some(r53RecordSet.getName)
     )
   }
@@ -107,7 +107,7 @@ trait Route53Conversions {
       Instant.now.truncatedTo(ChronoUnit.MILLIS),
       Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
       nsData,
-      recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.AutoApproved)),
+      recordSetGroupChange=Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved)),
       fqdn = Some(Fqdn(zoneName).fqdn)
     )
   }

@@ -266,7 +266,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             None,
             proposedRecordData.toList,
             ownerGroupId = setOwnerGroupId,
-            recordSetGroupChange=Some(RecordSetGroupApproval(recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.None))
+            recordSetGroupChange=Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
           )
       }
     }

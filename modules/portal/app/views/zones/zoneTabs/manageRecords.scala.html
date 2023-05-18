@@ -324,12 +324,12 @@
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                         </td>
                     <td ng-if="zoneInfo.shared">
-                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'ManuallyApproved' ||
-                                      record.recordSetGroupChange.recordSetGroupApprovalStatus == 'AutoApproved'">Approved</span>
-                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'ManuallyRejected'">Rejected</span>
-                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'None'"></span>
-                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'Cancelled'">Cancelled</span>
-                        <span ng-if= "record.recordSetGroupChange.recordSetGroupApprovalStatus == 'PendingReview'">Pending Review</span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'ManuallyApproved'">Approved by {{record.ownerGroupName}}</span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'AutoApproved'">Approved by Admin</span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'ManuallyRejected'">Rejected by {{record.ownerGroupName}}</span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'None'"></span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'Cancelled'">Cancelled by {{record.ownerGroupName}}</span>
+                        <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'">Pending Review to {{record.ownerGroupName}}</span>
                     </td>
                     }
                     <td>
@@ -349,8 +349,8 @@
                             <span ng-switch-when="false">
                                 <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Request</button>
                             </span>
-                            <span ng-switch-when="true" ng-if= record.recordSetGroupChange.recordSetGroupApprovalStatus=="PendingReview">
-                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Approve</button>
+                            <span ng-switch-when="true" ng-if= record.recordSetGroupChange.ownerShipTransferStatus=="PendingReview">
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Close Request</button>
                             </span>
                         </span>
                     </td>

@@ -104,15 +104,15 @@ trait ProtobufConversions {
       recordSetGroupChange = if (rs.hasRecordSetGroupChange) Some(fromPB(rs.getRecordSetGroupChange)) else None,
     )
 
-  def fromPB(rsa: VinylDNSProto.RecordSetGroupApproval): RecordSetGroupApproval =
-      record.RecordSetGroupApproval(
-         recordSetGroupApprovalStatus = RecordSetGroupApprovalStatus.withName(rsa.getRecordSetGroupApprovalStatus),
+  def fromPB(rsa: VinylDNSProto.ownerShipTransfer): OwnerShipTransfer =
+      record.OwnerShipTransfer(
+         ownerShipTransferStatus = OwnerShipTransferStatus.withName(rsa.getOwnerShipTransferStatus),
          requestedOwnerGroupId = if (rsa.hasRequestedOwnerGroupId) Some(rsa.getRequestedOwnerGroupId) else None)
 
-  def toPB(rsa: RecordSetGroupApproval): VinylDNSProto.RecordSetGroupApproval = {
-      val builder = VinylDNSProto.RecordSetGroupApproval
+  def toPB(rsa: OwnerShipTransfer): VinylDNSProto.ownerShipTransfer = {
+      val builder = VinylDNSProto.ownerShipTransfer
        .newBuilder()
-       .setRecordSetGroupApprovalStatus(rsa.recordSetGroupApprovalStatus.toString)
+       .setOwnerShipTransferStatus(rsa.ownerShipTransferStatus.toString)
       rsa.requestedOwnerGroupId.foreach(id => builder.setRequestedOwnerGroupId(id))
      builder.build()
   }

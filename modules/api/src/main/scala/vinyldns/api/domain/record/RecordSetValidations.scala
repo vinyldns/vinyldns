@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordSet, RecordSetGroupApprovalStatus, RecordType}
+import vinyldns.core.domain.record.{RecordSet, OwnerShipTransferStatus, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -472,9 +472,9 @@ object RecordSetValidations {
                        updates: RecordSet,
                        ): Either[Throwable, Unit] =
     Either.cond(
-        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.ManuallyApproved &&
-        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.AutoApproved &&
-        updates.recordSetGroupChange.get.recordSetGroupApprovalStatus != RecordSetGroupApprovalStatus.ManuallyRejected,
+        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.AutoApproved &&
+        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.ManuallyRejected,
       (),
       InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
     )

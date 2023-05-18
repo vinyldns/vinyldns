@@ -25,12 +25,12 @@ import org.slf4j.LoggerFactory
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
 import scala.util.Try
-import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, RecordSetGroupApprovalStatus, TXTData}
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, TXTData, OwnerShipTransferStatus}
 
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
-import vinyldns.core.domain.record.RecordSetGroupApprovalStatus.RecordSetGroupApprovalStatus
+import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
 
 import java.time.ZoneId
 
@@ -166,16 +166,16 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
                  | <b>Submitted time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/>
                  | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId} <br/>
                  | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId).get} <br/>
-                 | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.recordSetGroupApprovalStatus).get)}<br/>
+                 | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}<br/>
                  """.stripMargin)
     sb.toString
   }
-  def formatOwnerShipStatus(status: RecordSetGroupApprovalStatus): String =
+  def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
     status match {
-      case RecordSetGroupApprovalStatus.ManuallyRejected => "Rejected"
-      case RecordSetGroupApprovalStatus.PendingReview => "Pending Review"
-      case  RecordSetGroupApprovalStatus.ManuallyApproved=> "Approved"
-      case  RecordSetGroupApprovalStatus.Cancelled=> "Cancelled"
+      case OwnerShipTransferStatus.ManuallyRejected => "Rejected"
+      case OwnerShipTransferStatus.PendingReview => "Pending Review"
+      case  OwnerShipTransferStatus.ManuallyApproved=> "Approved"
+      case  OwnerShipTransferStatus.Cancelled=> "Cancelled"
     }
 
   def formatBatchStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
