@@ -113,6 +113,12 @@ final case class InvalidMX_NAPTR_SRVData(param: Long, min: Long, max: Long, reco
     s"""Invalid $recordType $recordDataType: "${param.toString}", must be a number between $min and $max."""
 }
 
+final case class InvalidNaptrFlag(value: String)
+  extends DomainValidationError {
+  def message: String =
+    s"""Invalid NAPTR flag value: '$value'. Valid NAPTR flag value must be U, S, A or P."""
+}
+
 final case class InvalidBatchRecordType(param: String, supported: Set[RecordType])
     extends DomainValidationError {
   def message: String =

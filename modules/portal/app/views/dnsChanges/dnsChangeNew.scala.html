@@ -281,7 +281,7 @@
                                         <br />
 
                                         <label class="batch-label">Flags</label>
-                                        <input name="record_naptr_flags_{{$index}}" type="text" ng-model="change.record.flags" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. U, S, A or P">
+                                        <select name="record_naptr_flags_{{$index}}" type="text" ng-model="change.record.flags" ng-required="change.changeType=='Add'" ng-options="flag for flag in naptrFlags" class="form-control" placeholder="e.g. U, S, A or P"></select>
                                         <p ng-show="createBatchChangeForm.$submitted">
                                             <span ng-show="createBatchChangeForm.record_naptr_flags_{{$index}}.$error.required" class="batch-change-error-help">Flags is required!</span>
                                         </p>

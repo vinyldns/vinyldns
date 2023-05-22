@@ -248,7 +248,7 @@ class BatchChangeValidations(
       case mx: MXData =>
         validateMX_NAPTR_SRVData(mx.preference, "preference", "MX").asUnit |+| validateHostName(mx.exchange).asUnit
       case ns: NSData => validateHostName(ns.nsdname).asUnit
-      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference, "preference", "NAPTR").asUnit |+| validateMX_NAPTR_SRVData(naptr.order, "order", "NAPTR").asUnit |+| validateHostName(naptr.replacement).asUnit
+      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference, "preference", "NAPTR").asUnit |+| validateMX_NAPTR_SRVData(naptr.order, "order", "NAPTR").asUnit |+| validateHostName(naptr.replacement).asUnit |+| validateNaptrFlag(naptr.flags).asUnit
       case srv: SRVData => validateMX_NAPTR_SRVData(srv.priority, "priority", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.port, "port", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.weight, "weight", "SRV").asUnit |+| validateHostName(srv.target).asUnit
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]

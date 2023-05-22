@@ -42,6 +42,7 @@
             $scope.allowManualReview = false;
             $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
             $scope.manualReviewEnabled;
+            $scope.naptrFlags = ["U", "S", "A", "P"];
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});

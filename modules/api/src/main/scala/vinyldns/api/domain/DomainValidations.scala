@@ -163,4 +163,8 @@ object DomainValidations {
   def validateMX_NAPTR_SRVData(number: Int, recordDataType: String, recordType: String): ValidatedNel[DomainValidationError, Int] =
     if (number >= INTEGER_MIN_VALUE && number <= INTEGER_MAX_VALUE) number.validNel
     else InvalidMX_NAPTR_SRVData(number, INTEGER_MIN_VALUE, INTEGER_MAX_VALUE, recordDataType, recordType).invalidNel[Int]
+
+  def validateNaptrFlag(value: String): ValidatedNel[DomainValidationError, String] =
+    if (value == "U" || value == "S" || value == "A" || value == "P") value.validNel
+    else InvalidNaptrFlag(value).invalidNel[String]
 }
