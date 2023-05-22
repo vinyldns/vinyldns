@@ -42,7 +42,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
       case bc: BatchChange => sendBatchChangeNotification(bc)
-      case rsc: RecordSetChange => sendRecordSetChangeNotification(rsc)
+      case rsc: RecordSetChange => sendRecordSetOwnerTransferNotification(rsc)
       case _ => IO.unit
     }
 
@@ -80,7 +80,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       }
   }
 
-  def sendRecordSetChangeNotification(rsc: RecordSetChange): IO[Unit] = {
+  def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] = {
     val toUser =
       for{
           group  <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))

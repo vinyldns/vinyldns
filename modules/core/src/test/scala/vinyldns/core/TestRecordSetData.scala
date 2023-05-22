@@ -37,7 +37,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(AData("10.1.1.1"))
+    List(AData("10.1.1.1")),
+    recordSetGroupChange= None
   )
 
   val abcRecord: RecordSet = RecordSet(
@@ -48,7 +49,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8"))
+    List(AAAAData("1:2:3:4:5:6:7:8")),
+    recordSetGroupChange= None
   )
 
   val aaaa: RecordSet = RecordSet(
@@ -59,7 +61,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8"))
+    List(AAAAData("1:2:3:4:5:6:7:8")),
+    recordSetGroupChange= None
   )
 
   val aaaaOrigin: RecordSet = RecordSet(
@@ -70,7 +73,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(AAAAData("1:2:3:4:5:6:7:8"))
+    List(AAAAData("1:2:3:4:5:6:7:8")),
+    recordSetGroupChange= None
   )
 
   val cname: RecordSet = RecordSet(
@@ -81,7 +85,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(CNAMEData(Fqdn("cname")))
+    List(CNAMEData(Fqdn("cname"))),
+    recordSetGroupChange= None
   )
 
   val ptrIp4: RecordSet = RecordSet(
@@ -92,7 +97,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(PTRData(Fqdn("ptr")))
+    List(PTRData(Fqdn("ptr"))),
+    recordSetGroupChange= None
   )
 
   val ptrIp6: RecordSet = RecordSet(
@@ -103,7 +109,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(PTRData(Fqdn("ptr")))
+    List(PTRData(Fqdn("ptr"))),
+    recordSetGroupChange= None
   )
 
   val srv: RecordSet = RecordSet(
@@ -114,7 +121,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(SRVData(1, 2, 3, Fqdn("target")))
+    List(SRVData(1, 2, 3, Fqdn("target"))),
+    recordSetGroupChange= None
   )
 
   val naptr: RecordSet = RecordSet(
@@ -125,7 +133,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target")))
+    List(NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target"))),
+    recordSetGroupChange= None
   )
 
   val mx: RecordSet = RecordSet(
@@ -136,7 +145,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(MXData(3, Fqdn("mx")))
+    List(MXData(3, Fqdn("mx"))),
+    recordSetGroupChange= None
   )
 
   val ns: RecordSet = RecordSet(
@@ -147,7 +157,8 @@ object TestRecordSetData {
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    records = List(NSData(Fqdn("ns1.test.com")), NSData(Fqdn("ns2.test.com")))
+    records = List(NSData(Fqdn("ns1.test.com")), NSData(Fqdn("ns2.test.com"))),
+    recordSetGroupChange= None
   )
 
   val txt: RecordSet = RecordSet(
@@ -158,7 +169,8 @@ object TestRecordSetData {
     RecordSetStatus.Pending,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(TXTData("txt"))
+    List(TXTData("txt")),
+    recordSetGroupChange= None
   )
 
   // example at https://tools.ietf.org/html/rfc4034#page-18
@@ -198,7 +210,12 @@ object TestRecordSetData {
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AAAAData("1:2:3:4:5:6:7:8")),
-    ownerGroupId = Some(okGroup.id)
+    ownerGroupId = Some(okGroup.id),
+    recordSetGroupChange= None
+  )
+
+  val ownerShipTransfer: OwnerShipTransfer = OwnerShipTransfer(
+    OwnerShipTransferStatus.None
   )
 
   val sharedZoneRecordNoOwnerGroup: RecordSet =

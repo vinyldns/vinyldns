@@ -384,7 +384,7 @@ object RecordSetValidations {
       ownerGroupId: Option[String],
       group: Option[Group],
       authPrincipal: AuthPrincipal
-  ): Either[Throwable, Unit] = {
+  ): Either[Throwable, Unit] =
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>
@@ -393,7 +393,6 @@ object RecordSetValidations {
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
-  }
 
   def unchangedRecordName(
       existing: RecordSet,
@@ -472,9 +471,9 @@ object RecordSetValidations {
                        updates: RecordSet,
                        ): Either[Throwable, Unit] =
     Either.cond(
-        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.ManuallyApproved &&
-        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.AutoApproved &&
-        updates.recordSetGroupChange.get.ownerShipTransferStatus != OwnerShipTransferStatus.ManuallyRejected,
+        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.AutoApproved &&
+        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyRejected,
       (),
       InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
     )
