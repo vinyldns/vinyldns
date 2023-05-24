@@ -464,7 +464,6 @@ class BatchChangeValidations(
           change.inputChange.typ,
           change.inputChange.record,
           groupedChanges,
-          isApproved,
           isDeleteExists
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
@@ -508,14 +507,14 @@ class BatchChangeValidations(
       typ: RecordType,
       recordData: RecordData,
       groupedChanges: ChangeForValidationMap,
-      isApproved: Boolean,
       isDeleteExist: Boolean
   ): SingleValidation[Unit] = {
     val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
     if(record.isDefined) {
       record.get.records.contains(recordData) match {
         case true => ().validNel
-        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName).invalidNel
+      }
     } else ().validNel
     }
 

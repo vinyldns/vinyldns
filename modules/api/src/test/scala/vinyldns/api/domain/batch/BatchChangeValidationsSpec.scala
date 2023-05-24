@@ -841,10 +841,10 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
+      RecordAlreadyExists(existingA.inputChange.inputName)
     )
     result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
+      RecordAlreadyExists(existingCname.inputChange.inputName)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
@@ -1218,7 +1218,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName, input.inputChange.record, false)
+        RecordAlreadyExists(input.inputChange.inputName)
       )
     }
   }
