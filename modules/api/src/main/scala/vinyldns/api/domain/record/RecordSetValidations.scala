@@ -478,4 +478,13 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
     )
 
+  def unchangedRecordSetOwnershipStatus(
+                                   updates: RecordSet,
+                                   existing: RecordSet
+                                     ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.recordSetGroupChange == existing.recordSetGroupChange,
+      (),
+      InvalidRequest("Cannot update RecordSet OwnerShip Status when zone is not shared.")
+    )
 }

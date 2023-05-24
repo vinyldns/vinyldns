@@ -159,13 +159,14 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def formatRecordSetChange(rsc: RecordSetChange): String = {
+
     val sb = new StringBuilder
     sb.append(s"""<h1>RecordSet Ownership Transfer</h1>
                  | <b>Submitter:</b>  ${ userRepository.getUser(rsc.userId).map(_.get.userName)}
                  | <b>Id:</b> ${rsc.id}<br/>
                  | <b>Submitted time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/>
-                 | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId} <br/>
-                 | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId).get} <br/>
+                 | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId.getOrElse("none")} <br/>
+                 | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("none")).getOrElse("none")} <br/>
                  | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}<br/>
                  """.stripMargin)
     sb.toString

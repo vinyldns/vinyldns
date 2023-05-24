@@ -153,7 +153,7 @@ class RecordSetService(
               && !auth.isSuper) unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
-      recordSet <- recordSetGroupStatus(recordSet, existing)
+      recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
@@ -223,11 +223,12 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  def recordSetGroupStatus(recordSet: RecordSet, existing: RecordSet): Result[RecordSet] = {
-    val existingOwnerShipTransfer=  existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None,Some("none")))
+  //update ownership transfer is zone is shared
+  def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone): Result[RecordSet] = {
+    val existingOwnerShipTransfer =  existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None,Some("none")))
     val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None,Some("none")))
     if (recordSet.recordSetGroupChange != None &&
-      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None) {
+      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None && zone.shared) {
       if (approverOwnerShipTransferStatus.contains(ownerShipTransfer.ownerShipTransferStatus)) {
         val recordSetOwnerApproval =
           ownerShipTransfer.ownerShipTransferStatus match {
@@ -269,11 +270,13 @@ class RecordSetService(
         } yield recordSet
       }
     }
-    else recordSet.copy(
+    else {for {
+      _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
+    } yield recordSet.copy(
       recordSetGroupChange = Some(ownerShipTransfer.copy(
         ownerShipTransferStatus = OwnerShipTransferStatus.None,
-        requestedOwnerGroupId = Some("null")))).toResult
-  }
+        requestedOwnerGroupId = Some("null"))))
+  }}
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {

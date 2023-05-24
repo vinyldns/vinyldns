@@ -38,7 +38,7 @@ object TestRecordSetData {
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
     List(AData("10.1.1.1")),
-    recordSetGroupChange= None
+    recordSetGroupChange = None
   )
 
   val abcRecord: RecordSet = RecordSet(

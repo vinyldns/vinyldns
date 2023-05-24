@@ -37,10 +37,12 @@ import _root_.vinyldns.core.domain.batch._
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.AData
+import vinyldns.core.domain.record.{AData, OwnerShipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import vinyldns.core.TestMembershipData.{dummyGroup, dummyUser, okGroup, okUser}
+import vinyldns.core.TestRecordSetData.{ownerShipTransfer, rsOk}
+import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.Encrypted
 
 import scala.collection.JavaConverters._
@@ -104,6 +106,16 @@ class EmailNotifierSpec
       "testBatch"
     )
 
+  def reccordSetChange: RecordSetChange =
+    RecordSetChange(
+      okZone,
+      rsOk.copy(ownerGroupId= Some(okGroup.id),recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(dummyGroup.id)))),
+      "system",
+      RecordSetChangeType.Create,
+      RecordSetChangeStatus.Complete
+    )
+
   "Email Notifier" should {
     "do nothing for unsupported Notifications" in {
       val emailConfig: Config = ConfigFactory.parseMap(
@@ -137,6 +149,59 @@ class EmailNotifierSpec
       verify(mockUserRepository).getUser("test")
     }
 
+    "send an email to a user for recordSet ownership transfer" in {
+      val fromAddress = new InternetAddress("test@test.com")
+
+      val notifier = new EmailNotifier(
+        EmailNotifierConfig(fromAddress, new Properties()),
+        session,
+        mockUserRepository,
+        mockGroupRepository
+      )
+      val expectedAddresses = Array[Address](new InternetAddress("test@test.com"),new InternetAddress("test@test.com"))
+
+      val messageArgument = ArgumentCaptor.forClass(classOf[Message])
+      doNothing().when(mockTransport).connect()
+      doNothing()
+        .when(mockTransport)
+        .sendMessage(messageArgument.capture(), eqArg(expectedAddresses))
+      doNothing().when(mockTransport).close()
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepository)
+        .getGroup(okGroup.id)
+      doReturn(IO.pure(Some(okUser)))
+        .when(mockUserRepository)
+        .getUser(okGroup.memberIds.head)
+      doReturn(IO.pure(Some(okUser)))
+        .when(mockUserRepository)
+        .getUser(okUser.id)
+      doReturn(IO.pure(Some(dummyGroup)))
+        .when(mockGroupRepository)
+        .getGroup(dummyGroup.id)
+      doReturn(IO.pure(Some(dummyUser.copy(email = Some("test@test.com")))))
+        .when(mockUserRepository)
+        .getUser(dummyGroup.memberIds.head)
+      doReturn(IO.pure(Some(dummyUser.copy(email = Some("test@test.com")))))
+        .when(mockUserRepository)
+        .getUser(dummyUser.id)
+
+      val rsc = reccordSetChange.copy(userId = okUser.id)
+
+      notifier.notify(Notification(rsc)).unsafeRunSync()
+      val message = messageArgument.getValue
+
+      message.getFrom should be(Array(fromAddress))
+      message.getContentType should be("text/html; charset=us-ascii")
+      message.getAllRecipients should be(expectedAddresses)
+      message.getSubject should be(s"VinylDNS RecordSet change ${rsc.id} results")
+
+      val content = message.getContent.asInstanceOf[String]
+
+      content.contains(rsc.id) should be(true)
+      content.contains(rsc.recordSet.ownerGroupId.get) should be(true)
+      content.contains(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get).get) should be(true)
+    }
+
     "do nothing when user not found" in {
       val notifier = new EmailNotifier(
         EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties()),
@@ -154,7 +219,7 @@ class EmailNotifierSpec
       verify(mockUserRepository).getUser("test")
     }
 
-    "send an email to a user" in {
+    "send an email to a user for batch change" in {
       val fromAddress = new InternetAddress("test@test.com")
       val notifier = new EmailNotifier(
         EmailNotifierConfig(fromAddress, new Properties()),

@@ -2162,6 +2162,31 @@ class RecordSetServiceSpec
       result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.AutoApproved)
     }
 
+    "fail if user request ownership transfer for non shared zone" in {
+      val zone = okZone.copy(id = "test-owner-group")
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-failure",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id)
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested, requestedOwnerGroupId = Some(okGroup.id))))
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, oldRecord.name)
+
+      val result = underTest.updateRecordSet(newRecord, okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe an[InvalidRequest]
+    }
+
     "fail if user not a member of owner group and tried to Approve ownership transfer request" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val oldRecord = aaaa.copy(
