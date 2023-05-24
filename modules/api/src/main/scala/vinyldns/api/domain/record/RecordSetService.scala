@@ -225,8 +225,8 @@ class RecordSetService(
 
   //update ownership transfer is zone is shared
   def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone): Result[RecordSet] = {
-    val existingOwnerShipTransfer =  existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None,Some("none")))
-    val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None,Some("none")))
+    val existingOwnerShipTransfer = existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
+    val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
     if (recordSet.recordSetGroupChange != None &&
       ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None && zone.shared) {
       if (approverOwnerShipTransferStatus.contains(ownerShipTransfer.ownerShipTransferStatus)) {
@@ -270,14 +270,20 @@ class RecordSetService(
         } yield recordSet
       }
     }
-    else {for {
-      _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
-    } yield recordSet.copy(
+    else if (!zone.shared && recordSet.recordSetGroupChange != None &&
+      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None) {
+      for {
+        _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
+      } yield recordSet.copy(
+        recordSetGroupChange = Some(ownerShipTransfer.copy(
+          ownerShipTransferStatus = OwnerShipTransferStatus.None,
+          requestedOwnerGroupId = Some("null"))))
+    }
+    else recordSet.copy(
       recordSetGroupChange = Some(ownerShipTransfer.copy(
         ownerShipTransferStatus = OwnerShipTransferStatus.None,
-        requestedOwnerGroupId = Some("null"))))
-  }}
-
+        requestedOwnerGroupId = Some("null")))).toResult
+  }
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
     // Use fqdn for searching through `recordset` mysql table to see if it already exist
