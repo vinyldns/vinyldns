@@ -119,6 +119,12 @@ final case class InvalidNaptrFlag(value: String)
     s"""Invalid NAPTR flag value: '$value'. Valid NAPTR flag value must be U, S, A or P."""
 }
 
+final case class InvalidNaptrRegexp(value: String)
+  extends DomainValidationError {
+  def message: String =
+    s"""Invalid NAPTR regexp value: '$value'. Valid NAPTR regexp value must start and end with '!'."""
+}
+
 final case class InvalidBatchRecordType(param: String, supported: Set[RecordType])
     extends DomainValidationError {
   def message: String =

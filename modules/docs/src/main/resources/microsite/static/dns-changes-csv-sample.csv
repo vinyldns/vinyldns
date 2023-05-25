@@ -8,8 +8,8 @@ Add,PTR,192.0.2.193,200,test.example.com.
 Add,TXT,test5.example.com,7200,example text
 Add,MX,test16.ok.,7200,1 text.com
 Add,NS,test17.ok.,7200,172.17.42.1
-Add,NAPTR,test18.ok.,7200,10 20 s SIPS+D2T _si._tc.ac-ot1.wdv.test.net.
-Add,NAPTR,test20.ok.,7200,10 20 s SIPS+D2T !^.*$!sip:jd@corpxyz.com! _si._tc.ac-ot1.wdv.test.net.
+Add,NAPTR,test18.ok.,7200,10 20 S SIPS+D2T _si._tc.ac-ot1.wdv.test.net.
+Add,NAPTR,test20.ok.,7200,10 20 U SIPS+D2T !^.*$!sip:jd@corpxyz.com! _si._tc.ac-ot1.wdv.test.net.
 Add,SRV,test19.ok.,7200,1 2 3 dummy.com
 DeleteRecordSet,A+PTR,test5.example.com.,,1.1.1.1
 DeleteRecordSet,A,test6.example.com.,,

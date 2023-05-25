@@ -566,11 +566,12 @@ class BatchChangeValidationsSpec
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {
     val goodNSInput = AddChangeInput("test-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.test.ns.")))
-    val goodNAPTRInput = AddChangeInput("test-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target")))
+    val goodNAPTRInput = AddChangeInput("test-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "!^.*$!sip:jd@corpxyz.com!", Fqdn("target")))
     val goodSRVInput = AddChangeInput("test-srv.example.com.", RecordType.SRV, ttl, SRVData(1, 2, 3, Fqdn("target.vinyldns.")))
     val badNSInput = AddChangeInput("test-bad-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.te$st.ns.")))
     val badNAPTRInput = AddChangeInput("test-bad-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(99999, 2, "S", "E2U+sip", "", Fqdn("target")))
     val badNAPTRFlagInput = AddChangeInput("test-bad-flag-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "t", "E2U+sip", "", Fqdn("target")))
+    val badNAPTRRegexpInput = AddChangeInput("test-bad-regexp-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "dummyregexp", Fqdn("target")))
     val badSRVInput = AddChangeInput("test-bad-srv.example.com.", RecordType.SRV, ttl, SRVData(99999, 2, 3, Fqdn("target.vinyldns.")))
     val goodInput = AddChangeInput("test.example.com.", RecordType.A, ttl, AData("1.1.1.1"))
     val goodAAAAInput =
@@ -581,7 +582,7 @@ class BatchChangeValidationsSpec
       AddChangeInput("testbad.example.com.", RecordType.AAAA, ttl, AAAAData("invalidIpv6:123"))
     val result =
       validateInputChanges(
-        List(goodNSInput, goodNAPTRInput, goodSRVInput, goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input, badNSInput, badNAPTRInput, badNAPTRFlagInput, badSRVInput),
+        List(goodNSInput, goodNAPTRInput, goodSRVInput, goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input, badNSInput, badNAPTRInput, badNAPTRFlagInput, badNAPTRRegexpInput, badSRVInput),
         false
       )
     result(0) shouldBe valid
@@ -594,7 +595,8 @@ class BatchChangeValidationsSpec
     result(7) should haveInvalid[DomainValidationError](InvalidDomainName("some.te$st.ns."))
     result(8) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "order", "NAPTR"))
     result(9) should haveInvalid[DomainValidationError](InvalidNaptrFlag("t"))
-    result(10) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "priority", "SRV"))
+    result(10) should haveInvalid[DomainValidationError](InvalidNaptrRegexp("dummyregexp"))
+    result(11) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "priority", "SRV"))
   }
 
   property("""validateInputName: should fail with a HighValueDomainError

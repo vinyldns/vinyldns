@@ -32,8 +32,8 @@ object DomainValidationErrorType extends Enumeration {
   val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
   InvalidDomainName, InvalidCname, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMX_NAPTR_SRVData, InvalidNaptrFlag,
-  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist, InvalidUpdateRequest,
-  CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
+  InvalidNaptrRegexp, InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
+  InvalidUpdateRequest, CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
   NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
   DeleteRecordDataDoesNotExist, InvalidIPv4CName, InvalidBatchRequest, NotApprovedNSError  = Value
@@ -57,6 +57,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: InvalidTTL => InvalidTTL
       case _: InvalidMX_NAPTR_SRVData => InvalidMX_NAPTR_SRVData
       case _: InvalidNaptrFlag => InvalidNaptrFlag
+      case _: InvalidNaptrRegexp => InvalidNaptrRegexp
       case _: InvalidBatchRecordType => InvalidBatchRecordType
       case _: ZoneDiscoveryError => ZoneDiscoveryError
       case _: RecordAlreadyExists => RecordAlreadyExists

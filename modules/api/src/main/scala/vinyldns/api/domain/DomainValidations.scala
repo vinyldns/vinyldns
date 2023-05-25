@@ -167,4 +167,8 @@ object DomainValidations {
   def validateNaptrFlag(value: String): ValidatedNel[DomainValidationError, String] =
     if (value == "U" || value == "S" || value == "A" || value == "P") value.validNel
     else InvalidNaptrFlag(value).invalidNel[String]
+
+  def validateNaptrRegexp(value: String): ValidatedNel[DomainValidationError, String] =
+    if ((value.startsWith("!") && value.endsWith("!")) || value == "") value.validNel
+    else InvalidNaptrRegexp(value).invalidNel[String]
 }
