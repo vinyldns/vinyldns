@@ -189,8 +189,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     };
     $scope.validDomains=function getValidEmailDomains() {
        function success(response) {
-       $log.log('manageZonesService::listEmailDomains-success');
-       $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
+       $log.debug('manageZonesService::listEmailDomains-success', response);
        return $scope.validEmailDomains = response.data;
        }
         return groupsService
