@@ -170,7 +170,8 @@ object Boot extends App {
         zoneValidations,
         recordAccessValidations,
         backendResolver,
-        vinyldnsConfig.crypto
+        vinyldnsConfig.crypto,
+        membershipService
       )
       //limits configured in reference.conf passing here
       val limits = LimitsConfig(
