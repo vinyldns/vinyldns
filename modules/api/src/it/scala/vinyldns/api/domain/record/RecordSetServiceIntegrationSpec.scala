@@ -19,6 +19,7 @@ package vinyldns.api.domain.record
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
+import org.mockito.Matchers.any
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -42,7 +43,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.core.notifier.{AllNotifiers, Notifier}
+import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 
 import scala.concurrent.ExecutionContext
 
@@ -227,6 +228,36 @@ class RecordSetServiceIntegrationSpec
     ownerGroupId = Some(sharedGroup.id)
   )
 
+  private val sharedTestRecordPendingReviewOwnerShip = RecordSet(
+    sharedZone.id,
+    "shared-record-ownerShip-pendingReview",
+    A,
+    200,
+    RecordSetStatus.Active,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    None,
+    List(AData("1.1.1.1")),
+    ownerGroupId = Some(sharedGroup.id),
+    recordSetGroupChange = Some(OwnerShipTransfer(
+      ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,
+      requestedOwnerGroupId = Some(group.id)))
+  )
+
+  private val sharedTestRecordCancelledOwnerShip = RecordSet(
+    sharedZone.id,
+    "shared-record-ownerShip-cancelled",
+    A,
+    200,
+    RecordSetStatus.Active,
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    None,
+    List(AData("1.1.1.1")),
+    ownerGroupId = Some(sharedGroup.id),
+    recordSetGroupChange = Some(OwnerShipTransfer(
+      ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+      requestedOwnerGroupId = Some(group.id)))
+  )
+
   private val sharedTestRecordBadOwnerGroup = RecordSet(
     sharedZone.id,
     "shared-record-bad-owner-group",
@@ -292,7 +323,9 @@ class RecordSetServiceIntegrationSpec
     // Seeding records in DB
     val sharedRecords = List(
       sharedTestRecord,
-      sharedTestRecordBadOwnerGroup
+      sharedTestRecordBadOwnerGroup,
+      sharedTestRecordPendingReviewOwnerShip,
+      sharedTestRecordCancelledOwnerShip
     )
     val conflictRecords = List(
       subTestRecordNameConflict,
@@ -405,6 +438,7 @@ class RecordSetServiceIntegrationSpec
           .addRecordSet(newRecord, dummyAuth)
           .value
           .unsafeRunSync()
+
       rightValue(result)
         .asInstanceOf[RecordSetChange]
         .recordSet
@@ -430,6 +464,227 @@ class RecordSetServiceIntegrationSpec
           .addRecordSet(newRecord, dummyAuth)
           .value
           .unsafeRunSync()
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "auto-approve ownership transfer request, if user tried to update the ownership" in {
+      val newRecord = sharedTestRecord.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,
+          requestedOwnerGroupId = Some(group.id))))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record"
+      change.recordSet.ownerGroupId.get shouldBe group.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.AutoApproved
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+    }
+
+    "approve ownership transfer request, if user requested for ownership transfer" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record-ownerShip-pendingReview"
+      change.recordSet.ownerGroupId.get shouldBe group.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyApproved
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+    }
+
+    "reject ownership transfer request, if user requested for ownership transfer" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record-ownerShip-pendingReview"
+      change.recordSet.ownerGroupId.get shouldBe sharedGroup.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyRejected
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+    }
+
+    "request ownership transfer, if user not in the owner group and wants to own the record" in {
+      val newRecord = sharedTestRecord.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Requested,
+          requestedOwnerGroupId = Some(dummyGroup.id))))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record"
+      change.recordSet.ownerGroupId.get shouldBe sharedGroup.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.PendingReview
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe dummyGroup.id
+    }
+
+    "fail requesting ownership transfer if user is not in owner group and tried to update other fields in record set" in {
+      val newRecord = sharedTestRecord.copy(
+        ttl = 3000,
+        recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Requested,
+          requestedOwnerGroupId = Some(dummyGroup.id))))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail updating if user is not in owner group for ownership transfer approval" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[NotAuthorizedError]
+    }
+
+    "fail updating if user is not in owner group for ownership transfer reject" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[NotAuthorizedError]
+    }
+
+    "cancel the ownership transfer request, if user not require ownership transfer further" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled)))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record-ownerShip-pendingReview"
+      change.recordSet.ownerGroupId.get shouldBe sharedGroup.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Cancelled
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+    }
+
+    "fail approving ownership transfer request, if user is cancelled" in {
+      val newRecord = sharedTestRecordCancelledOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail rejecting ownership transfer request, if user is cancelled" in {
+      val newRecord = sharedTestRecordCancelledOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail auto-approving ownership transfer request, if user is cancelled" in {
+      val newRecord = sharedTestRecordCancelledOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved
+        )))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail auto-approving ownership transfer request, if zone is not shared" in {
+      val newRecord = dottedTestRecord.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,
+          requestedOwnerGroupId = Some(group.id))))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail approving ownership transfer request, if zone is not shared" in {
+      val newRecord = dottedTestRecord.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved
+        )))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "fail requesting ownership transfer, if zone is not shared" in {
+      val newRecord = dottedTestRecord.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Requested,
+          requestedOwnerGroupId = Some(dummyGroup.id)
+        )))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, dummyAuth)
+        .value
+        .unsafeRunSync()
+
       leftValue(result) shouldBe a[InvalidRequest]
     }
 

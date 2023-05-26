@@ -2388,11 +2388,13 @@ class RecordSetServiceSpec
     "fail if user not a member of owner group and tried to update ttl while cancel ownership transfer" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val oldRecord =
-        aaaa.copy(zoneId = zone.id, status = RecordSetStatus.Active,  ownerGroupId = Some(oneUserDummyGroup.id))
+        aaaa.copy(zoneId = zone.id, status = RecordSetStatus.Active,  ownerGroupId = Some(oneUserDummyGroup.id),recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+        )
       val newRecord = oldRecord.copy(
         records = List(AAAAData("1:2:3:4:5:6:7:9")),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id))))
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled)))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2404,6 +2406,88 @@ class RecordSetServiceSpec
       val result = underTest.updateRecordSet(newRecord, okAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[InvalidRequest]
     }
+
+    "fail if user cancelled the ownership request and group member tried to approve the request" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
+
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-failure",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(newRecord.zoneId)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+
+      val result = underTest.updateRecordSet(newRecord, auth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+    }
+
+    "fail if user cancelled the ownership request and group member tried to reject the request" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
+
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-failure",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(newRecord.zoneId)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+
+      val result = underTest.updateRecordSet(newRecord, auth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+    }
+
+    "fail if user cancelled the ownership request and group member tried to reject the auto-approve" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
+
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-failure",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved)))
+
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(newRecord.zoneId)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+
+      val result = underTest.updateRecordSet(newRecord, auth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+    }
+
     "success if user Approve a ownership transfer request Manually" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
