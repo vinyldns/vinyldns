@@ -324,7 +324,7 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['preference_' + ($index)].$invalid}">
-                            <input name="weight_{{$index}}"
+                            <input name="preference_{{$index}}"
                                    class="form-control"
                                    ng-model="item.preference"
                                    ng-class="recordModal.details.class"
@@ -332,15 +332,17 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['flags_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
-                                   class="form-control"
-                                   ng-model="item.flags"
-                                   ng-class="recordModal.details.class"
-                                   ng-readonly="recordModal.details.readOnly"
-                                   required/>
+                            <select name="flags_{{$index}}"
+                                    class="form-control"
+                                    id="set-dropdown-width"
+                                    ng-model="item.flags"
+                                    ng-class="recordModal.details.class"
+                                    ng-options="flag for flag in naptrFlags"
+                                    required>
+                            </select>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['service_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
+                            <input name="service_{{$index}}"
                                    class="form-control"
                                    ng-model="item.service"
                                    ng-class="recordModal.details.class"
@@ -348,14 +350,14 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['regexp_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
+                            <input name="regexp_{{$index}}"
                                    class="form-control"
                                    ng-model="item.regexp"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['replacement_' + ($index)].$invalid}">
-                            <input name="target_{{$index}}"
+                            <input name="replacement_{{$index}}"
                                    class="form-control"
                                    ng-model="item.replacement"
                                    ng-class="recordModal.details.class"
