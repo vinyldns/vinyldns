@@ -75,7 +75,8 @@ class BatchChangeServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.manualReviewConfig,
     VinylDNSTestHelpers.batchChangeConfig,
-    VinylDNSTestHelpers.scheduledChangesConfig
+    VinylDNSTestHelpers.scheduledChangesConfig,
+    VinylDNSTestHelpers.approvedNameServers
   )
   private val ttl = Some(200L)
 

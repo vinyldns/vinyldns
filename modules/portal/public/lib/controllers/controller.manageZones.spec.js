@@ -215,6 +215,8 @@ describe('Controller: ManageZonesController', function () {
             .and.stub();
         var refreshZoneChange = spyOn(this.scope, 'refreshZoneChange')
                     .and.stub();
+        var validDomains = spyOn(this.scope, 'validDomains')
+                    .and.stub();
         this.scope.currentManageZoneState = this.scope.manageZoneState.CONFIRM_UPDATE;
         this.scope.updateZoneInfo.hiddenKey = 'some key';
         this.scope.updateZoneInfo.hiddenTransferKey = 'some key';
