@@ -66,7 +66,7 @@ class BatchChangeServiceSpec
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val nonFatalErrorZoneDiscoveryError = ZoneDiscoveryError("test")
-  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test", AData("1.1.1.1"), true)
+  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test")
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
