@@ -485,10 +485,15 @@ sns {
 ```
 ### Email Domain Configuration
  This configuration setting determines the valid domains which are 
- allowed in the email fields. `*dummy.com` means it will allow any 
- subdomain within dummy.com like apac.dummy.com. If email-domains is
- left empty then it will accept any domain name. The number of dots refers 
- to the number of dots allowed after @ in an email.
+ allowed in the email fields.
+
+ The `email-domains` field accepts a list of valid email domains. Wildcard matching 
+ is available; for example, `*dummy.com` means it will allow any 
+ subdomain within dummy.com like test.dummy.com. If the `email-domains` field is
+ left empty then it will accept any domain name. 
+ 
+The `number-of-dots` field controls the number of dots allowed after the `@` symbol in 
+an email. If this config value is left out, it will default to two.
 ```yaml
 valid-email-config {
    email-domains = ["test.com","*dummy.com"]
@@ -775,6 +780,7 @@ dotted-hosts = {
   # Valid Email Domains
   valid-email-config {
     email-domains = ["test.com","*dummy.com"]
+    number-of-dots= 2
   } 
 
   sns {
