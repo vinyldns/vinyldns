@@ -169,6 +169,8 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
+  def validateNaptrFlag(flag: String): Boolean = flag == "U" || flag  == "S" || flag  == "A" || flag  == "P"
+  def validateNaptrRegexp(regexp: String): Boolean = regexp.startsWith("!") && regexp.endsWith("!") || regexp == ""
   def nameContainsDots(s: String): Boolean = s.contains(".")
   def nameDoesNotContainSpaces(s: String): Boolean = !s.contains(" ")
 
@@ -514,7 +516,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "flags")
           .required[String]("Missing NAPTR.flags")
           .check(
-            "NAPTR.flags must be less than 2 characters" -> (_.length < 2)
+            "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P" -> validateNaptrFlag
           ),
         (js \ "service")
           .required[String]("Missing NAPTR.service")
@@ -524,7 +526,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "regexp")
           .required[String]("Missing NAPTR.regexp")
           .check(
-            "NAPTR.regexp must be less than 255 characters" -> checkDomainNameLen
+            "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty" -> validateNaptrRegexp
           ),
 
         (js \ "replacement")

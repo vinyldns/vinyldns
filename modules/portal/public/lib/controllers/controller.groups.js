@@ -213,10 +213,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
      $scope.validDomains=function getValidEmailDomains() {
             function success(response) {
-                $log.log('groupsService::listEmailDomains-success');
+                 $log.debug('groupsService::listEmailDomains-success', response);
                  $scope.validEmailDomains = response.data;
-                 $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
-                 $log.log('scope.validEmailDomains',$scope.validEmailDomains);
                  return $scope.validEmailDomains
             }
             return groupsService
