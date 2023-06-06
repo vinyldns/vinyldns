@@ -1,0 +1,919 @@
+<!DOCTYPE html><html><head><title>VinylDNS: API Configuration Guide</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: API Configuration Guide" /><meta name="title" property="og:title" content="VinylDNS: API Configuration Guide" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: API Configuration Guide" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav">        <div class="sidebar-nav-item  "><a href="/operator/index.html" title="Operator Guide" class="">Operator Guide</a></div> <div class="sidebar-nav-item  "><a href="/operator/pre.html" title="Pre-requisites" class="drop-nested">Pre-requisites</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/setup-mysql.html" title="Setup MySQL" class="">Setup MySQL</a> <a href="/operator/setup-sqs.html" title="Setup AWS SQS" class="">Setup AWS SQS</a> <a href="/operator/setup-ldap.html" title="Setup LDAP" class="">Setup LDAP</a></div></div> <div class="sidebar-nav-item  open"><a href="/operator/setup-api.html" title="Setup API Server" class="drop-nested">Setup API Server</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/config-api.html" title="API Configuration Guide" class="active">API Configuration Guide</a></div></div> <div class="sidebar-nav-item  "><a href="/operator/setup-portal.html" title="Setup the Portal Server" class="drop-nested">Setup the Portal Server</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/config-portal.html" title="Portal Configuration Guide" class="">Portal Configuration Guide</a></div></div>      </div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vinyldns" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="api-configuration-guide">API Configuration Guide</h1>
+
+<p><strong>Note: ALL configuration assumes a <code class="language-plaintext highlighter-rouge">vinyldns</code> namespace. For example, sqs settings would be under <code class="language-plaintext highlighter-rouge">vinyldns.sqs</code>.</strong></p>
+
+<h2 id="configuration">Configuration</h2>
+
+<ul>
+  <li><a href="#configuration-overview">Configuration Overview</a></li>
+  <li><a href="#configuring-api-server">Configuration API Server</a></li>
+  <li><a href="#queue-configuration">Queue Configuration</a></li>
+  <li><a href="#database-configuration">Database Configuration</a></li>
+  <li><a href="#cryptography-settings">Cryptography</a></li>
+  <li><a href="#additional-configuration-settings">Additional Configuration Settings</a></li>
+  <li><a href="#full-example-config">Full Example Config</a></li>
+</ul>
+
+<p>There are a lot of configuration settings in VinylDNS. So much so that it may seem overwhelming to configure vinyldns to
+your environment. This document describes the configuration settings, highlighting the settings you are <em>most likely to
+change</em>. All of the configuration settings are captured at the end.</p>
+
+<p>It is important to note that the <code class="language-plaintext highlighter-rouge">api</code> and <code class="language-plaintext highlighter-rouge">portal</code> have <em>different</em> configuration. We will review the configuration for
+each separately.</p>
+
+<h2 id="configuration-overview">Configuration Overview</h2>
+
+<h3 id="how-do-we-config">How do we config?</h3>
+
+<p>All configuration is done using <a href="https://github.com/lightbend/config">Typesafe Config</a>. It provides a means to
+specifying default configurations, and overriding the configured values in a number of ways:</p>
+
+<ol>
+  <li>The <em>default</em> configuration provides “safe” default values for all configuration. This makes it possible for you to
+only change the configuration values that you <em>need</em> to, and assume the <em>default</em> for the rest. This can typically be
+found in a file named <code class="language-plaintext highlighter-rouge">reference.conf</code>. The Typesafe Config library manages populating unspecified values for you
+automatically.</li>
+  <li>You can override the <code class="language-plaintext highlighter-rouge">reference.conf</code> file by providing your own <code class="language-plaintext highlighter-rouge">application.conf</code> file when the system starts up.
+We will review how to do that in the sections that follow.</li>
+  <li>You can override <em>individual</em> configuration properties when the application starts up using standard jvm arguments.
+For example, you can specify <code class="language-plaintext highlighter-rouge">-Dmy.config.value=42</code>, and that will override <em>both</em> application.conf <em>and</em>
+reference.conf (defaults)</li>
+  <li>You can further override configuration properties with <em>environment variables</em>. The Typesafe Config provides special
+syntax that allows you to use environment variables. You can make the environment variable optional (meaning use it
+if it is there)
+or required (fail to start up without the environment variable). We will illustrate use of environment variables in
+this guide.</li>
+</ol>
+
+<h3 id="using-environment-variables">Using Environment Variables</h3>
+
+<p>We <em>strongly</em> recommend that you use environment variables in particular for secrets. Laying down environment variables
+in a flat file is a security vulnerability for your installation. To demonstrate environment variable usage, here is a
+following snippet…</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="s">queue.settings {</span>
+     <span class="s">access-key = ${AWS_ACCESS_KEY}</span>
+     <span class="s">secret-key = ${AWS_SECRET_ACCESS_KEY}</span>
+     <span class="s">signing-region = ${SQS_REGION}</span>
+     <span class="s">service-endpoint = ${SQS_SERVICE_ENDPOINT}</span>
+     <span class="s">queue-name = ${SQS_QUEUE_NAME}</span>
+  <span class="s">}</span>
+</code></pre></div></div>
+
+<p>In the example, if any of the values in <code class="language-plaintext highlighter-rouge">${xxx}</code> are not found in the environment, the application will not start up!</p>
+
+<h2 id="configuring-api-server">Configuring API Server</h2>
+
+<p>The API configuration has a lot of values, the important ones reviewed here. There are several configuration settings
+that are specific to <em>your</em> environment.</p>
+
+<p>The most important configuration is around your system dependencies. Presently, these are your settings for:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">AWS SQS</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MySQL</code></li>
+</ul>
+
+<h2 id="queue-configuration">Queue Configuration</h2>
+
+<p>VinylDNS supports both SQS and MySQL queue implementations.</p>
+
+<p>There are a couple of implementation-dependent settings that need to be specified:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">messages-per-poll</code>: Number of messages retrieved in a single queue receive request. Valid values are 1 through 10 (
+default).</li>
+  <li><code class="language-plaintext highlighter-rouge">polling-interval</code>: Interval to delay between each poll for messages.</li>
+</ul>
+
+<p>If using SQS, be sure to follow the <a href="setup-sqs.html">AWS SQS Setup Guide</a> first to get the values you need to configure
+here.</p>
+
+<p>If using MySQL, follow the <a href="setup-mysql.html">MySQL Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>The following in a sample SQS config:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">vinyldns {</span>
+
+  <span class="s">queue {</span>
+     <span class="s">class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"</span>
+   
+     <span class="s">messages-per-poll = </span><span class="m">10</span>
+     <span class="s">polling-interval = 250.millis</span>
+   
+     <span class="s"># connection information to SQS</span>
+     <span class="s">settings {</span>
+        <span class="s"># AWS access key and secret.</span>
+        <span class="s">access-key = "x"</span>
+        <span class="s">secret-key = "x"</span>
+      
+        <span class="s"># Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.</span>
+        <span class="s">signing-region = "x"</span>
+      
+        <span class="s"># Endpoint to access queue</span>
+        <span class="s">service-endpoint = "http://vinyldns-elasticmq:9324/"</span>
+      
+        <span class="s"># Queue name. Should be used in conjunction with service endpoint, rather than using a queue url which is subject to change.</span>
+        <span class="s">queue-name = "vinyldns"</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<p>The following is a sample MySQL queue config:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">queue {</span>
+  <span class="s">class-name = "vinyldns.mysql.queue.MySqlMessageQueueProvider"</span>
+
+  <span class="s">polling-interval = 250.millis</span>
+  <span class="s">messages-per-poll = </span><span class="m">10</span>
+  <span class="s">max-retries = </span><span class="m">50</span> <span class="c1"># Override max retries; default = 100</span>
+
+  <span class="s">settings = {</span>
+     <span class="s">name = "vinyldns"</span>
+     <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+     <span class="s">migration-url = "jdbc:mariadb://localhost:19004/?user=root&amp;password=pass"</span>
+     <span class="s">url = "jdbc:mariadb://localhost:19004/vinyldns?user=root&amp;password=pass"</span>
+     <span class="s">user = "root"</span>
+     <span class="s">password = "pass"</span>
+   
+     <span class="s"># see https://github.com/brettwooldridge/HikariCP</span>
+     <span class="s">connection-timeout-millis = </span><span class="m">1000</span>
+     <span class="s">idle-timeout = </span><span class="m">10000</span>
+     <span class="s">max-lifetime = </span><span class="m">30000</span>
+     <span class="s">maximum-pool-size = </span><span class="m">5</span>
+     <span class="s">minimum-idle = </span><span class="m">0</span>
+   
+     <span class="s">my-sql-properties = {</span>
+        <span class="s">cachePrepStmts=true</span>
+        <span class="s">prepStmtCacheSize=250</span>
+        <span class="s">prepStmtCacheSqlLimit=2048</span>
+        <span class="s">rewriteBatchedStatements=true</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="database-configuration">Database Configuration</h2>
+
+<p>VinylDNS supports a MySQL database. You can enable all repos in a single backend, or have a mix of the two. For each
+backend, you need to configure the table(s) that should be loaded.</p>
+
+<p>If using MySQL, follow the <a href="setup-mysql.html">MySQL Setup Guide</a> first to get the values you need to configure here.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">vinyldns {</span>
+
+  <span class="s"># this list should include only the datastores being used by your instance</span>
+  <span class="s">data-stores = ["mysql"]</span>
+
+  <span class="s">mysql {</span>
+   
+     <span class="s"># this is the path to the mysql provider. This should not be edited</span>
+     <span class="s"># from the default in reference.conf</span>
+     <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+   
+     <span class="s">settings {</span>
+        <span class="s"># the name of the database, recommend to leave this as is</span>
+        <span class="s">name = "vinyldns"</span>
+      
+        <span class="s"># the jdbc driver, recommended to leave this as is</span>
+        <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+      
+        <span class="s"># the URL used to create the schema, typically this will be without the "database" name</span>
+        <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+      
+        <span class="s"># the main connection URL</span>
+        <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+      
+        <span class="s"># the user to connect to MySQL</span>
+        <span class="s">user = "root"</span>
+      
+        <span class="s"># the password to connect to MySQL</span>
+        <span class="s">password = "pass"</span>
+      
+        <span class="s">## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields</span>
+        <span class="s"># the maximum number of connections to scale the connection pool to</span>
+        <span class="s">maximum-pool-size = </span><span class="m">20</span>
+      
+        <span class="c1"># the maximum number of milliseconds to wait for a connection from the connection pool</span>
+        <span class="s">connection-timeout-millis = </span><span class="m">1000</span>
+      
+        <span class="c1"># the minimum number of idle connections that HikariCP tries to maintain in the pool</span>
+        <span class="s">minimum-idle = </span><span class="m">10</span>
+      
+        <span class="c1"># the maximum number of milliseconds that a connection is can sit idle in the pool</span>
+        <span class="s">idle-timeout = </span><span class="m">10000</span>
+      
+        <span class="c1"># The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit</span>
+        <span class="s">max-lifetime = </span><span class="m">600000</span>
+      
+        <span class="c1"># controls whether JMX MBeans are registered</span>
+        <span class="s">register-mbeans = </span><span class="no">true</span>
+      
+        <span class="s"># my-sql-properties allows you to include any additional mysql performance settings you want.</span>
+        <span class="s"># Note that the properties within my-sql-properties must be camel case!</span>
+        <span class="s"># see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance</span>
+        <span class="s">my-sql-properties {</span>
+        <span class="s">prepStmtCacheSize = </span><span class="m">300</span>
+        <span class="s">prepStmtCacheSqlLimit = </span><span class="m">2048</span>
+        <span class="s">cachePrepStmts = </span><span class="no">true</span>
+        <span class="s">useServerPrepStmts = </span><span class="no">true</span>
+        <span class="s">rewriteBatchedStatements = </span><span class="no">true</span>
+        <span class="s">}</span>
+     <span class="s">}</span>
+   
+     <span class="s">repositories {</span>
+        <span class="s"># all repositories with config sections here will be enabled in mysql</span>
+        <span class="s">zone {</span>
+        <span class="s"># no additional settings for repositories enabled in mysql</span>
+        <span class="s">}</span>
+        <span class="s">batch-change {</span>
+        <span class="s">}</span>
+        <span class="s">user {</span>
+        <span class="s">}</span>
+        <span class="s">record-set {</span>
+        <span class="s">}</span>
+        <span class="s">record-set-cache {</span>
+        <span class="s">}</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="cryptography-settings">Cryptography Settings</h2>
+
+<p>VinylDNS uses symmetric cryptography in order to encrypt/decrypt sensitive information in the system. This includes TSIG
+keys and user secrets. Cryptography is used in <em>both</em> the portal as well as the api.</p>
+
+<p>Cryptography is <em>pluggable</em>, meaning you can bring your own crypto with you. All that is required is to provide an
+implementation
+of <a href="https://github.com/vinyldns/vinyldns/blob/master/modules/core/src/main/scala/vinyldns/core/crypto/CryptoAlgebra.scala">CryptoAlgebra</a>
+using a crypto library of choice. The default implementation is <code class="language-plaintext highlighter-rouge">NoOpCrypto</code>, which does not do any encryption (not
+recommended for production). VinylDNS provides a cryptography implementation called <code class="language-plaintext highlighter-rouge">JavaCrypto</code> that you can use for
+production. The example that follows illustrates using the provided <code class="language-plaintext highlighter-rouge">JavaCrypto</code>.</p>
+
+<p>If you create your own implementation, you have to build your jar and make it (and all dependencies) available to the
+VinylDNS API and the VinylDNS portal.</p>
+
+<p>The following are the configuration settings for crypto. Notice here the <em>only</em> thing we see is the <code class="language-plaintext highlighter-rouge">type</code>. The <code class="language-plaintext highlighter-rouge">type</code>
+is the fully qualified class name for the <code class="language-plaintext highlighter-rouge">CryptoAlgebra</code> you will be using. If your crypto implementation requires
+additional settings, they will be configured inside the <code class="language-plaintext highlighter-rouge">crypto</code> element, adjacent to the <code class="language-plaintext highlighter-rouge">type</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">vinyldns {</span>
+  <span class="s">crypto {</span>
+     <span class="s">type = "vinyldns.core.crypto.JavaCrypto"</span>
+     <span class="s">secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="default-zone-connections">Default Zone Connections</h2>
+
+<p>VinylDNS has three ways of indicating zone connections:</p>
+
+<ol>
+  <li>Global default connection applies to all zones unless overridden by one of the following connections. This
+configuration is required.</li>
+  <li>Backends allows you to specify zone connection information for an individual zone by choosing a pre-configured zone
+connection. This configuration is optional.</li>
+  <li>Zone level override allows you to specify zone update and transfer connection information <em>for each zone</em>. More
+information is in the <a href="../api/zone-model.html">Zone Model</a>.</li>
+</ol>
+
+<p>VinylDNS has <strong>2</strong> connections for each zone:</p>
+
+<ol>
+  <li>The DDNS connection - used for making DDNS updates to the zone</li>
+  <li>The Transfer connection - used for making AXFR requests for zone syncing with the DNS backend</li>
+</ol>
+
+<p>VinylDNS also ties in testing network connectivity to the default zone connection’s primary server into its API health
+checks. A value for the health check connection timeout in milliseconds can be specified using <code class="language-plaintext highlighter-rouge">health-check-timeout</code>; a
+default value of 10000 will be used if not provided.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">vinyldns {</span>
+
+  <span class="s"># timeout for DNS backend connectivity health check</span>
+  <span class="s">health-check-timeout = </span><span class="m">5000</span>
+
+  <span class="c1"># the DDNS connection information for the default dns backend</span>
+  <span class="s">defaultZoneConnection {</span>
+     <span class="s"># this is not really used, but must be set, usually set to the keyName itself, or a descriptive name if you are interested</span>
+     <span class="s">name = "vinyldns."</span>
+   
+     <span class="s"># the name of the TSIG key</span>
+     <span class="s">keyName = "vinyldns."</span>
+   
+     <span class="s"># the TSIG secret key</span>
+     <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+   
+     <span class="s"># the host name or IP address, note you can add a port if not using the default by settings hostname:port</span>
+     <span class="s">primaryServer = "ddns1.foo.bar.com"</span>
+   
+     <span class="s"># the key algorithm to use</span><span class="err">:</span> <span class="s">HMAC-MD5, HMAC-SHA1, HMAC-SHA224, HMAC-SHA256, HMAC-SHA384, HMAC-SHA512</span>
+     <span class="s">algorithm = "HMAC-MD5"</span>
+  <span class="s">}</span>
+
+  <span class="s"># the AXFR connection information for the default dns backend</span>
+  <span class="s">defaultTransferConnection {</span>
+     <span class="s">name = "vinyldns."</span>
+     <span class="s">keyName = "vinyldns."</span>
+     <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+     <span class="s">primaryServer = "localhost:19001"</span>
+     <span class="s">algorithm = "HMAC-MD5"</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+
+  <span class="c1"># Zone Connection Data, ID can be specified in a zone to override the global default configuration</span>
+  <span class="s">backends = [</span>
+     <span class="s">{</span>
+        <span class="s">id = "test-backend-id"</span>
+        <span class="s">zone-connection {</span>
+        <span class="s">name = "vinyldns."</span>
+        <span class="s">key-name = "vinyldns."</span>
+        <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+        <span class="s">primary-server = "127.0.0.1:19001"</span>
+        <span class="s">algorithm = "HMAC-MD5"</span>
+     <span class="s">}</span>
+     <span class="s">transfer-connection {</span>
+        <span class="s">name = "vinyldns."</span>
+        <span class="s">key-name = "vinyldns."</span>
+        <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+        <span class="s">primary-server = "127.0.0.1:19001"</span>
+        <span class="s">algorithm = "HMAC-MD5"</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">]</span>
+</code></pre></div></div>
+
+<h2 id="additional-configuration-settings">Additional Configuration Settings</h2>
+
+<h3 id="approved-name-servers">Approved Name Servers</h3>
+
+<p>When running a large DNS installation, allowing users the ability to self-manage zone delegations can lead to a lot of
+problems when not done properly. Also, allowing delegation to untrusted DNS servers can be a security risk.</p>
+
+<p>To “lock down” zone delegation, you can configure name servers that you trust, so zone delegation is controlled.</p>
+
+<p>The entries in the list can be host names, IP addresses, or regular expressions.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">approved-name-servers = [</span>
+  <span class="s">"172.17.42.1.",</span>
+  <span class="s">"ddns1.foo.bar.",</span>
+  <span class="s">".*awsdns.*"</span>
+<span class="err">]</span>
+</code></pre></div></div>
+
+<h3 id="processing-disabled">Processing Disabled</h3>
+
+<p>The processing disabled flag can be used if doing a blue/green deployment. When processing is disabled, the VinylDNS
+engine will <em>not</em> be actively polling the message queue for messages.</p>
+
+<p><code class="language-plaintext highlighter-rouge">processing-disabled = false | true</code></p>
+
+<h3 id="color">Color</h3>
+
+<p>For blue-green deployments, you can configure the color of the current node. Not applicable to every environment.</p>
+
+<p><code class="language-plaintext highlighter-rouge">color = "green"</code></p>
+
+<h3 id="version">Version</h3>
+
+<p>Version of the application that is deployed. Currently, this is a configuration value.</p>
+
+<p><code class="language-plaintext highlighter-rouge">version = "0.8.0"</code></p>
+
+<p><strong>Note: You can get installation information including color, version, default key name, and processing-disabled by
+hitting the <em>status</em> endpoint GET /status</strong></p>
+
+<h3 id="is-zone-sync-schedule-allowed">Is Zone Sync Schedule Allowed</h3>
+
+<p>Used while deploying. Should be set to <code class="language-plaintext highlighter-rouge">true</code> only on one api server/instance and <code class="language-plaintext highlighter-rouge">false</code> on every other api servers/instances. 
+Thus automated sync will be done only once on a single server/instance instead of every api servers/instances.
+Set it to <code class="language-plaintext highlighter-rouge">true</code> while running locally or when we have only a single api server/instance.</p>
+
+<p><code class="language-plaintext highlighter-rouge">is-zone-sync-schedule-allowed = true</code></p>
+
+<h3 id="http-host-and-port">HTTP Host and Port</h3>
+
+<p>To specify what host and port to bind to when starting up the API server, default is 9000.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">rest {</span>
+  <span class="s">host = "0.0.0.0"</span>
+  <span class="s">port = </span><span class="m">9000</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="sync-delay">Sync Delay</h3>
+
+<p>VinylDNS uses a “sync-delay” setting that prevents users from syncing their zones too frequently. The settings is
+inspected <em>per zone</em>, and is the number of milliseconds since the <em>last</em> sync to wait before allowing another sync for
+<em>that</em> zone.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">sync-delay = </span><span class="m">10000</span>
+</code></pre></div></div>
+
+<h3 id="notifiers">Notifiers</h3>
+
+<p>VinylDNS provides the ability to send notifications via configured notifiers when a batch change is either implemented
+or rejected. Notifiers in VinylDNS are designed to be pluggable (ie. bring-your-own-implementation), granting users the
+flexibility to implement their own which can smoothly integrate into their instance.</p>
+
+<p>Setup requires a <code class="language-plaintext highlighter-rouge">notifiers</code> key which contains all of the configured notifiers that will be used by the running
+instance.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">notifiers = ["email", "sns"]</span>
+</code></pre></div></div>
+
+<h4 id="e-mail-notifier">E-mail notifier</h4>
+
+<p>Configuration for the e-mail notifier appears like the following:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">email = {</span>
+   <span class="s"># Path to notifier provider implementation</span>
+   <span class="s">class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"</span>
+
+   <span class="s">settings = {</span>
+      <span class="s"># Sender address for e-mail notifications</span>
+      <span class="s">from = "Sender &lt;do-not-reply@example.sender&gt;"</span>
+
+      <span class="s">smtp {</span>
+         <span class="s"># Host SMTP server</span>
+         <span class="s">host = "example.host"</span>
+      <span class="s">}</span>
+   <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<p>Note that <code class="language-plaintext highlighter-rouge">settings.from</code> and <code class="language-plaintext highlighter-rouge">settings.smtp</code> are both required, though the <code class="language-plaintext highlighter-rouge">smtp</code> values requirements depend on the
+specific exchange service that you are interfacing with.</p>
+
+<p>Below is an example e-mail notification:</p>
+
+<p><img src="../img/sample-email-nofitication.png" alt="Sample E-mail Notification" /></p>
+
+<h4 id="awd-simple-notification-service-sns-notifier">AWD Simple Notification Service (SNS) notifier</h4>
+
+<p>Configuration for the AWS SNS notifier appears like the following:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">sns {</span>
+  <span class="s"># Path to notifier provider implementation</span>
+  <span class="s">class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"</span>
+
+  <span class="s">settings {</span>
+  <span class="s"># SNS topic Amazon Resource Name (ARN)</span>
+  <span class="s">topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"</span>
+
+  <span class="s"># AWS access key and secret</span>
+  <span class="s">access-key = "vinyldnsTest"</span>
+  <span class="s">secret-key = "notNeededForSnsLocal"</span>
+
+  <span class="s"># Endpoint to access SNS</span>
+  <span class="s">service-endpoint = "http://127.0.0.1:19006"</span>
+
+  <span class="s"># Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.</span>
+  <span class="s">signing-region = "us-east-1"</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+<h3 id="email-domain-configuration">Email Domain Configuration</h3>
+<p>This configuration setting determines the valid domains which are 
+ allowed in the email fields.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">email-domains</code> field accepts a list of valid email domains. Wildcard matching 
+ is available; for example, <code class="language-plaintext highlighter-rouge">*dummy.com</code> means it will allow any 
+ subdomain within dummy.com like test.dummy.com. If the <code class="language-plaintext highlighter-rouge">email-domains</code> field is
+ left empty then it will accept any domain name.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">number-of-dots</code> field controls the number of dots allowed after the <code class="language-plaintext highlighter-rouge">@</code> symbol in 
+an email. If this config value is left out, it will default to two.</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">valid-email-config {</span>
+   <span class="s">email-domains = ["test.com","*dummy.com"]</span>
+   <span class="s">number-of-dots= </span><span class="m">2</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="batch-manual-review-enabled-">Batch Manual Review Enabled <a id="manual-review"></a></h3>
+
+<p>Configuration setting that determines whether batch changes with non-fatal errors can be reviewed rather than failing
+immediately. When enabling manual review, the expectation is that a DNS technician is actively querying and addressing
+batch change requests that are in a manual review state. If your process flow does not accommodate this expectation, we
+advise disabling manual review.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">manual-batch-review-enabled = </span><span class="no">true</span>
+</code></pre></div></div>
+
+<h3 id="manual-review-domains">Manual Review Domains</h3>
+
+<p>Configuration setting that determines what Batch Change/DNS Change input names require manual review
+if <code class="language-plaintext highlighter-rouge">manual-batch-review-enabled</code> is set to <code class="language-plaintext highlighter-rouge">true</code>. If <code class="language-plaintext highlighter-rouge">manual-batch-review-enabled</code> is set to <code class="language-plaintext highlighter-rouge">false</code> any input names
+that match entries in the configured list will be treated as fatal errors.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">manual-review-domains = {</span>
+  <span class="s">domain-list = [</span>
+     <span class="s">"needs-review.*"</span>
+  <span class="s">]</span>
+  <span class="s">ip-list = [</span>
+     <span class="s">"192.0.2.254",</span>
+     <span class="s">"192.0.2.255",</span>
+     <span class="s">"fd69:27cc:fe91:0:0:0:ffff:1",</span>
+     <span class="s">"fd69:27cc:fe91:0:0:0:ffff:2"</span>
+  <span class="s">]</span>
+  <span class="s">zone-name-list = [</span>
+     <span class="s">"zone.requires.review."</span>
+  <span class="s">]</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="scheduled-batch-changes-enabled">Scheduled Batch Changes Enabled</h3>
+
+<p>Configuration setting that determines if users are able to make Batch Changes with a scheduled
+time. <code class="language-plaintext highlighter-rouge">manual-batch-review-enabled</code> must be enabled as well. If enabled, a VinylDNS administrator cannot approve the
+Batch Change until after the scheduled time. An administrator could also reject the Batch Change.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">scheduled-changes-enabled = </span><span class="no">true</span>
+</code></pre></div></div>
+
+<h3 id="ipv6-zone-discovery-boundaries">IPv6 Zone Discovery Boundaries</h3>
+
+<p>Configuration setting that determines the range that will be searched for in reverse IPv6 Zone Discovery. This allows
+you to limit the search for what is appropriate for your organization. For example, min = 2, max = 3 will only search in
+zones in the form <code class="language-plaintext highlighter-rouge">X.X.ip6.arpa.</code> and <code class="language-plaintext highlighter-rouge">X.X.X.ip6.arpa.</code>. Note the following constraints: 0 &lt; min &lt;= max &lt;= 32. If your
+organization only makes zone cuts at one point, you may set min == max.</p>
+
+<p>The default values if omitted are min = 5, max = 20.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">v6-discovery-nibble-boundaries {</span>
+  <span class="s">min = </span><span class="m">5</span>
+  <span class="s">max = </span><span class="m">20</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="dotted-hosts">Dotted Hosts</h3>
+
+<p>Configuration setting that determines the zones, users (either individual or based on group) and record types that are 
+allowed to create dotted hosts. If only all the above are satisfied, one can create a dotted host in VinylDNS.</p>
+
+<p>Note the following:</p>
+<ol>
+  <li>Zones defined in the <code class="language-plaintext highlighter-rouge">zone</code> must always end with a dot. Eg: <code class="language-plaintext highlighter-rouge">comcast.com.</code></li>
+  <li>Wildcard character <code class="language-plaintext highlighter-rouge">*</code> can be used in <code class="language-plaintext highlighter-rouge">zone</code> to allow dotted hosts for all zones matching it.</li>
+  <li>Individual users who are allowed to create dotted hosts are added to the <code class="language-plaintext highlighter-rouge">user-list</code> using their username.</li>
+  <li>A set of users in a group who are allowed to create dotted hosts are added to the <code class="language-plaintext highlighter-rouge">group-list</code> using group name.</li>
+  <li>If the user is either in <code class="language-plaintext highlighter-rouge">user-list</code> or <code class="language-plaintext highlighter-rouge">group-list</code>, they are allowed to create a dotted host. It is
+not necessary for the user to be in both <code class="language-plaintext highlighter-rouge">user-list</code> and <code class="language-plaintext highlighter-rouge">group-list</code>.</li>
+  <li>The record types which are allowed while creating a dotted host is added to the <code class="language-plaintext highlighter-rouge">record-types</code>.</li>
+  <li>The number of dots allowed in a record name for a zone is given in <code class="language-plaintext highlighter-rouge">dots-limit</code>.</li>
+  <li>If <code class="language-plaintext highlighter-rouge">user-list</code> is left empty (<code class="language-plaintext highlighter-rouge">user-list = []</code>), no user will be allowed to create dotted hosts unless 
+they’re present in <code class="language-plaintext highlighter-rouge">group-list</code> and vice-versa. If both <code class="language-plaintext highlighter-rouge">user-list</code> and <code class="language-plaintext highlighter-rouge">group-list</code> is left empty
+no users will be allowed to create dotted hosts in that zone.</li>
+  <li>If <code class="language-plaintext highlighter-rouge">record-types</code> is left empty (<code class="language-plaintext highlighter-rouge">record-types = []</code>), user cannot create dotted hosts of any record type
+in that zone.</li>
+  <li>If <code class="language-plaintext highlighter-rouge">dots-limit</code> is set to 0 (<code class="language-plaintext highlighter-rouge">dots-limit = 0</code>), we cannot create dotted hosts record in that zone.</li>
+</ol>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts</span>
+<span class="s">dotted-hosts = {</span>
+   <span class="s">allowed-settings = [</span>
+      <span class="s">{</span>
+      <span class="s">zone = "dummy."</span>
+      <span class="s">user-list = ["testuser"]</span>
+      <span class="s">group-list = ["dummy-group"]</span>
+      <span class="s">record-types = ["AAAA"]</span>
+      <span class="s">dots-limit = </span><span class="m">3</span>
+      <span class="err">},</span>
+      <span class="pi">{</span>
+      <span class="c1"># for wildcard zones. Settings will be applied to all matching zones</span>
+      <span class="nv">zone = "*ent.com."</span>
+      <span class="nv">user-list =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">professor"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">testuser"</span><span class="pi">]</span>
+      <span class="nv">group-list =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">testing-group"</span><span class="pi">]</span>
+      <span class="nv">record-types =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">A"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">CNAME"</span><span class="pi">]</span>
+      <span class="nv">dots-limit = 3</span>
+      <span class="pi">}</span>
+   <span class="err">]</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<p>In the above, the dotted hosts can be created only in the zone <code class="language-plaintext highlighter-rouge">dummy.</code> and zones matching <code class="language-plaintext highlighter-rouge">*ent.com.</code> (parent.com., child.parent.com.)</p>
+
+<p>Also, it must satisfy the allowed users or group users and record type of the respective zone to create a dotted host.</p>
+
+<p>For eg, we can’t create a dotted host with <code class="language-plaintext highlighter-rouge">CNAME</code> record type in the zone <code class="language-plaintext highlighter-rouge">dummy.</code> as it’s not in <code class="language-plaintext highlighter-rouge">record-types</code>.
+And the user <code class="language-plaintext highlighter-rouge">professor</code> can’t create a dotted host in the zone <code class="language-plaintext highlighter-rouge">dummy.</code> as the user is not in <code class="language-plaintext highlighter-rouge">user-list</code> or 
+<code class="language-plaintext highlighter-rouge">group-list</code> (not part of <code class="language-plaintext highlighter-rouge">dummy-group</code>).</p>
+
+<p>The config can be left empty as follows if we don’t want to use it:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">dotted-hosts = {</span>
+   <span class="s">allowed-settings = []</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="full-example-config">Full Example Config</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># The default application.conf is not intended to be used in production.  It assumes a docker-compose</span>
+<span class="c1"># setup for all of the services.  Provide your own application.conf on the docker mount with your</span>
+  <span class="c1"># own settings</span>
+  <span class="s">vinyldns {</span>
+
+  <span class="s">queue {</span>
+     <span class="s">class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"</span>
+   
+     <span class="s">messages-per-poll = </span><span class="m">10</span>
+     <span class="s">polling-interval = 250.millis</span>
+   
+     <span class="s">settings {</span>
+        <span class="s"># AWS access key and secret.</span>
+        <span class="s">access-key = "x"</span>
+        <span class="s">secret-key = "x"</span>
+      
+        <span class="s"># Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.</span>
+        <span class="s">signing-region = "x"</span>
+      
+        <span class="s"># Endpoint to access queue</span>
+        <span class="s">service-endpoint = "http://localhost:9324/"</span>
+      
+        <span class="s"># Queue name. Should be used in conjunction with service endpoint, rather than using a queue url which is subject to change.</span>
+        <span class="s">queue-name = "vinyldns"</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+
+  <span class="s"># host and port the server binds to.  This should not be changed</span>
+  <span class="s">rest {</span>
+     <span class="s">host = "0.0.0.0"</span>
+     <span class="s">port = </span><span class="m">9000</span>
+  <span class="err">}</span>
+
+  <span class="c1"># The maximum number of records VinylDNS will load when syncing a DNS Zone</span>
+  <span class="c1"># this is to prevent possible out of memory errors when loading a Zone</span>
+  <span class="c1"># this does not stop the zone from existing in DNS, but you will not be able to manage it in VinylDNS if the number of records exceeds the max</span>
+  <span class="s">max-zone-size = </span><span class="m">60000</span>
+
+  <span class="c1"># the delay between zone syncs so we are not syncing too often</span>
+  <span class="s">sync-delay = </span><span class="m">10000</span>
+
+  <span class="c1"># crypto settings for symmetric cryptography of secrets in the system</span>
+  <span class="c1"># Note: for production systems secrets should not live in plain text in a file</span>
+  <span class="s">crypto {</span>
+    <span class="s">type = "vinyldns.core.crypto.NoOpCrypto"</span>
+  <span class="s">}</span>
+
+  <span class="s"># both datastore options are in use</span>
+  <span class="s">data-stores = ["mysql"]</span>
+
+  <span class="s">mysql {</span>
+     <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+   
+     <span class="s">settings {</span>
+        <span class="s">name = "vinyldns"</span>
+        <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+        <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+        <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+        <span class="s">user = "root"</span>
+        <span class="s">password = "pass"</span>
+        <span class="s">maximum-pool-size = </span><span class="m">20</span>
+        <span class="s">minimum-idle = </span><span class="m">10</span>
+        <span class="s">connection-timeout-millis = </span><span class="m">1000</span>
+        <span class="s">idle-timeout = </span><span class="m">10000</span>
+        <span class="s">max-lifetime = </span><span class="m">600000</span>
+        <span class="s">register-mbeans = </span><span class="no">true</span>
+        <span class="s">my-sql-properties {</span>
+           <span class="s">prepStmtCacheSize = </span><span class="m">300</span>
+           <span class="s">prepStmtCacheSqlLimit = </span><span class="m">2048</span>
+           <span class="s">cachePrepStmts = </span><span class="no">true</span>
+           <span class="s">useServerPrepStmts = </span><span class="no">true</span>
+           <span class="s">rewriteBatchedStatements = </span><span class="no">true</span>
+        <span class="s">}</span>
+     <span class="s">}</span>
+   
+     <span class="s">repositories {</span>
+        <span class="s">zone {</span>
+        <span class="s">}</span>
+        <span class="s">batch-change {</span>
+        <span class="s">}</span>
+        <span class="s">user {</span>
+        <span class="s">}</span>
+        <span class="s">record-set {</span>
+        <span class="s">}</span>
+        <span class="s">record-set-cache {</span>
+        <span class="s">}</span>
+        <span class="s">group {</span>
+        <span class="s">}</span>
+        <span class="s">membership {</span>
+        <span class="s">}</span>
+        <span class="s">group-change {</span>
+        <span class="s">}</span>
+        <span class="s">zone-change {</span>
+        <span class="s">}</span>
+        <span class="s">record-change {</span>
+        <span class="s">}</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+  
+  <span class="s"># limits for batchchange routing, membership routing , recordset routing , zone routing</span>
+  <span class="s">api {</span>
+  <span class="s">limits {</span>
+  <span class="s">batchchange-routing-max-items-limit = </span><span class="m">100</span>
+  <span class="s">membership-routing-default-max-items = </span><span class="m">100</span>
+  <span class="s">membership-routing-max-items-limit = </span><span class="m">1000</span>
+  <span class="s">membership-routing-max-groups-list-limit = </span><span class="m">1500</span>
+  <span class="s">recordset-routing-default-max-items= </span><span class="m">100</span>
+  <span class="s">zone-routing-default-max-items = </span><span class="m">100</span>
+  <span class="s">zone-routing-max-items-limit = </span><span class="m">100</span>
+  <span class="err">}</span>
+  <span class="err">}</span>
+  
+  <span class="c1"># the DDNS connection information for the default dns backend</span>
+  <span class="s">defaultZoneConnection {</span>
+     <span class="s">name = "vinyldns."</span>
+     <span class="s">keyName = "vinyldns."</span>
+     <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+     <span class="s">primaryServer = "localhost:19001"</span>
+     <span class="s">algorithm = "HMAC-MD5"</span>
+  <span class="s">}</span>
+
+  <span class="s"># the AXFR connection information for the default dns backend</span>
+  <span class="s">defaultTransferConnection {</span>
+     <span class="s">name = "vinyldns."</span>
+     <span class="s">keyName = "vinyldns."</span>
+     <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+     <span class="s">primaryServer = "localhost:19001"</span>
+     <span class="s">algorithm = "HMAC-MD5"</span>
+  <span class="s">}</span>
+
+  <span class="s"># the max number of changes in a single batch change.  Change carefully as this has performance</span>
+  <span class="s"># implications</span>
+  <span class="s">batch-change-limit = </span><span class="m">1000</span>
+
+  <span class="c1"># notifier configuration</span>
+  <span class="s">notifiers = ["email", "sns"]</span>
+
+  <span class="s">email = {</span>
+     <span class="s"># Path to notifier provider implementation</span>
+     <span class="s">class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"</span>
+   
+     <span class="s">settings = {</span>
+     <span class="s"># Sender address for e-mail notifications</span>
+     <span class="s">from = "Sender &lt;do-not-reply@example.sender&gt;"</span>
+   
+     <span class="s">smtp {</span>
+        <span class="s"># Host SMTP server</span>
+        <span class="s">host = "example.host"</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+
+  <span class="s"># Valid Email Domains</span>
+  <span class="s">valid-email-config {</span>
+    <span class="s">email-domains = ["test.com","*dummy.com"]</span>
+    <span class="s">number-of-dots= </span><span class="m">2</span>
+  <span class="err">}</span> 
+
+  <span class="s">sns {</span>
+     <span class="s"># Path to notifier provider implementation</span>
+     <span class="s">class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"</span>
+   
+     <span class="s">settings {</span>
+        <span class="s"># SNS topic Amazon Resource Name (ARN)</span>
+        <span class="s">topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"</span>
+      
+        <span class="s"># AWS access key and secret</span>
+        <span class="s">access-key = "vinyldnsTest"</span>
+        <span class="s">secret-key = "notNeededForSnsLocal"</span>
+      
+        <span class="s"># Endpoint to access SNS</span>
+        <span class="s">service-endpoint = "http://127.0.0.1:19006"</span>
+      
+        <span class="s"># Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.</span>
+        <span class="s">signing-region = "us-east-1"</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+
+  <span class="s"># approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts</span>
+  <span class="s">dotted-hosts = {</span>
+     <span class="s">allowed-settings = [</span>
+        <span class="s">{</span>
+        <span class="s">zone = "dummy."</span>
+        <span class="s">user-list = ["testuser"]</span>
+        <span class="s">group-list = ["dummy-group"]</span>
+        <span class="s">record-types = ["AAAA"]</span>
+        <span class="s">dots-limit = </span><span class="m">3</span>
+        <span class="err">},</span>
+        <span class="pi">{</span>
+        <span class="c1"># for wildcard zones. Settings will be applied to all matching zones</span>
+        <span class="nv">zone = "*ent.com."</span>
+        <span class="nv">user-list =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">professor"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">testuser"</span><span class="pi">]</span>
+        <span class="nv">group-list =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">testing-group"</span><span class="pi">]</span>
+        <span class="nv">record-types =</span> <span class="pi">[</span><span class="s2">"</span><span class="s">A"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">CNAME"</span><span class="pi">]</span>
+        <span class="nv">dots-limit = 3</span>
+        <span class="pi">}</span>
+     <span class="err">]</span>
+  <span class="err">}</span>
+
+  <span class="c1"># true if you want to enable manual review for non-fatal errors</span>
+  <span class="s">manual-batch-review-enabled = </span><span class="no">true</span>
+
+  <span class="s"># </span><span class="no">true</span><span class="s"> if you want to allow Batch Changes to be scheduled.  manual-batch-review-enabled must also be </span><span class="no">true</span><span class="s">.</span>
+  <span class="s">scheduled-changes-enabled = </span><span class="no">true</span>
+
+  <span class="s"># types of unowned records that users can access in shared zones</span>
+  <span class="s">shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]</span>
+
+  <span class="s"># FQDNs / IPs that cannot be modified via VinylDNS</span>
+  <span class="s"># regex-list</span><span class="err">:</span> <span class="s">list of regular expressions matching any FQDN that are not allowed to be modified by this VinylDNS instance</span>
+  <span class="s"># ip-list</span><span class="err">:</span> <span class="s">list of IP addresses that cannot be modified by this VinylDNS instance</span>
+  <span class="s">high-value-domains = {</span>
+     <span class="s">regex-list = [</span>
+     <span class="s">"high-value-domain.*"</span>
+     <span class="s">]</span>
+     <span class="s">ip-list = [</span>
+        <span class="s">"192.0.2.252",</span>
+        <span class="s">"192.0.2.253",</span>
+        <span class="s">"fd69:27cc:fe91:0:0:0:0:ffff",</span>
+        <span class="s">"fd69:27cc:fe91:0:0:0:ffff:0"</span>
+     <span class="s">]</span>
+  <span class="s">}</span>
+
+  <span class="s"># FQDNS / IPs / zone names that require manual review when submitted through Batch Change/DNS Change</span>
+  <span class="s"># Treated as a fatal error if manual review is not enabled</span>
+  <span class="s">manual-review-domains = {</span>
+     <span class="s">domain-list = [</span>
+        <span class="s">"needs-review.*"</span>
+     <span class="s">]</span>
+     <span class="s">ip-list = [</span>
+        <span class="s">"192.0.2.254",</span>
+        <span class="s">"192.0.2.255",</span>
+        <span class="s">"fd69:27cc:fe91:0:0:0:ffff:1",</span>
+        <span class="s">"fd69:27cc:fe91:0:0:0:ffff:2"</span>
+     <span class="s">]</span>
+     <span class="s">zone-name-list = [</span>
+        <span class="s">"zone.requires.review."</span>
+     <span class="s">]</span>
+  <span class="s">}</span>
+
+  <span class="s"># Zone Connection Data</span>
+  <span class="s">backends = [</span>
+     <span class="s">{</span>
+        <span class="s">id = "test-backend-id"</span>
+        <span class="s">zone-connection {</span>
+           <span class="s">name = "vinyldns."</span>
+           <span class="s">key-name = "vinyldns."</span>
+           <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+           <span class="s">primary-server = "127.0.0.1:19001"</span>
+           <span class="s">algorithm = "HMAC-MD5"</span>
+        <span class="s">}</span>
+        <span class="s">transfer-connection {</span>
+           <span class="s">name = "vinyldns."</span>
+           <span class="s">key-name = "vinyldns."</span>
+           <span class="s">key = "nzisn+4G2ldMn0q1CV3vsg=="</span>
+           <span class="s">primary-server = "127.0.0.1:19001"</span>
+           <span class="s">algorithm = "HMAC-MD5"</span>
+        <span class="s">}</span>
+     <span class="s">}</span>
+  <span class="s">]</span>
+
+<span class="err">}</span>
+
+  <span class="c1"># Akka settings, these should not need to be modified unless you know akka http really well.</span>
+  <span class="s">akka {</span>
+     <span class="s">loglevel = "INFO"</span>
+     <span class="s">loggers = ["akka.event.slf4j.Slf4jLogger"]</span>
+     <span class="s">logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"</span>
+     <span class="s">logger-startup-timeout = 30s</span>
+  <span class="s">}</span>
+
+  <span class="s">akka.http {</span>
+     <span class="s">server {</span>
+        <span class="s"># The time period within which the TCP binding process must be completed.</span>
+        <span class="s"># Set to `infinite` to disable.</span>
+        <span class="s">bind-timeout = 5s</span>
+      
+        <span class="s"># Show verbose error messages back to the client</span>
+        <span class="s">verbose-error-messages = on</span>
+     <span class="s">}</span>
+   
+     <span class="s">parsing {</span>
+        <span class="s"># Don't complain about the / in the AWS SigV4 auth header</span>
+        <span class="s">ignore-illegal-header-for = ["authorization"]</span>
+     <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+</section><div class="edit-button"><a href="https://github.com/vinyldns/vinyldns/edit/master/modules/docs/src/main/mdoc/operator/config-api.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/search.js"></script><script src="/js/docs.js"></script></body></html>
