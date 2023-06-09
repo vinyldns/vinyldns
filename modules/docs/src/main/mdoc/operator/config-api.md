@@ -438,7 +438,7 @@ backend {
                 signing-region = "us-east-1"
                 signing-region = ${?R53_REGION}
 
-                # Endpoint to access queue
+                # Endpoint to access r53
                 service-endpoint = "https://route53.amazonaws.com/"
                 service-endpoint = ${?R53_SERVICE_ENDPOINT}
 
