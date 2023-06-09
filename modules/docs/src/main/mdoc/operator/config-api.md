@@ -371,20 +371,14 @@ backend-providers = [
           zone-connection = {
             name = "vinyldns."
             key-name = "vinyldns."
-            key-name = ${?DEFAULT_DNS_KEY_NAME}
             key = "nzisn+4G2ldMn0q1CV3vsg=="
-            key = ${?DEFAULT_DNS_KEY_SECRET}
             primary-server = "127.0.0.1:19001"
-            primary-server = ${?DEFAULT_DNS_ADDRESS}
           }
           transfer-connection = {
             name = "vinyldns."
             key-name = "vinyldns."
-            key-name = ${?DEFAULT_DNS_KEY_NAME}
             key = "nzisn+4G2ldMn0q1CV3vsg=="
-            key = ${?DEFAULT_DNS_KEY_SECRET}
             primary-server = "127.0.0.1:19001"
-            primary-server = ${?DEFAULT_DNS_ADDRESS}
           },
           tsig-usage = "always"
         },
@@ -393,20 +387,14 @@ backend-providers = [
           zone-connection = {
             name = "vinyldns."
             key-name = "vinyldns."
-            key-name = ${?DEFAULT_DNS_KEY_NAME}
             key = "nzisn+4G2ldMn0q1CV3vsg=="
-            key = ${?DEFAULT_DNS_KEY_SECRET}
             primary-server = "127.0.0.1:19001"
-            primary-server = ${?DEFAULT_DNS_ADDRESS}
           }
           transfer-connection = {
             name = "vinyldns."
             key-name = "vinyldns."
-            key-name = ${?DEFAULT_DNS_KEY_NAME}
             key = "nzisn+4G2ldMn0q1CV3vsg=="
-            key = ${?DEFAULT_DNS_KEY_SECRET}
             primary-server = "127.0.0.1:19001"
-            primary-server = ${?DEFAULT_DNS_ADDRESS}
           },
           tsig-usage = "always"
         }
@@ -428,22 +416,17 @@ backend {
         settings = {
           backends = [
             {
-                # AWS access key and secret.
+                # AWS access key and secret key.
                 access-key = "your-access-key"
-                access-key = ${?AWS_ACCESS_KEY}
                 secret-key = "your-secret-key"
-                secret-key = ${?AWS_SECRET_ACCESS_KEY}
 
                 # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.
                 signing-region = "us-east-1"
-                signing-region = ${?R53_REGION}
 
                 # Endpoint to access r53
                 service-endpoint = "https://route53.amazonaws.com/"
-                service-endpoint = ${?R53_SERVICE_ENDPOINT}
 
                 id = "r53"
-                id = ${?R53_ID}
             }
           ]
         }
