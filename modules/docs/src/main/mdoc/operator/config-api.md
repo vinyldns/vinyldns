@@ -15,12 +15,13 @@ section: "operator_menu"
 - [Queue Configuration](#queue-configuration)
 - [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
+- [Zone Connections](#zone-connections)
 - [Additional Configuration Settings](#additional-configuration-settings)
 - [Full Example Config](#full-example-config)
 
 There are a lot of configuration settings in VinylDNS. So much so that it may seem overwhelming to configure vinyldns to
 your environment. This document describes the configuration settings, highlighting the settings you are _most likely to
-change_. All of the configuration settings are captured at the end.
+change_. All the configuration settings are captured at the end.
 
 It is important to note that the `api` and `portal` have _different_ configuration. We will review the configuration for
 each separately.
@@ -271,7 +272,7 @@ vinyldns {
 }
 ```
 
-## Default Zone Connections
+## Zone Connections
 
 VinylDNS has three ways of indicating zone connections:
 
@@ -291,6 +292,7 @@ VinylDNS also ties in testing network connectivity to the default zone connectio
 checks. A value for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a
 default value of 10000 will be used if not provided.
 
+### Global Zone Connections Configuration:
 ```yaml
 vinyldns {
 
@@ -345,6 +347,109 @@ vinyldns {
      }
   }
 ]
+```
+
+### Alternate Zone Connections Configuration:
+Below is an alternate way of setting zone connections configuration instead of using the [Global Zone Connections
+Configuration](#global-zone-connections-configuration)
+```yaml
+# configured backend providers
+backend {
+# Use "default" when dns backend legacy = true
+# otherwise, use the id of one of the connections in any of your backends
+default-backend-id = "default"
+
+# this is where we can save additional backends
+backend-providers = [
+  {
+    class-name = "vinyldns.api.backend.dns.DnsBackendProviderLoader"
+    settings = {
+      legacy = false
+      backends = [
+        {
+          id = "default"
+          zone-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key-name = ${?DEFAULT_DNS_KEY_NAME}
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            key = ${?DEFAULT_DNS_KEY_SECRET}
+            primary-server = "127.0.0.1:19001"
+            primary-server = ${?DEFAULT_DNS_ADDRESS}
+          }
+          transfer-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key-name = ${?DEFAULT_DNS_KEY_NAME}
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            key = ${?DEFAULT_DNS_KEY_SECRET}
+            primary-server = "127.0.0.1:19001"
+            primary-server = ${?DEFAULT_DNS_ADDRESS}
+          },
+          tsig-usage = "always"
+        },
+        {
+          id = "func-test-backend"
+          zone-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key-name = ${?DEFAULT_DNS_KEY_NAME}
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            key = ${?DEFAULT_DNS_KEY_SECRET}
+            primary-server = "127.0.0.1:19001"
+            primary-server = ${?DEFAULT_DNS_ADDRESS}
+          }
+          transfer-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key-name = ${?DEFAULT_DNS_KEY_NAME}
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            key = ${?DEFAULT_DNS_KEY_SECRET}
+            primary-server = "127.0.0.1:19001"
+            primary-server = ${?DEFAULT_DNS_ADDRESS}
+          },
+          tsig-usage = "always"
+        }
+      ]
+    }
+  }
+]
+}
+```
+
+Below is an example configuration of backend provider for AWS Route 53, in case we want to use AWS Route 53 as backend.
+```yaml
+backend {
+    default-backend-id = "r53"
+
+    backend-providers = [
+      {
+        class-name = "vinyldns.route53.backend.Route53BackendProviderLoader"
+        settings = {
+          backends = [
+            {
+                # AWS access key and secret.
+                access-key = "your-access-key"
+                access-key = ${?AWS_ACCESS_KEY}
+                secret-key = "your-secret-key"
+                secret-key = ${?AWS_SECRET_ACCESS_KEY}
+
+                # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.
+                signing-region = "us-east-1"
+                signing-region = ${?R53_REGION}
+
+                # Endpoint to access queue
+                service-endpoint = "https://route53.amazonaws.com/"
+                service-endpoint = ${?R53_SERVICE_ENDPOINT}
+
+                id = "r53"
+                id = ${?R53_ID}
+            }
+          ]
+        }
+      }
+    ]
+  }
 ```
 
 ## Additional Configuration Settings
