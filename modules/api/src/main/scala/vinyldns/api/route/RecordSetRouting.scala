@@ -239,8 +239,8 @@ class RecordSetRoute(
         parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "fqdn".as[String].?, "recordType".as[String].?) {
           (startFrom: Option[Int], maxItems: Int, fqdn: Option[String], recordType: Option[String]) =>
             handleRejections(invalidQueryHandler) {
-              val errorMessage = if(fqdn.isEmpty && recordType.isEmpty) {
-                "Record fqdn and record type cannot be empty"
+              val errorMessage = if(fqdn.isEmpty || recordType.isEmpty) {
+                "recordType and fqdn cannot be empty"
               } else {
                 s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
                   s"and $DEFAULT_MAX_ITEMS inclusive"

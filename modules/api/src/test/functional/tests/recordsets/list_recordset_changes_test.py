@@ -225,7 +225,8 @@ def test_list_recordset_history_member_auth_success(shared_zone_test_context):
     client = shared_zone_test_context.history_client
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    client.list_recordset_change_history(fqdn, type, status=200)
+    response = client.list_recordset_change_history(fqdn, type, status=200)
+    check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False)
 
 
 def test_list_recordset_history_member_auth_no_access(shared_zone_test_context):
