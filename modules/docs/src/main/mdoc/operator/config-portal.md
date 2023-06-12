@@ -211,7 +211,7 @@ The HTTP Port that the Portal server will bind to
 `http.port=9001`
 
 ### Portal URL
-Necessary to preview the metadata while sharing to social media
+Necessary to preview the metadata while sharing the portal link to social media
 
 `portal.vinyldns.url = "http://localhost:9001"`
 
