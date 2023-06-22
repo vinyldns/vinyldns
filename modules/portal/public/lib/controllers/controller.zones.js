@@ -24,6 +24,7 @@ angular.module('controller.zones', [])
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
     $scope.allGroups = [];
     $scope.ignoreAccess = false;
+    $scope.validEmailDomains= [];
     $scope.allZonesAccess = function () {
         $scope.ignoreAccess = true;
     }
@@ -39,7 +40,6 @@ angular.module('controller.zones', [])
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
     var allZonesPaging = pagingService.getNewPagingParams(100);
-
     profileService.getAuthenticatedUserData().then(function (results) {
         if (results.data) {
             $scope.profile = results.data;
@@ -52,7 +52,7 @@ angular.module('controller.zones', [])
 
     $scope.resetCurrentZone = function () {
         $scope.currentZone = {};
-
+        $scope.validDomains();
         if($scope.myGroups && $scope.myGroups.length) {
             $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
@@ -220,6 +220,19 @@ angular.module('controller.zones', [])
             $("td.dataTables_empty").show();
         }
     }
+    $scope.validDomains=function getValidEmailDomains() {
+                function success(response) {
+                    $log.debug('zonesService::listEmailDomains-success', response);
+                    return $scope.validEmailDomains = response.data;
+                }
+
+                return groupsService
+                    .listEmailDomains($scope.ignoreAccess, $scope.query)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'zonesService::listEmailDomains-failure');
+                    });
+            }
 
     /* Set total number of zones  */
 

@@ -543,3 +543,7 @@ input[type="file"] {
 .set-width {
     width: auto;
 }
+
+#set-dropdown-width {
+    width: 4em;
+}

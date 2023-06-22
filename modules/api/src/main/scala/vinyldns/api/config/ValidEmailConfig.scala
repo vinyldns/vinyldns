@@ -19,15 +19,24 @@ package vinyldns.api.config
 import pureconfig.ConfigReader
 
  case class ValidEmailConfig(
-    valid_domains : List[String]
-                             )
+    valid_domains : List[String],
+    number_of_dots : Int)
 object ValidEmailConfig {
   implicit val configReader: ConfigReader[ValidEmailConfig] =
-    ConfigReader.forProduct1[ValidEmailConfig,List[String]](
-      "email-domains"
+    ConfigReader.forProduct2[ValidEmailConfig,List[String],Int](
+      "email-domains",
+      "number-of-dots"
+    )
+    {
+      case (
+        valid_domains,
+        number_of_dots,
+        ) =>
+        ValidEmailConfig(
+          valid_domains,
+          number_of_dots,
 
-    ) {
-      case valid_domains => ValidEmailConfig(valid_domains)
+        )
     }
 
 }

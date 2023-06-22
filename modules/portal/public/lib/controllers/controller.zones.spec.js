@@ -64,6 +64,8 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
+        var validDomains = spyOn(this.scope, 'validDomains')
+                            .and.stub();
         this.scope.$digest();
         expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
