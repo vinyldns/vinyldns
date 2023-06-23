@@ -198,6 +198,19 @@ The play secret must be set to a secret value, and should be an environment vari
 play.http.secret.key = "vinyldnsportal-change-this-for-production"
 ```
 
+### Play Allowed Hosts Filter
+Play provides a filter that lets you configure which hosts can access your application. The filter introduces a 
+whitelist of allowed hosts and sends a 400 (Bad Request) response to all requests with a host that do not match 
+the whitelist.
+
+```yaml
+# See https://www.playframework.com/documentation/2.8.x/AllowedHostsFilter for more details.
+# Note: allowed = ["."] matches all hosts hence would not be recommended in a production environment.
+play.filters.hosts {
+  allowed = ["."]
+}
+```
+
 ### Test Login
 The test login should not be used for production environments.  It is useful to tinker with VinylDNS.  If this
 setting is true, then you can login with `testuser` and `testpassword`.  Logging in using the `testuser` will _not_
@@ -243,6 +256,12 @@ Allows users to schedule changes to be run sometime in the future
 #
 # See https://www.playframework.com/documentation/latest/ApplicationSecret for more details.
 play.http.secret.key = "vinyldnsportal-change-this-for-production"
+
+# See https://www.playframework.com/documentation/2.8.x/AllowedHostsFilter for more details.
+# Note: allowed = ["."] matches all hosts hence would not be recommended in a production environment.
+play.filters.hosts {
+  allowed = ["."]
+}
 
 # The application languages
 # ~~~~~
