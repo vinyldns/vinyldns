@@ -49,19 +49,19 @@
                                         </button>
                                     </div>
 
-                                    <div class="pull-right">
-                                        <div class="input-group" style="padding-left: 10px;">
-                                            <div class="ptr-zone-filter">
-                                                <form action="">
-                                                    <div class="checkbox pull-right">
-                                                        <label>
-                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
-                                                        </label>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
+<!--                                    <div class="pull-right">-->
+<!--                                        <div class="input-group" style="padding-left: 10px;">-->
+<!--                                            <div class="ptr-zone-filter">-->
+<!--                                                <form action="">-->
+<!--                                                    <div class="checkbox pull-right">-->
+<!--                                                        <label>-->
+<!--                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones-->
+<!--                                                        </label>-->
+<!--                                                    </div>-->
+<!--                                                </form>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
                                     <!-- SEARCH BOX -->
                                     <div class="pull-right">
                                         <form class="input-group" ng-submit="refreshZones()">
@@ -77,6 +77,19 @@
                                                 <label>
                                                     <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
                                                 </label>
+                                            </div>
+                                            <div class="pull-right">
+                                                <div class="input-group" style="padding-right: 10px;">
+                                                    <div class="ptr-zone-filter">
+                                                        <form action="">
+                                                            <div class="checkbox pull-right">
+                                                                <label>
+                                                                    <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                                </label>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
@@ -187,12 +200,24 @@
                                                 </span>
                                                 <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
                                             </div>
-
-                                                <div class="checkbox pull-right">
-                                                    <label>
-                                                        <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
-                                                    </label>
+                                            <div class="checkbox pull-right">
+                                                <label>
+                                                    <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                </label>
+                                            </div>
+                                            <div class="pull-right">
+                                                <div class="input-group" style="padding-right: 10px;">
+                                                    <div class="ptr-zone-filter">
+                                                        <form action="">
+                                                            <div class="checkbox pull-right">
+                                                                <label>
+                                                                    <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                                </label>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </div>
+                                            </div>
                                         </form>
                                     </div>
                                     <!-- END SEARCH BOX -->

@@ -188,7 +188,7 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true, $scope.includeReverse)
             .then(function (response) {
                 $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 allZonesPaging.next = response.data.nextId;
