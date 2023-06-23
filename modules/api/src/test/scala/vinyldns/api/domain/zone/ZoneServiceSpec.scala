@@ -874,7 +874,7 @@ class ZoneServiceSpec
         .getGroups(any[Set[String]])
       doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcZone"))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, Some("abcZone"), None, 100, true)
+        .listZones(abcAuth, Some("abcZone"), None, 100, true, true)
 
       // When searchByAdminGroup is false, zone name given in nameFilter is returned
       val result: ListZonesResponse =
