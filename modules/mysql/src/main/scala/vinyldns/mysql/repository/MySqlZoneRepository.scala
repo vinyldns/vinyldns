@@ -323,7 +323,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
@@ -332,6 +333,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
+
+          val noReverseRegex =
+            if (!includeReverse)
+              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            else None
 
           val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
             List(
@@ -348,6 +354,17 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           if (filters.nonEmpty) {
             sb.append(" WHERE ")
             sb.append(filters.mkString(" AND "))
+          }
+
+          if (!includeReverse) {
+            if (filters.nonEmpty) {
+              sb.append(" AND ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
+            else {
+              sb.append(" WHERE ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
           }
 
           sb.append(s" GROUP BY z.name ")
@@ -372,7 +389,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             startFrom = startFrom,
             maxItems = maxItems,
             zonesFilter = zoneNameFilter,
-            ignoreAccess = ignoreAccess
+            ignoreAccess = ignoreAccess,
+            includeReverse = includeReverse
           )
         }
       }

@@ -27,8 +27,8 @@ describe('Service: zoneService', function () {
     }));
 
     it('http backend gets called properly when getting zones', function () {
-        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false').respond('zone returned');
-        this.zonesService.getZones('100', 'start', 'someQuery', false, false)
+        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false&includeReverse=true').respond('zone returned');
+        this.zonesService.getZones('100', 'start', 'someQuery', false, false, true)
             .then(function(response) {
                 expect(response.data).toBe('zone returned');
             });

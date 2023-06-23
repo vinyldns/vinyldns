@@ -801,7 +801,7 @@ class ZoneServiceSpec
     "not fail with no zones returned" in {
       doReturn(IO.pure(ListZonesResults(List())))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100, false)
+        .listZones(abcAuth, None, None, 100, false, true)
       doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       val result: ListZonesResponse = underTest.listZones(abcAuth).value.unsafeRunSync().toOption.get
@@ -816,7 +816,7 @@ class ZoneServiceSpec
     "return the appropriate zones" in {
       doReturn(IO.pure(ListZonesResults(List(abcZone))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100, false)
+        .listZones(abcAuth, None, None, 100, false, true)
       doReturn(IO.pure(Set(abcGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -833,7 +833,7 @@ class ZoneServiceSpec
     "return all zones" in {
       doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone), ignoreAccess = true)))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100, true)
+        .listZones(abcAuth, None, None, 100, true, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -890,7 +890,7 @@ class ZoneServiceSpec
     "return Unknown group name if zone admin group cannot be found" in {
       doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100, false)
+        .listZones(abcAuth, None, None, 100, false, true)
       doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       val result: ListZonesResponse = underTest.listZones(abcAuth).value.unsafeRunSync().toOption.get
@@ -914,7 +914,7 @@ class ZoneServiceSpec
           )
         )
       ).when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 2, false)
+        .listZones(abcAuth, None, None, 2, false, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -940,7 +940,7 @@ class ZoneServiceSpec
           )
         )
       ).when(mockZoneRepo)
-        .listZones(abcAuth, Some("foo"), None, 2, false)
+        .listZones(abcAuth, Some("foo"), None, 2, false, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -964,7 +964,7 @@ class ZoneServiceSpec
           )
         )
       ).when(mockZoneRepo)
-        .listZones(abcAuth, None, Some("zone4."), 2, false)
+        .listZones(abcAuth, None, Some("zone4."), 2, false, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -987,7 +987,7 @@ class ZoneServiceSpec
           )
         )
       ).when(mockZoneRepo)
-        .listZones(abcAuth, None, Some("zone4."), 2, false)
+        .listZones(abcAuth, None, Some("zone4."), 2, false, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
