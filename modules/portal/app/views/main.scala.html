@@ -39,6 +39,7 @@
             <!-- START PAGE SIDEBAR -->
                 <div class="col-md-3 left_col" id="fixed-side-menu">
                     <div class="left_col scroll-view">
+
                         <div class="navbar nav_title vinyldns-nav-title">
                             <a href="/index"><span><img src="/assets/images/vinyldns-portal.png" class="vinyldns-logo"/></span></a>
                             <a href="/index"><img src="/assets/images/vinyldns-logo.png" class="vinyldns-logo vinyldns-logo-small"/></a>
@@ -46,34 +47,42 @@
                         <div class="clearfix"></div>
                         <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
                             <div class="menu_section">
+                                <div >
+                                    <button id="toggle-dark-theme">Toggle Dark Theme</button>
+                                    <!--<button ng-click="toggleTheme()" >Toggle Theme</button>-->
+                                </div>
                                 <ul class="nav side-menu vinyldns-side-menu">
                                   @if(controller == "DnsChangesController" || controller == "DnsChangeNewController" || controller == "DnsChangeDetailController") {
                                     <li class="active">
                                         } else {
                                     <li>
                                         }
-                                        <a href="/dnschanges"><i class="fa fa-list-ol"></i>DNS Changes</a>
+                                        <a href="/dnschanges"><i class="fa fa-list-ol color"></i>
+                                            <span class="color"> DNS Changes</span></a>
                                     </li>
                                     @if(controller == "RecordSetsController") {
                                     <li class="active">
                                         } else {
                                     <li>
                                         }
-                                        <a href="/recordsets"><i class="fa fa-search"></i>RecordSet Search</a>
+                                        <a href="/recordsets"><i class="fa fa-search color"></i>
+                                            <span class="color">RecordSet Search</span></a>
                                     </li>
                                   @if(controller == "GroupsController" || controller == "MembershipController") {
                                     <li class="active">
                                         } else {
                                     <li>
                                         }
-                                        <a href="/groups"><i class="fa fa-group"></i>Groups</a>
+                                        <a href="/groups"><i class="fa fa-group color"></i>
+                                            <span class="color">Groups</span></a>
                                     </li>
                                   @if(controller == "RecordsController" || controller == "ZonesController") {
                                     <li class="active">
                                   } else {
                                     <li>
                                   }
-                                    <a href="/zones"><i class="fa fa-table"></i>Zones</a>
+                                    <a href="/zones"><i class="fa fa-table color"></i>
+                                        <span class="color">Zones</span></a>
                                   </li>
                                   @*****************************************
                                    * Custom links from application config *

@@ -19,6 +19,11 @@ angular.module('vinyldns', [
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
         $scope.alerts = [];
+        var toggleButton = document.getElementById('toggle-dark-theme');
+
+                              toggleButton.addEventListener('click', function() {
+                                document.body.classList.toggle('dark-theme');
+                              });
 
         $scope.regenerateCredentials = function() {
             document.body.style.cursor = 'wait';
