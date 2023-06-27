@@ -501,7 +501,7 @@ angular.module('controller.records', [])
 
  $scope.showLengthRecords=function getTotalRecordCount() {
              function success(response) {
-                 $log.log('RecordService::getTotalRecordCount-success',  response.data);
+                 $log.debug('RecordService::getTotalRecordCount-success',  response.data);
                  return $scope.showRecordCount = response.data.count
 
              }
