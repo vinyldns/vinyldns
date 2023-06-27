@@ -221,10 +221,8 @@ angular.module('controller.zones', [])
         }
     }
     $scope.validDomains=function getValidEmailDomains() {
-          $log.log('Function Entry');
                 function success(response) {
-                    $log.log('zonesService::listEmailDomains-success');
-                     $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
+                    $log.debug('zonesService::listEmailDomains-success', response);
                     return $scope.validEmailDomains = response.data;
                 }
 

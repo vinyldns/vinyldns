@@ -189,8 +189,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     };
     $scope.validDomains=function getValidEmailDomains() {
        function success(response) {
-       $log.log('manageZonesService::listEmailDomains-success');
-       $log.log('scope.validEmailDomains length',$scope.validEmailDomains.length)
+       $log.debug('manageZonesService::listEmailDomains-success', response);
        return $scope.validEmailDomains = response.data;
        }
         return groupsService
@@ -258,6 +257,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.submitDeleteAclRule = function() {
         var newZone = angular.copy($scope.zoneInfo);
+        if(!$scope.recurrenceScheduleExist){
+            delete newZone.recurrenceSchedule;
+        }
         newZone = zonesService.normalizeZoneDates(newZone);
         newZone.acl.rules.splice($scope.currentAclRuleIndex, 1);
         $scope.updateZone(newZone, 'ACL Rule Delete');
@@ -286,6 +288,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.postUserLookup = function(type) {
         var newRule = zonesService.toVinylAclRule($scope.currentAclRule);
         var newZone = angular.copy($scope.zoneInfo);
+        if(!$scope.recurrenceScheduleExist){
+            delete newZone.recurrenceSchedule;
+        }
         newZone = zonesService.normalizeZoneDates(newZone);
         if (type == 'Update') {
             newZone.acl.rules[$scope.currentAclRuleIndex] = newRule;
