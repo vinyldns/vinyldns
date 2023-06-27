@@ -1576,4 +1576,21 @@ class RecordSetRoutingSpec
       )
     }
   }
+
+  "GET recordset count by zone" should {
+    "return recordset count" in {
+      Get(s"/zones/${okZone.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[RecordSetCount]
+        resultRs shouldBe RecordCount
+      }
+    }
+
+    "return a 404 Not Found when the zone doesn't exist" in {
+      Get(s"/zones/${zoneNotFound.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
+
 }
