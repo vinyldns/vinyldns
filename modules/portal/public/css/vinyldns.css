@@ -15,14 +15,14 @@
 */
 
 :root {
-    --background-color: white;    /* Light theme background color */
-    --text-color: black;          /* Light theme text color */
+    --background-color: #FFFFFF;    /* Light theme background color */
+    --text-color: #000000;          /* Light theme text color */
 }
 
                                                     /* Dark theme color values */
 .dark-theme {
-    --background-color: black;
-    --text-color: white;
+    --background-color: #000000;
+    --text-color: #FFFFFF;
 }
 
 .color {
@@ -276,7 +276,9 @@ body {
 }
 
 .nav.side-menu>li.active>a {
-    background-color: var(--background-color);
+    text-shadow: rgba(0, 0, 0, 0.25) 0 -1px 0;
+    background: #0086ff;
+    box-shadow: rgba(0, 0, 0, 0.25) 0 1px 0, inset rgba(255, 255, 255, 0.16) 0 1px 0
     color: var(--text-color);
 }
 
@@ -318,7 +320,11 @@ body {
 }
 
 .nav_menu {
-    background-color: var(--background-color);
+    float: left;
+    border-bottom: 1px solid var(--background-color);
+    margin-bottom: 10px;
+    width: 100%;
+    background: var(--background-color);
 }
 
 .nav-tabs{
