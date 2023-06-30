@@ -89,7 +89,8 @@ trait EmptyZoneRepo extends ZoneRepository {
      startFrom: Option[String] = None,
      maxItems: Int = 100,
      adminGroupIds: Set[String],
-     ignoreAccess: Boolean = false
+     ignoreAccess: Boolean = false,
+     includeReverse: Boolean = true
    ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def listZones(

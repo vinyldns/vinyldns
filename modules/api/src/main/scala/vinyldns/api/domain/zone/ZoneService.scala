@@ -202,7 +202,8 @@ class ZoneService(
           startFrom,
           maxItems,
           groupIds,
-          ignoreAccess
+          ignoreAccess,
+          includeReverse
         )
         zones = listZonesResult.zones
         groups <- groupRepository.getGroups(groupIds)
@@ -213,7 +214,8 @@ class ZoneService(
         listZonesResult.startFrom,
         listZonesResult.nextId,
         listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.ignoreAccess,
+        listZonesResult.includeReverse
       )
     }
   }.toResult

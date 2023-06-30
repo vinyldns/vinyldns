@@ -42,7 +42,8 @@ trait ZoneRepository extends Repository {
        startFrom: Option[String] = None,
        maxItems: Int = 100,
        adminGroupIds: Set[String],
-       ignoreAccess: Boolean = false
+       ignoreAccess: Boolean = false,
+       includeReverse: Boolean = true
      ): IO[ListZonesResults]
 
   def listZones(

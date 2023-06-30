@@ -263,7 +263,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
        startFrom: Option[String] = None,
        maxItems: Int = 100,
        adminGroupIds: Set[String],
-       ignoreAccess: Boolean = false
+       ignoreAccess: Boolean = false,
+       includeReverse: Boolean = true
   ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
       IO {
@@ -273,11 +274,21 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
+          val noReverseRegex =
+            if (!includeReverse)
+              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            else None
+
           if(adminGroupIds.nonEmpty) {
             val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
             sb.append(s" WHERE admin_group_id IN ($groupIds) ")
           } else {
             sb.append(s" WHERE admin_group_id IN ('') ")
+          }
+
+          if (!includeReverse) {
+            sb.append(" AND ")
+            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
           }
 
           sb.append(s" GROUP BY z.name ")
@@ -304,6 +315,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             maxItems = maxItems,
             zonesFilter = None,
             ignoreAccess = ignoreAccess,
+            includeReverse = includeReverse
           )
         }
       }

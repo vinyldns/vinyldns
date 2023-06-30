@@ -854,7 +854,7 @@ class ZoneServiceSpec
         .getGroupsByName(any[String])
       doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
         .when(mockZoneRepo)
-        .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true)
+        .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true, includeReverse = true)
       doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
