@@ -19,11 +19,32 @@ angular.module('vinyldns', [
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
         $scope.alerts = [];
-        var toggleButton = document.getElementById('toggle-dark-theme');
 
-                              toggleButton.addEventListener('click', function() {
-                                document.body.classList.toggle('dark-theme');
-                              });
+        // Function to apply the dark theme
+        function applyDarkTheme() {
+          document.body.classList.add('dark-theme');
+          localStorage.setItem('darkTheme', 'true');
+        }
+
+        // Function to remove the dark theme
+        function removeDarkTheme() {
+          document.body.classList.remove('dark-theme');
+          sessionStorage.setItem('darkTheme', 'false');
+        }
+
+        const savedTheme = sessionStorage.getItem('darkTheme');
+        if (savedTheme === 'true') {
+          applyDarkTheme();
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+          const isDarkTheme = document.body.classList.contains('dark-theme');
+          if (isDarkTheme) {
+            removeDarkTheme();
+          } else {
+            applyDarkTheme();
+          }
+        });
 
         $scope.regenerateCredentials = function() {
             document.body.style.cursor = 'wait';
