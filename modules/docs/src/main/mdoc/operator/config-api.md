@@ -434,6 +434,7 @@ backend {
     ]
   }
 ```
+Make sure to add AWS name servers in [Approved Name Servers Config](#approved-name-servers).
 
 ## Additional Configuration Settings
 
