@@ -31,25 +31,54 @@
 
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
     display: none !important;
+}
+
+.modal-title {
     background-color: var(--background-color);
-          color: var(--text-color);
+    color: var(--text-color);
+}
+
+.modal-title {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.modal-header {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.modal-header .close{
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.modal-body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.modal-footer {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.modal-title {
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 .table-cell-list {
     list-style-position: inside;
     padding-left:0;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
+
 .login-container .login-box .login-footer .login-links a {
-    background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-login-title {
     text-align: center;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .form-horizontal .label-top-left {
@@ -57,14 +86,10 @@
     width: 100%;
     padding-left:5px;
     padding-bottom:5px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 a.action-link {
     text-decoration:none;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .form-control.record-edit {
@@ -89,8 +114,6 @@ a.action-link {
 .modal {
     text-align: center;
     padding: 0!important;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .modal:before {
@@ -99,37 +122,27 @@ a.action-link {
     height: 100%;
     vertical-align: middle;
     margin-right: -4px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .modal-dialog {
     display: inline-block;
     text-align: left;
     vertical-align: middle;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .page-container .page-content .content-frame .content-frame-body {
     /*  joli admin had this at 300px to make a left data panel possible. We were using the left panel to add recordsets,
         but decided this should be in a modal of its own instead. We are now making the recordset list full sized */
     margin-left: 0px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .x-navigation > li > a.logo-header {
     padding: 3px 50px 3px 20px;
     border-bottom: none;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .x-navigation > li.logo > a.logo-header > img {
     width: 100%;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .alert-box {
@@ -138,8 +151,6 @@ a.action-link {
     padding: 10px 10px 12px 10px;
     vertical-align: middle;
     text-align: center;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .alert-wrapper {
@@ -148,52 +159,42 @@ a.action-link {
     left: 50%;
     width: 40%;
     z-index: 2000;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .dns-connection-form {
     padding-top: 10px;
     margin: 0 20px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .dns-connection-form hr {
     margin-top: 0px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .table-col-20 {
     width: 20%;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .table-col-50 {
     width: 50%;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .header-drop-down {
-    border: 0px
-    background-color: var(--background-color);
-      color: var(--text-color);
+    border: 0px;
 }
 
 .btn-left-round {
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .form-control.zone-edit {
-    color:#555;
     background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
+}
+
+.form-control.recordOwnerGroup {
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 .force-cursor {
@@ -202,7 +203,6 @@ a.action-link {
 
 .vinyldns-login {
     background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .vinyldns-login-box {
@@ -213,51 +213,44 @@ a.action-link {
     -webkit-border-radius: 0px;
     border-radius: 0px;
     background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .vinyldns-login-title {
-background-color: var(--background-color);
-  color: var(--text-color);
-      text-shadow: none;
+    color: var(--text-color);
+    text-shadow: none;
 }
 
 .vinyldns-login-btn {
     background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-login-btn:hover {
     background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-login-footer {
-background-color: var(--background-color);
-  color: var(--text-color);
-      margin-top: 20px;
+    color: var(--text-color);
+    margin-top: 20px;
 }
 
 .vinyldns-login-footer a {
-    background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-btn-dark {
     background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-btn-dark:hover {
-    background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .vinyldns-panel-top {
     display: flex;
     justify-content: space-between;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 /* V3 MAIN*/
@@ -267,12 +260,10 @@ body {
     font-size: 13px;
     font-weight: 400;
     background-color: var(--background-color);
-    color: var(--text-color);
 }
 
 .left_col {
   background-color: var(--background-color);
-  color: var(--text-color);
 }
 
 .nav.side-menu>li.active>a {
@@ -292,8 +283,6 @@ body {
   height: 100%;
   display: block;
   padding: 5px;
-  background-color: var(--background-color);
-  color: var(--text-color);
 }
 
 .nav_title {
@@ -301,22 +290,16 @@ body {
     float: left;
     border-radius: 0;
     height: 57px;
-    background-color: var(--background-color);
-      color: var(--text-color);
-
 }
 
 .vinyldns-nav-title {
     padding-left: 5px;
     border-bottom: 3px solid #1b1e24;
-    background-color: var(--background-color);
-      color: var(--text-color);
+    background: var(--background-color);
 }
 
 .vinyldns-side-menu {
     margin-top: 0!important;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .nav_menu {
@@ -346,46 +329,33 @@ body {
 
 .breadcrumb {
     background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .page-title {
     padding: 10px 20px 0;
-    background-color: var(--background-color);
-    color: var(--text-color);
 }
 
 .page-content-wrap {
     padding: 10px 20px 0;
     min-height: 100vh;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .vinyldns-logo-small {
     display: none!important;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .nav-sm .vinyldns-logo-small {
     display: block!important;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 
 /* GROUP MANAGER SWITCH */
 label.switch {
   margin-bottom: 0;
-  background-color: var(--background-color);
-    color: var(--text-color);
 }
 .switch {
     position: relative;
     height: 30px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .switch-checkbox {
@@ -393,28 +363,51 @@ label.switch {
     opacity: 0;
     filter: alpha(opacity=0);
     background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .switch input:checked + .slider:after {
     left: 30px;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .switch input:checked + .slider {
-    background-color: var(--background-color);
-      color: var(--text-color);
+    background-color: #95b75d;
 }
 
 .switch input:disabled + .slider {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .slider {
+    cursor: pointer;
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background-color: #E04B4A;
+    border: 1px solid #E5E5E5;
+    display: inline-block;
+    transition: all 200ms ease;
+    border-color: rgba(0, 0, 0, 0.1);
+    left: 0px;
+    border-radius: 20px;
+}
+
+.slider:after {
+    content: "";
+    position: absolute;
+    background-color: #FFFFFF;
+    width: 27px;
+    top: 1px;
+    bottom: 1px;
+    left: 1px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
+    border-radius: 20px;
+    transition: all 200ms ease;
+}
+
+/* THEME SWITCH */
+
+.slider-theme {
     cursor: pointer;
     position: relative;
     width: 60px;
@@ -425,11 +418,10 @@ label.switch {
     border-color: rgba(0, 0, 0, 0.1);
     left: 0px;
     border-radius: 20px;
-    background-color: var(--background-color);
-      color: var(--text-color);
+    background-color: #979797;
 }
 
-.slider:after {
+.slider-theme:after {
     content: "";
     position: absolute;
     width: 27px;
@@ -440,7 +432,19 @@ label.switch {
     border-radius: 20px;
     transition: all 200ms ease;
     background-color: var(--background-color);
-      color: var(--text-color);
+}
+
+.switch input:checked + .slider-theme {
+    background-color: var(--text-color);
+}
+
+.switch input:checked + .slider-theme:after {
+    left: 30px;
+}
+
+.switch input:disabled + .slider-theme {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .panel-tabs {
@@ -478,8 +482,6 @@ background-color: var(--background-color);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  background-color: var(--background-color);
-        color: var(--text-color);
 }
 
 @media(min-width: 991px) {
@@ -533,14 +535,10 @@ background-color: var(--background-color);
 
 .createBatchChangeForm.ng-submitted input.ng-invalid {
    border-color: #a94442;
-   background-color: var(--background-color);
-     color: var(--text-color);
 }
 
 .createBatchChangeForm .form-control:focus {
     border-color: #0086ff;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .batch-change-error-help {
@@ -550,8 +548,6 @@ background-color: var(--background-color);
 
 .ng-hide {
    display: none;
-   background-color: var(--background-color);
-     color: var(--text-color);
 }
 
 .ng-pristine {
@@ -561,7 +557,6 @@ background-color: var(--background-color);
 
 .changeError, .ownerGroupError {
     background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .softError {
@@ -569,12 +564,10 @@ background-color: var(--background-color);
 }
 
 .batch-label {
-    background-color: var(--background-color);
           color: var(--text-color);
 }
 
 .main-footer-text {
-    background-color: var(--background-color);
           color: var(--text-color);
 }
 
@@ -585,65 +578,47 @@ input[type="file"] {
 	overflow: hidden;
 	position: absolute;
 	z-index: -1;
-	background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 .batch-change-csv-label {
     cursor: pointer;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .vinyldns-flex-right {
     display: flex;
     justify-content: flex-end;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .wrap-long-text {
     word-break: break-all;
     background-color: var(--background-color);
-          color: var(--text-color);
+    color: var(--text-color);
 }
 
 .no-wrap {
     white-space: nowrap;
     word-break: keep-all;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .record-data-label {
     vertical-align: top;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .vinyldns_paginate {
     display: flex;
     align-items: center;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .vinyldns_page_number {
     margin-right: 10px;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .no-top-margin {
     margin-top: 0px;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .help-block-inline {
     display: inline;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .open>.record-type-filters {
@@ -651,8 +626,6 @@ input[type="file"] {
     grid: auto-flow / 1fr 1fr;
     grid-row-gap: 5px;
     padding: 5px;
-    background-color: var(--background-color);
-          color: var(--text-color);
 }
 
 .spinner {
@@ -669,7 +642,7 @@ input[type="file"] {
   -webkit-animation: spin 2s linear infinite;
   animation: spin 2s linear infinite;
   background-color: var(--background-color);
-        color: var(--text-color);
+  color: var(--text-color);
 }
 
 @-webkit-keyframes spin {
@@ -698,7 +671,7 @@ input[type="file"] {
     border: none;
     border-left: 1px;
     background-color: var(--background-color);
-      color: var(--text-color);
+    color: var(--text-color);
 }
 
 .ui-menu .ui-menu-item div:hover {
@@ -711,23 +684,17 @@ input[type="file"] {
     width:150px;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 #fixed-side-menu {
     position: fixed;
     top: 0;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 #fixed-top-nav {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background-color: var(--background-color);
-      color: var(--text-color);
 }
 
 /* Starting of css override for cron library and it's associated elements used in zone sync scheduling */

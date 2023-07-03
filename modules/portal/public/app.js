@@ -23,7 +23,7 @@ angular.module('vinyldns', [
         // Function to apply the dark theme
         function applyDarkTheme() {
           document.body.classList.add('dark-theme');
-          localStorage.setItem('darkTheme', 'true');
+          sessionStorage.setItem('darkTheme', 'true');
         }
 
         // Function to remove the dark theme

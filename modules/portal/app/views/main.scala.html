@@ -39,19 +39,19 @@
             <!-- START PAGE SIDEBAR -->
                 <div class="col-md-3 left_col" id="fixed-side-menu">
                     <div class="left_col scroll-view">
-
                         <div class="navbar nav_title vinyldns-nav-title">
+                            <span>
+                            <label class="navbar-right switch">
+                                <input id="theme-toggle" class="switch-checkbox" type="checkbox"/>
+                                <span class="slider-theme"></span>
+                            </label>
+                            </span>
                             <a href="/index"><span><img src="/assets/images/vinyldns-portal.png" class="vinyldns-logo"/></span></a>
                             <a href="/index"><img src="/assets/images/vinyldns-logo.png" class="vinyldns-logo vinyldns-logo-small"/></a>
                         </div>
                         <div class="clearfix"></div>
                         <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
                             <div class="menu_section">
-                                <div >
-                                    <button id="theme-toggle">Toggle Dark Theme</button>
-
-                                    <!--<button ng-click="toggleTheme()" >Toggle Theme</button>-->
-                                </div>
                                 <ul class="nav side-menu vinyldns-side-menu">
                                   @if(controller == "DnsChangesController" || controller == "DnsChangeNewController" || controller == "DnsChangeDetailController") {
                                     <li class="active">
