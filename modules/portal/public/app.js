@@ -19,6 +19,8 @@ angular.module('vinyldns', [
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
         $scope.alerts = [];
+        const themeToggle = document.getElementById('theme-toggle')
+
 
         // Function to apply the dark theme
         function applyDarkTheme() {
@@ -35,9 +37,10 @@ angular.module('vinyldns', [
         const savedTheme = sessionStorage.getItem('darkTheme');
         if (savedTheme === 'true') {
           applyDarkTheme();
+          themeToggle.checked = JSON.parse(savedTheme);
         }
 
-        document.getElementById('theme-toggle').addEventListener('click', () => {
+        themeToggle.addEventListener('click', () => {
           const isDarkTheme = document.body.classList.contains('dark-theme');
           if (isDarkTheme) {
             removeDarkTheme();

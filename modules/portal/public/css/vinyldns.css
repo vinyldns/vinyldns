@@ -15,14 +15,16 @@
 */
 
 :root {
-    --background-color: #FFFFFF;    /* Light theme background color */
-    --text-color: #000000;          /* Light theme text color */
+    --background-color: #F9F9F9;    /* Light theme background color */
+    --text-color: #1b1e24;          /* Light theme text color */
+    --background-color-shade : #E8E8E8;
 }
 
-                                                    /* Dark theme color values */
+/* Dark theme color values */
 .dark-theme {
-    --background-color: #000000;
+    --background-color: #1b1e24;
     --text-color: #FFFFFF;
+    --background-color-shade : #1b1e24;
 }
 
 .color {
@@ -74,7 +76,7 @@
 }
 
 .login-container .login-box .login-footer .login-links a {
-    color: var(--text-color);
+    color: #428bca;
 }
 
 .vinyldns-login-title {
@@ -93,14 +95,13 @@ a.action-link {
 }
 
 .form-control.record-edit {
-
-    background-color: var(--background-color);
-      color: var(--text-color);
+    background: var(--background-color);
+    color: var(--text-color);
 }
 
 .form-control.acl-edit {
-    background-color: var(--background-color);
-      color: var(--text-color);
+    background: var(--background-color);
+    color: var(--text-color);
 }
 
 .fa.inline-icon {
@@ -108,7 +109,6 @@ a.action-link {
     font-size: 15px;
     color: var(--text-color);
     vertical-align: middle;
-
 }
 
 .modal {
@@ -139,6 +139,7 @@ a.action-link {
 .x-navigation > li > a.logo-header {
     padding: 3px 50px 3px 20px;
     border-bottom: none;
+    background-color: var(--background-color);
 }
 
 .x-navigation > li.logo > a.logo-header > img {
@@ -202,7 +203,7 @@ a.action-link {
 }
 
 .vinyldns-login {
-    background-color: var(--background-color);
+    background: #1b1e24!important;
 }
 
 .vinyldns-login-box {
@@ -212,40 +213,40 @@ a.action-link {
     -moz-border-radius: 0px;
     -webkit-border-radius: 0px;
     border-radius: 0px;
-    background-color: var(--background-color);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .vinyldns-login-title {
-    color: var(--text-color);
+    color: #FFFFFF;
     text-shadow: none;
 }
 
 .vinyldns-login-btn {
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background: #0086ff;
+    color: #FFFFFF;
 }
 
 .vinyldns-login-btn:hover {
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background: #16a3b1;
+    color: #FFFFFF;
 }
 
 .vinyldns-login-footer {
-    color: var(--text-color);
+    color: #FFFFFF;
     margin-top: 20px;
 }
 
 .vinyldns-login-footer a {
-    color: var(--text-color);
+    color: #0086ff;
 }
 
 .vinyldns-btn-dark {
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background: #000000;
+    color: #FFFFFF;
 }
 
 .vinyldns-btn-dark:hover {
-    color: var(--text-color);
+    color: #FFFFFF;
 }
 
 .vinyldns-panel-top {
@@ -259,11 +260,11 @@ body {
     font-family: "Helvetica Neue", Roboto, Arial, "Droid Sans", sans-serif;
     font-size: 13px;
     font-weight: 400;
-    background-color: var(--background-color);
+    background: var(--background-color);
 }
 
 .left_col {
-  background-color: var(--background-color);
+  background: var(--background-color);
 }
 
 .nav.side-menu>li.active>a {
@@ -275,8 +276,12 @@ body {
 
 .nav.side-menu>li.active {
   border-right: 5px solid #0086ff;
-  background-color: var(--background-color);
-    color: var(--text-color);
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+.nav.side-menu>li > a {
+  color: var(--text-color);
 }
 
 .left_col .vinyldns-logo {
@@ -328,7 +333,7 @@ body {
 }
 
 .breadcrumb {
-    background-color: var(--background-color);
+    background: var(--background-color-shade);
 }
 
 .page-title {
@@ -362,7 +367,7 @@ label.switch {
     position: absolute;
     opacity: 0;
     filter: alpha(opacity=0);
-    background-color: var(--background-color);
+    background: var(--background-color);
 }
 
 .switch input:checked + .slider:after {
@@ -418,7 +423,7 @@ label.switch {
     border-color: rgba(0, 0, 0, 0.1);
     left: 0px;
     border-radius: 20px;
-    background-color: #979797;
+    background: #979797;
 }
 
 .slider-theme:after {
@@ -431,11 +436,11 @@ label.switch {
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
     border-radius: 20px;
     transition: all 200ms ease;
-    background-color: var(--background-color);
+    background: var(--background-color);
 }
 
 .switch input:checked + .slider-theme {
-    background-color: var(--text-color);
+    background: var(--text-color);
 }
 
 .switch input:checked + .slider-theme:after {
@@ -449,8 +454,8 @@ label.switch {
 
 .panel-tabs {
     padding-top: 5px;
-    background-color: var(--background-color);
-          color: var(--text-color);
+    background: var(--background-color-shade);
+    color: var(--text-color);
 }
 
 .panel{
@@ -459,12 +464,12 @@ background-color: var(--background-color);
           }
 
 .panel > .panel-heading{
-              background-color: var(--background-color);
+              background-color: var(--background-color-shade);
                         color: var(--text-color);
                         }
 
 .panel > .panel-footer{
-              background-color: var(--background-color);
+              background-color: var(--background-color-shade);
                         color: var(--text-color);
                         }
 
@@ -551,7 +556,7 @@ background-color: var(--background-color);
 }
 
 .ng-pristine {
-background-color: var(--background-color);
+    background-color: var(--background-color);
      color: var(--text-color);
      }
 
@@ -578,6 +583,21 @@ input[type="file"] {
 	overflow: hidden;
 	position: absolute;
 	z-index: -1;
+}
+
+input[type="password"] {
+	background: var(--background-color);
+	color: var(--text-color);
+}
+
+input[type="text"] {
+	background: var(--background-color);
+	color: var(--text-color);
+}
+
+input[type="text"] select{
+	background: var(--background-color);
+	color: var(--text-color);
 }
 
 .batch-change-csv-label {
@@ -641,8 +661,6 @@ input[type="file"] {
   border-top: 16px solid #3498db;
   -webkit-animation: spin 2s linear infinite;
   animation: spin 2s linear infinite;
-  background-color: var(--background-color);
-  color: var(--text-color);
 }
 
 @-webkit-keyframes spin {
