@@ -210,6 +210,11 @@ The HTTP Port that the Portal server will bind to
 
 `http.port=9001`
 
+### Portal URL
+Necessary to preview the metadata while sharing the portal link to social media
+
+`portal.vinyldns.url = "http://localhost:9001"`
+
 ### Shared Zones Display / Record Owner Selection
 Necessary to enable shared zones submission and record ownership
 
@@ -248,6 +253,7 @@ play.http.secret.key = "vinyldnsportal-change-this-for-production"
 # ~~~~~
 play.i18n.langs = [ "en" ]
 portal.vinyldns.backend.url = "http://vinyldns-api:9000"
+portal.vinyldns.url = "http://localhost:9001"
 portal.test_login = false
 
 # configuration for the users and groups store
