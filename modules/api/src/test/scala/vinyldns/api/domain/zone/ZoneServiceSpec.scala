@@ -57,6 +57,8 @@ class ZoneServiceSpec
   private val badConnection = ZoneConnection("bad", "bad", Encrypted("bad"), "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name, AccessLevel.Delete)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name, AccessLevel.NoAccess)
+  private val zoneIp4ZoneSummary = ZoneSummaryInfo(zoneIp4, abcGroup.name, AccessLevel.Delete)
+  private val zoneIp6ZoneSummary = ZoneSummaryInfo(zoneIp6, abcGroup.name, AccessLevel.Delete)
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
@@ -831,7 +833,7 @@ class ZoneServiceSpec
     }
 
     "return all zones" in {
-      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone), ignoreAccess = true)))
+      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone, zoneIp4, zoneIp6), ignoreAccess = true, includeReverse = true)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100, true, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
@@ -839,20 +841,40 @@ class ZoneServiceSpec
         .getGroups(any[Set[String]])
 
       val result: ListZonesResponse =
-        underTest.listZones(abcAuth, ignoreAccess = true).value.unsafeRunSync().toOption.get
+        underTest.listZones(abcAuth, ignoreAccess = true, includeReverse = true).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcZoneSummary, xyzZoneSummary, zoneIp4ZoneSummary, zoneIp6ZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+      result.includeReverse shouldBe true
+    }
+
+    "return all forward zones" in {
+      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone), ignoreAccess = true, includeReverse = false)))
+        .when(mockZoneRepo)
+        .listZones(abcAuth, None, None, 100, true, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListZonesResponse =
+        underTest.listZones(abcAuth, ignoreAccess = true, includeReverse = false).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary, xyzZoneSummary)
       result.maxItems shouldBe 100
       result.startFrom shouldBe None
       result.nameFilter shouldBe None
       result.nextId shouldBe None
       result.ignoreAccess shouldBe true
+      result.includeReverse shouldBe false
     }
 
     "name filter must be used to return zones by admin group name, when search by admin group option is true" in {
       doReturn(IO.pure(Set(abcGroup)))
         .when(mockGroupRepo)
         .getGroupsByName(any[String])
-      doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
+      doReturn(IO.pure(ListZonesResults(List(abcZone, zoneIp4, zoneIp6), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
         .when(mockZoneRepo)
         .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true, includeReverse = true)
       doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
@@ -860,12 +882,35 @@ class ZoneServiceSpec
       // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
       val result: ListZonesResponse =
         underTest.listZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcZoneSummary, zoneIp4ZoneSummary, zoneIp6ZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe Some("abcGroup")
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+      result.includeReverse shouldBe true
+    }
+
+    "name filter must be used to return forward zones by admin group name, when search by admin group option is true and includeReverse is false" in {
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroupsByName(any[String])
+      doReturn(IO.pure(ListZonesResults(List(abcZone), ignoreAccess = true, zonesFilter = Some("abcGroup"), includeReverse = false)))
+        .when(mockZoneRepo)
+        .listZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true, includeReverse = false)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter.
+      // Reverse zones are excluded when includeReverse is false.
+      val result: ListZonesResponse =
+        underTest.listZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true, includeReverse = false).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary)
       result.maxItems shouldBe 100
       result.startFrom shouldBe None
       result.nameFilter shouldBe Some("abcGroup")
       result.nextId shouldBe None
       result.ignoreAccess shouldBe true
+      result.includeReverse shouldBe false
     }
 
     "name filter must be used to return zone by zone name, when search by admin group option is false" in {
