@@ -104,6 +104,16 @@ a.action-link {
     color: var(--text-color);
 }
 
+.dropdown-menu > div > div >.form-control.recordOwnerGroup {
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
+.well {
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
 .fa.inline-icon {
     padding: 1px 2px 1px 2px;
     font-size: 15px;
@@ -299,7 +309,7 @@ body {
 
 .vinyldns-nav-title {
     padding-left: 5px;
-    border-bottom: 3px solid #1b1e24;
+    border-bottom: 3px solid var(--background-color-shade);
     background: var(--background-color);
 }
 
@@ -537,6 +547,10 @@ background-color: var(--background-color);
      color: var(--text-color);
 }
 
+.dropdown-menu {
+   background-color: var(--background-color);
+     color: var(--text-color);
+}
 
 .createBatchChangeForm.ng-submitted input.ng-invalid {
    border-color: #a94442;
