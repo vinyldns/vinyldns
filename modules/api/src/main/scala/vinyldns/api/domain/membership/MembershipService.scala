@@ -256,7 +256,7 @@ class MembershipService(
       _ <- isGroupChangePresent(result).toResult
       _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
       allUserIds = getGroupUserIds(Seq(result.get))
-      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap.withDefaultValue("unknown user"))
       groupChangeMessage <- determineGroupDifference(Seq(result.get), allUserMap)
       groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = Seq(result.get).map(_.userId).toSet
@@ -276,7 +276,7 @@ class MembershipService(
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
       allUserIds = getGroupUserIds(result.changes)
-      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap.withDefaultValue("unknown user"))
       groupChangeMessage <- determineGroupDifference(result.changes, allUserMap)
       groupChanges = (groupChangeMessage, result.changes).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = result.changes.map(_.userId).toSet
