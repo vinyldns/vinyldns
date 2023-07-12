@@ -152,8 +152,11 @@
                         <thead>
                         <tr>
                             <th class="col-md-4">
-                                <a class="force-cursor" ng-click="toggleNameSort()">FQDN
-                                    <i class="fa {{nameSortSymbol}}"></i>
+                                <a class="fa-force-cursor" ng-click="toggleNameSort()">FQDN
+                                    <div class="fa-chevron-icon">
+                                        <i class="fa fa-chevron-circle-up {{nameSortSymbolUp}}"></i>
+                                        <i class="fa fa-chevron-circle-down {{nameSortSymbolDown}}"></i>
+                                    </div>
                                 </a>
                             </th>
                             <th>Type</th>

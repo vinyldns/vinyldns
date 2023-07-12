@@ -228,11 +228,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
-          val nameSortQualifiers = if (nameSort == NameSort.ASC) {
-            sqls"ORDER BY fqdn ASC, type ASC "
-          }
-          else {
-            sqls"ORDER BY fqdn DESC, type ASC "
+          val nameSortQualifiers = nameSort match {
+            case NameSort.ASC => sqls"ORDER BY fqdn ASC, type ASC "
+            case NameSort.DESC => sqls"ORDER BY fqdn DESC, type ASC "
           }
 
           val recordTypeSortQualifiers = recordTypeSort match {

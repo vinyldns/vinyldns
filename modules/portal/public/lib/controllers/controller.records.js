@@ -24,8 +24,10 @@ angular.module('controller.records', [])
     $scope.query = "";
     $scope.nameSort = "asc";
     $scope.recordTypeSort = "none";
-    $scope.nameSortSymbol = "fa-chevron-up";
-    $scope.recordTypeSortSymbol = "fa-chevron-up";
+    $scope.nameSortSymbolUp = "toggle-on";
+    $scope.nameSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
+    $scope.recordTypeSortSymbolDown = "toggle-off";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
@@ -545,24 +547,32 @@ angular.module('controller.records', [])
 
     $scope.toggleNameSort = function() {
     $scope.recordTypeSort = "none"
+    $scope.recordTypeSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
         if ($scope.nameSort == "asc") {
             $scope.nameSort = "desc";
-            $scope.nameSortSymbol = "fa-chevron-down";
+            $scope.nameSortSymbolDown = "toggle-on";
+            $scope.nameSortSymbolUp = "toggle-off";
         } else {
             $scope.nameSort = "asc";
-            $scope.nameSortSymbol = "fa-chevron-up";
+            $scope.nameSortSymbolDown = "toggle-off";
+            $scope.nameSortSymbolUp = "toggle-on";
         }
         return $scope.refreshRecords();
     };
 
     $scope.toggleRecordTypeSort = function() {
         $scope.nameSort = ""
+        $scope.nameSortSymbolDown = "toggle-off";
+        $scope.nameSortSymbolUp = "toggle-off";
         if ($scope.recordTypeSort == "asc") {
             $scope.recordTypeSort = "desc";
-            $scope.recordTypeSortSymbol = "fa-chevron-down";
+            $scope.recordTypeSortSymbolDown = "toggle-on";
+            $scope.recordTypeSortSymbolUp = "toggle-off";
         } else {
             $scope.recordTypeSort = "asc";
-            $scope.recordTypeSortSymbol = "fa-chevron-up";
+            $scope.recordTypeSortSymbolDown = "toggle-off";
+            $scope.recordTypeSortSymbolUp = "toggle-on";
         }
         return $scope.refreshRecords();
     };

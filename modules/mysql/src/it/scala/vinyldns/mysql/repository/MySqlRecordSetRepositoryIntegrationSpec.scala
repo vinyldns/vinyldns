@@ -632,7 +632,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
         .theSameElementsInOrderAs(List(recordSetWithFQDN(existing(4), okZone)))
       page3.nextId shouldBe None
     }
-    "return applicable recordsets in ascending order when recordNameFilter is given" in {
+    "return applicable recordsets in ascending order respect to record type when recordNameFilter is given and record type sort is ascending" in {
       val existing = insert(okZone, 10).map(_.recordSet)
       val found = repo
         .listRecordSets(None, None, None, Some("*.ok*"), None, None, NameSort.ASC, RecordTypeSort.ASC)

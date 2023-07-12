@@ -105,13 +105,19 @@
             <thead>
                 <tr>
                     <th class="col-md-4">
-                        <a class="force-cursor" ng-click="toggleNameSort()">Name
-                            <i class="fa {{nameSortSymbol}}"></i>
+                        <a class="fa-force-cursor" ng-click="toggleNameSort()">Name
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{nameSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{nameSortSymbolDown}}"></i>
+                            </div>
                         </a>
                     </th>
                     <th>
-                        <a class="force-cursor" ng-click="toggleRecordTypeSort()">Type
-                            <i class="fa {{recordTypeSortSymbol}}"></i>
+                        <a class="fa-force-cursor" ng-click="toggleRecordTypeSort()">Type
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{recordTypeSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{recordTypeSortSymbolDown}}"></i>
+                            </div>
                         </a>
                     </th>
                     <th>TTL</th>

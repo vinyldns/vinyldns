@@ -40,7 +40,7 @@ case class ListGlobalRecordSetsResponse(
                                          nextId: Option[String] = None,
                                          maxItems: Option[Int] = None,
                                          recordNameFilter: String,
-                                          recordTypeFilter: Option[Set[RecordType]] = None,
+                                         recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
                                          nameSort: NameSort
                                        )
@@ -132,7 +132,6 @@ class RecordSetRoute(
                       NameSort.find(nameSort),
                       _,
                       RecordTypeSort.find(recordTypeSort),
-
                 )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
