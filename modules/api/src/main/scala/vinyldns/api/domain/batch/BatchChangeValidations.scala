@@ -27,11 +27,15 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.zone.ZoneRecordValidations.isStringInRegexList
 import vinyldns.api.domain.zone.ZoneRecordValidations
+import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey, RecordKeyData}
 import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.zone.Zone
+import scala.util.matching.Regex
 
 trait BatchChangeValidationsAlgebra {
 
@@ -81,7 +85,8 @@ class BatchChangeValidations(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     batchChangeConfig: BatchChangeConfig,
-    scheduledChangesConfig: ScheduledChangesConfig
+    scheduledChangesConfig: ScheduledChangesConfig,
+    approvedNameServers: List[Regex]
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -241,14 +246,17 @@ class BatchChangeValidations(
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
-        validateMxPreference(mx.preference).asUnit |+| validateHostName(mx.exchange).asUnit
+        validateMX_NAPTR_SRVData(mx.preference, "preference", "MX").asUnit |+| validateHostName(mx.exchange).asUnit
+      case ns: NSData => validateHostName(ns.nsdname).asUnit
+      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference, "preference", "NAPTR").asUnit |+| validateMX_NAPTR_SRVData(naptr.order, "order", "NAPTR").asUnit |+| validateHostName(naptr.replacement).asUnit |+| validateNaptrFlag(naptr.flags).asUnit |+| validateNaptrRegexp(naptr.regexp).asUnit
+      case srv: SRVData => validateMX_NAPTR_SRVData(srv.priority, "priority", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.port, "port", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.weight, "weight", "SRV").asUnit |+| validateHostName(srv.target).asUnit
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
 
   def validateInputName(change: ChangeInput, isApproved: Boolean): SingleValidation[Unit] = {
     val typedChecks = change.typ match {
-      case A | AAAA | MX =>
+      case A | AAAA | MX | NS | NAPTR | SRV =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
       case CNAME | TXT =>
         validateHostName(change.inputName).asUnit
@@ -421,8 +429,10 @@ class BatchChangeValidations(
     ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
-      case A | AAAA | MX =>
+      case A | AAAA | MX | SRV | NAPTR =>
         newRecordSetIsNotDotted(change)
+      case NS =>
+        newRecordSetIsNotDotted(change) |+| nsValidations(change.inputChange.record, change.recordName, change.zone, approvedNameServers)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
@@ -464,7 +474,6 @@ class BatchChangeValidations(
           change.inputChange.typ,
           change.inputChange.record,
           groupedChanges,
-          isApproved,
           isDeleteExists
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
@@ -508,14 +517,14 @@ class BatchChangeValidations(
       typ: RecordType,
       recordData: RecordData,
       groupedChanges: ChangeForValidationMap,
-      isApproved: Boolean,
       isDeleteExist: Boolean
   ): SingleValidation[Unit] = {
     val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
     if(record.isDefined) {
       record.get.records.contains(recordData) match {
         case true => ().validNel
-        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName).invalidNel
+      }
     } else ().validNel
     }
 
@@ -723,5 +732,47 @@ class BatchChangeValidations(
         change.zone.name,
         change.inputChange.inputName
       )
+    }
+
+  def nsValidations(
+     newRecordSetData: RecordData,
+     newRecordSetName: String,
+     zone: Zone,
+     approvedNameServers: List[Regex]
+  ): SingleValidation[Unit] = {
+
+      isNotOrigin(
+        newRecordSetName,
+        zone,
+        s"Record with name $newRecordSetName is an NS record at apex and cannot be added"
+      )
+      containsApprovedNameServers(newRecordSetData, approvedNameServers)
+  }
+
+  def isNotOrigin(recordSet: String, zone: Zone, err: String): SingleValidation[Unit] =
+    if(!isOriginRecord(recordSet, omitTrailingDot(zone.name))) ().validNel else InvalidBatchRequest(err).invalidNel
+
+  def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
+    recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
+
+  def containsApprovedNameServers(
+     nsRecordSet: RecordData,
+     approvedNameServers: List[Regex]
+  ): SingleValidation[Unit] = {
+    val nsData = nsRecordSet match {
+      case ns: NSData => ns
+      case _ => ??? // this would never be the case
+    }
+    isApprovedNameServer(approvedNameServers, nsData)
+  }
+
+  def isApprovedNameServer(
+    approvedServerList: List[Regex],
+    nsData: NSData
+  ): SingleValidation[Unit] =
+    if (isStringInRegexList(approvedServerList, nsData.nsdname.fqdn)) {
+      ().validNel
+    } else {
+      NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
     }
 }

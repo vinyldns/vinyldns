@@ -38,6 +38,9 @@ describe('Controller: MembershipController', function () {
                 members: [{id: "adminId"}, {id: "nonAdmin"}]
             }
         };
+          var mockDomains = {
+                    data: {"0": "test.com"}
+          };
 
         var mockGroupList = {
             data: {
@@ -67,6 +70,9 @@ describe('Controller: MembershipController', function () {
         this.groupsService.getGroup = function() {
           return $q.when(mockGroup);
         };
+          this.groupsService.listEmailDomains = function() {
+                  return $q.when(mockDomains);
+          };
         this.groupsService.getGroupMemberList = function() {
             return $q.when(mockGroupList);
         };

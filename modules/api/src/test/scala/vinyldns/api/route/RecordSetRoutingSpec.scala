@@ -1556,11 +1556,11 @@ class RecordSetRoutingSpec
     }
 
     "return errors for invalid NAPTR record data" in {
+      val validFlags = List("U", "S", "A", "P")
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
           ("replacement" -> Random.alphanumeric.take(260).mkString) ~~
-            // should check regex better
             ("regexp" -> Random.alphanumeric.take(260).mkString) ~~
             ("service" -> Random.alphanumeric.take(260).mkString) ~~
             ("flags" -> Random.alphanumeric.take(2).mkString) ~~
@@ -1569,18 +1569,18 @@ class RecordSetRoutingSpec
         ),
         "NAPTR.order must be an unsigned 16 bit number",
         "NAPTR.preference must be an unsigned 16 bit number",
-        "NAPTR.flags must be less than 2 characters",
+        "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P",
         "NAPTR.service must be less than 255 characters",
-        "NAPTR.regexp must be less than 255 characters",
+        "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty",
         "NAPTR.replacement must be less than 255 characters"
       )
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
-          ("regexp" -> Random.alphanumeric.take(10).mkString) ~~
+          ("regexp" -> "") ~~
             ("service" -> Random.alphanumeric.take(10).mkString) ~~
             ("replacement" -> Random.alphanumeric.take(10).mkString) ~~
-            ("flags" -> Random.alphanumeric.take(1).mkString) ~~
+            ("flags" -> validFlags.take(1).mkString) ~~
             ("order" -> -1) ~~
             ("preference" -> -1)
         ),
