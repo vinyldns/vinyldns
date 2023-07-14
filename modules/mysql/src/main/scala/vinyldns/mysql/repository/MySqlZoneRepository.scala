@@ -290,6 +290,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             sb.append(" AND ")
             sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
           }
+          
+          if(startFrom.isDefined){
+            sb.append(" AND ")
+            sb.append(s"z.name > '${startFrom.get}'")
+          }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT ${maxItems + 1}")
