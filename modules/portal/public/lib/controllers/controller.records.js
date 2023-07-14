@@ -23,7 +23,11 @@ angular.module('controller.records', [])
 
     $scope.query = "";
     $scope.nameSort = "asc";
-    $scope.nameSortSymbol = "fa-chevron-up";
+    $scope.recordTypeSort = "none";
+    $scope.nameSortSymbolUp = "toggle-on";
+    $scope.nameSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
+    $scope.recordTypeSortSymbolDown = "toggle-off";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
@@ -475,7 +479,7 @@ angular.module('controller.records', [])
             updateRecordDisplay(response.data.recordSets);
         }
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::listRecordSetsByZone-failure');
@@ -516,7 +520,7 @@ angular.module('controller.records', [])
     $scope.prevPage = function() {
         var startFrom = pagingService.getPrevStartFrom(recordsPaging);
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(function(response) {
                 recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                 updateRecordDisplay(response.data.recordSets);
@@ -528,7 +532,7 @@ angular.module('controller.records', [])
 
     $scope.nextPage = function() {
         return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
                 .then(function(response) {
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
@@ -543,12 +547,33 @@ angular.module('controller.records', [])
     };
 
     $scope.toggleNameSort = function() {
+    $scope.recordTypeSort = "none"
+    $scope.recordTypeSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
         if ($scope.nameSort == "asc") {
             $scope.nameSort = "desc";
-            $scope.nameSortSymbol = "fa-chevron-down";
+            $scope.nameSortSymbolDown = "toggle-on";
+            $scope.nameSortSymbolUp = "toggle-off";
         } else {
             $scope.nameSort = "asc";
-            $scope.nameSortSymbol = "fa-chevron-up";
+            $scope.nameSortSymbolDown = "toggle-off";
+            $scope.nameSortSymbolUp = "toggle-on";
+        }
+        return $scope.refreshRecords();
+    };
+
+    $scope.toggleRecordTypeSort = function() {
+        $scope.nameSort = ""
+        $scope.nameSortSymbolDown = "toggle-off";
+        $scope.nameSortSymbolUp = "toggle-off";
+        if ($scope.recordTypeSort == "asc") {
+            $scope.recordTypeSort = "desc";
+            $scope.recordTypeSortSymbolDown = "toggle-on";
+            $scope.recordTypeSortSymbolUp = "toggle-off";
+        } else {
+            $scope.recordTypeSort = "asc";
+            $scope.recordTypeSortSymbolDown = "toggle-off";
+            $scope.recordTypeSortSymbolUp = "toggle-on";
         }
         return $scope.refreshRecords();
     };
