@@ -280,6 +280,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             sb.append(s" WHERE admin_group_id IN ('') ")
           }
 
+          if(startFrom.isDefined){
+            sb.append(" AND ")
+            sb.append(s"z.name > '${startFrom.get}'")
+          }
+
           sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT ${maxItems + 1}")
 

@@ -341,6 +341,57 @@ class MySqlZoneRepositoryIntegrationSpec
       groupRepository.delete(okGroup).unsafeRunSync()
     }
 
+    "check pagination while filtering zones by admin group" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup)
+      }.unsafeRunSync()
+
+      val group = groupRepository.getGroupsByName(okGroup.name).unsafeRunSync()
+      val groupId = group.head.id
+
+      // store all of the zones
+      val privateZone = okZone.copy(
+        name = "private-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        adminGroupId = groupId
+      )
+
+      val sharedZone = okZone.copy(
+        name = "shared-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        shared = true,
+        adminGroupId = groupId
+      )
+
+      val testZones = Seq(privateZone, sharedZone)
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, should have all of the zones returned
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+
+      val page1 = repo
+        .listZonesByAdminGroupIds(okUserAuth, None, 1, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+      page1.zones.head shouldBe testZones.head
+
+      val page2 = repo
+        .listZonesByAdminGroupIds(okUserAuth, page1.nextId, 1, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+      page2.zones.head shouldBe testZones.last
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
+    }
+
     "get empty list when no matching admin group name is found while filtering zones by group name" in {
 
       executeWithinTransaction { db: DB =>
