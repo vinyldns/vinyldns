@@ -603,10 +603,53 @@ class MySqlZoneRepositoryIntegrationSpec
       f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
     }
 
+    "apply the reverse zone filter as a super user" in {
+
+      val testZones = Seq(
+        testZone("system-test."),
+        testZone("system-test.ip6.arpa."),
+        testZone("system-temp.in-addr.arpa."),
+        testZone("nomatch.in-addr.arpa.")
+      )
+
+      val expectedZones = Seq(testZones(0))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(superUserAuth, includeReverse = false)
+        } yield retrieved
+
+      f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
+    }
+
+    "apply the zone filter and reverse zone filter as a super user" in {
+
+      val testZones = Seq(
+        testZone("system-test."),
+        testZone("system-temp.ip6.arpa."),
+        testZone("system-test.ip6.arpa."),
+        testZone("system-temp.in-addr.arpa."),
+        testZone("no-match.")
+      )
+
+      val expectedZones = Seq(testZones(0)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"), includeReverse = false)
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
     "apply the zone filter as a normal user" in {
 
       val testZones = Seq(
-        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
         testZone("system-temp.", adminGroupId = "foo"),
         testZone("system-nomatch.", adminGroupId = "bar")
       )
@@ -640,6 +683,52 @@ class MySqlZoneRepositoryIntegrationSpec
         for {
           _ <- saveZones(testZones)
           retrieved <- repo.listZones(auth, zoneNameFilter = Some("SyStEm*"))
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
+    "apply the zone filter and reverse zone filter as a normal user" in {
+
+      val testZones = Seq(
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-temp.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(1)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"), includeReverse = false)
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
+    "apply the reverse zone filter as a normal user" in {
+
+      val testZones = Seq(
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
+        testZone("system-test.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-temp.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-match.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar"),
+        testZone("system-nomatch.in-addr.arpa.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(3)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, includeReverse = false)
         } yield retrieved
 
       (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
