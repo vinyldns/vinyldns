@@ -458,6 +458,10 @@ input[type="file"] {
     align-items: center;
 }
 
+.paginate_left {
+    float: left;
+}
+
 .vinyldns_page_number {
     margin-right: 10px;
 }
