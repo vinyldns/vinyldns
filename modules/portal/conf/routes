@@ -31,6 +31,7 @@ GET           /api/zones/backendids              @controllers.VinylDNS.getBacken
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
 GET           /api/zones/deleted/changes         @controllers.VinylDNS.getDeletedZones
+GET           /api/zones/:id/changes             @controllers.VinylDNS.getZoneChange(id: String)
 POST          /api/zones                         @controllers.VinylDNS.addZone
 PUT           /api/zones/:id                     @controllers.VinylDNS.updateZone(id: String)
 DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZone(id: String)
@@ -45,6 +46,9 @@ GET           /api/zones/:id/recordsetchanges    @controllers.VinylDNS.listRecor
 
 GET           /api/groups                        @controllers.VinylDNS.getGroups
 GET           /api/groups/:gid                   @controllers.VinylDNS.getGroup(gid: String)
+GET           /api/groups/valid/domains           @controllers.VinylDNS.getValidEmailDomains
+GET           /api/groups/:gid/groupchanges      @controllers.VinylDNS.listGroupChanges(gid: String)
+GET           /api/groups/change/:gcid           @controllers.VinylDNS.getGroupChange(gcid: String)
 POST          /api/groups                        @controllers.VinylDNS.newGroup
 PUT           /api/groups/:gid                   @controllers.VinylDNS.updateGroup(gid: String)
 DELETE        /api/groups/:gid                   @controllers.VinylDNS.deleteGroup(gid: String)

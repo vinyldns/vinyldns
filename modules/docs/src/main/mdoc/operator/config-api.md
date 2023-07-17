@@ -388,6 +388,14 @@ Version of the application that is deployed. Currently, this is a configuration 
 **Note: You can get installation information including color, version, default key name, and processing-disabled by
 hitting the _status_ endpoint GET /status**
 
+### Is Zone Sync Schedule Allowed
+
+Used while deploying. Should be set to `true` only on one api server/instance and `false` on every other api servers/instances. 
+Thus automated sync will be done only once on a single server/instance instead of every api servers/instances.
+Set it to `true` while running locally or when we have only a single api server/instance.
+
+`is-zone-sync-schedule-allowed = true`
+
 ### HTTP Host and Port
 
 To specify what host and port to bind to when starting up the API server, default is 9000.
@@ -475,6 +483,23 @@ sns {
   }
 }
 ```
+### Email Domain Configuration
+ This configuration setting determines the valid domains which are 
+ allowed in the email fields.
+
+ The `email-domains` field accepts a list of valid email domains. Wildcard matching 
+ is available; for example, `*dummy.com` means it will allow any 
+ subdomain within dummy.com like test.dummy.com. If the `email-domains` field is
+ left empty then it will accept any domain name. 
+ 
+The `number-of-dots` field controls the number of dots allowed after the `@` symbol in 
+an email. If this config value is left out, it will default to two.
+```yaml
+valid-email-config {
+   email-domains = ["test.com","*dummy.com"]
+   number-of-dots= 2
+}
+  ``` 
 
 ### Batch Manual Review Enabled <a id="manual-review" />
 
@@ -536,7 +561,66 @@ v6-discovery-nibble-boundaries {
   min = 5
   max = 20
 }
+```
 
+### Dotted Hosts
+
+Configuration setting that determines the zones, users (either individual or based on group) and record types that are 
+allowed to create dotted hosts. If only all the above are satisfied, one can create a dotted host in VinylDNS.
+
+Note the following:
+1. Zones defined in the `zone` must always end with a dot. Eg: `comcast.com.`
+2. Wildcard character `*` can be used in `zone` to allow dotted hosts for all zones matching it.
+3. Individual users who are allowed to create dotted hosts are added to the `user-list` using their username.
+4. A set of users in a group who are allowed to create dotted hosts are added to the `group-list` using group name.
+5. If the user is either in `user-list` or `group-list`, they are allowed to create a dotted host. It is
+not necessary for the user to be in both `user-list` and `group-list`.
+6. The record types which are allowed while creating a dotted host is added to the `record-types`.
+7. The number of dots allowed in a record name for a zone is given in `dots-limit`.
+8. If `user-list` is left empty (`user-list = []`), no user will be allowed to create dotted hosts unless 
+they're present in `group-list` and vice-versa. If both `user-list` and `group-list` is left empty
+no users will be allowed to create dotted hosts in that zone.
+9. If `record-types` is left empty (`record-types = []`), user cannot create dotted hosts of any record type
+in that zone.
+10. If `dots-limit` is set to 0 (`dots-limit = 0`), we cannot create dotted hosts record in that zone.
+
+```yaml
+# approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts
+dotted-hosts = {
+   allowed-settings = [
+      {
+      zone = "dummy."
+      user-list = ["testuser"]
+      group-list = ["dummy-group"]
+      record-types = ["AAAA"]
+      dots-limit = 3
+      },
+      {
+      # for wildcard zones. Settings will be applied to all matching zones
+      zone = "*ent.com."
+      user-list = ["professor", "testuser"]
+      group-list = ["testing-group"]
+      record-types = ["A", "CNAME"]
+      dots-limit = 3
+      }
+   ]
+}
+```
+
+In the above, the dotted hosts can be created only in the zone `dummy.` and zones matching `*ent.com.` (parent.com., child.parent.com.)
+
+Also, it must satisfy the allowed users or group users and record type of the respective zone to create a dotted host.
+
+For eg, we can't create a dotted host with `CNAME` record type in the zone `dummy.` as it's not in `record-types`.
+And the user `professor` can't create a dotted host in the zone `dummy.` as the user is not in `user-list` or 
+`group-list` (not part of `dummy-group`).
+
+The config can be left empty as follows if we don't want to use it:
+
+```yaml
+dotted-hosts = {
+   allowed-settings = []
+}
 ```
 
 ### Full Example Config
@@ -693,6 +777,12 @@ v6-discovery-nibble-boundaries {
      }
   }
 
+  # Valid Email Domains
+  valid-email-config {
+    email-domains = ["test.com","*dummy.com"]
+    number-of-dots= 2
+  } 
+
   sns {
      # Path to notifier provider implementation
      class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
@@ -711,6 +801,27 @@ v6-discovery-nibble-boundaries {
         # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
         signing-region = "us-east-1"
      }
+  }
+
+  # approved zones, individual users, users in groups, record types and no.of.dots that are allowed for dotted hosts
+  dotted-hosts = {
+     allowed-settings = [
+        {
+        zone = "dummy."
+        user-list = ["testuser"]
+        group-list = ["dummy-group"]
+        record-types = ["AAAA"]
+        dots-limit = 3
+        },
+        {
+        # for wildcard zones. Settings will be applied to all matching zones
+        zone = "*ent.com."
+        user-list = ["professor", "testuser"]
+        group-list = ["testing-group"]
+        record-types = ["A", "CNAME"]
+        dots-limit = 3
+        }
+     ]
   }
 
   # true if you want to enable manual review for non-fatal errors

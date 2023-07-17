@@ -69,7 +69,6 @@ class VinylDNSService(
 ) extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
-    with StatusRoute
     with PrometheusRoute
     with VinylDNSJsonProtocol
     with RequestLogging {
@@ -97,27 +96,29 @@ class VinylDNSService(
       vinylDNSAuthenticator,
       vinyldnsConfig.manualReviewConfig
     ).getRoutes
+  val statusRoute: Route =
+    new StatusRoute(
+      vinyldnsConfig.serverConfig,
+      vinylDNSAuthenticator,
+      processingDisabled
+    ).getRoutes
 
   val unloggedUris = Seq(
     Uri.Path("/health"),
     Uri.Path("/color"),
     Uri.Path("/ping"),
-    Uri.Path("/status"),
     Uri.Path("/metrics/prometheus")
   )
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
     vinyldnsConfig.serverConfig.color
-  ) ~ statusRoute(
-    vinyldnsConfig.serverConfig.color,
-    vinyldnsConfig.serverConfig.version,
-    vinyldnsConfig.serverConfig.keyName
   ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~
     batchChangeRoute ~
     zoneRoute ~
     recordSetRoute ~
-    membershipRoute
+    membershipRoute ~
+    statusRoute
 
   val vinyldnsRoutes: Route = logRequestResult(requestLogger(unloggedUris))(allRoutes)
 

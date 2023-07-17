@@ -45,9 +45,11 @@ class MembershipRoute(
     case GroupNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
     case GroupAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
+    case GroupValidationError(msg) => complete(StatusCodes.BadRequest, msg)
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
@@ -79,7 +81,7 @@ class MembershipRoute(
       } ~
         (get & monitor("Endpoint.listMyGroups")) {
           parameters(
-            "startFrom".?,
+            "startFrom".as[String].?,
             "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
             "groupNameFilter".?,
             "ignoreAccess".as[Boolean].?(false),
@@ -175,6 +177,20 @@ class MembershipRoute(
                 }
               }
             }
+        }
+      }
+    } ~
+    path("groups" / "change" / Segment) { groupChangeId =>
+      (get & monitor("Endpoint.groupSingleChange")) {
+        authenticateAndExecute(membershipService.getGroupChange(groupChangeId, _)) { groupChange =>
+          complete(StatusCodes.OK, groupChange)
+        }
+      }
+    } ~
+    path("groups" / "valid" / "domains") {
+      (get & monitor("Endpoint.validdomains")) {
+        authenticateAndExecute(membershipService.listEmailDomains) { emailDomains =>
+          complete(StatusCodes.OK, emailDomains)
         }
       }
     } ~

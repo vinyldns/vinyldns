@@ -17,7 +17,6 @@
 package vinyldns.core.domain.batch
 
 import java.util.UUID
-
 import vinyldns.core.domain.SingleChangeError
 import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.record.RecordData
@@ -45,6 +44,13 @@ sealed trait SingleChange {
       add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
     case delete: SingleDeleteRRSetChange =>
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
+  }
+
+  def withDoesNotExistMessage(error: String): SingleChange = this match {
+    case add: SingleAddChange =>
+      add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
+    case delete: SingleDeleteRRSetChange =>
+      delete.copy(status = SingleChangeStatus.Complete, systemMessage = Some(error))
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
@@ -140,10 +146,16 @@ object SingleChangeStatus extends Enumeration {
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)
+case class RecordKeyData(zoneId: String, recordName: String, recordType: RecordType, recordData: RecordData)
 
 object RecordKey {
   def apply(zoneId: String, recordName: String, recordType: RecordType): RecordKey =
     new RecordKey(zoneId, recordName.toLowerCase, recordType)
+}
+
+object RecordKeyData {
+  def apply(zoneId: String, recordName: String, recordType: RecordType, recordData: RecordData): RecordKeyData =
+    new RecordKeyData(zoneId, recordName.toLowerCase, recordType, recordData)
 }
 
 object OwnerType extends Enumeration {

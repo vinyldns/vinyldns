@@ -104,7 +104,7 @@ a.action-link {
     top: 3px;
     left: 50%;
     width: 40%;
-    z-index: 100;
+    z-index: 2000;
 }
 
 .dns-connection-form {
@@ -140,6 +140,25 @@ a.action-link {
 
 .force-cursor {
     cursor: pointer;
+}
+
+.fa-force-cursor {
+    cursor: pointer;
+    display: inline-flex;
+}
+
+.fa-chevron-icon {
+    display: inline-flex;
+    flex-direction: column;
+    margin-left: 5px;
+}
+
+.toggle-on{
+    color: #1b1e24
+}
+
+.toggle-off{
+    color: #D3D3D3;
 }
 
 .vinyldns-login {
@@ -434,12 +453,16 @@ input[type="file"] {
     vertical-align: top;
 }
 
-.vinyldns_zones_paginate {
+.vinyldns_paginate {
     display: flex;
     align-items: center;
 }
 
-.vinyldns_zones_page_number {
+.paginate_left {
+    float: left;
+}
+
+.vinyldns_page_number {
     margin-right: 10px;
 }
 
@@ -492,6 +515,26 @@ input[type="file"] {
   opacity: 0.75;
 }
 
+.ui-menu .ui-menu-item div {
+    background: white;
+    width: 100%;
+    font-size: 14px;
+    color: black;
+    border: none;
+    border-left: 1px;
+}
+
+.ui-menu .ui-menu-item div:hover {
+    background: #f5f5f5;
+}
+
+.ui-autocomplete {
+    max-height: 200px;
+    width:150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 #fixed-side-menu {
     position: fixed;
     top: 0;
@@ -501,4 +544,25 @@ input[type="file"] {
     position: sticky;
     top: 0;
     z-index: 1000;
+}
+
+/* Starting of css override for cron library and it's associated elements used in zone sync scheduling */
+.cron-select-wrap .cron-select {
+    border-radius: 0px !important;
+}
+
+#cron-lib {
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-top: 15px;
+}
+
+#cron-lib-check {
+    padding: 0px;
+    margin: 0px;
+}
+/* Ending of css override for cron library and it's associated elements used in zone sync scheduling */
+
+#set-dropdown-width {
+    width: 4em;
 }

@@ -35,6 +35,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{BodyWritable, InMemoryBody, WSClient}
 import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.logging.RequestTracing
@@ -214,6 +215,32 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getGroupChange(gcid: String): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/change/$gcid")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      logger.info(s"group change [$gcid] retrieved with status [${response.status}]")
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
+  def listGroupChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = new VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"groups/$id/activity",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getUser(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"users/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
@@ -266,6 +293,15 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getValidEmailDomains(): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/valid/domains")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getAuthenticatedUserData(): Action[AnyContent] = userAction.async { implicit request =>
     Future {
       Ok(Json.toJson(VinylDNS.UserInfo.fromUser(request.user)))
@@ -282,7 +318,7 @@ class VinylDNS @Inject() (
         .format(
           user.userName,
           user.accessKey,
-          crypto.decrypt(user.secretKey),
+          crypto.decrypt(user.secretKey.value),
           vinyldnsServiceBackend
         )
     ).as("text/csv")
@@ -324,7 +360,7 @@ class VinylDNS @Inject() (
       User(
         details.username,
         User.generateKey,
-        User.generateKey,
+        Encrypted(User.generateKey),
         details.firstName,
         details.lastName,
         details.email
@@ -433,13 +469,29 @@ class VinylDNS @Inject() (
   }
 
   def getDeletedZones: Action[AnyContent] = userAction.async { implicit request =>
-    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString
     } queryParameters.put(name, values.asJava)
     val vinyldnsRequest =
       new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "zones/deleted/changes", parameters = queryParameters)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+        // $COVERAGE-ON$
+  }
+    
+    def getZoneChange(id: String): Action[AnyContent] = userAction.async { implicit request =>
+      val queryParameters = new HashMap[String, java.util.List[String]]()
+      for {
+        (name, values) <- request.queryString
+      } queryParameters.put(name, values.asJava)
+      new VinylDNSRequest(
+        "GET",
+        s"$vinyldnsServiceBackend",
+        s"zones/$id/changes",
+        parameters = queryParameters)
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
@@ -645,7 +697,7 @@ class VinylDNS @Inject() (
     implicit userRequest: UserRequest[_]
   ) = {
     val signableRequest = new SignableVinylDNSRequest(request)
-    val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
+    val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey.value))
     signer.sign(signableRequest, credentials)
     logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
 

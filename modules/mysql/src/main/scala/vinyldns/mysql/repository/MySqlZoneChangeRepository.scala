@@ -17,7 +17,8 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -55,17 +56,24 @@ class MySqlZoneChangeRepository
       |  LIMIT {maxItems}
     """.stripMargin
 
+  private final val LIST_ZONES_CHANGES_DATA =
+    sql"""
+         |SELECT zc.data
+         |  FROM zone_change zc
+         |  JOIN zone z ON z.id = zc.zone_id
+    """.stripMargin
+
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       IO {
-        logger.debug(s"Saving zone change ${zoneChange.id}")
+        logger.debug(s"Saving zone change '${zoneChange.id}' for zone '${zoneChange.zone.name}'")
         DB.localTx { implicit s =>
           PUT_ZONE_CHANGE
             .bindByName(
               'change_id -> zoneChange.id,
               'zone_id -> zoneChange.zoneId,
               'data -> toPB(zoneChange).toByteArray,
-              'created_timestamp -> zoneChange.created.getMillis
+              'created_timestamp -> zoneChange.created.toEpochMilli
             )
             .update()
             .apply()
@@ -85,7 +93,7 @@ class MySqlZoneChangeRepository
       IO {
         logger.debug(s"Getting zone changes for zone $zoneId")
         DB.readOnly { implicit s =>
-          val startValue = startFrom.getOrElse(DateTime.now().getMillis.toString)
+          val startValue = startFrom.getOrElse(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = LIST_ZONES_CHANGES
             .bindByName(
@@ -102,7 +110,7 @@ class MySqlZoneChangeRepository
           // earlier maxItems was incremented, if the (maxItems + 1) size is not reached then pages are exhausted
           val nextId = queryResult match {
             case _ if queryResult.size <= maxItems | queryResult.isEmpty => None
-            case _ => Some(queryResult.last.created.getMillis.toString)
+            case _ => Some(queryResult.last.created.toEpochMilli.toString)
           }
 
           ListZoneChangesResults(maxQueries, nextId, startFrom, maxItems)
@@ -200,6 +208,22 @@ class MySqlZoneChangeRepository
             ignoreAccess = ignoreAccess
           )
         }}}
+
+  def listFailedZoneChanges(): IO[List[ZoneChange]] =
+    monitor("repo.ZoneChange.listFailedZoneChanges") {
+      IO {
+        DB.readOnly { implicit s =>
+          val queryResult = LIST_ZONES_CHANGES_DATA
+            .map(extractZoneChange(1))
+            .list()
+            .apply()
+
+          val failedZoneChanges = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed)
+
+          failedZoneChanges
+        }
+      }
+    }
 
   private def extractZoneChange(colIndex: Int): WrappedResultSet => ZoneChange = res => {
     fromPB(VinylDNSProto.ZoneChange.parseFrom(res.bytes(colIndex)))

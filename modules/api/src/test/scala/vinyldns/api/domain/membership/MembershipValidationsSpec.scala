@@ -25,6 +25,7 @@ import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership.User
 
 class MembershipValidationsSpec
@@ -64,13 +65,13 @@ class MembershipValidationsSpec
         canEditGroup(okGroup, superUserAuth) should be(right)
       }
       "return an error when the user is a support admin only" in {
-        val user = User("some", "new", "user", isSupport = true)
+        val user = User("some", "new", Encrypted("user"), isSupport = true)
         val supportAuth = AuthPrincipal(user, Seq())
         val error = leftValue(canEditGroup(okGroup, supportAuth))
         error shouldBe an[NotAuthorizedError]
       }
       "return an error when the user has no access and is not super" in {
-        val user = User("some", "new", "user")
+        val user = User("some", "new", Encrypted("user"))
         val nonSuperAuth = AuthPrincipal(user, Seq())
         val error = leftValue(canEditGroup(okGroup, nonSuperAuth))
         error shouldBe an[NotAuthorizedError]
@@ -85,14 +86,31 @@ class MembershipValidationsSpec
         canSeeGroup(okGroup.id, superUserAuth) should be(right)
       }
       "return true when the user is a support admin" in {
-        val user = User("some", "new", "user", isSupport = true)
+        val user = User("some", "new", Encrypted("user"), isSupport = true)
         val supportAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, supportAuth) should be(right)
       }
       "return true even when a user is not a member of the group or super" in {
-        val user = User("some", "new", "user")
+        val user = User("some", "new", Encrypted("user"))
         val nonSuperAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, nonSuperAuth) should be(right)
+      }
+    }
+
+    "User toString" should {
+      "not display access and secret keys" in {
+        val userString = s"""User: [id="ok"; userName="ok"; firstName="Some(ok)"; lastName="Some(ok)"; email="Some(test@test.com)"; created="${okUser.created}"; isSuper="false"; isSupport="false"; isTest="false"; lockStatus="Unlocked"; ]"""
+        okUser.toString shouldBe userString
+      }
+    }
+
+    "isGroupChangePresent" should {
+      "return true when there is a group change present for the requested group change id" in {
+        isGroupChangePresent(Some(okGroupChange)) should be(right)
+      }
+      "return an error when there is a group change present for the requested group change id" in {
+        val error = leftValue(isGroupChangePresent(None))
+        error shouldBe an[InvalidGroupRequestError]
       }
 
     }

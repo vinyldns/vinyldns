@@ -39,7 +39,7 @@ describe('Controller: ZonesController', function () {
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
         };
-        groupsService.getGroupsAbridged = function () {
+        groupsService.getGroups = function () {
             return $q.when({
                 data: {
                     groups: [{id: "all my groups", members: [{id: "userId"}]}]
@@ -71,6 +71,8 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
+        var validDomains = spyOn(this.scope, 'validDomains')
+                            .and.stub();
         this.scope.$digest();
         expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
@@ -83,13 +85,15 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
+        var expectedincludeReverse = true;
 
         this.scope.nextPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 
     it('prevPageMyZones should call getZones with the correct parameters', function () {
@@ -100,20 +104,22 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
+        var expectedincludeReverse = true;
 
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
 
         this.scope.nextPageMyZones();
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 
     it('nextPageMyZones should call getDeletedZones with the correct parameters', function () {

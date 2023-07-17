@@ -39,7 +39,7 @@ angular.module('service.utility', [])
             msg += stripQuotes(error.data);
         }
 
-        $log.log(type, error);
+        $log.debug(type, error);
         return {
             type: "danger", content: msg
         };
@@ -47,7 +47,7 @@ angular.module('service.utility', [])
 
     this.success = function(message, response, type) {
         var msg = "HTTP " + response.status + " (" + response.statusText + "): " + message;
-        $log.log(type, response);
+        $log.debug(type, response);
         return {
             type: "success", content: msg
         };

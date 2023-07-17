@@ -20,7 +20,7 @@ import java.sql.Timestamp
 
 import cats.data._
 import cats.effect._
-import org.joda.time.DateTime
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
@@ -263,14 +263,14 @@ class MySqlBatchChangeRepository
                 val cancelled = res.int("cancelled_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
                 val schedTime =
-                  res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
+                  res.timestampOpt("scheduled_time").map(st => st.toInstant)
                 val cancelledTimestamp =
-                  res.timestampOpt("cancelled_timestamp").map(st => new org.joda.time.DateTime(st))
+                  res.timestampOpt("cancelled_timestamp").map(st => st.toInstant)
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
                   Option(res.string("comments")),
-                  new org.joda.time.DateTime(res.timestamp("created_time")),
+                  res.timestamp("created_time").toInstant,
                   pending + failed + complete + cancelled,
                   BatchChangeStatus
                     .calculateBatchStatus(
@@ -287,7 +287,7 @@ class MySqlBatchChangeRepository
                   res.stringOpt("reviewer_id"),
                   None,
                   res.stringOpt("review_comment"),
-                  res.timestampOpt("review_timestamp").map(st => new org.joda.time.DateTime(st)),
+                  res.timestampOpt("review_timestamp").map(st => st.toInstant),
                   schedTime,
                   cancelledTimestamp
                 )
@@ -430,5 +430,5 @@ class MySqlBatchChangeRepository
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 
-  def toDateTime(ts: Timestamp): DateTime = new DateTime(ts)
+  def toDateTime(ts: Timestamp): Instant = ts.toInstant
 }

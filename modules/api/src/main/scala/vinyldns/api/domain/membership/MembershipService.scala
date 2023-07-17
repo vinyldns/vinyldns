@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.implicits._
 import scalikejdbc.DB
 import vinyldns.api.Interfaces._
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -30,14 +31,15 @@ import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
-      dataAccessor.recordSetRepository
+      dataAccessor.recordSetRepository,
+      emailConfig
     )
 }
 
@@ -47,7 +49,8 @@ class MembershipService(
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
-    recordSetRepo: RecordSetRepository
+    recordSetRepo: RecordSetRepository,
+    validDomains: ValidEmailConfig
 ) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
@@ -57,11 +60,18 @@ class MembershipService(
     val adminMembers = inputGroup.adminUserIds
     val nonAdminMembers = inputGroup.memberIds.diff(adminMembers)
     for {
+      _ <- groupValidation(newGroup)
+      _ <- emailValidation(newGroup.email)
       _ <- hasMembersAndAdmins(newGroup).toResult
       _ <- groupWithSameNameDoesNotExist(newGroup.name)
       _ <- usersExist(newGroup.memberIds)
       _ <- createGroupData(GroupChange.forAdd(newGroup, authPrincipal), newGroup, adminMembers, nonAdminMembers).toResult[Unit]
     } yield newGroup
+  }
+
+  def listEmailDomains(authPrincipal: AuthPrincipal): Result[List[String]] = {
+    val validEmailDomains = validDomains.valid_domains
+    IO(validEmailDomains).toResult
   }
 
   def updateGroup(
@@ -76,6 +86,8 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      _ <- groupValidation(newGroup)
+      _ <- emailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
       addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
       // new non-admin members ++ admins converted to non-admins
@@ -214,18 +226,43 @@ class MembershipService(
     ): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
-      .sortBy(_.id)
+      .sortBy(_.name.toLowerCase)
       .map(x => GroupInfo.fromGroup(x, abridged, Some(authPrincipal)))
 
-    val filtered = allMyGroups
-      .filter(grp => groupNameFilter.forall(grp.name.contains(_)))
-      .filter(grp => startFrom.forall(grp.id > _))
+    val filtered = if(startFrom.isDefined){
+      val prevPageGroup = allMyGroups.filter(_.id == startFrom.get).head.name
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+        .filter(grp => grp.name.toLowerCase > prevPageGroup.toLowerCase)
+    } else {
+      allMyGroups
+        .filter(grp => groupNameFilter.map(_.toLowerCase).forall(grp.name.toLowerCase.contains(_)))
+    }
 
     val nextId = if (filtered.length > maxItems) Some(filtered(maxItems - 1).id) else None
     val groups = filtered.take(maxItems)
 
     ListMyGroupsResponse(groups, groupNameFilter, startFrom, nextId, maxItems, ignoreAccess)
   }
+
+  def getGroupChange(
+    groupChangeId: String,
+    authPrincipal: AuthPrincipal
+  ): Result[GroupChangeInfo] =
+    for {
+      result <- groupChangeRepo
+        .getGroupChange(groupChangeId)
+        .toResult[Option[GroupChange]]
+      _ <- isGroupChangePresent(result).toResult
+      _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
+      allUserIds = getGroupUserIds(Seq(result.get))
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      groupChangeMessage <- determineGroupDifference(Seq(result.get), allUserMap)
+      groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
+      userIds = Seq(result.get).map(_.userId).toSet
+      users <- getUsers(userIds).map(_.users)
+      userMap = users.map(u => (u.id, u.userName)).toMap
+    } yield groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).head
 
   def getGroupActivity(
       groupId: String,
@@ -238,12 +275,80 @@ class MembershipService(
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
+      allUserIds = getGroupUserIds(result.changes)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      groupChangeMessage <- determineGroupDifference(result.changes, allUserMap)
+      groupChanges = (groupChangeMessage, result.changes).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
+      userIds = result.changes.map(_.userId).toSet
+      users <- getUsers(userIds).map(_.users)
+      userMap = users.map(u => (u.id, u.userName)).toMap
     } yield ListGroupChangesResponse(
-      result.changes.map(GroupChangeInfo.apply),
+      groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))),
       startFrom,
       result.lastEvaluatedTimeStamp,
       maxItems
     )
+
+  def getGroupUserIds(groupChange: Seq[GroupChange]): Set[String] = {
+    var userIds: Set[String] = Set.empty[String]
+    for (change <- groupChange) {
+      if (change.oldGroup.isDefined) {
+        val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
+        val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
+        val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
+        val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
+        userIds = userIds ++ adminAddDifference ++ adminRemoveDifference ++ memberAddDifference ++ memberRemoveDifference
+      }
+    }
+    userIds
+  }
+
+  def determineGroupDifference(groupChange: Seq[GroupChange],  allUserMap: Map[String, String]): Result[Seq[String]] = {
+    var groupChangeMessage: Seq[String] = Seq.empty[String]
+
+    for (change <- groupChange) {
+      val sb = new StringBuilder
+      if (change.oldGroup.isDefined) {
+        if (change.oldGroup.get.name != change.newGroup.name) {
+          sb.append(s"Group name changed to '${change.newGroup.name}'. ")
+        }
+        if (change.oldGroup.get.email != change.newGroup.email) {
+          sb.append(s"Group email changed to '${change.newGroup.email}'. ")
+        }
+        if (change.oldGroup.get.description != change.newGroup.description) {
+          sb.append(s"Group description changed to '${change.newGroup.description.get}'. ")
+        }
+        val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
+        if (adminAddDifference.nonEmpty) {
+          sb.append(s"Group admin/s with user name/s '${adminAddDifference.map(x => allUserMap(x)).mkString("','")}' added. ")
+        }
+        val adminRemoveDifference = change.oldGroup.get.adminUserIds.diff(change.newGroup.adminUserIds)
+        if (adminRemoveDifference.nonEmpty) {
+          sb.append(s"Group admin/s with user name/s '${adminRemoveDifference.map(x => allUserMap(x)).mkString("','")}' removed. ")
+        }
+        val memberAddDifference = change.newGroup.memberIds.diff(change.oldGroup.get.memberIds)
+        if (memberAddDifference.nonEmpty) {
+          sb.append(s"Group member/s with user name/s '${memberAddDifference.map(x => allUserMap(x)).mkString("','")}' added. ")
+        }
+        val memberRemoveDifference = change.oldGroup.get.memberIds.diff(change.newGroup.memberIds)
+        if (memberRemoveDifference.nonEmpty) {
+          sb.append(s"Group member/s with user name/s '${memberRemoveDifference.map(x => allUserMap(x)).mkString("','")}' removed. ")
+        }
+        groupChangeMessage = groupChangeMessage :+ sb.toString().trim
+      }
+      // It'll be in else statement if the group was created or deleted
+      else {
+        if (change.changeType == GroupChangeType.Create) {
+          sb.append("Group Created.")
+        }
+        else if (change.changeType == GroupChangeType.Delete){
+          sb.append("Group Deleted.")
+        }
+        groupChangeMessage = groupChangeMessage :+ sb.toString()
+      }
+    }
+    groupChangeMessage
+  }.toResult
 
   /**
    * Retrieves the requested User from the given userIdentifier, which can be a userId or username
@@ -276,6 +381,47 @@ class MembershipService(
       .getGroup(groupId)
       .orFail(GroupNotFoundError(s"Group with ID $groupId was not found"))
       .toResult[Group]
+
+  // Validate group details. Group name and email cannot be empty
+  def groupValidation(group: Group): Result[Unit] = {
+    Option(group) match {
+      case Some(value) if Option(value.name).forall(_.trim.isEmpty) || Option(value.email).forall(_.trim.isEmpty) =>
+        GroupValidationError(GroupValidationErrorMsg).asLeft
+      case _ =>
+        ().asRight
+    }
+  }.toResult
+   // Validate email details.Email domains details are fetched from the config file.
+  def emailValidation(email: String): Result[Unit] = {
+    val emailDomains = validDomains.valid_domains
+    val numberOfDots=  validDomains.number_of_dots
+    val splitEmailDomains = emailDomains.mkString(",")
+    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._+!&-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    val index = email.indexOf('@');
+    val emailSplit = if(index != -1){
+      email.substring(index+1,email.length)}
+    val wildcardEmailDomains=if(splitEmailDomains.contains("*")){
+      emailDomains.map(x=>x.replaceAllLiterally("*",""))}
+    else emailDomains
+
+    Option(email) match {
+      case Some(value) if (emailRegex.findFirstIn(value) != None && emailSplit.toString.count(_ == '.')>0)=>
+
+        if ((emailDomains.contains(emailSplit) || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))&&
+              emailSplit.toString.count(_ == '.')<=numberOfDots)
+        ().asRight
+        else {
+          if(emailSplit.toString.count(_ == '.')>numberOfDots){
+            EmailValidationError(DotsValidationErrorMsg + " " + numberOfDots).asLeft
+          }
+          else {
+            EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+          }
+        }
+      case _ =>
+        EmailValidationError(InvalidEmailValidationErrorMsg).asLeft
+    }}.toResult
+
 
   def groupWithSameNameDoesNotExist(name: String): Result[Unit] =
     groupRepo

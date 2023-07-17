@@ -17,12 +17,16 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
+import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
 import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
 
 object ZoneChangeHandler {
+
+  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneChangeHandler")
+
   def apply(
              zoneRepository: ZoneRepository,
              zoneChangeRepository: ZoneChangeRepository,
@@ -54,6 +58,7 @@ object ZoneChangeHandler {
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
             }
         case Right(_) =>
+          logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
           zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
       }
 }

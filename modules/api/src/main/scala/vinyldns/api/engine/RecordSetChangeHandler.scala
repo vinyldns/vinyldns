@@ -167,11 +167,11 @@ object RecordSetChangeHandler extends TransactionProvider {
           if (existingRecords.isEmpty) ReadyToApply(change)
           else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
             AlreadyApplied(change)
-          else Failure(change, "Incompatible record already exists in DNS.")
+          else Failure(change, "Incompatible record in DNS.")
 
         case RecordSetChangeType.Update =>
           if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
-            AlreadyApplied(change)
+          AlreadyApplied(change)
           else {
             // record must not exist in the DNS backend, or be synced if it exists
             val canApply = existingRecords.isEmpty ||
@@ -390,7 +390,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed validating update to DNS for change ${change.id}:${change.recordSet.name}: " + message
+            s"""Failed validating update to DNS for change "${change.id}": "${change.recordSet.name}": """ + message
           )
         )
       case Retry(_) => Retrying(change)
@@ -430,7 +430,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message"
+            s"""Failed verifying update to DNS for change "${change.id}":"${change.recordSet.name}": $message"""
           )
         )
       case _ => Retrying(change)

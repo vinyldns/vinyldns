@@ -18,7 +18,8 @@ package vinyldns.core.domain.record
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 sealed trait ChangeSetStatus {
   def intValue: Int = this match {
@@ -71,7 +72,7 @@ object ChangeSet {
     ChangeSet(
       id = UUID.randomUUID().toString,
       zoneId = change.zoneId,
-      createdTimestamp = DateTime.now.getMillis,
+      createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli,
       processingTimestamp = 0L,
       changes = Seq(change),
       status = ChangeSetStatus.Pending
@@ -81,7 +82,7 @@ object ChangeSet {
     ChangeSet(
       id = UUID.randomUUID().toString,
       zoneId = changes.head.zoneId,
-      createdTimestamp = DateTime.now.getMillis,
+      createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli,
       processingTimestamp = 0L,
       changes = changes,
       status = ChangeSetStatus.Pending

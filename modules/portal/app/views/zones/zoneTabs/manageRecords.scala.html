@@ -66,7 +66,7 @@
       <div class="vinyldns-panel-top">
         <div class="btn-group">
             <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
-            <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
+            <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
             <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
         </div>
 
@@ -105,11 +105,21 @@
             <thead>
                 <tr>
                     <th class="col-md-4">
-                        <a class="force-cursor" ng-click="toggleNameSort()">Name
-                            <i class="fa {{nameSortSymbol}}"></i>
+                        <a class="fa-force-cursor" ng-click="toggleNameSort()">Name
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{nameSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{nameSortSymbolDown}}"></i>
+                            </div>
                         </a>
                     </th>
-                    <th>Type</th>
+                    <th>
+                        <a class="fa-force-cursor" ng-click="toggleRecordTypeSort()">Type
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{recordTypeSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{recordTypeSortSymbolDown}}"></i>
+                            </div>
+                        </a>
+                    </th>
                     <th>TTL</th>
                     <th class="col-md-4">Record Data</th>
                     @if(meta.sharedDisplayEnabled) {
@@ -122,7 +132,7 @@
                 <tr ng-repeat="(recordName, record) in records track by $index">
                     <td>
                         <div ng-if="record.isDotted && record.type != 'TXT' && record.type != 'SRV' && record.type != 'NAPTR'" class="text-danger wrap-long-text" data-toggle="tooltip" data-placement="top"
-                        title="Dotted hosts are invalid! Please delete or update without a '.'">
+                        title="This is a dotted host!">
                             {{record.name}} <span class="fa fa-warning" />
                         </div>
                         <div class="wrap-long-text" ng-if="!record.isDotted || (record.type != 'TXT' || record.type != 'SRV' || record.type != 'NAPTR')">
@@ -324,7 +334,7 @@
                         </td>
                     }
                     <td>
-                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                        <span ng-if="(canReadZone && record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
                             <div class="table-form-group">
                                 <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
                                 <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>

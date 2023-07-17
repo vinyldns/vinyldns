@@ -47,4 +47,6 @@ case class ListDeletedZoneChangesResponse(
      ignoreAccess: Boolean = false
 )
 
-
+case class ListFailedZoneChangesResponse(
+                                          failedZoneChanges: List[ZoneChange] = Nil,
+                                        )

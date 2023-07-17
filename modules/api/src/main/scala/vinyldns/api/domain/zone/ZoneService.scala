@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.IO
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
@@ -27,6 +28,11 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
+import com.cronutils.model.definition.CronDefinition
+import com.cronutils.model.definition.CronDefinitionBuilder
+import com.cronutils.parser.CronParser
+import com.cronutils.model.CronType
+import vinyldns.api.domain.membership.MembershipService
 
 object ZoneService {
   def apply(
@@ -36,7 +42,8 @@ object ZoneService {
       zoneValidations: ZoneValidations,
       accessValidation: AccessValidationsAlgebra,
       backendResolver: BackendResolver,
-      crypto: CryptoAlgebra
+      crypto: CryptoAlgebra,
+      membershipService:MembershipService
   ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
@@ -48,7 +55,8 @@ object ZoneService {
       zoneValidations,
       accessValidation,
       backendResolver,
-      crypto
+      crypto,
+      membershipService
     )
 }
 
@@ -62,7 +70,8 @@ class ZoneService(
     zoneValidations: ZoneValidations,
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
-    crypto: CryptoAlgebra
+    crypto: CryptoAlgebra,
+    membershipService:MembershipService
 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
@@ -75,12 +84,17 @@ class ZoneService(
   ): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
+      _ <- membershipService.emailValidation(createZoneInput.email)
       _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
       _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
+      _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
+      _ <- validateCronString(isCronStringValid).toResult
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      zoneToCreate = Zone(createZoneInput, auth.isTestUser)
+      createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
+      zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
@@ -89,6 +103,7 @@ class ZoneService(
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(updateZoneInput.acl).toResult
+      _ <- membershipService.emailValidation(updateZoneInput.email)
       _ <- connectionValidator.isValidBackendId(updateZoneInput.backendId).toResult
       existingZone <- getZoneOrFail(updateZoneInput.id)
       _ <- validateSharedZoneAuthorized(
@@ -97,10 +112,14 @@ class ZoneService(
         auth.signedInUser
       ).toResult
       _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
+      _ <- if(updateZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(updateZoneInput.recurrenceSchedule.isDefined) isValidCronString(updateZoneInput.recurrenceSchedule.get) else true
+      _ <- validateCronString(isCronStringValid).toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
-      zoneWithUpdates = Zone(updateZoneInput, existingZone)
+      updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
+      zoneWithUpdates = Zone(updatedZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
@@ -142,20 +161,25 @@ class ZoneService(
       accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
+  // List zones. Uses zone name as default while using search to list zones or by admin group name if selected.
   def listZones(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false
+      searchByAdminGroup: Boolean = false,
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): Result[ListZonesResponse] = {
-    for {
-      listZonesResult <- zoneRepository.listZones(
-        authPrincipal,
-        nameFilter,
-        startFrom,
-        maxItems,
-        ignoreAccess
+    if(!searchByAdminGroup || nameFilter.isEmpty){
+      for {
+        listZonesResult <- zoneRepository.listZones(
+          authPrincipal,
+          nameFilter,
+          startFrom,
+          maxItems,
+          ignoreAccess,
+          includeReverse
       )
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
@@ -167,8 +191,33 @@ class ZoneService(
       listZonesResult.startFrom,
       listZonesResult.nextId,
       listZonesResult.maxItems,
-      listZonesResult.ignoreAccess
-    )
+      listZonesResult.ignoreAccess,
+      listZonesResult.includeReverse
+    )}
+    else {
+      for {
+        groupIds <- getGroupsIdsByName(nameFilter.get)
+        listZonesResult <- zoneRepository.listZonesByAdminGroupIds(
+          authPrincipal,
+          startFrom,
+          maxItems,
+          groupIds,
+          ignoreAccess,
+          includeReverse
+        )
+        zones = listZonesResult.zones
+        groups <- groupRepository.getGroups(groupIds)
+        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
+      } yield ListZonesResponse(
+        zoneSummaryInfos,
+        nameFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess,
+        listZonesResult.includeReverse
+      )
+    }
   }.toResult
 
   def listDeletedZones(
@@ -251,6 +300,25 @@ class ZoneService(
         .toResult[ListZoneChangesResults]
     } yield ListZoneChangesResponse(zone.id, zoneChangesResults)
 
+  def listFailedZoneChanges(
+                             authPrincipal: AuthPrincipal
+                           ): Result[ListFailedZoneChangesResponse] =
+    for {
+      zoneChangesFailedResults <- zoneChangeRepository
+        .listFailedZoneChanges()
+        .toResult[List[ZoneChange]]
+      _ <- zoneAccess(zoneChangesFailedResults, authPrincipal).toResult
+    } yield {
+      ListFailedZoneChangesResponse(zoneChangesFailedResults)}
+
+  def zoneAccess(
+                  zoneCh: List[ZoneChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    zoneCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
+
   def addACLRule(
       zoneId: String,
       aclRuleInfo: ACLRuleInfo,
@@ -294,8 +362,34 @@ class ZoneService(
     } yield zoneChange
   }
 
+  def getGroupsIdsByName(groupName: String): IO[Set[String]] = {
+    groupRepository.getGroupsByName(groupName).map(x => x.map(_.id))
+  }
+
   def getBackendIds(): Result[List[String]] =
     backendResolver.ids.toList.toResult
+
+  def isValidCronString(maybeString: String): Boolean = {
+    val isValid = try {
+      val cronDefinition: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
+      val parser: CronParser = new CronParser(cronDefinition)
+      val quartzCron = parser.parse(maybeString)
+      quartzCron.validate
+      true
+    }
+    catch {
+      case _: Exception =>
+        false
+    }
+    isValid
+  }
+
+  def validateCronString(isValid: Boolean): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest("Invalid cron expression. Please enter a valid cron expression in 'recurrenceSchedule'.")
+    )(
+      isValid
+    )
 
   def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository
@@ -309,6 +403,13 @@ class ZoneService(
         case _ => ().asRight
       }
       .toResult
+
+  def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(s"User '${auth.signedInUser.userName}' is not authorized to schedule zone sync in this zone.")
+    )(
+      auth.isSystemAdmin
+    )
 
   def adminGroupExists(groupId: String): Result[Unit] =
     groupRepository

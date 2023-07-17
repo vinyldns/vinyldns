@@ -73,7 +73,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
             .bindByName(
               'id -> groupChange.id,
               'group_id -> groupChange.newGroup.id,
-              'created_timestamp -> groupChange.created.getMillis,
+              'created_timestamp -> groupChange.created.toEpochMilli,
               'data -> fromGroupChange(groupChange)
             )
             .update()
@@ -124,7 +124,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
 
           val nextId =
             if (queryResult.size < maxItems) None
-            else queryResult.lastOption.map(_.created.getMillis.toString)
+            else queryResult.lastOption.map(_.created.toEpochMilli.toString)
 
           ListGroupChangesResults(queryResult, nextId)
         }

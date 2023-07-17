@@ -23,12 +23,17 @@ angular.module('controller.records', [])
 
     $scope.query = "";
     $scope.nameSort = "asc";
-    $scope.nameSortSymbol = "fa-chevron-up";
+    $scope.recordTypeSort = "none";
+    $scope.nameSortSymbolUp = "toggle-on";
+    $scope.nameSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
+    $scope.recordTypeSortSymbolDown = "toggle-off";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.selectedRecordTypes = [];
+    $scope.naptrFlags = ["U", "S", "A", "P"];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
@@ -369,8 +374,7 @@ angular.module('controller.records', [])
     function determineAdmin(){
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
-        $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || $scope.zoneInfo.shared ||
-            canCreateRecordsViaAcl();
+        $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl() || $scope.zoneInfo.shared;
 
         function canCreateRecordsViaAcl() {
             return $scope.zoneInfo.acl.rules.some(b => b.accessLevel == "Write" || b.accessLevel == "Delete")
@@ -401,7 +405,7 @@ angular.module('controller.records', [])
 
     $scope.refreshZone = function() {
         function success(response) {
-            $log.log('recordsService::getZone-success');
+            $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             // Get current user's groups and determine if they're an admin of this zone
             getMembership()
@@ -416,7 +420,7 @@ angular.module('controller.records', [])
 
     $scope.syncZone = function() {
         function success(response) {
-            $log.log('recordsService::syncZone-success');
+            $log.debug('recordsService::syncZone-success');
             location.reload();
         }
         return recordsService
@@ -429,7 +433,7 @@ angular.module('controller.records', [])
 
     $scope.refreshRecordChangesPreview = function() {
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             var newChanges = [];
             angular.forEach(response.data.recordSetChanges, function(change) {
                 newChanges.push(change);
@@ -447,7 +451,7 @@ angular.module('controller.records', [])
     $scope.refreshRecordChanges = function() {
         changePaging = pagingService.resetPaging(changePaging);
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             changePaging.next = response.data.nextId;
             updateChangeDisplay(response.data.recordSetChanges)
         }
@@ -470,12 +474,12 @@ angular.module('controller.records', [])
     $scope.refreshRecords = function() {
         recordsPaging = pagingService.resetPaging(recordsPaging);
         function success(response) {
-            $log.log('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
+            $log.debug('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
             recordsPaging.next = response.data.nextId;
             updateRecordDisplay(response.data.recordSets);
         }
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::listRecordSetsByZone-failure');
@@ -516,7 +520,7 @@ angular.module('controller.records', [])
     $scope.prevPage = function() {
         var startFrom = pagingService.getPrevStartFrom(recordsPaging);
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(function(response) {
                 recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                 updateRecordDisplay(response.data.recordSets);
@@ -528,7 +532,7 @@ angular.module('controller.records', [])
 
     $scope.nextPage = function() {
         return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
                 .then(function(response) {
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
@@ -543,12 +547,33 @@ angular.module('controller.records', [])
     };
 
     $scope.toggleNameSort = function() {
+    $scope.recordTypeSort = "none"
+    $scope.recordTypeSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
         if ($scope.nameSort == "asc") {
             $scope.nameSort = "desc";
-            $scope.nameSortSymbol = "fa-chevron-down";
+            $scope.nameSortSymbolDown = "toggle-on";
+            $scope.nameSortSymbolUp = "toggle-off";
         } else {
             $scope.nameSort = "asc";
-            $scope.nameSortSymbol = "fa-chevron-up";
+            $scope.nameSortSymbolDown = "toggle-off";
+            $scope.nameSortSymbolUp = "toggle-on";
+        }
+        return $scope.refreshRecords();
+    };
+
+    $scope.toggleRecordTypeSort = function() {
+        $scope.nameSort = ""
+        $scope.nameSortSymbolDown = "toggle-off";
+        $scope.nameSortSymbolUp = "toggle-off";
+        if ($scope.recordTypeSort == "asc") {
+            $scope.recordTypeSort = "desc";
+            $scope.recordTypeSortSymbolDown = "toggle-on";
+            $scope.recordTypeSortSymbolUp = "toggle-off";
+        } else {
+            $scope.recordTypeSort = "asc";
+            $scope.recordTypeSortSymbolDown = "toggle-off";
+            $scope.recordTypeSortSymbolUp = "toggle-on";
         }
         return $scope.refreshRecords();
     };
@@ -608,7 +633,7 @@ angular.module('controller.records', [])
     function profileSuccess(results) {
         if (results.data) {
             $scope.profile = results.data;
-            $log.log('profileService::getAuthenticatedUserData-success');
+            $log.debug('profileService::getAuthenticatedUserData-success');
         }
     }
 

@@ -95,6 +95,49 @@ def test_create_zone_success(shared_zone_test_context):
             client.abandon_zones([result_zone["id"]], status=202)
 
 
+def test_create_zone_success_number_of_dots(shared_zone_test_context):
+    """
+    Test successfully creating a zone
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        # Include a space in the zone name to verify that it is trimmed and properly formatted
+        zone_name = f"one-time{shared_zone_test_context.partition_id} "
+
+        zone = {
+            "name": zone_name,
+            "email": "test@ok.dummy.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "backendId": "func-test-backend"
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        get_result = client.get_zone(result_zone["id"])
+
+        get_zone = get_result["zone"]
+        assert_that(get_zone["name"], is_(zone["name"].strip() + "."))
+        assert_that(get_zone["email"], is_(zone["email"]))
+        assert_that(get_zone["adminGroupId"], is_(zone["adminGroupId"]))
+        assert_that(get_zone["latestSync"], is_not(none()))
+        assert_that(get_zone["status"], is_("Active"))
+        assert_that(get_zone["backendId"], is_("func-test-backend"))
+
+        # confirm that the recordsets in DNS have been saved in vinyldns
+        recordsets = client.list_recordsets_by_zone(result_zone["id"])["recordSets"]
+
+        assert_that(len(recordsets), is_(7))
+        for rs in recordsets:
+            small_rs = dict((k, rs[k]) for k in ["name", "type", "records"])
+            small_rs["records"] = small_rs["records"]
+            assert_that(retrieve_dns_records(shared_zone_test_context), has_item(small_rs))
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
+
+
 @pytest.mark.skip_production
 def test_create_zone_without_transfer_connection_leaves_it_empty(shared_zone_test_context):
     """
@@ -179,6 +222,59 @@ def test_create_invalid_zone_data(shared_zone_test_context):
     errors = client.create_zone(zone, status=400)["errors"]
     assert_that(errors, contains_inanyorder("Do not know how to convert JString(invalid_value) into boolean"))
 
+def test_create_invalid_email(shared_zone_test_context):
+    """
+    Test that creating a zone with invalid email
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
+
+    zone = {
+        "name": zone_name,
+        "email": "test.abc.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
+    }
+
+    errors = client.create_zone(zone, status=400)
+    assert_that(errors, is_("Please enter a valid Email."))
+
+def test_create_invalid_email_number_of_dots(shared_zone_test_context):
+    """
+    Test that creating a zone with invalid email
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
+
+    zone = {
+        "name": zone_name,
+        "email": "test@abc.ok.dummy.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
+    }
+
+    errors = client.create_zone(zone, status=400)
+    assert_that(errors, is_("Please enter a valid Email. Number of dots allowed after @ is 2"))
+
+def test_create_invalid_domain(shared_zone_test_context):
+    """
+    Test that creating a zone with invalid domain
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = f"one-time{shared_zone_test_context.partition_id} "
+
+    zone = {
+        "name": zone_name,
+        "email": "test@abc.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
+    }
+
+    errors = client.create_zone(zone, status=400)
+    assert_that(errors, is_("Please enter a valid Email. Valid domains should end with test.com,dummy.com"))
 
 @pytest.mark.serial
 def test_create_zone_with_connection_failure(shared_zone_test_context):

@@ -21,7 +21,7 @@ import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.{DomainValidationError, DomainValidationErrorType}
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
@@ -33,6 +33,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
 
   val batchChangeSerializers = Seq(
     JsonEnumV(ChangeInputType),
+    JsonEnumV(RecordType),
     JsonEnumV(SingleChangeStatus),
     JsonEnumV(BatchChangeStatus),
     JsonEnumV(BatchChangeApprovalStatus),
@@ -62,7 +63,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         (js \ "comments").optional[String],
         changeList,
         (js \ "ownerGroupId").optional[String],
-        (js \ "scheduledTime").optional[DateTime]
+        (js \ "scheduledTime").optional[Instant]
       ).mapN(BatchChangeInput(_, _, _, _))
     }
   }
@@ -248,8 +249,23 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         js.required[MXData](
           "Missing BatchChangeInput.changes.record.preference and BatchChangeInput.changes.record.exchange"
         )
+      case NS => js.required[NSData]("Missing BatchChangeInput.changes.record.nsdname")
+      case SRV => js.required[SRVData](
+          "Missing BatchChangeInput.changes.record.priority and " +
+          "Missing BatchChangeInput.changes.record.weight and " +
+          "Missing BatchChangeInput.changes.record.port and " +
+          "Missing BatchChangeInput.changes.record.target"
+      )
+      case NAPTR => js.required[NAPTRData](
+        "Missing BatchChangeInput.changes.record.order and " +
+          "Missing BatchChangeInput.changes.record.preference and " +
+          "Missing BatchChangeInput.changes.record.flags and " +
+          "Missing BatchChangeInput.changes.record.service and " +
+          "Missing BatchChangeInput.changes.record.regexp and " +
+          "Missing BatchChangeInput.changes.record.replacement"
+      )
       case _ =>
-        s"Unsupported type $typ, valid types include: A, AAAA, CNAME, PTR, TXT, and MX".invalidNel
+        s"Unsupported type $typ, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR".invalidNel
     }
   }
 }

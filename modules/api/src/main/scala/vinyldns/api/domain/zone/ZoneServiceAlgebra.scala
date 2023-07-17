@@ -42,7 +42,9 @@ trait ZoneServiceAlgebra {
       nameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      ignoreAccess: Boolean
+      searchByAdminGroup: Boolean,
+      ignoreAccess: Boolean,
+      includeReverse: Boolean
   ): Result[ListZonesResponse]
 
   def listDeletedZones(
@@ -74,4 +76,7 @@ trait ZoneServiceAlgebra {
 
   def getBackendIds(): Result[List[String]]
 
+  def listFailedZoneChanges(
+                             authPrincipal: AuthPrincipal
+                           ): Result[ListFailedZoneChangesResponse]
 }

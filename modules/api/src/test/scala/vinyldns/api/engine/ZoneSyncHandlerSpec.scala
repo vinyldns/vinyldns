@@ -17,7 +17,8 @@
 package vinyldns.api.engine
 
 import cats.effect._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{doReturn, reset, times, verify}
@@ -29,7 +30,7 @@ import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -39,6 +40,7 @@ import vinyldns.core.domain.zone._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.engine.ZoneSyncHandler.{monitor, time}
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.mysql.TransactionProvider
 
 class ZoneSyncHandlerSpec
@@ -88,7 +90,7 @@ class ZoneSyncHandlerSpec
             )
             IO.pure(
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             )
@@ -135,7 +137,7 @@ class ZoneSyncHandlerSpec
                 _ <- saveRecordSets
                 _ <- saveRecordSetDatas
               } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )
             }
@@ -180,16 +182,16 @@ class ZoneSyncHandlerSpec
     zoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testReverseZone = Zone(
     reverseZoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testRecord1 = RecordSet(
@@ -198,7 +200,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.A,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("1.1.1.1"))
   )
   private val testRecord2 = RecordSet(
@@ -207,7 +209,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.A,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("2.2.2.2"))
   )
   private val testRecordDotted = RecordSet(
@@ -216,7 +218,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.A,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("3.3.3.3"))
   )
   private val testRecordDottedOk = RecordSet(
@@ -225,7 +227,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.A,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("4.4.4.4"))
   )
 
@@ -235,7 +237,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.PTR,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(PTRData(Fqdn("test.com.")))
   )
   private val testReverseSOA = RecordSet(
@@ -244,7 +246,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.SOA,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(SOAData(Fqdn("mname"), "rname", 1439234395, 10800, 3600, 604800, 38400))
   )
   private val testReverseNS = RecordSet(
@@ -253,7 +255,7 @@ class ZoneSyncHandlerSpec
     typ = RecordType.NS,
     ttl = 100,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(NSData(Fqdn("172.17.42.1.")))
   )
 
@@ -310,7 +312,7 @@ class ZoneSyncHandlerSpec
     )
 
     doReturn(
-      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, None, NameSort.ASC))
+      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, None, NameSort.ASC, recordTypeSort = RecordTypeSort.NONE))
     ).when(recordSetRepo)
       .listRecordSets(
         any[Option[String]],
@@ -319,7 +321,8 @@ class ZoneSyncHandlerSpec
         any[Option[String]],
         any[Option[Set[RecordType]]],
         any[Option[String]],
-        any[NameSort]
+        any[NameSort],
+        any[RecordTypeSort],
       )
 
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[DB], any[ChangeSet])

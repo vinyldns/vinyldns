@@ -23,7 +23,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -93,13 +94,13 @@ class BatchChangeRoutingSpec()
         ownerGroupId: Option[String] = None,
         auth: AuthPrincipal = okAuth,
         approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved,
-        scheduledTime: Option[DateTime] = None
+        scheduledTime: Option[Instant] = None
     ): BatchChange =
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
         comments,
-        DateTime.now,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
         List(
           SingleAddChange(
             Some("zoneId"),
@@ -205,7 +206,7 @@ class BatchChangeRoutingSpec()
     val validResponseWithOwnerGroupId: BatchChange =
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
 
-    val testScheduledTime: DateTime = DateTime.now.secondOfDay().roundFloorCopy()
+    val testScheduledTime: Instant = Instant.now.truncatedTo(ChronoUnit.SECONDS)
     val validResponseWithCommentsAndScheduled = createBatchChangeResponse(
       comments = Some("validResponseWithCommentsAndScheduled"),
       scheduledTime = Some(testScheduledTime)
@@ -444,7 +445,7 @@ class BatchChangeRoutingSpec()
         case ("notFoundUser", _) =>
           EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
         case ("schedNotPastDue", _) =>
-          EitherT(IO.pure(ScheduledChangeNotDue(DateTime.now).asLeft))
+          EitherT(IO.pure(ScheduledChangeNotDue(Instant.now.truncatedTo(ChronoUnit.MILLIS)).asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
 
@@ -531,7 +532,7 @@ class BatchChangeRoutingSpec()
         compact(
           render(
             ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
-              .decompose(DateTime.now.secondOfDay().roundFloorCopy())) ~~ changeList
+              .decompose(Instant.now.truncatedTo(ChronoUnit.SECONDS))) ~~ changeList
           )
         )
 

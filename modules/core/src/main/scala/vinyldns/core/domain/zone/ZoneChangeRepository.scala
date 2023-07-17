@@ -37,4 +37,6 @@ trait ZoneChangeRepository extends Repository {
                  maxItems: Int = 100,
                  ignoreAccess: Boolean = false
                ): IO[ListDeletedZonesChangeResults]
+  def listFailedZoneChanges(
+                           ): IO[List[ZoneChange]]
 }
