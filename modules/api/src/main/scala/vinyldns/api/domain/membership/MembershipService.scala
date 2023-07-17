@@ -316,7 +316,8 @@ class MembershipService(
           sb.append(s"Group email changed to '${change.newGroup.email}'. ")
         }
         if (change.oldGroup.get.description != change.newGroup.description) {
-          sb.append(s"Group description changed to '${change.newGroup.description.get}'. ")
+          val description = if(change.newGroup.description.isEmpty) "" else change.newGroup.description.get
+          sb.append(s"Group description changed to '$description'. ")
         }
         val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
         if (adminAddDifference.nonEmpty) {
