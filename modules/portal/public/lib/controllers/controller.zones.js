@@ -115,7 +115,7 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-                    .getDeletedZones(zonesPaging.maxItems, undefined, $scope.query)
+                    .getDeletedZones(deleteZonesPaging.maxItems, undefined, $scope.query)
                     .then(function (response) {
                         $log.debug('zonesService::getDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
                         deleteZonesPaging.next = response.data.nextId;

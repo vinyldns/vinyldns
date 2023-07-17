@@ -146,12 +146,12 @@ class MySqlZoneChangeRepository
   }
 
   def listDeletedZones(
-                 authPrincipal: AuthPrincipal,
-                 zoneNameFilter: Option[String] = None,
-                 startFrom: Option[String] = None,
-                 maxItems: Int = 100,
-                 ignoreAccess: Boolean = false
-               ): IO[ListDeletedZonesChangeResults] =
+                        authPrincipal: AuthPrincipal,
+                        zoneNameFilter: Option[String] = None,
+                        startFrom: Option[String] = None,
+                        maxItems: Int = 100,
+                        ignoreAccess: Boolean = false
+                      ): IO[ListDeletedZonesChangeResults] =
     monitor("repo.ZoneChange.listDeletedZoneInZoneChanges") {
       IO {
         DB.readOnly { implicit s =>
@@ -164,26 +164,32 @@ class MySqlZoneChangeRepository
 
           val zoneChangeResults: List[ZoneChange] =
             SQL(query)
-            .bind(accessors: _*)
-            .map(extractZoneChange(1))
-            .list()
-            .apply()
+              .bind(accessors: _*)
+              .map(extractZoneChange(1))
+              .list()
+              .apply()
 
-          // get only deleted zones data.
           val deletedZoneResults: List[ZoneChange] =
             zoneChangeResults.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct
 
-          val results: List[ZoneChange]=
-          if(zoneNameFilter.nonEmpty){
-            deletedZoneResults.filter(r=>r.zone.name.contains(zoneNameFilter.getOrElse("not found")))
-          }else {
-            deletedZoneResults
-          }.take(maxItems+1)
+          val results: List[ZoneChange] =
+            if (zoneNameFilter.nonEmpty) {
+              deletedZoneResults.filter(r => r.zone.name.contains(zoneNameFilter.getOrElse("not found")))
+            } else {
+              deletedZoneResults
+            }
+
+          val deletedZonesWithStartFrom: List[ZoneChange] = startFrom match {
+            case Some(zoneName) => results.dropWhile(_.zone.name != zoneName)
+            case None => results
+          }
+
+          val deletedZonesWithMaxItems = deletedZonesWithStartFrom.take(maxItems + 1)
 
           val (newResults, nextId) =
-            if (results.size > maxItems)
-              (results.dropRight(1), results.dropRight(1).lastOption.map(_.zone.name))
-            else (results, None)
+            if (deletedZonesWithMaxItems.size > maxItems)
+              (deletedZonesWithMaxItems.dropRight(1), deletedZonesWithMaxItems.lastOption.map(_.zone.name))
+            else (deletedZonesWithMaxItems, None)
 
           ListDeletedZonesChangeResults(
             zoneDeleted = newResults,
@@ -193,9 +199,7 @@ class MySqlZoneChangeRepository
             zoneChangeFilter = zoneNameFilter,
             ignoreAccess = ignoreAccess
           )
-        }
-      }
-    }
+        }}}
 
   private def extractZoneChange(colIndex: Int): WrappedResultSet => ZoneChange = res => {
     fromPB(VinylDNSProto.ZoneChange.parseFrom(res.bytes(colIndex)))
