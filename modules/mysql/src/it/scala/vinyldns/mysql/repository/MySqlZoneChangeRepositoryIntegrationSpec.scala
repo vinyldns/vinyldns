@@ -234,7 +234,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         )
 
       val listResponse = repo.listFailedZoneChanges(100).unsafeRunSync()
-      listResponse shouldBe (List(),0,0,100)
+      listResponse shouldBe ListFailedZoneChangesResults(List(),0,0,100)
     }
 
     "get zone changes using a maxItems of 1" in {
