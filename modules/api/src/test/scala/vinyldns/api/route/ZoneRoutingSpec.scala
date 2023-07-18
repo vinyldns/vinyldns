@@ -135,7 +135,10 @@ class ZoneRoutingSpec
   )
 
   private val listFailedZoneChangeResponse = ListFailedZoneChangesResponse(
-    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed))
+    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed)),
+    nextId = 0,
+    startFrom = 0,
+    maxItems = 100
   )
 
   val crypto = new JavaCrypto(
@@ -360,6 +363,7 @@ class ZoneRoutingSpec
 
     def listFailedZoneChanges(
                                authPrincipal: AuthPrincipal,
+                               startFrom: Int,
                                maxItems: Int
                              ): Result[ListFailedZoneChangesResponse] = {
       val outcome = authPrincipal match {

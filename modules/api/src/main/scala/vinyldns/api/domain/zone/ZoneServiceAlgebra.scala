@@ -69,6 +69,7 @@ trait ZoneServiceAlgebra {
 
   def listFailedZoneChanges(
                              authPrincipal: AuthPrincipal,
+                             startFrom: Int,
                              maxItems: Int
                            ): Result[ListFailedZoneChangesResponse]
 }

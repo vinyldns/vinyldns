@@ -68,6 +68,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       s"${goodUser.userName}.zone$i.",
       "test@test.com",
       status = ZoneStatus.Active,
+      adminGroupId = goodUser.id,
       connection = testConnection
     )
 
@@ -167,7 +168,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       listResponse.startFrom should equal(None)
     }
 
-    "get all failedChanges for a failed zone changes" in {
+    "get all failedChanges for a failed zone changes with and without StartFrom, MaxItems" in {
       zones.map(zoneRepo.save(_)).toList.parSequence.unsafeRunTimed(5.minutes)
         .getOrElse(
           fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec")
@@ -181,10 +182,47 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         )
 
       val expectedChanges =
-        failedChanges.toList
+        failedChanges.sortBy(_.created.toEpochMilli).reverse.toList
 
-      val listResponse = repo.listFailedZoneChanges(100).unsafeRunSync()
-      listResponse should contain theSameElementsAs(expectedChanges)
+      val listResponse = repo.listFailedZoneChanges(100,0).unsafeRunSync()
+      listResponse.items should equal(expectedChanges)
+      listResponse.nextId should equal(0)
+      listResponse.startFrom should equal(0)
+      listResponse.maxItems should equal(100)
+
+      val listResponse1 = repo.listFailedZoneChanges(2,1).unsafeRunSync()
+      listResponse1.items.size should equal(2)
+      listResponse1.nextId should equal(3)
+      listResponse1.startFrom should equal(1)
+      listResponse1.maxItems should equal(2)
+
+      val expectedPageOne = List(expectedChanges(0))
+      val expectedPageTwo = List(expectedChanges(1))
+      val expectedPageThree = List(expectedChanges(2))
+
+      val pageOne =
+        repo.listFailedZoneChanges(maxItems = 1, startFrom = 0).unsafeRunSync()
+      pageOne.items.size should equal(1)
+      pageOne.items should equal(expectedPageOne)
+      pageOne.nextId should equal(1)
+      pageOne.startFrom should equal(0)
+
+      // get second page
+      val pageTwo =
+        repo.listFailedZoneChanges(maxItems = 1, startFrom = pageOne.nextId).unsafeRunSync()
+      pageTwo.items.size should equal(1)
+      pageTwo.items should equal(expectedPageTwo)
+      pageTwo.nextId should equal(2)
+      pageTwo.startFrom should equal(pageOne.nextId)
+
+      // get final page
+      // next id should be none now
+      val pageThree =
+      repo.listFailedZoneChanges( maxItems = 1, startFrom = pageTwo.nextId).unsafeRunSync()
+      pageThree.items.size should equal(1)
+      pageThree.items should equal(expectedPageThree)
+      pageThree.nextId should equal(3)
+      pageThree.startFrom should equal(pageTwo.nextId)
     }
 
     "get empty list in failedChanges for a success zone changes" in {

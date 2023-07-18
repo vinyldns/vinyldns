@@ -52,7 +52,7 @@ class MySqlZoneChangeRepository
          |SELECT zc.data
          |  FROM zone_change zc
          |  JOIN zone z ON z.id = zc.zone_id
-         |  LIMIT {maxItems}
+         |  ORDER BY zc.created_timestamp DESC
     """.stripMargin
 
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
@@ -110,19 +110,19 @@ class MySqlZoneChangeRepository
       }
     }
 
-  def listFailedZoneChanges(maxItems: Int): IO[List[ZoneChange]] =
+  def listFailedZoneChanges(maxItems: Int, startFrom: Int): IO[ListFailedZoneChangesResults] =
     monitor("repo.ZoneChange.listFailedZoneChanges") {
       IO {
         DB.readOnly { implicit s =>
           val queryResult = LIST_ZONES_CHANGES_DATA
-            .bindByName('maxItems -> maxItems)
             .map(extractZoneChange(1))
             .list()
             .apply()
 
-          val failedZoneChanges = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed)
+          val failedZoneChanges = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed).drop(startFrom).take(maxItems)
+          val nextId = if (failedZoneChanges.size < maxItems) 0 else startFrom + maxItems
 
-          failedZoneChanges
+          ListFailedZoneChangesResults(failedZoneChanges,nextId,startFrom,maxItems)
         }
       }
     }

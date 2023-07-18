@@ -137,7 +137,7 @@ class MySqlRecordChangeRepository
             .map(toRecordSetChange)
             .list()
             .apply()
-          val failedRecordSetChanges = queryResult.filter(zc => zc.status == RecordSetChangeStatus.Failed).drop(startFrom).take(maxItems)
+          val failedRecordSetChanges = queryResult.filter(rc => rc.status == RecordSetChangeStatus.Failed).drop(startFrom).take(maxItems)
           val nextId = if (failedRecordSetChanges.size < maxItems) 0 else startFrom + maxItems
           ListFailedRecordSetChangesResults(failedRecordSetChanges,nextId,startFrom,maxItems)
         }
