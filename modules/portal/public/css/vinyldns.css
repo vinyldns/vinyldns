@@ -142,6 +142,25 @@ a.action-link {
     cursor: pointer;
 }
 
+.fa-force-cursor {
+    cursor: pointer;
+    display: inline-flex;
+}
+
+.fa-chevron-icon {
+    display: inline-flex;
+    flex-direction: column;
+    margin-left: 5px;
+}
+
+.toggle-on{
+    color: #1b1e24
+}
+
+.toggle-off{
+    color: #D3D3D3;
+}
+
 .vinyldns-login {
     background: #1b1e24!important;
 }
@@ -439,6 +458,10 @@ input[type="file"] {
     align-items: center;
 }
 
+.paginate_left {
+    float: left;
+}
+
 .vinyldns_page_number {
     margin-right: 10px;
 }
@@ -539,3 +562,7 @@ input[type="file"] {
     margin: 0px;
 }
 /* Ending of css override for cron library and it's associated elements used in zone sync scheduling */
+
+#set-dropdown-width {
+    width: 4em;
+}

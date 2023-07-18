@@ -37,6 +37,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordTypeSort.{ASC, DESC, RecordTypeSort}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 
@@ -529,7 +530,8 @@ class RecordSetRoutingSpec
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -589,7 +591,8 @@ class RecordSetRoutingSpec
                            recordTypeFilter: Option[Set[RecordType]],
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
-                           authPrincipal: AuthPrincipal
+                           authPrincipal: AuthPrincipal,
+                           recordTypeSort: RecordTypeSort
                          ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -639,10 +642,49 @@ class RecordSetRoutingSpec
                               recordTypeFilter: Option[Set[RecordType]],
                               recordOwnerGroupFilter: Option[String],
                               nameSort: NameSort,
-                              authPrincipal: AuthPrincipal
+                              authPrincipal: AuthPrincipal,
+                              recordTypeSort: RecordTypeSort
                             ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==DESC =>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==ASC=>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
           Right(
             ListRecordSetsByZoneResponse(
@@ -655,7 +697,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               recordOwnerGroupFilter,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
         case okZone.id if recordTypeFilter.isEmpty =>
@@ -672,7 +715,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               None,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
       }
@@ -1084,6 +1128,38 @@ class RecordSetRoutingSpec
       }
     }
 
+    "return all recordSets types in descending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(soa.typ, cname.typ, aaaa.typ))
+      }
+    }
+
+    "return all recordSets types in ascending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(aaaa.typ, cname.typ, soa.typ))
+
+      }
+    }
+
+    "return all record name in ascending order when name and type sort simultaneously" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.name) shouldBe List(aaaa.name, cname.name, soa.name))
+
+      }
+    }
+
     "return recordsets of a specific type" in {
       Get(s"/zones/${okZone.id}/recordsets?recordTypeFilter=cname") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
@@ -1482,11 +1558,11 @@ class RecordSetRoutingSpec
     }
 
     "return errors for invalid NAPTR record data" in {
+      val validFlags = List("U", "S", "A", "P")
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
           ("replacement" -> Random.alphanumeric.take(260).mkString) ~~
-            // should check regex better
             ("regexp" -> Random.alphanumeric.take(260).mkString) ~~
             ("service" -> Random.alphanumeric.take(260).mkString) ~~
             ("flags" -> Random.alphanumeric.take(2).mkString) ~~
@@ -1495,18 +1571,18 @@ class RecordSetRoutingSpec
         ),
         "NAPTR.order must be an unsigned 16 bit number",
         "NAPTR.preference must be an unsigned 16 bit number",
-        "NAPTR.flags must be less than 2 characters",
+        "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P",
         "NAPTR.service must be less than 255 characters",
-        "NAPTR.regexp must be less than 255 characters",
+        "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty",
         "NAPTR.replacement must be less than 255 characters"
       )
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
-          ("regexp" -> Random.alphanumeric.take(10).mkString) ~~
+          ("regexp" -> "") ~~
             ("service" -> Random.alphanumeric.take(10).mkString) ~~
             ("replacement" -> Random.alphanumeric.take(10).mkString) ~~
-            ("flags" -> Random.alphanumeric.take(1).mkString) ~~
+            ("flags" -> validFlags.take(1).mkString) ~~
             ("order" -> -1) ~~
             ("preference" -> -1)
         ),

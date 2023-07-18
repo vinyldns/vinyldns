@@ -49,8 +49,8 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
-  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"))
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List())
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
+  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -307,6 +307,11 @@ class MembershipServiceSpec
         error shouldBe a[EmailValidationError]
       }
 
+      "return an error if an invalid email with number of dots is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test@ok.ok.dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
+
       "return an error if an invalid email with * is entered" in {
         val error = underTest.createGroup(groupInfo.copy(email = "test@*dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[EmailValidationError]
@@ -360,6 +365,11 @@ class MembershipServiceSpec
 
     "Check whether test.com is a valid email" in {
       val result = underTest.emailValidation(email = "test@test.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
+    "Check whether test.com is a valid email with number of dots" in {
+      val result = underTest.emailValidation(email = "test@ok.dummy.com").value.unsafeRunSync()
       result shouldBe Right(())
     }
 
