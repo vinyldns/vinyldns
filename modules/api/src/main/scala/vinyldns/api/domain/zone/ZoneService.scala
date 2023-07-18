@@ -174,7 +174,8 @@ class ZoneService(
       startFrom: Option[String] = None,
       maxItems: Int = 100,
       searchByAdminGroup: Boolean = false,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): Result[ListZonesResponse] = {
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
@@ -183,21 +184,22 @@ class ZoneService(
           nameFilter,
           startFrom,
           maxItems,
-          ignoreAccess
-        )
-        zones = listZonesResult.zones
-        groupIds = zones.map(_.adminGroupId).toSet
-        groups <- groupRepository.getGroups(groupIds)
-        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
-      } yield ListZonesResponse(
-        zoneSummaryInfos,
-        listZonesResult.zonesFilter,
-        listZonesResult.startFrom,
-        listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+          ignoreAccess,
+          includeReverse
       )
-    }
+      zones = listZonesResult.zones
+      groupIds = zones.map(_.adminGroupId).toSet
+      groups <- groupRepository.getGroups(groupIds)
+      zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
+    } yield ListZonesResponse(
+      zoneSummaryInfos,
+      listZonesResult.zonesFilter,
+      listZonesResult.startFrom,
+      listZonesResult.nextId,
+      listZonesResult.maxItems,
+      listZonesResult.ignoreAccess,
+      listZonesResult.includeReverse
+    )}
     else {
       for {
         groupIds <- getGroupsIdsByName(nameFilter.get)
@@ -206,7 +208,8 @@ class ZoneService(
           startFrom,
           maxItems,
           groupIds,
-          ignoreAccess
+          ignoreAccess,
+          includeReverse
         )
         zones = listZonesResult.zones
         groups <- groupRepository.getGroups(groupIds)
@@ -217,7 +220,8 @@ class ZoneService(
         listZonesResult.startFrom,
         listZonesResult.nextId,
         listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.ignoreAccess,
+        listZonesResult.includeReverse
       )
     }
   }.toResult

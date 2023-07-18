@@ -24,7 +24,8 @@
             $scope.recordSetChanges = {};
             $scope.alerts = [];
             $scope.nameSort = "asc";
-            $scope.nameSortSymbol = "fa-chevron-up";
+            $scope.nameSortSymbolUp = "toggle-on";
+            $scope.nameSortSymbolDown = "toggle-off";
             $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
             $scope.selectedRecordTypes = [];
             $scope.groups = [];
@@ -158,10 +159,12 @@
             $scope.toggleNameSort = function() {
                 if ($scope.nameSort == "asc") {
                     $scope.nameSort = "desc";
-                    $scope.nameSortSymbol = "fa-chevron-down";
+                    $scope.nameSortSymbolDown = "toggle-on";
+                    $scope.nameSortSymbolUp = "toggle-off";
                 } else {
                     $scope.nameSort = "asc";
-                    $scope.nameSortSymbol = "fa-chevron-up";
+                    $scope.nameSortSymbolDown = "toggle-off";
+                    $scope.nameSortSymbolUp = "toggle-on";
                 }
                 return $scope.refreshRecords();
             };

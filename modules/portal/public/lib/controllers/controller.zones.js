@@ -34,6 +34,7 @@ angular.module('controller.zones', [])
     }
 
     $scope.query = "";
+    $scope.includeReverse = true;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
@@ -173,7 +174,7 @@ angular.module('controller.zones', [])
         allZonesPaging = pagingService.resetPaging(allZonesPaging);
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true, $scope.includeReverse)
             .then(function (response) {
                 $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;
@@ -187,7 +188,7 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true, $scope.includeReverse)
             .then(function (response) {
                 $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 allZonesPaging.next = response.data.nextId;
@@ -306,7 +307,7 @@ angular.module('controller.zones', [])
     $scope.prevPageMyZones = function() {
         var startFrom = pagingService.getPrevStartFrom(zonesPaging);
         return zonesService
-            .getZones(zonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false)
+            .getZones(zonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false, true)
             .then(function(response) {
                 zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
                 updateZoneDisplay(response.data.zones);
@@ -319,7 +320,7 @@ angular.module('controller.zones', [])
     $scope.prevPageAllZones = function() {
         var startFrom = pagingService.getPrevStartFrom(allZonesPaging);
         return zonesService
-            .getZones(allZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(allZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, true, true)
             .then(function(response) {
                 allZonesPaging = pagingService.prevPageUpdate(response.data.nextId, allZonesPaging);
                 updateAllZonesDisplay(response.data.zones);
@@ -331,7 +332,7 @@ angular.module('controller.zones', [])
 
     $scope.nextPageMyZones = function () {
         return zonesService
-            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, $scope.searchByAdminGroup, false)
+            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, $scope.searchByAdminGroup, false, true)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 zonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, zonesPaging);
@@ -347,7 +348,7 @@ angular.module('controller.zones', [])
 
     $scope.nextPageAllZones = function () {
         return zonesService
-            .getZones(allZonesPaging.maxItems, allZonesPaging.next, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(allZonesPaging.maxItems, allZonesPaging.next, $scope.query, $scope.searchByAdminGroup, true, true)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 allZonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, allZonesPaging);

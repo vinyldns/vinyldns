@@ -1688,7 +1688,8 @@ class RecordSetServiceSpec
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC,
-            recordOwnerGroupFilter = Some("owner group id")
+            recordOwnerGroupFilter = Some("owner group id") ,
+            recordTypeSort = RecordTypeSort.NONE
           )
         )
       ).when(mockRecordRepo)
@@ -1699,7 +1700,8 @@ class RecordSetServiceSpec
           recordNameFilter = any[Option[String]],
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
-          nameSort = any[NameSort.NameSort]
+          nameSort = any[NameSort.NameSort],
+          recordTypeSort = any[RecordTypeSort.RecordTypeSort]
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1711,7 +1713,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = sharedAuth
+            authPrincipal = sharedAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1736,7 +1739,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -1760,7 +1764,8 @@ class RecordSetServiceSpec
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC,
-            recordOwnerGroupFilter = Some("owner group id")
+            recordOwnerGroupFilter = Some("owner group id"),
+            recordTypeSort = RecordTypeSort.NONE
           )
         )
       ).when(mockRecordDataRepo)
@@ -1783,7 +1788,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = sharedAuth
+            authPrincipal = sharedAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1808,7 +1814,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -1827,7 +1834,8 @@ class RecordSetServiceSpec
         IO.pure(
           ListRecordSetResults(
             List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup),
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.ASC
           )
         )
       ).when(mockRecordRepo)
@@ -1838,7 +1846,8 @@ class RecordSetServiceSpec
           recordNameFilter = None,
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordTypeSort = RecordTypeSort.ASC
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1851,7 +1860,8 @@ class RecordSetServiceSpec
             authPrincipal = sharedAuth,
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1872,7 +1882,7 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroups(Set())
 
-      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC)))
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC, recordTypeSort = RecordTypeSort.NONE)))
         .when(mockRecordRepo)
         .listRecordSets(
           zoneId = Some(okZone.id),
@@ -1881,7 +1891,8 @@ class RecordSetServiceSpec
           recordNameFilter = None,
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordTypeSort = RecordTypeSort.ASC
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1894,7 +1905,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
-            authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
+            authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty),
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1913,7 +1925,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
