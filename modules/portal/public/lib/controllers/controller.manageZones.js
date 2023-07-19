@@ -307,6 +307,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.objectsDiffer = function(left, right) {
+        if (!('recurrenceSchedule' in left)) {
+            left['recurrenceSchedule'] = "";
+        }
         var l = $scope.normalizeZone(left);
         var r = $scope.normalizeZone(right);
         return !angular.equals(l, r);
