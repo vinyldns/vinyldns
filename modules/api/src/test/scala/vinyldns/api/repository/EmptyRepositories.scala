@@ -19,11 +19,12 @@ package vinyldns.api.repository
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneRepository, ListZonesResults}
+import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
 import scalikejdbc._
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.NameSort.NameSort
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
 // Empty implementations let our other test classes just edit with the methods they need
@@ -42,9 +43,10 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
                       recordNameFilter: Option[String],
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
-                      nameSort: NameSort
+                      nameSort: NameSort,
+                      recordTypeSort: RecordTypeSort
                     ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults(nameSort = nameSort))
+    IO.pure(ListRecordSetResults(nameSort = nameSort,recordTypeSort=recordTypeSort))
 
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
@@ -73,7 +75,7 @@ trait EmptyRecordSetCacheRepo extends RecordSetCacheRepository {
                          recordOwnerGroupFilter: Option[String],
                          nameSort: NameSort
                        ): IO[ListRecordSetResults] =
-    IO.pure(ListRecordSetResults(nameSort = nameSort))
+    IO.pure(ListRecordSetResults(nameSort = nameSort, recordTypeSort = RecordTypeSort.NONE))
 }
 
 trait EmptyZoneRepo extends ZoneRepository {
@@ -89,7 +91,8 @@ trait EmptyZoneRepo extends ZoneRepository {
      startFrom: Option[String] = None,
      maxItems: Int = 100,
      adminGroupIds: Set[String],
-     ignoreAccess: Boolean = false
+     ignoreAccess: Boolean = false,
+     includeReverse: Boolean = true
    ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def listZones(
@@ -97,7 +100,8 @@ trait EmptyZoneRepo extends ZoneRepository {
                  zoneNameFilter: Option[String] = None,
                  startFrom: Option[String] = None,
                  maxItems: Int = 100,
-                 ignoreAccess: Boolean = false
+                 ignoreAccess: Boolean = false,
+                 includeReverse: Boolean = true
                ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())

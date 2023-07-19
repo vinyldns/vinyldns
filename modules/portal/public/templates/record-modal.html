@@ -59,7 +59,7 @@
             <modal-element ng-if="currentRecord.type == 'PTR'"
                            label="FQDN (one per line)"
                            invalid-when="addRecordForm.$submitted && addRecordForm.ptrRecordData.$invalid">
-                <textarea name="recordData"
+                <textarea name="ptrRecordData"
                           ng-model="currentRecord.ptrRecordData"
                           rows="5"
                           class="form-control"
@@ -116,6 +116,7 @@
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in dsAlgorithms"
                                     ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -126,6 +127,7 @@
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in dsDigestTypes"
                                     ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -338,6 +340,8 @@
                                     ng-model="item.flags"
                                     ng-class="recordModal.details.class"
                                     ng-options="flag for flag in naptrFlags"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -394,6 +398,8 @@
                                     ng-model="item.algorithm"
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in sshfpAlgorithms"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -403,6 +409,8 @@
                                     ng-model="item.type"
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in sshfpTypes"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
