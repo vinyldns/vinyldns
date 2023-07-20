@@ -24,7 +24,7 @@ case class Meta(
     defaultTtl: Long,
     manualBatchChangeReviewEnabled: Boolean,
     scheduledBatchChangesEnabled: Boolean,
-    portalUrl: String
+    portalUrl: String,
     maxGroupItemsDisplay: Int
 )
 object Meta {
@@ -36,7 +36,7 @@ object Meta {
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
       config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false),
-      config.getOptional[String]("portal.vinyldns.url").getOrElse("http://localhost:9001")
-      config.getOptional[Int]("api.limits.membership-routing-max-groups-list-limit").getOrElse(2500)
+      config.getOptional[String]("portal.vinyldns.url").getOrElse("http://localhost:9001"),
+      config.getOptional[Int]("api.limits.membership-routing-max-groups-list-limit").getOrElse(3000)
     )
 }

@@ -29,7 +29,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.hasGroups = false;
     $scope.query = "";
     $scope.validEmailDomains= [];
-    $scope.maxGroupItemsDisplay = 2000;
+    $scope.maxGroupItemsDisplay = 3000;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
