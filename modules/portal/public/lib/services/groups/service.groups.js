@@ -43,6 +43,10 @@ angular.module('service.groups', [])
             var url = '/api/groups/' + id;
             return $http.get(url);
         };
+        this.listEmailDomains = function () {
+                    var url = '/api/groups/valid/domains'
+                    return $http.get(url);
+                };
 
         this.deleteGroups = function (id) {
             var url = '/api/groups/' + id;

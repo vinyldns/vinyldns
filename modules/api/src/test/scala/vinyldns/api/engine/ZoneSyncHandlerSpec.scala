@@ -30,7 +30,7 @@ import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -40,6 +40,7 @@ import vinyldns.core.domain.zone._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.engine.ZoneSyncHandler.{monitor, time}
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.mysql.TransactionProvider
 
 class ZoneSyncHandlerSpec
@@ -181,16 +182,16 @@ class ZoneSyncHandlerSpec
     zoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testReverseZone = Zone(
     reverseZoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+    connection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress)),
+    transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, Encrypted(dnsTsig), dnsServerAddress))
   )
 
   private val testRecord1 = RecordSet(
@@ -311,7 +312,7 @@ class ZoneSyncHandlerSpec
     )
 
     doReturn(
-      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, None, NameSort.ASC))
+      IO(ListRecordSetResults(List(testRecord1), None, None, None, None, None, None, NameSort.ASC, recordTypeSort = RecordTypeSort.NONE))
     ).when(recordSetRepo)
       .listRecordSets(
         any[Option[String]],
@@ -320,7 +321,8 @@ class ZoneSyncHandlerSpec
         any[Option[String]],
         any[Option[Set[RecordType]]],
         any[Option[String]],
-        any[NameSort]
+        any[NameSort],
+        any[RecordTypeSort],
       )
 
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[DB], any[ChangeSet])

@@ -26,7 +26,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChange
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.core.domain.{Fqdn, record, zone}
+import vinyldns.core.domain.{Encrypted, Fqdn, record, zone}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -125,7 +125,9 @@ trait ProtobufConversions {
       adminGroupId = zn.getAdminGroupId,
       latestSync = if (zn.hasLatestSync) Some(Instant.ofEpochMilli(zn.getLatestSync)) else None,
       isTest = zn.getIsTest,
-      backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None
+      backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None,
+      recurrenceSchedule = if (zn.hasRecurrenceSchedule) Some(zn.getRecurrenceSchedule) else None,
+      scheduleRequestor = if (zn.hasScheduleRequestor) Some(zn.getScheduleRequestor) else None
     )
   }
 
@@ -133,7 +135,7 @@ trait ProtobufConversions {
     ZoneConnection(
       zc.getName,
       zc.getKeyName,
-      zc.getKey,
+      Encrypted(zc.getKey),
       zc.getPrimaryServer,
       fromPB(zc.getAlgorithm)
     )
@@ -401,6 +403,8 @@ trait ProtobufConversions {
     zone.transferConnection.foreach(cn => builder.setTransferConnection(toPB(cn)))
     zone.latestSync.foreach(dt => builder.setLatestSync(dt.toEpochMilli))
     zone.backendId.foreach(bid => builder.setBackendId(bid))
+    zone.recurrenceSchedule.foreach(rs => builder.setRecurrenceSchedule(rs))
+    zone.scheduleRequestor.foreach(rs => builder.setScheduleRequestor(rs))
     builder.build()
   }
 
@@ -418,7 +422,7 @@ trait ProtobufConversions {
       .newBuilder()
       .setName(conn.name)
       .setKeyName(conn.keyName)
-      .setKey(conn.key)
+      .setKey(conn.key.value)
       .setPrimaryServer(conn.primaryServer)
       .setAlgorithm(toPB(conn.algorithm))
       .build()
@@ -442,7 +446,7 @@ trait ProtobufConversions {
     User(
       data.getUserName,
       data.getAccessKey,
-      data.getSecretKey,
+      Encrypted(data.getSecretKey),
       if (data.hasFirstName) Some(data.getFirstName) else None,
       if (data.hasLastName) Some(data.getLastName) else None,
       if (data.hasEmail) Some(data.getEmail) else None,
@@ -459,7 +463,7 @@ trait ProtobufConversions {
       .newBuilder()
       .setUserName(user.userName)
       .setAccessKey(user.accessKey)
-      .setSecretKey(user.secretKey)
+      .setSecretKey(user.secretKey.value)
       .setCreated(user.created.toEpochMilli)
       .setId(user.id)
       .setIsSuper(user.isSuper)

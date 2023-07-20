@@ -26,7 +26,8 @@ import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType}
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
+import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType, RecordTypeSort}
 import vinyldns.core.domain.zone.ZoneCommandResult
 
 import scala.concurrent.duration._
@@ -52,7 +53,8 @@ case class ListRecordSetsByZoneResponse(
                                          recordNameFilter: Option[String] = None,
                                          recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
-                                         nameSort: NameSort
+                                         nameSort: NameSort,
+                                         recordTypeSort: RecordTypeSort
                                        )
 
 class RecordSetRoute(
@@ -100,7 +102,8 @@ class RecordSetRoute(
           "recordNameFilter".?,
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
-          "nameSort".as[String].?("ASC")
+          "nameSort".as[String].?("ASC"),
+          "recordTypeSort".as[String].?("None")
         ) {
           (
             startFrom: Option[String],
@@ -108,7 +111,8 @@ class RecordSetRoute(
             recordNameFilter: Option[String],
             recordTypeFilter: Option[String],
             recordOwnerGroupFilter: Option[String],
-            nameSort: String
+            nameSort: String,
+            recordTypeSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -126,8 +130,9 @@ class RecordSetRoute(
                       convertedRecordTypeFilter,
                       recordOwnerGroupFilter,
                       NameSort.find(nameSort),
-                      _
-                    )
+                      _,
+                      RecordTypeSort.find(recordTypeSort),
+                )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
                 }
@@ -144,7 +149,8 @@ class RecordSetRoute(
           "recordNameFilter".as[String],
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
-          "nameSort".as[String].?("ASC")
+          "nameSort".as[String].?("ASC"),
+          "recordTypeSort".as[String].?("NONE")
         ) {
           (
             startFrom: Option[String],
@@ -152,7 +158,8 @@ class RecordSetRoute(
             recordNameFilter: String,
             recordTypeFilter: Option[String],
             recordOwnerGroupFilter: Option[String],
-            nameSort: String
+            nameSort: String,
+            recordTypeSort: String
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -169,7 +176,8 @@ class RecordSetRoute(
                       convertedRecordTypeFilter,
                       recordOwnerGroupFilter,
                       NameSort.find(nameSort),
-                      _
+                      _,
+                      RecordTypeSort.find(recordTypeSort)
                     )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
@@ -215,8 +223,8 @@ class RecordSetRoute(
     } ~
     path("zones" / Segment / "recordsetchanges") { zoneId =>
       (get & monitor("Endpoint.listRecordSetChanges")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (startFrom: Option[String], maxItems: Int) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[Int], maxItems: Int) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -233,7 +241,17 @@ class RecordSetRoute(
             }
         }
       }
+    } ~
+    path("metrics" / "health" / "recordsetchangesfailure") {
+      (get & monitor("Endpoint.listFailedRecordSetChanges")) {
+          handleRejections(invalidQueryHandler) {
+              authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_)) {
+                  changes =>
+                  complete(StatusCodes.OK, changes)
+            }
+        }
     }
+}
 
   private val invalidQueryHandler = RejectionHandler
     .newBuilder()

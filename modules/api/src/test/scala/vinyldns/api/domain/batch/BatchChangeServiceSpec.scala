@@ -66,7 +66,7 @@ class BatchChangeServiceSpec
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val nonFatalErrorZoneDiscoveryError = ZoneDiscoveryError("test")
-  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test", AData("1.1.1.1"), true)
+  private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test")
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
@@ -75,7 +75,8 @@ class BatchChangeServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.manualReviewConfig,
     VinylDNSTestHelpers.batchChangeConfig,
-    VinylDNSTestHelpers.scheduledChangesConfig
+    VinylDNSTestHelpers.scheduledChangesConfig,
+    VinylDNSTestHelpers.approvedNameServers
   )
   private val ttl = Some(200L)
 
@@ -306,6 +307,10 @@ class BatchChangeServiceSpec
   }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
+
+    override def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+      IO.pure(Set(Zone("dummyZone", "test@test.com")))
+
     override def getZones(zoneIds: Set[String]): IO[Set[Zone]] = {
       val zones = zoneIds.map(Zone(_, "test@test.com"))
       IO.pure(zones)
@@ -352,6 +357,9 @@ class BatchChangeServiceSpec
         ipv6PTR17Zone,
         ipv6PTR18Zone
       )
+
+    override def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+      IO.pure(dbZones.filter(zn => zn.recurrenceSchedule.isDefined))
 
     override def getZones(zoneIds: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneIds.contains(zn.id)))

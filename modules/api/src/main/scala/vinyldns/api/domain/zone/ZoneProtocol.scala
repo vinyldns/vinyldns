@@ -44,6 +44,8 @@ case class ZoneInfo(
                      adminGroupName: String,
                      latestSync: Option[Instant],
                      backendId: Option[String],
+                     recurrenceSchedule: Option[String],
+                     scheduleRequestor: Option[String],
                      accessLevel: AccessLevel
                    )
 
@@ -70,6 +72,8 @@ object ZoneInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       backendId = zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
     )
 }
@@ -90,6 +94,8 @@ case class ZoneSummaryInfo(
                             adminGroupName: String,
                             latestSync: Option[Instant],
                             backendId: Option[String],
+                            recurrenceSchedule: Option[String],
+                            scheduleRequestor: Option[String],
                             accessLevel: AccessLevel
                           )
 
@@ -111,6 +117,8 @@ object ZoneSummaryInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
     )
 }
@@ -266,7 +274,8 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
 
 // Errors

@@ -19,7 +19,7 @@
 angular.module('service.zones', [])
     .service('zonesService', function ($http, groupsService, $log, utilityService) {
 
-        this.getZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess) {
+        this.getZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess, includeReverse) {
             if (query == "") {
                 query = null;
             }
@@ -28,7 +28,8 @@ angular.module('service.zones', [])
                 "startFrom": startFrom,
                 "nameFilter": query,
                 "searchByAdminGroup": searchByAdminGroup,
-                "ignoreAccess": ignoreAccess
+                "ignoreAccess": ignoreAccess,
+                "includeReverse": includeReverse
             };
             var url = groupsService.urlBuilder("/api/zones", params);
             let loader = $("#loader");
@@ -59,7 +60,7 @@ angular.module('service.zones', [])
 
         this.sendZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: sending zone", sanitizedPayload);
+            $log.debug("service.zones: sending zone", sanitizedPayload);
             return $http.post("/api/zones", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 
@@ -69,7 +70,7 @@ angular.module('service.zones', [])
 
         this.updateZone = function (id, payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: updating zone", sanitizedPayload);
+            $log.debug("service.zones: updating zone", sanitizedPayload);
             return $http.put("/api/zones/"+id, sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 

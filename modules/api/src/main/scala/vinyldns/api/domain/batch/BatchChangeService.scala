@@ -20,6 +20,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
@@ -340,7 +341,7 @@ class BatchChangeService(
   ): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | CNAME | MX | TXT => forwardZoneDiscovery(change, zoneMap)
+        case A | AAAA | CNAME | MX | TXT | NS | NAPTR | SRV => forwardZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
         case PTR if validateIpv6Address(change.inputName).isValid =>
@@ -470,14 +471,15 @@ class BatchChangeService(
     val hardErrorsPresent = allErrors.exists(_.isFatal)
     val noErrors = allErrors.isEmpty
     val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+    val isNSRecordsPresent = batchChangeInput.changes.exists(_.typ == NS)
 
     if (hardErrorsPresent) {
       // Always error out
       errorResponse
-    } else if (noErrors && !isScheduled) {
+    } else if (noErrors && !isScheduled && !isNSRecordsPresent) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else if (this.manualReviewEnabled && allowManualReview) {
+    } else if (this.manualReviewEnabled && allowManualReview || isNSRecordsPresent) {
       if ((noErrors && isScheduled) || batchChangeInput.ownerGroupId.isDefined) {
         // There are no errors and this is scheduled
         // or we have soft errors and owner group is defined

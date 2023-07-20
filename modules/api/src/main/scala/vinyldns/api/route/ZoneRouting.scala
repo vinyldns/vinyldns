@@ -21,6 +21,7 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.config.LimitsConfig
+import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
@@ -62,6 +63,7 @@ class ZoneRoute(
     case RecentSyncError(msg) => complete(StatusCodes.Forbidden, msg)
     case ZoneInactiveError(msg) => complete(StatusCodes.BadRequest, msg)
     case InvalidRequest(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val zoneRoute: Route = path("zones") {
@@ -79,14 +81,16 @@ class ZoneRoute(
           "startFrom".as[String].?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "searchByAdminGroup".as[Boolean].?(false),
-          "ignoreAccess".as[Boolean].?(false)
+          "ignoreAccess".as[Boolean].?(false),
+          "includeReverse".as[Boolean].?(true)
         ) {
           (
               nameFilter: Option[String],
               startFrom: Option[String],
               maxItems: Int,
               searchByAdminGroup: Boolean,
-              ignoreAccess: Boolean
+              ignoreAccess: Boolean,
+              includeReverse: Boolean
           ) =>
             {
               handleRejections(invalidQueryHandler) {
@@ -96,7 +100,7 @@ class ZoneRoute(
                 ) {
                   authenticateAndExecute(
                     zoneService
-                      .listZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess)
+                      .listZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess, includeReverse)
                   ) { result =>
                     complete(StatusCodes.OK, result)
                   }
@@ -160,6 +164,16 @@ class ZoneRoute(
                 }
               }
             }
+        }
+      }
+    } ~
+    path("metrics" / "health" / "zonechangesfailure") {
+      (get & monitor("Endpoint.listFailedZoneChanges")) {
+        handleRejections(invalidQueryHandler) {
+          authenticateAndExecute(zoneService.listFailedZoneChanges(_)) {
+            changes =>
+              complete(StatusCodes.OK, changes)
+          }
         }
       }
     } ~

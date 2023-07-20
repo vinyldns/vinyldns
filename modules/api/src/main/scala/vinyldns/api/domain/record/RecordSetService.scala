@@ -35,6 +35,7 @@ import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 
 import scala.util.matching.Regex
 
@@ -145,8 +146,9 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
+      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
@@ -407,7 +409,8 @@ class RecordSetService(
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
-                      authPrincipal: AuthPrincipal
+                      authPrincipal: AuthPrincipal,
+                      recordTypeSort: RecordTypeSort
                     ): Result[ListGlobalRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -420,7 +423,8 @@ class RecordSetService(
           Some(formattedRecordNameFilter),
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -458,7 +462,8 @@ class RecordSetService(
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse] = {
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -483,7 +488,8 @@ class RecordSetService(
           Some(formattedRecordNameFilter),
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         ).toResult[ListRecordSetResults]
       }
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -511,7 +517,8 @@ class RecordSetService(
                             recordTypeFilter: Option[Set[RecordType]],
                             recordOwnerGroupFilter: Option[String],
                             nameSort: NameSort,
-                            authPrincipal: AuthPrincipal
+                            authPrincipal: AuthPrincipal,
+                            recordTypeSort: RecordTypeSort
                           ): Result[ListRecordSetsByZoneResponse] =
     for {
       zone <- getZone(zoneId)
@@ -524,7 +531,8 @@ class RecordSetService(
           recordNameFilter,
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -539,7 +547,8 @@ class RecordSetService(
       recordSetResults.recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      recordSetResults.recordTypeSort
     )
 
   def getRecordSetChange(
@@ -568,7 +577,7 @@ class RecordSetService(
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String] = None,
+                            startFrom: Option[Int] = None,
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
@@ -580,6 +589,25 @@ class RecordSetService(
         .toResult[ListRecordSetChangesResults]
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
     } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal
+                                ): Result[ListFailedRecordSetChangesResponse] =
+    for {
+      recordSetChangesFailedResults <- recordChangeRepository
+        .listFailedRecordSetChanges()
+        .toResult[List[RecordSetChange]]
+      _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
+    } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)
+
+  def zoneAccess(
+                  RecordSetCh: List[RecordSetChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    RecordSetCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
 
   def getZone(zoneId: String): Result[Zone] =
     zoneRepository

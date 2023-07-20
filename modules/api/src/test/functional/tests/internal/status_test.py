@@ -77,7 +77,7 @@ def test_toggle_processing(shared_zone_test_context):
 
     # Create changes to make sure we can process after the toggle
     # attempt to perform an update
-    ok_zone["email"] = "foo@bar.com"
+    ok_zone["email"] = "test@test.com"
     zone_change_result = client.update_zone(ok_zone, status=202)
 
     # attempt to a create a record

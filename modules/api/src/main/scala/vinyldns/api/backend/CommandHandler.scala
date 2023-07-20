@@ -39,6 +39,7 @@ import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
+import java.io.{PrintWriter, StringWriter}
 
 object CommandHandler {
 
@@ -94,7 +95,9 @@ object CommandHandler {
         )
         .parJoin(maxOpen)
         .handleErrorWith { error =>
-          logger.error("Encountered unexpected error in main flow", error)
+          val errorMessage = new StringWriter
+          error.printStackTrace(new PrintWriter(errorMessage))
+          logger.error(s"Encountered unexpected error in main flow. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
 
           // just continue, the flow should never stop unless explicitly told to do so
           flow()
@@ -123,7 +126,9 @@ object CommandHandler {
         .handleErrorWith { error =>
           // on error, we make sure we still continue; should only stop when the app stops
           // or processing is disabled
-          logger.error("Encountered error polling message queue", error)
+          val errorMessage = new StringWriter
+          error.printStackTrace(new PrintWriter(errorMessage))
+          logger.error(s"Encountered error polling message queue. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
 
           // just keep going on the stream
           pollingStream()
@@ -137,7 +142,7 @@ object CommandHandler {
     _.evalMap[IO, Any] { message =>
       message.command match {
         case sync: ZoneChange
-            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
+            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
           logger.info(s"Updating visibility timeout for zone change; changeId=${sync.id}")
           mq.changeMessageTimeout(message, 1.hour)
 
@@ -158,7 +163,7 @@ object CommandHandler {
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
-            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
+            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
           outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>
@@ -182,7 +187,9 @@ object CommandHandler {
       .attempt
       .map {
         case Left(e) =>
-          logger.warn(s"Failed processing message need to retry; $message", e)
+          val errorMessage = new StringWriter
+          e.printStackTrace(new PrintWriter(errorMessage))
+          logger.warn(s"Failed processing message need to retry; $message. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
           RetryMessage(message)
         case Right(ok) => ok
       }

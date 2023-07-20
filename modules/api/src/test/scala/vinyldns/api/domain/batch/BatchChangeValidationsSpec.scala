@@ -65,7 +65,8 @@ class BatchChangeValidationsSpec
       VinylDNSTestHelpers.highValueDomainConfig,
       VinylDNSTestHelpers.manualReviewConfig,
       VinylDNSTestHelpers.batchChangeConfig,
-      VinylDNSTestHelpers.scheduledChangesConfig
+      VinylDNSTestHelpers.scheduledChangesConfig,
+      VinylDNSTestHelpers.approvedNameServers
     )
 
   import underTest._
@@ -234,6 +235,61 @@ class BatchChangeValidationsSpec
   }
 
   property(
+    "isApprovedNameServer: should be valid if the name server is on approved name server list"
+  ) {
+    isApprovedNameServer(VinylDNSTestHelpers.approvedNameServers, NSData(Fqdn("some.test.ns."))) shouldBe ().validNel
+  }
+
+  property(
+    "isApprovedNameServer: should throw an error if the name server is not on approved name server list"
+  ) {
+    val nsData = NSData(Fqdn("not.valid."))
+    isApprovedNameServer(VinylDNSTestHelpers.approvedNameServers, nsData) shouldBe NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
+  }
+
+  property(
+    "containsApprovedNameServers: should be valid if the name server is on approved name server list"
+  ) {
+    containsApprovedNameServers(NSData(Fqdn("some.test.ns.")), VinylDNSTestHelpers.approvedNameServers) shouldBe ().validNel
+  }
+
+  property(
+    "containsApprovedNameServers: should throw an error if the name server is not on approved name server list"
+  ) {
+    val nsData = NSData(Fqdn("not.valid."))
+    containsApprovedNameServers(nsData, VinylDNSTestHelpers.approvedNameServers) shouldBe NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
+  }
+
+  property(
+    "isOriginRecord: should return true if the record is origin"
+  ) {
+    isOriginRecord("@", "ok.") shouldBe true
+    isOriginRecord("ok.", "ok.") shouldBe true
+  }
+
+  property(
+    "isOriginRecord: should return false if the record is not origin"
+  ) {
+    isOriginRecord("dummy.ok.", "ok.") shouldBe false
+  }
+
+  property(
+    "isNotOrigin: should be valid if the record is not origin"
+  ) {
+    val recordSetName = "ok.zone.recordsets."
+    val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
+    isNotOrigin(recordSetName, okZone, error) shouldBe InvalidBatchRequest(error).invalidNel
+  }
+
+  property(
+    "isNotOrigin: should throw an error if the record is origin"
+  ) {
+    val recordSetName = "test."
+    val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
+    isNotOrigin(recordSetName, okZone, error) shouldBe ().validNel
+  }
+
+  property(
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled"
   ) {
     val input = BatchChangeInput(None, List(), scheduledTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
@@ -357,7 +413,8 @@ class BatchChangeValidationsSpec
         VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
         VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = false)
+        ScheduledChangesConfig(enabled = false),
+        VinylDNSTestHelpers.approvedNameServers
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled
@@ -378,7 +435,8 @@ class BatchChangeValidationsSpec
         VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
         VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = true)
+        ScheduledChangesConfig(enabled = true),
+        VinylDNSTestHelpers.approvedNameServers
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture
@@ -507,6 +565,14 @@ class BatchChangeValidationsSpec
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {
+    val goodNSInput = AddChangeInput("test-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.test.ns.")))
+    val goodNAPTRInput = AddChangeInput("test-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "!^.*$!sip:jd@corpxyz.com!", Fqdn("target")))
+    val goodSRVInput = AddChangeInput("test-srv.example.com.", RecordType.SRV, ttl, SRVData(1, 2, 3, Fqdn("target.vinyldns.")))
+    val badNSInput = AddChangeInput("test-bad-ns.example.com.", RecordType.NS, ttl, NSData(Fqdn("some.te$st.ns.")))
+    val badNAPTRInput = AddChangeInput("test-bad-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(99999, 2, "S", "E2U+sip", "", Fqdn("target")))
+    val badNAPTRFlagInput = AddChangeInput("test-bad-flag-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "t", "E2U+sip", "", Fqdn("target")))
+    val badNAPTRRegexpInput = AddChangeInput("test-bad-regexp-naptr.example.com.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "dummyregexp", Fqdn("target")))
+    val badSRVInput = AddChangeInput("test-bad-srv.example.com.", RecordType.SRV, ttl, SRVData(99999, 2, 3, Fqdn("target.vinyldns.")))
     val goodInput = AddChangeInput("test.example.com.", RecordType.A, ttl, AData("1.1.1.1"))
     val goodAAAAInput =
       AddChangeInput("testAAAA.example.com.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
@@ -516,17 +582,25 @@ class BatchChangeValidationsSpec
       AddChangeInput("testbad.example.com.", RecordType.AAAA, ttl, AAAAData("invalidIpv6:123"))
     val result =
       validateInputChanges(
-        List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input),
+        List(goodNSInput, goodNAPTRInput, goodSRVInput, goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input, badNSInput, badNAPTRInput, badNAPTRFlagInput, badNAPTRRegexpInput, badSRVInput),
         false
       )
     result(0) shouldBe valid
     result(1) shouldBe valid
-    result(2) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
-    result(3) should haveInvalid[DomainValidationError](InvalidIpv6Address("invalidIpv6:123"))
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) shouldBe valid
+    result(5) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
+    result(6) should haveInvalid[DomainValidationError](InvalidIpv6Address("invalidIpv6:123"))
+    result(7) should haveInvalid[DomainValidationError](InvalidDomainName("some.te$st.ns."))
+    result(8) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "order", "NAPTR"))
+    result(9) should haveInvalid[DomainValidationError](InvalidNaptrFlag("t"))
+    result(10) should haveInvalid[DomainValidationError](InvalidNaptrRegexp("dummyregexp"))
+    result(11) should haveInvalid[DomainValidationError](InvalidMX_NAPTR_SRVData(99999, 0, 65535, "priority", "SRV"))
   }
 
   property("""validateInputName: should fail with a HighValueDomainError
-      |if inputName is a High Value Domain""".stripMargin) {
+             |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, ttl, AData("1.1.1.1"))
     val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, ttl, PTRData(Fqdn("test.")))
     val changeIpV6 =
@@ -571,7 +645,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""zoneDoesNotRequireManualReview: should fail with RecordRequiresManualReview
-              |if zone name matches domain requiring manual review""".stripMargin) {
+             |if zone name matches domain requiring manual review""".stripMargin) {
     val addChangeInput =
       AddChangeInput("not-allowed.zone.NEEDS.review", RecordType.A, ttl, AData("1.1.1.1"))
     val addChangeForValidation = AddChangeForValidation(
@@ -599,14 +673,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteRRSetChangeInput("invalidDomainName$", RecordType.A)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteRRSetChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change, false)
@@ -615,7 +689,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidIp.111"
     val change = DeleteRRSetChangeInput(invalidIp, RecordType.PTR)
     val result = validateInputName(change, false)
@@ -639,14 +713,14 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name""".stripMargin) {
+             |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
-      |if validateHostName fails for an invalid domain name length""".stripMargin) {
+             |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change, false)
@@ -676,7 +750,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidIpv6Address
-      |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
+             |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
     val invalidIpv6 = "invalidIpv6:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, ttl, AAAAData(invalidIpv6))
     val result = validateAddChangeInput(change, false)
@@ -703,7 +777,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: should fail with InvalidDomainName
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "$$$"
     val change =
       AddChangeInput(
@@ -717,8 +791,23 @@ class BatchChangeValidationsSpec
     result should haveInvalid[DomainValidationError](InvalidCname(s"$invalidCNAMERecordData.",false))
   }
 
+  property("""validateAddChangeInput: should fail with Invalid CNAME
+             |if validateRecordData fails for IPv4 Address in CNAME record data""".stripMargin) {
+    val invalidCNAMERecordData = "1.2.3.4"
+    val change =
+      AddChangeInput(
+        "test.comcast.com.",
+        RecordType.CNAME,
+        ttl,
+        CNAMEData(Fqdn(invalidCNAMERecordData))
+      )
+    val result = validateAddChangeInput(change, false)
+
+    result should haveInvalid[DomainValidationError](InvalidIPv4CName(s"Fqdn($invalidCNAMERecordData.)"))
+  }
+
   property("""validateAddChangeInput: should fail with InvalidLength
-      |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
+             |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "s" * 256
     val change =
       AddChangeInput(
@@ -735,7 +824,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateAddChangeInput: PTR should fail with InvalidIPAddress
-      |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
+             |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidip.111."
     val change = AddChangeInput(invalidIp, RecordType.PTR, ttl, PTRData(Fqdn("test.comcast.com")))
     val result = validateAddChangeInput(change, false)
@@ -756,6 +845,24 @@ class BatchChangeValidationsSpec
   ) {
     val authZone = okZone
     val reverseZone = okZone.copy(name = "2.0.192.in-addr.arpa.")
+    val addNsRecord = AddChangeForValidation(
+      okZone,
+      "ns-add",
+      AddChangeInput("ns-add.ok.", RecordType.NS, ttl, NSData(Fqdn("some.test.ns."))),
+      defaultTtl
+    )
+    val addNaptrRecord = AddChangeForValidation(
+      okZone,
+      "naptr-add",
+      AddChangeInput("naptr-add.ok.", RecordType.NAPTR, ttl, NAPTRData(1, 2, "S", "E2U+sip", "", Fqdn("target"))),
+      defaultTtl
+    )
+    val addSrvRecord = AddChangeForValidation(
+      okZone,
+      "srv-add",
+      AddChangeInput("srv-add.ok.", RecordType.SRV, ttl, SRVData(1, 2, 3, Fqdn("target.vinyldns."))),
+      defaultTtl
+    )
     val addA1 = AddChangeForValidation(
       authZone,
       "valid",
@@ -810,6 +917,9 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       ChangeForValidationMap(
         List(
+          addNsRecord.validNel,
+          addNaptrRecord.validNel,
+          addSrvRecord.validNel,
           addA1.validNel,
           existingA.validNel,
           existingCname.validNel,
@@ -825,21 +935,24 @@ class BatchChangeValidationsSpec
     )
 
     result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingA.inputChange.inputName, existingA.inputChange.record, false)
+    result(1) shouldBe valid
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) should haveInvalid[DomainValidationError](
+      RecordAlreadyExists(existingA.inputChange.inputName)
     )
-    result(2) should haveInvalid[DomainValidationError](
-      RecordAlreadyExists(existingCname.inputChange.inputName, existingCname.inputChange.record, false)
+    result(5) should haveInvalid[DomainValidationError](
+      RecordAlreadyExists(existingCname.inputChange.inputName)
     ).and(
       haveInvalid[DomainValidationError](
         CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)
       )
     )
-    result(3) shouldBe valid
-    result(4) should haveInvalid[DomainValidationError](
+    result(6) shouldBe valid
+    result(7) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("199.2.0.192.in-addr.arpa.", RecordType.CNAME)
     )
-    result(5) shouldBe valid
+    result(8) shouldBe valid
   }
 
   property("validateChangesWithContext: should succeed for valid update inputs") {
@@ -1006,6 +1119,29 @@ class BatchChangeValidationsSpec
     )
   }
 
+  property("validateChangesWithContext: should fail for update if same record data is provided for add and delete") {
+    val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.2.3.4")))
+    val result = validateChangesWithContext(
+      ChangeForValidationMap(
+        List(
+          makeAddUpdateRecord("deleteRecord"), // Record does not exist
+          deleteRecord
+        ).map(_.validNel),
+        ExistingRecordSets(List(rsOk))
+      ),
+      okAuth,
+      false,
+      None
+    )
+
+    result(0) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(makeAddUpdateRecord("deleteRecord").inputChange.inputName)
+    )
+    result(1) should haveInvalid[DomainValidationError](
+      InvalidUpdateRequest(deleteRecord.inputChange.inputName)
+    )
+  }
+
   property("validateChangesWithContext: should complete for update if record does not exist") {
     val deleteRRSet = makeDeleteUpdateDeleteRRSet("deleteRRSet")
     val deleteRecord = makeDeleteUpdateDeleteRRSet("deleteRecord", Some(AData("1.1.1.1")))
@@ -1031,11 +1167,7 @@ class BatchChangeValidationsSpec
     result(1) shouldBe valid
     result(3) shouldBe valid
     result(4) shouldBe valid
-    deleteNonExistentEntry.inputChange.record.foreach { record =>
-      result(5) should haveInvalid[DomainValidationError](
-        DeleteRecordDataDoesNotExist(deleteNonExistentEntry.inputChange.inputName, record)
-      )
-    }
+    result(5) shouldBe valid
   }
 
   property(
@@ -1184,7 +1316,7 @@ class BatchChangeValidationsSpec
       )
 
       result(0) should haveInvalid[DomainValidationError](
-        RecordAlreadyExists(input.inputChange.inputName, input.inputChange.record, false)
+        RecordAlreadyExists(input.inputChange.inputName)
       )
     }
   }
@@ -2100,17 +2232,21 @@ class BatchChangeValidationsSpec
     val resultLarge = validateAddChangeInput(inputLarge, false)
 
     resultSmall should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         -1,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
     resultLarge should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         1000000,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
   }
@@ -2127,10 +2263,12 @@ class BatchChangeValidationsSpec
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, Fqdn("foo$.bar.")))
     val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](
-      InvalidMxPreference(
+      InvalidMX_NAPTR_SRVData(
         -1,
-        DomainValidations.MX_PREFERENCE_MIN_VALUE,
-        DomainValidations.MX_PREFERENCE_MAX_VALUE
+        DomainValidations.INTEGER_MIN_VALUE,
+        DomainValidations.INTEGER_MAX_VALUE,
+        "preference",
+        "MX"
       )
     )
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))

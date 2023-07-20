@@ -45,6 +45,7 @@ GET           /api/zones/:id/recordsetchanges    @controllers.VinylDNS.listRecor
 
 GET           /api/groups                        @controllers.VinylDNS.getGroups
 GET           /api/groups/:gid                   @controllers.VinylDNS.getGroup(gid: String)
+GET           /api/groups/valid/domains           @controllers.VinylDNS.getValidEmailDomains
 GET           /api/groups/:gid/groupchanges      @controllers.VinylDNS.listGroupChanges(gid: String)
 GET           /api/groups/change/:gcid           @controllers.VinylDNS.getGroupChange(gcid: String)
 POST          /api/groups                        @controllers.VinylDNS.newGroup
