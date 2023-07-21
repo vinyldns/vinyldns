@@ -799,6 +799,46 @@ class ZoneServiceSpec
     }
   }
 
+  "Getting a zone details" should {
+    "fail with no zone returned" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notAZoneId")
+
+      val error = underTest.getCommonZoneDetails("notAZoneId", okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[ZoneNotFoundError]
+    }
+
+    "return zone details even if the user is not authorized for the zone" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
+
+      val result = underTest.getCommonZoneDetails(okZone.id, noAuth).value.unsafeRunSync()
+      val expectedZoneDetails =
+        ZoneDetails(okZone, okGroup.name)
+      result.right.value shouldBe expectedZoneDetails
+    }
+
+    "return the appropriate zone as a ZoneDetails" in {
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
+      doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
+
+      val expectedZoneDetails =
+        ZoneDetails(abcZone, abcGroup.name)
+      val result = underTest.getCommonZoneDetails(abcZone.id, abcAuth).value.unsafeRunSync()
+      result.right.value shouldBe expectedZoneDetails
+    }
+
+    "return Unknown group name if zone admin group cannot be found" in {
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
+
+      val expectedZoneDetails =
+        ZoneDetails(abcZone, "Unknown group name")
+      val result: ZoneDetails = underTest.getCommonZoneDetails(abcZone.id, abcAuth).value.unsafeRunSync().toOption.get
+      result shouldBe expectedZoneDetails
+    }
+  }
+
   "ListZones" should {
     "not fail with no zones returned" in {
       doReturn(IO.pure(ListZonesResults(List())))

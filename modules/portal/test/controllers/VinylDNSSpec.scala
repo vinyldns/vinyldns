@@ -1650,6 +1650,35 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getCommonZoneDetails" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getCommonZoneDetails(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId/details"))
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getCommonZoneDetails(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId/details").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
     ".getZoneChange" should {
 
       "return ok (200) if the zoneChanges is found" in new WithApplication(app) {
@@ -1934,6 +1963,37 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withLockedClient(client)
         val result = underTest.listRecordSetChanges(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
+    ".listRecordSetChangeHistory" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.listRecordSetChangeHistory()(
+            FakeRequest(GET, s"/api/recordsetchange/history")
+          )
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listRecordSetChangeHistory()(
+          FakeRequest(GET, s"/api/recordsetchange/history").withSession(
             "username" -> lockedFrodoUser.userName,
             "accessKey" -> lockedFrodoUser.accessKey
           )

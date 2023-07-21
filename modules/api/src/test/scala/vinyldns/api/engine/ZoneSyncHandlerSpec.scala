@@ -556,7 +556,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordChangeRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
     "save the record changes to the recordSetCacheRepo" in {
@@ -566,7 +567,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetCacheRepo).save(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
 
     }
 
@@ -577,7 +579,8 @@ class ZoneSyncHandlerSpec
 
       verify(recordSetRepo).apply(any[DB], captor.capture())
       val req = captor.getValue
-      anonymize(req) shouldBe anonymize(testChangeSet)
+      val expectedRecordSetChanges = testChangeSet.changes
+      anonymize(req) shouldBe anonymize(testChangeSet.withRecordSetChange(expectedRecordSetChanges))
     }
 
     "returns the zone as active and sets the latest sync" in {

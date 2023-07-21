@@ -29,6 +29,7 @@ import vinyldns.core.domain.zone._
 import scala.concurrent.duration._
 
 case class GetZoneResponse(zone: ZoneInfo)
+case class GetZoneDetailsResponse(zone: ZoneDetails)
 case class ZoneRejected(zone: Zone, errors: List[String])
 
 class ZoneRoute(
@@ -141,6 +142,13 @@ class ZoneRoute(
             complete(StatusCodes.Accepted, chg)
           }
         }
+    } ~
+    path("zones" / Segment / "details") { id =>
+      (get & monitor("Endpoint.getCommonZoneDetails")) {
+        authenticateAndExecute(zoneService.getCommonZoneDetails(id, _)) { zone =>
+          complete(StatusCodes.OK, GetZoneDetailsResponse(zone))
+        }
+      }
     } ~
     path("zones" / Segment / "sync") { id =>
       (post & monitor("Endpoint.syncZone")) {
