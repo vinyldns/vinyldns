@@ -19,9 +19,11 @@ package vinyldns.mysql.repository
 import cats.effect._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
+import vinyldns.mysql.repository.MySqlRecordSetRepository.fromRecordType
 import vinyldns.proto.VinylDNSProto
 
 class MySqlRecordChangeRepository
@@ -39,10 +41,29 @@ class MySqlRecordChangeRepository
       | LIMIT {limit} OFFSET {startFrom}
     """.stripMargin
 
+  private val LIST_CHANGES_WITH_START_FQDN_TYPE =
+    sql"""
+       |SELECT data
+       | FROM record_change
+       | WHERE fqdn = {fqdn} AND record_type = {type}
+       | ORDER BY created DESC
+       | LIMIT {limit} OFFSET {startFrom}
+    """.stripMargin
+
+  private val LIST_CHANGES_WITHOUT_START_FQDN_TYPE =
+    sql"""
+         |SELECT data
+         | FROM record_change
+         | WHERE fqdn = {fqdn} AND record_type = {type}
+         | ORDER BY created DESC
+         | LIMIT {limit}
+    """.stripMargin
+
   private val LIST_RECORD_CHANGES =
     sql"""
          |SELECT data
          |  FROM record_change
+         |  ORDER BY created DESC
     """.stripMargin
 
   private val LIST_CHANGES_NO_START =
@@ -62,7 +83,7 @@ class MySqlRecordChangeRepository
     """.stripMargin
 
   private val INSERT_CHANGES =
-    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, data) VALUES (?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO record_change (id, zone_id, created, type, fqdn, record_type, data) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
   /**
     * We have the same issue with changes as record sets, namely we may have to save millions of them
@@ -81,7 +102,9 @@ class MySqlRecordChangeRepository
                   change.zoneId,
                   change.created.toEpochMilli,
                   fromChangeType(change.changeType),
-                  toPB(change).toByteArray
+                  if(change.recordSet.name == change.zone.name) change.zone.name else change.recordSet.name + "." + change.zone.name,
+                  fromRecordType(change.recordSet.typ),
+                  toPB(change).toByteArray,
                 )
               }
             }
@@ -93,33 +116,52 @@ class MySqlRecordChangeRepository
     }
 
   def listRecordSetChanges(
-      zoneId: String,
+      zoneId: Option[String],
       startFrom: Option[Int],
-      maxItems: Int
+      maxItems: Int,
+      fqdn: Option[String],
+      recordType: Option[RecordType]
   ): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.listRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
-          val changes = startFrom match {
-            case Some(start) =>
-              LIST_CHANGES_WITH_START
-                .bindByName('zoneId -> zoneId, 'startFrom -> start, 'limit -> maxItems)
-                .map(toRecordSetChange)
-                .list()
-                .apply()
-            case None =>
-              LIST_CHANGES_NO_START
-                .bindByName('zoneId -> zoneId, 'limit -> maxItems)
-                .map(toRecordSetChange)
-                .list()
-                .apply()
+          val changes = if(startFrom.isDefined && fqdn.isDefined && recordType.isDefined){
+          LIST_CHANGES_WITH_START_FQDN_TYPE
+            .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'startFrom -> startFrom.get, 'limit -> (maxItems + 1))
+            .map(toRecordSetChange)
+            .list()
+            .apply()
+          } else if(fqdn.isDefined && recordType.isDefined){
+            LIST_CHANGES_WITHOUT_START_FQDN_TYPE
+              .bindByName('fqdn -> fqdn.get, 'type -> fromRecordType(recordType.get), 'limit -> (maxItems + 1))
+              .map(toRecordSetChange)
+              .list()
+              .apply()
+          } else if(startFrom.isDefined){
+            LIST_CHANGES_WITH_START
+              .bindByName('zoneId -> zoneId.get, 'startFrom -> startFrom.get, 'limit -> (maxItems + 1))
+              .map(toRecordSetChange)
+              .list()
+              .apply()
+          } else {
+            LIST_CHANGES_NO_START
+              .bindByName('zoneId -> zoneId.get, 'limit -> (maxItems + 1))
+              .map(toRecordSetChange)
+              .list()
+              .apply()
           }
 
+          val maxQueries = changes.take(maxItems)
           val startValue = startFrom.getOrElse(0)
-          val nextId = if (changes.size < maxItems) None else Some(startValue + maxItems)
+
+          // earlier maxItems was incremented, if the (maxItems + 1) size is not reached then pages are exhausted
+          val nextId = changes match {
+            case _ if changes.size <= maxItems | changes.isEmpty => None
+            case _ => Some(startValue + maxItems)
+          }
 
           ListRecordSetChangesResults(
-            changes,
+            maxQueries,
             nextId,
             startFrom,
             maxItems
@@ -128,7 +170,7 @@ class MySqlRecordChangeRepository
       }
     }
 
-  def listFailedRecordSetChanges(): IO[List[RecordSetChange]] =
+  def listFailedRecordSetChanges(maxItems: Int, startFrom: Int): IO[ListFailedRecordSetChangesResults] =
     monitor("repo.RecordChange.listFailedRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
@@ -136,8 +178,9 @@ class MySqlRecordChangeRepository
             .map(toRecordSetChange)
             .list()
             .apply()
-          val maxQueries = queryResult.filter(zc => zc.status == RecordSetChangeStatus.Failed)
-          maxQueries
+          val failedRecordSetChanges = queryResult.filter(rc => rc.status == RecordSetChangeStatus.Failed).drop(startFrom).take(maxItems)
+          val nextId = if (failedRecordSetChanges.size < maxItems) 0 else startFrom + maxItems
+          ListFailedRecordSetChangesResults(failedRecordSetChanges,nextId,startFrom,maxItems)
         }
       }
     }

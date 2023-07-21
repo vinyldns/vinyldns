@@ -29,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, ListRecordSetHistoryResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
@@ -409,10 +409,20 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+  private val changeWithUserName =
+    List(RecordSetChangeInfo(rsChange1, Some("ok")))
+  private val listRecordSetChangeHistoryResponse = ListRecordSetHistoryResponse(
+    Some(okZone.id),
+    changeWithUserName,
+    nextId = None,
+    startFrom = None,
+    maxItems = 100
+  )
+
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
   private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
-    failedChangesWithUserName
+    failedChangesWithUserName,0,0,100
   )
 
   class TestService extends RecordSetServiceAlgebra {
@@ -574,7 +584,9 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listFailedRecordSetChanges(
-                                    authPrincipal: AuthPrincipal
+                                    authPrincipal: AuthPrincipal,
+                                    startFrom: Int,
+                                    maxItems: Int
                                   ): Result[ListFailedRecordSetChangesResponse] = {
       val outcome = authPrincipal match {
         case _ => Right(listFailedRecordSetChangeResponse)
@@ -734,15 +746,32 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSetChanges(
-                              zoneId: String,
+                              zoneId: Option[String],
                               startFrom: Option[Int],
                               maxItems: Int,
+                              fqdn: Option[String],
+                              recordType: Option[RecordType],
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
-        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
+      }
+    }.toResult
+
+    def listRecordSetChangeHistory(
+                              zoneId: Option[String],
+                              startFrom: Option[Int],
+                              maxItems: Int,
+                              fqdn: Option[String],
+                              recordType: Option[RecordType],
+                              authPrincipal: AuthPrincipal
+                            ): Result[ListRecordSetHistoryResponse] = {
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => Right(listRecordSetChangeHistoryResponse)
       }
     }.toResult
 
@@ -876,6 +905,33 @@ class RecordSetRoutingSpec
         status shouldBe StatusCodes.BadRequest
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET recordset change history" should {
+    "return the recordset change" in {
+      Get(s"/recordsetchange/history?fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
+        val response = responseAs[ListRecordSetHistoryResponse]
+
+        response.zoneId shouldBe Some(okZone.id)
+        (response.recordSetChanges.map(_.id) should contain)
+          .only(rsChange1.id)
+      }
+    }
+
+    "return an error when the record fqdn and type is not defined" in {
+      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a Bad Request when maxItems is out of Bounds" in {
+      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }

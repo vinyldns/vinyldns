@@ -153,6 +153,12 @@ class ZoneService(
       accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
+  def getCommonZoneDetails(zoneId: String, auth: AuthPrincipal): Result[ZoneDetails] =
+    for {
+      zone <- getZoneOrFail(zoneId)
+      groupName <- getGroupName(zone.adminGroupId)
+    } yield ZoneDetails(zone, groupName)
+
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
       zone <- getZoneByNameOrFail(ensureTrailingDot(zoneName))
@@ -249,15 +255,22 @@ class ZoneService(
     } yield ListZoneChangesResponse(zone.id, zoneChangesResults)
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal
+                             authPrincipal: AuthPrincipal,
+                             startFrom: Int= 0,
+                             maxItems: Int = 100
                            ): Result[ListFailedZoneChangesResponse] =
     for {
       zoneChangesFailedResults <- zoneChangeRepository
-        .listFailedZoneChanges()
-        .toResult[List[ZoneChange]]
-      _ <- zoneAccess(zoneChangesFailedResults, authPrincipal).toResult
-    } yield {
-      ListFailedZoneChangesResponse(zoneChangesFailedResults)}
+        .listFailedZoneChanges(maxItems, startFrom)
+        .toResult[ListFailedZoneChangesResults]
+      _ <- zoneAccess(zoneChangesFailedResults.items, authPrincipal).toResult
+    } yield
+      ListFailedZoneChangesResponse(
+        zoneChangesFailedResults.items,
+        zoneChangesFailedResults.nextId,
+        startFrom,
+        maxItems
+      )
 
   def zoneAccess(
                   zoneCh: List[ZoneChange],

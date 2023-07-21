@@ -82,6 +82,7 @@ class ZoneRoutingSpec
   private val ok = Zone("ok.", "ok@test.com", acl = zoneAcl, adminGroupId = "test")
   private val aclAsInfo = ZoneACLInfo(zoneAcl.rules.map(ACLRuleInfo(_, Some("name"))))
   private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name, AccessLevel.Read)
+  private val okAsZoneDetails = ZoneDetails(ok, okGroup.name)
   private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
   private val trailingDot = Zone("trailing.dot", "trailing-dot@test.com")
   private val connectionOk = Zone(
@@ -138,7 +139,10 @@ class ZoneRoutingSpec
   )
 
   private val listFailedZoneChangeResponse = ListFailedZoneChangesResponse(
-    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed))
+    List(zoneCreate.copy(status=ZoneChangeStatus.Failed), zoneUpdate.copy(status=ZoneChangeStatus.Failed)),
+    nextId = 0,
+    startFrom = 0,
+    maxItems = 100
   )
 
   val crypto = new JavaCrypto(
@@ -241,6 +245,15 @@ class ZoneRoutingSpec
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case ok.id => Right(okAsZoneInfo)
+        case error.id => Left(new RuntimeException("fail"))
+      }
+      outcome.toResult
+    }
+
+    def getCommonZoneDetails(zoneId: String, auth: AuthPrincipal): Result[ZoneDetails] = {
+      val outcome = zoneId match {
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case ok.id => Right(okAsZoneDetails)
         case error.id => Left(new RuntimeException("fail"))
       }
       outcome.toResult
@@ -397,7 +410,9 @@ class ZoneRoutingSpec
     }
 
     def listFailedZoneChanges(
-                               authPrincipal: AuthPrincipal
+                               authPrincipal: AuthPrincipal,
+                               startFrom: Int,
+                               maxItems: Int
                              ): Result[ListFailedZoneChangesResponse] = {
       val outcome = authPrincipal match {
         case _ => Right(listFailedZoneChangeResponse)
@@ -880,6 +895,27 @@ class ZoneRoutingSpec
 
     "return 404 if the zone does not exist" in {
       Get(s"/zones/${notFound.id}") ~> zoneRoute ~> check {
+        status shouldBe NotFound
+      }
+    }
+  }
+
+  "GET zone details" should {
+    "return the zone is retrieved" in {
+      Get(s"/zones/${ok.id}/details") ~> zoneRoute ~> check {
+        status shouldBe OK
+
+        val resultZone = responseAs[GetZoneDetailsResponse].zone
+        resultZone.email shouldBe ok.email
+        resultZone.name shouldBe ok.name
+        Option(resultZone.status) shouldBe defined
+        resultZone.adminGroupId shouldBe "test"
+        resultZone.adminGroupName shouldBe "ok"
+      }
+    }
+
+    "return 404 if the zone does not exist" in {
+      Get(s"/zones/${notFound.id}/details") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }

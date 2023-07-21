@@ -100,6 +100,10 @@ angular.module('service.records', [])
             return $http.get("/api/zones/"+zid);
         };
 
+        this.getCommonZoneDetails = function (zid) {
+            return $http.get("/api/zones/"+zid+"/details");
+        };
+
         this.syncZone = function (zid) {
             return $http.post("/api/zones/"+zid+"/sync", {}, {headers: utilityService.getCsrfHeader()});
         };
@@ -108,7 +112,21 @@ angular.module('service.records', [])
             var url = '/api/zones/' + zid + '/recordsetchanges';
             var params = {
                 "maxItems": maxItems,
-                "startFrom": startFrom
+                "startFrom": startFrom,
+                "fqdn": undefined,
+                "recordType": undefined
+            };
+            url = utilityService.urlBuilder(url, params);
+            return $http.get(url);
+        };
+
+        this.listRecordSetChangeHistory = function (maxItems, startFrom, fqdn, recordType) {
+            var url = '/api/recordsetchange/history';
+            var params = {
+                "maxItems": maxItems,
+                "startFrom": startFrom,
+                "fqdn": fqdn,
+                "recordType": recordType
             };
             url = utilityService.urlBuilder(url, params);
             return $http.get(url);

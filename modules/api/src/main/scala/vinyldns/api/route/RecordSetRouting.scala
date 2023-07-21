@@ -223,8 +223,8 @@ class RecordSetRoute(
     } ~
     path("zones" / Segment / "recordsetchanges") { zoneId =>
       (get & monitor("Endpoint.listRecordSetChanges")) {
-        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (startFrom: Option[Int], maxItems: Int) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "fqdn".as[String].?, "recordType".as[String].?) {
+          (startFrom: Option[Int], maxItems: Int, fqdn: Option[String], _: Option[String]) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -233,7 +233,34 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSetChanges(zoneId, startFrom, maxItems, _)
+                    .listRecordSetChanges(Some(zoneId), startFrom, maxItems, fqdn, None, _)
+                ) { changes =>
+                  complete(StatusCodes.OK, changes)
+                }
+              }
+            }
+        }
+      }
+    } ~
+    path("recordsetchange" / "history") {
+      (get & monitor("Endpoint.listRecordSetChangeHistory")) {
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "fqdn".as[String].?, "recordType".as[String].?) {
+          (startFrom: Option[Int], maxItems: Int, fqdn: Option[String], recordType: Option[String]) =>
+            handleRejections(invalidQueryHandler) {
+              val errorMessage = if(fqdn.isEmpty || recordType.isEmpty) {
+                "recordType and fqdn cannot be empty"
+              } else {
+                s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
+                  s"and $DEFAULT_MAX_ITEMS inclusive"
+              }
+              val isValid = (0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS) && (fqdn.nonEmpty && recordType.nonEmpty)
+              validate(
+                check = isValid,
+                errorMsg = errorMessage
+              ){
+                authenticateAndExecute(
+                  recordSetService
+                    .listRecordSetChangeHistory(None, startFrom, maxItems, fqdn, RecordType.find(recordType.get), _)
                 ) { changes =>
                   complete(StatusCodes.OK, changes)
                 }
@@ -244,14 +271,23 @@ class RecordSetRoute(
     } ~
     path("metrics" / "health" / "recordsetchangesfailure") {
       (get & monitor("Endpoint.listFailedRecordSetChanges")) {
-          handleRejections(invalidQueryHandler) {
-              authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_)) {
+        parameters("startFrom".as[Int].?(0), "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Int, maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
+                  s"and $DEFAULT_MAX_ITEMS inclusive"
+              ){
+                authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_, startFrom, maxItems)) {
                   changes =>
-                  complete(StatusCodes.OK, changes)
+                    complete(StatusCodes.OK, changes)
+                }
+              }
             }
         }
+      }
     }
-}
 
   private val invalidQueryHandler = RejectionHandler
     .newBuilder()
