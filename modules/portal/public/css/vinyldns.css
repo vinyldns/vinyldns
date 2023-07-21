@@ -563,6 +563,10 @@ input[type="file"] {
 }
 /* Ending of css override for cron library and it's associated elements used in zone sync scheduling */
 
+.set-width {
+    width: auto;
+}
+
 #set-dropdown-width {
     width: 4em;
 }

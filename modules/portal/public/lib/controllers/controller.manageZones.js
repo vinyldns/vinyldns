@@ -237,6 +237,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.submitUpdateZone = function () {
         var zone = angular.copy($scope.updateZoneInfo);
+        if(zone['recurrenceSchedule'] == ""){
+            delete zone['recurrenceSchedule']
+        }
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
         zone = zonesService.checkBackendId(zone);

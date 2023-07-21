@@ -42,6 +42,29 @@ object ListRecordSetChangesResponse {
     )
 }
 
+case class ListRecordSetHistoryResponse(
+     zoneId: Option[String],
+     recordSetChanges: List[RecordSetChangeInfo] = Nil,
+     nextId: Option[Int],
+     startFrom: Option[Int],
+     maxItems: Int
+ )
+
+object ListRecordSetHistoryResponse {
+  def apply(
+             zoneId: Option[String],
+             listResults: ListRecordSetChangesResults,
+             info: List[RecordSetChangeInfo]
+           ): ListRecordSetHistoryResponse =
+    ListRecordSetHistoryResponse(
+      zoneId,
+      info,
+      listResults.nextId,
+      listResults.startFrom,
+      listResults.maxItems
+    )
+}
+
 case class ListFailedRecordSetChangesResponse(
                                                failedRecordSetChanges: List[RecordSetChange] = Nil,
                                                nextId: Int,
