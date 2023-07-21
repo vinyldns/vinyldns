@@ -63,6 +63,7 @@ class MySqlRecordChangeRepository
     sql"""
          |SELECT data
          |  FROM record_change
+         |  ORDER BY created DESC
     """.stripMargin
 
   private val LIST_CHANGES_NO_START =
@@ -169,7 +170,7 @@ class MySqlRecordChangeRepository
       }
     }
 
-  def listFailedRecordSetChanges(): IO[List[RecordSetChange]] =
+  def listFailedRecordSetChanges(maxItems: Int, startFrom: Int): IO[ListFailedRecordSetChangesResults] =
     monitor("repo.RecordChange.listFailedRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
@@ -177,8 +178,9 @@ class MySqlRecordChangeRepository
             .map(toRecordSetChange)
             .list()
             .apply()
-          val maxQueries = queryResult.filter(zc => zc.status == RecordSetChangeStatus.Failed)
-          maxQueries
+          val failedRecordSetChanges = queryResult.filter(rc => rc.status == RecordSetChangeStatus.Failed).drop(startFrom).take(maxItems)
+          val nextId = if (failedRecordSetChanges.size < maxItems) 0 else startFrom + maxItems
+          ListFailedRecordSetChangesResults(failedRecordSetChanges,nextId,startFrom,maxItems)
         }
       }
     }

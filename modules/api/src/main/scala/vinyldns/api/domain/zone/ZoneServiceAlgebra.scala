@@ -71,6 +71,8 @@ trait ZoneServiceAlgebra {
   def getBackendIds(): Result[List[String]]
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal
+                             authPrincipal: AuthPrincipal,
+                             startFrom: Int,
+                             maxItems: Int
                            ): Result[ListFailedZoneChangesResponse]
 }

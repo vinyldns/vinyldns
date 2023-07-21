@@ -422,7 +422,7 @@ class RecordSetRoutingSpec
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
   private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
-    failedChangesWithUserName
+    failedChangesWithUserName,0,0,100
   )
 
   class TestService extends RecordSetServiceAlgebra {
@@ -584,7 +584,9 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listFailedRecordSetChanges(
-                                    authPrincipal: AuthPrincipal
+                                    authPrincipal: AuthPrincipal,
+                                    startFrom: Int,
+                                    maxItems: Int
                                   ): Result[ListFailedRecordSetChangesResponse] = {
       val outcome = authPrincipal match {
         case _ => Right(listFailedRecordSetChangeResponse)

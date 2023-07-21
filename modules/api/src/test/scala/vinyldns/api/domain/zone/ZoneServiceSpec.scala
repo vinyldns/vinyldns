@@ -1145,17 +1145,33 @@ class ZoneServiceSpec
   "listFailedZoneChanges" should {
     "retrieve the zone changes" in {
 
-      doReturn(IO.pure(List[ZoneChange](
-        zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      doReturn(IO.pure(ListFailedZoneChangesResults(
+        List(zoneUpdate.copy(status = ZoneChangeStatus.Failed),zoneCreate.copy(status = ZoneChangeStatus.Failed))
       )))
         .when(mockZoneChangeRepo)
-        .listFailedZoneChanges()
+        .listFailedZoneChanges(100,0)
 
       val result: ListFailedZoneChangesResponse =
         underTest.listFailedZoneChanges(okAuth).value.unsafeRunSync().toOption.get
 
-      result.failedZoneChanges shouldBe List(
-        zoneUpdate.copy(status = ZoneChangeStatus.Failed))
+      result.failedZoneChanges shouldBe
+        List(zoneUpdate.copy(status = ZoneChangeStatus.Failed),zoneCreate.copy(status = ZoneChangeStatus.Failed))
+      result.failedZoneChanges.head shouldBe zoneUpdate.copy(status = ZoneChangeStatus.Failed)
+      result.failedZoneChanges(1) shouldBe zoneCreate.copy(status = ZoneChangeStatus.Failed)
+    }
+
+    "retrieve the zone changes with startFrom and maxItems" in {
+
+      doReturn(IO.pure(ListFailedZoneChangesResults(
+        List(zoneUpdate.copy(status = ZoneChangeStatus.Failed),zoneCreate.copy(status = ZoneChangeStatus.Failed))
+      ))).when(mockZoneChangeRepo)
+        .listFailedZoneChanges(1,1)
+
+      val result: ListFailedZoneChangesResponse =
+        underTest.listFailedZoneChanges(okAuth,1,1).value.unsafeRunSync().toOption.get
+      result.startFrom shouldBe 1
+      result.nextId shouldBe 0
+      result.maxItems shouldBe 1
     }
   }
 

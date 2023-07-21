@@ -271,14 +271,23 @@ class RecordSetRoute(
     } ~
     path("metrics" / "health" / "recordsetchangesfailure") {
       (get & monitor("Endpoint.listFailedRecordSetChanges")) {
-          handleRejections(invalidQueryHandler) {
-              authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_)) {
+        parameters("startFrom".as[Int].?(0), "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Int, maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
+                  s"and $DEFAULT_MAX_ITEMS inclusive"
+              ){
+                authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_, startFrom, maxItems)) {
                   changes =>
-                  complete(StatusCodes.OK, changes)
+                    complete(StatusCodes.OK, changes)
+                }
+              }
             }
         }
+      }
     }
-}
 
   private val invalidQueryHandler = RejectionHandler
     .newBuilder()

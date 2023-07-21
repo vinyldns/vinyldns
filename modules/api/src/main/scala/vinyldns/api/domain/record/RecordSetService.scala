@@ -610,14 +610,21 @@ class RecordSetService(
     } yield ListRecordSetHistoryResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
   def listFailedRecordSetChanges(
-                                  authPrincipal: AuthPrincipal
+                                  authPrincipal: AuthPrincipal,
+                                  startFrom: Int= 0,
+                                  maxItems: Int = 100,
                                 ): Result[ListFailedRecordSetChangesResponse] =
     for {
       recordSetChangesFailedResults <- recordChangeRepository
-        .listFailedRecordSetChanges()
-        .toResult[List[RecordSetChange]]
-      _ <- zoneAccess(recordSetChangesFailedResults, authPrincipal).toResult
-    } yield ListFailedRecordSetChangesResponse(recordSetChangesFailedResults)
+        .listFailedRecordSetChanges(maxItems, startFrom)
+        .toResult[ListFailedRecordSetChangesResults]
+      _ <- zoneAccess(recordSetChangesFailedResults.items, authPrincipal).toResult
+    } yield
+      ListFailedRecordSetChangesResponse(
+        recordSetChangesFailedResults.items,
+        recordSetChangesFailedResults.nextId,
+        startFrom,
+        maxItems)
 
   def zoneAccess(
                   RecordSetCh: List[RecordSetChange],
