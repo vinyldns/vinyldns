@@ -118,23 +118,23 @@ class ZoneRoutingSpec
   private val zoneSummaryInfo6 = ZoneSummaryInfo(zone6, xyzGroup.name, AccessLevel.NoAccess)
   private val error = Zone("error.", "error@test.com")
   private val deletedZone1 = Zone("ok1.", "ok1@test.com", ZoneStatus.Deleted , acl = zoneAcl)
-  private val deletedZoneChange1 = ZoneChange(deletedZone1, "ok1", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val deletedZoneChange1 = ZoneChange(deletedZone1, "ok1", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo1 = ZoneChangeDeletedInfo(
     deletedZoneChange1, okGroup.name, okUser.userName, AccessLevel.NoAccess)
   private val deletedZone2 = Zone("ok2.", "ok2@test.com", ZoneStatus.Deleted , acl = zoneAcl)
-  private val deletedZoneChange2 = ZoneChange(deletedZone2, "ok2", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val deletedZoneChange2 = ZoneChange(deletedZone2, "ok2", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo2 = ZoneChangeDeletedInfo(
     deletedZoneChange2, okGroup.name, okUser.userName, AccessLevel.NoAccess)
   private val deletedZone3 = Zone("ok3.", "ok3@test.com", ZoneStatus.Deleted , acl = zoneAcl)
-  private val deletedZoneChange3 = ZoneChange(deletedZone3, "ok3", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val deletedZoneChange3 = ZoneChange(deletedZone3, "ok3", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo3= ZoneChangeDeletedInfo(
     deletedZoneChange3, okGroup.name, okUser.userName, AccessLevel.NoAccess)
   private val deletedZone4 = Zone("ok4.", "ok4@test.com", ZoneStatus.Deleted , acl = zoneAcl, adminGroupId = xyzGroup.id)
-  private val deletedZoneChange4 = ZoneChange(deletedZone4, "ok4", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val deletedZoneChange4 = ZoneChange(deletedZone4, "ok4", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo4 = ZoneChangeDeletedInfo(
     deletedZoneChange4, okGroup.name, okUser.userName, AccessLevel.NoAccess)
   private val deletedZone5 = Zone("ok5.", "ok5@test.com", ZoneStatus.Deleted , acl = zoneAcl, adminGroupId = xyzGroup.id)
-  private val deletedZoneChange5 = ZoneChange(deletedZone5, "ok5", ZoneChangeType.Create, ZoneChangeStatus.Complete)
+  private val deletedZoneChange5 = ZoneChange(deletedZone5, "ok5", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo5 = ZoneChangeDeletedInfo(
     deletedZoneChange5, okGroup.name, okUser.userName, AccessLevel.NoAccess)
 

@@ -1097,7 +1097,7 @@ class ZoneServiceSpec
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+      val result: ListDeletedZoneChangesResponse = underTest.listDeletedZones(abcAuth).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List()
       result.maxItems shouldBe 100
       result.startFrom shouldBe None
@@ -1117,7 +1117,7 @@ class ZoneServiceSpec
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+      val result: ListDeletedZoneChangesResponse = underTest.listDeletedZones(abcAuth).value.unsafeRunSync().toOption.get
 
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary)
       result.maxItems shouldBe 100
@@ -1139,7 +1139,7 @@ class ZoneServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListDeletedZoneChangesResponse =
-        rightResultOf(underTest.listDeletedZones(abcAuth, ignoreAccess = true).value)
+        underTest.listDeletedZones(abcAuth, ignoreAccess = true).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary,xyzDeletedZoneSummary)
       result.maxItems shouldBe 100
       result.startFrom shouldBe None
@@ -1157,7 +1157,7 @@ class ZoneServiceSpec
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+      val result: ListDeletedZoneChangesResponse = underTest.listDeletedZones(abcAuth).value.unsafeRunSync().toOption.get
       val expectedZones =
         List(abcDeletedZoneSummary, xyzDeletedZoneSummary).map(_.copy(adminGroupName = "Unknown group name"))
       result.zonesDeletedInfo shouldBe expectedZones
@@ -1187,7 +1187,7 @@ class ZoneServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListDeletedZoneChangesResponse =
-        rightResultOf(underTest.listDeletedZones(abcAuth, maxItems = 2).value)
+        underTest.listDeletedZones(abcAuth, maxItems = 2).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
       result.maxItems shouldBe 2
       result.startFrom shouldBe None
@@ -1216,7 +1216,7 @@ class ZoneServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListDeletedZoneChangesResponse =
-        rightResultOf(underTest.listDeletedZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value)
+        underTest.listDeletedZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
       result.zoneChangeFilter shouldBe Some("foo")
       result.nextId shouldBe Some("zone2.")
@@ -1243,7 +1243,7 @@ class ZoneServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListDeletedZoneChangesResponse =
-        rightResultOf(underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
+        underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
       result.startFrom shouldBe Some("zone4.")
     }
@@ -1269,7 +1269,7 @@ class ZoneServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListDeletedZoneChangesResponse =
-        rightResultOf(underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
+        underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
       result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
       result.nextId shouldBe Some("zone6.")
     }
