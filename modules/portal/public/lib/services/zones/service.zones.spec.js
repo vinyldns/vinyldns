@@ -54,6 +54,15 @@ describe('Service: zoneService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when getting deleted zones', function () {
+        this.$httpBackend.expectGET('/api/zones/deleted/changes?maxItems=100&startFrom=start&nameFilter=someQuery&ignoreAccess=false').respond('deleted zone returned');
+        this.zonesService.getDeletedZones('100', 'start', 'someQuery', true)
+            .then(function(response) {
+                expect(response.data).toBe('deleted zone returned');
+            });
+        this.$httpBackend.flush();
+    });
+
     it('http backend gets called properly when deleting zone', function (done) {
         this.$httpBackend.expectDELETE('/api/zones/id').respond('zone deleted');
         this.zonesService.delZone('id')

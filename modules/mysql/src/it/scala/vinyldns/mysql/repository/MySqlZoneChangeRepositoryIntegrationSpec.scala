@@ -33,6 +33,9 @@ import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.Encrypted
 import vinyldns.mysql.TestMySqlInstance
+import vinyldns.core.TestZoneData.{okZone, testConnection}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.TestMembershipData.{dummyAuth, dummyGroup, okGroup, okUser}
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -92,6 +95,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       status= ZoneChangeStatus.Failed,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
+
     val successChanges
     : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
       zone,
@@ -100,6 +104,84 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       status= ZoneChangeStatus.Synced,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
     )
+
+    val groups = (11 until 20)
+      .map(num => okGroup.copy(name = num.toString, id = UUID.randomUUID().toString))
+      .toList
+
+    // generate some ACLs
+    private val groupAclRules = groups.map(
+      g =>
+        ACLRule(
+          accessLevel = AccessLevel.Read,
+          groupId = Some(g.id)
+        )
+    )
+
+    private val userOnlyAclRule =
+      ACLRule(
+        accessLevel = AccessLevel.Read,
+        userId = Some(okUser.id)
+      )
+
+    // the zone acl rule will have the user rule and all of the group rules
+    private val testZoneAcl = ZoneACL(
+      rules = Set(userOnlyAclRule) ++ groupAclRules
+    )
+
+    private val testZoneAdminGroupId = "foo"
+
+    val dummyAclRule =
+      ACLRule(
+        accessLevel = AccessLevel.Read,
+        groupId = Some(dummyGroup.id)
+      )
+
+    val testZone = (11 until 20).map { num =>
+      val z =
+        okZone.copy(
+          name = num.toString + ".",
+          id = UUID.randomUUID().toString,
+          adminGroupId = testZoneAdminGroupId,
+          acl = testZoneAcl
+        )
+      // add the dummy acl rule to the first zone
+      if (num == 11) z.addACLRule(dummyAclRule) else z
+    }
+
+    val deletedZoneChanges
+    : IndexedSeq[ZoneChange] = for { testZone <- testZone } yield {
+      ZoneChange(
+        testZone.copy(status = ZoneStatus.Deleted),
+        testZone.account,
+        ZoneChangeType.Create,
+        ZoneChangeStatus.Synced,
+        created = DateTime.now().minusSeconds(Random.nextInt(1000))
+      )}
+
+    def saveZones(zones: Seq[Zone]): IO[Unit] =
+      zones.foldLeft(IO.unit) {
+        case (acc, z) =>
+          acc.flatMap { _ =>
+            zoneRepo.save(z).map(_ => ())
+          }
+      }
+
+    def deleteZones(zones: Seq[Zone]): IO[Unit] =
+      zones.foldLeft(IO.unit) {
+        case (acc, z) =>
+          acc.flatMap { _ =>
+            zoneRepo.deleteTx(z).map(_ => ())
+          }
+      }
+
+    def saveZoneChanges(zoneChanges: Seq[ZoneChange]): IO[Unit] =
+      zoneChanges.foldLeft(IO.unit) {
+        case (acc, zc) =>
+          acc.flatMap { _ =>
+            repo.save(zc).map(_ => ())
+          }
+      }
   }
 
   import TestData._
@@ -302,6 +384,78 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       pageThree.items should equal(expectedPageThree)
       pageThree.nextId should equal(None)
       pageThree.startFrom should equal(pageTwo.nextId)
+    }
+    "get authorized zones" in {
+      // store all of the zones
+      saveZones(testZone).unsafeRunSync()
+      // save the change
+      saveZoneChanges(deletedZoneChanges).unsafeRunSync()
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain theSameElementsAs deletedZoneChanges
+
+      // dummy user only has access to one zone
+      (repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted should contain).only(deletedZoneChanges.head)
+
+      deleteZones(testZone).unsafeRunSync()
+
+
+    }
+    "return an empty list of zones if the user is not authorized to any" in {
+      val unauthorized = AuthPrincipal(
+        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        memberGroupIds = Seq.empty
+      )
+
+      val f =
+        for {
+          _ <- saveZones(testZone)
+          _ <- saveZoneChanges(deletedZoneChanges)
+          zones <- repo.listDeletedZones(unauthorized)
+        } yield zones
+
+      f.unsafeRunSync().zoneDeleted shouldBe empty
+      deleteZones(testZone).unsafeRunSync()
+
+    }
+
+    "not return zones when access is revoked" in {
+      // ok user can access both zones, dummy can only access first zone
+      val zones = testZone.take(2)
+      val zoneChange = deletedZoneChanges.take(2)
+      val addACL = saveZones(zones)
+      val addACLZc = saveZoneChanges(zoneChange)
+
+
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+      addACL.unsafeRunSync()
+      addACLZc.unsafeRunSync()
+
+      (repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain). allElementsOf(zoneChange)
+
+      // dummy user only has access to first zone
+      (repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted should contain).only(zoneChange.head)
+
+      // revoke the access for the dummy user
+      val revoked = zones(0).deleteACLRule(dummyAclRule)
+      val revokedZc = zoneChange(0).copy(zone=revoked)
+      zoneRepo.save(revoked).unsafeRunSync()
+      repo.save(revokedZc).unsafeRunSync()
+
+      // ok user can still access zones
+      (repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain).allElementsOf(Seq( zoneChange(1)))
+
+      // dummy user can not access the revoked zone
+      repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted shouldBe empty
+      deleteZones(testZone).unsafeRunSync()
     }
   }
 }

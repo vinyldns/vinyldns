@@ -57,6 +57,8 @@ class ZoneServiceSpec
   private val badConnection = ZoneConnection("bad", "bad", Encrypted("bad"), "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name, AccessLevel.Delete)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name, AccessLevel.NoAccess)
+  private val abcDeletedZoneSummary = ZoneChangeDeletedInfo(abcDeletedZoneChange, abcGroup.name, okUser.userName, AccessLevel.Delete)
+  private val xyzDeletedZoneSummary = ZoneChangeDeletedInfo(xyzDeletedZoneChange, xyzGroup.name, okUser.userName, AccessLevel.NoAccess)
   private val zoneIp4ZoneSummary = ZoneSummaryInfo(zoneIp4, abcGroup.name, AccessLevel.Delete)
   private val zoneIp6ZoneSummary = ZoneSummaryInfo(zoneIp6, abcGroup.name, AccessLevel.Delete)
   private val mockMembershipRepo = mock[MembershipRepository]
@@ -1080,6 +1082,195 @@ class ZoneServiceSpec
       val result: ListZonesResponse =
         underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary, xyzZoneSummary)
+      result.nextId shouldBe Some("zone6.")
+    }
+  }
+
+  "ListDeletedZones" should {
+    "not fail with no zones returned" in {
+
+      doReturn(IO.pure(ListDeletedZonesChangeResults(List())))
+        .when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+      result.zonesDeletedInfo shouldBe List()
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.zoneChangeFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe false
+    }
+
+    "return the appropriate zones" in {
+      doReturn(IO.pure(ListDeletedZonesChangeResults(List(abcDeletedZoneChange))))
+        .when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.zoneChangeFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe false
+    }
+
+    "return all zones" in {
+      doReturn(IO.pure(ListDeletedZonesChangeResults(List(abcDeletedZoneChange, xyzDeletedZoneChange), ignoreAccess = true)))
+        .when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, None, 100, true)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse =
+        rightResultOf(underTest.listDeletedZones(abcAuth, ignoreAccess = true).value)
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary,xyzDeletedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.zoneChangeFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
+    "return Unknown group name if zone admin group cannot be found" in {
+      doReturn(IO.pure(ListDeletedZonesChangeResults(List(abcDeletedZoneChange, xyzDeletedZoneChange))))
+        .when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse = rightResultOf(underTest.listDeletedZones(abcAuth).value)
+      val expectedZones =
+        List(abcDeletedZoneSummary, xyzDeletedZoneSummary).map(_.copy(adminGroupName = "Unknown group name"))
+      result.zonesDeletedInfo shouldBe expectedZones
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.zoneChangeFilter shouldBe None
+      result.nextId shouldBe None
+    }
+
+    "set the nextId appropriately" in {
+      doReturn(
+        IO.pure(
+          ListDeletedZonesChangeResults(
+            List(abcDeletedZoneChange, xyzDeletedZoneChange),
+            maxItems = 2,
+            nextId = Some("zone2."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, None, 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse =
+        rightResultOf(underTest.listDeletedZones(abcAuth, maxItems = 2).value)
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
+      result.maxItems shouldBe 2
+      result.startFrom shouldBe None
+      result.zoneChangeFilter shouldBe None
+      result.nextId shouldBe Some("zone2.")
+    }
+
+    "set the nameFilter when provided" in {
+      doReturn(
+        IO.pure(
+          ListDeletedZonesChangeResults(
+            List(abcDeletedZoneChange, xyzDeletedZoneChange),
+            zoneChangeFilter = Some("foo"),
+            maxItems = 2,
+            nextId = Some("zone2."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, Some("foo"), None, 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse =
+        rightResultOf(underTest.listDeletedZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value)
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
+      result.zoneChangeFilter shouldBe Some("foo")
+      result.nextId shouldBe Some("zone2.")
+      result.maxItems shouldBe 2
+    }
+
+    "set the startFrom when provided" in {
+      doReturn(
+        IO.pure(
+          ListDeletedZonesChangeResults(
+            List(abcDeletedZoneChange, xyzDeletedZoneChange),
+            startFrom = Some("zone4."),
+            maxItems = 2,
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, Some("zone4."), 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse =
+        rightResultOf(underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
+      result.startFrom shouldBe Some("zone4.")
+    }
+
+    "set the nextId to be the current result set size plus the start from" in {
+      doReturn(
+        IO.pure(
+          ListDeletedZonesChangeResults(
+            List(abcDeletedZoneChange, xyzDeletedZoneChange),
+            startFrom = Some("zone4."),
+            maxItems = 2,
+            nextId = Some("zone6."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockZoneChangeRepo)
+        .listDeletedZones(abcAuth, None, Some("zone4."), 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListDeletedZoneChangesResponse =
+        rightResultOf(underTest.listDeletedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
+      result.zonesDeletedInfo shouldBe List(abcDeletedZoneSummary, xyzDeletedZoneSummary)
       result.nextId shouldBe Some("zone6.")
     }
   }
