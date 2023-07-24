@@ -105,16 +105,16 @@ object TestZoneData {
     abcZoneDeleted,
     "ok",
     ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000)
+    ZoneChangeStatus.Synced,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
   )
 
   val xyzDeletedZoneChange: ZoneChange = ZoneChange(
     xyzZoneDeleted,
     "ok",
     ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000)
+    ZoneChangeStatus.Synced,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
   )
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =

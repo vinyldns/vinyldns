@@ -156,7 +156,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         testZone.account,
         ZoneChangeType.Create,
         ZoneChangeStatus.Synced,
-        created = DateTime.now().minusSeconds(Random.nextInt(1000))
+        created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
       )}
 
     def saveZones(zones: Seq[Zone]): IO[Unit] =
@@ -408,7 +408,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     }
     "return an empty list of zones if the user is not authorized to any" in {
       val unauthorized = AuthPrincipal(
-        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        signedInUser = User("not-authorized", "not-authorized", Encrypted("not-authorized")),
         memberGroupIds = Seq.empty
       )
 
