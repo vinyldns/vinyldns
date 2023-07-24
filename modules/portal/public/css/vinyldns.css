@@ -458,10 +458,6 @@ input[type="file"] {
     align-items: center;
 }
 
-.paginate_left {
-    float: left;
-}
-
 .vinyldns_page_number {
     margin-right: 10px;
 }
@@ -569,4 +565,24 @@ input[type="file"] {
 
 #set-dropdown-width {
     width: 4em;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.remove-bottom-margin {
+    margin-bottom: 0px;
+}
+
+.reduce-font-weight {
+    font-weight: 400;
+}
+
+.bolder-font-weight{
+    font-weight: 500;
+}
+
+.set-inline-flex{
+    display: inline-flex;
 }
