@@ -185,5 +185,6 @@ describe('Controller: ZonesController', function () {
         expect(getDeletedZoneSets.calls.count()).toBe(3);
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
+
     });
 });
