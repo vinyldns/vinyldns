@@ -173,7 +173,7 @@ describe('Controller: ZonesController', function () {
         var expectedQuery = this.scope.query;
         var expectedIgnoreAccess = false;
 
-        this.scope.prevPageDeletedZones();
+        this.scope.prevPageMyDeletedZones();
 
         expect(getDeletedZoneSets.calls.count()).toBe(1);
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
