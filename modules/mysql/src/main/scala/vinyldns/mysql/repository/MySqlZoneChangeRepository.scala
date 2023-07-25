@@ -196,7 +196,7 @@ class MySqlZoneChangeRepository
             zoneChangeResults.filter(z=> !zoneResults.map(_.name).contains(z.zone.name) && z.zone.status != ZoneStatus.Active)
 
           val deletedZoneResults: List[ZoneChange] =
-            zoneNotInZoneChange.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct
+            zoneNotInZoneChange.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct.sortBy(_.zone.updated).reverse
 
           val results: List[ZoneChange] =
             if (zoneNameFilter.nonEmpty) {
