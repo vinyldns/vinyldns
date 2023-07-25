@@ -388,6 +388,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     "get authorized zones" in {
       // store all of the zones
       saveZones(testZone).unsafeRunSync()
+      // delete all stored zones
+      deleteZones(testZone).unsafeRunSync()
       // save the change
       saveZoneChanges(deletedZoneChanges).unsafeRunSync()
 
@@ -402,8 +404,24 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       // dummy user only has access to one zone
       (repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted should contain).only(deletedZoneChanges.head)
 
-      deleteZones(testZone).unsafeRunSync()
+    }
 
+    "return empty in deleted zone if zone is created again" in {
+      // store all of the zones
+      saveZones(testZone).unsafeRunSync()
+      // save the change
+      saveZoneChanges(deletedZoneChanges).unsafeRunSync()
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain theSameElementsAs List()
+
+      // delete all stored zones
+      deleteZones(testZone).unsafeRunSync()
 
     }
     "return an empty list of zones if the user is not authorized to any" in {
@@ -415,6 +433,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZone)
+          _ <- deleteZones(testZone)
           _ <- saveZoneChanges(deletedZoneChanges)
           zones <- repo.listDeletedZones(unauthorized)
         } yield zones
@@ -429,6 +448,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val zones = testZone.take(2)
       val zoneChange = deletedZoneChanges.take(2)
       val addACL = saveZones(zones)
+      val deleteZone= deleteZones(zones)
       val addACLZc = saveZoneChanges(zoneChange)
 
 
@@ -437,6 +457,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         memberGroupIds = groups.map(_.id)
       )
       addACL.unsafeRunSync()
+      deleteZone.unsafeRunSync()
       addACLZc.unsafeRunSync()
 
       (repo.listDeletedZones(okUserAuth).unsafeRunSync().zoneDeleted should contain). allElementsOf(zoneChange)
@@ -455,7 +476,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       // dummy user can not access the revoked zone
       repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted shouldBe empty
-      deleteZones(testZone).unsafeRunSync()
     }
   }
 }
