@@ -1,4 +1,4 @@
-c/*
+/*
  * Copyright 2018 Comcast Cable Communications Management, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -115,7 +115,7 @@ describe('Controller: ZonesController', function () {
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 
-    it('nextPageMyZones should call getDeletedZones with the correct parameters', function () {
+    it('nextPageZones should call getDeletedZones with the correct parameters', function () {
         mockDeletedZone = {zonesDeletedInfo:[ {
                                                         zoneChanges: [{ zone: {
                                                             name: "dummy.",
@@ -138,16 +138,16 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
-        var expectedignoreAccess = true;
+        var expectedIgnoreAccess = false;
 
         this.scope.nextPageMyDeletedZones();
 
         expect(getDeletedZoneSets.calls.count()).toBe(1);
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
     });
 
-    it('prevPageMyZones should call getZones with the correct parameters', function () {
+    it('prevPageZones should call getDeletedZones with the correct parameters', function () {
 
         mockDeletedZone = {zonesDeletedInfo:[ {
                                                         zoneChanges: [{ zone: {
@@ -171,19 +171,19 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
-        var expectedignoreAccess = true;
+        var expectedIgnoreAccess = false;
 
-        this.scope.prevPageMyDeletedZones();
+        this.scope.prevPageDeletedZones();
 
         expect(getDeletedZoneSets.calls.count()).toBe(1);
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
 
         this.scope.nextPageMyDeletedZones();
         this.scope.prevPageMyDeletedZones();
 
         expect(getDeletedZoneSets.calls.count()).toBe(3);
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
     });
 });
