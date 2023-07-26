@@ -17,7 +17,8 @@
 package vinyldns.api.domain.record
 
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -43,6 +44,8 @@ class RecordSetValidationsSpec
     with EitherMatchers {
 
   import RecordSetValidations._
+
+  val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
 
   "RecordSetValidations" should {
     "validRecordTypes" should {
@@ -184,24 +187,75 @@ class RecordSetValidationsSpec
       }
     }
 
+    "isDotted" should {
+      "return a failure for any record with dotted hosts if it is already present" in {
+        val test = aaaa.copy(name = "this.is.a.failure.")
+        leftValue(isDotted(test, okZone, None, false, true)) shouldBe an[InvalidRequest]
+      }
+
+      "return a failure for any record that is a dotted host if user or record type is not allowed" in {
+        val test = aaaa.copy(name = "this.is.a.failure." + okZone.name)
+        leftValue(isDotted(test, okZone, None, true, false)) shouldBe an[InvalidRequest]
+      }
+
+      "return success for a dotted record if it does not already have a record or zone with same name and user is allowed" in {
+        val test = aaaa.copy(name = "this.passes")
+        isDotted(test, okZone, None, true, true) should be(right)
+      }
+
+      "return success for a new record that has the same name as the existing record" in {
+        val newRecord = aaaa.copy(name = "dot.ted")
+        val existingRecord = newRecord.copy(ttl = 330)
+
+        isDotted(newRecord, okZone, Some(existingRecord), true, true) should be(right)
+      }
+    }
+
     "typeSpecificValidations" should {
       "Run dotted hosts checks" should {
         val dottedARecord = rsOk.copy(name = "this.is.a.failure.")
         "return a failure for any new record with dotted hosts in forward zones" in {
           leftValue(
-            typeSpecificValidations(dottedARecord, List(), okZone, None, Nil)
+            typeSpecificValidations(dottedARecord, List(), okZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false)
           ) shouldBe an[InvalidRequest]
         }
 
         "return a failure for any new record with dotted hosts in forward zones (CNAME)" in {
           leftValue(
-            typeSpecificValidations(dottedARecord.copy(typ = CNAME), List(), okZone, None, Nil)
+            typeSpecificValidations(dottedARecord.copy(typ = CNAME), List(), okZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false)
           ) shouldBe an[InvalidRequest]
         }
 
         "return a failure for any new record with dotted hosts in forward zones (NS)" in {
           leftValue(
-            typeSpecificValidations(dottedARecord.copy(typ = NS), List(), okZone, None, Nil)
+            typeSpecificValidations(dottedARecord.copy(typ = NS), List(), okZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false)
+          ) shouldBe an[InvalidRequest]
+        }
+
+        "return a success for any new record with dotted hosts in forward zones if it satisfies dotted hosts configs" in {
+          // Zone, User, Record Type and Number of dots are all satisfied
+          val record = typeSpecificValidations(dottedARecord.copy(typ = CNAME, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
+          record should be(right)
+        }
+
+        "return a failure for any new record with dotted hosts if no.of.dots allowed is 0" in {
+          // Zone, User, Record Type and Number of dots are all satisfied
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(typ = CNAME, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, true, 0)
+          ) shouldBe an[InvalidRequest]
+        }
+
+        "return a failure for any new record with dotted hosts in forward zones (A record) if it doesn't satisfy dotted hosts configs" in {
+          // 'A' record is not allowed in the config
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false, 5)
+          ) shouldBe an[InvalidRequest]
+        }
+
+        "return a failure for any new record with dotted hosts in forward zones (NS record) if it doesn't satisfy dotted hosts configs" in {
+          // 'NS' record is not allowed in the config
+          leftValue(
+            typeSpecificValidations(dottedARecord.copy(typ = NS, zoneId = dottedZone.id), List(), dottedZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false, 5)
           ) shouldBe an[InvalidRequest]
         }
 
@@ -211,7 +265,10 @@ class RecordSetValidationsSpec
             List(),
             okZone,
             Some(dottedARecord.copy(ttl = 300)),
-            Nil
+            Nil,
+            true,
+            dottedHostsConfigZonesAllowed.toSet,
+            false
           ) should be(right)
         }
 
@@ -222,7 +279,10 @@ class RecordSetValidationsSpec
             List(),
             okZone,
             Some(dottedCNAMERecord.copy(ttl = 300)),
-            Nil
+            Nil,
+            true,
+            dottedHostsConfigZonesAllowed.toSet,
+            false
           ) should be(right)
         }
 
@@ -234,7 +294,10 @@ class RecordSetValidationsSpec
               List(),
               okZone,
               Some(dottedNSRecord.copy(ttl = 300)),
-              Nil
+              Nil,
+              true,
+              dottedHostsConfigZonesAllowed.toSet,
+              false
             )
           ) shouldBe an[InvalidRequest]
         }
@@ -245,35 +308,35 @@ class RecordSetValidationsSpec
           val test = srv.copy(name = "_sip._tcp.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success for an SRV record following convention without FQDN" in {
           val test = srv.copy(name = "_sip._tcp")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success for an SRV record following convention with a record name" in {
           val test = srv.copy(name = "_sip._tcp.foo.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success on a wildcard SRV that follows convention" in {
           val test = srv.copy(name = "*._tcp.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success on a wildcard in second position SRV that follows convention" in {
           val test = srv.copy(name = "_sip._*.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
       }
       "Skip dotted checks on NAPTR" should {
@@ -281,21 +344,21 @@ class RecordSetValidationsSpec
           val test = naptr.copy(name = "sub.naptr.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success for an NAPTR record without FQDN" in {
           val test = naptr.copy(name = "sub.naptr")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
         "return success on a wildcard NAPTR" in {
           val test = naptr.copy(name = "*.sub.naptr.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
       }
@@ -304,7 +367,7 @@ class RecordSetValidationsSpec
           val test = ptrIp4.copy(name = "10.1.2.")
           val zone = zoneIp4.copy(name = "198.in-addr.arpa.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
       }
       "Skip dotted checks on TXT" should {
@@ -312,7 +375,7 @@ class RecordSetValidationsSpec
           val test = txt.copy(name = "sub.txt.example.com.")
           val zone = okZone.copy(name = "example.com.")
 
-          typeSpecificValidations(test, List(), zone, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
 
       }
@@ -324,12 +387,12 @@ class RecordSetValidationsSpec
             SOA,
             200,
             RecordSetStatus.Active,
-            DateTime.now,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
             List(SOAData(Fqdn("something"), "other", 1, 2, 3, 5, 6))
           )
 
-          typeSpecificValidations(test, List(), zoneIp4, None, Nil) should be(right)
+          typeSpecificValidations(test, List(), zoneIp4, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
         }
       }
     }
@@ -342,29 +405,29 @@ class RecordSetValidationsSpec
           records = List(NSData(Fqdn("some.test.ns.")))
         )
 
-        nsValidations(valid, okZone, None, List(new Regex(".*"))) should be(right)
+        nsValidations(valid, okZone, None, List(new Regex(".*")), true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
       }
 
       "return an InvalidRequest if an NS record is '@'" in {
-        val error = leftValue(nsValidations(invalidNsApexRs, okZone, None, Nil))
+        val error = leftValue(nsValidations(invalidNsApexRs, okZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record is the same as the zone" in {
         val invalid = invalidNsApexRs.copy(name = okZone.name)
-        val error = leftValue(nsValidations(invalid, okZone, None, Nil))
+        val error = leftValue(nsValidations(invalid, okZone, None, Nil, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if the NS record being updated is '@'" in {
         val valid = invalidNsApexRs.copy(name = "this-is-not-origin-mate")
-        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs), Nil))
+        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs), Nil, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record data is not in the approved server list" in {
         val ns = invalidNsApexRs.copy(records = List(NSData(Fqdn("not.approved."))))
-        val error = leftValue(nsValidations(ns, okZone, None, List(new Regex("not.*"))))
+        val error = leftValue(nsValidations(ns, okZone, None, List(new Regex("not.*")), true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
     }
@@ -372,25 +435,35 @@ class RecordSetValidationsSpec
     "DSValidations" should {
       val matchingNs = ns.copy(zoneId = ds.zoneId, name = ds.name, ttl = ds.ttl)
       "return ok if the record is non-origin DS with matching NS" in {
-        dsValidations(ds, List(matchingNs), okZone) should be(right)
+        dsValidations(ds, List(matchingNs), okZone, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
       }
       "return an InvalidRequest if a DS record is '@'" in {
         val apex = ds.copy(name = "@")
-        val error = leftValue(dsValidations(apex, List(matchingNs), okZone))
+        val error = leftValue(dsValidations(apex, List(matchingNs), okZone, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a DS record is the same as the zone" in {
         val apex = ds.copy(name = okZone.name)
-        val error = leftValue(dsValidations(apex, List(matchingNs), okZone))
+        val error = leftValue(dsValidations(apex, List(matchingNs), okZone, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if there is no NS matching the record" in {
-        val error = leftValue(dsValidations(ds, List(), okZone))
+        val error = leftValue(dsValidations(ds, List(), okZone, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if the DS is dotted" in {
         val error =
-          leftValue(dsValidations(ds.copy(name = "test.dotted"), List(matchingNs), okZone))
+          leftValue(dsValidations(ds.copy(name = "test.dotted"), List(matchingNs), okZone, true, dottedHostsConfigZonesAllowed.toSet, false))
+        error shouldBe an[InvalidRequest]
+      }
+      "return ok if the DS is dotted and zone, user, record type is allowed in dotted hosts config" in {
+        val record =
+          dsValidations(ds.copy(name = "dotted.trial", zoneId = dottedZone.id), List(matchingNs), dottedZone, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
+        record should be(right)
+      }
+      "return an InvalidRequest if the DS is dotted and zone, user, record type is allowed in dotted hosts config but has a conflict with existing record or zone" in {
+        val error =
+          leftValue(dsValidations(ds.copy(name = "dotted.trial", zoneId = dottedZone.id), List(matchingNs), dottedZone, false, dottedHostsConfigZonesAllowed.toSet, true))
         error shouldBe an[InvalidRequest]
       }
     }
@@ -398,53 +471,67 @@ class RecordSetValidationsSpec
     "CnameValidations" should {
       val invalidCnameApexRs: RecordSet = cname.copy(name = "@")
       "return a RecordSetAlreadyExistsError if a record with the same name exists and creating a cname" in {
-        val error = leftValue(cnameValidations(cname, List(aaaa), okZone))
+        val error = leftValue(cnameValidations(cname, List(aaaa), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe a[RecordSetAlreadyExists]
       }
       "return ok if name is not '@'" in {
-        cnameValidations(cname, List(), okZone) should be(right)
+        cnameValidations(cname, List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false) should be(right)
       }
       "return an InvalidRequest if a cname record set name is '@'" in {
-        val error = leftValue(cnameValidations(invalidCnameApexRs, List(), okZone))
+        val error = leftValue(cnameValidations(invalidCnameApexRs, List(), okZone, None,  true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set name is same as zone" in {
         val invalid = invalidCnameApexRs.copy(name = okZone.name)
-        val error = leftValue(cnameValidations(invalid, List(), okZone))
+        val error = leftValue(cnameValidations(invalid, List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
+      "return an InvalidRequest if a cname record set fqdn is IPv4 address" in {
+        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("1.2.3.4")))), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
+        error shouldBe an[RecordSetValidation]
+      }
       "return an InvalidRequest if a cname record set name is dotted" in {
-        val error = leftValue(cnameValidations(cname.copy(name = "dot.ted"), List(), okZone))
+        val error = leftValue(cnameValidations(cname.copy(name = "dot.ted"), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return ok if new recordset name does not contain dot" in {
-        cnameValidations(cname, List(), okZone, Some(cname.copy(name = "not-dotted"))) should be(
+        cnameValidations(cname, List(), okZone, Some(cname.copy(name = "not-dotted")), true, dottedHostsConfigZonesAllowed.toSet, false) should be(
           right
         )
       }
       "return ok if dotted host name doesn't change" in {
         val newRecord = cname.copy(name = "dot.ted", ttl = 500)
-        cnameValidations(newRecord, List(), okZone, Some(newRecord.copy(ttl = 300))) should be(
+        cnameValidations(newRecord, List(), okZone, Some(newRecord.copy(ttl = 300)), true, dottedHostsConfigZonesAllowed.toSet, false) should be(
           right
         )
       }
       "return an InvalidRequest if a cname record set name is updated to '@'" in {
-        val error = leftValue(cnameValidations(cname.copy(name = "@"), List(), okZone, Some(cname)))
+        val error = leftValue(cnameValidations(cname.copy(name = "@"), List(), okZone, Some(cname), true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if updated cname record set name is same as zone" in {
         val error =
-          leftValue(cnameValidations(cname.copy(name = okZone.name), List(), okZone, Some(cname)))
+          leftValue(cnameValidations(cname.copy(name = okZone.name), List(), okZone, Some(cname), true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[InvalidRequest]
       }
       "return an RecordSetValidation error if recordset data contain more than one sequential '.'" in {
-        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record..zone")))), List(), okZone))
+        val error = leftValue(cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record..zone")))), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false))
         error shouldBe an[RecordSetValidation]
       }
       "return ok if recordset data does not contain sequential '.'" in {
-        cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record.zone")))), List(), okZone) should be(
+        cnameValidations(cname.copy(records = List(CNAMEData(Fqdn("record.zone")))), List(), okZone, None, true, dottedHostsConfigZonesAllowed.toSet, false) should be(
           right
         )
+      }
+      "return ok if the CNAME is dotted and zone, user, record type is allowed in dotted hosts config" in {
+        val record =
+          cnameValidations(cname.copy(name = "dot.ted", zoneId = dottedZone.id), List(), dottedZone, None, true, dottedHostsConfigZonesAllowed.toSet, true, 5)
+        record should be(right)
+      }
+      "return an InvalidRequest if the CNAME is dotted and zone, user, record type is allowed in dotted hosts config but has a conflict with existing record or zone" in {
+        val error =
+          leftValue(cnameValidations(cname.copy(name = "dot.ted", zoneId = dottedZone.id), List(), dottedZone, None, false, dottedHostsConfigZonesAllowed.toSet, true))
+        error shouldBe an[InvalidRequest]
       }
     }
 
@@ -603,6 +690,36 @@ class RecordSetValidationsSpec
         val error = leftValue(validRecordNameFilterLength(invalidString))
         error shouldBe an[InvalidRequest]
         error.getMessage() shouldBe RecordNameFilterError
+      }
+    }
+    
+    "canSuperUserUpdateOwnerGroup" should {
+      "return true when record owner group is the only field changed in the updated record, the zone is shared, " +
+        "and user is a superuser" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(true)
+      }
+      "return false when record owner group is the only field changed in the updated record, the zone is shared, " +
+        "and user is NOT a superuser" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, okAuth) should be(false)
+      }
+      "return false when record owner group is the only field changed in the updated record, the zone is NOT shared, " +
+        "and user is a superuser" in {
+        val zone = okZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
+      }
+      "return false when record owner group is NOT the only field changed in the updated record" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
       }
     }
   }

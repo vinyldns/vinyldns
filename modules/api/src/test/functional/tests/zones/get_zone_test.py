@@ -34,11 +34,17 @@ def test_get_zone_shared_by_id_as_owner(shared_zone_test_context):
 
 def test_get_zone_shared_by_id_non_owner(shared_zone_test_context):
     """
-    Test get an existing shared zone by id as a zone owner
+    Test get an existing shared zone by id as a non-zone-owner. Non-owner should have read-only access
     """
     client = shared_zone_test_context.dummy_vinyldns_client
+    group_name = shared_zone_test_context.shared_record_group["name"]
+    result = client.get_zone(shared_zone_test_context.shared_zone["id"], status=200)
+    retrieved = result["zone"]
 
-    client.get_zone(shared_zone_test_context.shared_zone["id"], status=403)
+    assert_that(retrieved["id"], is_(shared_zone_test_context.shared_zone["id"]))
+    assert_that(retrieved["adminGroupName"], is_(group_name))
+    assert_that(retrieved["shared"], is_(True))
+    assert_that(retrieved["accessLevel"], is_("Read"))
 
 
 def test_get_zone_private_by_id_fails_without_access(shared_zone_test_context):
@@ -65,6 +71,29 @@ def test_get_zone_by_id_no_authorization(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     client.get_zone("123456", sign_request=False, status=401)
+
+
+def test_get_common_zone_details_by_id(shared_zone_test_context):
+    """
+    Test get an existing zone's common details by id
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    result = client.get_common_zone_details(shared_zone_test_context.system_test_zone["id"], status=200)
+    retrieved = result["zone"]
+
+    assert_that(retrieved["name"], is_(shared_zone_test_context.system_test_zone["name"]))
+    assert_that(retrieved["email"], is_(shared_zone_test_context.system_test_zone["email"]))
+    assert_that(retrieved["adminGroupName"], is_(shared_zone_test_context.ok_group["name"]))
+    assert_that(retrieved["adminGroupId"], is_(shared_zone_test_context.ok_group["id"]))
+
+
+def test_get_common_zone_details_by_id_returns_404_when_not_found(shared_zone_test_context):
+    """
+    Test get an existing zone returns a 404 when the zone is not found
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    client.get_common_zone_details(str(uuid.uuid4()), status=404)
 
 
 @pytest.mark.serial

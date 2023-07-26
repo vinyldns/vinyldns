@@ -52,6 +52,23 @@ final case class InvalidDomainName(param: String) extends DomainValidationError 
       "joined by dots, and terminated with a dot."
 }
 
+final case class InvalidIPv4CName(param: String) extends DomainValidationError {
+  def message: String =
+    s"""Invalid Cname: "$param", Valid CNAME record data should not be an IP address"""
+}
+
+final case class InvalidCname(param: String, isReverseZone: Boolean) extends DomainValidationError {
+  def message: String =
+    isReverseZone match {
+      case true =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, slashes, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+      case false =>
+        s"""Invalid Cname: "$param", valid cnames must be letters, numbers, underscores, and hyphens, """ +
+          "joined by dots, and terminated with a dot."
+    }
+}
+
 final case class InvalidLength(param: String, minLengthInclusive: Int, maxLengthInclusive: Int)
     extends DomainValidationError {
   def message: String =
@@ -90,10 +107,22 @@ final case class InvalidTTL(param: Long, min: Long, max: Long) extends DomainVal
     s"""Invalid TTL: "${param.toString}", must be a number between $min and $max."""
 }
 
-final case class InvalidMxPreference(param: Long, min: Long, max: Long)
+final case class InvalidMX_NAPTR_SRVData(param: Long, min: Long, max: Long, recordDataType: String, recordType: String)
     extends DomainValidationError {
   def message: String =
-    s"""Invalid MX Preference: "${param.toString}", must be a number between $min and $max."""
+    s"""Invalid $recordType $recordDataType: "${param.toString}", must be a number between $min and $max."""
+}
+
+final case class InvalidNaptrFlag(value: String)
+  extends DomainValidationError {
+  def message: String =
+    s"""Invalid NAPTR flag value: '$value'. Valid NAPTR flag value must be U, S, A or P."""
+}
+
+final case class InvalidNaptrRegexp(value: String)
+  extends DomainValidationError {
+  def message: String =
+    s"""Invalid NAPTR regexp value: '$value'. Valid NAPTR regexp value must start and end with '!'."""
 }
 
 final case class InvalidBatchRecordType(param: String, supported: Set[RecordType])
@@ -111,13 +140,19 @@ final case class ZoneDiscoveryError(name: String, fatal: Boolean = false)
 
 final case class RecordAlreadyExists(name: String) extends DomainValidationError {
   def message: String =
-    s"""Record "$name" Already Exists: cannot add an existing record; to update it, """ +
-      "issue a DeleteRecordSet then an Add."
+    s"""RecordName "$name" already exists. """ +
+      "If you intended to update this record, submit a DeleteRecordSet entry followed by an Add."
 }
 
 final case class RecordDoesNotExist(name: String) extends DomainValidationError {
   def message: String =
     s"""Record "$name" Does Not Exist: cannot delete a record that does not exist."""
+}
+
+final case class InvalidUpdateRequest(name: String) extends DomainValidationError {
+  def message: String =
+    s"""Cannot perform request for the record "$name". """ +
+      "Add and Delete for the record with same record data exists in the batch."
 }
 
 final case class CnameIsNotUniqueError(name: String, typ: RecordType)
@@ -175,6 +210,17 @@ final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false
   def message: String =
     s"""Record set with name "$fqdn" requires manual review."""
       .replaceAll("\n", " ")
+}
+
+final case class InvalidBatchRequest(msg: String) extends DomainValidationError {
+  def message: String =
+    s"""$msg"""
+      .replaceAll("\n", " ")
+}
+
+final case class NotApprovedNSError(nsData: String) extends DomainValidationError {
+  def message: String =
+    s"Name Server $nsData is not an approved name server."
 }
 
 final case class UnsupportedOperation(operation: String) extends DomainValidationError {

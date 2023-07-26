@@ -19,7 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.joda.time.DateTime
+import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -67,7 +67,7 @@ class MembershipRoutingSpec
 
   // marshalling and unmarshalling cuts off some 0s. By setting the times to epoch,
   // this is avoided since were working with 0s there anyway
-  val baseTime = new DateTime(0)
+  val baseTime: Instant = Instant.ofEpochMilli(0)
   val okUserInfo: UserInfo = UserInfo(okUser).copy(created = Some(baseTime))
   val okUserId: UserId = UserId(okUser.id)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser).copy(created = Some(baseTime))
@@ -725,6 +725,37 @@ class MembershipRoutingSpec
         .when(membershipService)
         .getGroupActivity("bad", None, 100, okAuth)
       Get(s"/groups/bad/activity") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.InternalServerError
+      }
+    }
+  }
+
+  "GET group change" should {
+    "return a 200 response with the group change when found" in {
+      val grpChange = GroupChangeInfo(okGroupChange)
+      doReturn(result(grpChange)).when(membershipService).getGroupChange("ok", okAuth)
+      Get("/groups/change/ok") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupChangeInfo]
+        result shouldBe grpChange
+      }
+    }
+
+    "return a 400 Bad Request when the group change id is not valid" in {
+      doReturn(result(InvalidGroupRequestError("Invalid Group Change ID")))
+        .when(membershipService)
+        .getGroupChange("notValid", okAuth)
+      Get("/groups/change/notValid") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a 500 response on failure" in {
+      doReturn(result(new RuntimeException("fail")))
+        .when(membershipService)
+        .getGroupChange("bad", okAuth)
+      Get(s"/groups/change/bad") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }

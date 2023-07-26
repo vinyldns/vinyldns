@@ -17,13 +17,13 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.domain.zone.RecordSetChangeInfo
-import vinyldns.core.domain.record.ListRecordSetChangesResults
+import vinyldns.core.domain.record.{ListFailedRecordSetChangesResults, ListRecordSetChangesResults, RecordSetChange}
 
 case class ListRecordSetChangesResponse(
     zoneId: String,
     recordSetChanges: List[RecordSetChangeInfo] = Nil,
-    nextId: Option[String],
-    startFrom: Option[String],
+    nextId: Option[Int],
+    startFrom: Option[Int],
     maxItems: Int
 )
 
@@ -41,3 +41,43 @@ object ListRecordSetChangesResponse {
       listResults.maxItems
     )
 }
+
+case class ListRecordSetHistoryResponse(
+     zoneId: Option[String],
+     recordSetChanges: List[RecordSetChangeInfo] = Nil,
+     nextId: Option[Int],
+     startFrom: Option[Int],
+     maxItems: Int
+ )
+
+object ListRecordSetHistoryResponse {
+  def apply(
+             zoneId: Option[String],
+             listResults: ListRecordSetChangesResults,
+             info: List[RecordSetChangeInfo]
+           ): ListRecordSetHistoryResponse =
+    ListRecordSetHistoryResponse(
+      zoneId,
+      info,
+      listResults.nextId,
+      listResults.startFrom,
+      listResults.maxItems
+    )
+}
+
+case class ListFailedRecordSetChangesResponse(
+                                               failedRecordSetChanges: List[RecordSetChange] = Nil,
+                                               nextId: Int,
+                                               startFrom: Int,
+                                               maxItems: Int
+                                             )
+
+object ListFailedRecordSetChangesResponse {
+  def apply(
+             ListFailedRecordSetChanges: ListFailedRecordSetChangesResults
+           ): ListFailedRecordSetChangesResponse =
+    ListFailedRecordSetChangesResponse(
+      ListFailedRecordSetChanges.items,
+      ListFailedRecordSetChanges.nextId,
+      ListFailedRecordSetChanges.startFrom,
+      ListFailedRecordSetChanges.maxItems)}

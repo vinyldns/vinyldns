@@ -19,7 +19,8 @@ package vinyldns.api.route
 import cats.data.NonEmptyList
 import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import cats.syntax.all._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -179,7 +180,7 @@ class BatchChangeJsonProtocolSpec
       val result = ChangeInputSerializer.fromJson(json)
 
       result should haveInvalid(
-        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"
+        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR"
       )
     }
 
@@ -223,6 +224,27 @@ class BatchChangeJsonProtocolSpec
       val resultAAAA = ChangeInputSerializer.fromJson(jsonAAAA)
 
       resultAAAA should haveInvalid("Missing BatchChangeInput.changes.record.address")
+    }
+
+    "return an error if the record data is not specified for NS" in {
+      val jsonNS = buildAddChangeInputJson(Some("foo."), Some(NS), Some(3600))
+      val resultNS = ChangeInputSerializer.fromJson(jsonNS)
+
+      resultNS should haveInvalid("Missing BatchChangeInput.changes.record.nsdname")
+    }
+
+    "return an error if the record data is not specified for SRV" in {
+      val jsonSRV = buildAddChangeInputJson(Some("foo."), Some(SRV), Some(3600))
+      val resultSRV = ChangeInputSerializer.fromJson(jsonSRV)
+
+      resultSRV should haveInvalid("Missing BatchChangeInput.changes.record.priority and Missing BatchChangeInput.changes.record.weight and Missing BatchChangeInput.changes.record.port and Missing BatchChangeInput.changes.record.target")
+    }
+
+    "return an error if the record data is not specified for NAPTR" in {
+      val jsonNAPTR = buildAddChangeInputJson(Some("foo."), Some(NAPTR), Some(3600))
+      val resultNAPTR = ChangeInputSerializer.fromJson(jsonNAPTR)
+
+      resultNAPTR should haveInvalid("Missing BatchChangeInput.changes.record.order and Missing BatchChangeInput.changes.record.preference and Missing BatchChangeInput.changes.record.flags and Missing BatchChangeInput.changes.record.service and Missing BatchChangeInput.changes.record.regexp and Missing BatchChangeInput.changes.record.replacement")
     }
   }
 
@@ -451,7 +473,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = DateTime.now
+      val time = Instant.now.truncatedTo(ChronoUnit.MILLIS)
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",
@@ -585,7 +607,7 @@ class BatchChangeJsonProtocolSpec
         id = "id"
       )
 
-      val time = DateTime.now
+      val time = Instant.now.truncatedTo(ChronoUnit.MILLIS)
       val batchChange = BatchChange(
         "someUserId",
         "someUserName",

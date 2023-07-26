@@ -19,14 +19,15 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
@@ -39,6 +40,7 @@ trait DnsJsonProtocol extends JsonValidation {
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     AlgorithmSerializer,
+    EncryptedSerializer,
     RecordSetSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
@@ -52,6 +54,7 @@ trait DnsJsonProtocol extends JsonValidation {
     JsonEnumV(ZoneChangeType),
     JsonEnumV(RecordSetChangeType),
     JsonEnumV(NameSort),
+    JsonEnumV(RecordTypeSort),
     ASerializer,
     AAAASerializer,
     CNAMESerializer,
@@ -77,12 +80,24 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "userId").required[String]("Missing RecordSetChange.userId"),
         (js \ "changeType").required(RecordSetChangeType, "Missing RecordSetChange.changeType"),
         (js \ "status").default(RecordSetChangeStatus, RecordSetChangeStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "systemMessage").optional[String],
         (js \ "updates").optional[RecordSet],
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
         ).mapN(RecordSetChange.apply)
+
+    override def toJson(rs: RecordSetChange): JValue =
+      ("zone" -> Extraction.decompose(rs.zone)) ~
+        ("recordSet" -> Extraction.decompose(rs.recordSet)) ~
+        ("userId" -> rs.userId) ~
+        ("changeType" -> Extraction.decompose(rs.changeType)) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("systemMessage" -> rs.systemMessage) ~
+        ("updates" -> Extraction.decompose(rs.updates)) ~
+        ("id" -> rs.id) ~
+        ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
   case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
@@ -98,7 +113,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
-        (js \ "backendId").optional[String]
+        (js \ "backendId").optional[String],
+        (js \ "recurrenceSchedule").optional[String],
+        (js \ "scheduleRequestor").optional[String],
         ).mapN(CreateZoneInput.apply)
   }
 
@@ -115,7 +132,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
-        (js \ "backendId").optional[String]
+        (js \ "recurrenceSchedule").optional[String],
+        (js \ "scheduleRequestor").optional[String],
+        (js \ "backendId").optional[String],
         ).mapN(UpdateZoneInput.apply)
   }
 
@@ -129,18 +148,30 @@ trait DnsJsonProtocol extends JsonValidation {
     override def toJson(a: Algorithm): JValue = JString(a.name)
   }
 
+  case object EncryptedSerializer extends ValidationSerializer[Encrypted] {
+    override def fromJson(js: JValue): ValidatedNel[String, Encrypted] =
+      js match {
+        case JString(value) => EncryptFromJson.fromString(value).toValidatedNel
+        case _ => "Unsupported type for zone connection key, must be a string".invalidNel
+      }
+
+    override def toJson(a: Encrypted): JValue = JString(a.value)
+  }
+
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
         (js \ "name").required[String]("Missing ZoneConnection.name"),
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
-        (js \ "key").required[String]("Missing ZoneConnection.key"),
+        (js \ "key").required[Encrypted]("Missing ZoneConnection.key"),
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
         ).mapN(ZoneConnection.apply)
   }
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
+  def validateNaptrFlag(flag: String): Boolean = flag == "U" || flag  == "S" || flag  == "A" || flag  == "P"
+  def validateNaptrRegexp(regexp: String): Boolean = regexp.startsWith("!") && regexp.endsWith("!") || regexp == ""
   def nameContainsDots(s: String): Boolean = s.contains(".")
   def nameDoesNotContainSpaces(s: String): Boolean = !s.contains(" ")
 
@@ -194,8 +225,8 @@ trait DnsJsonProtocol extends JsonValidation {
             "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
           ),
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[DateTime](DateTime.now),
-        (js \ "updated").optional[DateTime],
+        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+        (js \ "updated").optional[Instant],
         recordType
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),
@@ -486,7 +517,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "flags")
           .required[String]("Missing NAPTR.flags")
           .check(
-            "NAPTR.flags must be less than 2 characters" -> (_.length < 2)
+            "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P" -> validateNaptrFlag
           ),
         (js \ "service")
           .required[String]("Missing NAPTR.service")
@@ -496,7 +527,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "regexp")
           .required[String]("Missing NAPTR.regexp")
           .check(
-            "NAPTR.regexp must be less than 255 characters" -> checkDomainNameLen
+            "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty" -> validateNaptrRegexp
           ),
 
         (js \ "replacement")

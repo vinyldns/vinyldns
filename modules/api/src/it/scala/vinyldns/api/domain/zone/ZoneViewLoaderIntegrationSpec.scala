@@ -19,8 +19,8 @@ package vinyldns.api.domain.zone
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS.ZoneTransferException
-import vinyldns.api.backend.dns.DnsBackend
 import vinyldns.api.config.VinylDNSConfig
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
@@ -50,15 +50,13 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
             ZoneConnection(
               "vinyldns.",
               "vinyldns.",
-              "nzisn+4G2ldMn0q1CV3vsg==",
+              Encrypted("nzisn+4G2ldMn0q1CV3vsg=="),
               sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           ),
           transferConnection =
-            Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))
+            Some(ZoneConnection("invalid-connection.", "bad-key", Encrypted("invalid-key"), "10.1.1.1"))
         )
-        val backend = backendResolver.resolve(zone).asInstanceOf[DnsBackend]
-        println(s"${backend.id}, ${backend.xfrInfo}, ${backend.resolver.getAddress}")
         DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
           .load()
           .unsafeRunSync()
@@ -83,7 +81,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
             ZoneConnection(
               "vinyldns.",
               "vinyldns.",
-              "nzisn+4G2ldMn0q1CV3vsg==",
+              Encrypted("nzisn+4G2ldMn0q1CV3vsg=="),
               sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           ),
@@ -91,7 +89,7 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
             ZoneConnection(
               "vinyldns.",
               "vinyldns.",
-              "nzisn+4G2ldMn0q1CV3vsg==",
+              Encrypted("nzisn+4G2ldMn0q1CV3vsg=="),
               sys.env.getOrElse("DEFAULT_DNS_ADDRESS", "127.0.0.1:19001")
             )
           )

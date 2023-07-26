@@ -18,7 +18,9 @@ package vinyldns.api.domain.zone
 
 import cats.data.NonEmptyList
 import cats.effect._
-import org.joda.time.DateTime
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.mockito.Mockito.doReturn
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -28,6 +30,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.membership.MembershipService
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
@@ -61,7 +64,7 @@ class ZoneServiceIntegrationSpec
 
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
-
+  private val mockMembershipService = mock[MembershipService]
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
@@ -72,7 +75,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.SOA,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records =
       List(SOAData(Fqdn("172.17.42.1."), "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
   )
@@ -82,7 +85,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.NS,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(NSData(Fqdn("172.17.42.1.")))
   )
   private val testRecordA = RecordSet(
@@ -91,7 +94,7 @@ class ZoneServiceIntegrationSpec
     typ = RecordType.A,
     ttl = 38400,
     status = RecordSetStatus.Active,
-    created = DateTime.now,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     records = List(AData("10.1.1.1"))
   )
 
@@ -126,7 +129,8 @@ class ZoneServiceIntegrationSpec
       new ZoneValidations(1000),
       new AccessValidations(),
       mockBackendResolver,
-      NoOpCrypto.instance
+      NoOpCrypto.instance,
+      mockMembershipService
     )
   }
 

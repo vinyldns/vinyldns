@@ -2,110 +2,288 @@
 
 @content = {
 
-    <!-- PAGE CONTENT -->
-    <div class="right_col" role="main" >
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main" >
 
-<div>
-        <!-- START BREADCRUMB -->
-        <ul class="breadcrumb">
-            <li><a href="/">Home</a></li>
-            <li><a href="/groups">Groups</a></li>
-            <li class="active">{{membership.group.name}}</li>
-        </ul>
-        <!-- END BREADCRUMB -->
+    <div>
+            <!-- START BREADCRUMB -->
+            <ul class="breadcrumb">
+                <li><a href="/">Home</a></li>
+                <li><a href="/groups">Groups</a></li>
+                <li class="active">{{membership.group.name}}</li>
+            </ul>
+            <!-- END BREADCRUMB -->
 
-        <!-- PAGE TITLE -->
-        <div class="page-title">
-            <h3><span class="fa fa-group"></span> Group {{membership.group.name}}</h3>
-        </div>
-        <!-- END PAGE TITLE -->
-
-        <!-- PAGE CONTENT WRAPPER -->
-        <div class="page-content-wrap">
-
-            <div class="alert-wrapper">
-                <div ng-repeat="alert in alerts">
-                    <notification ng-model="alert"></notification>
-                </div>
+            <!-- PAGE TITLE -->
+            <div class="page-title">
+                <h3><span class="fa fa-group"></span> Group {{membership.group.name}}</h3>
             </div>
+            <!-- END PAGE TITLE -->
 
-            <div class="row">
-                <div class="col-md-12">
-                    <p ng-if="membership.group.description"><strong>Description:</strong> {{membership.group.description}}</p>
-                    <p><strong>Group Email:</strong> {{membership.group.email}}</p>
-                    <!-- START SIMPLE DATATABLE -->
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <div ng-if="isGroupAdmin">
-                                <form class="form-inline" role="form" name="addMemberForm" ng-submit="addMemberForm.$valid && addMember();">
-                                    <div class="col-md-8">
-                                        <div class="form-group">
-                                            <div class="input-group">
-                                                <input type="text" ng-model="newMemberData.login" name="newMemberLogin" class="form-control" placeholder="User Name" required/>
+            <!-- PAGE CONTENT WRAPPER -->
+            <div class="page-content-wrap">
+
+                <div class="alert-wrapper">
+                    <div ng-repeat="alert in alerts">
+                        <notification ng-model="alert"></notification>
+                    </div>
+                </div>
+
+                <!-- START VERTICAL TABS -->
+                <div class="panel panel-default panel-tabs">
+                    <ul class="nav nav-tabs bar_tabs">
+                        <li class="active"><a href="#tab1" data-toggle="tab">Manage Groups</a></li>
+                        <li><a href="#tab2" data-toggle="tab">Change History</a></li>
+                    </ul>
+                    <div class="panel-body tab-content">
+
+                        <div class="tab-pane active" id="tab1">
+
+                                <h3 class="batch-change-error-help">
+                                    <i class="fa fa-info-circle" style="font-size:18px;color:red">
+                                        Updates to group require a valid email. If group email is invalid please enter a valid email.
+                                    </i>
+                                </h3>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p ng-if="membership.group.description"><strong>Description:</strong> {{membership.group.description}}</p>
+                                    <p><strong>Group Email:</strong> {{membership.group.email}}</p>
+                                    <!-- START SIMPLE DATATABLE -->
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <div ng-if="isGroupAdmin">
+                                                <form class="form-inline" role="form" name="addMemberForm" ng-submit="addMemberForm.$valid && addMember();">
+                                                    <div class="col-md-8">
+                                                        <div class="form-group">
+                                                            <div class="input-group">
+                                                                <input type="text" ng-model="newMemberData.login" name="newMemberLogin" class="form-control" placeholder="User Name" required/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group" style="padding-left: 10px;">
+                                                            <label class="check">
+                                                                <input type="checkbox"
+                                                                       ng-model="newMemberData.isAdmin" name="newMemberAdmin"
+                                                                       class="icheckbox_minimal-grey"/>
+                                                                Is Group Manager?</label>
+                                                        </div>
+                                                        <div class="form-group" style="padding-left: 10px;">
+                                                            <div class="input-group">
+                                                                <button type="submit" class="btn btn-sm vinyldns-btn-dark">Add Group Member</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
-                                        <div class="form-group" style="padding-left: 10px;">
-                                            <label class="check">
-                                                <input type="checkbox"
-                                                    ng-model="newMemberData.isAdmin" name="newMemberAdmin"
-                                                    class="icheckbox_minimal-grey"/>
-                                                Is Group Manager?</label>
-                                        </div>
-                                        <div class="form-group" style="padding-left: 10px;">
-                                            <div class="input-group">
-                                            <button type="submit" class="btn btn-sm vinyldns-btn-dark">Add Group Member</button>
-                                            </div>
+                                        <div class="panel-body">
+                                            <p id="no-group-list" ng-if="!membershipLoaded">Loading members...</p>
+                                            <p id="no-group-list" ng-if="!membership.members.length && membershipLoaded">You don't have any members yet.</p>
+                                            <table class="table datatable_simple group-members" ng-if="membership.members.length">
+                                                <thead>
+                                                <tr>
+                                                    <th>User Name</th>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Group Manager</th>
+                                                    <th>Status</th>
+                                                    <th ng-if="isGroupAdmin">Actions</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <tr ng-repeat="member in membership.members | orderBy:'+userName'">
+                                                    <td>{{member.userName}}</td>
+                                                    <td>{{([member.lastName, member.firstName] | filter: "" ).join(", ")}}</td>
+                                                    <td>{{member.email}}</td>
+                                                    <td>
+                                                        <label class="switch col-md-1">
+                                                            <input class="switch-checkbox" type="checkbox" ng-model="member.isAdmin" ng-disabled="!isGroupAdmin" ng-change="toggleAdmin(member);"/>
+                                                            <span class="slider"></span>
+                                                        </label>
+                                                    </td>
+                                                    <td>{{member.lockStatus}}</td>
+                                                    <td ng-if="isGroupAdmin">
+                                                        <button class="btn btn-danger btn-rounded" ng-click="removeMember(member.id);">
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
-                                </form>
+                                    <!-- END SIMPLE DATATABLE -->
+
+                                </div>
                             </div>
                         </div>
-                        <div class="panel-body">
-                            <p id="no-group-list" ng-if="!membershipLoaded">Loading members...</p>
-                            <p id="no-group-list" ng-if="!membership.members.length && membershipLoaded">You don't have any members yet.</p>
-                            <table class="table datatable_simple group-members" ng-if="membership.members.length">
-                                <thead>
-                                    <tr>
-                                        <th>User Name</th>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Group Manager</th>
-                                        <th>Status</th>
-                                        <th ng-if="isGroupAdmin">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr ng-repeat="member in membership.members | orderBy:'+userName'">
-                                        <td>{{member.userName}}</td>
-                                        <td>{{([member.lastName, member.firstName] | filter: "" ).join(", ")}}</td>
-                                        <td>{{member.email}}</td>
-                                        <td>
-                                            <label class="switch col-md-1">
-                                                <input class="switch-checkbox" type="checkbox" ng-model="member.isAdmin" ng-disabled="!isGroupAdmin" ng-change="toggleAdmin(member);"/>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </td>
-                                        <td>{{member.lockStatus}}</td>
-                                        <td ng-if="isGroupAdmin">
-                                            <button class="btn btn-danger btn-rounded" ng-click="removeMember(member.id);">
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="tab-pane" id="tab2">
+                            <!-- START SIMPLE DATATABLE -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">All Group Changes {{ getChangePageTitle() }}</h3>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="btn-group">
+                                        <button class="btn btn-default" ng-click="refreshGroupChanges()"><span class="fa fa-refresh"></span> Refresh</button>
+                                    </div>
+
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate">
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="changePrevPageEnabled()" ng-click="changePrevPage()" class="paginate_button">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="changeNextPageEnabled()" ng-click="changeNextPage()" class="paginate_button">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+
+                                    <table id="changeDataTable" class="table table-hover table-striped">
+                                        <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Group Change ID</th>
+                                            <th>Change Type</th>
+                                            <th>Change Message</th>
+                                            <th>Change Info</th>
+                                            <th>User</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr ng-repeat="change in groupChanges track by $index">
+                                            <td>{{change.created}}</td>
+                                            <td>{{change.id}}</td>
+                                            <td>{{change.changeType}}</td>
+                                            <td class="col-md-3 wrap-long-text" ng-bind-html="changeMessage(change.groupChangeMessage)"></td>
+                                            <td class="col-md-3 wrap-long-text">
+                                                <a ng-if="change.changeType =='Create'" ng-click="viewGroupInfo(change.newGroup)" class="force-cursor">View created group</a>
+
+                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewGroupInfo(change.newGroup)" class="force-cursor">View new group</a></div>
+                                                <div><a ng-if="change.changeType =='Update'" ng-click="viewGroupInfo(change.oldGroup)" class="force-cursor">View old group</a></div>
+                                            </td>
+                                            <td>{{change.userName}}</td>
+                                        </tr>
+                                        </tbody>
+
+                                    </table>
+
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate">
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="changePrevPageEnabled()" ng-click="changePrevPage()" class="paginate_button">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="changeNextPageEnabled()" ng-click="changeNextPage()" class="paginate_button">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+
+                                </div>
+                                <div class="panel-footer"></div>
+                            </div>
+                            <!-- END SIMPLE DATATABLE -->
                         </div>
                     </div>
-                    <!-- END SIMPLE DATATABLE -->
-
                 </div>
-            </div>
+                <!-- END VERTICAL TABS -->
 
-        </div>
-        <!-- PAGE CONTENT WRAPPER -->
-</div>
+            </div>
+            <!-- PAGE CONTENT WRAPPER -->
     </div>
-    <!-- END PAGE CONTENT -->
+
+    <form name="viewGroupForm" role="form" class="form-horizontal" novalidate>
+        <modal modal-id="group_modal" modal-title="{{ groupModal.title }}">
+            <modal-body>
+                <modal-element label="Group ID">
+                    <input id="create-group-id-text" type="text" name="groupID" class="form-control"
+                           ng-model="currentGroup.id"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Group Name">
+                    <input id="create-group-name-text" type="text" name="groupName" class="form-control"
+                           ng-model="currentGroup.name"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Group Description">
+                    <input id="create-group-description-text" type="text" name="groupDescription" class="form-control"
+                           ng-model="currentGroup.description"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Email">
+                    <input id="create-group-email-text" type="text"
+                           name="groupEmail"
+                           class="form-control"
+                           ng-model="currentGroup.email"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Group Created">
+                    <input id="create-group-created-text" type="text"
+                           name="groupCreated"
+                           class="form-control"
+                           ng-model="currentGroup.created"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Group Status">
+                    <input id="create-group-status-text" type="text"
+                           name="groupStatus"
+                           class="form-control"
+                           ng-model="currentGroup.status"
+                           ng-class="groupModal.details.class"
+                           ng-readonly="groupModal.details.readOnly"/>
+                </modal-element>
+
+                <modal-element label="Group Members IDs (one per line)">
+                <textarea id="create-group-members-ids-text"
+                          name="groupMembers"
+                          ng-model="currentGroup.memberIds"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="groupModal.details.class"
+                          ng-readonly="groupModal.details.readOnly">
+                </textarea>
+                </modal-element>
+
+                <modal-element label="Group Admins IDs (one per line)">
+                <textarea id="create-group-admins-ids-text"
+                          name="groupAdmins"
+                          ng-model="currentGroup.adminIds"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="groupModal.details.class"
+                          ng-readonly="groupModal.details.readOnly">
+                </textarea>
+                </modal-element>
+
+            </modal-body>
+            <modal-footer>
+                <span ng-if="groupModal.action == groupModalState.VIEW_DETAILS">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeGroupModal()">Close</button>
+                </span>
+            </modal-footer>
+        </modal>
+    </form>
+
+</div>
+<!-- END PAGE CONTENT -->
 }
 
 @plugins = {

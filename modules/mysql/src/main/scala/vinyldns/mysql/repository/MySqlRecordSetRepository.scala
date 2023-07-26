@@ -20,13 +20,14 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
-import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
-
+import java.io.{PrintWriter, StringWriter}
 import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
@@ -176,7 +177,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
                       recordNameFilter: Option[String],
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
-                      nameSort: NameSort
+                      nameSort: NameSort,
+                      recordTypeSort: RecordTypeSort,
                     ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -226,11 +228,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
-          val qualifiers = if (nameSort == ASC) {
-            sqls"ORDER BY fqdn ASC, type ASC "
+          val nameSortQualifiers = nameSort match {
+            case NameSort.ASC => sqls"ORDER BY fqdn ASC, type ASC "
+            case NameSort.DESC => sqls"ORDER BY fqdn DESC, type ASC "
           }
-          else {
-            sqls"ORDER BY fqdn DESC, type ASC "
+
+          val recordTypeSortQualifiers = recordTypeSort match {
+            case RecordTypeSort.ASC => sqls"ORDER BY type ASC"
+            case RecordTypeSort.DESC => sqls"ORDER BY type DESC"
+            case RecordTypeSort.NONE => nameSortQualifiers
+
           }
 
           val recordLimit = maxPlusOne match {
@@ -238,7 +245,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case None => sqls""
           }
 
-          val finalQualifiers = qualifiers.append(recordLimit)
+          val finalQualifiers = recordTypeSortQualifiers.append(recordLimit)
 
           // construct query
           val initialQuery = sqls"SELECT data, fqdn FROM recordset "
@@ -278,7 +285,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             maxItems = maxItems,
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
-            nameSort = nameSort
+            nameSort = nameSort,
+            recordTypeSort = recordTypeSort
           )
         }
       }
@@ -380,7 +388,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
         logger.debug(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
       }.handleErrorWith { error =>
-        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
+        val errorMessage = new StringWriter
+        error.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId). Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         IO.raiseError(error)
       }
     }

@@ -19,7 +19,7 @@
 angular.module('service.zones', [])
     .service('zonesService', function ($http, groupsService, $log, utilityService) {
 
-        this.getZones = function (limit, startFrom, query, ignoreAccess) {
+        this.getZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess, includeReverse) {
             if (query == "") {
                 query = null;
             }
@@ -27,10 +27,30 @@ angular.module('service.zones', [])
                 "maxItems": limit,
                 "startFrom": startFrom,
                 "nameFilter": query,
-                "ignoreAccess": ignoreAccess
+                "searchByAdminGroup": searchByAdminGroup,
+                "ignoreAccess": ignoreAccess,
+                "includeReverse": includeReverse
             };
             var url = groupsService.urlBuilder("/api/zones", params);
-            return $http.get(url);
+            let loader = $("#loader");
+            loader.modal({
+                          backdrop: "static", //remove ability to close modal with click
+                          keyboard: false, //remove option to close with keyboard
+                          show: true //Display loader!
+                          })
+            let promis =  $http.get(url);
+            // Hide loader when api gets response
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            return promis
+        };
+
+        this.getZoneChanges = function (limit, startFrom, zoneId) {
+                    var params = {
+                        "maxItems": limit,
+                        "startFrom": startFrom
+                        }
+                    var url = utilityService.urlBuilder ( "/api/zones/" + zoneId + "/changes", params);
+                    return $http.get(url);
         };
 
         this.getBackendIds = function() {
@@ -40,7 +60,7 @@ angular.module('service.zones', [])
 
         this.sendZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: sending zone", sanitizedPayload);
+            $log.debug("service.zones: sending zone", sanitizedPayload);
             return $http.post("/api/zones", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 
@@ -50,7 +70,7 @@ angular.module('service.zones', [])
 
         this.updateZone = function (id, payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.info("service.zones: updating zone", sanitizedPayload);
+            $log.debug("service.zones: updating zone", sanitizedPayload);
             return $http.put("/api/zones/"+id, sanitizedPayload, {headers: utilityService.getCsrfHeader()});
         };
 

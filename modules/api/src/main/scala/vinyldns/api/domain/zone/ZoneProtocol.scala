@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import org.joda.time.DateTime
+import java.time.Instant
 import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
@@ -32,8 +32,8 @@ case class ZoneInfo(
                      name: String,
                      email: String,
                      status: ZoneStatus,
-                     created: DateTime,
-                     updated: Option[DateTime],
+                     created: Instant,
+                     updated: Option[Instant],
                      id: String,
                      connection: Option[ZoneConnection],
                      transferConnection: Option[ZoneConnection],
@@ -42,8 +42,10 @@ case class ZoneInfo(
                      acl: ZoneACLInfo,
                      adminGroupId: String,
                      adminGroupName: String,
-                     latestSync: Option[DateTime],
+                     latestSync: Option[Instant],
                      backendId: Option[String],
+                     recurrenceSchedule: Option[String],
+                     scheduleRequestor: Option[String],
                      accessLevel: AccessLevel
                    )
 
@@ -70,7 +72,31 @@ object ZoneInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       backendId = zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
+    )
+}
+
+case class ZoneDetails(
+                     name: String,
+                     email: String,
+                     status: ZoneStatus,
+                     adminGroupId: String,
+                     adminGroupName: String,
+                   )
+
+object ZoneDetails {
+  def apply(
+             zone: Zone,
+             groupName: String,
+           ): ZoneDetails =
+    ZoneDetails(
+      name = zone.name,
+      email = zone.email,
+      status = zone.status,
+      adminGroupId = zone.adminGroupId,
+      adminGroupName = groupName,
     )
 }
 
@@ -78,8 +104,8 @@ case class ZoneSummaryInfo(
                             name: String,
                             email: String,
                             status: ZoneStatus,
-                            created: DateTime,
-                            updated: Option[DateTime],
+                            created: Instant,
+                            updated: Option[Instant],
                             id: String,
                             connection: Option[ZoneConnection],
                             transferConnection: Option[ZoneConnection],
@@ -88,8 +114,10 @@ case class ZoneSummaryInfo(
                             acl: ZoneACL,
                             adminGroupId: String,
                             adminGroupName: String,
-                            latestSync: Option[DateTime],
+                            latestSync: Option[Instant],
                             backendId: Option[String],
+                            recurrenceSchedule: Option[String],
+                            scheduleRequestor: Option[String],
                             accessLevel: AccessLevel
                           )
 
@@ -111,6 +139,8 @@ object ZoneSummaryInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
     )
 }
@@ -121,8 +151,8 @@ case class RecordSetListInfo(
                               typ: RecordType,
                               ttl: Long,
                               status: RecordSetStatus,
-                              created: DateTime,
-                              updated: Option[DateTime],
+                              created: Instant,
+                              updated: Option[Instant],
                               records: List[RecordData],
                               id: String,
                               account: String,
@@ -158,8 +188,8 @@ case class RecordSetInfo(
                           typ: RecordType,
                           ttl: Long,
                           status: RecordSetStatus,
-                          created: DateTime,
-                          updated: Option[DateTime],
+                          created: Instant,
+                          updated: Option[Instant],
                           records: List[RecordData],
                           id: String,
                           account: String,
@@ -193,8 +223,8 @@ case class RecordSetGlobalInfo(
                                 typ: RecordType,
                                 ttl: Long,
                                 status: RecordSetStatus,
-                                created: DateTime,
-                                updated: Option[DateTime],
+                                created: Instant,
+                                updated: Option[Instant],
                                 records: List[RecordData],
                                 id: String,
                                 account: String,
@@ -237,7 +267,7 @@ case class RecordSetChangeInfo(
                                 userId: String,
                                 changeType: RecordSetChangeType,
                                 status: RecordSetChangeStatus,
-                                created: DateTime,
+                                created: Instant,
                                 systemMessage: Option[String],
                                 updates: Option[RecordSet],
                                 id: String,
@@ -266,7 +296,8 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
 
 // Errors

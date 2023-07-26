@@ -14,7 +14,7 @@ def validate_change_error_response_basics(input_json, change_type, input_name, r
     assert_that(input_json["changeType"], is_(change_type))
     assert_that(input_json["inputName"], is_(input_name))
     assert_that(input_json["type"], is_(record_type))
-    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX"]))
+    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX", "NS", "NAPTR", "SRV"]))
     if change_type == "Add":
         assert_that(input_json["ttl"], is_(ttl))
         if record_type in ["A", "AAAA"]:
@@ -28,6 +28,20 @@ def validate_change_error_response_basics(input_json, change_type, input_name, r
         elif record_type == "MX":
             assert_that(input_json["record"]["preference"], is_(record_data["preference"]))
             assert_that(input_json["record"]["exchange"], is_(record_data["exchange"]))
+        elif record_type == "NS" and change_type == "Add":
+            assert_that(input_json["record"]["nsdname"], is_(record_data))
+        elif record_type == "NAPTR" and change_type == "Add":
+            assert_that(input_json["record"]["order"], is_(record_data["order"]))
+            assert_that(input_json["record"]["preference"], is_(record_data["preference"]))
+            assert_that(input_json["record"]["flags"], is_(record_data["flags"]))
+            assert_that(input_json["record"]["service"], is_(record_data["service"]))
+            assert_that(input_json["record"]["regexp"], is_(record_data["regexp"]))
+            assert_that(input_json["record"]["replacement"], is_(record_data["replacement"]))
+        elif record_type == "SRV" and change_type == "Add":
+            assert_that(input_json["record"]["priority"], is_(record_data["priority"]))
+            assert_that(input_json["record"]["weight"], is_(record_data["weight"]))
+            assert_that(input_json["record"]["port"], is_(record_data["port"]))
+            assert_that(input_json["record"]["target"], is_(record_data["target"]))
     return
 
 
@@ -56,7 +70,7 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
     assert_that(changes_json[index]["type"], is_(record_type))
     assert_that(changes_json[index]["id"], is_not(none()))
     assert_that(changes_json[index]["changeType"], is_(change_type))
-    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX"]))
+    assert_that(record_type, is_in(["A", "AAAA", "CNAME", "PTR", "TXT", "MX", "NS", "NAPTR", "SRV"]))
     if record_type in ["A", "AAAA"] and change_type == "Add":
         assert_that(changes_json[index]["record"]["address"], is_(record_data))
     elif record_type == "CNAME" and change_type == "Add":
@@ -68,6 +82,20 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
     elif record_type == "MX" and change_type == "Add":
         assert_that(changes_json[index]["record"]["preference"], is_(record_data["preference"]))
         assert_that(changes_json[index]["record"]["exchange"], is_(record_data["exchange"]))
+    elif record_type == "NS" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["nsdname"], is_(record_data))
+    elif record_type == "NAPTR" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["order"], is_(record_data["order"]))
+        assert_that(changes_json[index]["record"]["preference"], is_(record_data["preference"]))
+        assert_that(changes_json[index]["record"]["flags"], is_(record_data["flags"]))
+        assert_that(changes_json[index]["record"]["service"], is_(record_data["service"]))
+        assert_that(changes_json[index]["record"]["regexp"], is_(record_data["regexp"]))
+        assert_that(changes_json[index]["record"]["replacement"], is_(record_data["replacement"]))
+    elif record_type == "SRV" and change_type == "Add":
+        assert_that(changes_json[index]["record"]["priority"], is_(record_data["priority"]))
+        assert_that(changes_json[index]["record"]["weight"], is_(record_data["weight"]))
+        assert_that(changes_json[index]["record"]["port"], is_(record_data["port"]))
+        assert_that(changes_json[index]["record"]["target"], is_(record_data["target"]))
     return
 
 
@@ -113,7 +141,9 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_TXT_json(f"txt-unique-characters.{ok_zone_name}", text='a\\\\`=` =\\"Cat\\"\nattr=val'),
             get_change_TXT_json(f"txt.{ip4_zone_name}"),
             get_change_MX_json(f"mx.{ok_zone_name}", preference=0),
-            get_change_MX_json(f"{ok_zone_name}", preference=1000, exchange="bar.foo.")
+            get_change_MX_json(f"{ok_zone_name}", preference=1000, exchange="bar.foo."),
+            get_change_NAPTR_json(f"naptr.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_SRV_json(f"srv.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo.")
         ]
     }
 
@@ -161,6 +191,10 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                               record_name="mx", input_name=f"mx.{ok_zone_name}", record_data={"preference": 0, "exchange": "foo.bar."}, record_type="MX")
         assert_change_success(result["changes"], zone=ok_zone, index=14,
                               record_name=f"{ok_zone_name}", input_name=f"{ok_zone_name}", record_data={"preference": 1000, "exchange": "bar.foo."}, record_type="MX")
+        assert_change_success(result["changes"], zone=ok_zone, index=15,
+                              record_name=f"naptr", input_name=f"naptr.{ok_zone_name}", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, record_type="NAPTR")
+        assert_change_success(result["changes"], zone=ok_zone, index=16,
+                              record_name=f"srv", input_name=f"srv.{ok_zone_name}", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, record_type="SRV")
 
         completed_status = [change["status"] == "Complete" for change in completed_batch["changes"]]
         assert_that(all(completed_status), is_(True))
@@ -285,6 +319,22 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       "ttl": 200,
                       "records": [{"preference": 1000, "exchange": "bar.foo."}]}
         verify_recordset(rs16, expected16)
+
+        rs17 = client.get_recordset(record_set_list[15][0], record_set_list[15][1])["recordSet"]
+        expected17 = {"name": f"naptr",
+                      "zoneId": ok_zone["id"],
+                      "type": "NAPTR",
+                      "ttl": 200,
+                      "records": [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}]}
+        verify_recordset(rs17, expected17)
+
+        rs18 = client.get_recordset(record_set_list[16][0], record_set_list[16][1])["recordSet"]
+        expected18 = {"name": f"srv",
+                      "zoneId": ok_zone["id"],
+                      "type": "SRV",
+                      "ttl": 200,
+                      "records": [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}]}
+        verify_recordset(rs18, expected18)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
@@ -310,6 +360,30 @@ def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared
         result = client.create_batch_change(batch_change_input, status=202)
         assert_that(result["status"], "Scheduled")
         assert_that(result["scheduledTime"], dt)
+    finally:
+        if result:
+            rejecter = shared_zone_test_context.support_user_client
+            rejecter.reject_batch_change(result["id"], status=200)
+
+
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_ns_record_goes_to_review(shared_zone_test_context):
+    """
+    Test creating a batch change with ns record goes to review
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_NS_json(f"ns.{ok_zone_name}", nsdname="ns1.parent.com."),
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group["id"]
+    }
+    result = None
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        assert_that(result["status"], "Pending Review")
     finally:
         if result:
             rejecter = shared_zone_test_context.support_user_client
@@ -890,7 +964,7 @@ def test_create_batch_change_with_unsupported_record_type_fails(shared_zone_test
     errors = client.create_batch_change(batch_change_input, status=400)
 
     assert_error(errors,
-                 error_messages=["Unsupported type UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"])
+                 error_messages=["Unsupported type UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR"])
 
 
 def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_context):
@@ -1481,8 +1555,8 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
         # context validations: conflicting recordsets, unauthorized error
         assert_failed_change_in_error_response(response[7], input_name=existing_a_fqdn, record_data="1.2.3.4",
-                                               error_messages=[f"Record \"{existing_a_fqdn}\" Already Exists: "
-                                                               f"cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+                                               error_messages=[f"RecordName \"{existing_a_fqdn}\" already exists. "
+                                                               f"If you intended to update this record, submit a DeleteRecordSet entry followed by an Add."])
         assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn,
                                                record_data="1.2.3.4",
                                                error_messages=[f'CNAME Conflict: CNAME record names must be unique. '
@@ -1542,6 +1616,7 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json(rs_delete_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_fqdn, ttl=300),
+            get_change_A_AAAA_json(f"non-existent.{ok_zone_name}", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_A_AAAA_json("$invalid.host.name.", change_type="DeleteRecordSet"),
@@ -1555,7 +1630,6 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json("zone.discovery.error.", change_type="DeleteRecordSet"),
 
             # context validation failures: record does not exist, not authorized
-            get_change_A_AAAA_json(f"non-existent.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_dummy_fqdn, ttl=300),
@@ -1592,43 +1666,40 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[2], input_name=rs_update_fqdn, ttl=300)
+        assert_successful_change_in_error_response(response[3], input_name=f"non-existent.{ok_zone_name}", change_type="DeleteRecordSet")
 
         # input validations failures
-        assert_failed_change_in_error_response(response[3], input_name="$invalid.host.name.",
+        assert_failed_change_in_error_response(response[4], input_name="$invalid.host.name.",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, '
                                                                'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name="reverse.zone.in-addr.arpa.",
+        assert_failed_change_in_error_response(response[5], input_name="reverse.zone.in-addr.arpa.",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "reverse.zone.in-addr.arpa." and type "A" '
                                                                'is not allowed in a reverse zone.'])
-        assert_failed_change_in_error_response(response[5], input_name="$another.invalid.host.name.", ttl=300,
+        assert_failed_change_in_error_response(response[6], input_name="$another.invalid.host.name.", ttl=300,
                                                error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, '
                                                                'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[6], input_name="$another.invalid.host.name.",
+        assert_failed_change_in_error_response(response[7], input_name="$another.invalid.host.name.",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, '
                                                                'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[7], input_name="another.reverse.zone.in-addr.arpa.", ttl=10,
+        assert_failed_change_in_error_response(response[8], input_name="another.reverse.zone.in-addr.arpa.", ttl=10,
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "another.reverse.zone.in-addr.arpa." '
                                                                'and type "A" is not allowed in a reverse zone.',
                                                                'Invalid TTL: "10", must be a number between 30 and 2147483647.'])
-        assert_failed_change_in_error_response(response[8], input_name="another.reverse.zone.in-addr.arpa.",
+        assert_failed_change_in_error_response(response[9], input_name="another.reverse.zone.in-addr.arpa.",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "another.reverse.zone.in-addr.arpa." '
                                                                'and type "A" is not allowed in a reverse zone.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[9], input_name="zone.discovery.error.",
+        assert_failed_change_in_error_response(response[10], input_name="zone.discovery.error.",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
-        assert_failed_change_in_error_response(response[10], input_name=f"non-existent.{ok_zone_name}",
-                                               change_type="DeleteRecordSet",
-                                               error_messages=[
-                                                   f'Record "non-existent.{ok_zone_name}" Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                change_type="DeleteRecordSet",
                                                error_messages=[f'User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes.'])
@@ -1730,11 +1801,9 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_successful_change_in_error_response(response[6], input_name=f"cname-duplicate.{parent_zone_name}",
-                                                   record_type="AAAA", record_data="1::1")
-        assert_failed_change_in_error_response(response[7], input_name=existing_aaaa_fqdn, record_type="AAAA",
-                                               record_data="1::1",
-                                               error_messages=[f"Record \"{existing_aaaa_fqdn}\" Already Exists: cannot add an existing record; "
-                                                               f"to update it, issue a DeleteRecordSet then an Add."])
+                                               record_type="AAAA", record_data="1::1")
+        assert_successful_change_in_error_response(response[7], input_name=existing_aaaa_fqdn, record_type="AAAA",
+                                               record_data="1::1")
         assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn, record_type="AAAA",
                                                record_data="1::1",
                                                error_messages=[f"CNAME Conflict: CNAME record names must be unique. Existing record with name \"{existing_cname_fqdn}\" "
@@ -1781,6 +1850,8 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json(rs_delete_fqdn, record_type="AAAA", change_type="DeleteRecordSet", address="1:0::4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", ttl=300, address="1:2:3:4:5:6:7:8"),
             get_change_A_AAAA_json(rs_update_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(f"delete-nonexistent.{ok_zone_name}", record_type="AAAA", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json(f"update-nonexistent.{ok_zone_name}", record_type="AAAA", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_A_AAAA_json(f"invalid-name$.{ok_zone_name}", record_type="AAAA", change_type="DeleteRecordSet"),
@@ -1792,8 +1863,6 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_A_AAAA_json("no.zone.at.all.", record_type="AAAA", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_A_AAAA_json(f"delete-nonexistent.{ok_zone_name}", record_type="AAAA", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(f"update-nonexistent.{ok_zone_name}", record_type="AAAA", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(f"update-nonexistent.{ok_zone_name}", record_type="AAAA", address="1::1"),
             get_change_A_AAAA_json(rs_delete_dummy_fqdn, record_type="AAAA", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json(rs_update_dummy_fqdn, record_type="AAAA", address="1::1"),
@@ -1826,39 +1895,37 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_data="1:2:3:4:5:6:7:8")
         assert_successful_change_in_error_response(response[2], input_name=rs_update_fqdn, record_type="AAAA",
                                                    record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="AAAA",
+                                                   record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="AAAA",
+                                                   record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
-        assert_failed_change_in_error_response(response[3], input_name=f"invalid-name$.{ok_zone_name}", record_type="AAAA",
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="AAAA",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", '
                                                                f'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name="reverse.zone.in-addr.arpa.", record_type="AAAA",
+        assert_failed_change_in_error_response(response[6], input_name="reverse.zone.in-addr.arpa.", record_type="AAAA",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse.zone.in-addr.arpa.\" and "
                                                                "type \"AAAA\" is not allowed in a reverse zone."])
-        assert_failed_change_in_error_response(response[5], input_name=f"bad-ttl-and-invalid-name$-update.{ok_zone_name}",
+        assert_failed_change_in_error_response(response[7], input_name=f"bad-ttl-and-invalid-name$-update.{ok_zone_name}",
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[f'Invalid domain name: "bad-ttl-and-invalid-name$-update.{ok_zone_name}", '
                                                                f'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[6], input_name=f"bad-ttl-and-invalid-name$-update.{ok_zone_name}", ttl=29,
+        assert_failed_change_in_error_response(response[8], input_name=f"bad-ttl-and-invalid-name$-update.{ok_zone_name}", ttl=29,
                                                record_type="AAAA", record_data="1:2:3:4:5:6:7:8",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                f'Invalid domain name: "bad-ttl-and-invalid-name$-update.{ok_zone_name}", '
                                                                f'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="AAAA",
+        assert_failed_change_in_error_response(response[9], input_name="no.zone.at.all.", record_type="AAAA",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
-        assert_failed_change_in_error_response(response[8], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="AAAA",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"delete-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[9], input_name=f"update-nonexistent.{ok_zone_name}", record_type="AAAA",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"update-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[10], input_name=f"update-nonexistent.{ok_zone_name}", record_type="AAAA", record_data="1::1")
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
@@ -1945,7 +2012,8 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
             get_change_CNAME_json(existing_forward_fqdn),
             get_change_CNAME_json(existing_cname_fqdn),
             get_change_CNAME_json(f"0.{ip4_zone_name}", cname="duplicate.in.db."),
-            get_change_CNAME_json(f"user-add-unauthorized.{dummy_zone_name}")
+            get_change_CNAME_json(f"user-add-unauthorized.{dummy_zone_name}"),
+            get_change_CNAME_json(f"invalid-ipv4-{parent_zone_name}", cname="1.2.3.4")
         ]
     }
 
@@ -1974,7 +2042,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                f'Invalid domain name: "bad-ttl-and-invalid-name$.{parent_zone_name}", '
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.",
-                                                               'Invalid domain name: "also$bad.name.", valid domain names must be letters, numbers, underscores, and hyphens, '
+                                                               'Invalid Cname: "also$bad.name.", valid cnames must be letters, numbers, underscores, and hyphens, '
                                                                "joined by dots, and terminated with a dot."])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME",
@@ -2010,8 +2078,8 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                                f"Existing record with name \"{existing_forward_fqdn}\" and type \"A\" conflicts with this record."])
         assert_failed_change_in_error_response(response[14], input_name=existing_cname_fqdn,
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record \"{existing_cname_fqdn}\" Already Exists: cannot add an existing record; to update it, "
-                                                               f"issue a DeleteRecordSet then an Add.",
+                                               error_messages=[f"RecordName \"{existing_cname_fqdn}\" already exists. "
+                                                               f"If you intended to update this record, submit a DeleteRecordSet entry followed by an Add.",
                                                                f"CNAME Conflict: CNAME record names must be unique. "
                                                                f"Existing record with name \"{existing_cname_fqdn}\" and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[15], input_name=existing_reverse_fqdn, record_type="CNAME",
@@ -2021,6 +2089,9 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[16], input_name=f"user-add-unauthorized.{dummy_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
                                                error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[17], input_name=f"invalid-ipv4-{parent_zone_name}", record_type="CNAME", record_data="1.2.3.4.",
+                                               error_messages=[f'Invalid Cname: "Fqdn(1.2.3.4.)", Valid CNAME record data should not be an IP address'])
+
     finally:
         clear_recordset_list(to_delete, client)
 
@@ -2058,6 +2129,8 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_CNAME_json(f"delete3.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_CNAME_json(f"update3.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_CNAME_json(f"update3.{ok_zone_name}", ttl=300),
+            get_change_CNAME_json(f"non-existent-delete.{ok_zone_name}", change_type="DeleteRecordSet"),
+            get_change_CNAME_json(f"non-existent-update.{ok_zone_name}", change_type="DeleteRecordSet"),
 
             # valid changes - reverse zone
             get_change_CNAME_json(f"200.{ip4_zone_name}", change_type="DeleteRecordSet"),
@@ -2073,8 +2146,6 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_CNAME_json("zone.discovery.error.", change_type="DeleteRecordSet"),
 
             # context validation failures: record does not exist, not authorized, failure on update with multiple adds
-            get_change_CNAME_json(f"non-existent-delete.{ok_zone_name}", change_type="DeleteRecordSet"),
-            get_change_CNAME_json(f"non-existent-update.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_CNAME_json(f"non-existent-update.{ok_zone_name}"),
             get_change_CNAME_json(f"delete-unauthorized3.{dummy_zone_name}", change_type="DeleteRecordSet"),
             get_change_CNAME_json(f"update-unauthorized3.{dummy_zone_name}", change_type="DeleteRecordSet"),
@@ -2111,47 +2182,43 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                    change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[2], input_name=f"update3.{ok_zone_name}", record_type="CNAME", ttl=300,
                                                    record_data="test.com.")
+        assert_successful_change_in_error_response(response[3], input_name=f"non-existent-delete.{ok_zone_name}", record_type="CNAME",
+                                                   change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"non-existent-update.{ok_zone_name}", record_type="CNAME",
+                                                   change_type="DeleteRecordSet")
 
         # valid changes - reverse zone
-        assert_successful_change_in_error_response(response[3], input_name=f"200.{ip4_zone_name}",
+        assert_successful_change_in_error_response(response[5], input_name=f"200.{ip4_zone_name}",
                                                    record_type="CNAME", change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[4], input_name=f"201.{ip4_zone_name}",
+        assert_successful_change_in_error_response(response[6], input_name=f"201.{ip4_zone_name}",
                                                    record_type="CNAME", change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[5], input_name=f"201.{ip4_zone_name}",
+        assert_successful_change_in_error_response(response[7], input_name=f"201.{ip4_zone_name}",
                                                    record_type="CNAME", ttl=300, record_data="test.com.")
 
         # ttl, domain name, data
-        assert_failed_change_in_error_response(response[6], input_name="$invalid.host.name.", record_type="CNAME",
+        assert_failed_change_in_error_response(response[8], input_name="$invalid.host.name.", record_type="CNAME",
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[7], input_name="$another.invalid.host.name.",
+        assert_failed_change_in_error_response(response[9], input_name="$another.invalid.host.name.",
                                                record_type="CNAME", change_type="DeleteRecordSet",
                                                error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[8], input_name="$another.invalid.host.name.", ttl=20,
+        assert_failed_change_in_error_response(response[10], input_name="$another.invalid.host.name.", ttl=20,
                                                record_type="CNAME", record_data="$another.invalid.cname.",
                                                error_messages=['Invalid TTL: "20", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.',
-                                                               'Invalid domain name: "$another.invalid.cname.", valid domain names must be letters, numbers, '
+                                                               'Invalid Cname: "$another.invalid.cname.", valid cnames must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[9], input_name="zone.discovery.error.", record_type="CNAME",
+        assert_failed_change_in_error_response(response[11], input_name="zone.discovery.error.", record_type="CNAME",
                                                change_type="DeleteRecordSet",
                                                error_messages=[
                                                    'Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
-        assert_failed_change_in_error_response(response[10], input_name=f"non-existent-delete.{ok_zone_name}", record_type="CNAME",
-                                               change_type="DeleteRecordSet",
-                                               error_messages=[
-                                                   f'Record "non-existent-delete.{ok_zone_name}" Does Not Exist: cannot delete a record that does not exist.'])
-        assert_failed_change_in_error_response(response[11], input_name=f"non-existent-update.{ok_zone_name}", record_type="CNAME",
-                                               change_type="DeleteRecordSet",
-                                               error_messages=[
-                                                   f'Record "non-existent-update.{ok_zone_name}" Does Not Exist: cannot delete a record that does not exist.'])
         assert_successful_change_in_error_response(response[12], input_name=f"non-existent-update.{ok_zone_name}",
                                                    record_type="CNAME", record_data="test.com.")
         assert_failed_change_in_error_response(response[13], input_name=f"delete-unauthorized3.{dummy_zone_name}",
@@ -2302,9 +2369,9 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # delegated and non-delegated PTR duplicate name checks
         assert_successful_change_in_error_response(response[4], input_name=f"{ip4_prefix}.196", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[5], input_name=f"196.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
-        assert_failed_change_in_error_response(response[6], input_name=f"196.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f'Record Name "196.192/30.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_failed_change_in_error_response(response[5], input_name=f"196.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
+                                               error_messages=[f'Record Name "196.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+        assert_successful_change_in_error_response(response[6], input_name=f"196.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
         assert_successful_change_in_error_response(response[7], input_name=f"{ip4_prefix}.55", record_type="PTR", record_data="test.com.")
         assert_failed_change_in_error_response(response[8], input_name=f"55.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
                                                error_messages=[f'Record Name "55.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
@@ -2317,7 +2384,8 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # context validations: existing cname recordset
         assert_failed_change_in_error_response(response[11], input_name=f"{ip4_prefix}.193", record_type="PTR", record_data="existing-ptr.",
-                                               error_messages=[f'Record "{ip4_prefix}.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
+                                               error_messages=[f'RecordName "{ip4_prefix}.193" already exists. '
+                                                               f'If you intended to update this record, submit a DeleteRecordSet entry followed by an Add.'])
         assert_failed_change_in_error_response(response[12], input_name=f"{ip4_prefix}.199", record_type="PTR", record_data="existing-cname.",
                                                error_messages=[
                                                    f'CNAME Conflict: CNAME record names must be unique. Existing record with name "{ip4_prefix}.199" and type "CNAME" conflicts with this record.'])
@@ -2384,6 +2452,8 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json(f"{ip4_prefix}.25", change_type="DeleteRecordSet"),
             get_change_PTR_json(f"{ip4_prefix}.193", ttl=300, ptrdname="has-updated.ptr."),
             get_change_PTR_json(f"{ip4_prefix}.193", change_type="DeleteRecordSet"),
+            get_change_PTR_json(f"{ip4_prefix}.199", change_type="DeleteRecordSet"),
+            get_change_PTR_json(f"{ip4_prefix}.200", change_type="DeleteRecordSet"),
 
             # valid changes: delete and add of same record name but different type
             get_change_CNAME_json(f"21.{ip4_zone_name}", change_type="DeleteRecordSet"),
@@ -2400,9 +2470,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("192.1.1.25", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_PTR_json(f"{ip4_prefix}.199", change_type="DeleteRecordSet"),
             get_change_PTR_json(f"{ip4_prefix}.200", ttl=300, ptrdname="has-updated.ptr."),
-            get_change_PTR_json(f"{ip4_prefix}.200", change_type="DeleteRecordSet"),
         ]
     }
 
@@ -2423,25 +2491,29 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_data="has-updated.ptr.")
         assert_successful_change_in_error_response(response[2], input_name=f"{ip4_prefix}.193", record_type="PTR",
                                                    record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[3], input_name=f"{ip4_prefix}.199", record_type="PTR",
+                                                   record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"{ip4_prefix}.200", record_type="PTR",
+                                                   record_data=None, change_type="DeleteRecordSet")
 
         # successful changes: add and delete of same record name but different type
-        assert_successful_change_in_error_response(response[3], input_name=f"21.{ip4_zone_name}",
+        assert_successful_change_in_error_response(response[5], input_name=f"21.{ip4_zone_name}",
                                                    record_type="CNAME", record_data=None, change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[4], input_name=f"{ip4_prefix}.21", record_type="PTR",
+        assert_successful_change_in_error_response(response[6], input_name=f"{ip4_prefix}.21", record_type="PTR",
                                                    record_data="replace-cname.ptr.")
-        assert_successful_change_in_error_response(response[5], input_name=f"17.{ip4_zone_name}",
+        assert_successful_change_in_error_response(response[7], input_name=f"17.{ip4_zone_name}",
                                                    record_type="CNAME", record_data="replace-ptr.cname.")
-        assert_successful_change_in_error_response(response[6], input_name=f"{ip4_prefix}.17", record_type="PTR",
+        assert_successful_change_in_error_response(response[8], input_name=f"{ip4_prefix}.17", record_type="PTR",
                                                    record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid IP, ttl, and record data
-        assert_failed_change_in_error_response(response[7], input_name="1.1.1", record_type="PTR", record_data=None,
+        assert_failed_change_in_error_response(response[9], input_name="1.1.1", record_type="PTR", record_data=None,
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "1.1.1".'])
-        assert_failed_change_in_error_response(response[8], input_name="192.0.2.", record_type="PTR", record_data=None,
+        assert_failed_change_in_error_response(response[10], input_name="192.0.2.", record_type="PTR", record_data=None,
                                                change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "192.0.2.".'])
-        assert_failed_change_in_error_response(response[9], ttl=29, input_name="192.0.2.", record_type="PTR",
+        assert_failed_change_in_error_response(response[11], ttl=29, input_name="192.0.2.", record_type="PTR",
                                                record_data="failed-update$.ptr.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid IP address: "192.0.2.".',
@@ -2449,19 +2521,13 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                                'joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[10], input_name="192.1.1.25", record_type="PTR",
+        assert_failed_change_in_error_response(response[12], input_name="192.1.1.25", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Zone Discovery Failed: zone for \"192.1.1.25\" does not exist in VinylDNS. If zone exists, "
                                                                "then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist
-        assert_failed_change_in_error_response(response[11], input_name=f"{ip4_prefix}.199", record_type="PTR",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"{ip4_prefix}.199\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[12], ttl=300, input_name=f"{ip4_prefix}.200", record_type="PTR", record_data="has-updated.ptr.")
-        assert_failed_change_in_error_response(response[13], input_name=f"{ip4_prefix}.200", record_type="PTR",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"{ip4_prefix}.200\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_successful_change_in_error_response(response[13], ttl=300, input_name=f"{ip4_prefix}.200", record_type="PTR", record_data="has-updated.ptr.")
     finally:
         clear_recordset_list(to_delete, ok_client)
 
@@ -2528,8 +2594,8 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         # context validations: existing record sets pre-request
         assert_failed_change_in_error_response(response[5], input_name=f"{ip6_prefix}:1000::bbbb", record_type="PTR",
                                                record_data="existing.ptr.",
-                                               error_messages=[f"Record \"{ip6_prefix}:1000::bbbb\" Already Exists: cannot add an existing record; "
-                                                               "to update it, issue a DeleteRecordSet then an Add."])
+                                               error_messages=[f"RecordName \"{ip6_prefix}:1000::bbbb\" already exists. "
+                                                               f"If you intended to update this record, submit a DeleteRecordSet entry followed by an Add."])
     finally:
         clear_recordset_list(to_delete, client)
 
@@ -2556,6 +2622,8 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json(f"{ip6_prefix}:1000::aaaa", change_type="DeleteRecordSet"),
             get_change_PTR_json(f"{ip6_prefix}:1000::62", ttl=300, ptrdname="has-updated.ptr."),
             get_change_PTR_json(f"{ip6_prefix}:1000::62", change_type="DeleteRecordSet"),
+            get_change_PTR_json(f"{ip6_prefix}:1000::60", change_type="DeleteRecordSet"),
+            get_change_PTR_json(f"{ip6_prefix}:1000::65", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_PTR_json("fd69:27cc:fe91de::ab", change_type="DeleteRecordSet"),
@@ -2566,9 +2634,7 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("fedc:ba98:7654::abc", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_PTR_json(f"{ip6_prefix}:1000::60", change_type="DeleteRecordSet"),
             get_change_PTR_json(f"{ip6_prefix}:1000::65", ttl=300, ptrdname="has-updated.ptr."),
-            get_change_PTR_json(f"{ip6_prefix}:1000::65", change_type="DeleteRecordSet")
         ]
     }
 
@@ -2589,15 +2655,19 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_type="PTR", record_data="has-updated.ptr.")
         assert_successful_change_in_error_response(response[2], input_name=f"{ip6_prefix}:1000::62", record_type="PTR",
                                                    record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[3], input_name=f"{ip6_prefix}:1000::60", record_type="PTR",
+                                                   record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"{ip6_prefix}:1000::65", record_type="PTR",
+                                                   record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid IP, ttl, and record data
-        assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR",
+        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91de::ab", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
-        assert_failed_change_in_error_response(response[4], input_name="fd69:27cc:fe91de::ba", record_type="PTR",
+        assert_failed_change_in_error_response(response[6], input_name="fd69:27cc:fe91de::ba", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ba".'])
-        assert_failed_change_in_error_response(response[5], ttl=29, input_name="fd69:27cc:fe91de::ba",
+        assert_failed_change_in_error_response(response[7], ttl=29, input_name="fd69:27cc:fe91de::ba",
                                                record_type="PTR", record_data="failed-update$.ptr.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid IP address: "fd69:27cc:fe91de::ba".',
@@ -2605,20 +2675,14 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                                'and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR",
+        assert_failed_change_in_error_response(response[8], input_name="fedc:ba98:7654::abc", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, failure on update with double add
-        assert_failed_change_in_error_response(response[7], input_name=f"{ip6_prefix}:1000::60", record_type="PTR",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"{ip6_prefix}:1000::60\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[8], ttl=300, input_name=f"{ip6_prefix}:1000::65",
+        assert_successful_change_in_error_response(response[9], ttl=300, input_name=f"{ip6_prefix}:1000::65",
                                                    record_type="PTR", record_data="has-updated.ptr.")
-        assert_failed_change_in_error_response(response[9], input_name=f"{ip6_prefix}:1000::65", record_type="PTR",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"{ip6_prefix}:1000::65\" Does Not Exist: cannot delete a record that does not exist."])
 
     finally:
         clear_recordset_list(to_delete, ok_client)
@@ -2697,10 +2761,8 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[5], input_name=existing_txt_fqdn, record_type="TXT",
-                                               record_data="test",
-                                               error_messages=[f"Record \"{existing_txt_fqdn}\" Already Exists: "
-                                                               f"cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response[5], input_name=existing_txt_fqdn, record_type="TXT",
+                                               record_data="test")
         assert_failed_change_in_error_response(response[6], input_name=existing_cname_fqdn, record_type="TXT",
                                                record_data="test",
                                                error_messages=[f"CNAME Conflict: CNAME record names must be unique. "
@@ -2747,6 +2809,8 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_TXT_json(rs_delete_fqdn, change_type="DeleteRecordSet"),
             get_change_TXT_json(rs_update_fqdn, change_type="DeleteRecordSet"),
             get_change_TXT_json(rs_update_fqdn, ttl=300),
+            get_change_TXT_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
+            get_change_TXT_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_TXT_json(f"invalid-name$.{ok_zone_name}", change_type="DeleteRecordSet"),
@@ -2756,8 +2820,6 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_TXT_json("no.zone.at.all.", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_TXT_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
-            get_change_TXT_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_TXT_json(f"update-nonexistent.{ok_zone_name}", text="test"),
             get_change_TXT_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_TXT_json(rs_update_dummy_fqdn, text="test"),
@@ -2787,25 +2849,23 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, record_type="TXT", record_data=None, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[2], ttl=300, input_name=rs_update_fqdn, record_type="TXT", record_data="test")
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="TXT", record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="TXT", record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
-        assert_failed_change_in_error_response(response[3], input_name=f"invalid-name$.{ok_zone_name}", record_type="TXT", record_data="test", change_type="DeleteRecordSet",
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="TXT", record_data="test", change_type="DeleteRecordSet",
                                                error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", valid domain names must be '
                                                                f'letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name=f"invalid-ttl.{ok_zone_name}", ttl=29, record_type="TXT", record_data="bad-ttl",
+        assert_failed_change_in_error_response(response[6], input_name=f"invalid-ttl.{ok_zone_name}", ttl=29, record_type="TXT", record_data="bad-ttl",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
+        assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[
                                                    "Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                    "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
-        assert_failed_change_in_error_response(response[6], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"delete-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[7], input_name=f"update-nonexistent.{ok_zone_name}", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"update-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[8], input_name=f"update-nonexistent.{ok_zone_name}", record_type="TXT", record_data="test")
         assert_failed_change_in_error_response(response[9], input_name=rs_delete_dummy_fqdn, record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
@@ -2906,10 +2966,8 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[8], input_name=existing_mx_fqdn, record_type="MX",
-                                               record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=[f"Record \"{existing_mx_fqdn}\" Already Exists: cannot add an existing record; to update it, "
-                                                               f"issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response[8], input_name=existing_mx_fqdn, record_type="MX",
+                                               record_data={"preference": 1, "exchange": "foo.bar."})
         assert_failed_change_in_error_response(response[9], input_name=existing_cname_fqdn, record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=["CNAME Conflict: CNAME record names must be unique. "
@@ -2958,6 +3016,8 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_MX_json(rs_delete_fqdn, change_type="DeleteRecordSet"),
             get_change_MX_json(rs_update_fqdn, change_type="DeleteRecordSet"),
             get_change_MX_json(rs_update_fqdn, ttl=300),
+            get_change_MX_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
+            get_change_MX_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_MX_json(f"invalid-name$.{ok_zone_name}", change_type="DeleteRecordSet"),
@@ -2969,8 +3029,6 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_MX_json("no.zone.at.all.", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_MX_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
-            get_change_MX_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet"),
             get_change_MX_json(f"update-nonexistent.{ok_zone_name}", preference=1000, exchange="foo.bar."),
             get_change_MX_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet"),
             get_change_MX_json(rs_update_dummy_fqdn, preference=1000, exchange="foo.bar."),
@@ -3000,37 +3058,35 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, record_type="MX", record_data=None, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, record_type="MX", record_data=None, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[2], ttl=300, input_name=rs_update_fqdn, record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."})
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="MX",
+                                                   record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="MX",
+                                                   record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
-        assert_failed_change_in_error_response(response[3], input_name=f"invalid-name$.{ok_zone_name}", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                                change_type="DeleteRecordSet",
                                                error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", valid domain names must be letters, '
                                                                f'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name=f"delete.{ok_zone_name}", ttl=29, record_type="MX",
+        assert_failed_change_in_error_response(response[6], input_name=f"delete.{ok_zone_name}", ttl=29, record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
-        assert_failed_change_in_error_response(response[5], input_name=f"bad-exchange.{ok_zone_name}", record_type="MX",
+        assert_failed_change_in_error_response(response[7], input_name=f"bad-exchange.{ok_zone_name}", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo$.bar."},
                                                error_messages=['Invalid domain name: "foo$.bar.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[6], input_name=f"mx.{ip4_zone_name}", record_type="MX",
+        assert_failed_change_in_error_response(response[8], input_name=f"mx.{ip4_zone_name}", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=[f'Invalid Record Type In Reverse Zone: record with name "mx.{ip4_zone_name}" '
                                                                f'and type "MX" is not allowed in a reverse zone.'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="MX",
+        assert_failed_change_in_error_response(response[9], input_name="no.zone.at.all.", record_type="MX",
                                                record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
-        assert_failed_change_in_error_response(response[8], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="MX",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"delete-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[9], input_name=f"update-nonexistent.{ok_zone_name}", record_type="MX",
-                                               record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f"Record \"update-nonexistent.{ok_zone_name}\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[10], input_name=f"update-nonexistent.{ok_zone_name}", record_type="MX",
                                                    record_data={"preference": 1000, "exchange": "foo.bar."})
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn, record_type="MX",
@@ -3739,39 +3795,27 @@ def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_co
             rejecter.reject_batch_change(response["id"], status=200)
 
 
-def test_create_batch_delete_record_for_invalid_record_data_fails(shared_zone_test_context):
+def test_create_batch_delete_record_that_does_not_exists_completes(shared_zone_test_context):
     """
-    Test delete record set fails for non-existent record and non-existent record data
+    Test delete record set completes for non-existent record
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone_name = shared_zone_test_context.ok_zone["name"]
 
-    a_delete_name = generate_record_name()
-    a_delete_fqdn = a_delete_name + f".{ok_zone_name}"
-    a_delete = create_recordset(shared_zone_test_context.ok_zone, a_delete_fqdn, "A", [{"address": "1.1.1.1"}])
-
     batch_change_input = {
         "comments": "test delete record failures",
         "changes": [
-            get_change_A_AAAA_json(f"delete-non-existent-record.{ok_zone_name}", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json(a_delete_fqdn, address="4.5.6.7", change_type="DeleteRecordSet")
+            get_change_A_AAAA_json(f"delete-non-existent-record.{ok_zone_name}", change_type="DeleteRecordSet")
         ]
     }
 
-    to_delete = []
+    response = client.create_batch_change(batch_change_input, status=202)
+    get_batch = client.get_batch_change(response["id"])
 
-    try:
-        create_rs = client.create_recordset(a_delete, status=202)
-        to_delete.append(client.wait_until_recordset_change_status(create_rs, "Complete"))
+    assert_that(get_batch["changes"][0]["systemMessage"], is_("This record does not exist. " +
+                                                              "No further action is required."))
 
-        errors = client.create_batch_change(batch_change_input, status=400)
-
-        assert_failed_change_in_error_response(errors[0], input_name=f"delete-non-existent-record.{ok_zone_name}", record_data="1.1.1.1", change_type="DeleteRecordSet",
-                                               error_messages=[f'Record "delete-non-existent-record.{ok_zone_name}" Does Not Exist: cannot delete a record that does not exist.'])
-        assert_failed_change_in_error_response(errors[1], input_name=a_delete_fqdn, record_data="4.5.6.7", change_type="DeleteRecordSet",
-                                               error_messages=["Record data 4.5.6.7 does not exist for \"" + a_delete_fqdn + "\"."])
-    finally:
-        clear_recordset_list(to_delete, client)
+    assert_successful_change_in_error_response(response["changes"][0], input_name=f"delete-non-existent-record.{ok_zone_name}", record_data="1.1.1.1", change_type="DeleteRecordSet")
 
 
 @pytest.mark.serial
@@ -4143,7 +4187,7 @@ def test_create_batch_deletes_succeeds(shared_zone_test_context):
 @pytest.mark.skip_production
 def test_create_batch_change_with_multi_record_adds_with_multi_record_support(shared_zone_test_context):
     """
-    Test new recordsets with multiple records can be added in batch, but existing recordsets cannot be added to
+    Test new recordsets with multiple records can be added in batch.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
@@ -4168,24 +4212,655 @@ def test_create_batch_change_with_multi_record_adds_with_multi_record_support(sh
             get_change_TXT_json(f"multi-txt.{ok_zone_name}", text="more-multi-text"),
             get_change_MX_json(f"multi-mx.{ok_zone_name}", preference=0),
             get_change_MX_json(f"multi-mx.{ok_zone_name}", preference=1000, exchange="bar.foo."),
-            get_change_A_AAAA_json(rs_fqdn, address="1.1.1.1")
-        ]
+            get_change_A_AAAA_json(rs_fqdn, address="1.2.3.4")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group["id"]
     }
 
     try:
         create_rs = client.create_recordset(rs_to_create, status=202)
         to_delete.append(client.wait_until_recordset_change_status(create_rs, "Complete"))
-        response = client.create_batch_change(batch_change_input, status=400)
+        response = client.create_batch_change(batch_change_input, status=202)
 
-        assert_successful_change_in_error_response(response[0], input_name=f"multi.{ok_zone_name}", record_data="1.2.3.4")
-        assert_successful_change_in_error_response(response[1], input_name=f"multi.{ok_zone_name}", record_data="4.5.6.7")
-        assert_successful_change_in_error_response(response[2], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi.test.")
-        assert_successful_change_in_error_response(response[3], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi2.test.")
-        assert_successful_change_in_error_response(response[4], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="some-multi-text")
-        assert_successful_change_in_error_response(response[5], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="more-multi-text")
-        assert_successful_change_in_error_response(response[6], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 0, "exchange": "foo.bar."})
-        assert_successful_change_in_error_response(response[7], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 1000, "exchange": "bar.foo."})
-        assert_failed_change_in_error_response(response[8], input_name=rs_fqdn, record_data="1.1.1.1",
-                                               error_messages=["Record \"" + rs_fqdn + "\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+        assert_successful_change_in_error_response(response["changes"][0], input_name=f"multi.{ok_zone_name}", record_data="1.2.3.4")
+        assert_successful_change_in_error_response(response["changes"][1], input_name=f"multi.{ok_zone_name}", record_data="4.5.6.7")
+        assert_successful_change_in_error_response(response["changes"][2], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi.test.")
+        assert_successful_change_in_error_response(response["changes"][3], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi2.test.")
+        assert_successful_change_in_error_response(response["changes"][4], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="some-multi-text")
+        assert_successful_change_in_error_response(response["changes"][5], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="more-multi-text")
+        assert_successful_change_in_error_response(response["changes"][6], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 0, "exchange": "foo.bar."})
+        assert_successful_change_in_error_response(response["changes"][7], input_name=f"multi-mx.{ok_zone_name}", record_type="MX", record_data={"preference": 1000, "exchange": "bar.foo."})
+        assert_successful_change_in_error_response(response["changes"][8], input_name=rs_fqdn, record_data="1.2.3.4")
     finally:
         clear_recordset_list(to_delete, client)
+
+
+def test_ns_recordtype_add_checks(shared_zone_test_context):
+    """
+    Test all add validations performed on NS records submitted in batch changes
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+
+    existing_ns_name = generate_record_name()
+    existing_ns_fqdn = existing_ns_name + f".{ok_zone_name}"
+    existing_ns = create_recordset(shared_zone_test_context.ok_zone, existing_ns_name, "NS", [{"nsdname": "ns1.parent.com."}], 100)
+
+    existing_cname_name = generate_record_name()
+    existing_cname_fqdn = existing_cname_name + f".{ok_zone_name}"
+    existing_cname = create_recordset(shared_zone_test_context.ok_zone, existing_cname_name, "CNAME",
+                                      [{"cname": "test."}], 100)
+
+    batch_change_input = {
+        "changes": [
+            # valid change
+            get_change_NS_json(f"ns.{ok_zone_name}", nsdname="ns1.parent.com."),
+
+            # input validation failures
+            get_change_NS_json(f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29, nsdname="ns1.parent.com."),
+
+            # zone discovery failures
+            get_change_NS_json(f"no.zone.at.all.", nsdname="ns1.parent.com."),
+
+            # context validation failures
+            get_change_CNAME_json(f"cname-duplicate.{ok_zone_name}"),
+            get_change_NS_json(f"cname-duplicate.{ok_zone_name}", nsdname="ns1.parent.com."),
+            get_change_NS_json(existing_ns_fqdn, nsdname="ns1.parent.com."),
+            get_change_NS_json(existing_cname_fqdn, nsdname="ns1.parent.com."),
+            get_change_NS_json(f"unapproved.{ok_zone_name}", nsdname="unapproved.name.server."),
+            get_change_NS_json(f"user-add-unauthorized.{dummy_zone_name}", nsdname="ns1.parent.com.")
+        ]
+    }
+
+    to_create = [existing_ns, existing_cname]
+    to_delete = []
+    try:
+        for create_json in to_create:
+            create_result = client.create_recordset(create_json, status=202)
+            to_delete.append(client.wait_until_recordset_change_status(create_result, "Complete"))
+
+        response = client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=f"ns.{ok_zone_name}", record_type="NS",
+                                                   record_data="ns1.parent.com.")
+
+        # ttl, domain name, record data
+        assert_failed_change_in_error_response(response[1], input_name=f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29,
+                                               record_type="NS", record_data="ns1.parent.com.",
+                                               error_messages=[
+                                                   'Invalid TTL: "29", must be a number between 30 and 2147483647.',
+                                                   f'Invalid domain name: "bad-ttl-and-invalid-name$.{ok_zone_name}", '
+                                                   "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
+
+        # zone discovery failure
+        assert_failed_change_in_error_response(response[2], input_name="no.zone.at.all.", record_type="NS",
+                                               record_data="ns1.parent.com.",
+                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                                               'If zone exists, then it must be connected to in VinylDNS.'])
+
+        # context validations: cname duplicate
+        assert_failed_change_in_error_response(response[3], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
+                                               record_data="test.com.",
+                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                                               f"cannot have multiple \"CNAME\" records with the same name."])
+
+        # context validations: conflicting recordsets, unauthorized error
+        assert_successful_change_in_error_response(response[5], input_name=existing_ns_fqdn, record_type="NS",
+                                                   record_data="ns1.parent.com.")
+        assert_failed_change_in_error_response(response[6], input_name=existing_cname_fqdn, record_type="NS",
+                                               record_data="ns1.parent.com.",
+                                               error_messages=[f"CNAME Conflict: CNAME record names must be unique. "
+                                                               f"Existing record with name \"{existing_cname_fqdn}\" and type \"CNAME\" conflicts with this record."])
+        assert_failed_change_in_error_response(response[7], input_name=f"unapproved.{ok_zone_name}",
+                                               record_type="NS", record_data="unapproved.name.server.",
+                                               error_messages=[f"Name Server unapproved.name.server. is not an approved name server."])
+        assert_failed_change_in_error_response(response[8], input_name=f"user-add-unauthorized.{dummy_zone_name}",
+                                               record_type="NS", record_data="ns1.parent.com.",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        clear_recordset_list(to_delete, client)
+
+
+def test_ns_recordtype_update_delete_checks(shared_zone_test_context):
+    """
+    Test all update and delete validations performed on NS records submitted in batch changes
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    dummy_zone = shared_zone_test_context.dummy_zone
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+
+    rs_delete_name = generate_record_name()
+    rs_delete_fqdn = rs_delete_name + f".{ok_zone_name}"
+    rs_delete_ok = create_recordset(ok_zone, rs_delete_name, "NS", [{"nsdname": "ns1.parent.com."}], 200)
+
+    rs_update_name = generate_record_name()
+    rs_update_fqdn = rs_update_name + f".{ok_zone_name}"
+    rs_update_ok = create_recordset(ok_zone, rs_update_name, "NS", [{"nsdname": "ns1.parent.com."}], 200)
+
+    rs_delete_dummy_name = generate_record_name()
+    rs_delete_dummy_fqdn = rs_delete_dummy_name + f".{dummy_zone_name}"
+    rs_delete_dummy = create_recordset(dummy_zone, rs_delete_dummy_name, "NS", [{"nsdname": "ns1.parent.com."}], 200)
+
+    rs_update_dummy_name = generate_record_name()
+    rs_update_dummy_fqdn = rs_update_dummy_name + f".{dummy_zone_name}"
+    rs_update_dummy = create_recordset(dummy_zone, rs_update_dummy_name, "NS", [{"nsdname": "ns1.parent.com."}], 200)
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            # valid changes
+            get_change_NS_json(rs_delete_fqdn, change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+            get_change_NS_json(rs_update_fqdn, change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+            get_change_NS_json(rs_update_fqdn, ttl=300, nsdname="ns1.parent.com."),
+            get_change_NS_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+            get_change_NS_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+
+            # input validations failures
+            get_change_NS_json(f"invalid-name$.{ok_zone_name}", change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+            get_change_NS_json(f"invalid-ttl.{ok_zone_name}", ttl=29, nsdname="ns1.parent.com."),
+
+            # zone discovery failure
+            get_change_NS_json("no.zone.at.all.", change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+
+            # context validation failures
+            get_change_NS_json(f"update-nonexistent.{ok_zone_name}", nsdname="ns1.parent.com."),
+            get_change_NS_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet", nsdname="ns1.parent.com."),
+            get_change_NS_json(rs_update_dummy_fqdn, nsdname="ns1.parent.com."),
+            get_change_NS_json(f"unapproved.{ok_zone_name}", nsdname="unapproved.name.server."),
+            get_change_NS_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet", nsdname="ns1.parent.com.")
+        ]
+    }
+
+    to_create = [rs_delete_ok, rs_update_ok, rs_delete_dummy, rs_update_dummy]
+    to_delete = []
+
+    try:
+        for rs in to_create:
+            if rs["zoneId"] == dummy_zone["id"]:
+                create_client = dummy_client
+            else:
+                create_client = ok_client
+
+            create_rs = create_client.create_recordset(rs, status=202)
+            to_delete.append(create_client.wait_until_recordset_change_status(create_rs, "Complete"))
+
+        # Confirm that record set doesn't already exist
+        ok_client.get_recordset(ok_zone["id"], "delete-nonexistent", status=404)
+
+        response = ok_client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[2], ttl=300, input_name=rs_update_fqdn, record_type="NS", record_data="ns1.parent.com.")
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet")
+
+        # input validations failures: invalid input name, reverse zone error, invalid ttl
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet",
+                                               error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", valid domain names must be '
+                                                               f'letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
+        assert_failed_change_in_error_response(response[6], input_name=f"invalid-ttl.{ok_zone_name}", ttl=29, record_type="NS", record_data="ns1.parent.com.",
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
+
+        # zone discovery failure
+        assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet",
+                                               error_messages=[
+                                                   "Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                                   "If zone exists, then it must be connected to in VinylDNS."])
+
+        # context validation failures: record does not exist, not authorized
+        assert_successful_change_in_error_response(response[8], input_name=f"update-nonexistent.{ok_zone_name}", record_type="NS", record_data="ns1.parent.com.")
+        assert_failed_change_in_error_response(response[9], input_name=rs_delete_dummy_fqdn, record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[10], input_name=rs_update_dummy_fqdn, record_type="NS", record_data="ns1.parent.com.",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[11], input_name=f"unapproved.{ok_zone_name}",
+                                               record_type="NS", record_data="unapproved.name.server.",
+                                               error_messages=[f"Name Server unapproved.name.server. is not an approved name server."])
+        assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn, record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        # Clean up updates
+        dummy_deletes = [rs for rs in to_delete if rs["zone"]["id"] == dummy_zone["id"]]
+        ok_deletes = [rs for rs in to_delete if rs["zone"]["id"] != dummy_zone["id"]]
+        clear_recordset_list(dummy_deletes, dummy_client)
+        clear_recordset_list(ok_deletes, ok_client)
+
+
+def test_naptr_recordtype_add_checks(shared_zone_test_context):
+    """
+    Test all add validations performed on NAPTR records submitted in batch changes
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+    ip4_zone_name = shared_zone_test_context.classless_base_zone["name"]
+
+    existing_naptr_name = generate_record_name()
+    existing_naptr_fqdn = f"{existing_naptr_name}.{ok_zone_name}"
+    existing_naptr = create_recordset(shared_zone_test_context.ok_zone, existing_naptr_name, "NAPTR", [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}], 100)
+
+    existing_cname_name = generate_record_name()
+    existing_cname_fqdn = f"{existing_cname_name}.{ok_zone_name}"
+    existing_cname = create_recordset(shared_zone_test_context.ok_zone, existing_cname_name, "CNAME", [{"cname": "test."}], 100)
+
+    good_record_fqdn = generate_record_name(ok_zone_name)
+    batch_change_input = {
+        "changes": [
+            # valid change
+            get_change_NAPTR_json(good_record_fqdn, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # input validation failures
+            get_change_NAPTR_json(f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"naptr.{ip4_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # zone discovery failures
+            get_change_NAPTR_json(f"no.subzone.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json("no.zone.at.all.", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # context validation failures
+            get_change_CNAME_json(f"cname-duplicate.{ok_zone_name}"),
+            get_change_NAPTR_json(f"cname-duplicate.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(existing_naptr_fqdn, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(existing_cname_fqdn, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"user-add-unauthorized.{dummy_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns.")
+        ]
+    }
+
+    to_create = [existing_naptr, existing_cname]
+    to_delete = []
+    try:
+        for create_json in to_create:
+            create_result = client.create_recordset(create_json, status=202)
+            to_delete.append(client.wait_until_recordset_change_status(create_result, "Complete"))
+
+        response = client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=good_record_fqdn, record_type="NAPTR", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."})
+
+        # ttl, domain name, record data
+        assert_failed_change_in_error_response(response[1], input_name=f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
+                                                               f'Invalid domain name: "bad-ttl-and-invalid-name$.{ok_zone_name}", '
+                                                               "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
+        assert_failed_change_in_error_response(response[2], input_name=f"naptr.{ip4_zone_name}", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "naptr.{ip4_zone_name}" and type "NAPTR" is not allowed in a reverse zone.'])
+
+        # zone discovery failures
+        assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{ok_zone_name}", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
+                                                               f'If zone exists, then it must be connected to in VinylDNS.'])
+        assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                                               'If zone exists, then it must be connected to in VinylDNS.'])
+
+        # context validations: cname duplicate
+        assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
+                                               record_data="test.com.",
+                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                                               f"cannot have multiple \"CNAME\" records with the same name."])
+
+        # context validations: conflicting recordsets, unauthorized error
+        assert_successful_change_in_error_response(response[7], input_name=existing_naptr_fqdn, record_type="NAPTR",
+                                                   record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."})
+        assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=["CNAME Conflict: CNAME record names must be unique. "
+                                                               f"Existing record with name \"{existing_cname_fqdn}\" and type \"CNAME\" conflicts with this record."])
+        assert_failed_change_in_error_response(response[9], input_name=f"user-add-unauthorized.{dummy_zone_name}", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        clear_recordset_list(to_delete, client)
+
+
+def test_naptr_recordtype_update_delete_checks(shared_zone_test_context):
+    """
+    Test all update and delete validations performed on NAPTR records submitted in batch changes
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    dummy_zone = shared_zone_test_context.dummy_zone
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    ip4_zone_name = shared_zone_test_context.classless_base_zone["name"]
+
+    rs_delete_name = generate_record_name()
+    rs_delete_fqdn = rs_delete_name + f".{ok_zone_name}"
+    rs_delete_ok = create_recordset(ok_zone, rs_delete_name, "NAPTR", [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}], 200)
+
+    rs_update_name = generate_record_name()
+    rs_update_fqdn = rs_update_name + f".{ok_zone_name}"
+    rs_update_ok = create_recordset(ok_zone, rs_update_name, "NAPTR", [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}], 200)
+
+    rs_delete_dummy_name = generate_record_name()
+    rs_delete_dummy_fqdn = rs_delete_dummy_name + f".{dummy_zone_name}"
+    rs_delete_dummy = create_recordset(dummy_zone, rs_delete_dummy_name, "NAPTR", [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}], 200)
+
+    rs_update_dummy_name = generate_record_name()
+    rs_update_dummy_fqdn = rs_update_dummy_name + f".{dummy_zone_name}"
+    rs_update_dummy = create_recordset(dummy_zone, rs_update_dummy_name, "NAPTR", [{"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}], 200)
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            # valid changes
+            get_change_NAPTR_json(rs_delete_fqdn, change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(rs_update_fqdn, change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(rs_update_fqdn, ttl=300, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # input validations failures
+            get_change_NAPTR_json(f"invalid-name$.{ok_zone_name}", change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"delete.{ok_zone_name}", ttl=29, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(f"naptr.{ip4_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # zone discovery failures
+            get_change_NAPTR_json("no.zone.at.all.", change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+
+            # context validation failures
+            get_change_NAPTR_json(f"update-nonexistent.{ok_zone_name}", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(rs_update_dummy_fqdn, order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns."),
+            get_change_NAPTR_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet", order=1, preference=1000, flags="U", service="E2U+sip", regexp="!.*!test.!", replacement="target.vinyldns.")
+        ]
+    }
+
+    to_create = [rs_delete_ok, rs_update_ok, rs_delete_dummy, rs_update_dummy]
+    to_delete = []
+
+    try:
+        for rs in to_create:
+            if rs["zoneId"] == dummy_zone["id"]:
+                create_client = dummy_client
+            else:
+                create_client = ok_client
+
+            create_rs = create_client.create_recordset(rs, status=202)
+            to_delete.append(create_client.wait_until_recordset_change_status(create_rs, "Complete"))
+
+        # Confirm that record set doesn't already exist
+        ok_client.get_recordset(ok_zone["id"], "delete-nonexistent", status=404)
+
+        response = ok_client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, record_type="NAPTR", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, record_type="NAPTR", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[2], ttl=300, input_name=rs_update_fqdn, record_type="NAPTR", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."})
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="NAPTR",
+                                                   record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="NAPTR",
+                                                   record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet")
+
+        # input validations failures: invalid input name, reverse zone error, invalid ttl
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="NAPTR", record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               change_type="DeleteRecordSet",
+                                               error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", valid domain names must be letters, '
+                                                               f'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
+        assert_failed_change_in_error_response(response[6], input_name=f"delete.{ok_zone_name}", ttl=29, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
+        assert_failed_change_in_error_response(response[7], input_name=f"naptr.{ip4_zone_name}", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "naptr.{ip4_zone_name}" '
+                                                               f'and type "NAPTR" is not allowed in a reverse zone.'])
+
+        # zone discovery failure
+        assert_failed_change_in_error_response(response[8], input_name="no.zone.at.all.", record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet",
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                                               "If zone exists, then it must be connected to in VinylDNS."])
+
+        # context validation failures: record does not exist, not authorized
+        assert_successful_change_in_error_response(response[9], input_name=f"update-nonexistent.{ok_zone_name}", record_type="NAPTR",
+                                                   record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."})
+        assert_failed_change_in_error_response(response[10], input_name=rs_delete_dummy_fqdn, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[11], input_name=rs_update_dummy_fqdn, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn, record_type="NAPTR",
+                                               record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        # Clean up updates
+        dummy_deletes = [rs for rs in to_delete if rs["zone"]["id"] == dummy_zone["id"]]
+        ok_deletes = [rs for rs in to_delete if rs["zone"]["id"] != dummy_zone["id"]]
+        clear_recordset_list(dummy_deletes, dummy_client)
+        clear_recordset_list(ok_deletes, ok_client)
+
+
+def test_srv_recordtype_add_checks(shared_zone_test_context):
+    """
+    Test all add validations performed on SRV records submitted in batch changes
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+    ip4_zone_name = shared_zone_test_context.classless_base_zone["name"]
+
+    existing_srv_name = generate_record_name()
+    existing_srv_fqdn = f"{existing_srv_name}.{ok_zone_name}"
+    existing_srv = create_recordset(shared_zone_test_context.ok_zone, existing_srv_name, "SRV", [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}], 100)
+
+    existing_cname_name = generate_record_name()
+    existing_cname_fqdn = f"{existing_cname_name}.{ok_zone_name}"
+    existing_cname = create_recordset(shared_zone_test_context.ok_zone, existing_cname_name, "CNAME", [{"cname": "test."}], 100)
+
+    good_record_fqdn = generate_record_name(ok_zone_name)
+    batch_change_input = {
+        "changes": [
+            # valid change
+            get_change_SRV_json(good_record_fqdn, priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # input validation failures
+            get_change_SRV_json(f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"srv.{ip4_zone_name}", priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # zone discovery failures
+            get_change_SRV_json(f"no.subzone.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json("no.zone.at.all.", priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # context validation failures
+            get_change_CNAME_json(f"cname-duplicate.{ok_zone_name}"),
+            get_change_SRV_json(f"cname-duplicate.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(existing_srv_fqdn, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(existing_cname_fqdn, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"user-add-unauthorized.{dummy_zone_name}", priority=1000, weight=5, port=20, target="bar.foo.")
+        ]
+    }
+
+    to_create = [existing_srv, existing_cname]
+    to_delete = []
+    try:
+        for create_json in to_create:
+            create_result = client.create_recordset(create_json, status=202)
+            to_delete.append(client.wait_until_recordset_change_status(create_result, "Complete"))
+
+        response = client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=good_record_fqdn, record_type="SRV", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."})
+
+        # ttl, domain name, record data
+        assert_failed_change_in_error_response(response[1], input_name=f"bad-ttl-and-invalid-name$.{ok_zone_name}", ttl=29, record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
+                                                               f'Invalid domain name: "bad-ttl-and-invalid-name$.{ok_zone_name}", '
+                                                               "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
+        assert_failed_change_in_error_response(response[2], input_name=f"srv.{ip4_zone_name}", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "srv.{ip4_zone_name}" and type "SRV" is not allowed in a reverse zone.'])
+
+        # zone discovery failures
+        assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{ok_zone_name}", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
+                                                               f'If zone exists, then it must be connected to in VinylDNS.'])
+        assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                                               'If zone exists, then it must be connected to in VinylDNS.'])
+
+        # context validations: cname duplicate
+        assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
+                                               record_data="test.com.",
+                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                                               f"cannot have multiple \"CNAME\" records with the same name."])
+
+        # context validations: conflicting recordsets, unauthorized error
+        assert_successful_change_in_error_response(response[7], input_name=existing_srv_fqdn, record_type="SRV",
+                                                   record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."})
+        assert_failed_change_in_error_response(response[8], input_name=existing_cname_fqdn, record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=["CNAME Conflict: CNAME record names must be unique. "
+                                                               f"Existing record with name \"{existing_cname_fqdn}\" and type \"CNAME\" conflicts with this record."])
+        assert_failed_change_in_error_response(response[9], input_name=f"user-add-unauthorized.{dummy_zone_name}", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        clear_recordset_list(to_delete, client)
+
+
+def test_srv_recordtype_update_delete_checks(shared_zone_test_context):
+    """
+    Test all update and delete validations performed on SRV records submitted in batch changes
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    dummy_zone = shared_zone_test_context.dummy_zone
+    dummy_zone_name = shared_zone_test_context.dummy_zone["name"]
+
+    dummy_group_name = shared_zone_test_context.dummy_group["name"]
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    ip4_zone_name = shared_zone_test_context.classless_base_zone["name"]
+
+    rs_delete_name = generate_record_name()
+    rs_delete_fqdn = rs_delete_name + f".{ok_zone_name}"
+    rs_delete_ok = create_recordset(ok_zone, rs_delete_name, "SRV", [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}], 200)
+
+    rs_update_name = generate_record_name()
+    rs_update_fqdn = rs_update_name + f".{ok_zone_name}"
+    rs_update_ok = create_recordset(ok_zone, rs_update_name, "SRV", [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}], 200)
+
+    rs_delete_dummy_name = generate_record_name()
+    rs_delete_dummy_fqdn = rs_delete_dummy_name + f".{dummy_zone_name}"
+    rs_delete_dummy = create_recordset(dummy_zone, rs_delete_dummy_name, "SRV", [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}], 200)
+
+    rs_update_dummy_name = generate_record_name()
+    rs_update_dummy_fqdn = rs_update_dummy_name + f".{dummy_zone_name}"
+    rs_update_dummy = create_recordset(dummy_zone, rs_update_dummy_name, "SRV", [{"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}], 200)
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            # valid changes
+            get_change_SRV_json(rs_delete_fqdn, change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(rs_update_fqdn, change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(rs_update_fqdn, ttl=300, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"delete-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"update-nonexistent.{ok_zone_name}", change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # input validations failures
+            get_change_SRV_json(f"invalid-name$.{ok_zone_name}", change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"delete.{ok_zone_name}", ttl=29, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(f"srv.{ip4_zone_name}", priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # zone discovery failures
+            get_change_SRV_json("no.zone.at.all.", change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+
+            # context validation failures
+            get_change_SRV_json(f"update-nonexistent.{ok_zone_name}", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(rs_delete_dummy_fqdn, change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(rs_update_dummy_fqdn, priority=1000, weight=5, port=20, target="bar.foo."),
+            get_change_SRV_json(rs_update_dummy_fqdn, change_type="DeleteRecordSet", priority=1000, weight=5, port=20, target="bar.foo.")
+        ]
+    }
+
+    to_create = [rs_delete_ok, rs_update_ok, rs_delete_dummy, rs_update_dummy]
+    to_delete = []
+
+    try:
+        for rs in to_create:
+            if rs["zoneId"] == dummy_zone["id"]:
+                create_client = dummy_client
+            else:
+                create_client = ok_client
+
+            create_rs = create_client.create_recordset(rs, status=202)
+            to_delete.append(create_client.wait_until_recordset_change_status(create_rs, "Complete"))
+
+        # Confirm that record set doesn't already exist
+        ok_client.get_recordset(ok_zone["id"], "delete-nonexistent", status=404)
+
+        response = ok_client.create_batch_change(batch_change_input, status=400)
+
+        # successful changes
+        assert_successful_change_in_error_response(response[0], input_name=rs_delete_fqdn, record_type="SRV", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], input_name=rs_update_fqdn, record_type="SRV", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[2], ttl=300, input_name=rs_update_fqdn, record_type="SRV", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."})
+        assert_successful_change_in_error_response(response[3], input_name=f"delete-nonexistent.{ok_zone_name}", record_type="SRV",
+                                                   record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[4], input_name=f"update-nonexistent.{ok_zone_name}", record_type="SRV",
+                                                   record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet")
+
+        # input validations failures: invalid input name, reverse zone error, invalid ttl
+        assert_failed_change_in_error_response(response[5], input_name=f"invalid-name$.{ok_zone_name}", record_type="SRV", record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               change_type="DeleteRecordSet",
+                                               error_messages=[f'Invalid domain name: "invalid-name$.{ok_zone_name}", valid domain names must be letters, '
+                                                               f'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
+        assert_failed_change_in_error_response(response[6], input_name=f"delete.{ok_zone_name}", ttl=29, record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
+        assert_failed_change_in_error_response(response[7], input_name=f"srv.{ip4_zone_name}", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "srv.{ip4_zone_name}" '
+                                                               f'and type "SRV" is not allowed in a reverse zone.'])
+
+        # zone discovery failure
+        assert_failed_change_in_error_response(response[8], input_name="no.zone.at.all.", record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet",
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                                               "If zone exists, then it must be connected to in VinylDNS."])
+
+        # context validation failures: record does not exist, not authorized
+        assert_successful_change_in_error_response(response[9], input_name=f"update-nonexistent.{ok_zone_name}", record_type="SRV",
+                                                   record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."})
+        assert_failed_change_in_error_response(response[10], input_name=rs_delete_dummy_fqdn, record_type="SRV",
+                                               record_data=None, change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[11], input_name=rs_update_dummy_fqdn, record_type="SRV",
+                                               record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+        assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn, record_type="SRV",
+                                               record_data=None, change_type="DeleteRecordSet",
+                                               error_messages=[f"User \"ok\" is not authorized. Contact zone owner group: {dummy_group_name} at test@test.com to make DNS changes."])
+    finally:
+        # Clean up updates
+        dummy_deletes = [rs for rs in to_delete if rs["zone"]["id"] == dummy_zone["id"]]
+        ok_deletes = [rs for rs in to_delete if rs["zone"]["id"] != dummy_zone["id"]]
+        clear_recordset_list(dummy_deletes, dummy_client)
+        clear_recordset_list(ok_deletes, ok_client)
+

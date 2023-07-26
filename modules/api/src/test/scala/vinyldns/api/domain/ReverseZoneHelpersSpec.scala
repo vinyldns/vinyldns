@@ -17,7 +17,8 @@
 package vinyldns.api.domain
 
 import cats.scalatest.EitherMatchers
-import org.joda.time.DateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -42,14 +43,14 @@ class ReverseZoneHelpersSpec
 
       "convert PTR with two octets in zone and two octets in record set to ip4" in {
         val zn1 = Zone("1.2.in-addr.arpa.", "email")
-        val rs1 = RecordSet("id", "4.5", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        val rs1 = RecordSet("id", "4.5", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "2.1.5.4"
       }
 
       "convert PTR with three octets in zone and one octet in record set to ip4" in {
         val zn1 = Zone("100.80.9.in-addr.arpa.", "email")
-        val rs1 = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        val rs1 = RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "9.80.100.3"
       }
@@ -57,21 +58,21 @@ class ReverseZoneHelpersSpec
       "convert PTR with one octet in zone and three octets in record set to ip4" in {
         val zn1 = Zone("111.in-addr.arpa.", "email")
         val rs1 =
-          RecordSet("id", "123.32.4", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+          RecordSet("id", "123.32.4", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "111.4.32.123"
       }
 
       "drop slash part for reverse classless zone delegations" in {
         val zn1 = Zone("192/30.2.0.192.in-addr.arpa.", "email")
-        val rs1 = RecordSet("id", "193", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        val rs1 = RecordSet("id", "193", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "192.0.2.193"
       }
 
       "convert PTR with two octets in zone and two octets in record set to ip4 with upper case" in {
         val zn1 = Zone("1.2.IN-ADDR.ARPA.", "email")
-        val rs1 = RecordSet("id", "4.5", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+        val rs1 = RecordSet("id", "4.5", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
         ReverseZoneHelpers.convertPTRtoIPv4(zn1, rs1.name) shouldBe "2.1.5.4"
       }
@@ -87,7 +88,7 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now
+          Instant.now.truncatedTo(ChronoUnit.MILLIS)
         )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
@@ -101,7 +102,7 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now
+          Instant.now.truncatedTo(ChronoUnit.MILLIS)
         )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
@@ -115,7 +116,7 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now
+          Instant.now.truncatedTo(ChronoUnit.MILLIS)
         )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89ab"
@@ -128,7 +129,7 @@ class ReverseZoneHelpersSpec
           RecordType.PTR,
           200,
           RecordSetStatus.Active,
-          DateTime.now
+          Instant.now.truncatedTo(ChronoUnit.MILLIS)
         )
 
         ReverseZoneHelpers.convertPTRtoIPv6(zn1, rs1.name) shouldBe "2001:0db8:0000:0000:0000:0000:0567:89AB"
@@ -136,24 +137,24 @@ class ReverseZoneHelpersSpec
     }
     "recordsetIsWithinCidrMask" should {
       "when testing IPv4" should {
-        "filter in/out record set based on CIDR rule of 0 (lower bound for ip4 CIDR rules)" in {
-          val mask = "120.1.2.0/0"
+        "filter in/out record set based on CIDR rule of 1 (lower bound for ip4 CIDR rules)" in {
+          val mask = "120.1.2.0/1"
           val znTrue = Zone("40.120.in-addr.arpa.", "email")
           val rsTrue =
-            RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "20.3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
           val znFalse = Zone("255.129.in-addr.arpa.", "email")
           val rsFalse =
-            RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
         }
 
         "filter in/out record set based on CIDR rule of 8" in {
-          val mask = "10.10.32/19"
+          val mask = "10.10.32.0/19"
           val zone = Zone("10.10.in-addr.arpa.", "email")
           val recordSet =
-            RecordSet("id", "90.44", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "90.44", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordSet.name) shouldBe true
         }
@@ -162,10 +163,10 @@ class ReverseZoneHelpersSpec
           val mask = "202.204.62.208/8"
           val znTrue = Zone("202.in-addr.arpa.", "email")
           val rsTrue =
-            RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "32.23.100", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
           val znFalse = Zone("1.23.100.in-addr.arpa.", "email")
           val rsFalse =
-            RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
@@ -175,10 +176,10 @@ class ReverseZoneHelpersSpec
           val mask = "120.1.2.0/32"
           val znTrue = Zone("1.120.in-addr.arpa.", "email")
           val rsTrue =
-            RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
           val znFalse = Zone("23.10.in-addr.arpa.", "email")
           val rsFalse =
-            RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "3", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
@@ -188,7 +189,7 @@ class ReverseZoneHelpersSpec
           val mask = ".*0.*"
           val zone = Zone("1.120.in-addr.arpa.", "email")
           val recordSet =
-            RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "0.2", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordSet.name) shouldBe false
         }
@@ -203,7 +204,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
@@ -212,7 +213,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
@@ -228,7 +229,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
@@ -237,7 +238,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
@@ -253,7 +254,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
           val znFalse = Zone("5.b.e.f.9.d.2.f.9.5.c.c.7.4.a.a.8.ip6.arpa.", "email")
           val rsFalse = RecordSet(
@@ -262,7 +263,7 @@ class ReverseZoneHelpersSpec
             RecordType.PTR,
             200,
             RecordSetStatus.Active,
-            DateTime.now
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
           )
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
@@ -293,14 +294,14 @@ class ReverseZoneHelpersSpec
         "return ok if the ptr is within CIDR for the zone (classless)" in {
           val zone = Zone("32/27.1.10.10.in-addr.arpa.", "email")
           val record =
-            RecordSet("id", "44", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "44", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name) shouldBe right
         }
         "return InvalidRequest if the ptr is outside of the CIDR range for the zone (classless)" in {
           val zone = Zone("32/27.1.10.10.in-addr.arpa.", "email")
           val record =
-            RecordSet("id", "90", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "90", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]
@@ -308,7 +309,7 @@ class ReverseZoneHelpersSpec
         "return InvalidRequest if the ptr created is illegal (classless)" in {
           val zone = Zone("32/27.1.10.10.in-addr.arpa.", "email")
           val record =
-            RecordSet("id", "44.44", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "44.44", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]
@@ -316,7 +317,7 @@ class ReverseZoneHelpersSpec
         "return InvalidRequest if the ptr is outside of the CIDR range for the zone (classless - 2 octet)" in {
           val zone = Zone("32/19.10.10.in-addr.arpa.", "email")
           val record =
-            RecordSet("id", "90.90", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
+            RecordSet("id", "90.90", RecordType.PTR, 200, RecordSetStatus.Active, Instant.now.truncatedTo(ChronoUnit.MILLIS))
 
           val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]

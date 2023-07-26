@@ -23,6 +23,7 @@ import vinyldns.core.domain.zone.ZoneCommandResult
 import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneResponse}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
 
 trait RecordSetServiceAlgebra {
@@ -54,7 +55,8 @@ trait RecordSetServiceAlgebra {
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupId: Option[String],
                       nameSort: NameSort,
-                      authPrincipal: AuthPrincipal
+                      authPrincipal: AuthPrincipal,
+                      recordTypeSort: RecordTypeSort
                     ): Result[ListGlobalRecordSetsResponse]
 
   /**
@@ -76,7 +78,8 @@ trait RecordSetServiceAlgebra {
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupId: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse]
 
   def listRecordSetsByZone(
@@ -87,7 +90,8 @@ trait RecordSetServiceAlgebra {
                             recordTypeFilter: Option[Set[RecordType]],
                             recordOwnerGroupId: Option[String],
                             nameSort: NameSort,
-                            authPrincipal: AuthPrincipal
+                            authPrincipal: AuthPrincipal,
+                            recordTypeSort: RecordTypeSort
                           ): Result[ListRecordSetsByZoneResponse]
 
   def getRecordSetChange(
@@ -97,10 +101,27 @@ trait RecordSetServiceAlgebra {
                         ): Result[RecordSetChange]
 
   def listRecordSetChanges(
-                            zoneId: String,
-                            startFrom: Option[String],
+                            zoneId: Option[String],
+                            startFrom: Option[Int],
                             maxItems: Int,
+                            fqdn: Option[String],
+                            recordType: Option[RecordType],
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse]
+
+  def listRecordSetChangeHistory(
+                            zoneId: Option[String],
+                            startFrom: Option[Int],
+                            maxItems: Int,
+                            fqdn: Option[String],
+                            recordType: Option[RecordType],
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetHistoryResponse]
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal,
+                                  startFrom: Int,
+                                  maxItems: Int
+                                ): Result[ListFailedRecordSetChangesResponse]
 
 }

@@ -17,8 +17,8 @@
 package vinyldns.api.domain.zone
 
 import java.net.InetAddress
-
-import org.joda.time.DateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures.whenReady
@@ -32,10 +32,11 @@ import vinyldns.core.domain.record._
 import scala.collection.mutable
 import cats.effect._
 import vinyldns.api.backend.dns.DnsConversions
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
 class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
@@ -43,7 +44,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
   private val testZoneName = "vinyldns."
 
   private val testZoneConnection: Option[ZoneConnection] = Some(
-    ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
+    ZoneConnection(testZoneName, testZoneName, Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "127.0.0.1:19001")
   )
 
   private val mockBackendResolver = mock[BackendResolver]
@@ -57,7 +58,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = List(AData("1.1.1.1"))
     ),
     RecordSet(
@@ -66,7 +67,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = List(AData("2.2.2.2"))
     ),
     RecordSet(
@@ -75,7 +76,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       typ = RecordType.AAAA,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = List(AAAAData("2001:db8:a0b:12f0::1"))
     ),
     RecordSet(
@@ -84,7 +85,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       typ = RecordType.A,
       ttl = 100,
       status = RecordSetStatus.Active,
-      created = DateTime.now,
+      created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
       records = List(AData("3.3.3.3"))
     )
   )
@@ -95,7 +96,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
 
-      doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC)))
+      doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
         .when(mockRecordSetRepo)
         .listRecordSets(
           any[Option[String]],
@@ -104,7 +105,8 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           any[Option[String]],
           any[Option[Set[RecordType]]],
           any[Option[String]],
-          any[NameSort]
+          any[NameSort],
+          any[RecordTypeSort]
         )
 
       val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo)
@@ -134,7 +136,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.A,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(AData("1.1.1.1"))
         ),
         RecordSet(
@@ -143,7 +145,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.A,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(AData("2.2.2.2"))
         ),
         RecordSet(
@@ -152,7 +154,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.AAAA,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(AAAAData(InetAddress.getByName("2001:db8:a0b:12f0::1").getHostAddress))
         ),
         RecordSet(
@@ -161,7 +163,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.A,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(AData("3.3.3.3"))
         )
       )
@@ -244,7 +246,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.A,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(AData("1.1.1.1"), AData("2.2.2.2"))
         ),
         RecordSet(
@@ -253,7 +255,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           typ = RecordType.SOA,
           ttl = 38400,
           status = RecordSetStatus.Active,
-          created = DateTime.now,
+          created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
           records = List(
             SOAData(
               Fqdn("172.17.42.1."),
