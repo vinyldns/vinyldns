@@ -333,11 +333,11 @@
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
-                                <span ng-if="batchChangeErrors" class="batch-change-error-help">There were errors, please review the highlighted rows and then proceed.</span>
                                 <button type="button" id="create-batch-changes-button" class="btn btn-primary" ng-click="submitChange(manualReviewEnabled)">Submit</button>
                             </div>
                             <div ng-if="formStatus=='pendingConfirm'" class="pull-right">
-                                <span>{{ confirmationPrompt }}</span>
+                                <span ng-if="!batchChangeErrors">{{ confirmationPrompt }}</span>
+                                <span ng-if="batchChangeErrors" class="batch-change-error-help">There were errors, please review the highlighted rows and then proceed.</span>
                                 <button class="btn btn-default" ng-click="cancelSubmit()">Cancel</button>
                                 <button class="btn btn-success" type="submit" ng-click="confirmSubmit(createBatchChangeForm)">Confirm</button>
                             </div>
