@@ -120,7 +120,8 @@ class MySqlZoneChangeRepository
             .apply()
 
           val failedZoneChanges = queryResult.filter(zc => zc.status == ZoneChangeStatus.Failed).drop(startFrom).take(maxItems)
-          val nextId = if (failedZoneChanges.size < maxItems) 0 else startFrom + maxItems
+          val nextId = if (failedZoneChanges.size < maxItems) 0 else startFrom + maxItems + 1
+          println(nextId)
 
           ListFailedZoneChangesResults(failedZoneChanges,nextId,startFrom,maxItems)
         }
