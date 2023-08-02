@@ -942,7 +942,7 @@ class RecordSetRoutingSpec
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
       val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
 
-      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+      Get(s"/metrics/health/zones/${okZone.id}/recordsetchangesfailure") ~> recordSetRoute ~> check {
         val changes = responseAs[ListFailedRecordSetChangesResponse]
         changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
 
