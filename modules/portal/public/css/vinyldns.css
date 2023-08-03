@@ -583,6 +583,10 @@ input[type="file"] {
     font-weight: 500;
 }
 
-.set-inline-flex{
-    display: inline-flex;
+.flex {
+    display: flex;
+}
+
+.flex-1{
+    flex: 1;
 }
