@@ -206,7 +206,7 @@ class MySqlZoneChangeRepository
             }
 
           val deletedZonesWithStartFrom: List[ZoneChange] = startFrom match {
-            case Some(zoneName) => results.dropWhile(_.zone.name != zoneName)
+            case Some(zoneId) => results.dropWhile(_.zone.id != zoneId)
             case None => results
           }
 
@@ -214,7 +214,7 @@ class MySqlZoneChangeRepository
 
           val (newResults, nextId) =
             if (deletedZonesWithMaxItems.size > maxItems)
-              (deletedZonesWithMaxItems.dropRight(1), deletedZonesWithMaxItems.lastOption.map(_.zone.name))
+              (deletedZonesWithMaxItems.dropRight(1), deletedZonesWithMaxItems.lastOption.map(_.zone.id))
             else (deletedZonesWithMaxItems, None)
 
           ListDeletedZonesChangeResults(
