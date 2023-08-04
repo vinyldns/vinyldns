@@ -280,8 +280,7 @@ body {
 .left_col .footer{
   position: absolute;
   bottom: 0;
-  left: 0;
-  color: white
+  width: 230px;
 }
 
 .nav.side-menu>li.active>a {

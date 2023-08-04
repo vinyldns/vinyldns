@@ -1,0 +1,87 @@
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+
+@content = {
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main">
+
+    <!-- START BREADCRUMB -->
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/settings">Settings</a></li>
+    </ul>
+    <!-- END BREADCRUMB -->
+
+    <!-- PAGE TITLE -->
+    <div class="page-title">
+        <h3><span class="fa fa-cog"></span> Settings
+        </h3>
+    </div>
+    <!-- END PAGE TITLE -->
+
+    <!-- PAGE CONTENT WRAPPER -->
+    <div class="page-content-wrap">
+
+        <div class="alert-wrapper">
+            <div ng-repeat="alert in alerts">
+                <notification ng-model="alert"></notification>
+            </div>
+        </div>
+
+        <!-- START RECORD TABLE -->
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Settings</h3>
+            </div>
+
+            <div class="panel-body">
+                <li><a href="/download-creds-file/@rootAccountName-vinyldns-credentials.csv">
+                    Download API Credentials<span aria-hidden="true"></span></a>
+                </li>
+                <li><a href="" class="mb-control" data-toggle="modal" data-target="#mb-creds">Regenerate Credentials<span></span></a></li>
+                <li><a href="" class="mb-control" data-toggle="modal" data-target="#mb-signout">Logout<span></span></a></li>
+
+                <!-- PAGINATION -->
+                <div class="dataTables_paginate">
+                    <ul class="pagination">
+                        <li class="paginate_button previous">
+                            <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                        </li>
+                        <li class="paginate_button next">
+                            <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- END PAGINATION -->
+
+
+                <!-- PAGINATION -->
+                <div class="dataTables_paginate">
+                    <ul class="pagination">
+                        <li class="paginate_button previous">
+                            <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                        </li>
+                        <li class="paginate_button next">
+                            <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- END PAGINATION -->
+
+            </div>
+            <div class="panel-footer"></div>
+        </div>
+        <!-- END RECORD TABLE -->
+
+    </div>
+    <!-- END PAGE CONTENT WRAPPER -->
+
+</div>
+<!-- END PAGE CONTENT -->
+}
+
+@plugins = {
+<script type='text/javascript' src='/public/js/ui.js'></script>
+}
+
+
+@main(rootAccountName)("SettingsController")("RecordSets")(content)(plugins)
