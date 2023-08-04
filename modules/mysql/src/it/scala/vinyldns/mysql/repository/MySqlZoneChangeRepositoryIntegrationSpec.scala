@@ -403,7 +403,54 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       // dummy user only has access to one zone
       (repo.listDeletedZones(dummyAuth).unsafeRunSync().zoneDeleted should contain).only(deletedZoneChanges.head)
+    }
 
+    "page deleted zones using a startFrom and maxItems" in {
+      // store all of the zones
+      saveZones(testZone).unsafeRunSync()
+      // delete all stored zones
+      deleteZones(testZone).unsafeRunSync()
+      // save the change
+      saveZoneChanges(deletedZoneChanges).unsafeRunSync()
+
+      // query for all zones for the ok user, he should have access to all of the zones
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      val listDeletedZones = repo.listDeletedZones(okUserAuth).unsafeRunSync()
+
+      val expectedPageOne = List(listDeletedZones.zoneDeleted(0))
+      val expectedPageOneNext = Some(listDeletedZones.zoneDeleted(1).zone.id)
+      val expectedPageTwo = List(listDeletedZones.zoneDeleted(1))
+      val expectedPageTwoNext = Some(listDeletedZones.zoneDeleted(2).zone.id)
+      val expectedPageThree = List(listDeletedZones.zoneDeleted(2))
+      val expectedPageThreeNext = Some(listDeletedZones.zoneDeleted(3).zone.id)
+
+      // get first page
+      val pageOne = repo.listDeletedZones(okUserAuth,startFrom = None, maxItems = 1 ).unsafeRunSync()
+      pageOne.zoneDeleted.size should equal(1)
+      pageOne.zoneDeleted should equal(expectedPageOne)
+      pageOne.nextId should equal(expectedPageOneNext)
+      pageOne.startFrom should equal(None)
+
+      // get second page
+      val pageTwo =
+        repo.listDeletedZones(okUserAuth, startFrom = pageOne.nextId, maxItems = 1).unsafeRunSync()
+      pageTwo.zoneDeleted.size should equal(1)
+      pageTwo.zoneDeleted should equal(expectedPageTwo)
+      pageTwo.nextId should equal(expectedPageTwoNext)
+      pageTwo.startFrom should equal(pageOne.nextId)
+
+      // get final page
+      // next id should be none now
+      val pageThree =
+      repo.listDeletedZones(okUserAuth, startFrom = pageTwo.nextId, maxItems = 1).unsafeRunSync()
+      pageThree.zoneDeleted.size should equal(1)
+      pageThree.zoneDeleted should equal(expectedPageThree)
+      pageThree.nextId should equal(expectedPageThreeNext)
+      pageThree.startFrom should equal(pageTwo.nextId)
     }
 
     "return empty in deleted zone if zone is created again" in {
@@ -424,6 +471,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       deleteZones(testZone).unsafeRunSync()
 
     }
+
     "return an empty list of zones if the user is not authorized to any" in {
       val unauthorized = AuthPrincipal(
         signedInUser = User("not-authorized", "not-authorized", Encrypted("not-authorized")),
