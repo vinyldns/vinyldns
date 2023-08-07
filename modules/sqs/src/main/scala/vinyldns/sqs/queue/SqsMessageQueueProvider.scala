@@ -34,6 +34,7 @@ import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvid
 
 import scala.util.matching.Regex
 import cats.effect.ContextShift
+import vinyldns.core.Messages._
 
 class SqsMessageQueueProvider extends MessageQueueProvider {
   import SqsMessageQueueProvider._
@@ -113,10 +114,9 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 
 object SqsMessageQueueProvider {
   final case class InvalidQueueName(queueName: String)
-      extends Throwable(
-        s"Invalid queue name: $queueName. Must be 1-80 alphanumeric, hyphen or underscore characters. FIFO queues " +
-          "(queue names ending in \".fifo\") are not supported."
-      )
+    extends Throwable(
+      InvalidQueueNameErrorMsg.format(queueName)
+    )
 
   private val logger = LoggerFactory.getLogger(classOf[SqsMessageQueueProvider])
 }

@@ -75,10 +75,10 @@ trait DnsJsonProtocol extends JsonValidation {
   case object RecordSetChangeSerializer extends ValidationSerializer[RecordSetChange] {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetChange] =
       (
-        (js \ "zone").required[Zone]("Missing RecordSetChange.zone"),
-        (js \ "recordSet").required[RecordSet]("Missing RecordSetChange.recordSet"),
-        (js \ "userId").required[String]("Missing RecordSetChange.userId"),
-        (js \ "changeType").required(RecordSetChangeType, "Missing RecordSetChange.changeType"),
+        (js \ "zone").required[Zone](MissingRecordSetZoneMsg),
+        (js \ "recordSet").required[RecordSet](MissingRecordSetMsg),
+        (js \ "userId").required[String](MissingRecordSetUserIdMsg),
+        (js \ "changeType").required(RecordSetChangeType, MissingRecordSetChangeTypeMsg),
         (js \ "status").default(RecordSetChangeStatus, RecordSetChangeStatus.Pending),
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "systemMessage").optional[String],
@@ -104,15 +104,15 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, CreateZoneInput] =
       (
         (js \ "name")
-          .required[String]("Missing Zone.name")
+          .required[String](MissingZoneNameMsg)
           .map(removeWhitespace)
           .map(name => if (name.endsWith(".")) name else s"$name."),
-        (js \ "email").required[String]("Missing Zone.email"),
+        (js \ "email").required[String](MissingZoneEmailMsg),
         (js \ "connection").optional[ZoneConnection],
         (js \ "transferConnection").optional[ZoneConnection],
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
-        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
+        (js \ "adminGroupId").required[String](MissingZoneGroupIdMsg),
         (js \ "backendId").optional[String],
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
@@ -122,16 +122,16 @@ trait DnsJsonProtocol extends JsonValidation {
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
     override def fromJson(js: JValue): ValidatedNel[String, UpdateZoneInput] =
       (
-        (js \ "id").required[String]("Missing Zone.id"),
+        (js \ "id").required[String](MissingZoneIdMsg),
         (js \ "name")
-          .required[String]("Missing Zone.name")
+          .required[String](MissingZoneNameMsg)
           .map(ensureTrailingDot),
-        (js \ "email").required[String]("Missing Zone.email"),
+        (js \ "email").required[String](MissingZoneEmailMsg),
         (js \ "connection").optional[ZoneConnection],
         (js \ "transferConnection").optional[ZoneConnection],
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
-        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
+        (js \ "adminGroupId").required[String](MissingZoneGroupIdMsg),
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
         (js \ "backendId").optional[String],
@@ -142,7 +142,7 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, Algorithm] =
       js match {
         case JString(value) => Algorithm.fromString(value).toValidatedNel
-        case _ => "Unsupported type for key algorithm, must be a string".invalidNel
+        case _ => UnsupportedKeyAlgorithmMsg.invalidNel
       }
 
     override def toJson(a: Algorithm): JValue = JString(a.name)
@@ -152,7 +152,7 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, Encrypted] =
       js match {
         case JString(value) => EncryptFromJson.fromString(value).toValidatedNel
-        case _ => "Unsupported type for zone connection key, must be a string".invalidNel
+        case _ => UnsupportedEncryptedTypeErrorMsg.invalidNel
       }
 
     override def toJson(a: Encrypted): JValue = JString(a.value)
@@ -161,10 +161,10 @@ trait DnsJsonProtocol extends JsonValidation {
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
-        (js \ "name").required[String]("Missing ZoneConnection.name"),
-        (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
-        (js \ "key").required[Encrypted]("Missing ZoneConnection.key"),
-        (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
+        (js \ "name").required[String](MissingZoneConnectionNameMsg),
+        (js \ "keyName").required[String](MissingZoneConnectionKeyNameMsg),
+        (js \ "key").required[Encrypted](MissingZoneConnectionKeyMsg),
+        (js \ "primaryServer").required[String](MissingZoneConnectionServer),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
         ).mapN(ZoneConnection.apply)
   }
@@ -204,25 +204,25 @@ trait DnsJsonProtocol extends JsonValidation {
   case object RecordSetSerializer extends ValidationSerializer[RecordSet] {
     import RecordType._
     override def fromJson(js: JValue): ValidatedNel[String, RecordSet] = {
-      val recordType = (js \ "type").required(RecordType, "Missing RecordSet.type")
+      val recordType = (js \ "type").required(RecordType, MissingRecordSetTypeMsg)
       // This variable is ONLY used for record type checks where the type is already known to be a success.
       // The "getOrElse" is only so that it will cast the type
       val recordTypeGet: RecordType = recordType.getOrElse(A)
       val recordSetResult = (
-        (js \ "zoneId").required[String]("Missing RecordSet.zoneId"),
+        (js \ "zoneId").required[String](MissingRecordSetZoneIdMsg),
         (js \ "name")
-          .required[String]("Missing RecordSet.name")
+          .required[String](MissingRecordSetNameMsg)
           .check(
-            "Record name must not exceed 255 characters" -> checkDomainNameLen,
-            "Record name cannot contain spaces" -> nameDoesNotContainSpaces
+            RecordNameLengthMsg -> checkDomainNameLen,
+            RecordContainsSpaceMsg -> nameDoesNotContainSpaces
           ),
         recordType,
         (js \ "ttl")
-          .required[Long]("Missing RecordSet.ttl")
+          .required[Long](MissingRecordSetTTL)
           .check(
             // RFC 1035.2.3.4 and  RFC 2181.8
-            "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
-            "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
+            RecordSetTTLNotPositiveMsg -> (_ <= 2147483647),
+            RecordSetTTLNotValidMsg -> (_ >= 30)
           ),
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
@@ -237,7 +237,7 @@ trait DnsJsonProtocol extends JsonValidation {
 
       // Put additional record set level checks below
       recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
-        "CNAME record sets cannot contain multiple records" -> { rs =>
+        CnameValidationMsg -> { rs =>
           rs.records.length <= 1
         }
       )
@@ -263,7 +263,7 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetListInfo] =
       (
         RecordSetInfoSerializer.fromJson(js),
-        (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId")
+        (js \ "accessLevel").required[AccessLevel.AccessLevel](MissingRecordSetZoneIdMsg)
         ).mapN(RecordSetListInfo.apply)
 
     override def toJson(rs: RecordSetListInfo): JValue =
@@ -308,8 +308,8 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetGlobalInfo] =
       (
         RecordSetSerializer.fromJson(js),
-        (js \ "zoneName").required[String]("Missing Zone.name"),
-        (js \ "zoneShared").required[Boolean]("Missing Zone.shared"),
+        (js \ "zoneName").required[String](MissingZoneNameMsg),
+        (js \ "zoneShared").required[Boolean](MissingZoneSharedMsg),
         (js \ "ownerGroupName").optional[String]
         ).mapN(RecordSetGlobalInfo.apply)
 
@@ -333,28 +333,28 @@ trait DnsJsonProtocol extends JsonValidation {
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =
     typ match {
-      case RecordType.A => js.required[List[AData]]("Missing A Records")
-      case RecordType.AAAA => js.required[List[AAAAData]]("Missing AAAA Records")
-      case RecordType.CNAME => js.required[List[CNAMEData]]("Missing CNAME Records")
-      case RecordType.DS => js.required[List[DSData]]("Missing DS Records")
-      case RecordType.MX => js.required[List[MXData]]("Missing MX Records")
-      case RecordType.NS => js.required[List[NSData]]("Missing NS Records")
-      case RecordType.PTR => js.required[List[PTRData]]("Missing PTR Records")
-      case RecordType.SOA => js.required[List[SOAData]]("Missing SOA Records")
-      case RecordType.SPF => js.required[List[SPFData]]("Missing SPF Records")
-      case RecordType.SRV => js.required[List[SRVData]]("Missing SRV Records")
-      case RecordType.NAPTR => js.required[List[NAPTRData]]("Missing NAPTR Records")
-      case RecordType.SSHFP => js.required[List[SSHFPData]]("Missing SSHFP Records")
-      case RecordType.TXT => js.required[List[TXTData]]("Missing TXT Records")
-      case _ => s"Unsupported type $typ, valid types include ${RecordType.values}".invalidNel
+      case RecordType.A => js.required[List[AData]](MissingARecordsMsg)
+      case RecordType.AAAA => js.required[List[AAAAData]](MissingAAAARecordsMsg)
+      case RecordType.CNAME => js.required[List[CNAMEData]](MissingCnameRecordsMsg)
+      case RecordType.DS => js.required[List[DSData]](MissingDSRecordsMsg)
+      case RecordType.MX => js.required[List[MXData]](MissingMXRecordsMsg)
+      case RecordType.NS => js.required[List[NSData]](MissingNsRecordsMsg)
+      case RecordType.PTR => js.required[List[PTRData]](MissingPTRRecordsMsg)
+      case RecordType.SOA => js.required[List[SOAData]](MissingSOARecordsMsg)
+      case RecordType.SPF => js.required[List[SPFData]](MissingSPFRecordsMsg)
+      case RecordType.SRV => js.required[List[SRVData]](MissingSRVRecordsMsg)
+      case RecordType.NAPTR => js.required[List[NAPTRData]](MissingNAPTRRecordsMsg)
+      case RecordType.SSHFP => js.required[List[SSHFPData]](MissingSSHFPRecordsMsg)
+      case RecordType.TXT => js.required[List[TXTData]](MissingTXTRecordsMsg)
+      case _ => UnsupportedRecordTypeMsg.format(typ, RecordType.values).invalidNel
     }
 
   case object ASerializer extends ValidationSerializer[AData] {
     override def fromJson(js: JValue): ValidatedNel[String, AData] =
       (js \ "address")
-        .required[String]("Missing A.address")
+        .required[String](MissingAAddressMsg)
         .check(
-          "A must be a valid IPv4 Address" -> ipv4Match
+          InvalidIPv4Msg -> ipv4Match
         )
         .map(AData.apply)
   }
@@ -362,9 +362,9 @@ trait DnsJsonProtocol extends JsonValidation {
   case object AAAASerializer extends ValidationSerializer[AAAAData] {
     override def fromJson(js: JValue): ValidatedNel[String, AAAAData] =
       (js \ "address")
-        .required[String]("Missing AAAA.address")
+        .required[String](MissingAAAAAddressMsg)
         .check(
-          "AAAA must be a valid IPv6 Address" -> ipv6Match
+          InvalidIPv6Msg -> ipv6Match
         )
         .map(AAAAData.apply)
   }
@@ -372,10 +372,10 @@ trait DnsJsonProtocol extends JsonValidation {
   case object CNAMESerializer extends ValidationSerializer[CNAMEData] {
     override def fromJson(js: JValue): ValidatedNel[String, CNAMEData] =
       (js \ "cname")
-        .required[String]("Missing CNAME.cname")
+        .required[String](MissingCnameMsg)
         .check(
-          "CNAME domain name must not exceed 255 characters" -> checkDomainNameLen,
-          "CNAME data must be absolute" -> nameContainsDots
+          CnameLengthMsg -> checkDomainNameLen,
+          CnameAbsoluteMsg -> nameContainsDots
         )
         .map(Fqdn.apply)
         .map(CNAMEData.apply)
@@ -385,14 +385,14 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, MXData] =
       (
         (js \ "preference")
-          .required[Integer]("Missing MX.preference")
+          .required[Integer](MissingMXPreferenceMsg)
           .check(
-            "MX.preference must be a 16 bit integer" -> (i => i <= 65535 && i >= 0)
+            MXPreferenceValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "exchange")
-          .required[String]("Missing MX.exchange")
+          .required[String](MissingMXExchangeMsg)
           .check(
-            "MX.exchange must be less than 255 characters" -> checkDomainNameLen
+            MXExchangeValidationMsg -> checkDomainNameLen
           )
           .map(Fqdn.apply)
         ).mapN(MXData.apply)
@@ -401,10 +401,10 @@ trait DnsJsonProtocol extends JsonValidation {
   case object NSSerializer extends ValidationSerializer[NSData] {
     override def fromJson(js: JValue): ValidatedNel[String, NSData] =
       (js \ "nsdname")
-        .required[String]("Missing NS.nsdname")
+        .required[String](MissingNSNameMsg)
         .check(
-          "NS must be less than 255 characters" -> checkDomainNameLen,
-          NSDataError -> nameContainsDots
+          NSNameValidationMsg -> checkDomainNameLen,
+          NSDataErrorMsg -> nameContainsDots
         )
         .map(Fqdn.apply)
         .map(NSData.apply)
@@ -413,9 +413,9 @@ trait DnsJsonProtocol extends JsonValidation {
   case object PTRSerializer extends ValidationSerializer[PTRData] {
     override def fromJson(js: JValue): ValidatedNel[String, PTRData] =
       (js \ "ptrdname")
-        .required[String]("Missing PTR.ptrdname")
+        .required[String](MissingPTRNameMsg)
         .check(
-          "PTR must be less than 255 characters" -> checkDomainNameLen
+          PTRNameValidationMsg -> checkDomainNameLen
         )
         .map(Fqdn.apply)
         .map(PTRData.apply)
@@ -425,41 +425,41 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, SOAData] =
       (
         (js \ "mname")
-          .required[String]("Missing SOA.mname")
+          .required[String](MissingSOAMNameMsg)
           .check(
-            "SOA.mname must be less than 255 characters" -> checkDomainNameLen
+            SOAMNameValidationMsg -> checkDomainNameLen
           )
           .map(Fqdn.apply),
         (js \ "rname")
-          .required[String]("Missing SOA.rname")
+          .required[String](MissingSOARNameMsg)
           .check(
-            "SOA.rname must be less than 255 characters" -> checkDomainNameLen
+            SOARNameValidationMsg -> checkDomainNameLen
           )
           .map(removeWhitespace),
         (js \ "serial")
-          .required[Long]("Missing SOA.serial")
+          .required[Long](MissingSOASerialMsg)
           .check(
-            "SOA.serial must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
+            SOASerialValidationMsg -> (i => i <= 4294967295L && i >= 0)
           ),
         (js \ "refresh")
-          .required[Long]("Missing SOA.refresh")
+          .required[Long](MissingSOARefreshMsg)
           .check(
-            "SOA.refresh must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
+            SOARefreshValidationMsg -> (i => i <= 4294967295L && i >= 0)
           ),
         (js \ "retry")
-          .required[Long]("Missing SOA.retry")
+          .required[Long](MissingSOARetryMsg)
           .check(
-            "SOA.retry must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
+            SOARetryValidationMsg -> (i => i <= 4294967295L && i >= 0)
           ),
         (js \ "expire")
-          .required[Long]("Missing SOA.expire")
+          .required[Long](MissingSOAExpireMsg)
           .check(
-            "SOA.expire must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
+            SOAExpireValidationMsg -> (i => i <= 4294967295L && i >= 0)
           ),
         (js \ "minimum")
-          .required[Long]("Missing SOA.minimum")
+          .required[Long](MissingSOAMinimumMsg)
           .check(
-            "SOA.minimum must be an unsigned 32 bit number" -> (i => i <= 4294967295L && i >= 0)
+            SOAMinimumValidationMsg -> (i => i <= 4294967295L && i >= 0)
           )
         ).mapN(SOAData.apply)
   }
@@ -467,9 +467,9 @@ trait DnsJsonProtocol extends JsonValidation {
   case object SPFSerializer extends ValidationSerializer[SPFData] {
     override def fromJson(js: JValue): ValidatedNel[String, SPFData] =
       (js \ "text")
-        .required[String]("Missing SPF.text")
+        .required[String](MissingSPFTextMsg)
         .check(
-          "SPF record must be less than 64764 characters" -> (_.length < 64764)
+          SPFValidationMsg -> (_.length < 64764)
         )
         .map(SPFData.apply)
   }
@@ -478,24 +478,24 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, SRVData] =
       (
         (js \ "priority")
-          .required[Integer]("Missing SRV.priority")
+          .required[Integer](MissingSRVPriorityMsg)
           .check(
-            "SRV.priority must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+            SRVPriorityValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "weight")
-          .required[Integer]("Missing SRV.weight")
+          .required[Integer](MissingSRVWeightMsg)
           .check(
-            "SRV.weight must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+            SRVWeightValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "port")
-          .required[Integer]("Missing SRV.port")
+          .required[Integer](MissingSRVPortMsg)
           .check(
-            "SRV.port must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+            SRVPortValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "target")
-          .required[String]("Missing SRV.target")
+          .required[String](MissingSRVTargetMsg)
           .check(
-            "SRV.target must be less than 255 characters" -> checkDomainNameLen
+            SRVTargetValidationMsg -> checkDomainNameLen
           )
           .map(Fqdn.apply)
         ).mapN(SRVData.apply)
@@ -505,35 +505,35 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, NAPTRData] =
       (
         (js \ "order")
-          .required[Integer]("Missing NAPTR.order")
+          .required[Integer](MissingNAPTROrderMsg)
           .check(
-            "NAPTR.order must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+            NAPTROrderValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "preference")
-          .required[Integer]("Missing NAPTR.preference")
+          .required[Integer](MissingNAPTRPreferenceMsg)
           .check(
-            "NAPTR.preference must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+            NAPTRPreferenceValidationMsg -> (i => i <= 65535 && i >= 0)
           ),
         (js \ "flags")
-          .required[String]("Missing NAPTR.flags")
+          .required[String](MissingNAPTRFlagsMsg)
           .check(
-            "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P" -> validateNaptrFlag
+            NAPTRFlagsValidationMsg -> validateNaptrFlag
           ),
         (js \ "service")
-          .required[String]("Missing NAPTR.service")
+          .required[String](MissingNAPTRServiceMsg)
           .check(
-            "NAPTR.service must be less than 255 characters" -> checkDomainNameLen
+            NAPTRServiceValidationMsg -> checkDomainNameLen
           ),
         (js \ "regexp")
-          .required[String]("Missing NAPTR.regexp")
+          .required[String](MissingNAPTRRegexMsg)
           .check(
-            "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty" -> validateNaptrRegexp
+            NAPTRRegexValidationMsg -> validateNaptrRegexp
           ),
 
         (js \ "replacement")
-          .required[String]("Missing NAPTR.replacement")
+          .required[String](MissingNAPTRReplacementMsg)
           .check(
-            "NAPTR.replacement must be less than 255 characters" -> checkDomainNameLen
+            NAPTRReplacementValidationMsg -> checkDomainNameLen
           )
           .map(Fqdn.apply)
         ).mapN(NAPTRData.apply)
@@ -543,16 +543,16 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, SSHFPData] =
       (
         (js \ "algorithm")
-          .required[Integer]("Missing SSHFP.algorithm")
+          .required[Integer](MissingSSHFPAlgorithmMsg)
           .check(
-            "SSHFP.algorithm must be an unsigned 8 bit number" -> (i => i <= 255 && i >= 0)
+            SSHFPAlgorithmValidationMsg -> (i => i <= 255 && i >= 0)
           ),
         (js \ "type")
-          .required[Integer]("Missing SSHFP.type")
+          .required[Integer](MissingSSHFPTypeMsg)
           .check(
-            "SSHFP.type must be an unsigned 8 bit number" -> (i => i <= 255 && i >= 0)
+            SSHFPTypeValidationMsg -> (i => i <= 255 && i >= 0)
           ),
-        (js \ "fingerprint").required[String]("Missing SSHFP.fingerprint")
+        (js \ "fingerprint").required[String](MissingSSHFPFingerprintMsg)
         ).mapN(SSHFPData.apply)
 
     // necessary because type != typ
@@ -566,30 +566,30 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, DSData] =
       (
         (js \ "keytag")
-          .required[Integer]("Missing DS.keytag")
-          .check("DS.keytag must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)),
+          .required[Integer](MissingDSKeytagMsg)
+          .check(DSKeytagValidationMsg -> (i => i <= 65535 && i >= 0)),
         (js \ "algorithm")
-          .required[Integer]("Missing DS.algorithm")
+          .required[Integer](MissingDSAlgorithmMsg)
           .map(DnsSecAlgorithm(_))
           .andThen {
             case DnsSecAlgorithm.UnknownAlgorithm(x) =>
-              s"Algorithm $x is not a supported DNSSEC algorithm".invalidNel
+              UnsupportedDNSSECMsg.format(x).invalidNel
             case supported => supported.validNel
           },
         (js \ "digesttype")
-          .required[Integer]("Missing DS.digesttype")
+          .required[Integer](MissingDSDigestTypeMsg)
           .map(DigestType(_))
           .andThen {
             case DigestType.UnknownDigestType(x) =>
-              s"Digest Type $x is not a supported DS record digest type".invalidNel
+              UnsupportedDigestTypeMsg.format(x).invalidNel
             case supported => supported.validNel
           },
         (js \ "digest")
-          .required[String]("Missing DS.digest")
+          .required[String](MissingDSDigestMsg)
           .map(ByteVector.fromHex(_))
           .andThen {
             case Some(v) => v.validNel
-            case None => "Could not convert digest to valid hex".invalidNel
+            case None => DigestConvertMsg.invalidNel
           }
         ).mapN(DSData.apply)
 
@@ -603,9 +603,9 @@ trait DnsJsonProtocol extends JsonValidation {
   case object TXTSerializer extends ValidationSerializer[TXTData] {
     override def fromJson(js: JValue): ValidatedNel[String, TXTData] =
       (js \ "text")
-        .required[String]("Missing TXT.text")
+        .required[String](MissingTXTTextMsg)
         .check(
-          "TXT record must be less than 64764 characters" -> (_.length < 64764)
+          TXTRecordValidationMsg -> (_.length < 64764)
         )
         .map(TXTData.apply)
   }
