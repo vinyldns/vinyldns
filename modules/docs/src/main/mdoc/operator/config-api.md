@@ -652,6 +652,33 @@ v6-discovery-nibble-boundaries {
 }
 ```
 
+### Configure Messages
+The messages displayed to the users can be configured in VinylDNS. If you wish to change any existing message, you can do
+it using this configuration settings. Visit `Messages.scala` file present in `core` directory to see all the existing messages.
+Copy the existing message you want to change from `Messages.scala` and place it in `text` field. Enter the new message in
+`override-text` field. The new message in `override-text` will replace the existing message in `text` and display it to the user.
+Have a look on placeholders (`%s`, `%d` etc.) while making changes, else you may run into errors.
+
+```yaml
+# Configure Messages. Override existing messages with new messages. Refer Messages.scala file for existing messages
+# Have a look on placeholders while making changes, else you may face errors
+  messages = [
+      # Place the existing message present at Messages.scala file in 'text' and the new message in 'override-text'
+      {
+          text = "Search must contain at least two letters or numbers to perform a RecordSet Search."
+          override-text = "Record Name Filter field must contain at least two letters or numbers to perform a RecordSet Search."
+      },
+      {
+          text = "NS data must absolute"
+          override-text = "NS data must be a positive integer"
+      },
+      {
+          text = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group."
+          override-text = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group. Visit FAQ for more information."
+      }
+]
+```
+
 ### Dotted Hosts
 
 Configuration setting that determines the zones, users (either individual or based on group) and record types that are 
