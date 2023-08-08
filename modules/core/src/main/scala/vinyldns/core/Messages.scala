@@ -134,11 +134,11 @@ object Messages {
 
   val InvalidIPv4CNameErrorMsg: String = "Invalid Cname: \"%s\", Valid CNAME record data should not be an IP address".orConfig
 
-  val InvalidForwardCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, slashes, underscores, and hyphens, joined by dots, and terminated with a dot."
+  val InvalidForwardCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, slashes, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
-  val InvalidReverseCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."
+  val InvalidReverseCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
-  val InvalidUpdateRequestErrorMsg: String = "Cannot perform request for the record \"%s\". Add and Delete for the record with same record data exists in the batch."
+  val InvalidUpdateRequestErrorMsg: String = "Cannot perform request for the record \"%s\". Add and Delete for the record with same record data exists in the batch.".orConfig
 
   /* RecordSetValidations.scala */
   val RecordNameFilterErrorMsg: String = "Record Name Filter field must contain at least two letters or numbers and cannot have wildcard at both the start and end.".orConfig
@@ -184,18 +184,18 @@ object Messages {
   val InvalidPtrErrorMsg: String = "PTR is not valid in forward lookup zone".orConfig
 
   val InvalidRequestErrorMsg: String = "Record with fqdn '%s.%s' cannot be created. " +
-    "Please check if a record with the same FQDN and type already exist and make the change there."
+    "Please check if a record with the same FQDN and type already exist and make the change there.".orConfig
 
-  val RtypeOrUserNotAllowedErrorMsg: String = "Record type is not allowed or the user is not authorized to create a dotted host in the zone '%s'"
+  val RtypeOrUserNotAllowedErrorMsg: String = "Record type is not allowed or the user is not authorized to create a dotted host in the zone '%s'".orConfig
 
-  val RDataWithConsecutiveDotsErrorMsg: String = "RecordSet Data cannot contain consecutive 'dot' character. RData: '%s'"
+  val RDataWithConsecutiveDotsErrorMsg: String = "RecordSet Data cannot contain consecutive 'dot' character. RData: '%s'".orConfig
 
-  val IPv4inCnameErrorMsg: String = "Invalid CNAME: %s, valid CNAME record data cannot be an IP address."
+  val IPv4inCnameErrorMsg: String = "Invalid CNAME: %s, valid CNAME record data cannot be an IP address.".orConfig
 
   val MoreDotsThanAllowedErrorMsg: String = "RecordSet with name %s has more dots than that is allowed in config for this zone " +
-    "which is, 'dots-limit = %s'."
+    "which is, 'dots-limit = %s'.".orConfig
 
-  val InvalidEndingErrorMsg: String = "RecordSet name cannot end with a dot, unless it's an apex record."
+  val InvalidEndingErrorMsg: String = "RecordSet name cannot end with a dot, unless it's an apex record.".orConfig
 
   /* BatchChangeErrors.scala */
   val BatchChangeNotFoundErrorMsg: String = "Batch change with id %s cannot be found".orConfig
@@ -441,8 +441,7 @@ object Messages {
   val CannotViewRecordErrorMsg: String = "User %s does not have access to view %s.%s".orConfig
 
   /* MembershipValidations.scala */
-  val hasNoMembersAndAdminsErrorMsg: String =
-    "Group must have at least one member and one admin".orConfig
+  val hasNoMembersAndAdminsErrorMsg: String = "Group must have at least one member and one admin".orConfig
 
   val NoAuthorizationErrorMsg: String = "Not authorized".orConfig
 
@@ -502,8 +501,7 @@ object Messages {
   /* ZoneService.scala */
   val UnknownGroupNameMsg: String = "Unknown group name".orConfig
 
-  val ZoneAlreadyExistsErrorMsg: String =
-    "Zone with name %s already exists. Please contact %s to request access to the zone.".orConfig
+  val ZoneAlreadyExistsErrorMsg: String = "Zone with name %s already exists. Please contact %s to request access to the zone.".orConfig
 
   val ZoneIdNotFoundErrorMsg: String = "Zone with id %s does not exists".orConfig
 
@@ -513,13 +511,12 @@ object Messages {
 
   val InvalidCronStringErrorMsg: String = "Invalid cron expression. Please enter a valid cron expression in 'recurrenceSchedule'.".orConfig
 
-  val UnauthorizedSyncScheduleErrorMsg: String = "User '%s' is not authorized to schedule zone sync in this zone."
+  val UnauthorizedSyncScheduleErrorMsg: String = "User '%s' is not authorized to schedule zone sync in this zone.".orConfig
 
   /* ZoneValidations.scala */
   val RecentSyncErrorMsg: String = "Zone %s was recently synced. Cannot complete sync".orConfig
 
-  val InvalidACLRuleErrorMsg: String =
-    "Invalid ACL rule: ACL rules must have a group or user id".orConfig
+  val InvalidACLRuleErrorMsg: String = "Invalid ACL rule: ACL rules must have a group or user id".orConfig
 
   val CIDRErrorMsg: String = "PTR types must have no mask or a valid CIDR mask: Invalid CIDR block".orConfig
 
@@ -529,8 +526,7 @@ object Messages {
 
   val CreateSharedZoneErrorMsg: String = "Not authorized to create shared zones.".orConfig
 
-  val UpdateSharedZoneErrorMsg: String =
-    "Not authorized to update zone shared status from %b to %b.".orConfig
+  val UpdateSharedZoneErrorMsg: String = "Not authorized to update zone shared status from %b to %b.".orConfig
 
   /* JsonValidation.scala */
   val UnexpectedExtractionErrorMsg: String = "Extraction.extract returned unexpected type".orConfig
@@ -544,8 +540,7 @@ object Messages {
   /* Route53Backend.scala */
   val HostedZoneErrorMsg: String = "Unable to find hosted zone for zone name %s".orConfig
 
-  val RecordConversionErrorMsg: String =
-    "Unable to convert record set to route 53 format for %s".orConfig
+  val RecordConversionErrorMsg: String = "Unable to convert record set to route 53 format for %s".orConfig
 
   /* SqsMessage.scala */
   val SqsParseErrorMsg: String = "Unable to parse SQS Message with ID '%s'".orConfig
@@ -555,8 +550,7 @@ object Messages {
   val SqsInvalidCommand: String = "Invalid command message type '%s'".orConfig
 
   /* SqsMessageQueue.scala */
-  val InvalidDurationErrorMsg: String =
-    "Invalid duration: %d seconds. Duration must be between %d-%d seconds.".orConfig
+  val InvalidDurationErrorMsg: String = "Invalid duration: %d seconds. Duration must be between %d-%d seconds.".orConfig
 
   /* SqsMessageQueueProvider.scala */
   val InvalidQueueNameErrorMsg: String = "Invalid queue name: %s. Must be 1-80 alphanumeric, hyphen or underscore characters. " +
