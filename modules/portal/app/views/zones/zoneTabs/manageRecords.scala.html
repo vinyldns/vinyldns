@@ -59,37 +59,41 @@
     <!-- START RECORD TABLE -->
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h3 class="panel-title">Records {{ getRecordPageTitle() }}</h3>
-    </div>
-
-    <div class="panel-body">
-      <div class="vinyldns-panel-top">
-        <div class="btn-group">
-            <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
-            <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
-            <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
-        </div>
-
-        <div>
-            <form class="input-group" ng-submit="refreshRecords()">
-                <div class="input-group">
-                    <span class="input-group-btn">
-                        <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
-                    </span>
-                    <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
-                </div>
+        <div class="row">
+            <div class="col-md-10">
+                <span class="panel-title bolder-font-weight">Records</span>
+            </div>
+            <div class="col-md-2 pull-right">
+                <form class="input-group remove-bottom-margin" ng-submit="refreshRecords()">
+                    <div class="input-group remove-bottom-margin">
+                        <span class="input-group-btn">
+                            <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                        </span>
+                        <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
+                    </div>
+                </form>
                 <div class="dropdown">
                     <a class="record-type-filter-heading force-cursor dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filter By Record Type <i class="fa fa-chevron-down"></i></a>
                     <ul class="dropdown-menu record-type-filters" aria-labelledby="dropdownMenu1">
                         <li ng-repeat="recordType in readRecordTypes"><input type="checkbox" ng-checked="selectedRecordTypes.indexOf(recordType) != -1" ng-click="toggleCheckedRecordType(recordType)"> {{recordType}}</li>
                     </ul>
                 </div>
-            </form>
+            </div>
         </div>
-      </div>
+    </div>
+
+    <div class="panel-body">
+        <div class="vinyldns-panel-top">
+            <div class="btn-group">
+                <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
+                <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
+                <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+            </div>
+        </div>
 
       <!-- PAGINATION -->
-      <div class="dataTables_paginate">
+        <div class="dataTables_paginate vinyldns_paginate">
+          <span class="vinyldns_page_number">{{ getRecordPageTitle() }}</span>
           <ul class="pagination">
               <li class="paginate_button previous">
                   <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
@@ -345,18 +349,19 @@
             </tbody>
         </table>
 
-      <!-- PAGINATION -->
-      <div class="dataTables_paginate">
-          <ul class="pagination">
-              <li class="paginate_button previous">
-                  <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
-              </li>
-              <li class="paginate_button next">
-                  <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
-              </li>
-          </ul>
-      </div>
-      <!-- END PAGINATION -->
+        <!-- PAGINATION -->
+        <div class="dataTables_paginate vinyldns_paginate">
+            <span class="vinyldns_page_number">{{ getRecordPageTitle() }}</span>
+            <ul class="pagination">
+                <li class="paginate_button previous">
+                    <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                </li>
+                <li class="paginate_button next">
+                    <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                </li>
+            </ul>
+        </div>
+        <!-- END PAGINATION -->
 
     </div>
     <div class="panel-footer"></div>
