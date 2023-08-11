@@ -85,7 +85,7 @@
                 $.ajax({
                   url: "/api/recordsets?maxItems=100",
                   dataType: "json",
-                  data: "recordNameFilter="+request.term+"%25&nameSort=asc",
+                  data: {recordNameFilter: request.term, nameSort: $scope.nameSort},
                   success: function( data ) {
                       const recordSearch =  JSON.parse(JSON.stringify(data));
                       response($.map(recordSearch.recordSets, function(item) {
