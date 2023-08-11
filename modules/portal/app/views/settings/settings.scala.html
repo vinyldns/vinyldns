@@ -2,6 +2,8 @@
 
 @content = {
 <!-- PAGE CONTENT -->
+
+
 <div class="right_col" role="main">
 
     <!-- START BREADCRUMB -->
@@ -17,7 +19,6 @@
         </h3>
     </div>
     <!-- END PAGE TITLE -->
-
     <!-- PAGE CONTENT WRAPPER -->
     <div class="page-content-wrap">
 
@@ -29,47 +30,69 @@
 
         <!-- START RECORD TABLE -->
         <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title">Settings</h3>
-            </div>
-
             <div class="panel-body">
-                <li><a href="/download-creds-file/@rootAccountName-vinyldns-credentials.csv">
-                    Download API Credentials<span aria-hidden="true"></span></a>
-                </li>
-                <li><a href="" class="mb-control" data-toggle="modal" data-target="#mb-creds">Regenerate Credentials<span></span></a></li>
-                <li><a href="" class="mb-control" data-toggle="modal" data-target="#mb-signout">Logout<span></span></a></li>
-
-                <!-- PAGINATION -->
-                <div class="dataTables_paginate">
-                    <ul class="pagination">
-                        <li class="paginate_button previous">
-                            <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
-                        </li>
-                        <li class="paginate_button next">
-                            <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
-                        </li>
-                    </ul>
+                <div class="vinyldns-panel-top">
+                <div>
+                    <div>
+                        <h class="panel-title">
+                            <a class="collapse-link" data-toggle="collapse" data-target="#collapseAccount" aria-expanded="false" aria-controls="collapseAccount">
+                               Accounts <span class="fa fa-chevron-down"></span>
+                            </a>
+                        </h>
+                    </div>
+                    <div class="collapse" id="collapseAccount">
+                        <br>
+                        <div>
+                            API Credentials
+                        <button class="btn btn-info btn-sm float-right" ><a href="/download-creds-file/@rootAccountName-vinyldns-credentials.csv">
+                            <span class="fa fa-download"></span> Download API Credentials<span aria-hidden="true"></span></a>
+                        </button>
+                        <button  class="btn btn-info btn-sm"><a href="" class="mb-control" data-toggle="modal" data-target="#mb-creds">
+                            <span class="fa fa-refresh"></span> Regenerate Credentials<span aria-hidden="true"></span></a></button>
+                        </div>
+                    </div>
                 </div>
-                <!-- END PAGINATION -->
-
-
-                <!-- PAGINATION -->
-                <div class="dataTables_paginate">
-                    <ul class="pagination">
-                        <li class="paginate_button previous">
-                            <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
-                        </li>
-                        <li class="paginate_button next">
-                            <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
-                        </li>
-                    </ul>
-                </div>
-                <!-- END PAGINATION -->
-
             </div>
-            <div class="panel-footer"></div>
         </div>
+            </div>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="vinyldns-panel-top">
+                    <div>
+                        <div>
+                            <h class="panel-title">
+                                <a class="collapse-link" data-toggle="collapse" data-target="#collapseTheme" aria-expanded="false" aria-controls="collapseTheme">
+                                    Appearance <span class="fa fa-chevron-down"></span>
+                                </a>
+                            </h>
+                        </div>
+                        <br>
+                        <div class="collapse" id="collapseTheme">
+                            <div>
+                                Visual <p5 id="theme-toggle-text">light</p5> mode
+                                <!--<label class="navbar-right switch">
+                                <input id="theme-toggle" class="switch-checkbox" type="checkbox"/>
+                                <span class="slider-theme"></span>
+                            </label>-->
+                                <input type="checkbox" id="toggle_checkbox">
+                                <label for="toggle_checkbox">
+                                    <div id="star">
+                                        <div class="star" id="star-1">★</div>
+                                        <div class="star" id="star-2">★</div>
+                                    </div>
+                                    <div id="moon"></div>
+                                </label>
+                            </div>
+                            <br>
+                            <div>
+                            <img id="theme-img" width="300" height="200"  />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
         <!-- END RECORD TABLE -->
 
     </div>

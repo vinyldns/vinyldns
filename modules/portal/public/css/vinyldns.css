@@ -308,9 +308,9 @@ body {
 }
 
 .vinyldns-nav-title {
+    background: #FFFFFF;
     padding-left: 5px;
-    border-bottom: 3px solid var(--background-color-shade);
-    background: var(--background-color);
+    border-bottom: 3px solid #1b1e24;
 }
 
 .vinyldns-side-menu {
@@ -363,7 +363,6 @@ body {
 .nav-sm .vinyldns-logo-small {
     display: block!important;
 }
-
 
 /* GROUP MANAGER SWITCH */
 label.switch {
@@ -472,6 +471,7 @@ label.switch {
 .panel{
 background-color: var(--background-color);
           color: var(--text-color);
+           border-color: #E8E8E8;
           }
 
 .panel > .panel-heading{
@@ -494,6 +494,12 @@ background-color: var(--background-color);
                         color: var(--text-color);
                         }
 
+.nav.navbar-nav> li > ul {
+width: 20px;;
+              background-color: var(--background-color);
+                        color: var(--text-color);
+                        }
+
 .update-zone-msg {
   display: flex;
   align-items: center;
@@ -511,6 +517,11 @@ background-color: var(--background-color);
         display: none;
         color: var(--text-color);
     }
+    .nav-md > .container > .main_container > .top_nav > .nav_menu > nav > .navbar-nav> .open > .dropdown-usermenu {
+            width: 100%;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
     .nav-md > .container > .main_container > footer{
             color: var(--text-color);
             background-color: var(--background-color);
@@ -544,11 +555,6 @@ background-color: var(--background-color);
 }
 
 .btn {
-   background-color: var(--background-color);
-     color: var(--text-color);
-}
-
-.dropdown-menu {
    background-color: var(--background-color);
      color: var(--text-color);
 }
@@ -749,4 +755,116 @@ input[type="text"] select{
 
 #set-dropdown-width {
     width: 4em;
+}
+
+#toggle_checkbox
+{
+    display: none;
+}
+
+label
+{
+    cursor: pointer;
+    left: 0px;
+    display: block;
+    position: relative;
+    width: 60px;
+    height: 30px;
+    margin: 0 auto;
+    background-color: #979797;
+    border-radius: 20px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    transition: 0.3s ease background-color;
+    overflow: hidden;
+    border-color: rgba(0, 0, 0, 0.1);
+
+}
+
+#star
+{
+    position: absolute;
+    top: 13px;
+    left: 13px;
+    width: 10px;
+    height: 10px;
+    background-color: #979797;
+    transform: scale(1);
+    border-radius: 50%;
+    transition: 0.3s ease top, 0.3s ease left, 0.3s ease transform, 0.3s ease background-color;
+    z-index: 1;
+}
+
+#star-1
+{
+    position: relative;
+}
+
+#star-2
+{
+    position: absolute;
+    transform: rotateZ(36deg);
+}
+
+.star
+{
+    top: 0;
+    left: -7px;
+    font-size: 24px;
+    line-height: 2px;
+    color: #F9F9F9;
+    transition: 0.3s ease color;
+}
+
+#moon
+{
+    position: absolute;
+    bottom: -22px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background-color: #F9F9F9;
+    border-radius: 50%;
+    transition: 0.3s ease bottom;
+}
+
+#moon:before
+{
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: -7px;
+    width: 20px;
+    height: 20px;
+    background-color:#979797;
+    border-radius: 50%;
+    transition: 0.3s ease background-color;
+}
+
+#toggle_checkbox:checked + label
+{
+    background-color: #979797;
+}
+
+#toggle_checkbox:checked + label #star
+{
+    top: 6px;
+    left: 34px;
+    transform: scale(0.3);
+    background-color: #979797;
+}
+
+#toggle_checkbox:checked + label .star
+{
+    color: #F9F9F9;
+}
+
+#toggle_checkbox:checked + label #moon
+{
+    bottom: 4px;
+}
+
+#toggle_checkbox:checked + label #moon:before
+{
+    background-color: #979797;
 }
