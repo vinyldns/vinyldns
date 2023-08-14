@@ -269,7 +269,7 @@ class RecordSetRoute(
         }
       }
     } ~
-    path("metrics" / "health" / "recordsetchangesfailure") {
+    path("metrics" / "health" / "zones" / Segment / "recordsetchangesfailure") {zoneId =>
       (get & monitor("Endpoint.listFailedRecordSetChanges")) {
         parameters("startFrom".as[Int].?(0), "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
           (startFrom: Int, maxItems: Int) =>
@@ -279,7 +279,7 @@ class RecordSetRoute(
                 errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
                   s"and $DEFAULT_MAX_ITEMS inclusive"
               ){
-                authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_, startFrom, maxItems)) {
+                authenticateAndExecute(recordSetService.listFailedRecordSetChanges(_, Some(zoneId), startFrom, maxItems)) {
                   changes =>
                     complete(StatusCodes.OK, changes)
                 }

@@ -63,6 +63,7 @@ class MySqlRecordChangeRepository
     sql"""
          |SELECT data
          |  FROM record_change
+         |  WHERE zone_id = {zoneId}
          |  ORDER BY created DESC
     """.stripMargin
 
@@ -170,16 +171,17 @@ class MySqlRecordChangeRepository
       }
     }
 
-  def listFailedRecordSetChanges(maxItems: Int, startFrom: Int): IO[ListFailedRecordSetChangesResults] =
+  def listFailedRecordSetChanges(zoneId: Option[String], maxItems: Int, startFrom: Int): IO[ListFailedRecordSetChangesResults] =
     monitor("repo.RecordChange.listFailedRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
           val queryResult = LIST_RECORD_CHANGES
+            .bindByName('zoneId -> zoneId.get)
             .map(toRecordSetChange)
             .list()
             .apply()
           val failedRecordSetChanges = queryResult.filter(rc => rc.status == RecordSetChangeStatus.Failed).drop(startFrom).take(maxItems)
-          val nextId = if (failedRecordSetChanges.size < maxItems) 0 else startFrom + maxItems
+          val nextId = if (failedRecordSetChanges.size < maxItems) 0 else startFrom + maxItems + 1
           ListFailedRecordSetChangesResults(failedRecordSetChanges,nextId,startFrom,maxItems)
         }
       }
