@@ -65,5 +65,13 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("scheduled-changes-enabled" -> true)
       Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beTrue
     }
+    "default to 3000 if membership-routing-max-groups-list-limit is not found" in {
+      val config = Map("vinyldns.version" -> "foo-bar")
+      Meta(Configuration.from(config)).maxGroupItemsDisplay must beEqualTo(3000)
+    }
+    "get the membership-routing-max-groups-list-limit value in config" in {
+      val config = Map("api.limits.membership-routing-max-groups-list-limit" -> 3100)
+      Meta(Configuration.from(config)).maxGroupItemsDisplay must beEqualTo(3100)
+    }
   }
 }
