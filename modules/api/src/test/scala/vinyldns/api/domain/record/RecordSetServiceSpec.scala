@@ -2017,11 +2017,11 @@ class RecordSetServiceSpec
 
         doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
           .when(mockRecordChangeRepo)
-          .listFailedRecordSetChanges(100,0)
+          .listFailedRecordSetChanges(Some(okZone.id),100,0)
 
 
         val result: ListFailedRecordSetChangesResponse =
-          underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,Some(okZone.id)).value.unsafeRunSync().toOption.get
 
         val changesWithName =
           ListFailedRecordSetChangesResponse(
@@ -2042,11 +2042,11 @@ class RecordSetServiceSpec
 
         doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
           .when(mockRecordChangeRepo)
-          .listFailedRecordSetChanges(3,2)
+          .listFailedRecordSetChanges(Some(okZone.id),3,2)
 
 
         val result: ListFailedRecordSetChangesResponse =
-          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,2,3).value.unsafeRunSync().toOption.get
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,Some(okZone.id),2,3).value.unsafeRunSync().toOption.get
 
         val changesWithName =
           ListFailedRecordSetChangesResponse(
