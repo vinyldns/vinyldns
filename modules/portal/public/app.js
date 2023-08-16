@@ -19,45 +19,6 @@ angular.module('vinyldns', [
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
         $scope.alerts = [];
-        const themeToggle = document.getElementById('toggle_checkbox')
-        const themeToggleImg = document.getElementById('theme-img')
-        const themeLightImg = "/assets/images/vinyldns-portal-day.png"
-        const themeDarkImg = "/assets/images/vinyldns-portal-night.png"
-        const themeToggleText = document.getElementById('theme-toggle-text')
-        const userData = {};
-
-
-
-        // Function to apply the dark theme
-        function applyDarkTheme() {
-          document.body.classList.add('dark-theme');
-          themeToggleImg.src = themeDarkImg
-          themeToggleText.innerHTML = "dark";
-          sessionStorage.setItem('darkTheme', 'true');
-        }
-
-        // Function to remove the dark theme
-        function removeDarkTheme() {
-          document.body.classList.remove('dark-theme');
-          themeToggleImg.src = themeLightImg
-          themeToggleText.innerHTML = "light";
-          sessionStorage.setItem('darkTheme', 'false');
-        }
-
-        const savedTheme = sessionStorage.getItem('darkTheme');
-        if (savedTheme === 'true') {
-          applyDarkTheme();
-          themeToggle.checked = JSON.parse(savedTheme);
-        }
-
-        themeToggle.addEventListener('click', () => {
-          const isDarkTheme = document.body.classList.contains('dark-theme');
-          if (isDarkTheme) {
-            removeDarkTheme();
-          } else {
-            applyDarkTheme();
-          }
-        })
 
         $scope.regenerateCredentials = function() {
             document.body.style.cursor = 'wait';

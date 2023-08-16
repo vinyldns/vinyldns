@@ -273,6 +273,10 @@ body {
     background: var(--background-color);
 }
 
+.text-normal {
+    font-weight: normal;
+}
+
 .left_col {
   background: #1b1e24;
 }
@@ -765,7 +769,8 @@ input[type="text"] select{
 label
 {
     cursor: pointer;
-    left: 0px;
+    top: -8px;
+    left: -450px;
     display: block;
     position: relative;
     width: 60px;
@@ -864,7 +869,7 @@ label
     bottom: 4px;
 }
 
-#toggle_checkbox:checked + label #moon:before
+    #toggle_checkbox:checked + label #moon:before
 {
     background-color: #979797;
 }
