@@ -184,6 +184,9 @@ class RecordSetServiceSpec
       doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(Set.empty, None, None)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
 
       val result: RecordSetChange =
           underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
@@ -468,7 +471,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(okGroup.id)
     }
-    "fail if user is in not owner group" in {
+    "fail if user is not in owner group" in {
       val record = aaaa.copy(ownerGroupId = Some(dummyGroup.id))
 
       doReturn(IO.pure(List()))
@@ -583,6 +586,9 @@ class RecordSetServiceSpec
     doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
       .when(mockUserRepo)
       .getUsers(dummyGroup.memberIds, None, None)
+    doReturn(IO.pure(Some(xyzGroup)))
+      .when(mockGroupRepo)
+      .getGroup(xyzGroup.id)
 
     // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
     val result: RecordSetChange =
@@ -787,6 +793,9 @@ class RecordSetServiceSpec
     doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
       .when(mockUserRepo)
       .getUsers(dummyGroup.memberIds, None, None)
+    doReturn(IO.pure(Some(abcGroup)))
+      .when(mockGroupRepo)
+      .getGroup(abcGroup.id)
 
     // fails as only two properties within dotted hosts config (zones and record types) are satisfied while user is not allowed
     val result = underTest.addRecordSet(record, abcAuth).value.unsafeRunSync().swap.toOption.get
@@ -1679,7 +1688,8 @@ class RecordSetServiceSpec
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC,
-            recordOwnerGroupFilter = Some("owner group id")
+            recordOwnerGroupFilter = Some("owner group id") ,
+            recordTypeSort = RecordTypeSort.NONE
           )
         )
       ).when(mockRecordRepo)
@@ -1690,7 +1700,8 @@ class RecordSetServiceSpec
           recordNameFilter = any[Option[String]],
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
-          nameSort = any[NameSort.NameSort]
+          nameSort = any[NameSort.NameSort],
+          recordTypeSort = any[RecordTypeSort.RecordTypeSort]
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1702,7 +1713,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = sharedAuth
+            authPrincipal = sharedAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1727,7 +1739,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -1751,7 +1764,8 @@ class RecordSetServiceSpec
             List(sharedZoneRecord),
             recordNameFilter = Some("aaaa*"),
             nameSort = NameSort.ASC,
-            recordOwnerGroupFilter = Some("owner group id")
+            recordOwnerGroupFilter = Some("owner group id"),
+            recordTypeSort = RecordTypeSort.NONE
           )
         )
       ).when(mockRecordDataRepo)
@@ -1774,7 +1788,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = sharedAuth
+            authPrincipal = sharedAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1799,7 +1814,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -1818,7 +1834,8 @@ class RecordSetServiceSpec
         IO.pure(
           ListRecordSetResults(
             List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup),
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.ASC
           )
         )
       ).when(mockRecordRepo)
@@ -1829,7 +1846,8 @@ class RecordSetServiceSpec
           recordNameFilter = None,
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordTypeSort = RecordTypeSort.ASC
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1842,7 +1860,8 @@ class RecordSetServiceSpec
             authPrincipal = sharedAuth,
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
-            nameSort = NameSort.ASC
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1863,7 +1882,7 @@ class RecordSetServiceSpec
         .when(mockGroupRepo)
         .getGroups(Set())
 
-      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC)))
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa), nameSort = NameSort.ASC, recordTypeSort = RecordTypeSort.NONE)))
         .when(mockRecordRepo)
         .listRecordSets(
           zoneId = Some(okZone.id),
@@ -1872,7 +1891,8 @@ class RecordSetServiceSpec
           recordNameFilter = None,
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
-          nameSort = NameSort.ASC
+          nameSort = NameSort.ASC,
+          recordTypeSort = RecordTypeSort.ASC
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1885,7 +1905,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
-            authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
+            authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty),
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1904,7 +1925,8 @@ class RecordSetServiceSpec
             recordTypeFilter = None,
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
-            authPrincipal = okAuth
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -1919,13 +1941,13 @@ class RecordSetServiceSpec
 
       doReturn(IO.pure(ListRecordSetChangesResults(completeRecordSetChanges)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = okZone.id, startFrom = None, maxItems = 100)
+        .listRecordSetChanges(zoneId = Some(okZone.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
       doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         completeRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
@@ -1938,13 +1960,42 @@ class RecordSetServiceSpec
       result shouldBe expectedResults
     }
 
+    "retrieve the recordset changes based on fqdn and record type" in {
+      val filteredRecordSetChanges: List[RecordSetChange] =
+        List(pendingCreateAAAA, completeCreateAAAA)
+      val zoneId = filteredRecordSetChanges.head.zoneId
+
+      doReturn(IO.pure(ListRecordSetChangesResults(filteredRecordSetChanges)))
+        .when(mockRecordChangeRepo)
+        .listRecordSetChanges(zoneId = None, startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+
+      val result: ListRecordSetHistoryResponse =
+        underTest.listRecordSetChangeHistory(None, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+      val changesWithName =
+        filteredRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
+      val expectedResults = ListRecordSetHistoryResponse(
+        zoneId = Some(zoneId),
+        recordSetChanges = changesWithName,
+        nextId = None,
+        startFrom = None,
+        maxItems = 100
+      )
+      result shouldBe expectedResults
+    }
+
     "return a zone with no changes if no changes exist" in {
       doReturn(IO.pure(ListRecordSetChangesResults(items = Nil)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = okZone.id, startFrom = None, maxItems = 100)
+        .listRecordSetChanges(zoneId = Some(okZone.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val expectedResults = ListRecordSetChangesResponse(
         zoneId = okZone.id,
         recordSetChanges = List(),
@@ -1956,24 +2007,53 @@ class RecordSetServiceSpec
     }
 
     "listFailedRecordSetChanges" should {
-      "retrieve the recordset changes" in {
+      "retrieve the recordset changes with default maxItems and startFrom" in {
         val completeRecordSetChanges: List[RecordSetChange] = List(
           pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
           pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
           completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
           completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
         )
-        //val recordSetChange= List[RecordSetChange]
-        doReturn(IO.pure(completeRecordSetChanges))
+
+        doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
           .when(mockRecordChangeRepo)
-          .listFailedRecordSetChanges()
+          .listFailedRecordSetChanges(Some(okZone.id),100,0)
 
 
         val result: ListFailedRecordSetChangesResponse =
-          underTest.listFailedRecordSetChanges(authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,Some(okZone.id)).value.unsafeRunSync().toOption.get
 
         val changesWithName =
-          ListFailedRecordSetChangesResponse(completeRecordSetChanges)
+          ListFailedRecordSetChangesResponse(
+            completeRecordSetChanges,
+            nextId = 0,
+            startFrom = 0,
+            maxItems = 100)
+
+        result shouldBe changesWithName
+      }
+      "retrieve the recordset changes with maxItems 3 and startFrom 2" in {
+        val completeRecordSetChanges: List[RecordSetChange] = List(
+          pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          completeCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+        )
+
+        doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
+          .when(mockRecordChangeRepo)
+          .listFailedRecordSetChanges(Some(okZone.id),3,2)
+
+
+        val result: ListFailedRecordSetChangesResponse =
+          underTest.listFailedRecordSetChanges(authPrincipal = okAuth,Some(okZone.id),2,3).value.unsafeRunSync().toOption.get
+
+        val changesWithName =
+          ListFailedRecordSetChangesResponse(
+            completeRecordSetChanges,
+            nextId = 0,
+            startFrom = 2,
+            maxItems = 3)
 
         result shouldBe changesWithName
       }
@@ -1981,7 +2061,7 @@ class RecordSetServiceSpec
 
     "return a NotAuthorizedError" in {
       val error =
-        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.listRecordSetChanges(Some(zoneNotAuthorized.id), authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -1992,10 +2072,13 @@ class RecordSetServiceSpec
 
       doReturn(IO.pure(ListRecordSetChangesResults(List(rsChange2, rsChange1))))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = okZone.id, startFrom = None, maxItems = 100)
+        .listRecordSetChanges(zoneId = Some(okZone.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         List(RecordSetChangeInfo(rsChange2, Some("ok")), RecordSetChangeInfo(rsChange1, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(

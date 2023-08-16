@@ -22,3 +22,10 @@ case class ListZoneChangesResults(
     startFrom: Option[String] = None,
     maxItems: Int = 100
 )
+
+case class ListFailedZoneChangesResults(
+                                   items: List[ZoneChange] = List[ZoneChange](),
+                                   nextId: Int = 0,
+                                   startFrom: Int = 0,
+                                   maxItems: Int = 100
+                                 )

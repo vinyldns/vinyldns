@@ -467,6 +467,16 @@ class VinylDNS @Inject() (
     // $COVERAGE-ON$
   }
 
+  def getCommonZoneDetails(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val vinyldnsRequest = new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id/details")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def getZoneByName(name: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/name/$name")
@@ -590,6 +600,25 @@ class VinylDNS @Inject() (
       "GET",
       s"$vinyldnsServiceBackend",
       s"zones/$id/recordsetchanges",
+      parameters = queryParameters
+    )
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
+  def listRecordSetChangeHistory: Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest = new VinylDNSRequest(
+      "GET",
+      s"$vinyldnsServiceBackend",
+      s"recordsetchange/history",
       parameters = queryParameters
     )
     executeRequest(vinyldnsRequest, request.user).map(response => {

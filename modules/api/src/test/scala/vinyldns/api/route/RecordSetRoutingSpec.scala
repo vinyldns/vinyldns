@@ -29,14 +29,15 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone.{RecordSetCount, _}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, ListRecordSetHistoryResponse, RecordSetServiceAlgebra}
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordTypeSort.{ASC, DESC, RecordTypeSort}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import scala.util.Random
@@ -407,12 +408,19 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+
   private val RecordCount = RecordSetCount(5)
+  private val changeWithUserName =
+    List(RecordSetChangeInfo(rsChange1, Some("ok")))
+  private val listRecordSetChangeHistoryResponse = ListRecordSetHistoryResponse(
+    Some(okZone.id),
+    changeWithUserName,
+    nextId = None,
+    startFrom = None,
+    maxItems = 100
+  )
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
-  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
-    failedChangesWithUserName
-  )
 
   class TestService extends RecordSetServiceAlgebra {
 
@@ -529,7 +537,8 @@ class RecordSetRoutingSpec
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -572,13 +581,18 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listFailedRecordSetChanges(
-                                    authPrincipal: AuthPrincipal
+                                    authPrincipal: AuthPrincipal,
+                                    zoneId:Option[String],
+                                    startFrom: Int,
+                                    maxItems: Int
                                   ): Result[ListFailedRecordSetChangesResponse] = {
-      val outcome = authPrincipal match {
-        case _ => Right(listFailedRecordSetChangeResponse)
-      }
-      outcome.toResult
-    }
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => authPrincipal match {
+          case _ => Right(ListFailedRecordSetChangesResponse(failedChangesWithUserName,0,startFrom,maxItems))
+        }
+      }}.toResult
 
     def searchRecordSets(
                            startFrom: Option[String],
@@ -587,7 +601,8 @@ class RecordSetRoutingSpec
                            recordTypeFilter: Option[Set[RecordType]],
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
-                           authPrincipal: AuthPrincipal
+                           authPrincipal: AuthPrincipal,
+                           recordTypeSort: RecordTypeSort
                          ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -637,10 +652,49 @@ class RecordSetRoutingSpec
                               recordTypeFilter: Option[Set[RecordType]],
                               recordOwnerGroupFilter: Option[String],
                               nameSort: NameSort,
-                              authPrincipal: AuthPrincipal
+                              authPrincipal: AuthPrincipal,
+                              recordTypeSort: RecordTypeSort
                             ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==DESC =>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==ASC=>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
           Right(
             ListRecordSetsByZoneResponse(
@@ -653,7 +707,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               recordOwnerGroupFilter,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
         case okZone.id if recordTypeFilter.isEmpty =>
@@ -670,7 +725,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               None,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
       }
@@ -690,20 +746,21 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSetChanges(
-                              zoneId: String,
+                              zoneId: Option[String],
                               startFrom: Option[Int],
                               maxItems: Int,
+                              fqdn: Option[String],
+                              recordType: Option[RecordType],
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
-        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
       }
     }.toResult
 
-
-    def getRecordSetCount(
+   def getRecordSetCount(
                               zoneId: String,
                               authPrincipal: AuthPrincipal
                             ): Result[RecordSetCount] = {
@@ -711,6 +768,19 @@ class RecordSetRoutingSpec
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(RecordCount)
+
+    def listRecordSetChangeHistory(
+                              zoneId: Option[String],
+                              startFrom: Option[Int],
+                              maxItems: Int,
+                              fqdn: Option[String],
+                              recordType: Option[RecordType],
+                              authPrincipal: AuthPrincipal
+                            ): Result[ListRecordSetHistoryResponse] = {
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => Right(listRecordSetChangeHistoryResponse)
       }
     }.toResult
 
@@ -849,12 +919,39 @@ class RecordSetRoutingSpec
     }
   }
 
+  "GET recordset change history" should {
+    "return the recordset change" in {
+      Get(s"/recordsetchange/history?fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
+        val response = responseAs[ListRecordSetHistoryResponse]
+
+        response.zoneId shouldBe Some(okZone.id)
+        (response.recordSetChanges.map(_.id) should contain)
+          .only(rsChange1.id)
+      }
+    }
+
+    "return an error when the record fqdn and type is not defined" in {
+      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a Bad Request when maxItems is out of Bounds" in {
+      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
   "GET failed record set changes" should {
     "return the failed record set changes" in {
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
       val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
 
-      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+      Get(s"/metrics/health/zones/${okZone.id}/recordsetchangesfailure") ~> recordSetRoute ~> check {
         val changes = responseAs[ListFailedRecordSetChangesResponse]
         changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
 
@@ -1091,6 +1188,38 @@ class RecordSetRoutingSpec
         val resultRs = responseAs[ListRecordSetsByZoneResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs3.id, rs2.id, rs1.id)
+      }
+    }
+
+    "return all recordSets types in descending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(soa.typ, cname.typ, aaaa.typ))
+      }
+    }
+
+    "return all recordSets types in ascending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(aaaa.typ, cname.typ, soa.typ))
+
+      }
+    }
+
+    "return all record name in ascending order when name and type sort simultaneously" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.name) shouldBe List(aaaa.name, cname.name, soa.name))
+
       }
     }
 

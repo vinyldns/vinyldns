@@ -51,7 +51,8 @@ class VinylDNSClient(object):
         self.session.close()
         self.session_not_found_ok.close()
 
-    def requests_retry_not_found_ok_session(self, retries=20, backoff_factor=0.1, status_forcelist=(500, 502, 504), session=None):
+    def requests_retry_not_found_ok_session(self, retries=20, backoff_factor=0.1, status_forcelist=(500, 502, 504),
+                                            session=None):
         session = session or requests.Session()
         retry = Retry(
             total=retries,
@@ -79,7 +80,8 @@ class VinylDNSClient(object):
         session.mount("https://", adapter)
         return session
 
-    def make_request(self, url, method="GET", headers=None, body_string=None, sign_request=True, not_found_ok=False, **kwargs):
+    def make_request(self, url, method="GET", headers=None, body_string=None, sign_request=True, not_found_ok=False,
+                     **kwargs):
 
         # pull out status or None
         status_code = kwargs.pop("status", None)
@@ -100,13 +102,15 @@ class VinylDNSClient(object):
                          for k, v in query.items())
 
         if sign_request:
-            signed_headers, signed_body = self.sign_request(method, path, body_string, query, with_headers=headers or {}, **kwargs)
+            signed_headers, signed_body = self.sign_request(method, path, body_string, query,
+                                                            with_headers=headers or {}, **kwargs)
         else:
             signed_headers = headers or {}
             signed_body = body_string
 
         if not_found_ok:
-            response = self.session_not_found_ok.request(method, url, data=signed_body, headers=signed_headers, **kwargs)
+            response = self.session_not_found_ok.request(method, url, data=signed_body, headers=signed_headers,
+                                                         **kwargs)
         else:
             response = self.session.request(method, url, data=signed_body, headers=signed_headers, **kwargs)
 
@@ -388,6 +392,17 @@ class VinylDNSClient(object):
 
         return data
 
+    def get_common_zone_details(self, zone_id, **kwargs):
+        """
+        Gets common zone details which can be seen by all users for the given zone id
+        :param zone_id: the id of the zone to retrieve
+        :return: the zone, or will 404 if not found
+        """
+        url = urljoin(self.index_url, "/zones/{0}/details".format(zone_id))
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
     def get_zone_by_name(self, zone_name, **kwargs):
         """
         Gets a zone for the given zone name
@@ -445,7 +460,29 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False, ignore_access=False, **kwargs):
+    def list_recordset_change_history(self, fqdn, record_type, start_from=None, max_items=None, **kwargs):
+        """
+        Gets the record's change history for the given record fqdn and record type
+        :param fqdn: the record's fqdn
+        :param record_type: the record's type
+        :param start_from: the start key of the page
+        :param max_items: the page limit
+        :return: the zone, or will 404 if not found
+        """
+        args = []
+        if start_from:
+            args.append("startFrom={0}".format(start_from))
+        if max_items is not None:
+            args.append("maxItems={0}".format(max_items))
+        args.append("fqdn={0}".format(fqdn))
+        args.append("recordType={0}".format(record_type))
+        url = urljoin(self.index_url, "recordsetchange/history") + "?" + "&".join(args)
+
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
+        return data
+
+    def list_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False,
+                   ignore_access=False, **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -547,7 +584,8 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
         return data
 
-    def list_recordsets_by_zone(self, zone_id, start_from=None, max_items=None, record_name_filter=None, record_type_filter=None, name_sort=None, **kwargs):
+    def list_recordsets_by_zone(self, zone_id, start_from=None, max_items=None, record_name_filter=None,
+                                record_type_filter=None, name_sort=None, **kwargs):
         """
         Retrieves all recordsets in a zone
         :param zone_id: the zone to retrieve
@@ -630,7 +668,8 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, "POST", self.headers, **kwargs)
         return data
 
-    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None, **kwargs):
+    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None,
+                                    **kwargs):
         """
         Gets list of user's batch change summaries
         :return: the content of the response
@@ -672,7 +711,8 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         url = urljoin(self.index_url, "/zones/{0}/acl/rules".format(zone_id))
-        response, data = self.make_request(url, "PUT", self.headers, json.dumps(acl_rule), sign_request=sign_request, **kwargs)
+        response, data = self.make_request(url, "PUT", self.headers, json.dumps(acl_rule), sign_request=sign_request,
+                                           **kwargs)
 
         return data
 
@@ -816,7 +856,8 @@ class VinylDNSClient(object):
         while change["status"] != expected_status and retries > 0:
             time.sleep(RETRY_WAIT)
             retries -= 1
-            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"], change["recordSet"]["id"], change["id"], status=(200, 404))
+            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"], change["recordSet"]["id"],
+                                                      change["id"], status=(200, 404))
             if type(latest_change) != str:
                 change = latest_change
 

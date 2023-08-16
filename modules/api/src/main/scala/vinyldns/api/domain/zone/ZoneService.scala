@@ -153,6 +153,12 @@ class ZoneService(
       accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
+  def getCommonZoneDetails(zoneId: String, auth: AuthPrincipal): Result[ZoneDetails] =
+    for {
+      zone <- getZoneOrFail(zoneId)
+      groupName <- getGroupName(zone.adminGroupId)
+    } yield ZoneDetails(zone, groupName)
+
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
       zone <- getZoneByNameOrFail(ensureTrailingDot(zoneName))
@@ -168,7 +174,8 @@ class ZoneService(
       startFrom: Option[String] = None,
       maxItems: Int = 100,
       searchByAdminGroup: Boolean = false,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): Result[ListZonesResponse] = {
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
@@ -177,21 +184,22 @@ class ZoneService(
           nameFilter,
           startFrom,
           maxItems,
-          ignoreAccess
-        )
-        zones = listZonesResult.zones
-        groupIds = zones.map(_.adminGroupId).toSet
-        groups <- groupRepository.getGroups(groupIds)
-        zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
-      } yield ListZonesResponse(
-        zoneSummaryInfos,
-        listZonesResult.zonesFilter,
-        listZonesResult.startFrom,
-        listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+          ignoreAccess,
+          includeReverse
       )
-    }
+      zones = listZonesResult.zones
+      groupIds = zones.map(_.adminGroupId).toSet
+      groups <- groupRepository.getGroups(groupIds)
+      zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
+    } yield ListZonesResponse(
+      zoneSummaryInfos,
+      listZonesResult.zonesFilter,
+      listZonesResult.startFrom,
+      listZonesResult.nextId,
+      listZonesResult.maxItems,
+      listZonesResult.ignoreAccess,
+      listZonesResult.includeReverse
+    )}
     else {
       for {
         groupIds <- getGroupsIdsByName(nameFilter.get)
@@ -200,7 +208,8 @@ class ZoneService(
           startFrom,
           maxItems,
           groupIds,
-          ignoreAccess
+          ignoreAccess,
+          includeReverse
         )
         zones = listZonesResult.zones
         groups <- groupRepository.getGroups(groupIds)
@@ -211,7 +220,8 @@ class ZoneService(
         listZonesResult.startFrom,
         listZonesResult.nextId,
         listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.ignoreAccess,
+        listZonesResult.includeReverse
       )
     }
   }.toResult
@@ -245,15 +255,22 @@ class ZoneService(
     } yield ListZoneChangesResponse(zone.id, zoneChangesResults)
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal
+                             authPrincipal: AuthPrincipal,
+                             startFrom: Int= 0,
+                             maxItems: Int = 100
                            ): Result[ListFailedZoneChangesResponse] =
     for {
       zoneChangesFailedResults <- zoneChangeRepository
-        .listFailedZoneChanges()
-        .toResult[List[ZoneChange]]
-      _ <- zoneAccess(zoneChangesFailedResults, authPrincipal).toResult
-    } yield {
-      ListFailedZoneChangesResponse(zoneChangesFailedResults)}
+        .listFailedZoneChanges(maxItems, startFrom)
+        .toResult[ListFailedZoneChangesResults]
+      _ <- zoneAccess(zoneChangesFailedResults.items, authPrincipal).toResult
+    } yield
+      ListFailedZoneChangesResponse(
+        zoneChangesFailedResults.items,
+        zoneChangesFailedResults.nextId,
+        startFrom,
+        maxItems
+      )
 
   def zoneAccess(
                   zoneCh: List[ZoneChange],

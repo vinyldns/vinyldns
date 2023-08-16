@@ -29,6 +29,7 @@ GET           /api/recordsets                    @controllers.VinylDNS.listRecor
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
+GET           /api/zones/:id/details             @controllers.VinylDNS.getCommonZoneDetails(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
 GET           /api/zones/:id/changes             @controllers.VinylDNS.getZoneChange(id: String)
 POST          /api/zones                         @controllers.VinylDNS.addZone
@@ -43,6 +44,7 @@ PUT           /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.updateRec
 
 GET           /api/zones/:id/recordsetchanges    @controllers.VinylDNS.listRecordSetChanges(id: String)
 GET           /api/zones/:zid/recordsetcount     @controllers.VinylDNS.getRecordSetCount(zid: String)
+GET           /api/recordsetchange/history       @controllers.VinylDNS.listRecordSetChangeHistory
 
 GET           /api/groups                        @controllers.VinylDNS.getGroups
 GET           /api/groups/:gid                   @controllers.VinylDNS.getGroup(gid: String)
