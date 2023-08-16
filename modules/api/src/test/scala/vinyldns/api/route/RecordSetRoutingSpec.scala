@@ -784,8 +784,6 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-  }
-
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
   val testLimitConfig: LimitsConfig =
