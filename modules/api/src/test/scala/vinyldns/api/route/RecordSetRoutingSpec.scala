@@ -768,7 +768,8 @@ class RecordSetRoutingSpec
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(RecordCount)
-
+      }
+   }.toResult
     def listRecordSetChangeHistory(
                               zoneId: Option[String],
                               startFrom: Option[Int],
