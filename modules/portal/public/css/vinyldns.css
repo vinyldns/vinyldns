@@ -18,6 +18,8 @@
     --background-color: #F9F9F9;    /* Light theme background color */
     --text-color: #1b1e24;          /* Light theme text color */
     --background-color-shade : #E8E8E8;
+    --background-color-panel : #f5f5f5;
+    --background-color-panel-body : #fff
 }
 
 /* Dark theme color values */
@@ -25,6 +27,8 @@
     --background-color: #1b1e24;
     --text-color: #FFFFFF;
     --background-color-shade : #1b1e24;
+    --background-color-panel : #1b1e24;
+    --background-color-panel-body : #1b1e24
 }
 
 .color {
@@ -210,6 +214,22 @@ a.action-link {
 
 .force-cursor {
     cursor: pointer;
+}
+
+.fa-force-cursor {
+    cursor: pointer;
+    display: inline-flex;
+}
+.fa-chevron-icon {
+    display: inline-flex;
+    flex-direction: column;
+    margin-left: 5px;
+}
+.toggle-on{
+    color: #1b1e24
+}
+.toggle-off{
+    color: #D3D3D3;
 }
 
 .vinyldns-login {
@@ -424,48 +444,6 @@ label.switch {
     transition: all 200ms ease;
 }
 
-/* THEME SWITCH */
-
-.slider-theme {
-    cursor: pointer;
-    position: relative;
-    width: 60px;
-    height: 30px;
-    border: 1px solid #E5E5E5;
-    display: inline-block;
-    transition: all 200ms ease;
-    border-color: rgba(0, 0, 0, 0.1);
-    left: 0px;
-    border-radius: 20px;
-    background: #979797;
-}
-
-.slider-theme:after {
-    content: "";
-    position: absolute;
-    width: 27px;
-    top: 1px;
-    bottom: 1px;
-    left: 1px;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
-    border-radius: 20px;
-    transition: all 200ms ease;
-    background: var(--background-color);
-}
-
-.switch input:checked + .slider-theme {
-    background: var(--text-color);
-}
-
-.switch input:checked + .slider-theme:after {
-    left: 30px;
-}
-
-.switch input:disabled + .slider-theme {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 .panel-tabs {
     padding-top: 5px;
     background: var(--background-color-shade);
@@ -475,17 +453,25 @@ label.switch {
 .panel{
 background-color: var(--background-color);
           color: var(--text-color);
-           border-color: #E8E8E8;
+           border-color: #E8E8E8 !important;
           }
 
 .panel > .panel-heading{
-              background-color: var(--background-color-shade);
+              background-color: var(--background-color-panel);
                         color: var(--text-color);
+                        border-color: #f5f5f5 ;
+                        }
+
+.panel > .panel-body{
+              background-color: var(--background-color-panel-body);
+                        color: var(--text-color);
+                        border-color :#E8E8E8 !important;
                         }
 
 .panel > .panel-footer{
-              background-color: var(--background-color-shade);
+              background-color: var(--background-color-panel);
                         color: var(--text-color);
+                        border-color : #E8E8E8 !important;
                         }
 
 .nav.nav-tabs > li.active>a{
@@ -554,13 +540,6 @@ width: 20px;;
 
 .table-form-group > .btn {
    margin-bottom: 0;
-   background-color: var(--background-color);
-     color: var(--text-color);
-}
-
-.btn {
-   background-color: var(--background-color);
-     color: var(--text-color);
 }
 
 .createBatchChangeForm.ng-submitted input.ng-invalid {
@@ -652,6 +631,11 @@ input[type="text"] select{
 .vinyldns_paginate {
     display: flex;
     align-items: center;
+}
+
+
+.paginate_left {
+    float: left;
 }
 
 .vinyldns_page_number {
@@ -761,12 +745,14 @@ input[type="text"] select{
     width: 4em;
 }
 
-#toggle_checkbox
+/* THEME SWITCH */
+
+#toggle-theme
 {
     display: none;
 }
 
-label
+#toggle-checkbox
 {
     cursor: pointer;
     top: -8px;
@@ -783,7 +769,6 @@ label
     transition: 0.3s ease background-color;
     overflow: hidden;
     border-color: rgba(0, 0, 0, 0.1);
-
 }
 
 #star
@@ -846,12 +831,12 @@ label
     transition: 0.3s ease background-color;
 }
 
-#toggle_checkbox:checked + label
+#toggle-theme:checked + #toggle-checkbox
 {
     background-color: #979797;
 }
 
-#toggle_checkbox:checked + label #star
+#toggle-theme:checked + #toggle-checkbox #star
 {
     top: 6px;
     left: 34px;
@@ -859,17 +844,17 @@ label
     background-color: #979797;
 }
 
-#toggle_checkbox:checked + label .star
+#toggle-theme:checked + #toggle-checkbox .star
 {
     color: #F9F9F9;
 }
 
-#toggle_checkbox:checked + label #moon
+#toggle-theme:checked + #toggle-checkbox #moon
 {
     bottom: 4px;
 }
 
-    #toggle_checkbox:checked + label #moon:before
+#toggle-theme:checked + #toggle-checkbox #moon:before
 {
     background-color: #979797;
 }

@@ -18,17 +18,12 @@ angular.module('controller.settings', [])
     .controller('SettingsController', function ($scope, $http, $location, $log, profileService,
                                              utilityService, $timeout) {
 
-
-        const themeToggle = document.getElementById('toggle_checkbox')
-        const themeToggleImg = document.getElementById('theme-img')
-        var themeLightImg = "/assets/images/vinyldns-portal-day.png"
-        var themeDarkImg = "/assets/images/vinyldns-portal-night.png"
-        const themeToggleText = document.getElementById('theme-toggle-text')
-
-
         var userData = {};
-
-
+        var themeToggle = document.getElementById('toggle-theme')
+        var themeToggleImg = document.getElementById('theme-img')
+        var themeToggleText = document.getElementById('theme-toggle-text')
+        const themeLightImg = "/assets/images/vinyldns-portal-day.png"
+        const themeDarkImg = "/assets/images/vinyldns-portal-night.png"
 
         // Function to apply the dark theme
         function applyDarkTheme() {
@@ -53,7 +48,6 @@ angular.module('controller.settings', [])
         }
 
         $scope.themeToggleClick = function(){
-        $log.log("fsgfsdgfsdsdf")
         const isDarkTheme = document.body.classList.contains('dark-theme');
           if (isDarkTheme) {
             removeDarkTheme();
@@ -61,15 +55,6 @@ angular.module('controller.settings', [])
             applyDarkTheme();
           }
         }
-
-        /*themeToggle.addEventListener('click', () => {
-          const isDarkTheme = document.body.classList.contains('dark-theme');
-          if (isDarkTheme) {
-            removeDarkTheme();
-          } else {
-            applyDarkTheme();
-          }
-        }, false)*/
 
         function profileSuccess(results) {
             //if data is provided

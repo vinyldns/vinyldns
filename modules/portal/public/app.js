@@ -20,6 +20,16 @@ angular.module('vinyldns', [
         document.body.style.cursor = 'default';
         $scope.alerts = [];
 
+        function applyDarkThemeAll() {
+          document.body.classList.add('dark-theme');
+          sessionStorage.setItem('darkTheme', 'true');
+        }
+
+        const savedTheme = sessionStorage.getItem('darkTheme');
+        if (savedTheme === 'true') {
+          applyDarkThemeAll();
+        }
+
         $scope.regenerateCredentials = function() {
             document.body.style.cursor = 'wait';
             profileService.regenerateCredentials()
