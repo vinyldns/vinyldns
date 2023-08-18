@@ -28,6 +28,18 @@ angular.module('vinyldns', [
         const savedTheme = sessionStorage.getItem('darkTheme');
         if (savedTheme === 'true') {
           applyDarkThemeAll();
+           if (document.getElementById('zoneChangeDataTable')){
+           document.getElementById('zoneChangeDataTable').className = 'table table-dark' ;
+           }
+           if (document.getElementById('recordDataTable')){
+           document.getElementById('recordDataTable').className= 'table table-dark';
+           }
+           if (document.getElementById('aclRuleTable')){
+           document.getElementById('aclRuleTable').className = 'table table-dark' ;
+           }
+           if (document.getElementById('changeDataTable')){
+           document.getElementById('changeDataTable').className = 'table table-dark' ;
+           }
         }
 
         $scope.regenerateCredentials = function() {

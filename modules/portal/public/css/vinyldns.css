@@ -98,6 +98,21 @@ a.action-link {
     text-decoration:none;
 }
 
+.form-control {
+    background: var(--background-color-panel-body);
+    color: var(--text-color);
+}
+
+.ng-scope {
+    background: var(--background-color-panel-body);
+    color: var(--text-color);
+}
+
+.ng-scope> .form-control {
+    background: var(--background-color-panel-body);
+    color: var(--text-color);
+}
+
 .form-control.record-edit {
     background: var(--background-color);
     color: var(--text-color);
@@ -542,6 +557,28 @@ width: 20px;;
    margin-bottom: 0;
 }
 
+.btn-default {
+background-color: var(--background-color-panel-body);
+color: var(--text-color);
+
+}
+
+.btn-warning, .btn-warning:disabled:hover, a.btn-warning {
+background-color: var(--background-color-panel-body);
+}
+
+.btn-info
+{
+background-color: var(--background-color-panel-body);
+}
+
+
+.btn-danger {
+background-color: var(--background-color-panel-body);
+color: #E04B4A;
+border-color: #E04B4A;
+}
+
 .createBatchChangeForm.ng-submitted input.ng-invalid {
    border-color: #a94442;
 }
@@ -615,8 +652,6 @@ input[type="text"] select{
 
 .wrap-long-text {
     word-break: break-all;
-    background-color: var(--background-color);
-    color: var(--text-color);
 }
 
 .no-wrap {
