@@ -421,9 +421,6 @@ class RecordSetRoutingSpec
 
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
-  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
-    failedChangesWithUserName,0,0,100
-  )
 
   class TestService extends RecordSetServiceAlgebra {
 
@@ -585,14 +582,17 @@ class RecordSetRoutingSpec
 
     def listFailedRecordSetChanges(
                                     authPrincipal: AuthPrincipal,
+                                    zoneId:Option[String],
                                     startFrom: Int,
                                     maxItems: Int
                                   ): Result[ListFailedRecordSetChangesResponse] = {
-      val outcome = authPrincipal match {
-        case _ => Right(listFailedRecordSetChangeResponse)
-      }
-      outcome.toResult
-    }
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => authPrincipal match {
+          case _ => Right(ListFailedRecordSetChangesResponse(failedChangesWithUserName,0,startFrom,maxItems))
+        }
+      }}.toResult
 
     def searchRecordSets(
                            startFrom: Option[String],
@@ -915,7 +915,7 @@ class RecordSetRoutingSpec
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
       val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
 
-      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+      Get(s"/metrics/health/zones/${okZone.id}/recordsetchangesfailure") ~> recordSetRoute ~> check {
         val changes = responseAs[ListFailedRecordSetChangesResponse]
         changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
 

@@ -39,48 +39,42 @@
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                    <div class="btn-group">
-                                        <button class="btn btn-default" ng-click="resetCurrentZone()" data-toggle="modal"
-                                                data-target="#zone_connection_modal" id="open-zone-modal-button">
-                                            <span class="fa fa-arrow-right"></span> Connect
-                                        </button>
-                                        <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
-                                            <span class="fa fa-refresh"></span> Refresh
-                                        </button>
-                                    </div>
-                                    <!-- SEARCH BOX -->
-                                    <div class="pull-right">
-                                        <form class="input-group" ng-submit="refreshZones()">
-                                            <div class="input-group">
-                                                <span class="input-group-btn">
-                                                    <button id="zone-search-button" type="submit" class="btn btn-primary btn-left-round">
-                                                        <span class="fa fa-search"></span>
-                                                    </button>
-                                                </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
-                                            </div>
-                                            <div class="checkbox pull-right">
-                                                <label>
+                                    <div class="row flex">
+                                        <div class="btn-group col-md-9 flex-1">
+                                            <button class="btn btn-default" ng-click="resetCurrentZone()" data-toggle="modal" data-target="#zone_connection_modal" id="open-zone-modal-button">
+                                                <span class="fa fa-arrow-right"></span> Connect
+                                            </button>
+                                            <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 pull-right">
+                                            <!-- SEARCH BOX -->
+                                            <form class="input-group remove-bottom-margin full-width" ng-submit="refreshZones()">
+                                                <div class="input-group remove-bottom-margin">
+                                                    <span class="input-group-btn">
+                                                        <button id="zone-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                                </div>
+                                            </form>
+                                            <!-- END SEARCH BOX -->
+                                            <div class="flex">
+                                                <label class="reduce-font-weight remove-bottom-margin flex-1">
                                                     <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
                                                 </label>
-                                            </div>
-                                            <div class="pull-right">
-                                                <div class="input-group" style="padding-right: 10px;">
-                                                    <div class="ptr-zone-filter">
-                                                        <form action="">
-                                                            <div class="checkbox pull-right">
-                                                                <label>
-                                                                    <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
-                                                                </label>
-                                                            </div>
-                                                        </form>
+                                                <form action="" class="pull-right flex-1">
+                                                    <div>
+                                                        <label class="reduce-font-weight remove-bottom-margin">
+                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                        </label>
                                                     </div>
-                                                </div>
+                                                </form>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
-                                    <!-- END SEARCH BOX -->
-
                                 </div>
                                 <div id="zone-list-table" class="panel-body">
                                     <p ng-if="!zonesLoaded">Loading zones...</p>
@@ -170,44 +164,39 @@
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-
-                                    <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
-                                        <span class="fa fa-refresh"></span> Refresh
-                                    </button>
-
-                                    <!-- SEARCH BOX -->
-                                    <div class="pull-right">
-                                        <form class="input-group" ng-submit="refreshZones()">
-                                            <div class="input-group">
-                                                <span class="input-group-btn">
-                                                    <button id="all-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
-                                                        <span class="fa fa-search"></span>
-                                                    </button>
-                                                </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
-                                            </div>
-                                            <div class="checkbox pull-right">
-                                                <label>
+                                    <div class="row flex">
+                                        <div class="btn-group col-md-9 flex-1">
+                                            <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 pull-right">
+                                            <!-- SEARCH BOX -->
+                                            <form class="input-group remove-bottom-margin full-width" ng-submit="refreshZones()">
+                                                <div class="input-group remove-bottom-margin">
+                                                    <span class="input-group-btn">
+                                                        <button id="all-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                                </div>
+                                            </form>
+                                            <!-- END SEARCH BOX -->
+                                            <div class="flex">
+                                                <label class="reduce-font-weight remove-bottom-margin flex-1">
                                                     <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
                                                 </label>
-                                            </div>
-                                            <div class="pull-right">
-                                                <div class="input-group" style="padding-right: 10px;">
-                                                    <div class="ptr-zone-filter">
-                                                        <form action="">
-                                                            <div class="checkbox pull-right">
-                                                                <label>
-                                                                    <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
-                                                                </label>
-                                                            </div>
-                                                        </form>
+                                                <form action="" class="pull-right flex-1">
+                                                    <div>
+                                                        <label class="reduce-font-weight remove-bottom-margin">
+                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                        </label>
                                                     </div>
-                                                </div>
+                                                </form>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
-                                    <!-- END SEARCH BOX -->
-
                                 </div>
                                 <div id="zone-list-table" class="panel-body">
                                     <p ng-if="!allZonesLoaded">Loading zones...</p>
