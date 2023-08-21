@@ -84,7 +84,8 @@ class FrontendController @Inject() (
   }
 
   def viewRecordSets(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.recordsets.recordSets(request.user.userName)))
+    val canReview = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.recordsets.recordSets(request.user.userName, canReview)))
   }
 
   def viewAllBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>

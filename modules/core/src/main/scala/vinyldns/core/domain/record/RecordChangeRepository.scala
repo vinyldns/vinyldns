@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import cats.effect._
 import scalikejdbc.DB
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
 
 trait RecordChangeRepository extends Repository {
@@ -25,13 +26,18 @@ trait RecordChangeRepository extends Repository {
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet]
 
   def listRecordSetChanges(
-      zoneId: String,
+      zoneId: Option[String],
       startFrom: Option[Int] = None,
-      maxItems: Int = 100
+      maxItems: Int = 100,
+      fqdn: Option[String] = None,
+      recordType: Option[RecordType] = None
   ): IO[ListRecordSetChangesResults]
 
   def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
 
-  def listFailedRecordSetChanges(): IO[List[RecordSetChange]]
+  def listFailedRecordSetChanges(zoneId: Option[String],
+                                  maxItems: Int = 100,
+                                 startFrom: Int = 0
+                                ): IO[ListFailedRecordSetChangesResults]
 
 }

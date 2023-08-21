@@ -19,7 +19,7 @@
 angular.module('service.zones', [])
     .service('zonesService', function ($http, groupsService, $log, utilityService) {
 
-        this.getZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess) {
+        this.getZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess, includeReverse) {
             if (query == "") {
                 query = null;
             }
@@ -28,7 +28,8 @@ angular.module('service.zones', [])
                 "startFrom": startFrom,
                 "nameFilter": query,
                 "searchByAdminGroup": searchByAdminGroup,
-                "ignoreAccess": ignoreAccess
+                "ignoreAccess": ignoreAccess,
+                "includeReverse": includeReverse
             };
             var url = groupsService.urlBuilder("/api/zones", params);
             let loader = $("#loader");

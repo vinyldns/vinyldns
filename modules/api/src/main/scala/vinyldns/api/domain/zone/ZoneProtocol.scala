@@ -78,6 +78,28 @@ object ZoneInfo {
     )
 }
 
+case class ZoneDetails(
+                     name: String,
+                     email: String,
+                     status: ZoneStatus,
+                     adminGroupId: String,
+                     adminGroupName: String,
+                   )
+
+object ZoneDetails {
+  def apply(
+             zone: Zone,
+             groupName: String,
+           ): ZoneDetails =
+    ZoneDetails(
+      name = zone.name,
+      email = zone.email,
+      status = zone.status,
+      adminGroupId = zone.adminGroupId,
+      adminGroupName = groupName,
+    )
+}
+
 case class ZoneSummaryInfo(
                             name: String,
                             email: String,
@@ -274,7 +296,8 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
 
 // Errors
