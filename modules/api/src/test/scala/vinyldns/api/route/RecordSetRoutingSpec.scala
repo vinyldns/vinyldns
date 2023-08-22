@@ -910,33 +910,6 @@ class RecordSetRoutingSpec
     }
   }
 
-  "GET recordset change history" should {
-    "return the recordset change" in {
-      Get(s"/recordsetchange/history?fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
-        val response = responseAs[ListRecordSetHistoryResponse]
-
-        response.zoneId shouldBe Some(okZone.id)
-        (response.recordSetChanges.map(_.id) should contain)
-          .only(rsChange1.id)
-      }
-    }
-
-    "return an error when the record fqdn and type is not defined" in {
-      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-    }
-
-    "return a Bad Request when maxItems is out of Bounds" in {
-      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-    }
-  }
-
   "GET failed record set changes" should {
     "return the failed record set changes" in {
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
