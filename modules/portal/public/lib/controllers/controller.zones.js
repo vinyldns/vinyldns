@@ -178,7 +178,7 @@ angular.module('controller.zones', [])
         allZonesPaging = pagingService.resetPaging(allZonesPaging);
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true, $scope.includeReverse)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, false, $scope.includeReverse)
             .then(function (response) {
                 $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;
@@ -212,6 +212,7 @@ angular.module('controller.zones', [])
                     .catch(function (error) {
                         handleError(error, 'zonesService::getDeletedZones-failure');
                     });
+
         zonesService
                     .getDeletedZones(allDeleteZonesPaging.maxItems, undefined, $scope.query, true)
                     .then(function (response) {
