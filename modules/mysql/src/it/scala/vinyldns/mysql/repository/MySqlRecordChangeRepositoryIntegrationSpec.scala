@@ -183,19 +183,19 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges(10, 0).unsafeRunSync()
+      val result = repo.listFailedRecordSetChanges(Some(okZone.id),10, 0).unsafeRunSync()
       (result.items  should have).length(10)
       result.maxItems shouldBe 10
       result.items should contain theSameElementsAs(inserts)
-
     }
+
     "return empty for success record changes" in {
       val inserts = generateInserts(okZone, 10)
       val saveRecChange = executeWithinTransaction { db: DB =>
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val result = repo.listFailedRecordSetChanges(5, 0).unsafeRunSync()
+      val result = repo.listFailedRecordSetChanges(Some(okZone.id),5, 0).unsafeRunSync()
       (result.items  should have).length(0)
       result.items shouldBe List()
       result.nextId shouldBe 0
@@ -215,17 +215,19 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(timeSpaced))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      val page1 = repo.listFailedRecordSetChanges(2, 0).unsafeRunSync()
-      page1.nextId shouldBe 2
+      val page1 = repo.listFailedRecordSetChanges(Some(okZone.id), 2, 0).unsafeRunSync()
+      println(page1.items)
+      page1.nextId shouldBe 3
       page1.maxItems shouldBe 2
       (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
 
-      val page2 = repo.listFailedRecordSetChanges(2, page1.nextId).unsafeRunSync()
-      page2.nextId shouldBe 4
+      val page2 = repo.listFailedRecordSetChanges(Some(okZone.id), 2, page1.nextId).unsafeRunSync()
+      println(page2.items)
+      page2.nextId shouldBe 6
       page2.maxItems shouldBe 2
-      (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(2, 4))
+      (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(3, 5))
 
-      val page3 = repo.listFailedRecordSetChanges(2, page2.nextId).unsafeRunSync()
+      val page3 = repo.listFailedRecordSetChanges(Some(okZone.id), 2, 4).unsafeRunSync()
       page3.nextId shouldBe 0
       page3.maxItems shouldBe 2
       page3.items should contain theSameElementsAs expectedOrder.slice(4, 5)
