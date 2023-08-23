@@ -486,13 +486,22 @@ background-color: var(--background-color);
                          border-color: var(--border-color);
                         }
 
+
 .panel > .panel-body{
-              background-color: var(--background-color-panel-body);
+                        background-color: var(--background-color-panel-body);
                         color: var(--text-color);
                          border-color: var(--border-color);
+                         border-top-color : var(--border-color);
                         }
 
-.panel > .panel-default . >panel-tabs{
+.panel-default>.panel-heading+.panel-collapse>.panel-body{
+                        background-color: var(--background-color-panel-body);
+                        color: var(--text-color);
+                         border-color: var(--border-color);
+                         border-top-color : var(--border-color);
+}
+
+.panel > .panel-default > .panel-tabs{
               background-color: var(--background-color-panel-body);
                         color: var(--text-color);
                          border-color: var(--border-color);
@@ -521,15 +530,30 @@ background-color: var(--background-color);
                         }
 
 .nav.nav-tabs > li.active>a{
-              background-color: var(--background-color);
+              background-color: var(--background-color-panel-body);
                         color: var(--text-color);
                         border-color: var(--border-bottom-nav-menu)
                         }
 
-.nav.nav-tabs > li >a{
-              background-color: var(--background-color);
+.nav.nav-tabs > li.active>a:hover{
+              background-color: var(--background-color-panel-body);
                         color: var(--text-color);
-                        border-color: var(--border-bottom-nav-menu)
+                           }
+
+ul.bar_tabs>li a{
+              background: var(--background-color);
+                            color: var(--text-color);
+                        }
+
+.nav.nav-tabs > li >a:{
+              background-color: var(--background-color-panel);
+                        color: var(--text-color);
+                        }
+
+.nav.nav-tabs > li >a:hover{
+              background-color: var(--background-color-panel-body);
+              color: var(--text-color);
+              border-color: var(--background-color-panel-body)
                         }
 
 .nav.navbar-nav> li > ul {
