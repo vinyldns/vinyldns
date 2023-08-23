@@ -426,7 +426,8 @@
                             </div>
 
                             <!-- PAGINATION -->
-                            <div class="dataTables_paginate">
+                            <div class="dataTables_paginate vinyldns_paginate">
+                                <span class="vinyldns_page_number">{{ getRecordChangePageTitle() }}</span>
                                 <ul class="pagination">
                                     <li class="paginate_button previous">
                                         <a ng-if="changeHistoryPrevPageEnabled()" ng-click="changeHistoryPrevPage()" class="paginate_button">Previous</a>
@@ -476,7 +477,8 @@
                             </table>
 
                             <!-- PAGINATION -->
-                            <div class="dataTables_paginate">
+                            <div class="dataTables_paginate vinyldns_paginate">
+                                <span class="vinyldns_page_number">{{ getRecordChangePageTitle() }}</span>
                                 <ul class="pagination">
                                     <li class="paginate_button previous">
                                         <a ng-if="changeHistoryPrevPageEnabled()" ng-click="changeHistoryPrevPage()" class="paginate_button">Previous</a>

@@ -264,6 +264,9 @@
             /**
              * Record change history paging
              */
+             $scope.getRecordChangePageTitle = function() {
+                return pagingService.getPanelTitle(changePaging);
+             };
 
             $scope.changeHistoryPrevPageEnabled = function() {
                 return pagingService.prevPageEnabled(changePaging);

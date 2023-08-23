@@ -75,7 +75,7 @@
                                     <label class="col-md-3 control-label">Access</label>
                                     <div class="col-md-9">
                                         <div>
-                                            <select class="form-control" ng-model="updateZoneInfo.shared">
+                                            <select class="form-control" ng-model="updateZoneInfo.shared" ng-disabled="!isZoneAdmin">
                                                 <option ng-value="true" ng-model="updateZoneInfo.shared"
                                                         ng-selected="updateZoneInfo.shared == true">
                                                     Shared</option>
