@@ -130,7 +130,7 @@ a {
 
 /* TABS */
 ul.bar_tabs {
-  background: none;
+  background: var(--background-color-panel-body);
 }
 
 ul.bar_tabs>li.active {
@@ -142,6 +142,56 @@ ul.bar_tabs>li.active {
 ul.bar_tabs>li a {
   background: #F5F5F5;
   color: #555555;
+}
+
+.nav.nav-tabs > li.active>a{
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-bottom-nav-menu);
+    border-bottom-color: var(--background-color-panel-body);
+}
+
+.nav.nav-tabs > li.active>a:hover{
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-bottom-nav-menu);
+    border-bottom-color: var(--background-color-panel-body);
+}
+
+ul.bar_tabs>li a{
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
+.nav.nav-tabs > li >a:{
+    background-color: var(--background-color-panel);
+    color: var(--text-color);
+}
+
+.nav.nav-tabs > li >a:hover{
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--background-color-panel-body)
+}
+
+.nav.navbar-nav> li > ul {
+    width: 20px;;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.nav.nav-tabs> li{
+    border-color: var(--border-color);
+}
+
+.nav.nav-tabs> li.active{
+    border-color: var(--border-color);
+}
+
+.nav.nav-tabs.bar_tabs{
+    border-color: var(--border-color);
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
 }
 
 /* FORMS */

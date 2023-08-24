@@ -373,11 +373,6 @@ body {
     position: relative
 }
 
-.nav-tabs{
-  background-color: var(--background-color);
-  color: var(--text-color);
-}
-
 .nav-sm .container.body .right_col {
     padding: 0;
     background-color: var(--background-color);
@@ -469,46 +464,46 @@ label.switch {
 
 .panel-tabs {
     padding-top: 5px;
-    background: var(--background-color-shade);
+    background-color: var(--background-color-panel-body);
     color: var(--text-color);
 }
 
 .panel{
-background-color: var(--background-color);
-          color: var(--text-color);
-            border-color: var(--border-color);
-          }
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
 
 
 .panel > .panel-heading{
-              background-color: var(--background-color-panel);
-                        color: var(--text-color);
-                         border-color: var(--border-color);
-                        }
+    background-color: var(--background-color-panel);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
 
 
 .panel > .panel-body{
-                        background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                         border-color: var(--border-color);
-                         border-top-color : var(--border-color);
-                        }
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    border-top-color : var(--border-color);
+}
 
 .panel-default>.panel-heading+.panel-collapse>.panel-body{
-                        background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                         border-color: var(--border-color);
-                         border-top-color : var(--border-color);
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    border-top-color : var(--border-color);
 }
 
 .panel > .panel-default > .panel-tabs{
-              background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                         border-color: var(--border-color);
-                        }
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    }
 
 .panel >.panel-body > table > thead > tr > th{
-       border-color: var(--border-color);
+    border-color: var(--border-color);
 }
 
 .panel >.panel-body >table > tbody > tr >td {
@@ -516,65 +511,18 @@ background-color: var(--background-color);
 }
 
 .panel >.panel-collapse>.panel-body > table > thead > tr > th{
-       border-color: var(--border-color);
+    border-color: var(--border-color);
 }
 
 .panel >.panel-collapse>.panel-body >table > tbody > tr >td {
-   border-color: var(--border-color);
+    border-color: var(--border-color);
 }
 
 .panel > .panel-footer{
-              background-color: var(--background-color-panel);
-                        color: var(--text-color);
-                         border-color: var(--border-color);
-                        }
-
-.nav.nav-tabs > li.active>a{
-              background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                        border-color: var(--border-bottom-nav-menu)
-                        }
-
-.nav.nav-tabs > li.active>a:hover{
-              background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                           }
-
-ul.bar_tabs>li a{
-              background: var(--background-color);
-                            color: var(--text-color);
-                        }
-
-.nav.nav-tabs > li >a:{
-              background-color: var(--background-color-panel);
-                        color: var(--text-color);
-                        }
-
-.nav.nav-tabs > li >a:hover{
-              background-color: var(--background-color-panel-body);
-              color: var(--text-color);
-              border-color: var(--background-color-panel-body)
-                        }
-
-.nav.navbar-nav> li > ul {
-width: 20px;;
-              background-color: var(--background-color);
-                        color: var(--text-color);
-                        }
-.nav.nav-tabs> li{
-              border-color: var(--border-color);
-                        }
-.nav.nav-tabs> li.active{
-              border-color: var(--border-color);
-                        }
-
-.nav.nav-tabs.bar_tabs{
-              border-color: var(--border-color);
-             background-color: var(--background-color-panel-body);
-                        color: var(--text-color);
-                        }
-
-
+    background-color: var(--background-color-panel);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
 
 .update-zone-msg {
   display: flex;
@@ -629,26 +577,26 @@ width: 20px;;
 }
 
 .btn-default {
-background-color: var(--background-color-panel-body);
-color: var(--text-color);
- border-color: var(--border-color);
+    background-color: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-color);
 
 }
 
 .btn-warning, .btn-warning:disabled:hover, a.btn-warning {
-background-color: var(--background-color-panel-body);
+    background-color: var(--background-color-panel-body);
 }
 
 .btn-info
 {
-background-color: var(--background-color-panel-body);
+    background-color: var(--background-color-panel-body);
 }
 
 
 .btn-danger {
-background-color: var(--background-color-panel-body);
-color: #E04B4A;
-border-color: #E04B4A;
+    background-color: var(--background-color-panel-body);
+    color: #E04B4A;
+    border-color: #E04B4A;
 }
 
 .createBatchChangeForm.ng-submitted input.ng-invalid {
@@ -670,7 +618,7 @@ border-color: #E04B4A;
 
 .ng-pristine {
     background-color: var(--background-color);
-     color: var(--text-color);
+    color: var(--text-color);
      }
 
 .changeError, .ownerGroupError {
@@ -682,11 +630,11 @@ border-color: #E04B4A;
 }
 
 .batch-label {
-          color: var(--text-color);
+    color: var(--text-color);
 }
 
 .main-footer-text {
-          color: var(--text-color);
+    color: var(--text-color);
 }
 
 input[type="file"] {
