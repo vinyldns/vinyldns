@@ -18,13 +18,13 @@ package controllers
 
 import java.util
 import java.util.HashMap
-
 import actions.{SecuritySupport, UserRequest}
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import controllers.OidcAuthenticator.ErrorResponse
+
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta, SignableVinylDNSRequest, VinylDNSRequest}
 import org.slf4j.LoggerFactory
@@ -36,6 +36,7 @@ import play.api.libs.ws.{BodyWritable, InMemoryBody, WSClient}
 import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.Encrypted
+import vinyldns.core.domain.membership.Appearance.Appearance
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.logging.RequestTracing

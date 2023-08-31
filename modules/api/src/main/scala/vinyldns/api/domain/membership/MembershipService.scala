@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.core.domain.membership.Theme.Theme
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
@@ -500,6 +501,17 @@ class MembershipService(
       _ <- isSuperAdmin(authPrincipal).toResult
       existingUser <- getExistingUser(userId)
       newUser = existingUser.updateUserLockStatus(lockStatus)
+      _ <- userRepo.save(newUser).toResult[User]
+    } yield newUser
+
+  def updateUserTheme(
+                            userId: String,
+                            theme: Theme,
+                            authPrincipal: AuthPrincipal
+                          ): Result[User] =
+    for {
+      existingUser <- getExistingUser(userId)
+      newUser = existingUser.updateUserTheme(theme)
       _ <- userRepo.save(newUser).toResult[User]
     } yield newUser
 }
