@@ -36,7 +36,6 @@ import play.api.libs.ws.{BodyWritable, InMemoryBody, WSClient}
 import play.api.mvc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.Encrypted
-import vinyldns.core.domain.membership.Appearance.Appearance
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.logging.RequestTracing
