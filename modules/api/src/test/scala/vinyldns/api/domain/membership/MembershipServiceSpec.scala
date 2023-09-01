@@ -1389,6 +1389,44 @@ class MembershipServiceSpec
       }
     }
 
+    "updateUserTheme" should {
+      "save the update and Light theme to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserTheme(okUser.id, Theme.Light, okAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.theme shouldBe Theme.Light
+        savedUser.id shouldBe okUser.id
+      }
+
+      "save the update and Dark theme to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserTheme(okUser.id, Theme.Dark, okAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.theme shouldBe Theme.Dark
+        savedUser.id shouldBe okUser.id
+      }
+    }
+
     "get user" should {
       "return the user" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
