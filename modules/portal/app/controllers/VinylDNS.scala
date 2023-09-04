@@ -18,13 +18,13 @@ package controllers
 
 import java.util
 import java.util.HashMap
+
 import actions.{SecuritySupport, UserRequest}
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import controllers.OidcAuthenticator.ErrorResponse
-
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta, SignableVinylDNSRequest, VinylDNSRequest}
 import org.slf4j.LoggerFactory

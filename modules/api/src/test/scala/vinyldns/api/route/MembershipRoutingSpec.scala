@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+
 import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -38,7 +39,8 @@ import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupI
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
-import vinyldns.core.domain.membership.{Group, LockStatus}
+import vinyldns.core.domain.membership.Theme.Theme
+import vinyldns.core.domain.membership.{Group, LockStatus, Theme}
 
 class MembershipRoutingSpec
     extends AnyWordSpec
@@ -810,6 +812,78 @@ class MembershipRoutingSpec
         .when(membershipService)
         .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
       Put("/users/forbidden/lock") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+  }
+
+  "PUT update user theme" should {
+    "return a 200 response with the user theme is dark" in {
+      membershipRoute = okAuthRoute
+      val updatedUser = okUser.copy(theme = Theme.Dark)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserTheme("ok", Theme.Dark, okAuth)
+
+      Put("/users/ok/theme/dark") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe okUser.id
+        result.theme shouldBe Theme.Dark
+      }
+    }
+
+    "return a 200 response with the user is light" in {
+      membershipRoute = okAuthRoute
+      val updatedUser = okUser.copy(theme = Theme.Light)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserTheme("ok", Theme.Light, okAuth)
+
+      Put("/users/ok/theme/light") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe okUser.id
+        result.theme shouldBe Theme.Light
+      }
+    }
+
+    "return a 404 Not Found when the user is not found for light theme" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .updateUserTheme(anyString, any[Theme], any[AuthPrincipal])
+      Put("/users/notFound/theme/light") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 403 Forbidden when not authorized for light theme" in {
+      doReturn(result(NotAuthorizedError("fail")))
+        .when(membershipService)
+        .updateUserTheme(anyString, any[Theme], any[AuthPrincipal])
+      Put("/users/forbidden/theme/light") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    "return a 404 Not Found when the user is not found for dark theme" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .updateUserTheme(anyString, any[Theme], any[AuthPrincipal])
+      Put("/users/notFound/theme/dark") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 403 Forbidden when not authorized for dark theme" in {
+      doReturn(result(NotAuthorizedError("fail")))
+        .when(membershipService)
+        .updateUserTheme(anyString, any[Theme], any[AuthPrincipal])
+      Put("/users/forbidden/theme/dark") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
