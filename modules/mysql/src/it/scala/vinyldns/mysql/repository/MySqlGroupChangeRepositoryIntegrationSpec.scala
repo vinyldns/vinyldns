@@ -113,7 +113,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
 
       val listResponse = repo.getGroupChanges(groupId, None, 100).unsafeRunSync()
       listResponse.changes shouldBe expectedChanges
-      listResponse.lastEvaluatedTimeStamp shouldBe None
+      listResponse.nextId shouldBe None
     }
 
     "get group changes properly using a maxItems of 1" in {
@@ -130,9 +130,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       val listResponse =
         repo.getGroupChanges(groupId, startFrom = None, maxItems = 1).unsafeRunSync()
       listResponse.changes shouldBe expectedChanges
-      listResponse.lastEvaluatedTimeStamp shouldBe Some(
-        expectedChanges.head.created.toEpochMilli.toString
-      )
+      listResponse.nextId shouldBe Some(1)
     }
 
     "page group changes using a startFrom and maxItems" in {
@@ -145,33 +143,33 @@ class MySqlGroupChangeRepositoryIntegrationSpec
         .reverse
 
       val expectedPageOne = Seq(changesSorted(0))
-      val expectedPageOneNext = Some(changesSorted(0).created.toEpochMilli.toString)
+      val expectedPageOneNext = Some(1)
       val expectedPageTwo = Seq(changesSorted(1))
-      val expectedPageTwoNext = Some(changesSorted(1).created.toEpochMilli.toString)
+      val expectedPageTwoNext = Some(2)
       val expectedPageThree = Seq(changesSorted(2))
-      val expectedPageThreeNext = Some(changesSorted(2).created.toEpochMilli.toString)
+      val expectedPageThreeNext = Some(3)
 
       // get first page
       val pageOne =
         repo.getGroupChanges(groupId, startFrom = None, maxItems = 1).unsafeRunSync()
       pageOne.changes shouldBe expectedPageOne
-      pageOne.lastEvaluatedTimeStamp shouldBe expectedPageOneNext
+      pageOne.nextId shouldBe expectedPageOneNext
 
       // get second page
       val pageTwo =
         repo
-          .getGroupChanges(groupId, startFrom = pageOne.lastEvaluatedTimeStamp, maxItems = 1)
+          .getGroupChanges(groupId, startFrom = pageOne.nextId, maxItems = 1)
           .unsafeRunSync()
       pageTwo.changes shouldBe expectedPageTwo
-      pageTwo.lastEvaluatedTimeStamp shouldBe expectedPageTwoNext
+      pageTwo.nextId shouldBe expectedPageTwoNext
 
       // get final page
       val pageThree =
         repo
-          .getGroupChanges(groupId, startFrom = pageTwo.lastEvaluatedTimeStamp, maxItems = 1)
+          .getGroupChanges(groupId, startFrom = pageTwo.nextId, maxItems = 1)
           .unsafeRunSync()
       pageThree.changes shouldBe expectedPageThree
-      pageThree.lastEvaluatedTimeStamp shouldBe expectedPageThreeNext
+      pageThree.nextId shouldBe expectedPageThreeNext
     }
   }
 }

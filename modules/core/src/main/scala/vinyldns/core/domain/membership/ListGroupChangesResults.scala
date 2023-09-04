@@ -18,5 +18,5 @@ package vinyldns.core.domain.membership
 
 final case class ListGroupChangesResults(
     changes: Seq[GroupChange],
-    lastEvaluatedTimeStamp: Option[String]
+    nextId: Option[Int]
 )
