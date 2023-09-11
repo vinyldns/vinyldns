@@ -164,7 +164,6 @@ object CommandHandler {
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
-          logger.info(s"Performing zone sync for zone with zone change id: '${sync.id}', zone name: '${sync.zone.name}'")
           outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>

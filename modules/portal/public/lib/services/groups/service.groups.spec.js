@@ -38,6 +38,10 @@ describe('Service: groupsService', function () {
         expect(this.groupsService.getGroup).toBeDefined();
     });
 
+    it('should have listEmailDomains method', function () {
+        expect(this.groupsService.listEmailDomains).toBeDefined();
+    });
+
     it('should have createGroups method', function () {
         expect(this.groupsService.createGroup).toBeDefined();
     });
@@ -171,6 +175,19 @@ describe('Service: groupsService', function () {
         });
         this.$httpBackend.flush();
     });
+
+    it('listEmailDomains method should return json', function (done) {
+            var url = '/api/groups/valid/domains';
+            this.$httpBackend.whenRoute('GET', url).respond(getJSONFixture('mockDomains.json'));
+            this.groupsService.listEmailDomains().then(function (response) {
+                expect(response.data).toEqual(getJSONFixture('mockDomains.json'));
+                done();
+            }, function (error) {
+                fail('listEmailDomains expected 202 with json, but got' + error.status.toString());
+                done();
+            });
+            this.$httpBackend.flush();
+        });
 
     it('getGroupMemberList method should return 200 with valid group', function (done) {
         var uuid = 123;

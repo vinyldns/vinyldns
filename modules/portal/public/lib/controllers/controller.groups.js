@@ -28,6 +28,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.ignoreAccess = false;
     $scope.hasGroups = false;
     $scope.query = "";
+    $scope.validEmailDomains= [];
+    $scope.maxGroupItemsDisplay = 3000;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
@@ -38,20 +40,22 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.alerts.push(alert);
         $scope.processing = false;
     }
-
     //views
     //shared modal
     var modalDialog;
 
     $scope.openModal = function (evt) {
         $scope.currentGroup = {};
+        $scope.validDomains();
         void (evt && evt.preventDefault());
         if (!modalDialog) {
+
             modalDialog = angular.element('#modal_new_group').modal();
         }
-        modalDialog.modal('show');
-    };
 
+        modalDialog.modal('show');
+
+    };
     $scope.closeModal = function (evt) {
         void (evt && evt.preventDefault());
         if (!modalDialog) {
@@ -69,7 +73,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.refresh();
         return true;
     };
-
     // Autocomplete for group search
     $("#group-search-text").autocomplete({
       source: function( request, response ) {
@@ -201,12 +204,28 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         }
 
         return groupsService
-            .getGroups($scope.ignoreAccess, $scope.query)
+            .getGroups($scope.ignoreAccess, $scope.query, $scope.maxGroupItemsDisplay)
             .then(success)
             .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
             });
-    }
+  }
+    //Function for fetching list of valid domains
+
+     $scope.validDomains=function getValidEmailDomains() {
+            function success(response) {
+                 $log.debug('groupsService::listEmailDomains-success', response);
+                 $scope.validEmailDomains = response.data;
+                 return $scope.validEmailDomains
+            }
+            return groupsService
+                .listEmailDomains($scope.ignoreAccess, $scope.query)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::listEmailDomains-failure');
+                });
+        }
+
 
     // Return true if there are no groups created by the user
     $scope.haveNoGroups = function (groupLength) {
@@ -228,6 +247,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     $scope.editGroup = function (groupInfo) {
         $scope.currentGroup = groupInfo;
+        $scope.validDomains();
         $("#modal_edit_group").modal("show");
     };
 

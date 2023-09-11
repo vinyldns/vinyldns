@@ -19,7 +19,6 @@ package vinyldns.api.domain.zone
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.xbill.DNS.ZoneTransferException
-import vinyldns.api.backend.dns.DnsBackend
 import vinyldns.api.config.VinylDNSConfig
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
@@ -58,8 +57,6 @@ class ZoneViewLoaderIntegrationSpec extends AnyWordSpec with Matchers {
           transferConnection =
             Some(ZoneConnection("invalid-connection.", "bad-key", Encrypted("invalid-key"), "10.1.1.1"))
         )
-        val backend = backendResolver.resolve(zone).asInstanceOf[DnsBackend]
-        println(s"${backend.id}, ${backend.xfrInfo}, ${backend.resolver.getAddress}")
         DnsZoneViewLoader(zone, backendResolver.resolve(zone), 10000)
           .load()
           .unsafeRunSync()

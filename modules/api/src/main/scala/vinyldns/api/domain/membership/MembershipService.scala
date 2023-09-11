@@ -69,6 +69,11 @@ class MembershipService(
     } yield newGroup
   }
 
+  def listEmailDomains(authPrincipal: AuthPrincipal): Result[List[String]] = {
+    val validEmailDomains = validDomains.valid_domains
+    IO(validEmailDomains).toResult
+  }
+
   def updateGroup(
       groupId: String,
       name: String,
@@ -251,7 +256,7 @@ class MembershipService(
       _ <- isGroupChangePresent(result).toResult
       _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
       allUserIds = getGroupUserIds(Seq(result.get))
-      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap.withDefaultValue("unknown user"))
       groupChangeMessage <- determineGroupDifference(Seq(result.get), allUserMap)
       groupChanges = (groupChangeMessage, Seq(result.get)).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = Seq(result.get).map(_.userId).toSet
@@ -271,7 +276,7 @@ class MembershipService(
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
       allUserIds = getGroupUserIds(result.changes)
-      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap)
+      allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap.withDefaultValue("unknown user"))
       groupChangeMessage <- determineGroupDifference(result.changes, allUserMap)
       groupChanges = (groupChangeMessage, result.changes).zipped.map{ (a, b) => b.copy(groupChangeMessage = Some(a)) }
       userIds = result.changes.map(_.userId).toSet
@@ -311,7 +316,8 @@ class MembershipService(
           sb.append(s"Group email changed to '${change.newGroup.email}'. ")
         }
         if (change.oldGroup.get.description != change.newGroup.description) {
-          sb.append(s"Group description changed to '${change.newGroup.description.get}'. ")
+          val description = if(change.newGroup.description.isEmpty) "" else change.newGroup.description.get
+          sb.append(s"Group description changed to '$description'. ")
         }
         val adminAddDifference = change.newGroup.adminUserIds.diff(change.oldGroup.get.adminUserIds)
         if (adminAddDifference.nonEmpty) {
@@ -389,8 +395,9 @@ class MembershipService(
    // Validate email details.Email domains details are fetched from the config file.
   def emailValidation(email: String): Result[Unit] = {
     val emailDomains = validDomains.valid_domains
+    val numberOfDots=  validDomains.number_of_dots
     val splitEmailDomains = emailDomains.mkString(",")
-    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
+    val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._+!&-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
     val index = email.indexOf('@');
     val emailSplit = if(index != -1){
       email.substring(index+1,email.length)}
@@ -399,12 +406,19 @@ class MembershipService(
     else emailDomains
 
     Option(email) match {
-      case Some(value) if (emailRegex.findFirstIn(value) != None)=>
+      case Some(value) if (emailRegex.findFirstIn(value) != None && emailSplit.toString.count(_ == '.')>0)=>
 
-        if (emailDomains.contains(emailSplit)  || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))
+        if ((emailDomains.contains(emailSplit) || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))&&
+              emailSplit.toString.count(_ == '.')<=numberOfDots)
         ().asRight
-        else
-          EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+        else {
+          if(emailSplit.toString.count(_ == '.')>numberOfDots){
+            EmailValidationError(DotsValidationErrorMsg + " " + numberOfDots).asLeft
+          }
+          else {
+            EmailValidationError(EmailValidationErrorMsg + " " + wildcardEmailDomains.mkString(",")).asLeft
+          }
+        }
       case _ =>
         EmailValidationError(InvalidEmailValidationErrorMsg).asLeft
     }}.toResult

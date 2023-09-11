@@ -43,6 +43,10 @@ angular.module('service.groups', [])
             var url = '/api/groups/' + id;
             return $http.get(url);
         };
+        this.listEmailDomains = function () {
+                    var url = '/api/groups/valid/domains'
+                    return $http.get(url);
+                };
 
         this.deleteGroups = function (id) {
             var url = '/api/groups/' + id;
@@ -70,12 +74,12 @@ angular.module('service.groups', [])
             return $http.delete(url, {headers: utilityService.getCsrfHeader()});
         };
 
-        this.getGroups = function (ignoreAccess, query) {
+        this.getGroups = function (ignoreAccess, query, maxItems) {
             if (query == "") {
                 query = null;
             }
             var params = {
-                "maxItems": 3000,
+                "maxItems": maxItems,
                 "groupNameFilter": query,
                 "ignoreAccess": ignoreAccess
             };

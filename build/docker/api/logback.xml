@@ -9,9 +9,14 @@
         </encoder>
     </appender>
 
+
     <logger name="vinyldns.core.route.Monitor" level="OFF"/>
 
     <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF"/>
+
+    <logger name="com.zaxxer.hikari" level="TRACE">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
 
     <root level="${VINYLDNS_LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>

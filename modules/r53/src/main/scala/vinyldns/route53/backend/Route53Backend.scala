@@ -83,7 +83,7 @@ class Route53Backend(
         val found = result.getHostedZones.asScala.toList.headOption.map { hz =>
           val hzid = parseHostedZoneId(hz.getId)
 
-          // adds the hozted zone name and id to our cache if not present
+          // adds the hosted zone name and id to our cache if not present
           zoneMap.putIfAbsent(hz.getName, hzid)
           hzid
         }

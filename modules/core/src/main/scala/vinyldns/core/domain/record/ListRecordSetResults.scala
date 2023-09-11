@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 
 object NameSort extends Enumeration {
   type NameSort = Value
@@ -26,6 +27,19 @@ object NameSort extends Enumeration {
   def find(value: String): Value = value.toUpperCase match {
     case "DESC" => NameSort.DESC
     case _ => NameSort.ASC
+
+  }
+}
+
+object RecordTypeSort extends Enumeration {
+  type RecordTypeSort = Value
+  val ASC, DESC, NONE = Value
+
+  def find(value: String): Value = value.toUpperCase match {
+    case "DESC" => RecordTypeSort.DESC
+    case "ASC" => RecordTypeSort.ASC
+    case _ => RecordTypeSort.NONE
+
   }
 }
 
@@ -37,5 +51,6 @@ case class ListRecordSetResults(
                                  recordNameFilter: Option[String] = None,
                                  recordTypeFilter: Option[Set[RecordType]] = None,
                                  recordOwnerGroupFilter: Option[String] = None,
-                                 nameSort: NameSort
+                                 nameSort: NameSort,
+                                 recordTypeSort: RecordTypeSort
                                )
