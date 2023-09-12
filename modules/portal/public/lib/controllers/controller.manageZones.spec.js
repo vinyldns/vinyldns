@@ -42,6 +42,13 @@ describe('Controller: ManageZonesController', function () {
                 }
             });
         };
+        zonesService.getDeletedZones = function() {
+                    return $q.when({
+                        data: {
+                            zonesDeletedInfo: ["all my deleted zones"]
+                        }
+                    });
+                };
         zonesService.getBackendIds = function() {
                     return $q.when({
                         data: ['backend-1', 'backend-2']

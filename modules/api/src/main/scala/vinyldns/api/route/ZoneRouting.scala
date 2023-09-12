@@ -111,6 +111,38 @@ class ZoneRoute(
         }
       }
   } ~
+    path("zones" / "deleted" / "changes") {
+      (get & monitor("Endpoint.listDeletedZones")) {
+        parameters(
+          "nameFilter".?,
+          "startFrom".as[String].?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "ignoreAccess".as[Boolean].?(false)
+        ) {
+          (
+            nameFilter: Option[String],
+            startFrom: Option[String],
+            maxItems: Int,
+            ignoreAccess: Boolean
+          ) =>
+          {
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+              ) {
+                authenticateAndExecute(
+                  zoneService
+                    .listDeletedZones(_, nameFilter, startFrom, maxItems, ignoreAccess)
+                ) { result =>
+                  complete(StatusCodes.OK, result)
+                }
+              }
+            }
+          }
+        }
+      }
+    } ~
     path("zones" / "backendids") {
       (get & monitor("Endpoint.getBackendIds")) {
         authenticateAndExecute(_ => zoneService.getBackendIds()) { ids =>
