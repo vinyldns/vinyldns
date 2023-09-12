@@ -117,6 +117,26 @@ class ZoneRoutingSpec
     Zone("zone6.in-addr.arpa.", "zone6@test.com", ZoneStatus.Active, adminGroupId = xyzGroup.id)
   private val zoneSummaryInfo6 = ZoneSummaryInfo(zone6, xyzGroup.name, AccessLevel.NoAccess)
   private val error = Zone("error.", "error@test.com")
+  private val deletedZone1 = Zone("ok1.", "ok1@test.com", ZoneStatus.Deleted , acl = zoneAcl)
+  private val deletedZoneChange1 = ZoneChange(deletedZone1, "ok1", ZoneChangeType.Create, ZoneChangeStatus.Synced)
+  private val ZoneChangeDeletedInfo1 = ZoneChangeDeletedInfo(
+    deletedZoneChange1, okGroup.name, okUser.userName, AccessLevel.NoAccess)
+  private val deletedZone2 = Zone("ok2.", "ok2@test.com", ZoneStatus.Deleted , acl = zoneAcl)
+  private val deletedZoneChange2 = ZoneChange(deletedZone2, "ok2", ZoneChangeType.Create, ZoneChangeStatus.Synced)
+  private val ZoneChangeDeletedInfo2 = ZoneChangeDeletedInfo(
+    deletedZoneChange2, okGroup.name, okUser.userName, AccessLevel.NoAccess)
+  private val deletedZone3 = Zone("ok3.", "ok3@test.com", ZoneStatus.Deleted , acl = zoneAcl)
+  private val deletedZoneChange3 = ZoneChange(deletedZone3, "ok3", ZoneChangeType.Create, ZoneChangeStatus.Synced)
+  private val ZoneChangeDeletedInfo3= ZoneChangeDeletedInfo(
+    deletedZoneChange3, okGroup.name, okUser.userName, AccessLevel.NoAccess)
+  private val deletedZone4 = Zone("ok4.", "ok4@test.com", ZoneStatus.Deleted , acl = zoneAcl, adminGroupId = xyzGroup.id)
+  private val deletedZoneChange4 = ZoneChange(deletedZone4, "ok4", ZoneChangeType.Create, ZoneChangeStatus.Synced)
+  private val ZoneChangeDeletedInfo4 = ZoneChangeDeletedInfo(
+    deletedZoneChange4, okGroup.name, okUser.userName, AccessLevel.NoAccess)
+  private val deletedZone5 = Zone("ok5.", "ok5@test.com", ZoneStatus.Deleted , acl = zoneAcl, adminGroupId = xyzGroup.id)
+  private val deletedZoneChange5 = ZoneChange(deletedZone5, "ok5", ZoneChangeType.Create, ZoneChangeStatus.Synced)
+  private val ZoneChangeDeletedInfo5 = ZoneChangeDeletedInfo(
+    deletedZoneChange5, okGroup.name, okUser.userName, AccessLevel.NoAccess)
 
   private val missingFields: JValue =
     ("invalidField" -> "randomValue") ~~
@@ -383,6 +403,92 @@ class ZoneRoutingSpec
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              ignoreAccess = false
+            )
+          )
+
+        case _ => Left(InvalidRequest("shouldnt get here"))
+      }
+
+      outcome.toResult
+    }
+
+    def listDeletedZones(
+                          authPrincipal: AuthPrincipal,
+                          nameFilter: Option[String],
+                          startFrom: Option[String],
+                          maxItems: Int,
+                          ignoreAccess: Boolean = false
+                        ): Result[ListDeletedZoneChangesResponse] = {
+
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
+        case (_, None, Some("zone3."), 3, false) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zoneChangeFilter = None,
+              startFrom = Some("zone3."),
+              nextId = Some("zone6."),
+              maxItems = 3,
+              ignoreAccess = false
+            )
+          )
+        case (_, None, Some("zone4."), 4, false) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zoneChangeFilter = None,
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4,
+              ignoreAccess = false
+            )
+          )
+
+        case (_, None, None, 3, false) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zoneChangeFilter = None,
+              startFrom = None,
+              nextId = Some("zone3."),
+              maxItems = 3,
+              ignoreAccess = false
+            )
+          )
+
+        case (_, None, None, 5, true) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo =
+                List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3, ZoneChangeDeletedInfo4,ZoneChangeDeletedInfo5),
+              zoneChangeFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 5,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, false) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zoneChangeFilter = Some(filter),
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4,
+              ignoreAccess = false
+            )
+          )
+
+        case (_, None, None, _, _) =>
+          Right(
+            ListDeletedZoneChangesResponse(
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zoneChangeFilter = None,
               startFrom = None,
               nextId = None,
               ignoreAccess = false
@@ -1070,6 +1176,83 @@ class ZoneRoutingSpec
 
     "return an error if the max items is out of range" in {
       Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseEntity.toString should include(
+          "maxItems was 700, maxItems must be between 0 and 100"
+        )
+      }
+    }
+  }
+
+  "GET Deleted zones" should {
+    "return the next id when more results exist" in {
+      Get(s"/zones/deleted/changes?startFrom=zone3.&maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListDeletedZoneChangesResponse]
+        val deletedZones = resp.zonesDeletedInfo
+        (deletedZones.map(_.zoneChange.zone.id) should contain)
+          .only(deletedZone1.id, deletedZone2.id, deletedZone3.id)
+        resp.nextId shouldBe Some("zone6.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe Some("zone3.")
+      }
+    }
+
+    "not return the next id when there are no more results" in {
+      Get(s"/zones/deleted/changes?startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListDeletedZoneChangesResponse]
+        val deletedZones = resp.zonesDeletedInfo
+        (deletedZones.map(_.zoneChange.zone.id) should contain)
+          .only(deletedZone1.id, deletedZone2.id, deletedZone3.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "not return the start from when not provided" in {
+      Get(s"/zones/deleted/changes?maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListDeletedZoneChangesResponse]
+        val deletedZones = resp.zonesDeletedInfo
+        (deletedZones.map(_.zoneChange.zone.id) should contain)
+          .only(deletedZone1.id, deletedZone2.id, deletedZone3.id)
+        resp.nextId shouldBe Some("zone3.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe None
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return the name filter when provided" in {
+      Get(s"/zones/deleted/changes?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListDeletedZoneChangesResponse]
+        val deletedZones = resp.zonesDeletedInfo
+        (deletedZones.map(_.zoneChange.zone.id) should contain)
+          .only(deletedZone1.id, deletedZone2.id, deletedZone3.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.zoneChangeFilter shouldBe Some("foo")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return all zones when list all is true" in {
+      Get(s"/zones/deleted/changes?maxItems=5&ignoreAccess=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListDeletedZoneChangesResponse]
+        val deletedZones = resp.zonesDeletedInfo
+        (deletedZones.map(_.zoneChange.zone.id) should contain)
+          .only(deletedZone1.id, deletedZone2.id, deletedZone3.id, deletedZone4.id, deletedZone5.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 5
+        resp.startFrom shouldBe None
+        resp.zoneChangeFilter shouldBe None
+        resp.ignoreAccess shouldBe true
+      }
+    }
+
+    "return an error if the max items is out of range" in {
+      Get(s"/zones/deleted/changes?maxItems=700") ~> zoneRoute ~> check {
         status shouldBe BadRequest
         responseEntity.toString should include(
           "maxItems was 700, maxItems must be between 0 and 100"

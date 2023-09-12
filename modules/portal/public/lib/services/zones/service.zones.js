@@ -53,6 +53,20 @@ angular.module('service.zones', [])
                     return $http.get(url);
         };
 
+        this.getDeletedZones = function (limit, startFrom, query, ignoreAccess) {
+            if (query == "") {
+                query = null;
+            }
+            var params = {
+                "maxItems": limit,
+                "startFrom": startFrom,
+                "nameFilter": query,
+                "ignoreAccess": ignoreAccess
+            };
+            var url = groupsService.urlBuilder("/api/zones/deleted/changes", params);
+            return $http.get(url);
+        };
+
         this.getBackendIds = function() {
             var url = "/api/zones/backendids";
             return $http.get(url);
