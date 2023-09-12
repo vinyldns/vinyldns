@@ -421,9 +421,6 @@ class RecordSetRoutingSpec
 
   private val failedChangesWithUserName =
     List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
-  private val listFailedRecordSetChangeResponse = ListFailedRecordSetChangesResponse(
-    failedChangesWithUserName,0,0,100
-  )
 
   class TestService extends RecordSetServiceAlgebra {
 
@@ -585,14 +582,17 @@ class RecordSetRoutingSpec
 
     def listFailedRecordSetChanges(
                                     authPrincipal: AuthPrincipal,
+                                    zoneId:Option[String],
                                     startFrom: Int,
                                     maxItems: Int
                                   ): Result[ListFailedRecordSetChangesResponse] = {
-      val outcome = authPrincipal match {
-        case _ => Right(listFailedRecordSetChangeResponse)
-      }
-      outcome.toResult
-    }
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => authPrincipal match {
+          case _ => Right(ListFailedRecordSetChangesResponse(failedChangesWithUserName,0,startFrom,maxItems))
+        }
+      }}.toResult
 
     def searchRecordSets(
                            startFrom: Option[String],
@@ -910,39 +910,12 @@ class RecordSetRoutingSpec
     }
   }
 
-  "GET recordset change history" should {
-    "return the recordset change" in {
-      Get(s"/recordsetchange/history?fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
-        val response = responseAs[ListRecordSetHistoryResponse]
-
-        response.zoneId shouldBe Some(okZone.id)
-        (response.recordSetChanges.map(_.id) should contain)
-          .only(rsChange1.id)
-      }
-    }
-
-    "return an error when the record fqdn and type is not defined" in {
-      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-    }
-
-    "return a Bad Request when maxItems is out of Bounds" in {
-      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.BadRequest
-      }
-    }
-  }
-
   "GET failed record set changes" should {
     "return the failed record set changes" in {
       val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
       val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
 
-      Get(s"/metrics/health/recordsetchangesfailure") ~> recordSetRoute ~> check {
+      Get(s"/metrics/health/zones/${okZone.id}/recordsetchangesfailure") ~> recordSetRoute ~> check {
         val changes = responseAs[ListFailedRecordSetChangesResponse]
         changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
 

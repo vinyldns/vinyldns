@@ -477,6 +477,20 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getDeletedZones: Action[AnyContent] = userAction.async { implicit request =>
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest =
+      new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "zones/deleted/changes", parameters = queryParameters)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def getZoneChange(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
