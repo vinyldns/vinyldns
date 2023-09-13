@@ -102,7 +102,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   }
 
   "MySqlGroupChangeRepository.getGroupChanges" should {
-    "don't return lastEvaluatedTimeStamp if page size < maxItems" in {
+    "don't return nextId if page size < maxItems" in {
       val groupId = "group-id-1"
       val changes = generateGroupChanges(groupId, 50)
       changes.map(saveGroupChangeData(repo, _).unsafeRunSync())
