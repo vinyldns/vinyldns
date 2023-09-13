@@ -63,7 +63,7 @@ trait MembershipServiceAlgebra {
 
   def getGroupActivity(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int,
       authPrincipal: AuthPrincipal
   ): Result[ListGroupChangesResponse]

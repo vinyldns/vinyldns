@@ -266,7 +266,7 @@ class MembershipService(
 
   def getGroupActivity(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int,
       authPrincipal: AuthPrincipal
   ): Result[ListGroupChangesResponse] =
@@ -285,7 +285,7 @@ class MembershipService(
     } yield ListGroupChangesResponse(
       groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))),
       startFrom,
-      result.lastEvaluatedTimeStamp,
+      result.nextId,
       maxItems
     )
 

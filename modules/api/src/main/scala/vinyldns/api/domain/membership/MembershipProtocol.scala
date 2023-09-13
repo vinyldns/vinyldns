@@ -158,8 +158,8 @@ final case class ListAdminsResponse(admins: Seq[UserInfo])
 
 final case class ListGroupChangesResponse(
     changes: Seq[GroupChangeInfo],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
+    startFrom: Option[Int] = None,
+    nextId: Option[Int] = None,
     maxItems: Int
 )
 

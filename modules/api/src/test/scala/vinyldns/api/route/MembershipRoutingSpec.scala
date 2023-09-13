@@ -705,14 +705,14 @@ class MembershipRoutingSpec
       )
       doReturn(result(expected))
         .when(membershipService)
-        .getGroupActivity(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
+        .getGroupActivity(anyString, any[Option[Int]], anyInt, any[AuthPrincipal])
 
       Get(s"/groups/pageSize/activity") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
         val maxItemsCaptor = ArgumentCaptor.forClass(classOf[Int])
         verify(membershipService).getGroupActivity(
           anyString,
-          any[Option[String]],
+          any[Option[Int]],
           maxItemsCaptor.capture(),
           any[AuthPrincipal]
         )
