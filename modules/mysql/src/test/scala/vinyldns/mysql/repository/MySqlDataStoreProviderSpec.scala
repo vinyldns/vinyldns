@@ -49,7 +49,7 @@ class MySqlDataStoreProviderSpec extends AnyWordSpec with Matchers {
           |      migration-url = "test-url"
           |      maximum-pool-size = 20
           |      connection-timeout-millis = 1000
-          |      max-life-time = 600000
+          |      max-lifetime = 600000
           |    }
           |
           |    repositories {

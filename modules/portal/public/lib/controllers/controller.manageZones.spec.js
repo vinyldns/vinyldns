@@ -42,6 +42,13 @@ describe('Controller: ManageZonesController', function () {
                 }
             });
         };
+        zonesService.getDeletedZones = function() {
+                    return $q.when({
+                        data: {
+                            zonesDeletedInfo: ["all my deleted zones"]
+                        }
+                    });
+                };
         zonesService.getBackendIds = function() {
                     return $q.when({
                         data: ['backend-1', 'backend-2']
@@ -214,6 +221,8 @@ describe('Controller: ManageZonesController', function () {
         var refreshAclRuleDisplay = spyOn(this.scope, 'refreshAclRuleDisplay')
             .and.stub();
         var refreshZoneChange = spyOn(this.scope, 'refreshZoneChange')
+                    .and.stub();
+        var validDomains = spyOn(this.scope, 'validDomains')
                     .and.stub();
         this.scope.currentManageZoneState = this.scope.manageZoneState.CONFIRM_UPDATE;
         this.scope.updateZoneInfo.hiddenKey = 'some key';

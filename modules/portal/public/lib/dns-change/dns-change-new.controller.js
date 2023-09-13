@@ -42,6 +42,7 @@
             $scope.allowManualReview = false;
             $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
             $scope.manualReviewEnabled;
+            $scope.naptrFlags = ["U", "S", "A", "P"];
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -88,6 +89,13 @@
                             entry.type = entry.type.slice(0, -4);
                             var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
                             payload.changes.splice(i+1, 0, newEntry)
+                        }
+                        if(entry.type == 'NAPTR') {
+                            // Since regexp can be left empty
+                            if(entry.record.regexp == undefined){
+                                var newEntry = {changeType: entry.changeType, type: "NAPTR", ttl: entry.ttl, inputName: entry.inputName, record: {order: entry.record.order, preference: entry.record.preference, flags: entry.record.flags, service: entry.record.service, regexp: '', replacement: entry.record.replacement}}
+                                payload.changes[i] = newEntry;
+                            }
                         }
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
                             var recordDataEmpty = true;
@@ -219,6 +227,21 @@
                                 change[headers[j]] = {"ptrdname": rowContent[j].trim()}
                             } else if (change["type"] == "TXT") {
                                 change[headers[j]] = {"text": rowContent[j].trim()}
+                            } else if (change["type"] == "NS") {
+                                change[headers[j]] = {"nsdname": rowContent[j].trim()}
+                            } else if (change["type"] == "MX") {
+                                var mxData = rowContent[j].trim().split(' ');
+                                change[headers[j]] = {"preference": parseInt(mxData[0]), "exchange": mxData[1]}
+                            } else if (change["type"] == "NAPTR") {
+                                var naptrData = rowContent[j].trim().split(' ');
+                                if(naptrData.length == 6){
+                                    change[headers[j]] = {"order": parseInt(naptrData[0]), "preference": parseInt(naptrData[1]), "flags": naptrData[2], "service": naptrData[3], "regexp": naptrData[4], "replacement": naptrData[5]}
+                                } else {
+                                    change[headers[j]] = {"order": parseInt(naptrData[0]), "preference": parseInt(naptrData[1]), "flags": naptrData[2], "service": naptrData[3], "regexp": '', "replacement": naptrData[4]}
+                                }
+                            } else if (change["type"] == "SRV") {
+                                var srvData = rowContent[j].trim().split(' ');
+                                change[headers[j]] = {"priority": parseInt(srvData[0]), "weight": parseInt(srvData[1]), "port": parseInt(srvData[2]), "target": srvData[3]}
                             }
                         } else {
                             change[headers[j]] = rowContent[j].trim()

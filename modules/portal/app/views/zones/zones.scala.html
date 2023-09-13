@@ -1,5 +1,4 @@
 @(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
-
 @content = {
 <!-- PAGE CONTENT -->
 <div class="right_col" role="main">
@@ -30,6 +29,7 @@
             <ul class="nav nav-tabs bar_tabs">
                 <li class="active"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
                 <li><a id="tab2-button" href="#allZones" data-toggle="tab" ng-click="allZonesAccess()">All Zones</a></li>
+                <li><a id="tab3-button" href="#deletedZones" data-toggle="tab">Abandoned Zones</a></li>
             </ul>
 
             <div class="panel-body tab-content">
@@ -40,36 +40,42 @@
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                    <div class="btn-group">
-                                        <button class="btn btn-default" ng-click="resetCurrentZone()" data-toggle="modal"
-                                                data-target="#zone_connection_modal" id="open-zone-modal-button">
-                                            <span class="fa fa-arrow-right"></span> Connect
-                                        </button>
-                                        <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
-                                            <span class="fa fa-refresh"></span> Refresh
-                                        </button>
-                                    </div>
-
-                                    <!-- SEARCH BOX -->
-                                    <div class="pull-right">
-                                        <form class="input-group" ng-submit="refreshZones()">
-                                            <div class="input-group">
-                                                <span class="input-group-btn">
-                                                    <button id="zone-search-button" type="submit" class="btn btn-primary btn-left-round">
-                                                        <span class="fa fa-search"></span>
-                                                    </button>
-                                                </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
-                                            </div>
-                                            <div class="checkbox pull-right">
-                                                <label>
+                                    <div class="row flex">
+                                        <div class="btn-group col-md-9 flex-1">
+                                            <button class="btn btn-default" ng-click="resetCurrentZone()" data-toggle="modal" data-target="#zone_connection_modal" id="open-zone-modal-button">
+                                                <span class="fa fa-arrow-right"></span> Connect
+                                            </button>
+                                            <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 pull-right">
+                                            <!-- SEARCH BOX -->
+                                            <form class="input-group remove-bottom-margin full-width" ng-submit="refreshZones()">
+                                                <div class="input-group remove-bottom-margin">
+                                                    <span class="input-group-btn">
+                                                        <button id="zone-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                                </div>
+                                            </form>
+                                            <!-- END SEARCH BOX -->
+                                            <div class="flex">
+                                                <label class="reduce-font-weight remove-bottom-margin flex-1">
                                                     <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
                                                 </label>
+                                                <form action="" class="pull-right flex-1">
+                                                    <div>
+                                                        <label class="reduce-font-weight remove-bottom-margin">
+                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                        </label>
+                                                    </div>
+                                                </form>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
-                                    <!-- END SEARCH BOX -->
-
                                 </div>
                                 <div id="zone-list-table" class="panel-body">
                                     <p ng-if="!zonesLoaded">Loading zones...</p>
@@ -77,7 +83,7 @@
                                     <p ng-if="hasZones && zonesLoaded && !zones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
                                         <span class="vinyldns_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
@@ -128,7 +134,7 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
                                         <span class="vinyldns_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
@@ -159,39 +165,46 @@
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-
-                                    <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
-                                        <span class="fa fa-refresh"></span> Refresh
-                                    </button>
-
-                                    <!-- SEARCH BOX -->
-                                    <div class="pull-right">
-                                        <form class="input-group" ng-submit="refreshZones()">
-                                            <div class="input-group">
-                                                <span class="input-group-btn">
-                                                    <button id="all-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
-                                                        <span class="fa fa-search"></span>
-                                                    </button>
-                                                </span>
-                                                <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
-                                            </div>
-
-                                                <div class="checkbox pull-right">
-                                                    <label>
-                                                        <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
-                                                    </label>
+                                    <div class="row flex">
+                                        <div class="btn-group col-md-9 flex-1">
+                                            <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 pull-right">
+                                            <!-- SEARCH BOX -->
+                                            <form class="input-group remove-bottom-margin full-width" ng-submit="refreshZones()">
+                                                <div class="input-group remove-bottom-margin">
+                                                    <span class="input-group-btn">
+                                                        <button id="all-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input ng-model="query" type="text" class="form-control zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
                                                 </div>
-                                        </form>
+                                            </form>
+                                            <!-- END SEARCH BOX -->
+                                            <div class="flex">
+                                                <label class="reduce-font-weight remove-bottom-margin flex-1">
+                                                    <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshZones()"> Search by admin group
+                                                </label>
+                                                <form action="" class="pull-right flex-1">
+                                                    <div>
+                                                        <label class="reduce-font-weight remove-bottom-margin">
+                                                            <input type="checkbox" ng-model="includeReverse" ng-true-value="false" ng-false-value="true" ng-change="refreshZones()"> Hide PTR Zones
+                                                        </label>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <!-- END SEARCH BOX -->
-
                                 </div>
                                 <div id="zone-list-table" class="panel-body">
                                     <p ng-if="!allZonesLoaded">Loading zones...</p>
                                     <p ng-if="allZonesLoaded && !allZones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
                                         <span class="vinyldns_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
@@ -245,7 +258,7 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate vinyldns_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
                                         <span class="vinyldns_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
@@ -258,6 +271,209 @@
                                     </div>
                                     <!-- END PAGINATION -->
 
+                                </div>
+                                <div class="panel-footer"></div>
+                            </div>
+                            <!-- END SIMPLE DATATABLE -->
+
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="deletedZones">
+                    <div class="row">
+                        <div class="col-md-12">
+
+                            <!-- SIMPLE DATATABLE -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+
+                                    <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                        <span class="fa fa-refresh"></span> Refresh
+                                    </button>
+
+                                    <!-- SEARCH BOX -->
+                                    <div class="pull-right">
+                                        <form class="input-group" ng-submit="refreshZones()">
+                                            <div class="input-group">
+                                                <span class="input-group-btn">
+                                                    <button id="my-deleted-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                        <span class="fa fa-search"></span>
+                                                    </button>
+                                                </span>
+                                                <input id="deleted-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- END SEARCH BOX -->
+
+                                    <!-- DELETED ZONES TABS -->
+                                    <div class="panel panel-default panel-tabs">
+                                        <ul class="nav nav-tabs bar_tabs">
+                                            <li class="active"><a href="#myDeletedZones" data-toggle="tab">My Zones</a></li>
+                                            <li><a id="tab2-button" href="#allDeletedZones" data-toggle="tab">All Zones</a></li>
+                                        </ul>
+                                        <div class="panel-body tab-content">
+                                            <div class="tab-pane active" id="myDeletedZones">
+                                                <div id="zone-list-table" class="panel-body">
+                                                    <p ng-if="!myDeletedZonesLoaded">Loading zones...</p>
+                                                    <p ng-if="myDeletedZonesLoaded && !myDeletedZones.length">No zones match the search criteria.</p>
+
+                                                    <!-- PAGINATION -->
+                                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
+                                                        <ul class="pagination">
+                                                            <li class="paginate_button previous">
+                                                                <a ng-if="prevPageEnabled('myDeletedZones')" ng-click="prevPageMyDeletedZones()">Previous</a>
+                                                            </li>
+                                                            <li class="paginate_button next">
+                                                                <a ng-if="nextPageEnabled('myDeletedZones')" ng-click="nextPageMyDeletedZones()">Next</a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- END PAGINATION -->
+
+                                                    <table class="table" ng-if="myDeletedZones.length">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>Email</th>
+                                                            <th>Admin Group</th>
+                                                            <th>Created</th>
+                                                            <th>Abandoned</th>
+                                                            <th>Status</th>
+                                                            <th>Abandoned By</th>
+                                                            @if(meta.sharedDisplayEnabled) {
+                                                            <th>Access</th>
+                                                            }
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <tr ng-repeat="deletedZone in myDeletedZones">
+                                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.name">
+                                                            </td>
+                                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.email">
+                                                            </td>
+                                                            <td>
+                                                                <a ng-if="canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                                   href="/groups/{{deletedZone.zoneChange.zone.adminGroupId}}"></a>
+                                                                <span ng-if="!canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                                      style="line-height: 0"></span>
+                                                            </td>
+                                                            <td>
+                                                                {{deletedZone.zoneChange.zone.created}}
+                                                            </td>
+                                                            <td>
+                                                                {{deletedZone.zoneChange.zone.updated}}
+                                                            </td>
+                                                            <td ng-bind="deletedZone.zoneChange.zone.status"></td>
+                                                            <td>
+                                                                {{deletedZone.userName}}
+                                                            </td>
+                                                            @if(meta.sharedDisplayEnabled) {
+                                                            <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                            }
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+
+                                                    <!-- PAGINATION -->
+                                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
+                                                        <ul class="pagination">
+                                                            <li class="paginate_button previous">
+                                                                <a ng-if="prevPageEnabled('myDeletedZones')" ng-click="prevPageMyDeletedZones()">Previous</a>
+                                                            </li>
+                                                            <li class="paginate_button next">
+                                                                <a ng-if="nextPageEnabled('myDeletedZones')" ng-click="nextPageMyDeletedZones()">Next</a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- END PAGINATION -->
+
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane" id="allDeletedZones">
+                                                <div id="zone-list-table" class="panel-body">
+                                                    <p ng-if="!allDeletedZonesLoaded">Loading zones...</p>
+                                                    <p ng-if="allDeletedZonesLoaded && !allDeletedZones.length">No zones match the search criteria.</p>
+
+                                                    <!-- PAGINATION -->
+                                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
+                                                        <ul class="pagination">
+                                                            <li class="paginate_button previous">
+                                                                <a ng-if="prevPageEnabled('allDeletedZones')" ng-click="prevPageAllDeletedZones()">Previous</a>
+                                                            </li>
+                                                            <li class="paginate_button next">
+                                                                <a ng-if="nextPageEnabled('allDeletedZones')" ng-click="nextPageAllDeletedZones()">Next</a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- END PAGINATION -->
+
+                                                    <table class="table" ng-if="allDeletedZones.length">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>Email</th>
+                                                            <th>Admin Group</th>
+                                                            <th>Created</th>
+                                                            <th>Abandoned</th>
+                                                            <th>Status</th>
+                                                            <th>Abandoned By</th>
+                                                            @if(meta.sharedDisplayEnabled) {
+                                                            <th>Access</th>
+                                                            }
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <tr ng-repeat="deletedZone in allDeletedZones">
+                                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.name">
+                                                            </td>
+                                                            <td class="wrap-long-text" ng-bind="deletedZone.zoneChange.zone.email">
+                                                            </td>
+                                                            <td>
+                                                                <a ng-if="canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                                   href="/groups/{{deletedZone.zoneChange.zone.adminGroupId}}"></a>
+                                                                <span ng-if="!canAccessGroup(deletedZone.zoneChange.zone.adminGroupId)" ng-bind="deletedZone.adminGroupName"
+                                                                      style="line-height: 0"></span>
+                                                            </td>
+                                                            <td>
+                                                                {{deletedZone.zoneChange.zone.created}}
+                                                            </td>
+                                                            <td>
+                                                                {{deletedZone.zoneChange.zone.updated}}
+                                                            </td>
+                                                            <td ng-bind="deletedZone.zoneChange.zone.status"></td>
+                                                            <td>
+                                                                {{deletedZone.userName}}
+                                                            </td>
+                                                            @if(meta.sharedDisplayEnabled) {
+                                                            <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                            }
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+
+                                                    <!-- PAGINATION -->
+                                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
+                                                        <ul class="pagination">
+                                                            <li class="paginate_button previous">
+                                                                <a ng-if="prevPageEnabled('allDeletedZones')" ng-click="prevPageAllDeletedZones()">Previous</a>
+                                                            </li>
+                                                            <li class="paginate_button next">
+                                                                <a ng-if="nextPageEnabled('allDeletedZones')" ng-click="nextPageAllDeletedZones()">Next</a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- END PAGINATION -->
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- END DELETED ZONES TABS -->
                                 </div>
                                 <div class="panel-footer"></div>
                             </div>

@@ -6,8 +6,14 @@
     </div>
 </div>
 
+       <h3 class="batch-change-error-help">
+        <i class="fa fa-info-circle" style="font-size:18px;color:red">
+            Updates to zone require a valid email. If zone email is invalid please enter a valid email.
+        </i>
+       </h3>
+
 <!-- START ZONE INFO FORM -->
-<div>
+<div ng-init="maxGroupItemsDisplay = @meta.maxGroupItemsDisplay">
     <form class="form-horizontal">
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -33,6 +39,24 @@
                                 <div class="col-md-9">
                                     <div>
                                         <input id="zone-update-email" type="text" ng-model="updateZoneInfo.email" class="form-control" ng-disabled="!isZoneAdmin"/>
+                                        <div>
+                                            <h5>
+                                                <a data-toggle="collapse" data-target="#collapseUpdateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                                                    <span class="badge" id="validDomainsUpdateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                                                </a>
+                                            </h5>
+                                        </div>
+                                        <div class="collapse" id="collapseUpdateZoneInstruction">
+                                            <div class="well">
+                                                <p>
+                                                    List Of Valid Email Domains:
+                                                <li ng-repeat="validDomains in validEmailDomains">
+                                                    {{validDomains}}
+                                                </li>
+                                                </p>
+                                                <hr/>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -360,6 +384,9 @@
         <cron-selection id="cron-lib" class="col-md-12" ng-model="zoneSyncSchedule.recurrenceSchedule" config="myZoneSyncScheduleConfig"></cron-selection>
         <span class="help-block">
             Schedule for zone sync at the provided time. Scheduled zone sync follows <b>UTC timezone</b>.
+            <a style="cursor: pointer;" ng-click="openTimeConverter();" id="open-time-converter-modal-button">
+                    Convert to UTC time
+            </a>
         </span>
         <div class="checkbox col-md-12" id="cron-lib-check">
             <label ng-if="recurrenceScheduleExist">
@@ -573,6 +600,33 @@
                         Close
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="time_converter_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
+                </button>
+                <div class="modal-title">Convert to UTC time</div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="local-time">Select the time:</label>
+                    <div class="input-group">
+                        <input id="local-time" type="text" name="time" class="form-control" ng-model="time" />
+                        <div class="input-group-addon">{{ getLocalTimeZone() }}</div>
+                    </div>
+                    <p style="margin: 0px;"><b>Equivalent UTC time:</b> {{utcTime}}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" ng-click="resetTime();">Clear Form</button>
+                <button type="button" class="btn btn-default pull-right" ng-click="getUtcTime();">Get UTC time</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetTime();">Close</button>
             </div>
         </div>
     </div>

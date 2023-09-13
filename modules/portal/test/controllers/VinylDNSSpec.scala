@@ -1621,6 +1621,74 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getDeletedZones" should {
+
+      "return ok (200) if the DeletedZones is found" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/deleted/changes" =>
+            defaultActionBuilder { Results.Ok(hobbitDeletedZoneChange) }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getDeletedZones()(
+            FakeRequest(GET, s"/zones/deleted/changes")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(hobbitDeletedZoneChange)
+      }
+
+      "return a not found (404) if the DeletedZones does not exist" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/deleted/changes" =>
+            defaultActionBuilder { Results.NotFound }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.getDeletedZones()(
+            FakeRequest(GET, "zones/deleted/changes")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
+      }
+
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.getDeletedZones()(FakeRequest(GET, s"/api/zones/deleted/changes"))
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getDeletedZones()(
+          FakeRequest(GET, s"/api/zones/deleted/changes").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
     ".getZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
@@ -1637,6 +1705,35 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withLockedClient(client)
         val result = underTest.getZone(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
+    ".getCommonZoneDetails" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.getCommonZoneDetails(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId/details"))
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.getCommonZoneDetails(hobbitZoneId)(
+          FakeRequest(GET, s"/api/zones/$hobbitZoneId/details").withSession(
             "username" -> lockedFrodoUser.userName,
             "accessKey" -> lockedFrodoUser.accessKey
           )
@@ -1934,6 +2031,37 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val underTest = withLockedClient(client)
         val result = underTest.listRecordSetChanges(hobbitZoneId)(
           FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+            "username" -> lockedFrodoUser.userName,
+            "accessKey" -> lockedFrodoUser.accessKey
+          )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+    }
+
+    ".listRecordSetChangeHistory" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.listRecordSetChangeHistory()(
+            FakeRequest(GET, s"/api/recordsetchange/history")
+          )
+
+        status(result) mustEqual 401
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.listRecordSetChangeHistory()(
+          FakeRequest(GET, s"/api/recordsetchange/history").withSession(
             "username" -> lockedFrodoUser.userName,
             "accessKey" -> lockedFrodoUser.accessKey
           )

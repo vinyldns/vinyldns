@@ -31,12 +31,12 @@ object DomainValidationErrorType extends Enumeration {
   // NOTE: once defined, an error code type cannot be changed!
   val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
   InvalidDomainName, InvalidCname, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
-  InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
-  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist, InvalidUpdateRequest,
-  CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
+  InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMX_NAPTR_SRVData, InvalidNaptrFlag,
+  InvalidNaptrRegexp, InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
+  InvalidUpdateRequest, CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
   NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
-  DeleteRecordDataDoesNotExist, InvalidIPv4CName  = Value
+  DeleteRecordDataDoesNotExist, InvalidIPv4CName, InvalidBatchRequest, NotApprovedNSError  = Value
 
   // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
@@ -55,7 +55,9 @@ object DomainValidationErrorType extends Enumeration {
       case _: InvalidIpv6Address => InvalidIpv6Address
       case _: InvalidIPAddress => InvalidIPAddress
       case _: InvalidTTL => InvalidTTL
-      case _: InvalidMxPreference => InvalidMxPreference
+      case _: InvalidMX_NAPTR_SRVData => InvalidMX_NAPTR_SRVData
+      case _: InvalidNaptrFlag => InvalidNaptrFlag
+      case _: InvalidNaptrRegexp => InvalidNaptrRegexp
       case _: InvalidBatchRecordType => InvalidBatchRecordType
       case _: ZoneDiscoveryError => ZoneDiscoveryError
       case _: RecordAlreadyExists => RecordAlreadyExists
@@ -75,6 +77,8 @@ object DomainValidationErrorType extends Enumeration {
       case _: UnsupportedOperation => UnsupportedOperation
       case _: DeleteRecordDataDoesNotExist => DeleteRecordDataDoesNotExist
       case _: InvalidIPv4CName => InvalidIPv4CName
+      case _: InvalidBatchRequest => InvalidBatchRequest
+      case _: NotApprovedNSError => NotApprovedNSError
     }
   // $COVERAGE-ON$
 }

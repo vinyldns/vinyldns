@@ -14,18 +14,29 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.record
+package vinyldns.api.config
 
-case class ListRecordSetChangesResults(
-    items: List[RecordSetChange] = List[RecordSetChange](),
-    nextId: Option[Int] = None,
-    startFrom: Option[Int] = None,
-    maxItems: Int = 100
-)
+import pureconfig.ConfigReader
 
-case class ListFailedRecordSetChangesResults(
-                                        items: List[RecordSetChange] = List[RecordSetChange](),
-                                        nextId: Int = 0,
-                                        startFrom: Int = 0,
-                                        maxItems: Int = 100
-                                      )
+ case class ValidEmailConfig(
+    valid_domains : List[String],
+    number_of_dots : Int)
+object ValidEmailConfig {
+  implicit val configReader: ConfigReader[ValidEmailConfig] =
+    ConfigReader.forProduct2[ValidEmailConfig,List[String],Int](
+      "email-domains",
+      "number-of-dots"
+    )
+    {
+      case (
+        valid_domains,
+        number_of_dots,
+        ) =>
+        ValidEmailConfig(
+          valid_domains,
+          number_of_dots,
+
+        )
+    }
+
+}

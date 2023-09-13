@@ -23,7 +23,10 @@ angular.module('controller.zones', [])
     $scope.allZonesLoaded = false;
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
     $scope.allGroups = [];
+    $scope.myDeletedZones = [];
+    $scope.allDeletedZones = [];
     $scope.ignoreAccess = false;
+    $scope.validEmailDomains= [];
     $scope.allZonesAccess = function () {
         $scope.ignoreAccess = true;
     }
@@ -33,13 +36,15 @@ angular.module('controller.zones', [])
     }
 
     $scope.query = "";
+    $scope.includeReverse = true;
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
     var allZonesPaging = pagingService.getNewPagingParams(100);
-
+    var myDeleteZonesPaging = pagingService.getNewPagingParams(100);
+    var allDeleteZonesPaging = pagingService.getNewPagingParams(100);
     profileService.getAuthenticatedUserData().then(function (results) {
         if (results.data) {
             $scope.profile = results.data;
@@ -52,7 +57,7 @@ angular.module('controller.zones', [])
 
     $scope.resetCurrentZone = function () {
         $scope.currentZone = {};
-
+        $scope.validDomains();
         if($scope.myGroups && $scope.myGroups.length) {
             $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
@@ -78,7 +83,7 @@ angular.module('controller.zones', [])
     });
 
     $scope.canAccessGroup = function(groupId) {
-         return $scope.myGroupIds !== "undefined" &&  $scope.myGroupIds.indexOf(groupId) > -1;
+         return $scope.myGroupIds !== undefined &&  $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     $scope.canAccessZone = function(accessLevel) {
@@ -173,9 +178,9 @@ angular.module('controller.zones', [])
         allZonesPaging = pagingService.resetPaging(allZonesPaging);
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, false, $scope.includeReverse)
             .then(function (response) {
-                $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
+                $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 zonesPaging.next = response.data.nextId;
                 updateZoneDisplay(response.data.zones);
                 if (!$scope.query.length) {
@@ -187,22 +192,67 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, true, $scope.includeReverse)
             .then(function (response) {
-                $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
+                $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 allZonesPaging.next = response.data.nextId;
                 updateAllZonesDisplay(response.data.zones);
             })
             .catch(function (error) {
                 handleError(error, 'zonesService::getZones-failure');
             });
+
+        zonesService
+                    .getDeletedZones(myDeleteZonesPaging.maxItems, undefined, $scope.query, false)
+                    .then(function (response) {
+                        $log.debug('zonesService::getMyDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
+                        myDeleteZonesPaging.next = response.data.nextId;
+                        updateMyDeletedZoneDisplay(response.data.zonesDeletedInfo);
+                    })
+                    .catch(function (error) {
+                        handleError(error, 'zonesService::getDeletedZones-failure');
+                    });
+
+        zonesService
+                    .getDeletedZones(allDeleteZonesPaging.maxItems, undefined, $scope.query, true)
+                    .then(function (response) {
+                        $log.debug('zonesService::getAllDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
+                        allDeleteZonesPaging.next = response.data.nextId;
+                        updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
+                    })
+                    .catch(function (error) {
+                        handleError(error, 'zonesService::getDeletedZones-failure');
+                    });
+
     };
+
+    function updateMyDeletedZoneDisplay (myDeletedZones) {
+        $scope.myDeletedZones = myDeletedZones;
+        $scope.myDeletedZonesLoaded = true;
+        $log.debug("Displaying my Deleted zones: ", $scope.myDeletedZones);
+                if($scope.myDeletedZones.length > 0) {
+                    $("td.dataTables_empty").hide();
+                } else {
+                    $("td.dataTables_empty").show();
+                }
+    }
+
+    function updateAllDeletedZoneDisplay (allDeletedZones) {
+        $scope.allDeletedZones = allDeletedZones;
+        $scope.allDeletedZonesLoaded = true;
+        $log.debug("Displaying all Deleted zones: ", $scope.allDeletedZones);
+                if($scope.allDeletedZones.length > 0) {
+                    $("td.dataTables_empty").hide();
+                } else {
+                    $("td.dataTables_empty").show();
+                }
+    }
 
     function updateZoneDisplay (zones) {
         $scope.zones = zones;
         $scope.myZoneIds = zones.map(function(zone) {return zone['id']});
         $scope.zonesLoaded = true;
-        $log.log("Displaying my zones: ", $scope.zones);
+        $log.debug("Displaying my zones: ", $scope.zones);
         if($scope.zones.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
@@ -213,19 +263,32 @@ angular.module('controller.zones', [])
     function updateAllZonesDisplay (zones) {
         $scope.allZones = zones;
         $scope.allZonesLoaded = true;
-        $log.log("Displaying all zones: ", $scope.allZones);
+        $log.debug("Displaying all zones: ", $scope.allZones);
         if($scope.allZones.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
             $("td.dataTables_empty").show();
         }
     }
+    $scope.validDomains=function getValidEmailDomains() {
+                function success(response) {
+                    $log.debug('zonesService::listEmailDomains-success', response);
+                    return $scope.validEmailDomains = response.data;
+                }
+
+                return groupsService
+                    .listEmailDomains($scope.ignoreAccess, $scope.query)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'zonesService::listEmailDomains-failure');
+                    });
+            }
 
     /* Set total number of zones  */
 
     $scope.addZoneConnection = function () {
         if ($scope.processing) {
-            $log.log('zoneConnection::processing is true; exiting');
+            $log.debug('zoneConnection::processing is true; exiting');
             return;
         }
 
@@ -269,6 +332,10 @@ angular.module('controller.zones', [])
                  return pagingService.getPanelTitle(zonesPaging);
              case 'allZones':
                  return pagingService.getPanelTitle(allZonesPaging);
+             case 'myDeletedZones':
+                 return pagingService.getPanelTitle(myDeleteZonesPaging);
+             case 'allDeletedZones':
+                 return pagingService.getPanelTitle(allDeleteZonesPaging);
          }
      };
 
@@ -278,6 +345,10 @@ angular.module('controller.zones', [])
                 return pagingService.prevPageEnabled(zonesPaging);
             case 'allZones':
                 return pagingService.prevPageEnabled(allZonesPaging);
+            case 'myDeletedZones':
+                return pagingService.prevPageEnabled(myDeleteZonesPaging);
+            case 'allDeletedZones':
+                return pagingService.prevPageEnabled(allDeleteZonesPaging);
         }
     };
 
@@ -287,13 +358,17 @@ angular.module('controller.zones', [])
                 return pagingService.nextPageEnabled(zonesPaging);
             case 'allZones':
                 return pagingService.nextPageEnabled(allZonesPaging);
+            case 'myDeletedZones':
+                return pagingService.nextPageEnabled(myDeleteZonesPaging);
+            case 'allDeletedZones':
+                return pagingService.nextPageEnabled(allDeleteZonesPaging);
         }
     };
 
     $scope.prevPageMyZones = function() {
         var startFrom = pagingService.getPrevStartFrom(zonesPaging);
         return zonesService
-            .getZones(zonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false)
+            .getZones(zonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false, true)
             .then(function(response) {
                 zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
                 updateZoneDisplay(response.data.zones);
@@ -306,7 +381,7 @@ angular.module('controller.zones', [])
     $scope.prevPageAllZones = function() {
         var startFrom = pagingService.getPrevStartFrom(allZonesPaging);
         return zonesService
-            .getZones(allZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(allZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, true, true)
             .then(function(response) {
                 allZonesPaging = pagingService.prevPageUpdate(response.data.nextId, allZonesPaging);
                 updateAllZonesDisplay(response.data.zones);
@@ -316,9 +391,35 @@ angular.module('controller.zones', [])
             });
     }
 
+    $scope.prevPageMyDeletedZones = function() {
+        var startFrom = pagingService.getPrevStartFrom(myDeleteZonesPaging);
+        return zonesService
+            .getDeletedZones(myDeleteZonesPaging.maxItems, startFrom, $scope.query, false)
+            .then(function(response) {
+                myDeleteZonesPaging = pagingService.prevPageUpdate(response.data.nextId, myDeleteZonesPaging);
+                updateMyDeletedZoneDisplay(response.data.zonesDeletedInfo);
+            })
+            .catch(function (error) {
+                handleError(error,'zonesService::prevPage-failure');
+            });
+    }
+
+    $scope.prevPageAllDeletedZones = function() {
+            var startFrom = pagingService.getPrevStartFrom(allDeleteZonesPaging);
+            return zonesService
+                .getDeletedZones(allDeleteZonesPaging.maxItems, startFrom, $scope.query, true)
+                .then(function(response) {
+                    allDeleteZonesPaging = pagingService.prevPageUpdate(response.data.nextId, allDeleteZonesPaging);
+                    updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
+                })
+                .catch(function (error) {
+                    handleError(error,'zonesService::prevPage-failure');
+                });
+        }
+
     $scope.nextPageMyZones = function () {
         return zonesService
-            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, $scope.searchByAdminGroup, false)
+            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, $scope.searchByAdminGroup, false, true)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 zonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, zonesPaging);
@@ -334,13 +435,45 @@ angular.module('controller.zones', [])
 
     $scope.nextPageAllZones = function () {
         return zonesService
-            .getZones(allZonesPaging.maxItems, allZonesPaging.next, $scope.query, $scope.searchByAdminGroup, true)
+            .getZones(allZonesPaging.maxItems, allZonesPaging.next, $scope.query, $scope.searchByAdminGroup, true, true)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 allZonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, allZonesPaging);
 
                 if (zoneSets.length > 0) {
                     updateAllZonesDisplay(response.data.zones);
+                }
+            })
+            .catch(function (error) {
+               handleError(error,'zonesService::nextPage-failure')
+            });
+    };
+
+    $scope.nextPageMyDeletedZones = function () {
+        return zonesService
+            .getDeletedZones(myDeleteZonesPaging.maxItems, myDeleteZonesPaging.next, $scope.query, false)
+            .then(function(response) {
+                var myDeletedZoneSets = response.data.zonesDeletedInfo;
+                myDeleteZonesPaging = pagingService.nextPageUpdate(myDeletedZoneSets, response.data.nextId, myDeleteZonesPaging);
+
+                if (myDeletedZoneSets.length > 0) {
+                    updateMyDeletedZoneDisplay(response.data.zonesDeletedInfo);
+                }
+            })
+            .catch(function (error) {
+               handleError(error,'zonesService::nextPage-failure')
+            });
+    };
+
+    $scope.nextPageAllDeletedZones = function () {
+        return zonesService
+            .getDeletedZones(allDeleteZonesPaging.maxItems, allDeleteZonesPaging.next, $scope.query, false)
+            .then(function(response) {
+                var allDeletedZoneSets = response.data.zonesDeletedInfo;
+                allDeleteZonesPaging = pagingService.nextPageUpdate(allDeletedZoneSets, response.data.nextId, allDeleteZonesPaging);
+
+                if (allDeletedZoneSets.length > 0) {
+                    updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
                 }
             })
             .catch(function (error) {

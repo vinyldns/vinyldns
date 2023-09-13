@@ -83,7 +83,7 @@ class Route53Backend(
         val found = result.getHostedZones.asScala.toList.headOption.map { hz =>
           val hzid = parseHostedZoneId(hz.getId)
 
-          // adds the hozted zone name and id to our cache if not present
+          // adds the hosted zone name and id to our cache if not present
           zoneMap.putIfAbsent(hz.getName, hzid)
           hzid
         }
@@ -106,10 +106,17 @@ class Route53Backend(
     * @return A list of record sets matching the name, empty if not found
     */
   def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] = {
+    val fqdn = Fqdn.merge(name, zoneName).fqdn
+    def filterResourceRecordSet(
+        rrs: java.util.List[ResourceRecordSet],
+        rrType: RRType
+    ): java.util.List[ResourceRecordSet] =
+      rrs.asScala.filter { r =>
+        r.getName == fqdn && RRType.fromValue(r.getType) == rrType
+      }.asJava
     for {
       hostedZoneId <- lookupHostedZone(zoneName)
       awsRRType <- OptionT.fromOption[IO](toRoute53RecordType(typ))
-      fqdn = Fqdn.merge(name, zoneName).fqdn
       result <- OptionT.liftF {
         r53(
           new ListResourceRecordSetsRequest()
@@ -119,7 +126,10 @@ class Route53Backend(
           client.listResourceRecordSetsAsync
         )
       }
-    } yield toVinylRecordSets(result.getResourceRecordSets, zoneName: String)
+    } yield toVinylRecordSets(
+      filterResourceRecordSet(result.getResourceRecordSets, awsRRType),
+      zoneName: String
+    )
   }.getOrElse(Nil)
 
   /**

@@ -49,6 +49,7 @@ class MembershipRoute(
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
@@ -183,6 +184,13 @@ class MembershipRoute(
       (get & monitor("Endpoint.groupSingleChange")) {
         authenticateAndExecute(membershipService.getGroupChange(groupChangeId, _)) { groupChange =>
           complete(StatusCodes.OK, groupChange)
+        }
+      }
+    } ~
+    path("groups" / "valid" / "domains") {
+      (get & monitor("Endpoint.validdomains")) {
+        authenticateAndExecute(membershipService.listEmailDomains) { emailDomains =>
+          complete(StatusCodes.OK, emailDomains)
         }
       }
     } ~

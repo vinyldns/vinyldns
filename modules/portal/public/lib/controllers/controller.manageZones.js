@@ -36,10 +36,13 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      * Zone scope data initial setup
      */
 
+    $scope.time = undefined;
+    $scope.utcTime = undefined;
     $scope.alerts = [];
     $scope.zoneInfo = {};
     $scope.zoneChanges = {};
     $scope.updateZoneInfo = {};
+    $scope.validEmailDomains= [];
     $scope.zoneSyncSchedule = {
         isChecked: false,
         recurrenceSchedule: ''
@@ -82,7 +85,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
 
     var zoneHistoryPaging = pagingService.getNewPagingParams(100);
-
     /**
      * Zone modal control functions
      */
@@ -99,6 +101,23 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         $("#delete_zone_connection_modal").modal("show");
     };
 
+    $scope.openTimeConverter = function() {
+        $("#time_converter_modal").modal("show");
+    };
+
+    $scope.getLocalTimeZone = function() {
+        return new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
+    };
+
+    $scope.getUtcTime = function() {
+        $scope.utcTime = moment($scope.time, 'hh:mm A').utc().format('HH:mm');
+    };
+
+    $scope.resetTime = function () {
+        $scope.time = undefined;
+        $scope.utcTime = undefined;
+    };
+
     $scope.myZoneSyncScheduleConfig = {
         allowMultiple: false,
         quartz: true,
@@ -110,6 +129,18 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             allowYear : false
         }
     }
+
+    // Hide calendar as it's not necessary here and override css
+    $('#local-time').focusin(function(){
+      $('.calendar-table').css("display","none");
+      $('.calendar-time').css("margin-left","1.1rem");
+    });
+
+    // Override minute values to have trialing zero
+    $('.panel').focusin(function(){
+      $(".minute-value option[value='number:0']").attr("label", "00");
+      $(".minute-value option[value='number:5']").attr("label", "05");
+    });
 
     $scope.submitDeleteZone = function() {
         zonesService.delZone($scope.zoneInfo.id)
@@ -156,6 +187,18 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         };
         $('#acl_modal').modal('show');
     };
+    $scope.validDomains=function getValidEmailDomains() {
+       function success(response) {
+       $log.debug('manageZonesService::listEmailDomains-success', response);
+       return $scope.validEmailDomains = response.data;
+       }
+        return groupsService
+        .listEmailDomains($scope.ignoreAccess, $scope.query)
+        .then(success)
+        .catch(function (error) {
+        handleError(error, 'manageZonesService::listEmailDomains-failure');
+        });
+        }
 
     $scope.clickUpdateAclRule = function(index) {
         $scope.currentAclRuleIndex = index;
@@ -194,6 +237,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.submitUpdateZone = function () {
         var zone = angular.copy($scope.updateZoneInfo);
+        if(zone['recurrenceSchedule'] == ""){
+            delete zone['recurrenceSchedule']
+        }
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
         zone = zonesService.checkBackendId(zone);
@@ -214,6 +260,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.submitDeleteAclRule = function() {
         var newZone = angular.copy($scope.zoneInfo);
+        if(!$scope.recurrenceScheduleExist){
+            delete newZone.recurrenceSchedule;
+        }
         newZone = zonesService.normalizeZoneDates(newZone);
         newZone.acl.rules.splice($scope.currentAclRuleIndex, 1);
         $scope.updateZone(newZone, 'ACL Rule Delete');
@@ -226,7 +275,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             if ($scope.currentAclRule.priority == 'User') {
                 profileService.getUserDataByUsername($scope.currentAclRule.userName)
                     .then(function (profile) {
-                        $log.log('profileService::getUserDataByUsername-success');
+                        $log.debug('profileService::getUserDataByUsername-success');
                         $scope.currentAclRule.userId = profile.data.id;
                         $scope.postUserLookup(type);
                     })
@@ -242,6 +291,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.postUserLookup = function(type) {
         var newRule = zonesService.toVinylAclRule($scope.currentAclRule);
         var newZone = angular.copy($scope.zoneInfo);
+        if(!$scope.recurrenceScheduleExist){
+            delete newZone.recurrenceSchedule;
+        }
         newZone = zonesService.normalizeZoneDates(newZone);
         if (type == 'Update') {
             newZone.acl.rules[$scope.currentAclRuleIndex] = newRule;
@@ -258,6 +310,9 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
 
     $scope.objectsDiffer = function(left, right) {
+        if (!('recurrenceSchedule' in left)) {
+            left['recurrenceSchedule'] = "";
+        }
         var l = $scope.normalizeZone(left);
         var r = $scope.normalizeZone(right);
         return !angular.equals(l, r);
@@ -309,7 +364,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     $scope.refreshZone = function() {
         function success(response) {
-            $log.log('recordsService::getZone-success');
+            $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
@@ -325,6 +380,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
             $scope.refreshAclRuleDisplay();
             $scope.refreshZoneChange();
+            $scope.validDomains();
         }
         return recordsService
             .getZone($scope.zoneId)
@@ -337,7 +393,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
     $scope.refreshZoneChange = function() {
         zoneHistoryPaging = pagingService.resetPaging(zoneHistoryPaging);
          function success(response) {
-            $log.log('zonesService::getZoneChanges-success');
+            $log.debug('zonesService::getZoneChanges-success');
             zoneHistoryPaging.next = response.data.nextId;
             $scope.zoneChanges = response.data.zoneChanges;
             $scope.updateZoneChangeDisplay(response.data.zoneChanges);
@@ -393,7 +449,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
      */
     function getZoneGroup(groupId, length) {
         function success(response) {
-            $log.log('groupsService::getZoneGroup-success');
+            $log.debug('groupsService::getZoneGroup-success');
             $scope.zoneChanges[length].zone.adminGroupName = response.data.name;
         }
             return groupsService
@@ -407,7 +463,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getZoneUser(userId, length) {
         function success(response) {
-            $log.log('profileService::getZoneUserDataById-success');
+            $log.debug('profileService::getZoneUserDataById-success');
             $scope.zoneChanges[length].userName = response.data.userName;
         }
         return profileService
@@ -420,7 +476,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getAclGroup(groupId, length) {
         function success(response) {
-            $log.log('groupsService::getAclGroup-success');
+            $log.debug('groupsService::getAclGroup-success');
             $scope.allAclRules[length].groupName = response.data.name;
         }
         return groupsService
@@ -433,7 +489,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
 
     function getAclUser(userId, length) {
         function success(response) {
-            $log.log('profileService::getAclUserDataById-success');
+            $log.debug('profileService::getAclUserDataById-success');
             $scope.allAclRules[length].userName = response.data.userName;
         }
         return profileService
@@ -504,6 +560,19 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
                 handleError(error, 'zonesService::updateZone-failure');
             });
     };
+
+    $('input[name="time"]').daterangepicker({
+        singleDatePicker: true,
+        startDate: moment().startOf('day'),
+        minDate: moment().startOf('day'),
+        maxDate: moment().endOf('day'),
+        timePicker24Hour: true,
+        timePicker: true,
+        timePickerIncrement: 5,
+        locale: {
+          format: 'HH:mm'
+        }
+    });
 
     $timeout($scope.refreshZone, 0);
 });

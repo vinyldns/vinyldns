@@ -22,7 +22,7 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnerShipTransfer}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
@@ -78,6 +78,28 @@ object ZoneInfo {
     )
 }
 
+case class ZoneDetails(
+                     name: String,
+                     email: String,
+                     status: ZoneStatus,
+                     adminGroupId: String,
+                     adminGroupName: String,
+                   )
+
+object ZoneDetails {
+  def apply(
+             zone: Zone,
+             groupName: String,
+           ): ZoneDetails =
+    ZoneDetails(
+      name = zone.name,
+      email = zone.email,
+      status = zone.status,
+      adminGroupId = zone.adminGroupId,
+      adminGroupName = groupName,
+    )
+}
+
 case class ZoneSummaryInfo(
                             name: String,
                             email: String,
@@ -119,6 +141,27 @@ object ZoneSummaryInfo {
       zone.backendId,
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
+      accessLevel = accessLevel
+    )
+}
+
+case class ZoneChangeDeletedInfo(
+                         zoneChange: ZoneChange,
+                         adminGroupName: String,
+                         userName: String,
+                         accessLevel: AccessLevel
+                          )
+
+object ZoneChangeDeletedInfo {
+  def apply(zoneChange: List[ZoneChange],
+            groupName: String,
+            userName: String,
+            accessLevel: AccessLevel)
+  : ZoneChangeDeletedInfo =
+    ZoneChangeDeletedInfo(
+      zoneChange= zoneChange,
+      groupName = groupName,
+      userName = userName,
       accessLevel = accessLevel
     )
 }
@@ -280,7 +323,8 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
 
 // Errors

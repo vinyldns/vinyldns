@@ -23,7 +23,9 @@ case class Meta(
     batchChangeLimit: Int,
     defaultTtl: Long,
     manualBatchChangeReviewEnabled: Boolean,
-    scheduledBatchChangesEnabled: Boolean
+    scheduledBatchChangesEnabled: Boolean,
+    portalUrl: String,
+    maxGroupItemsDisplay: Int
 )
 object Meta {
   def apply(config: Configuration): Meta =
@@ -33,6 +35,8 @@ object Meta {
       config.getOptional[Int]("batch-change-limit").getOrElse(1000),
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
-      config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false)
+      config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false),
+      config.getOptional[String]("portal.vinyldns.url").getOrElse("http://localhost:9001"),
+      config.getOptional[Int]("api.limits.membership-routing-max-groups-list-limit").getOrElse(3000)
     )
 }

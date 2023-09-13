@@ -101,7 +101,7 @@ object Boot extends App {
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the zone sync task to be executed every 5 seconds
-      _ <- IO(executor.scheduleAtFixedRate(() => {
+      _ <- if (vinyldnsConfig.serverConfig.isZoneSyncScheduleAllowed){ IO(executor.scheduleAtFixedRate(() => {
         val zoneChanges = for {
           zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
           _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
@@ -112,7 +112,7 @@ object Boot extends App {
           case Left(error) =>
             logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
         }
-      }, 0, 1, TimeUnit.SECONDS))
+      }, 0, 1, TimeUnit.SECONDS)) } else IO.unit
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,
@@ -141,9 +141,10 @@ object Boot extends App {
         vinyldnsConfig.highValueDomainConfig,
         vinyldnsConfig.manualReviewConfig,
         vinyldnsConfig.batchChangeConfig,
-        vinyldnsConfig.scheduledChangesConfig
+        vinyldnsConfig.scheduledChangesConfig,
+        vinyldnsConfig.serverConfig.approvedNameServers
       )
-      val membershipService = MembershipService(repositories)
+      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
 
       val connectionValidator =
         new ZoneConnectionValidator(
@@ -171,7 +172,8 @@ object Boot extends App {
         zoneValidations,
         recordAccessValidations,
         backendResolver,
-        vinyldnsConfig.crypto
+        vinyldnsConfig.crypto,
+        membershipService
       )
       //limits configured in reference.conf passing here
       val limits = LimitsConfig(

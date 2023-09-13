@@ -29,6 +29,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneRepository
 import cats.effect._
 import scalikejdbc.{ConnectionPool, DB}
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -48,6 +49,8 @@ class MembershipServiceSpec
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
+  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
+  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -55,9 +58,20 @@ class MembershipServiceSpec
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
-    mockRecordSetRepo
+    mockRecordSetRepo,
+    mockValidEmailConfig
+  )
+  private val backingServiceNew = new MembershipService(
+    mockGroupRepo,
+    mockUserRepo,
+    mockMembershipRepo,
+    mockZoneRepo,
+    mockGroupChangeRepo,
+    mockRecordSetRepo,
+    mockValidEmailConfigNew
   )
   private val underTest = spy(backingService)
+  private val underTestNew = spy(backingServiceNew)
 
   private val okUserInfo: UserInfo = UserInfo(okUser)
   private val dummyUserInfo: UserInfo = UserInfo(dummyUser)
@@ -82,7 +96,7 @@ class MembershipServiceSpec
   // the update will remove users 3 and 4, add users 5 and 6, as well as a new admin user 7 and remove user2 as admin
   private val updatedInfo = Group(
     name = "new.name",
-    email = "new.email",
+    email = "test@test.com",
     description = Some("new desc"),
     id = "id",
     memberIds = Set("user1", "user2", "user5", "user6", "user7"),
@@ -282,7 +296,171 @@ class MembershipServiceSpec
         verify(mockMembershipRepo, never())
           .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
       }
+
+      "return an error if an invalid domain is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test@ok.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
+
+      "return an error if an invalid email is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test.ok.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
+
+      "return an error if an invalid email with number of dots is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test@ok.ok.dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
+
+      "return an error if an invalid email with * is entered" in {
+        val error = underTest.createGroup(groupInfo.copy(email = "test@*dummy.com"), okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[EmailValidationError]
+      }
     }
+
+    "return an error if an email is invalid test case 1" in {
+      val error = underTest.emailValidation(email = "test.ok.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if a domain is invalid test case 1" in {
+      val error = underTest.emailValidation(email = "test@ok.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 2" in {
+      val error = underTest.emailValidation(email = "test@.@.test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 3" in {
+      val error = underTest.emailValidation(email = "test@.@@.test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 4" in {
+      val error = underTest.emailValidation(email = "@te@st@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 5" in {
+      val error = underTest.emailValidation(email = ".test@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 6" in {
+      val error = underTest.emailValidation(email = "te.....st@test.com").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "return an error if an email is invalid test case 7" in {
+      val error = underTest.emailValidation(email = "test@test.com.").value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[EmailValidationError]
+    }
+
+    "Check whether *dummy.com is a valid email" in {
+      val result = underTest.emailValidation(email = "test@ok.dummy.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
+    "Check whether test.com is a valid email" in {
+      val result = underTest.emailValidation(email = "test@test.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
+    "Check whether test.com is a valid email with number of dots" in {
+      val result = underTest.emailValidation(email = "test@ok.dummy.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
+    "Check whether it is allowing any domain when the config is empty" in {
+      val result = underTestNew.emailValidation(email = "test@abc.com").value.unsafeRunSync()
+      result shouldBe Right(())
+    }
+
+    "Create Group when email has domain *dummy.com" in {
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+      doReturn(().toResult).when(underTest).groupValidation(groupInfo)
+      doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+      doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
+      doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(Set(okUser.id)))
+        .when(mockMembershipRepo)
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+
+      val result = underTest.createGroup(groupInfo.copy(email = "test@ok.dummy.com"), okAuth).value.unsafeRunSync().toOption.get
+      result shouldBe groupInfo.copy(email = "test@ok.dummy.com")
+
+      val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
+
+      verify(mockMembershipRepo, times(2))
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      verify(mockGroupRepo).save(any[DB], groupCaptor.capture())
+
+      val savedGroup = groupCaptor.getValue
+      (savedGroup.memberIds should contain).only(okUser.id)
+      (savedGroup.adminUserIds should contain).only(okUser.id)
+      savedGroup.name shouldBe groupInfo.name
+      savedGroup.email shouldBe groupInfo.copy(email = "test@ok.dummy.com").email
+      savedGroup.description shouldBe groupInfo.description
+  }
+
+    "Create Group when email with any domain when config is empty" in {
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+      doReturn(().toResult).when(underTestNew).groupValidation(groupInfo)
+      doReturn(().toResult).when(underTestNew).groupWithSameNameDoesNotExist(groupInfo.name)
+      doReturn(().toResult).when(underTestNew).usersExist(groupInfo.memberIds)
+      doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(Set(okUser.id)))
+        .when(mockMembershipRepo)
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+
+      val result = underTestNew.createGroup(groupInfo.copy(email = "test@abc.com"), okAuth).value.unsafeRunSync().toOption.get
+      result shouldBe groupInfo.copy(email = "test@abc.com")
+
+      val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
+
+      verify(mockMembershipRepo, times(2))
+        .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      verify(mockGroupRepo).save(any[DB], groupCaptor.capture())
+
+      val savedGroup = groupCaptor.getValue
+      (savedGroup.memberIds should contain).only(okUser.id)
+      (savedGroup.adminUserIds should contain).only(okUser.id)
+      savedGroup.name shouldBe groupInfo.name
+      savedGroup.email shouldBe groupInfo.copy(email = "test@abc.com").email
+      savedGroup.description shouldBe groupInfo.description
+    }
+
+    "Create Group when email has domain test.com" in {
+    doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
+    doReturn(().toResult).when(underTest).groupValidation(groupInfo)
+    doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
+    doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
+    doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+    doReturn(IO.pure(Set(okUser.id)))
+      .when(mockMembershipRepo)
+      .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+    doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+
+      val result = underTest.createGroup(groupInfo.copy(email = "test@test.com"), okAuth).value.unsafeRunSync().toOption.get
+      result shouldBe groupInfo.copy(email = "test@test.com")
+
+    val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
+
+    verify(mockMembershipRepo, times(2))
+      .saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+    verify(mockGroupRepo).save(any[DB], groupCaptor.capture())
+
+    val savedGroup = groupCaptor.getValue
+    (savedGroup.memberIds should contain).only(okUser.id)
+    (savedGroup.adminUserIds should contain).only(okUser.id)
+    savedGroup.name shouldBe groupInfo.name
+    savedGroup.email shouldBe groupInfo.copy(email = "test@test.com").email
+    savedGroup.description shouldBe groupInfo.description
+  }
 
     "update an existing group" should {
       "save the update and add new members and remove deleted members" in {

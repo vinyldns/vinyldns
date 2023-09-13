@@ -28,6 +28,7 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
+
 import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 
@@ -165,6 +166,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     val dnsName = recordDnsName(name, zoneName)
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
+
     lookup.setResolver(resolver)
     lookup.setSearchPath(List(Name.empty).asJava)
     lookup.setCache(null)
@@ -213,6 +215,19 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
         resp <- toDnsResponse(resp)
       } yield resp
 
+    val message =
+      for {
+        str <- Either.catchNonFatal(s"DNS Resolver: ${resolver.toString}, " +
+          s"Resolver Address=${resolver.getAddress.getAddress}, Resolver Host=${resolver.getAddress.getHostName}, " +
+          s"Resolver Port=${resolver.getPort}, Timeout=${resolver.getTimeout.toString}"
+        )
+      } yield str
+
+    val resolver_debug_message = message match {
+      case Right(value) => value
+      case Left(_) => s"DNS Resolver: ${resolver.toString}"
+    }
+
     val receivedResponse = result match {
       case Right(value) => value.toString.replaceAll("\n",";").replaceAll("\t"," ")
       case Left(e) =>
@@ -222,7 +237,7 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     }
 
     logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse"
+      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString.replaceAll("\n",";").replaceAll("\t"," ")}. Received response: $receivedResponse. DNS Resolver Info: $resolver_debug_message"
     )
 
     result
