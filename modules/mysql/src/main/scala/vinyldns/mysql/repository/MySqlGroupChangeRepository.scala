@@ -47,9 +47,9 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
     sql"""
       |SELECT data
       |  FROM group_change
-      | WHERE group_id = {groupId} AND created_timestamp < {startFrom}
+      | WHERE group_id = {groupId}
       | ORDER BY created_timestamp DESC
-      | LIMIT {maxItems}
+      | LIMIT {maxItems} OFFSET {startFrom}
     """.stripMargin
 
   private final val LIST_GROUP_CHANGE_NO_START =
@@ -100,7 +100,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
 
   def getGroupChanges(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int
   ): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
@@ -112,21 +112,25 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
           val query = startFrom match {
             case Some(start) =>
               LIST_GROUP_CHANGES_WITH_START
-                .bindByName('groupId -> groupId, 'startFrom -> start, 'maxItems -> maxItems)
+                .bindByName('groupId -> groupId, 'startFrom -> start, 'maxItems -> (maxItems + 1))
             case None =>
               LIST_GROUP_CHANGE_NO_START
-                .bindByName('groupId -> groupId, 'maxItems -> maxItems)
+                .bindByName('groupId -> groupId, 'maxItems -> (maxItems + 1))
           }
           val queryResult = query
             .map(toGroupChange(1))
             .list()
             .apply()
 
-          val nextId =
-            if (queryResult.size < maxItems) None
-            else queryResult.lastOption.map(_.created.toEpochMilli.toString)
+          val maxQueries = queryResult.take(maxItems)
+          val startValue = startFrom.getOrElse(0)
 
-          ListGroupChangesResults(queryResult, nextId)
+          val nextId = queryResult match {
+            case _ if queryResult.size <= maxItems | queryResult.isEmpty => None
+            case _ => Some(startValue + maxItems)
+          }
+
+          ListGroupChangesResults(maxQueries, nextId)
         }
       }
     }

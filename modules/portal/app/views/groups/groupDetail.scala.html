@@ -121,7 +121,7 @@
                             <!-- START SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                    <h3 class="panel-title">All Group Changes {{ getChangePageTitle() }}</h3>
+                                    <h3 class="panel-title">All Group Changes</h3>
                                 </div>
                                 <div class="panel-body">
                                     <div class="btn-group">
@@ -129,7 +129,8 @@
                                     </div>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getChangePageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="changePrevPageEnabled()" ng-click="changePrevPage()" class="paginate_button">Previous</a>
@@ -171,7 +172,8 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_paginate">
+                                        <span class="vinyldns_page_number">{{ getChangePageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
                                                 <a ng-if="changePrevPageEnabled()" ng-click="changePrevPage()" class="paginate_button">Previous</a>
