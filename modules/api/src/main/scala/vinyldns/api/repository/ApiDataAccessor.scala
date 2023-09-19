@@ -17,10 +17,11 @@
 package vinyldns.api.repository
 
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{UserRepository, GroupChangeRepository, MembershipRepository, GroupRepository}
+import vinyldns.core.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneRepository, ZoneChangeRepository}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.DataAccessor
+import vinyldns.core.task.TaskRepository
 
 final case class ApiDataAccessor(
     userRepository: UserRepository,
@@ -32,5 +33,6 @@ final case class ApiDataAccessor(
     recordSetCacheRepository: RecordSetCacheRepository,
     zoneChangeRepository: ZoneChangeRepository,
     zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository
+    batchChangeRepository: BatchChangeRepository,
+    taskRepository: TaskRepository
 ) extends DataAccessor
