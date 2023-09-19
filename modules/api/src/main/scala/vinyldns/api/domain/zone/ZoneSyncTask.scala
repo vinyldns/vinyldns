@@ -47,7 +47,7 @@ class ZoneSyncTask(
       zoneScheduleIds = getZonesWithSchedule(zones.toList)
       zoneChanges <- getZoneChanges(zoneRepository, zoneScheduleIds)
       _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
-      _ <- IO(logger.debug(s"""zones synced="${zoneChanges.map(_.zone.name)}"; userLockCount="${zoneChanges.size}" """))
+      _ <- IO(logger.debug(s"""zones synced="${zoneChanges.map(_.zone.name)}"; zoneSyncCount="${zoneChanges.size}" """))
     } yield ()
   }
 
