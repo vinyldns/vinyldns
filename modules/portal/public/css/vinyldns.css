@@ -26,11 +26,11 @@
 
 /* Dark theme color values */
 .dark-theme {
-    --background-color: #1b1e24;
+    --background-color: #22262C;
     --text-color: #FFFFFF;
-    --background-color-shade : #1b1e24;
-    --background-color-panel : #1b1e24;
-    --background-color-panel-body : #1b1e24;
+    --background-color-shade : #22262C;
+    --background-color-panel : #22262C;
+    --background-color-panel-body : #22262C;
     --border-color:  #3f3f3f;
     --border-bottom-nav-menu: #3f3f3f;
 }
