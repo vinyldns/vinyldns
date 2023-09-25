@@ -100,7 +100,7 @@ angular.module('service.records', [])
             return $http.get("/api/zones/"+zid);
         };
 
-        this.recordSetCount = function (zid) {
+        this.getRecordSetCount = function (zid) {
         return $http.get("/api/zones/"+zid+"/recordsetcount");
         };
 

@@ -137,6 +137,11 @@ describe('Controller: RecordsController', function () {
         expect(this.scope.isZoneAdmin).toBe(true);
     });
 
+    it('display the recordset count', function() {
+           this.scope.getRecordSetCount();
+           expect(this.scope.getRecordSetCount).toEqual(0);
+        });
+
     it('refreshZone updates zoneInfo and isZoneAdmin when user is not in admin group', function() {
         mockZone = {
             name: "dummy.",

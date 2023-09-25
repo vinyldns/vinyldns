@@ -88,7 +88,7 @@ def test_get_recordset_doesnt_exist(shared_zone_test_context):
     client.get_recordset(shared_zone_test_context.ok_zone["id"], "123", status=404)
 
 
-def test_get_recordsetcount(shared_zone_test_context):
+def test_get_recordset_count_status_code(shared_zone_test_context):
     """
     Test getting recordset count for a valid zoneid should return 200
     """
@@ -96,7 +96,37 @@ def test_get_recordsetcount(shared_zone_test_context):
     client.get_recordset_count(shared_zone_test_context.ok_zone["id"],status=200)
 
 
-def test_get_recordsetcount_error(shared_zone_test_context):
+def test_get_recordset_count_by_zoneid(shared_zone_test_context):
+    """
+    Test getting a recordset with name @
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    result_rs = None
+    try:
+        new_rs = {
+            "zoneId": ok_zone["id"],
+            "name": "@",
+            "type": "TXT",
+            "ttl": 100,
+            "records": [
+                {
+                    "text": "someText"
+                }
+            ]
+        }
+
+        # Get the recordset we just made and verify
+        result = client.get_recordset_count(result_rs["zoneId"])
+        result_rs = result["count"]
+        assert_that(get_recordset_count, is_(1))
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
+def test_get_recordset_count_error(shared_zone_test_context):
     """
     Test getting recordset count for a invalid zoneid should return 404
     """

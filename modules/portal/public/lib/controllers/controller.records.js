@@ -510,7 +510,7 @@ angular.module('controller.records', [])
                  return $scope.recordSetCount = response.data.count
              }
              return recordsService
-                 .recordSetCount($scope.zoneId)
+                 .getRecordSetCount($scope.zoneId)
                  .then(success)
                  .catch(function (error) {
                      handleError(error, 'groupsService::getRecordSetsCount-failure');
