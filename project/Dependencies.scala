@@ -94,6 +94,7 @@ object Dependencies {
 
   lazy val r53Dependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sts"               % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-route53"           % awsV withSources()
   )
 

@@ -16,13 +16,9 @@
 
 package vinyldns.route53.backend
 
+import java.util.UUID
 import cats.data.OptionT
 import cats.effect.IO
-import com.amazonaws.auth.{
-  AWSStaticCredentialsProvider,
-  BasicAWSCredentials,
-  DefaultAWSCredentialsProviderChain
-}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
@@ -288,21 +284,23 @@ object Route53Backend {
       r53ClientBuilder.withEndpointConfiguration(
         new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
       )
-      // If either of accessKey or secretKey are empty in conf file; then use AWSCredentialsProviderChain to figure out
-      // credentials.
-      // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
-      val credProvider = config.accessKey
-        .zip(config.secretKey)
-        .map {
-          case (key, secret) =>
-            new AWSStaticCredentialsProvider(
-              new BasicAWSCredentials(key, secret)
-            )
+
+      val r53CredBuilder = Route53Credentials.builder
+      for {
+        accessKey <- config.accessKey
+        secretKey <- config.secretKey
+      } r53CredBuilder.basicCredentials(accessKey, secretKey)
+
+      for (role <- config.roleArn) {
+        config.externalId match {
+          case Some(externalId) =>
+            r53CredBuilder.withRole(role, UUID.randomUUID().toString, externalId)
+          case None => r53CredBuilder.withRole(role, UUID.randomUUID().toString)
         }
-        .headOption
-        .getOrElse {
-          new DefaultAWSCredentialsProviderChain()
-        }
+      }
+
+      val credProvider = r53CredBuilder.build().provider
+
       r53ClientBuilder.withCredentials(credProvider).build()
     }
 
