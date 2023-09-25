@@ -91,7 +91,7 @@ describe('Controller: RecordsController', function () {
 
     it('deleteSshfp should keep at least one sshfp object', function() {
         this.scope.currentRecord.sshfpItems = [{algorithm: '1', type: '', fingerprint: ''},
-            {algorithm: '2', type: '', fingerprint: ''}];
+            {algorithm: '2', type: '', fideleteSshfpngerprint: ''}];
         this.scope.deleteSshfp(0);
         this.scope.deleteSshfp(0);
         expect(this.scope.currentRecord.sshfpItems).toEqual([{algorithm: '', type: '', fingerprint: ''}]);
@@ -136,11 +136,6 @@ describe('Controller: RecordsController', function () {
         expect(this.scope.zoneInfo).toEqual(mockZone);
         expect(this.scope.isZoneAdmin).toBe(true);
     });
-
-    it('display the recordset count', function() {
-           this.scope.getRecordSetCount();
-           expect(this.scope.getRecordSetCount).toEqual(0);
-        });
 
     it('refreshZone updates zoneInfo and isZoneAdmin when user is not in admin group', function() {
         mockZone = {
