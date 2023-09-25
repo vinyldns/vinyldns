@@ -302,6 +302,15 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getRecordSetCount(zoneId : String): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$zoneId/recordsetcount")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getAuthenticatedUserData(): Action[AnyContent] = userAction.async { implicit request =>
     Future {
       Ok(Json.toJson(VinylDNS.UserInfo.fromUser(request.user)))

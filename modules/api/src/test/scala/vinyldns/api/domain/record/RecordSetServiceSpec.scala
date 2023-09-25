@@ -2123,6 +2123,15 @@ class RecordSetServiceSpec
       error shouldBe a[RecordSetChangeNotFoundError]
     }
 
+    "return Total RecordCount" in {
+      doReturn(IO.pure(10))
+        .when(mockRecordRepo).getRecordSetCount(okZone.id)
+
+      val result = underTest.getRecordSetCount(okZone.id,authPrincipal = sharedAuth).value.unsafeRunSync().toOption.get
+      result shouldBe RecordSetCount(10)
+
+    }
+
     "return a NotAuthorizedError if the user is not authorized to access the zone" in {
       doReturn(IO.pure(Some(zoneActive))).when(mockZoneRepo).getZone(zoneActive.id)
       doReturn(IO.pure(Some(pendingCreateAAAA)))

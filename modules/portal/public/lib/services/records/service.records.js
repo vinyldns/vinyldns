@@ -100,6 +100,10 @@ angular.module('service.records', [])
             return $http.get("/api/zones/"+zid);
         };
 
+        this.recordSetCount = function (zid) {
+        return $http.get("/api/zones/"+zid+"/recordsetcount");
+        };
+
         this.getCommonZoneDetails = function (zid) {
             return $http.get("/api/zones/"+zid+"/details");
         };

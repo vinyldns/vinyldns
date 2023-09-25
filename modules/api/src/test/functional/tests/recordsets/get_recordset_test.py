@@ -88,6 +88,21 @@ def test_get_recordset_doesnt_exist(shared_zone_test_context):
     client.get_recordset(shared_zone_test_context.ok_zone["id"], "123", status=404)
 
 
+def test_get_recordsetcount(shared_zone_test_context):
+    """
+    Test getting recordset count for a valid zoneid should return 200
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    client.get_recordset_count(shared_zone_test_context.ok_zone["id"],status=200)
+
+
+def test_get_recordsetcount_error(shared_zone_test_context):
+    """
+    Test getting recordset count for a invalid zoneid should return 404
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    client.get_recordset_count("999",status=404)
+
 @pytest.mark.serial
 def test_at_get_recordset(shared_zone_test_context):
     """

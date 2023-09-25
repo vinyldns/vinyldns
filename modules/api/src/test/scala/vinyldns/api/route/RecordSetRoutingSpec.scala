@@ -56,6 +56,7 @@ class RecordSetRoutingSpec
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
   private val invalidChangeZone = Zone("invalidChange", "test@test.com")
+  private val recordSetCount = RecordSetCount(5)
 
   private val rsAlreadyExists = RecordSet(
     okZone.id,
@@ -742,6 +743,17 @@ class RecordSetRoutingSpec
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
         case "forbidden" => Left(NotAuthorizedError(""))
         case _ => Right(rsChange1)
+      }
+    }.toResult
+
+    def getRecordSetCount(
+                           zoneId: String,
+                           authPrincipal: AuthPrincipal
+                         ): Result[RecordSetCount] = {
+      zoneId match {
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(recordSetCount)
       }
     }.toResult
 
@@ -1667,6 +1679,21 @@ class RecordSetRoutingSpec
         testRecordType(RecordType.TXT, "text" -> Random.alphanumeric.take(70000).mkString),
         "TXT record must be less than 64764 characters"
       )
+    }
+  }
+  "GET recordset count by zone" should {
+    "return recordset count" in {
+      Get(s"/zones/${okZone.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[RecordSetCount]
+        resultRs shouldBe RecordCount
+      }
+    }
+
+    "return a 404 Not Found when the zone doesn't exist" in {
+      Get(s"/zones/${zoneNotFound.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
     }
   }
 }

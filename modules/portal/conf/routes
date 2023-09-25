@@ -43,6 +43,7 @@ DELETE        /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.deleteRec
 PUT           /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.updateRecordSet(zid: String, rid:String)
 
 GET           /api/zones/:id/recordsetchanges    @controllers.VinylDNS.listRecordSetChanges(id: String)
+GET           /api/zones/:zid/recordsetcount     @controllers.VinylDNS.getRecordSetCount(zid: String)
 GET           /api/recordsetchange/history       @controllers.VinylDNS.listRecordSetChangeHistory
 
 GET           /api/groups                        @controllers.VinylDNS.getGroups
