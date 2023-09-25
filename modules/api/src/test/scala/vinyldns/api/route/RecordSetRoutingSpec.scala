@@ -1686,7 +1686,7 @@ class RecordSetRoutingSpec
       Get(s"/zones/${okZone.id}/recordsetcount") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[RecordSetCount]
-        resultRs shouldBe RecordCount
+        resultRs shouldBe recordSetCount
       }
     }
 
