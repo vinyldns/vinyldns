@@ -24,3 +24,7 @@ Those records are accessible via the [DNS Changes](./dns-changes.html) area of t
 [![Zones page - My Zones tab](../img/portal/zones-my-zones.png){:.screenshot}](../img/portal/zones-my-zones.png)
 
 [![Zones page - All Zones tab](../img/portal/zones-all-zones.png){:.screenshot}](../img/portal/zones-all-zones.png)
+
+[![Zones page - Abandoned My Zones](../img/portal/zones-my-deleted-zones.png){:.screenshot}](../img/portal/zones-my-deleted-zones.png)
+
+[![Zones page - Abandoned All Zones](../img/portal/zones-all-deleted-zones.png){:.screenshot}](../img/portal/zones-all-deleted-zones.png)
