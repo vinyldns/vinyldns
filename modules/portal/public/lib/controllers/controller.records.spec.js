@@ -91,7 +91,7 @@ describe('Controller: RecordsController', function () {
 
     it('deleteSshfp should keep at least one sshfp object', function() {
         this.scope.currentRecord.sshfpItems = [{algorithm: '1', type: '', fingerprint: ''},
-            {algorithm: '2', type: '', fideleteSshfpngerprint: ''}];
+            {algorithm: '2', type: '', fingerprint: ''}];
         this.scope.deleteSshfp(0);
         this.scope.deleteSshfp(0);
         expect(this.scope.currentRecord.sshfpItems).toEqual([{algorithm: '', type: '', fingerprint: ''}]);
