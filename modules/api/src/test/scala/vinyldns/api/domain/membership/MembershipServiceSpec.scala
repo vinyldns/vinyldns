@@ -1013,11 +1013,11 @@ class MembershipServiceSpec
       "return the group activity" in {
         val groupChangeRepoResponse = ListGroupChangesResults(
           listOfDummyGroupChanges.take(100),
-          Some(listOfDummyGroupChanges(100).id)
+          Some(listOfDummyGroupChanges.size)
         )
         doReturn(IO.pure(groupChangeRepoResponse))
           .when(mockGroupChangeRepo)
-          .getGroupChanges(anyString, any[Option[String]], anyInt)
+          .getGroupChanges(anyString, any[Option[Int]], anyInt)
 
         doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
           .when(mockUserRepo)
@@ -1031,18 +1031,18 @@ class MembershipServiceSpec
           underTest.getGroupActivity(dummyGroup.id, None, 100, dummyAuth).value.unsafeRunSync().toOption.get
         result.changes should contain theSameElementsAs expected
         result.maxItems shouldBe 100
-        result.nextId shouldBe Some(listOfDummyGroupChanges(100).id)
+        result.nextId shouldBe Some(listOfDummyGroupChanges.size)
         result.startFrom shouldBe None
       }
 
     "return group activity even if the user is not authorized" in {
       val groupChangeRepoResponse = ListGroupChangesResults(
         listOfDummyGroupChanges.take(100),
-        Some(listOfDummyGroupChanges(100).id)
+        Some(listOfDummyGroupChanges.size)
       )
       doReturn(IO.pure(groupChangeRepoResponse))
         .when(mockGroupChangeRepo)
-        .getGroupChanges(anyString, any[Option[String]], anyInt)
+        .getGroupChanges(anyString, any[Option[Int]], anyInt)
 
       doReturn(IO.pure(ListUsersResults(Seq(dummyUser), Some("1"))))
         .when(mockUserRepo)
@@ -1056,7 +1056,7 @@ class MembershipServiceSpec
         underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value.unsafeRunSync().toOption.get
       result.changes should contain theSameElementsAs expected
       result.maxItems shouldBe 100
-      result.nextId shouldBe Some(listOfDummyGroupChanges(100).id)
+      result.nextId shouldBe Some(listOfDummyGroupChanges.size)
       result.startFrom shouldBe None
     }
   }

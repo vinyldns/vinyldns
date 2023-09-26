@@ -5,13 +5,13 @@
 <div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled; defaultTtl = @meta.defaultTtl">
     <div class="panel-heading">
         <h3 class="panel-title">
-            <a class="collapse-link">
+            <a class="collapse-link" href data-toggle="collapse" data-target="#recordChangePreviewTableCollapse" aria-expanded="false" aria-controls="recordChangePreviewTableCollapse">
                 <i class="fa fa-chevron-down"></i>
                     Recent Record Changes
             </a>
         </h3>
     </div>
-
+    <div class="panel-collapse collapse in" id="recordChangePreviewTableCollapse">
     <div class="panel-body x_content panel-body-open">
         <button class="btn btn-default" ng-click="refreshRecordChangesPreview()"><span class="fa fa-refresh"></span> Refresh</button>
         <table id="recordChangePreviewTable" class="table table-condensed">
@@ -51,6 +51,7 @@
 
         </table>
             <!-- <button type="button" class="btn btn-info btn-sm">View full change log</button> -->
+    </div>
     </div>
 </div>
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->

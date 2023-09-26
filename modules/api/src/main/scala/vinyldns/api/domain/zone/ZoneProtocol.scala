@@ -22,7 +22,7 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
@@ -141,6 +141,27 @@ object ZoneSummaryInfo {
       zone.backendId,
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
+      accessLevel = accessLevel
+    )
+}
+
+case class ZoneChangeDeletedInfo(
+                         zoneChange: ZoneChange,
+                         adminGroupName: String,
+                         userName: String,
+                         accessLevel: AccessLevel
+                          )
+
+object ZoneChangeDeletedInfo {
+  def apply(zoneChange: List[ZoneChange],
+            groupName: String,
+            userName: String,
+            accessLevel: AccessLevel)
+  : ZoneChangeDeletedInfo =
+    ZoneChangeDeletedInfo(
+      zoneChange= zoneChange,
+      groupName = groupName,
+      userName = userName,
       accessLevel = accessLevel
     )
 }

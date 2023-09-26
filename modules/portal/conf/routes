@@ -31,6 +31,7 @@ GET           /api/zones/backendids              @controllers.VinylDNS.getBacken
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
 GET           /api/zones/:id/details             @controllers.VinylDNS.getCommonZoneDetails(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
+GET           /api/zones/deleted/changes         @controllers.VinylDNS.getDeletedZones
 GET           /api/zones/:id/changes             @controllers.VinylDNS.getZoneChange(id: String)
 POST          /api/zones                         @controllers.VinylDNS.addZone
 PUT           /api/zones/:id                     @controllers.VinylDNS.updateZone(id: String)
