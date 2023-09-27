@@ -1,10 +1,10 @@
 ---
 layout: docs
-title: "List / Abandoned Zones"
+title: "List Abandoned Zones"
 section: "api"
 ---
 
-# List / Search Abandoned Zone
+# List Abandoned Zones
 
 Retrieves the list of deleted zones a user has access to.  The zone name is only sorted alphabetically.
 
@@ -33,8 +33,8 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-deletedZones  | Array of [Deleted Zones](zone-model.html#zone-attributes) | An array of the deleted zones found.  The zones are sorted alphabetically by zone name. |
-startFrom     | *any*         | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
+zonesDeletedInfo  | Array of [Deleted Zones](zone-model.html#zone-attributes) | An array of the deleted zones found.  The zones are sorted alphabetically by zone name. |
+startFrom     | string        | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
 nextId        | *any*         | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present.|
 maxItems      | int           | The maxItems parameter that was sent in the HTTP request.  This will be 100 if not sent. |
 ignoreAccess  | boolean       | The ignoreAccess parameter that was sent in the HTTP request. This will be false if not sent. |
@@ -43,81 +43,62 @@ ignoreAccess  | boolean       | The ignoreAccess parameter that was sent in the 
 
 ```json
 {
-  "deletedZones": [
+  "zonesDeletedInfo": [
     {
-      "status": "Deleted",
-      "account": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "name": "list-zones-test-searched-1.",
-      "created": "2016-12-16T15:21:47Z",
-      "adminGroupId": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "email": "test@test.com",
-      "shared": false,
-      "acl": {
-        "rules": []
+      "zoneChange": {
+        "zone": {
+          "name": "dummy.",
+          "email": "test@test.com",
+          "status": "Deleted",
+          "created": "2023-09-26T09:32:08Z",
+          "updated": "2023-09-26T09:32:24Z",
+          "id": "01975877-ff13-4605-a940-533b87718726",
+          "account": "system",
+          "shared": false,
+          "acl": {
+            "rules": []
+          },
+          "adminGroupId": "7d034091-d14f-40fa-a42f-5264a71fe6af",
+          "latestSync": "2023-09-26T09:32:08Z",
+          "isTest": false
+        },
+        "userId": "4b2f14fc-d57a-4ea3-88ee-602d5cfb533c",
+        "changeType": "Delete",
+        "status": "Synced",
+        "created": "2023-09-26T09:32:24Z",
+        "id": "ff28aa95-0b35-469e-8fef-e2fb97b9e247"
       },
-      "id": "31a3d8a9-bea0-458f-9c24-3d39d4b929d6",
-      "latestSync": "2016-12-16T15:27:26Z",
+      "adminGroupName": "duGroup",
+      "userName": "professor",
       "accessLevel": "NoAccess"
     },
     {
-      "status": "Deleted",
-      "account": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "name": "list-zones-test-searched-2.",
-      "created": "2016-12-16T15:21:47Z",
-      "adminGroupId": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "email": "test@test.com",
-      "shared": false,
-      "acl": {
-        "rules": []
+      "zoneChange": {
+        "zone": {
+          "name": "ok.",
+          "email": "test@test.com",
+          "status": "Deleted",
+          "created": "2023-09-25T14:16:56Z",
+          "updated": "2023-09-26T09:19:27Z",
+          "id": "96b85fed-61d4-41bf-ac81-fdbfe3d1c037",
+          "account": "system",
+          "shared": false,
+          "acl": {
+            "rules": []
+          },
+          "adminGroupId": "1f938110-cd0d-4670-8c64-5f53f1cce2f1",
+          "latestSync": "2023-09-25T14:16:57Z",
+          "isTest": false
+        },
+        "userId": "8628a36b-9302-41d1-bd0a-7610cc964086",
+        "changeType": "Delete",
+        "status": "Synced",
+        "created": "2023-09-26T09:19:27Z",
+        "id": "8925f690-4586-465d-8309-c3d4ca6dd420"
       },
-      "id": "f1a376b2-2d8f-41f3-b8c8-9c9fba308f5d",
-      "latestSync": "2016-12-16T15:27:26Z",
+      "adminGroupName": "name",
+      "userName": "fry",
       "accessLevel": "Delete"
-    },
-    {
-      "status": "Deleted",
-      "account": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "name": "list-zones-test-searched-3.",
-      "created": "2016-12-16T15:21:47Z",
-      "adminGroupId": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "email": "test@test.com",
-      "shared": false,
-      "acl": {
-        "rules": []
-      },
-      "id": "568de57d-cb34-4f05-a9b5-35f9187490af",
-      "latestSync": "2016-12-16T15:27:26Z",
-      "accessLevel": "Read"
-    },
-    {
-      "status": "Deleted",
-      "account": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "name": "list-zones-test-unfiltered-1.",
-      "created": "2016-12-16T15:21:47Z",
-      "adminGroupId": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "email": "test@test.com",
-      "shared": false,
-      "acl": {
-        "rules": []
-      },
-      "id": "98dac90c-236e-4171-8729-c977ad38717e",
-      "latestSync": "2016-12-16T15:27:26Z",
-      "accessLevel": "NoAccess"
-    },
-    {
-      "status": "Deleted",
-      "account": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "name": "list-zones-test-unfiltered-2.",
-      "created": "2016-12-16T15:21:47Z",
-      "adminGroupId": "a0b5ea74-cc05-4932-a294-9bf935d52744",
-      "email": "test@test.com",
-      "shared": false,
-      "acl": {
-        "rules": []
-      },
-      "id": "e4942020-b85a-421f-a8e2-124d8ba79422",
-      "latestSync": "2016-12-16T15:27:26Z",
-      "accessLevel": "Read"
     }
   ],
   "maxItems": 100,
