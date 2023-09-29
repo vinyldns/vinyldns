@@ -95,6 +95,15 @@ describe('Service: recordsService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when getting record sets count', function () {
+        this.$httpBackend.expectGET('/api/zones/zoneid/recordsetcount').respond('success');
+        this.recordsService.getRecordSetCount('zoneid')
+            .then(function(response) {
+                expect(response.data).toBe('success');
+            });
+        this.$httpBackend.flush();
+    });
+
     it('have toVinylRecord return a valid sshfp record', function() {
         sentRecord = {
             "id": 'recordId',

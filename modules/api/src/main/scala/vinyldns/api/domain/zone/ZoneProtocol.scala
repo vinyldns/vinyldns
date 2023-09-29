@@ -321,6 +321,8 @@ case class ListZonesResponse(
                               includeReverse: Boolean = true
                             )
 
+case class RecordSetCount( count: Int = 0 )
+
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
 
