@@ -168,6 +168,9 @@ options:
       - title: Global List / Search RecordSets
         url: api/list-recordsets-global.html
         menu_sectioon: recordsetapireference
+      - title: Get RecordSet Change History
+        url: api/get-recordset-change-history.html
+        menu_section: recordsetapireference
 
   - title: Batch Change
     url: api/batchchange-model.html
