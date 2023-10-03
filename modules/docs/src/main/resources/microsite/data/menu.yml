@@ -135,6 +135,9 @@ options:
       - title: List Zone Changes
         url: api/list-zone-changes.html
         menu_section: zoneapireference
+      - title: Abandoned Zones
+        url: api/list-deleted-zones.html
+        menu_section: zoneapireference
 
   - title: RecordSet
     url: api/recordset-model.html
@@ -234,3 +237,5 @@ options:
       - title: List Group Activity
         url: api/list-group-activity.html
         menu_section: membershipapireference
+
+
