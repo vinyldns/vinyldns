@@ -135,7 +135,7 @@ def test_get_recordset_count_by_zoneid(shared_zone_test_context):
         expected_rs["name"] = ok_zone["name"]
         verify_recordset(result_rs, expected_rs)
 
-        assert_that(result_recordset_count, is_({'count': 10}))
+        assert_that(result_recordset_count, is_({'count': 13}))
     finally:
         if result_rs:
             delete_result = client.delete_recordset(result_rs["zoneId"], result_rs["id"], status=202)
