@@ -12,7 +12,7 @@
     <!-- END BREADCRUMB -->
 
     <!-- PAGE TITLE -->
-    <div class="page-title"><h3><span class="fa fa-list-ol"></span> DNS Changes {{ getPageTitle() }}</h3></div>
+    <div class="page-title"><h3><span class="fa fa-list-ol"></span> DNS Changes</h3></div>
     <!-- END PAGE TITLE -->
 
     <!-- PAGE CONTENT WRAPPER -->
@@ -58,7 +58,8 @@
                     <div class="panel-body">
 
                         <!-- PAGINATION -->
-                        <div class="dataTables_paginate">
+                        <div class="dataTables_paginate vinyldns_paginate">
+                            <span class="vinyldns_page_number">{{ getPageTitle() }}</span>
                             <ul class="pagination">
                                 <li class="paginate_button previous">
                                     <a type="button" ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
@@ -125,7 +126,8 @@
                         </table>
 
                         <!-- PAGINATION -->
-                        <div class="dataTables_paginate">
+                        <div class="dataTables_paginate vinyldns_paginate">
+                            <span class="vinyldns_page_number">{{ getPageTitle() }}</span>
                             <ul class="pagination">
                                 <li class="paginate_button previous">
                                     <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
