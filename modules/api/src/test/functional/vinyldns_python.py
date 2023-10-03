@@ -559,6 +559,17 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
         return data
 
+    def get_recordset_count(self, zone_id,**kwargs):
+        """
+        Get count of record set in managed records tab
+        :param zone_id: the zone id the recordset belongs to
+        :return: the value of count
+        """
+        url = urljoin(self.index_url, "/zones/{0}/recordsetcount".format(zone_id))
+
+        response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
+        return data
+
     def get_recordset_change(self, zone_id, rs_id, change_id, **kwargs):
         """
         Gets an existing recordset change
