@@ -10,16 +10,17 @@ Retrieves a list of groups that you are a part of
 
 #### HTTP REQUEST
 
-> GET /groups?startFrom={response.nextId}&maxItems={1 - 100}&groupNameFilter={filter}&ignoreAccess={true  &#124; false}
+> GET /groups?startFrom={response.nextId}&maxItems={1 - 100}&groupNameFilter={filter}&ignoreAccess={true  &#124; false}&abridged={true  &#124; false}
 
 #### HTTP REQUEST PARAMS
 
-name          | type          | required?   | description |
- ------------ | ------------- | ----------- | :---------- |
-groupNameFilter    | string        | no          | One or more characters contained in the name of the group set to search for.  For example `TP`.  This is a contains search only, no wildcards or regular expressions are supported |
-startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
-maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
-ignoreAccess  | boolean       | no          | If false, returns only groups the requesting user is a member of. If true, returns groups in the system, regardless of membership. Defaults to false if not provided. Super and support admin see all groups regardless of this value. |
+name             | type          | required?   | description |
+ ------------    | ------------- | ----------- | :---------- |
+groupNameFilter  | string        | no          | One or more characters contained in the name of the group set to search for.  For example `TP`.  This is a contains search only, no wildcards or regular expressions are supported |
+startFrom        | string        | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+maxItems         | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
+ignoreAccess     | boolean       | no          | If false, returns only groups the requesting user is a member of. If true, returns groups in the system, regardless of membership. Defaults to false if not provided. Super and support admin see all groups regardless of this value. |
+abridged         | boolean       | no          | If false, returns all the group details. If true, returns an abridged version of group details. Defaults to false if not provided. |
 
 #### HTTP RESPONSE TYPES
 
@@ -30,14 +31,14 @@ Code          | description |
 
 #### HTTP RESPONSE ATTRIBUTES
 
-name          | type          | description |
- ------------ | ------------- | :---------- |
-groups        | Array of Groups | refer to [membership model](membership-model.html) |
-groupNameFilter    | string  | name filter sent in request |
-startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
-nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if groups are exhausted |
-maxItems      | integer       | maxItems sent in request, default is 100 |
-ignoreAccess  | boolean       | The ignoreAccess parameter that was sent in the HTTP request. This will be false if not sent. |
+name             | type               | description |
+ ------------    | -------------      | :---------- |
+groups           | Array of Groups    | refer to [membership model](membership-model.html) |
+groupNameFilter  | string             | name filter sent in request |
+startFrom        | string             | startFrom sent in request, will not be returned if not provided |
+nextId           | string             | nextId, used as startFrom parameter of next page request, will not be returned if groups are exhausted |
+maxItems         | integer            | maxItems sent in request, default is 100 |
+ignoreAccess     | boolean            | The ignoreAccess parameter that was sent in the HTTP request. This will be false if not sent. |
 
 #### EXAMPLE RESPONSE
 

@@ -16,7 +16,7 @@ Retrieves a list of group members
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+startFrom     | string        | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
 
 #### HTTP RESPONSE TYPES
@@ -29,12 +29,12 @@ Code          | description |
 
 #### HTTP RESPONSE ATTRIBUTES
 
-name          | type          | description |
- ------------ | ------------- | :---------- |
-members        | Array of Users | refer to [membership model](membership-model.html), these Users will also include an isAdmin attribute |
-startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
-nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if members are exhausted |
-maxItems      | integer       | maxItems sent in request, default is 100 |
+name          | type           | description |
+ ------------ | -------------  | :---------- |
+members       | Array of Users | refer to [membership model](membership-model.html), these Users will also include an isAdmin attribute |
+startFrom     | string         | startFrom sent in request, will not be returned if not provided |
+nextId        | string         | nextId, used as startFrom parameter of next page request, will not be returned if members are exhausted |
+maxItems      | integer        | maxItems sent in request, default is 100 |
 
 #### EXAMPLE RESPONSE
 

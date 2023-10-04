@@ -135,6 +135,9 @@ options:
       - title: List Zone Changes
         url: api/list-zone-changes.html
         menu_section: zoneapireference
+      - title: List Zone Changes Failures
+        url: api/list-zone-changes.html
+        menu_section: zoneapireference
 
   - title: RecordSet
     url: api/recordset-model.html
@@ -168,6 +171,12 @@ options:
       - title: Global List / Search RecordSets
         url: api/list-recordsets-global.html
         menu_sectioon: recordsetapireference
+      - title: Get RecordSet Count
+        url: api/get-recordset-count.html
+        menu_section: recordsetapireference
+      - title: List RecordSet Changes Failures
+        url: api/list-recordset-changes-failures.html
+        menu_section: recordsetapireference
 
   - title: Batch Change
     url: api/batchchange-model.html
@@ -233,4 +242,7 @@ options:
         menu_section: membershipapireference
       - title: List Group Activity
         url: api/list-group-activity.html
+        menu_section: membershipapireference
+      - title: Get Group Change
+        url: api/get-group-change.html
         menu_section: membershipapireference
