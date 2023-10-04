@@ -23,7 +23,7 @@ maxItems      | int           | no          | The number of items to return in t
 
 Code          | description |
  ------------ | :---------- |
-200           | **OK** - the recordset changes are returned in response body|
+200           | **OK** - the list of failed recordset changes are returned in response body |
 401           | **Unauthorized** - The authentication information provided is invalid.  Typically the request was not signed properly, or the access key and secret used to sign the request are incorrect |
 403           | **Forbidden** - The user does not have the access required to perform the action |
 404           | **Not Found** - Zone not found |
