@@ -246,3 +246,6 @@ options:
       - title: Get Group Change
         url: api/get-group-change.html
         menu_section: membershipapireference
+      - title: Get Valid Email Domains
+        url: api/get-valid-email-domains.html
+        menu_section: membershipapireference
