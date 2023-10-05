@@ -7,7 +7,7 @@ section: "api"
 # Get RecordSet Change
 
 RecordSet changes (Create, Update, Delete) are not immediately applied to the DNS backend; they are queued up for processing.  Most changes are applied within a few seconds.
-When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed)
+When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed).
 
 #### HTTP REQUEST
 

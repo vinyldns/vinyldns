@@ -6,7 +6,7 @@ section: "api"
 
 # Get User
 
-Gets a user corresponding to the given identifier (user ID or username)
+Gets a user corresponding to the given identifier (user ID or username).
 
 #### HTTP REQUEST
 

@@ -6,7 +6,7 @@ section: "api"
 
 # List Group Members
 
-Retrieves a list of group members
+Retrieves a list of group members.
 
 #### HTTP REQUEST
 

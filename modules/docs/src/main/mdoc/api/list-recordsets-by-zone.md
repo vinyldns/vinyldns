@@ -6,7 +6,7 @@ section: "api"
 
 # List / Search RecordSets by Zone
 
-Retrieves a list of RecordSets from the zone
+Retrieves a list of RecordSets from the zone.
 
 #### HTTP REQUEST
 

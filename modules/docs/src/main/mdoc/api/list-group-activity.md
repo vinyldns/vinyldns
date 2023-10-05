@@ -6,7 +6,7 @@ section: "api"
 
 # List Group Activity
 
-Retrieves a list of group activity
+Retrieves a list of group activity.
 
 #### HTTP REQUEST
 

@@ -7,7 +7,7 @@ section: "api"
 # Create Zone
 
 Connects user to an existing zone. User must be a member of the group that has access to the zone. Connection info is optional,
-if no info is provided the default VinylDNS connections will be used
+if no info is provided the default VinylDNS connections will be used.
 
 #### HTTP REQUEST
 

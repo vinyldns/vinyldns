@@ -6,7 +6,7 @@ section: "api"
 
 # Get Zone by ID
 
-Retrieves a zone with the matching zone ID
+Retrieves a zone with the matching zone ID.
 
 #### HTTP REQUEST
 

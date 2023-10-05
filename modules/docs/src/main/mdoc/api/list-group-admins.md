@@ -6,7 +6,7 @@ section: "api"
 
 # List Group Admins
 
-Retrieves a group's admins
+Retrieves a group's admins.
 
 #### HTTP REQUEST
 

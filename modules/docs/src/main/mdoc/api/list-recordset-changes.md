@@ -7,9 +7,9 @@ section: "api"
 # List RecordSet Changes
 
 RecordSet changes (Create, Update, Delete) are not immediately applied to the DNS backend; they are queued up for processing.  Most changes are applied within a few seconds.
-When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed)
+When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed).
 <br><br>
-Retrieves a list of RecordSet changes in a zone. All RecordSet changes are stored, including those coming from zone syncs. RecordSet changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters
+Retrieves a list of RecordSet changes in a zone. All RecordSet changes are stored, including those coming from zone syncs. RecordSet changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters.
 
 #### HTTP REQUEST
 

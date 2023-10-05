@@ -6,7 +6,7 @@ section: "api"
 
 # List Zone Changes
 
-Retrieves a list of zone changes to a zone. All zone changes are stored, including those coming from zone syncs. Zone changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters
+Retrieves a list of zone changes to a zone. All zone changes are stored, including those coming from zone syncs. Zone changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters.
 
 #### HTTP REQUEST
 
