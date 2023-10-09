@@ -384,6 +384,14 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
+  def getRecordSetCount(zoneId: String, authPrincipal: AuthPrincipal): Result[RecordSetCount] = {
+    for {
+      zone <- getZone(zoneId)
+      _ <- canSeeZone(authPrincipal, zone).toResult
+      count  <- recordSetRepository.getRecordSetCount(zoneId).toResult
+    } yield RecordSetCount(count)
+  }
+
   def getRecordSetByZone(
                           recordSetId: String,
                           zoneId: String,

@@ -187,6 +187,13 @@ class RecordSetRoute(
         }
       }
     } ~
+    path("zones" / Segment / "recordsetcount") { zoneId =>
+      (get & monitor("Endpoint.getRecordSetCount")) {
+        authenticateAndExecute(recordSetService.getRecordSetCount(zoneId, _)) { count =>
+          complete(StatusCodes.OK, count)
+        }
+      }
+    } ~
     path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
       (get & monitor("Endpoint.getRecordSetByZone")) {
         authenticateAndExecute(recordSetService.getRecordSetByZone(rsId, zoneId, _)) { rs =>
@@ -234,33 +241,6 @@ class RecordSetRoute(
                 authenticateAndExecute(
                   recordSetService
                     .listRecordSetChanges(Some(zoneId), startFrom, maxItems, fqdn, None, _)
-                ) { changes =>
-                  complete(StatusCodes.OK, changes)
-                }
-              }
-            }
-        }
-      }
-    } ~
-    path("recordsetchange" / "history") {
-      (get & monitor("Endpoint.listRecordSetChangeHistory")) {
-        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "fqdn".as[String].?, "recordType".as[String].?) {
-          (startFrom: Option[Int], maxItems: Int, fqdn: Option[String], recordType: Option[String]) =>
-            handleRejections(invalidQueryHandler) {
-              val errorMessage = if(fqdn.isEmpty || recordType.isEmpty) {
-                "recordType and fqdn cannot be empty"
-              } else {
-                s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
-                  s"and $DEFAULT_MAX_ITEMS inclusive"
-              }
-              val isValid = (0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS) && (fqdn.nonEmpty && recordType.nonEmpty)
-              validate(
-                check = isValid,
-                errorMsg = errorMessage
-              ){
-                authenticateAndExecute(
-                  recordSetService
-                    .listRecordSetChangeHistory(None, startFrom, maxItems, fqdn, RecordType.find(recordType.get), _)
                 ) { changes =>
                   complete(StatusCodes.OK, changes)
                 }

@@ -138,6 +138,9 @@ options:
       - title: List Zone Changes Failures
         url: api/list-zone-changes.html
         menu_section: zoneapireference
+      - title: Abandoned Zones
+        url: api/list-deleted-zones.html
+        menu_section: zoneapireference
 
   - title: RecordSet
     url: api/recordset-model.html
