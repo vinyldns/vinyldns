@@ -339,7 +339,7 @@
                         </td>
                     }
                     <td>
-                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                        <span ng-if="((canReadZone && record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read') || (record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read' && !zoneInfo.shared))">
                             <div class="table-form-group">
                                 <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
                                 <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>
