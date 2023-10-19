@@ -261,15 +261,17 @@ def test_update_record_in_zone_user_not_part_of_owner_group(shared_zone_test_con
     Test zone admin user can update a record that user not part of owner group of record for private zone
     """
     client = shared_zone_test_context.ok_vinyldns_client
+    super_zone = copy.deepcopy(shared_zone_test_context.ok_zone)
+    super_zone["shared"] = False
+
     rs = None
     try:
         rs = client.create_recordset(
             {
-                "zoneId": shared_zone_test_context.ok_zone["id"],
-                "name": "test_user_can_update_record_in_zone_it_owns",
+                "zoneId": super_zone["id"],
+                "name": "test_update_record_in_zone_user_not_part_of_owner_group",
                 "type": "A",
                 "ttl": 100,
-                "ownerGroupId": shared_zone_test_context.dummy_group["id"],
                 "records": [
                     {
                         "address": "10.1.1.1"
@@ -278,9 +280,8 @@ def test_update_record_in_zone_user_not_part_of_owner_group(shared_zone_test_con
             }, status=202
         )["recordSet"]
         client.wait_until_recordset_exists(rs["zoneId"], rs["id"])
-
         rs["ttl"] = rs["ttl"] + 1000
-
+        rs["ownerGroupId"] = shared_zone_test_context.dummy_group["id"]
         result = client.update_recordset(rs, status=202, retries=3)
         result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
         assert_that(result_rs["ttl"], is_(rs["ttl"]))
