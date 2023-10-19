@@ -73,6 +73,7 @@ class RecordSetServiceIntegrationSpec
   private val sharedGroup =
     Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user.id, user2.id))
   private val auth = AuthPrincipal(user, Seq(group.id, sharedGroup.id))
+  private val groupAuth = AuthPrincipal(user, Seq(group.id))
   private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id, group2.id))
   val dummyAuth: AuthPrincipal = AuthPrincipal(testUser, Seq(dummyGroup.id))
 
@@ -657,6 +658,16 @@ class RecordSetServiceIntegrationSpec
 
       rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe
         Some(group2.id)
+    }
+
+    "update successfully for private zone if user is updating record set when record set is already owned by another group were user is not a part of" in {
+      val result = testRecordSetService
+        .updateRecordSet(testOwnerGroupRecordInNormalZone, groupAuth)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.records shouldBe testOwnerGroupRecordInNormalZone.records
+
     }
 
     "delete dotted host record successfully for user in record owner group" in {

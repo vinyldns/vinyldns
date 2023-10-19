@@ -256,6 +256,42 @@ def test_update_record_in_zone_user_owns(shared_zone_test_context):
                 pass
 
 
+def test_update_record_in_zone_user_not_part_of_owner_group(shared_zone_test_context):
+    """
+    Test zone admin user can update a record that user not part of owner group of record for private zone
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    rs = None
+    try:
+        rs = client.create_recordset(
+            {
+                "zoneId": shared_zone_test_context.ok_zone["id"],
+                "name": "test_user_can_update_record_in_zone_it_owns",
+                "type": "A",
+                "ttl": 100,
+                "ownerGroupId": dummy_group["id"],
+                "records": [
+                    {
+                        "address": "10.1.1.1"
+                    }
+                ]
+            }, status=202
+        )["recordSet"]
+        client.wait_until_recordset_exists(rs["zoneId"], rs["id"])
+
+        rs["ttl"] = rs["ttl"] + 1000
+
+        result = client.update_recordset(rs, status=202, retries=3)
+        result_rs = client.wait_until_recordset_change_status(result, "Complete")["recordSet"]
+        assert_that(result_rs["ttl"], is_(rs["ttl"]))
+    finally:
+        if rs:
+            try:
+                client.delete_recordset(rs["zoneId"], rs["id"], status=(202, 404))
+                client.wait_until_recordset_deleted(rs["zoneId"], rs["id"])
+            finally:
+                pass
+
 def test_update_recordset_no_authorization(shared_zone_test_context):
     """
     Test updating a record set without authorization

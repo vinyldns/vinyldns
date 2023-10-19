@@ -887,6 +887,51 @@ class RecordSetServiceSpec
       result.changeType shouldBe RecordSetChangeType.Update
       result.status shouldBe RecordSetChangeStatus.Pending
     }
+
+    "return the recordSet change as the result for private zone if user is updating record set " +
+      "when record set is already owned by another group were user is not a part of" in {
+      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
+
+      // Record Group is dummy and zone group is ok.
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000,ownerGroupId = Some(dummyGroup.id))
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(okZone.id, newRecord.name)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
+
+      val result: RecordSetChange =
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+
+      matches(result.recordSet, newRecord, okZone.name) shouldBe true
+      matches(result.updates.get, oldRecord, okZone.name) shouldBe true
+      result.changeType shouldBe RecordSetChangeType.Update
+      result.status shouldBe RecordSetChangeStatus.Pending
+    }
+
     "fail when the account is not authorized" in {
       doReturn(IO.pure(Some(zoneNotAuthorized)))
         .when(mockZoneRepo)
