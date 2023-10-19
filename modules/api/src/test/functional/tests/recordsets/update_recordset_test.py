@@ -269,7 +269,7 @@ def test_update_record_in_zone_user_not_part_of_owner_group(shared_zone_test_con
                 "name": "test_user_can_update_record_in_zone_it_owns",
                 "type": "A",
                 "ttl": 100,
-                "ownerGroupId": dummy_group["id"],
+                "ownerGroupId": shared_zone_test_context.dummy_group["id"],
                 "records": [
                     {
                         "address": "10.1.1.1"
