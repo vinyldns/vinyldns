@@ -112,12 +112,14 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList] = {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
+      .filter(bu => userName.forall(_ == bu.userName))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges

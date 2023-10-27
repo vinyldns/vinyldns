@@ -581,15 +581,17 @@ class BatchChangeService(
 
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
+      userName: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
+    val submitterUserName = if(userName.isDefined && userName.get.isEmpty) None else userName
     for {
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, startFrom, maxItems, approvalStatus)
+        .getBatchChangeSummaries(userId, submitterUserName, startFrom, maxItems, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -606,7 +608,8 @@ class BatchChangeService(
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
-        approvalStatus = approvalStatus
+        approvalStatus = approvalStatus,
+        userName = userName
       )
     } yield listWithGroupNames
   }

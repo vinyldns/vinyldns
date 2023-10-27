@@ -43,17 +43,27 @@
                         <div class="btn-group">
                             <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
-                        @if(meta.manualBatchChangeReviewEnabled){
+                        <div class="col-md-2 pull-right">
+                            <form ng-hide="!ignoreAccess" class="input-group remove-bottom-margin" ng-submit="refreshBatchChanges()">
+                                <div class="input-group remove-bottom-margin">
+                                    <span class="input-group-btn">
+                                        <button id="user-name-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                                    </span>
+                                    <input id="user-name-search-text" type="text" ng-model="submitterName" class="form-control" placeholder="Search by submitter">
+                                </div>
+                            </form>
+                            @if(meta.manualBatchChangeReviewEnabled){
                             <div class="batch-filter">
                                 <form action="">
-                                    <div class="checkbox pull-right">
+                                    <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox'">
                                         <label>
                                             <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
                                         </label>
                                     </div>
                                 </form>
                             </div>
-                        }
+                            }
+                        </div>
                     </div>
                     <div class="panel-body">
 

@@ -310,14 +310,15 @@ class BatchChangeRoutingSpec()
 
     def listBatchChangeSummaries(
         auth: AuthPrincipal,
+        userName: Option[String] = None,
         startFrom: Option[Int],
         maxItems: Int,
         ignoreAccess: Boolean = false,
         approvalStatus: Option[BatchChangeApprovalStatus] = None
     ): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
-        (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
-          case (_, None, 100, _, None) =>
+        (auth, userName, startFrom, maxItems, ignoreAccess, approvalStatus) match {
+          case (_, None, None, 100, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges =
@@ -327,7 +328,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 1, _, None) =>
+          case (_, None, None, 1, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo1),
@@ -337,7 +338,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, Some(1), 100, _, None) =>
+          case (_, None, Some(1), 100, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -346,7 +347,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, Some(1), 1, _, None) =>
+          case (_, None, Some(1), 1, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -356,7 +357,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
+          case (_, None, None, 100, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -366,11 +367,21 @@ class BatchChangeRoutingSpec()
               )
             )
 
+          case (_, Some(okAuth.signedInUser.userName), None, 100, _, None) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(batchChangeSummaryInfo2),
+                startFrom = None,
+                nextId = None,
+                userName = Some(okAuth.signedInUser.userName)
+              )
+            )
+
           case _ => EitherT.rightT(BatchChangeSummaryList(List()))
         }
       else if (auth.userId == superUserAuth.userId)
-        (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
-          case (_, None, 100, true, None) =>
+        (auth, userName, startFrom, maxItems, ignoreAccess, approvalStatus) match {
+          case (_, None, None, 100, true, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(
@@ -385,7 +396,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, true, Some(BatchChangeApprovalStatus.PendingReview)) => {
+          case (_, None, None, 100, true, Some(BatchChangeApprovalStatus.PendingReview)) => {
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2, batchChangeSummaryInfo4),
@@ -397,7 +408,7 @@ class BatchChangeRoutingSpec()
             )
           }
 
-          case (_, None, 100, false, None) =>
+          case (_, None, None, 100, false, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
@@ -406,13 +417,23 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, false, Some(BatchChangeApprovalStatus.PendingReview)) =>
+          case (_, None, None, 100, false, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
                 startFrom = None,
                 nextId = None,
                 approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+              )
+            )
+
+          case (_, Some(superUserAuth.signedInUser.userName), None, 100, false, None) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(),
+                startFrom = None,
+                nextId = None,
+                userName = Some(superUserAuth.signedInUser.userName)
               )
             )
 

@@ -73,12 +73,14 @@ class BatchChangeRoute(
       } ~
         (get & monitor("Endpoint.listBatchChangeSummaries")) {
           parameters(
+            "userName".as[String].?,
             "startFrom".as[Int].?,
             "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
             "ignoreAccess".as[Boolean].?(false),
             "approvalStatus".as[String].?
           ) {
             (
+                userName: Option[String],
                 startFrom: Option[Int],
                 maxItems: Int,
                 ignoreAccess: Boolean,
@@ -95,6 +97,7 @@ class BatchChangeRoute(
                     authenticateAndExecute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
+                        userName,
                         startFrom,
                         maxItems,
                         ignoreAccess,

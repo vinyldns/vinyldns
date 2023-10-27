@@ -29,6 +29,7 @@ trait BatchChangeRepository extends Repository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus] = None

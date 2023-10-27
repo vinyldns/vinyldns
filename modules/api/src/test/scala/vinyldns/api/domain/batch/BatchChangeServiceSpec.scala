@@ -2130,6 +2130,47 @@ class BatchChangeServiceSpec
       result.batchChanges(0).createdTimestamp shouldBe batchChangeOne.createdTimestamp
     }
 
+    "return list of batchChangeSummaries filtered by userName if some exist" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            userName = Some(auth.signedInUser.userName)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.userName shouldBe Some(auth.signedInUser.userName)
+
+      result.batchChanges.length shouldBe 2
+      result.batchChanges(0).userName shouldBe batchChangeOne.userName
+      result.batchChanges(1).userName shouldBe batchChangeTwo.userName
+    }
+
     "return an offset list of batchChangeSummaries if some exist" in {
       val batchChangeOne =
         BatchChange(

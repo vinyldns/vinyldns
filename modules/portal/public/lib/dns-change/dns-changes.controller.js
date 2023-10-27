@@ -55,7 +55,7 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
+                    .getBatchChanges($scope.submitterName, batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');

@@ -233,6 +233,7 @@ class MySqlBatchChangeRepository
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus]
@@ -246,7 +247,8 @@ class MySqlBatchChangeRepository
 
           val uid = userId.map(u => s"bc.user_id = '$u'")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
-          val opts = uid ++ as
+          val uname = userName.map(uname => s"bc.user_name = '$uname'")
+          val opts = uid ++ as ++ uname
 
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
 
