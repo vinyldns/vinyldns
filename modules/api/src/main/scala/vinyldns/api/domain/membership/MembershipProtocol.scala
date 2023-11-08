@@ -104,14 +104,16 @@ object UserInfo {
 
 case class UserResponseInfo(
    id: String,
-   userName: Option[String] = None
+   userName: Option[String] = None,
+   groupId: Set[String] =    Set.empty
  )
 
 object UserResponseInfo {
-  def apply(user: User): UserResponseInfo =
+  def apply(user: User , group: Group): UserResponseInfo =
     UserResponseInfo(
       id = user.id,
-      userName = Some(user.userName)
+      userName = Some(user.userName),
+      groupId = Set(group.id)
     )
 }
 

@@ -78,4 +78,9 @@ trait MembershipServiceAlgebra {
       userIdentifier: String,
       authPrincipal: AuthPrincipal
   ): Result[User]
+
+  def getGroupByUser(
+               userIdentifier: String,
+               authPrincipal: AuthPrincipal
+             ): Result[UserResponseInfo]
 }

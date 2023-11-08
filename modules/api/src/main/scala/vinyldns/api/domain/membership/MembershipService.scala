@@ -362,6 +362,15 @@ class MembershipService(
       .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
       .toResult[User]
 
+
+  def getGroupByUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
+      for{
+    userId <- getUser(userIdentifier,authPrincipal) .map(_.id)
+        user <- getUser(userIdentifier,authPrincipal)
+    group =  membershipRepo.getGroupsForUser(userId).unsafeRunSync()
+  } yield UserResponseInfo(user.id, Some(user.userName), group)
+
+
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String] = None,
