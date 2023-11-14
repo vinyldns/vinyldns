@@ -113,6 +113,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
   def getBatchChangeSummaries(
       userId: Option[String],
       userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
@@ -120,6 +122,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(bu => userName.forall(_ == bu.userName))
+      .filter(bdtsr => dateTimeStartRange.forall(_ == bdtsr.userName))
+      .filter(bdter => dateTimeEndRange.forall(_ == bdter.userName))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
