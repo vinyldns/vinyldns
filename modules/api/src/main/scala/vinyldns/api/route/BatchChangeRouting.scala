@@ -74,6 +74,8 @@ class BatchChangeRoute(
         (get & monitor("Endpoint.listBatchChangeSummaries")) {
           parameters(
             "userName".as[String].?,
+            "dateTimeRangeStart".as[String].?,
+            "dateTimeRangeEnd".as[String].?,
             "startFrom".as[Int].?,
             "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
             "ignoreAccess".as[Boolean].?(false),
@@ -81,6 +83,8 @@ class BatchChangeRoute(
           ) {
             (
                 userName: Option[String],
+                dateTimeRangeStart: Option[String],
+                dateTimeRangeEnd: Option[String],
                 startFrom: Option[Int],
                 maxItems: Int,
                 ignoreAccess: Boolean,
@@ -98,6 +102,8 @@ class BatchChangeRoute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
                         userName,
+                        dateTimeRangeStart,
+                        dateTimeRangeEnd,
                         startFrom,
                         maxItems,
                         ignoreAccess,

@@ -43,8 +43,8 @@
                         <div class="btn-group">
                             <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
-                        <div class="col-md-2 pull-right">
-                            <form ng-hide="!ignoreAccess" class="input-group remove-bottom-margin" ng-submit="refreshBatchChanges()">
+                        <div class="col-md-4 pull-right">
+                            <form ng-hide="!ignoreAccess" class="input-group full-width remove-bottom-margin" ng-submit="refreshBatchChanges()">
                                 <div class="input-group remove-bottom-margin">
                                     <span class="input-group-btn">
                                         <button id="user-name-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
@@ -52,17 +52,31 @@
                                     <input id="user-name-search-text" type="text" ng-model="submitterName" class="form-control" placeholder="Search by submitter">
                                 </div>
                             </form>
-                            @if(meta.manualBatchChangeReviewEnabled){
+                            <div ng-hide="!ignoreAccess" class="dropdown">
+                                <a class="record-type-filter-heading force-cursor dropdown-toggle force-a-color " id="batch-dropdown-menu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filters<i class="fa fa-chevron-down"></i></a>
+                                <div class="dropdown-menu increase-dropdown-width" aria-labelledby="batch-dropdown-menu">
+                                    <button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">×</span></button>
+                                    <form class="px-4 py-3 filter-margin dt-filter">
+                                        <div class="form-group">
+                                            <label class="control-label">Date Time Range</label>
+                                            <div class="input-group">
+                                                <input type="text" name="dateTimeRange" id="dt-range-txt-box" class="form-control" />
+                                                <div class="input-group-addon">{{ getLocalTimeZone() }}</div>
+                                            </div>
+                                        </div>
+                                        <button ng-click="resetDateTimeFilter()" type="submit" class="btn btn-primary">Reset</button>
+                                    </form>
+                                </div>
+                            </div>
                             <div class="batch-filter">
                                 <form action="">
-                                    <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox'">
+                                    <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox float-right'">
                                         <label>
                                             <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
                                         </label>
                                     </div>
                                 </form>
                             </div>
-                            }
                         </div>
                     </div>
                     <div class="panel-body">

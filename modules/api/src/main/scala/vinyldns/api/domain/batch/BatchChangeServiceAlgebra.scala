@@ -34,6 +34,8 @@ trait BatchChangeServiceAlgebra {
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int],
       maxItems: Int,
       ignoreAccess: Boolean,

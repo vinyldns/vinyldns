@@ -18,12 +18,15 @@
     'use strict';
 
     angular.module('dns-change')
-        .controller('DnsChangesController', function($scope, $timeout, dnsChangeService, pagingService, utilityService){
+        .controller('DnsChangesController', function($scope, $timeout, $q, $log, dnsChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
             $scope.currentBatchChange;
 
             // Set default params: empty start from and 100 max items
             var batchChangePaging = pagingService.getNewPagingParams(100);
+            var yesterday = moment().subtract(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            var now = moment().format('YYYY-MM-DD HH:mm:ss');
+            $scope.filter = {dateTimeRangeStart: "", dateTimeRangeEnd: ""};
 
             $scope.getBatchChanges = function(maxItems, startFrom) {
                 function success(response) {
@@ -37,6 +40,10 @@
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
                     });
             };
+
+            $scope.getLocalTimeZone = function() {
+                return new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
+            }
 
             function handleError(error, type) {
                 var alert = utilityService.failure(error, type);
@@ -55,11 +62,17 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges($scope.submitterName, batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
+                    .getBatchChanges($scope.submitterName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd, batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
                     });
+            };
+
+            $scope.resetDateTimeFilter = function() {
+                $scope.filter.dateTimeRangeStart = "";
+                $scope.filter.dateTimeRangeEnd = "";
+                $scope.refreshBatchChanges();
             };
 
             // Previous page button enabled?
@@ -143,6 +156,24 @@
             $scope.canCancelBatchChange = function(batchChange, accountName) {
                 return batchChange.approvalStatus == 'PendingReview' && accountName == batchChange.userName;
             }
+
+            $("#dt-range-txt-box").on("click", function() {
+                  $(".daterangepicker").addClass("dt-select-box");
+            });
+
+            $('input[name="dateTimeRange"]').daterangepicker({
+                timePicker: true,
+                timePickerSeconds: true,
+                startDate: yesterday,
+                endDate: now,
+                locale: {
+                    format: 'YYYY-MM-DD HH:mm:ss'
+                }
+            }, function(start, end) {
+                 $scope.filter.dateTimeRangeStart = start.format('YYYY-MM-DD HH:mm:ss');
+                 $scope.filter.dateTimeRangeEnd = end.format('YYYY-MM-DD HH:mm:ss');
+                 $scope.refreshBatchChanges();
+            });
 
             $timeout($scope.refreshBatchChanges, 0);
         });

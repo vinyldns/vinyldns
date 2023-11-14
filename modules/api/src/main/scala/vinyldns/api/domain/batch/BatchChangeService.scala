@@ -582,6 +582,8 @@ class BatchChangeService(
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
@@ -589,9 +591,11 @@ class BatchChangeService(
   ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     val submitterUserName = if(userName.isDefined && userName.get.isEmpty) None else userName
+    val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
+    val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startFrom, maxItems, approvalStatus)
+        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -609,7 +613,9 @@ class BatchChangeService(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
         approvalStatus = approvalStatus,
-        userName = userName
+        userName = userName,
+        dateTimeStartRange = dateTimeStartRange,
+        dateTimeEndRange = dateTimeEndRange
       )
     } yield listWithGroupNames
   }
