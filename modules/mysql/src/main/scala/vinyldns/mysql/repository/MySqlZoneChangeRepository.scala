@@ -198,12 +198,10 @@ class MySqlZoneChangeRepository
           val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
             List(
               zoneNameFilter.map(flt => s"zc.zone_name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-              startFrom.map(os => s"zc.zone_name > '$os'")
             ).flatten
           } else {
             List(
               zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'"),
-              startFrom.map(os => s"zc.zone_name > '$os'")
             ).flatten
           }.mkString
           if(zoneNameFilter.isDefined)
