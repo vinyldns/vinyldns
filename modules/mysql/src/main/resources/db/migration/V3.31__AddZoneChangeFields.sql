@@ -1,0 +1,9 @@
+CREATE SCHEMA IF NOT EXISTS ${dbName};
+
+USE ${dbName};
+
+ALTER TABLE zone_change
+ADD COLUMN zone_name VARCHAR(256) NOT NULL;
+
+ALTER TABLE zone_change
+ADD COLUMN zone_status CHAR(36) NOT NULL;

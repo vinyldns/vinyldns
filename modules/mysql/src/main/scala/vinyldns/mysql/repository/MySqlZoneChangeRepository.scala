@@ -22,6 +22,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
@@ -39,14 +40,15 @@ class MySqlZoneChangeRepository
 
   private final val PUT_ZONE_CHANGE =
     sql"""
-      |REPLACE INTO zone_change (change_id, zone_id, data, created_timestamp)
-      |  VALUES ({change_id}, {zone_id}, {data}, {created_timestamp})
+      |REPLACE INTO zone_change (change_id, zone_id, data, created_timestamp, zone_name, zone_status)
+      |  VALUES ({change_id}, {zone_id}, {data}, {created_timestamp},{zone_name}, {zone_status})
       """.stripMargin
 
   private final val BASE_ZONE_CHANGE_SEARCH_SQL =
     """
       |SELECT zc.data
       |  FROM zone_change zc
+      |
        """.stripMargin
 
   private final val BASE_GET_ZONES_SQL =
@@ -82,7 +84,9 @@ class MySqlZoneChangeRepository
               'change_id -> zoneChange.id,
               'zone_id -> zoneChange.zoneId,
               'data -> toPB(zoneChange).toByteArray,
-              'created_timestamp -> zoneChange.created.toEpochMilli
+              'created_timestamp -> zoneChange.created.toEpochMilli,
+              'zone_name -> zoneChange.zone.name,
+              'zone_status -> zoneChange.zone.status.toString
             )
             .update()
             .apply()
@@ -144,7 +148,8 @@ class MySqlZoneChangeRepository
         s"""
            |    JOIN zone_access za ON zc.zone_id = za.zone_id
            |      AND za.accessor_id IN ($questionMarks)
-    """.stripMargin
+           |
+        """.stripMargin
       (withAccessorCheck, accessors)
     }
 
@@ -177,37 +182,51 @@ class MySqlZoneChangeRepository
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val query = sb.toString
-
-          val zoneChangeResults: List[ZoneChange] =
-            SQL(query)
-              .bind(accessors: _*)
-              .map(extractZoneChange(1))
-              .list()
-              .apply()
-
           val zoneResults: List[Zone] =
             SQL(BASE_GET_ZONES_SQL)
               .map(extractZone(1))
               .list()
               .apply()
 
-          val zoneNotInZoneChange: List[ZoneChange] =
-            zoneChangeResults.filter(z=> !zoneResults.map(_.name).contains(z.zone.name) && z.zone.status != ZoneStatus.Active)
+          val zones = zoneResults.map(_.name).map(v => s"'$v'").mkString(",")
+          sb.append(s" WHERE ")
+
+         if (zones.isEmpty){
+           sb.append(s" zc.zone_status != 'Active'")
+          }else{sb.append(s" zc.zone_name NOT IN (${zones}) AND zc.zone_status != 'Active'")}
+
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"zc.zone_name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"zc.zone_name > '$os'")
+            ).flatten
+          }.mkString
+          if(zoneNameFilter.isDefined)
+            sb.append(s" AND ")
+          sb.append(filters)
+
+          val groupZoneName = s"""|    GROUP BY zc.zone_name
+                                  |    ORDER BY zc.created_timestamp DESC
+                              """.stripMargin
+          sb.append(groupZoneName)
+
+          val query = sb.toString
 
           val deletedZoneResults: List[ZoneChange] =
-            zoneNotInZoneChange.filter(_.zone.status.equals(ZoneStatus.Deleted)).distinct.sortBy(_.zone.updated).reverse
-
-          val results: List[ZoneChange] =
-            if (zoneNameFilter.nonEmpty) {
-              deletedZoneResults.filter(r => r.zone.name.contains(zoneNameFilter.getOrElse("not found")))
-            } else {
-              deletedZoneResults
-            }
+            SQL(query)
+              .bind(accessors: _*)
+              .map(extractZoneChange(1))
+                .list()
+                .apply()
 
           val deletedZonesWithStartFrom: List[ZoneChange] = startFrom match {
-            case Some(zoneId) => results.dropWhile(_.zone.id != zoneId)
-            case None => results
+            case Some(zoneId) => deletedZoneResults.dropWhile(_.zone.id != zoneId)
+            case None => deletedZoneResults
           }
 
           val deletedZonesWithMaxItems = deletedZonesWithStartFrom.take(maxItems + 1)
