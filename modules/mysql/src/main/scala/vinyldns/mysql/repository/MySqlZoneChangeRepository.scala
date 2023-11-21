@@ -146,7 +146,6 @@ class MySqlZoneChangeRepository
         s"""
            |    JOIN zone_access za ON zc.zone_id = za.zone_id
            |      AND za.accessor_id IN ($questionMarks)
-           |
         """.stripMargin
       (withAccessorCheck, accessors)
     }
