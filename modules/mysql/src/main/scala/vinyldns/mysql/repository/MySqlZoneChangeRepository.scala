@@ -22,7 +22,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
@@ -48,12 +47,11 @@ class MySqlZoneChangeRepository
     """
       |SELECT zc.data
       |  FROM zone_change zc
-      |
        """.stripMargin
 
-  private final val BASE_GET_ZONES_SQL =
+  private final val BASE_ZONE_NAME_SEARCH_SQL =
     """
-      |SELECT z.data
+      |SELECT z.name
       |  FROM zone z
        """.stripMargin
 
@@ -182,31 +180,26 @@ class MySqlZoneChangeRepository
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val zoneResults: List[Zone] =
-            SQL(BASE_GET_ZONES_SQL)
-              .map(extractZone(1))
+          val zoneResults: List[String] =
+            SQL(BASE_ZONE_NAME_SEARCH_SQL)
+              .map(_.string(1))
               .list()
               .apply()
 
-          val zones = zoneResults.map(_.name).map(v => s"'$v'").mkString(",")
           sb.append(s" WHERE ")
 
-         if (zones.isEmpty){
+         if (zoneResults.isEmpty)
            sb.append(s" zc.zone_status != 'Active'")
-          }else{sb.append(s" zc.zone_name NOT IN (${zones}) AND zc.zone_status != 'Active'")}
+         else sb.append(s" zc.zone_name NOT IN ($BASE_ZONE_NAME_SEARCH_SQL) AND zc.zone_status != 'Active'")
 
-          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
-            List(
-              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-            ).flatten
-          } else {
-            List(
-              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'"),
-            ).flatten
-          }.mkString
+          val filters = if (zoneNameFilter.isDefined && zoneNameFilter.get.contains("*"))
+              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${(flt.replace('*', '%'))}'")
+          else zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'")
+
           if(zoneNameFilter.isDefined)
             sb.append(s" AND ")
-          sb.append(filters)
+
+          sb.append(filters.mkString)
 
           val groupZoneName = s"""|    GROUP BY zc.zone_name
                                   |    ORDER BY zc.created_timestamp DESC
@@ -263,9 +256,5 @@ class MySqlZoneChangeRepository
 
   private def extractZoneChange(colIndex: Int): WrappedResultSet => ZoneChange = res => {
     fromPB(VinylDNSProto.ZoneChange.parseFrom(res.bytes(colIndex)))
-  }
-
-  private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
-    fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
   }
 }
