@@ -49,6 +49,12 @@ class MySqlZoneChangeRepository
       |  FROM zone_change zc
        """.stripMargin
 
+  private final val BASE_ZONE_NAME_COUNT_SQL =
+    """
+      |SELECT COUNT(z.name)
+      |  FROM zone z
+       """.stripMargin
+
   private final val BASE_ZONE_NAME_SEARCH_SQL =
     """
       |SELECT z.name
@@ -179,20 +185,21 @@ class MySqlZoneChangeRepository
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val zoneResults: List[String] =
-            SQL(BASE_ZONE_NAME_SEARCH_SQL)
-              .map(_.string(1))
-              .list()
-              .apply()
+          val zoneResults: Int =
+             SQL(BASE_ZONE_NAME_COUNT_SQL)
+               .map(_.int(1))
+               .single()
+               .apply()
+               .getOrElse(0)
 
-          sb.append(s" WHERE ")
+           sb.append(s" WHERE ")
 
-         if (zoneResults.isEmpty)
-           sb.append(s" zc.zone_status != 'Active'")
-         else sb.append(s" zc.zone_name NOT IN ($BASE_ZONE_NAME_SEARCH_SQL) AND zc.zone_status != 'Active'")
+          if (zoneResults != 0) sb.append(s" zc.zone_name NOT IN ($BASE_ZONE_NAME_SEARCH_SQL) AND ")
+
+          sb.append(s" zc.zone_status = 'Deleted' ")
 
           val filters = if (zoneNameFilter.isDefined && zoneNameFilter.get.contains("*"))
-              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${(flt.replace('*', '%'))}'")
+              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.replace('*', '%')}'")
           else zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'")
 
           if(zoneNameFilter.isDefined)
@@ -200,10 +207,11 @@ class MySqlZoneChangeRepository
 
           sb.append(filters.mkString)
 
-          val groupZoneName = s"""|    GROUP BY zc.zone_name
-                                  |    ORDER BY zc.created_timestamp DESC
-                              """.stripMargin
-          sb.append(groupZoneName)
+          val resultOrdering = s"""|    GROUP BY zc.zone_name
+                                   |    ORDER BY zc.created_timestamp DESC
+                                 """.stripMargin
+
+          sb.append(resultOrdering)
 
           val query = sb.toString
 
