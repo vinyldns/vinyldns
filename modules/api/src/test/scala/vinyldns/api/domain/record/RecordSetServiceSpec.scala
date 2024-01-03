@@ -889,7 +889,7 @@ class RecordSetServiceSpec
     }
 
     "return the recordSet change as the result for private zone if user is updating record set " +
-      "when record set is already owned by another group were user is not a part of" in {
+      "when record set is already owned by another group where user is not a part of" in {
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
 
       // Record Group is dummy and zone group is ok.

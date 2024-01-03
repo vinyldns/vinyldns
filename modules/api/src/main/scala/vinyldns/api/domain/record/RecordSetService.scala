@@ -145,7 +145,7 @@ class RecordSetService(
       _ <- unchangedZoneId(existing, recordSet).toResult
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
-      rsForValidations = if(!zone.shared) change.recordSet.copy(ownerGroupId = None) else change.recordSet
+      rsForValidations = if(!zone.shared) change.recordSet.copy(ownerGroupId = Some(zone.adminGroupId)) else change.recordSet
       superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
@@ -184,7 +184,6 @@ class RecordSetService(
       ).toResult
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
-
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 

@@ -660,7 +660,7 @@ class RecordSetServiceIntegrationSpec
         Some(group2.id)
     }
 
-    "update successfully for private zone if user is updating record set when record set is already owned by another group were user is not a part of" in {
+    "update successfully for private zone if user is updating record set when record set is already owned by another group where user is not a part of" in {
       val result = testRecordSetService
         .updateRecordSet(testOwnerGroupRecordInNormalZone, groupAuth)
         .value
