@@ -185,9 +185,7 @@ class RecordSetService(
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name)) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
-    } yield {
-      println("hjghjghjghjghjgjhg               fghjfgfgjhfjfjghfgjhf      ",rsForValidations)
-      change}
+    } yield change
 
   def deleteRecordSet(
                        recordSetId: String,
