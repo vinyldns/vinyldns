@@ -364,11 +364,11 @@ class MembershipService(
 
 
   def getGroupByUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
-      for{
-    userId <- getUser(userIdentifier,authPrincipal) .map(_.id)
+    for{
+        userId <- getUser(userIdentifier,authPrincipal) .map(_.id)
         user <- getUser(userIdentifier,authPrincipal)
-    group =  membershipRepo.getGroupsForUser(userId).unsafeRunSync()
-  } yield UserResponseInfo(user.id, Some(user.userName), group)
+        group =  membershipRepo.getGroupsForUser(userId).unsafeRunSync()
+    } yield UserResponseInfo(user.id, Some(user.userName), group)
 
 
   def getUsers(

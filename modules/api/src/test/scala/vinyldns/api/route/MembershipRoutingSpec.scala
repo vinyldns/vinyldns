@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+
 import java.time.Instant
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -32,7 +33,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.membership._
+import vinyldns.api.domain.membership.{UserResponseInfo, _}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.core.TestMembershipData._
@@ -78,6 +79,8 @@ class MembershipRoutingSpec
   val okGroupChangeInfo: GroupChangeInfo = GroupChangeInfo(okGroupChange)
   val okGroupChangeUpdateInfo: GroupChangeInfo = GroupChangeInfo(okGroupChangeUpdate)
   val okGroupChangeDeleteInfo: GroupChangeInfo = GroupChangeInfo(okGroupChangeDelete)
+  val okUserResponseInfo: UserResponseInfo = UserResponseInfo(okUser, okGroup)
+  val dummyUserResponseInfo: UserResponseInfo = UserResponseInfo(listOfDummyUsers.head,dummyGroup)
 
   "POST groups" should {
     "return a 200 response when successful" in {
@@ -817,9 +820,9 @@ class MembershipRoutingSpec
 
   "GET user" should {
     "return a 200 response with the user info" in {
-      doReturn(result(okUser))
+      doReturn(result(okUserResponseInfo))
         .when(membershipService)
-        .getUser("ok", okAuth)
+        .getGroupByUser("ok", okAuth)
       Get("/users/ok") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -829,9 +832,9 @@ class MembershipRoutingSpec
 
     "return a 200 response with the user info when the user ID is valid" in {
       val testUser = listOfDummyUsers.head
-      doReturn(result(testUser))
+      doReturn(result(dummyUserResponseInfo))
         .when(membershipService)
-        .getUser("dummy000", okAuth)
+        .getGroupByUser("dummy000", okAuth)
       Get("/users/dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -841,9 +844,9 @@ class MembershipRoutingSpec
 
     "return a 200 response with the user info when the username is valid" in {
       val testUser = listOfDummyUsers.head
-      doReturn(result(testUser))
+      doReturn(result(dummyUserResponseInfo))
         .when(membershipService)
-        .getUser("name-dummy000", okAuth)
+        .getGroupByUser("name-dummy000", okAuth)
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -854,7 +857,7 @@ class MembershipRoutingSpec
     "return a 404 Not Found response when the userIdentifier is not a valid user ID or username" in {
       doReturn(result(UserNotFoundError("fail")))
         .when(membershipService)
-        .getUser("fail", okAuth)
+        .getGroupByUser("fail", okAuth)
       Get("/users/fail") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }

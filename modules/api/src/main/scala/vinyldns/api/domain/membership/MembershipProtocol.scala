@@ -105,7 +105,7 @@ object UserInfo {
 case class UserResponseInfo(
    id: String,
    userName: Option[String] = None,
-   groupId: Set[String] =    Set.empty
+   groupId: Set[String] = Set.empty
  )
 
 object UserResponseInfo {
