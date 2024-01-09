@@ -363,11 +363,10 @@ class MembershipService(
       .toResult[User]
 
 
-  def getGroupByUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
+  def getUserDetails(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
     for{
-        userId <- getUser(userIdentifier,authPrincipal) .map(_.id)
         user <- getUser(userIdentifier,authPrincipal)
-        group =  membershipRepo.getGroupsForUser(userId).unsafeRunSync()
+        group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
     } yield UserResponseInfo(user.id, Some(user.userName), group)
 
 

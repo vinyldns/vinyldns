@@ -212,7 +212,7 @@ class MembershipRoute(
     } ~
     path("users" / Segment) { id =>
       (get & monitor("Endpoint.getUser")) {
-        authenticateAndExecute(membershipService.getGroupByUser(id, _)) {
+        authenticateAndExecute(membershipService.getUserDetails(id, _)) {
           user =>
             complete(StatusCodes.OK, user)
         }

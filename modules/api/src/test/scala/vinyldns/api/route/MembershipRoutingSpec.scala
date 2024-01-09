@@ -822,7 +822,7 @@ class MembershipRoutingSpec
     "return a 200 response with the user info" in {
       doReturn(result(okUserResponseInfo))
         .when(membershipService)
-        .getGroupByUser("ok", okAuth)
+        .getUserDetails("ok", okAuth)
       Get("/users/ok") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -834,7 +834,7 @@ class MembershipRoutingSpec
       val testUser = listOfDummyUsers.head
       doReturn(result(dummyUserResponseInfo))
         .when(membershipService)
-        .getGroupByUser("dummy000", okAuth)
+        .getUserDetails("dummy000", okAuth)
       Get("/users/dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -846,7 +846,7 @@ class MembershipRoutingSpec
       val testUser = listOfDummyUsers.head
       doReturn(result(dummyUserResponseInfo))
         .when(membershipService)
-        .getGroupByUser("name-dummy000", okAuth)
+        .getUserDetails("name-dummy000", okAuth)
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
@@ -854,10 +854,21 @@ class MembershipRoutingSpec
       }
     }
 
+    "return a 200 response with the user info when the group Id is valid" in {
+      doReturn(result(dummyUserResponseInfo))
+        .when(membershipService)
+        .getUserDetails("name-dummy000", okAuth)
+      Get("/users/name-dummy000") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[UserResponseInfo]
+        result.groupId shouldBe dummyUserResponseInfo.groupId
+      }
+    }
+
     "return a 404 Not Found response when the userIdentifier is not a valid user ID or username" in {
       doReturn(result(UserNotFoundError("fail")))
         .when(membershipService)
-        .getGroupByUser("fail", okAuth)
+        .getUserDetails("fail", okAuth)
       Get("/users/fail") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
