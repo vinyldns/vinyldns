@@ -26,15 +26,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
-import vinyldns.core.domain.batch.BatchChange
+import _root_.vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, BatchChangeStatus, SingleAddChange, SingleChange, SingleChangeStatus, SingleDeleteRRSetChange}
 import java.time.Instant
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus
-import vinyldns.core.domain.batch.SingleChange
-import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteRRSetChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
-import _root_.vinyldns.core.domain.batch.SingleChangeStatus
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
@@ -68,6 +63,7 @@ class SnsNotifierSpec
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,
+      BatchChangeStatus.PendingProcessing,
       None,
       None,
       None,

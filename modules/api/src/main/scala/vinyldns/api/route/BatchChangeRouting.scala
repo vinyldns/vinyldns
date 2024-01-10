@@ -76,16 +76,19 @@ class BatchChangeRoute(
             "startFrom".as[Int].?,
             "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
             "ignoreAccess".as[Boolean].?(false),
+            "batchStatus".as[String].?,
             "approvalStatus".as[String].?
           ) {
             (
                 startFrom: Option[Int],
                 maxItems: Int,
                 ignoreAccess: Boolean,
+                batchStatus: Option[String],
                 approvalStatus: Option[String]
             ) =>
               {
                 val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
+                val convertBatchStatus = batchStatus.flatMap(BatchChangeStatus.find)
 
                 handleRejections(invalidQueryHandler) {
                   validate(
@@ -98,6 +101,7 @@ class BatchChangeRoute(
                         startFrom,
                         maxItems,
                         ignoreAccess,
+                        convertBatchStatus,
                         convertApprovalStatus
                       )
                     ) { summaries =>

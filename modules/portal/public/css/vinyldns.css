@@ -590,3 +590,31 @@ input[type="file"] {
 .flex-1{
     flex: 1;
 }
+
+.filter-margin {
+    margin: 5px;
+}
+
+.dropdown-bottom-margin {
+    margin-bottom: 5px;
+}
+
+.no-margin {
+   margin: 0px;
+}
+
+.dt-filter {
+    width: 400px;
+}
+
+.dt-select-box {
+    top: 318.883px !important;
+    left: 1275.34px !important;
+    right: auto !important;
+    margin-top: 60px !important;
+    z-index: 9999 !important;
+}
+
+.float-right {
+    float: right;
+}

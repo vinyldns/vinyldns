@@ -18,6 +18,7 @@ package vinyldns.core.domain.batch
 
 import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.repository.Repository
 
 // $COVERAGE-OFF$
@@ -31,6 +32,7 @@ trait BatchChangeRepository extends Repository {
       userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList]
 

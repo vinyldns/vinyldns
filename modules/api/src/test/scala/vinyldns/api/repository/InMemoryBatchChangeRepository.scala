@@ -23,6 +23,7 @@ import scala.collection.concurrent
 import cats.effect._
 import cats.implicits._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 
 class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
@@ -37,6 +38,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       ownerGroupId: Option[String],
       id: String,
       approvalStatus: BatchChangeApprovalStatus,
+      batchStatus: BatchChangeStatus,
       reviewerId: Option[String],
       reviewComment: Option[String],
       reviewTimestamp: Option[Instant]
@@ -52,6 +54,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         batchChange.ownerGroupId,
         batchChange.id,
         batchChange.approvalStatus,
+        batchChange.batchStatus,
         batchChange.reviewerId,
         batchChange.reviewComment,
         batchChange.reviewTimestamp
@@ -86,6 +89,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           singleChangesFromRepo,
           sc.ownerGroupId,
           sc.approvalStatus,
+          sc.batchStatus,
           sc.reviewerId,
           sc.reviewComment,
           sc.reviewTimestamp,
@@ -114,10 +118,12 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList] = {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
+      .filter(bs => batchStatus.forall(_ == bs.batchStatus))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
@@ -131,6 +137,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         changes,
         sc.ownerGroupId,
         sc.approvalStatus,
+        sc.batchStatus,
         sc.reviewerId,
         sc.reviewComment,
         sc.reviewTimestamp,
@@ -150,6 +157,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         nextId = nextId,
         maxItems = maxItems,
         ignoreAccess = ignoreAccess,
+        batchStatus = batchStatus,
         approvalStatus = approvalStatus
       )
     )

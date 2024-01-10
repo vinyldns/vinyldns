@@ -103,6 +103,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         changes,
         Some(UUID.randomUUID().toString),
         BatchChangeApprovalStatus.AutoApproved,
+        BatchChangeStatus.PendingProcessing,
         Some(UUID.randomUUID().toString),
         Some("review comment"),
         Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(2))
@@ -150,6 +151,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         createdTimestamp = timeBase.plusMillis(10000000),
         approvalStatus = BatchChangeApprovalStatus.ManuallyRejected
       )
+    val change_six: BatchChange =
+      completeBatchChange.copy(createdTimestamp = timeBase.plusMillis(2000), ownerGroupId = None)
   }
 
   import TestData._
@@ -453,7 +456,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         } yield (updated, saved)
 
       val (retrieved, saved) = f.unsafeRunSync
-      retrieved shouldBe saved
+      // Batch Change Status will be updated once saved
+      retrieved.map(x => x.copy(batchStatus = BatchChangeStatus.Complete)) shouldBe saved
     }
 
     "return no batch when single changes list is empty" in {
