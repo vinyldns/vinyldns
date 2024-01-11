@@ -691,6 +691,59 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       batchChangeSummaries.batchChanges shouldBe empty
     }
 
+    "get batch change summaries by batch change status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(None, batchStatus = Some(BatchChangeStatus.PartialFailure))
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user ID, approval status and batch change status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
+            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved),
+            batchStatus = Some(BatchChangeStatus.Complete)
+          )
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_two)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "return empty list if a batch change summary is not found for a batch change status" in {
+      val batchChangeSummaries = repo.getBatchChangeSummaries(None, batchStatus = Some(BatchChangeStatus.Scheduled)).unsafeRunSync()
+      batchChangeSummaries.batchChanges shouldBe empty
+    }
+
     "properly status check (pending)" in {
       val chg = randomBatchChange(
         List(
