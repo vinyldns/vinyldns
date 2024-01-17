@@ -209,7 +209,6 @@ def test_list_recordset_changes_max_items_boundaries(shared_zone_test_context):
     assert_that(too_small, is_("maxItems was 0, maxItems must be between 0 exclusive and 100 inclusive"))
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_no_authorization(shared_zone_test_context):
     """
     Test that recordset history without authorization fails
@@ -220,7 +219,6 @@ def test_list_recordset_history_no_authorization(shared_zone_test_context):
     client.list_recordset_change_history(fqdn, type, sign_request=False, status=401)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_member_auth_success(shared_zone_test_context):
     """
     Test recordset history succeeds with membership auth for member of admin group
@@ -232,7 +230,6 @@ def test_list_recordset_history_member_auth_success(shared_zone_test_context):
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_member_auth_no_access(shared_zone_test_context):
     """
     Test recordset history fails for user not in admin group with no acl rules
@@ -243,7 +240,6 @@ def test_list_recordset_history_member_auth_no_access(shared_zone_test_context):
     client.list_recordset_change_history(fqdn, type, status=403)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_success(shared_zone_test_context):
     """
     Test recordset history succeeds with membership auth for member of admin group
@@ -255,7 +251,6 @@ def test_list_recordset_history_success(shared_zone_test_context):
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_paging(shared_zone_test_context):
     """
     Test paging for recordset history can use previous nextId as start key of next page
@@ -272,7 +267,6 @@ def test_list_recordset_history_paging(shared_zone_test_context):
     check_change_history_response(response_2, fqdn, type, recordChanges=True, nextId=True, startFrom=response_1["nextId"], maxItems=1)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_returning_no_changes(shared_zone_test_context):
     """
     Pass in startFrom of "2000" should return empty list because start key exceeded number of recordset change history
@@ -286,7 +280,6 @@ def test_list_recordset_history_returning_no_changes(shared_zone_test_context):
     assert_that(response["maxItems"], is_(100))
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_default_max_items(shared_zone_test_context):
     """
     Test default max items is 100
@@ -299,7 +292,6 @@ def test_list_recordset_history_default_max_items(shared_zone_test_context):
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False, maxItems=100)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_max_items_boundaries(shared_zone_test_context):
     """
     Test 0 < max_items <= 100

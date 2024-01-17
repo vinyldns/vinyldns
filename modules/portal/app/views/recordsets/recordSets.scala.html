@@ -141,7 +141,7 @@
                             <div class="modal-content">
                                 <div class="modal-body text-center">
                                     <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                    <div clas="loader-txt">
+                                    <div class="loader-txt">
                                         <p> <br /><br />No records found.<br /><br /></p>
                                     </div>
                                 </div>
@@ -169,6 +169,7 @@
                             @if(meta.sharedDisplayEnabled) {
                                 <th>Owner Group Name</th>
                             }
+                            <th ng-if="rootAccountCanReview || userCanAccessGroup">Record History</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -376,6 +377,9 @@
                                       title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                             </td>
                             }
+                            <td ng-if="rootAccountCanReview || (record.ownerGroupName && canAccessGroup(record.ownerGroupId))">
+                                <span><button class="btn btn-info btn-sm" ng-click="viewRecordHistory(record.fqdn, record.type)">View History</button></span>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
