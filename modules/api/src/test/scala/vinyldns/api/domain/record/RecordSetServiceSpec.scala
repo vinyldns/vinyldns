@@ -1963,6 +1963,9 @@ class RecordSetServiceSpec
         List(pendingCreateAAAA, completeCreateAAAA)
       val zoneId = filteredRecordSetChanges.head.zoneId
 
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(zoneId)
       doReturn(IO.pure(ListRecordSetChangesResults(filteredRecordSetChanges)))
         .when(mockRecordChangeRepo)
         .listRecordSetChanges(zoneId = None, startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
