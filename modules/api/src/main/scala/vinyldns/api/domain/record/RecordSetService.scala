@@ -609,13 +609,12 @@ class RecordSetService(
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetHistoryResponse] =
     for {
+      zone <- getZone(zoneId.get)
+      _ <- canSeeZone(authPrincipal, zone).toResult
       recordSetChangesResults <- recordChangeRepository
         .listRecordSetChanges(zoneId, startFrom, maxItems, fqdn, recordType)
         .toResult[ListRecordSetChangesResults]
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-      zoneId = if(recordSetChangesResults.items.nonEmpty) Some(recordSetChangesResults.items.map(x => x.zone.id).head) else None
-      zone <- getZone(zoneId.get)
-      _ <- canSeeZone(authPrincipal, zone).toResult
     } yield ListRecordSetHistoryResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
   def listFailedRecordSetChanges(

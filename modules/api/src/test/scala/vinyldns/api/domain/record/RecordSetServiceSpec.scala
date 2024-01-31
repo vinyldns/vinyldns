@@ -1968,13 +1968,13 @@ class RecordSetServiceSpec
         .getZone(zoneId)
       doReturn(IO.pure(ListRecordSetChangesResults(filteredRecordSetChanges)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = None, startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
+        .listRecordSetChanges(zoneId = Some(zoneId), startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
       doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetHistoryResponse =
-        underTest.listRecordSetChangeHistory(None, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChangeHistory(zoneId = Some(zoneId), fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         filteredRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetHistoryResponse(
