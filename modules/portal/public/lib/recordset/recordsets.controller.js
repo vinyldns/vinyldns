@@ -184,7 +184,6 @@
                     newRecords.push(recordsService.toDisplayRecord(record, ''));
                 });
                 $scope.records = newRecords;
-                $log.log("$scope.records: ",  $scope.records);
                 for(var i = 0; i < $scope.records.length; i++) {
                   if (!$scope.records[i].zoneShared){
                     getZone($scope.records[i].zoneId, i);
