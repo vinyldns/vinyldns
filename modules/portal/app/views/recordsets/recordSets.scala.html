@@ -169,7 +169,7 @@
                             @if(meta.sharedDisplayEnabled) {
                                 <th>Owner Group Name</th>
                             }
-                            <th ng-if="rootAccountCanReview || userCanAccessGroup">Record History</th>
+                            <th>Record History</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -377,8 +377,8 @@
                                       title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                             </td>
                             }
-                            <td ng-if="rootAccountCanReview || (record.ownerGroupName && canAccessGroup(record.ownerGroupId))">
-                                <span><button class="btn btn-info btn-sm" ng-click="viewRecordHistory(record.fqdn, record.type)">View History</button></span>
+                            <td>
+                                <span><button class="btn btn-info btn-sm" ng-disabled="(record.ownerGroupName && !canAccessGroup(record.ownerGroupId))" ng-click="viewRecordHistory(record.fqdn, record.type, record.zoneId)">View History</button></span>
                             </td>
                         </tr>
                         </tbody>
