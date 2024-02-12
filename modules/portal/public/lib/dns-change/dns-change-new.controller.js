@@ -170,23 +170,26 @@
 
                 function parseFile(file) {
                   return $q(function(resolve, reject) {
-                      var reader = new FileReader();
-                      reader.onload = function(e) {
-                          var rows = e.target.result.split("\n");
-                          if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
-                            $scope.newBatch.changes = [];
-                            for(var i = 1; i < rows.length; i++) {
-                              var lengthCheck = rows[i].replace(/,+/g, '').trim().length
-                              if (lengthCheck == 0) { continue; }
-                              parseRow(rows[i])
-                            }
-                            $scope.$apply()
-                            resolve($scope.newBatch.changes.length);
-                          } else {
-                            reject("Import failed. Not a valid file. File should be of ‘.csv’ type.");
-                          }
+                    if (!file.name.endsWith('.csv')) {
+                      reject("Import failed. File should be of ‘.csv’ type.");
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                      var rows = e.target.result.split("\n");
+                      if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
+                        $scope.newBatch.changes = [];
+                        for(var i = 1; i < rows.length; i++) {
+                          var lengthCheck = rows[i].replace(/,+/g, '').trim().length
+                          if (lengthCheck == 0) { continue; }
+                          parseRow(rows[i])
+                        }
+                        $scope.$apply()
+                        resolve($scope.newBatch.changes.length);
+                      } else {
+                        reject("Import failed. CSV header must be: Change Type,Record Type,Input Name,TTL,Record Data");
                       }
-                      reader.readAsText(file);
+                    }
+                    reader.readAsText(file);
                   });
                 }
 
