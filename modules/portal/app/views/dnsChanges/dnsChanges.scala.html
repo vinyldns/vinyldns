@@ -44,15 +44,15 @@
                             <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
                         @if(meta.manualBatchChangeReviewEnabled){
-                                <div class="batch-filter">
-                                    <form action="">
-                                        <div class="checkbox pull-right">
-                                            <label>
-                                                <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
-                                            </label>
-                                        </div>
-                                    </form>
-                                </div>
+                            <div class="batch-filter">
+                                <form action="">
+                                    <div class="checkbox pull-right">
+                                        <label>
+                                            <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
                         }
                     </div>
                     <div class="panel-body">
