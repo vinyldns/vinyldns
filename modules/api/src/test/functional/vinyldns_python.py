@@ -460,9 +460,10 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_recordset_change_history(self, fqdn, record_type, start_from=None, max_items=None, **kwargs):
+    def list_recordset_change_history(self, zone_id, fqdn, record_type, start_from=None, max_items=None, **kwargs):
         """
-        Gets the record's change history for the given record fqdn and record type
+        Gets the record's change history for the given zone, record fqdn and record type
+        :param zone_id: the id of the zone to retrieve
         :param fqdn: the record's fqdn
         :param record_type: the record's type
         :param start_from: the start key of the page
@@ -474,6 +475,7 @@ class VinylDNSClient(object):
             args.append("startFrom={0}".format(start_from))
         if max_items is not None:
             args.append("maxItems={0}".format(max_items))
+        args.append("zoneId={0}".format(zone_id))
         args.append("fqdn={0}".format(fqdn))
         args.append("recordType={0}".format(record_type))
         url = urljoin(self.index_url, "recordsetchange/history") + "?" + "&".join(args)
