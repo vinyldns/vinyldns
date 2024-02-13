@@ -33,12 +33,11 @@
                 return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
             };
 
-            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, batchStatus, approvalStatus) {
+            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus) {
                 var params = {
                     "maxItems": maxItems,
                     "startFrom": startFrom,
                     "ignoreAccess": ignoreAccess,
-                    "batchStatus": batchStatus,
                     "approvalStatus": approvalStatus
                 };
                 var url = utilityService.urlBuilder('/api/dnschanges', params);

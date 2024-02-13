@@ -44,38 +44,15 @@
                             <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
                         @if(meta.manualBatchChangeReviewEnabled){
-                            <div class="col-md-4 pull-right">
-                                <div ng-hide="!ignoreAccess" class="dropdown">
-                                    <a class="record-type-filter-heading force-cursor dropdown-toggle force-a-color " id="batch-dropdown-menu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filters<i class="fa fa-chevron-down"></i></a>
-                                    <div class="dropdown-menu increase-dropdown-width" aria-labelledby="batch-dropdown-menu">
-                                        <button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">×</span></button>
-                                        <form class="px-4 py-3 filter-margin dt-filter">
-                                            <div class="form-group">
-                                                <label class="control-label">Batch Change Status</label>
-                                                <div class="input-group">
-                                                    <select class="form-control" ng-model="batchStatus">
-                                                        <option value=""></option>
-                                                        <option ng-repeat="status in batchChangeStatuses" value="{{status}}"
-                                                                ng-selected="batchStatus == status">
-                                                            {{status}}
-                                                        </option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <button ng-click="refreshBatchChanges()" type="submit" class="btn btn-primary">Submit</button>
-                                        </form>
-                                    </div>
-                                </div>
                                 <div class="batch-filter">
                                     <form action="">
-                                        <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox float-right'">
+                                        <div class="checkbox pull-right">
                                             <label>
                                                 <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
                                             </label>
                                         </div>
                                     </form>
                                 </div>
-                            </div>
                         }
                     </div>
                     <div class="panel-body">

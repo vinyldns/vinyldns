@@ -20,7 +20,6 @@
     angular.module('dns-change')
         .controller('DnsChangesController', function($scope, $timeout, dnsChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
-            $scope.batchChangeStatuses = ["Cancelled", "Complete", "Failed", "PartialFailure", "PendingProcessing", "PendingReview", "Rejected", "Scheduled"]
             $scope.currentBatchChange;
 
             // Set default params: empty start from and 100 max items
@@ -32,7 +31,7 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.batchStatus, $scope.approvalStatus)
+                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function(error) {
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
@@ -56,7 +55,7 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.batchStatus, $scope.approvalStatus)
+                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
@@ -81,7 +80,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(batchChangePaging);
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.batchStatus, $scope.approvalStatus)
+                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         batchChangePaging = pagingService.prevPageUpdate(response.data.nextId, batchChangePaging);
                         $scope.batchChanges = response.data.batchChanges;
@@ -93,7 +92,7 @@
 
             $scope.nextPage = function() {
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.batchStatus, $scope.approvalStatus)
+                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         var batchChanges = response.data.batchChanges;
                         batchChangePaging = pagingService.nextPageUpdate(batchChanges, response.data.nextId, batchChangePaging);
