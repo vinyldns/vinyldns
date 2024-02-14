@@ -180,6 +180,9 @@ options:
       - title: List RecordSet Changes Failures
         url: api/list-recordset-changes-failures.html
         menu_section: recordsetapireference
+      - title: Get RecordSet Change History
+        url: api/get-recordset-change-history.html
+        menu_section: recordsetapireference
 
   - title: Batch Change
     url: api/batchchange-model.html
