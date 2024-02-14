@@ -63,8 +63,20 @@ angular.module('service.zones', [])
                 "nameFilter": query,
                 "ignoreAccess": ignoreAccess
             };
+
+            let loader = $("#loader");
+            loader.modal({
+                          backdrop: "static", //remove ability to close modal with click
+                          keyboard: false, //remove option to close with keyboard
+                          show: true //Display loader!
+                          })
+
             var url = groupsService.urlBuilder("/api/zones/deleted/changes", params);
-            return $http.get(url);
+
+            let promis =  $http.get(url);
+            // Hide loader when api gets response
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            return promis;
         };
 
         this.getBackendIds = function() {
