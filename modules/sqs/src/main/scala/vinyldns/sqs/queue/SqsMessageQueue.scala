@@ -27,6 +27,7 @@ import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
+import vinyldns.core.Messages._
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
@@ -185,10 +186,10 @@ object SqsMessageQueue extends ProtobufConversions {
 
   sealed abstract class SqsMessageQueueError(message: String) extends Throwable(message)
   final case class InvalidMessageTimeout(duration: Long)
-      extends SqsMessageQueueError(
-        s"Invalid duration: $duration seconds. Duration must be between " +
-          s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds."
-      )
+    extends SqsMessageQueueError(
+      InvalidDurationErrorMsg
+        .format(duration, MINIMUM_VISIBILITY_TIMEOUT, MAXIMUM_VISIBILITY_TIMEOUT)
+    )
 
   // AWS limits as specified at:
   // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-limits.html

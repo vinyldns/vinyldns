@@ -18,6 +18,7 @@ package vinyldns.api.route
 
 import org.json4s.JValue
 import cats.data._, cats.implicits._
+import vinyldns.core.Messages._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.{ACLRule, ACLRuleInfo, AccessLevel}
 
@@ -33,7 +34,7 @@ trait ACLJsonProtocol extends JsonValidation {
   case object ACLRuleInfoSerializer extends ValidationSerializer[ACLRuleInfo] {
     override def fromJson(js: JValue): ValidatedNel[String, ACLRuleInfo] = {
       val deserialized = (
-        (js \ "accessLevel").required(AccessLevel, "Missing ACLRule.accessLevel"),
+        (js \ "accessLevel").required(AccessLevel, ACLAccessLevelMsg),
         (js \ "description").optional[String],
         (js \ "userId").optional[String],
         (js \ "groupId").optional[String],
@@ -43,7 +44,7 @@ trait ACLJsonProtocol extends JsonValidation {
       ).mapN(ACLRuleInfo.apply)
 
       deserialized.check(
-        ("Cannot specify both a userId and a groupId", { rule =>
+        (DeserializeCheckErrorMsg, { rule =>
           !(rule.userId.isDefined && rule.groupId.isDefined)
         })
       )

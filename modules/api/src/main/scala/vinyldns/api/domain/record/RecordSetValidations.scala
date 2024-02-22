@@ -39,26 +39,23 @@ object RecordSetValidations {
     recordSet.typ match {
       case CNAME | SOA | TXT | NS | DS => ().asRight
       case PTR =>
-        ensuring(InvalidRequest("PTR is not valid in forward lookup zone"))(zone.isReverse)
+        ensuring(InvalidRequest(InvalidPtrErrorMsg))(zone.isReverse)
       case _ =>
-        ensuring(InvalidRequest(s"${recordSet.typ} is not valid in reverse lookup zone."))(
+        ensuring(InvalidRequest(ReverseLookupErrorMsg.format(recordSet.typ)))(
           !zone.isReverse
         )
     }
 
   def validRecordNameLength(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     val absoluteName = recordSet.name + "." + zone.name
-    ensuring(InvalidRequest(s"record set name ${recordSet.name} is too long")) {
+    ensuring(InvalidRequest(RecordNameLengthErrorMsg.format(recordSet.name))) {
       absoluteName.length < 256 || isOriginRecord(recordSet.name, zone.name)
     }
   }
 
   def notPending(recordSet: RecordSet): Either[Throwable, Unit] =
     ensuring(
-      PendingUpdateError(
-        s"RecordSet with id ${recordSet.id}, name ${recordSet.name} and type ${recordSet.typ} " +
-          s"currently has a pending change"
-      )
+      PendingUpdateError(PendingUpdateErrorMsg.format(recordSet.id, recordSet.name, recordSet.typ))
     )(
       !recordSet.isPending
     )
@@ -69,10 +66,7 @@ object RecordSetValidations {
       zone: Zone
   ): Either[Throwable, Unit] =
     ensuring(
-      RecordSetAlreadyExists(
-        s"RecordSet with name ${newRecordSet.name} and type CNAME already " +
-          s"exists in zone ${zone.name}"
-      )
+      RecordSetAlreadyExists(RecordSetCnameExistsErrorMsg.format(newRecordSet.name, zone.name))
     )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == CNAME)
     )
@@ -84,8 +78,7 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     ensuring(
       RecordSetAlreadyExists(
-        s"RecordSet with name ${newRecordSet.name} and type ${newRecordSet.typ} already " +
-          s"exists in zone ${zone.name}"
+        RecordSetAlreadyExistsErrorMsg.format(newRecordSet.name, newRecordSet.typ, zone.name)
       )
     )(
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
@@ -129,10 +122,7 @@ object RecordSetValidations {
      isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(
-        s"Record with fqdn '${newRecordSet.name}.${zone.name}' cannot be created. " +
-          s"Please check if a record with the same FQDN and type already exist and make the change there."
-      )
+      InvalidRequest(InvalidRequestErrorMsg.format(newRecordSet.name, zone.name))
     )(
       (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed
     )
@@ -146,9 +136,7 @@ object RecordSetValidations {
      isRecordTypeAndUserAllowed: Boolean
   ): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(
-        s"Record type is not allowed or the user is not authorized to create a dotted host in the zone '${zone.name}'"
-      )
+      InvalidRequest(RtypeOrUserNotAllowedErrorMsg.format(zone.name))
     )(
       (newRecordSet.name != zone.name || existingRecordSet.exists(_.name == newRecordSet.name)) && recordFqdnDoesNotExist && isRecordTypeAndUserAllowed
     )
@@ -160,10 +148,7 @@ object RecordSetValidations {
       existingRecordSet: Option[RecordSet] = None
   ): Either[Throwable, Unit] =
     ensuring(
-      InvalidRequest(
-        s"Record with name ${newRecordSet.name} and type ${newRecordSet.typ} is a dotted host which" +
-          s" is not allowed in zone ${zone.name}"
-      )
+      InvalidRequest(DottedHostErrorMsg.format(newRecordSet.name, newRecordSet.typ, zone.name))
     )(
       newRecordSet.name == zone.name || !newRecordSet.name.contains(".") ||
         existingRecordSet.exists(_.name == newRecordSet.name)
@@ -197,9 +182,9 @@ object RecordSetValidations {
         isNotOrigin(
           recordSet,
           zone,
-          s"Record with name ${recordSet.name} is an NS record at apex and cannot be edited"
+          NSApexEditErrorMsg.format(recordSet.name)
         )
-      case SOA => InvalidRequest("SOA records cannot be deleted").asLeft
+      case SOA => InvalidRequest(SOADeleteErrorMsg).asLeft
       case _ => ().asRight
     }
 
@@ -217,10 +202,7 @@ object RecordSetValidations {
     // cannot create a cname record if a record with the same exists
     val noRecordWithName = {
       ensuring(
-        RecordSetAlreadyExists(
-          s"RecordSet with name ${newRecordSet.name} already " +
-            s"exists in zone ${zone.name}, CNAME record cannot use duplicate name"
-        )
+        RecordSetAlreadyExists(CnameDuplicateErrorMsg.format(newRecordSet.name, zone.name))
       )(
         existingRecordsWithName.forall(_.id == newRecordSet.id)
       )
@@ -229,9 +211,7 @@ object RecordSetValidations {
     // cname recordset data cannot contain more than one sequential '.'
     val RDataWithConsecutiveDots = {
       ensuring(
-        RecordSetValidation(
-          s"RecordSet Data cannot contain consecutive 'dot' character. RData: '${newRecordSet.records.head.toString}'"
-        )
+        RecordSetValidation(RDataWithConsecutiveDotsErrorMsg.format(newRecordSet.records.head.toString))
       )(
         noConsecutiveDots(newRecordSet.records.head.toString)
       )
@@ -239,9 +219,7 @@ object RecordSetValidations {
 
     val isNotIPv4inCname = {
       ensuring(
-        RecordSetValidation(
-          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid CNAME record data cannot be an IP address."""
-        )
+        RecordSetValidation(IPv4inCnameErrorMsg.format(newRecordSet.records.head.toString.dropRight(1)))
       )(
         validateIpv4Address(newRecordSet.records.head.toString.dropRight(1)).isInvalid
       )
@@ -251,7 +229,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        "CNAME RecordSet cannot have name '@' because it points to zone origin"
+        InvalidCnameErrorMsg
       )
       _ <- noRecordWithName
       _ <- isNotIPv4inCname
@@ -274,10 +252,7 @@ object RecordSetValidations {
     val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
       case Some(_) => ().asRight
       case None =>
-        InvalidRequest(
-          s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
-            s"name in the zone [${zone.name}]"
-        ).asLeft
+        InvalidRequest(DSInvalidErrorMsg.format(newRecordSet.name, zone.name)).asLeft
     }
 
     for {
@@ -285,7 +260,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        s"Record with name [${newRecordSet.name}] is an DS record at apex and cannot be added"
+        DSApexErrorMsg.format(newRecordSet.name)
       )
       _ <- nsChecks
     } yield ()
@@ -309,7 +284,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be added"
+        NSApexErrorMsg.format(newRecordSet.name)
       )
       _ <- containsApprovedNameServers(newRecordSet, approvedNameServers)
       _ <- oldRecordSet
@@ -317,7 +292,7 @@ object RecordSetValidations {
           isNotOrigin(
             rs,
             zone,
-            s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be edited"
+            NSApexEditErrorMsg.format(newRecordSet.name)
           )
         }
         .getOrElse(().asRight)
@@ -371,10 +346,7 @@ object RecordSetValidations {
 
   def checkAllowedDots(allowedDotsLimit: Int, recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     ensuring(
-      InvalidRequest(
-        s"RecordSet with name ${recordSet.name} has more dots than that is allowed in config for this zone " +
-          s"which is, 'dots-limit = $allowedDotsLimit'."
-      )
+      InvalidRequest(MoreDotsThanAllowedErrorMsg.format(recordSet.name, allowedDotsLimit))
     )(
       recordSet.name.count(_ == '.') <= allowedDotsLimit || (recordSet.name.count(_ == '.') == 1 &&
         recordSet.name.takeRight(1) == ".") || recordSet.name == zone.name ||
@@ -384,9 +356,7 @@ object RecordSetValidations {
 
   def isNotApexEndsWithDot(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     ensuring(
-      InvalidRequest(
-        "RecordSet name cannot end with a dot, unless it's an apex record."
-      )
+      InvalidRequest(InvalidEndingErrorMsg)
     )(
       recordSet.name.endsWith(zone.name) || !recordSet.name.endsWith(".")
     )
@@ -400,10 +370,10 @@ object RecordSetValidations {
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>
-        InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+        InvalidGroupError(RecordOwnerGroupNotFoundErrorMsg.format(groupId)).asLeft
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
-        else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
+        else InvalidRequest(UserNotInOwnerGroupErrorMsg.format(groupId)).asLeft
     }
 
   def unchangedRecordName(
@@ -414,7 +384,7 @@ object RecordSetValidations {
     updates.name.toLowerCase == existing.name.toLowerCase
       || (updates.name == "@" && existing.name.toLowerCase == zone.name.toLowerCase),
     (),
-    InvalidRequest("Cannot update RecordSet's name.")
+    InvalidRequest(UnchangedRecordNameErrorMsg)
   )
 
   def unchangedRecordType(
@@ -424,7 +394,7 @@ object RecordSetValidations {
     Either.cond(
       updates.typ == existing.typ,
       (),
-      InvalidRequest("Cannot update RecordSet's record type.")
+      InvalidRequest(UnchangedRecordTypeErrorMsg)
     )
 
   def unchangedZoneId(
@@ -434,7 +404,7 @@ object RecordSetValidations {
     Either.cond(
       updates.zoneId == existing.zoneId,
       (),
-      InvalidRequest("Cannot update RecordSet's zone ID.")
+      InvalidRequest(UnchangedZoneIdErrorMsg)
     )
 
   /**
@@ -457,7 +427,7 @@ object RecordSetValidations {
         && auth.isSuper)
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
-    ensuring(onError = InvalidRequest(RecordNameFilterError)) {
+    ensuring(onError = InvalidRequest(RecordNameFilterErrorMsg)) {
       val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
       val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
       searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty

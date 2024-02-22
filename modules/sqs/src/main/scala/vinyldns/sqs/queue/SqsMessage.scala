@@ -19,6 +19,7 @@ import java.util.Base64
 
 import cats.implicits._
 import com.amazonaws.services.sqs.model.Message
+import vinyldns.core.Messages._
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
@@ -34,11 +35,11 @@ final case class SqsMessage(id: MessageId, command: ZoneCommand) extends Command
 object SqsMessage extends ProtobufConversions {
   sealed abstract class SqsMessageError(message: String) extends Throwable(message)
   final case class InvalidSqsMessageContents(messageId: String)
-      extends SqsMessageError(s"Unable to parse SQS Message with ID '$messageId'")
+    extends SqsMessageError(SqsParseErrorMsg.format(messageId))
   final case class EmptySqsMessageContents(messageId: String)
-      extends SqsMessageError(s"No message body found for SQS message with ID '$messageId'")
+    extends SqsMessageError(SqsBodyErrorMsg.format(messageId))
   final case class InvalidMessageType(className: String)
-      extends SqsMessageError(s"Invalid command message type '$className'")
+    extends SqsMessageError(SqsInvalidCommand.format(className))
 
   def parseSqsMessage(message: Message): Either[Throwable, SqsMessage] =
     for {
