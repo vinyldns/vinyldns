@@ -4,7 +4,7 @@ title: "Get Valid Email Domains"
 section: "api"
 ---
 
-# Get Group
+# Get Valid Email Domains
 
 Gets a list of valid email domains which are allowed while entering groups and zones email.
 

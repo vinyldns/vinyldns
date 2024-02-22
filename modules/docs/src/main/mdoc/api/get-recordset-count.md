@@ -6,7 +6,7 @@ section: "api"
 
 # Get RecordSet Count
 
-Gets the count of total recordsets in a specified zone
+Gets the count of total recordsets in a specified zone.
 
 #### HTTP REQUEST
 
