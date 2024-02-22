@@ -24,7 +24,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-admins        | Array of Users | refer to [membership model](membership-model.html) |
+admins        | Array of Users | Refer to [membership model](membership-model.html) |
 
 #### EXAMPLE RESPONSE
 

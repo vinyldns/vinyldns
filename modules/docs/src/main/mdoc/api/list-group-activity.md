@@ -40,8 +40,8 @@ maxItems      | integer       | maxItems sent in request, default is 100 |
 
 name                | type          | description |
  -----------------  | ------------- | :---------- |
-newGroup            | map           | The new group as a result of the change, refer to [Membership Model](membership-model.html) |
-oldGroup            | map           | The old group before the change, refer to [Membership Model](membership-model.html) |
+newGroup            | map           | The new group as a result of the change. Refer to [Membership Model](membership-model.html) |
+oldGroup            | map           | The old group before the change. Refer to [Membership Model](membership-model.html) |
 created             | string        | Millisecond timestamp that change was created
 userId              | string        | User Id of user who made the change |
 id                  | string        | Id of the group change |

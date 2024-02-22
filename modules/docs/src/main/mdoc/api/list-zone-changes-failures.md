@@ -32,7 +32,7 @@ Code          | description |
 
 name                | type                         | description |
  ------------------ | ---------------------------- | :---------- |
-failedZoneChanges   | array of zone changes        | array of failed zone changes sorted by created time in descending order. Refer to [Zone Change](#zone-change) |
+failedZoneChanges   | array of zone changes        | Array of failed zone changes sorted by created time in descending order. Refer to [Zone Change](#zone-change) |
 startFrom           | int                          | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
 nextId              | int                          | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present |
 maxItems            | int                          | The maxItems parameter that was sent in on the HTTP request.  This will be 100 if not sent |
@@ -41,7 +41,7 @@ maxItems            | int                          | The maxItems parameter that
 
 name                | type          | description |
  -----------------  | ------------- | :---------- |
-zone                | map           | refer to [zone model](zone-model.html) |
+zone                | map           | Refer to [zone model](zone-model.html) |
 status              | string        | The status of the change. Either Pending, Failed or Synced |
 changeType          | string        | The type of change. Either Create, Update, Delete, Sync or AutomatedSync |
 systemMessage       | string        | (optional) A message regarding the change.  Will not be present if the string is empty |
