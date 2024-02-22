@@ -4,7 +4,7 @@ title: "Get Group Change"
 section: "api"
 ---
 
-# Get RecordSet Change
+# Get Group Change
 
 Retrieves a group change given the group change ID.
 

@@ -135,8 +135,8 @@ options:
       - title: List Zone Changes
         url: api/list-zone-changes.html
         menu_section: zoneapireference
-      - title: List Zone Changes Failures
-        url: api/list-zone-changes.html
+      - title: List Zone Change Failures
+        url: api/list-zone-change-failures.html
         menu_section: zoneapireference
       - title: Abandoned Zones
         url: api/list-deleted-zones.html
@@ -177,8 +177,8 @@ options:
       - title: Get RecordSet Count
         url: api/get-recordset-count.html
         menu_section: recordsetapireference
-      - title: List RecordSet Changes Failures
-        url: api/list-recordset-changes-failures.html
+      - title: List RecordSet Change Failures
+        url: api/list-recordset-change-failures.html
         menu_section: recordsetapireference
       - title: Get RecordSet Change History
         url: api/get-recordset-change-history.html

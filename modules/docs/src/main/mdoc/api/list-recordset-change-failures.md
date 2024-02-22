@@ -1,6 +1,6 @@
 ---
 layout: docs
-title: "List RecordSet Changes Failures"
+title: "List RecordSet Change Failures"
 section: "api"
 ---
 

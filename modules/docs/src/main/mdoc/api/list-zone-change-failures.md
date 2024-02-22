@@ -1,6 +1,6 @@
 ---
 layout: docs
-title: "List Zone Changes Failures"
+title: "List Zone Change Failures"
 section: "api"
 ---
 
