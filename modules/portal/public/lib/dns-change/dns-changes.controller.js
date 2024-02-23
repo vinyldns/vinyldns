@@ -72,6 +72,8 @@
             $scope.resetDateTimeFilter = function() {
                 $scope.filter.dateTimeRangeStart = "";
                 $scope.filter.dateTimeRangeEnd = "";
+                $('input[name="dateTimeRange"]').data('daterangepicker').setStartDate(yesterday);
+                $('input[name="dateTimeRange"]').data('daterangepicker').setEndDate(now);
                 $scope.refreshBatchChanges();
             };
 
@@ -173,6 +175,10 @@
                  $scope.filter.dateTimeRangeStart = start.format('YYYY-MM-DD HH:mm:ss');
                  $scope.filter.dateTimeRangeEnd = end.format('YYYY-MM-DD HH:mm:ss');
                  $scope.refreshBatchChanges();
+            });
+
+           $("div.daterangepicker").click( function(e) {
+                e.stopPropagation();
             });
 
             $timeout($scope.refreshBatchChanges, 0);

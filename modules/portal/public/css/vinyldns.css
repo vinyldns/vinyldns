@@ -618,3 +618,8 @@ input[type="file"] {
 .increase-dropdown-width {
     width: 100%;
 }
+
+.set-flex {
+    display: flex;
+    flex-direction: column;
+}
