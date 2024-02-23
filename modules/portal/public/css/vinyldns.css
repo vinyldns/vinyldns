@@ -614,3 +614,7 @@ input[type="file"] {
 .float-right {
     float: right;
 }
+
+.increase-dropdown-width {
+    width: 100%;
+}
