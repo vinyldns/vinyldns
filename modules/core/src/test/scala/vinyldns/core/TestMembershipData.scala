@@ -119,7 +119,7 @@ object TestMembershipData {
     memberGroupIds = List(abcGroup.id, okGroup.id)
   )
 
-  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
+  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id, oneUserDummyGroup.id))
 
   val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", Encrypted("secret")), Seq.empty)
 
