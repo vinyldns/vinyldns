@@ -33,15 +33,15 @@
                 return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
             };
 
-            this.getBatchChanges = function (userName, dateTimeRangeStart, dateTimeRangeEnd, maxItems, startFrom, ignoreAccess, approvalStatus) {
+            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus, userName, dateTimeRangeStart, dateTimeRangeEnd) {
                 var params = {
-                    "userName": userName,
-                    "dateTimeRangeStart": dateTimeRangeStart,
-                    "dateTimeRangeEnd": dateTimeRangeEnd,
                     "maxItems": maxItems,
                     "startFrom": startFrom,
                     "ignoreAccess": ignoreAccess,
-                    "approvalStatus": approvalStatus
+                    "approvalStatus": approvalStatus,
+                    "userName": userName,
+                    "dateTimeRangeStart": dateTimeRangeStart,
+                    "dateTimeRangeEnd": dateTimeRangeEnd
                 };
                 var url = utilityService.urlBuilder('/api/dnschanges', params);
                 return $http.get(url);
