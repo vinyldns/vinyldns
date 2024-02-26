@@ -1391,5 +1391,21 @@ class MembershipServiceSpec
         error shouldBe a[UserNotFoundError]
       }
     }
+    "get user info" should {
+      "return the user info" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
+        result.id shouldBe okUser.id
+        result.userName.get shouldBe okUser.userName
+        result.groupId shouldBe Set(okGroup.id)
+      }
+
+      "return an error if the user is not found" in {
+        doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(anyString)
+        val error = underTest.getUserDetails("notfound", okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[UserNotFoundError]
+      }
+    }
   }
 }

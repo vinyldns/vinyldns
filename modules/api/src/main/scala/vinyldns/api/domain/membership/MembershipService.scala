@@ -362,6 +362,14 @@ class MembershipService(
       .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
       .toResult[User]
 
+
+  def getUserDetails(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
+    for{
+        user <- getUser(userIdentifier,authPrincipal)
+        group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
+    } yield UserResponseInfo(user.id, Some(user.userName), group)
+
+
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String] = None,
