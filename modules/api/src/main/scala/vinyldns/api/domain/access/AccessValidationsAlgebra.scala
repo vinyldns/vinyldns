@@ -27,6 +27,8 @@ trait AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
+  def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
+
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,
