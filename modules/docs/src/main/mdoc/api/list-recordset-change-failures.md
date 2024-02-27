@@ -56,7 +56,7 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "rules": []
         },
         "adminGroupId": "7611734a-8409-4827-9e8b-960d115b9f9c",
-        "scheduleRequestor": "ashah403",
+        "scheduleRequestor": "testuser",
         "latestSync": "2023-09-28T13:51:30Z",
         "isTest": true,
         "backendId": "func-test-backend"
