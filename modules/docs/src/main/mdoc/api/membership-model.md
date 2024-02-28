@@ -21,7 +21,7 @@ will be an admin of that zone, and can preform zone syncs, zone updates, zone de
 of any Access Control Rules set on them.
 <br><br>
 While users in the admin group will have complete zone access, further users can be given limited membership through [Zone
-ACL Rules](zone-model.html#zone-acl-rule-attr)
+ACL Rules](zone-model.html#zone-acl-rule-attr).
 
 #### GROUP ATTRIBUTES <a id="group-attributes"></a>
 
