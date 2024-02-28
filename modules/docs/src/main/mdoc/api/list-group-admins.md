@@ -6,7 +6,7 @@ section: "api"
 
 # List Group Admins
 
-Retrieves a group's admins
+Retrieves a group's admins.
 
 #### HTTP REQUEST
 
@@ -24,7 +24,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-admins        | Array of Users | refer to [membership model](membership-model.html) |
+admins        | Array of Users | Refer to [membership model](membership-model.html) |
 
 #### EXAMPLE RESPONSE
 
