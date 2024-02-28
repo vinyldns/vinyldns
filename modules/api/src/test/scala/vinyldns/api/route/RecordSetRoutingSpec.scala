@@ -924,7 +924,7 @@ class RecordSetRoutingSpec
 
   "GET recordset change history" should {
     "return the recordset change" in {
-      Get(s"/recordsetchange/history?fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
+      Get(s"/recordsetchange/history?zoneId=${okZone.id}&fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
         val response = responseAs[ListRecordSetHistoryResponse]
 
         response.zoneId shouldBe Some(okZone.id)

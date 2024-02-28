@@ -138,9 +138,9 @@ def test_get_group_changes_paging(group_activity_context, shared_zone_test_conte
     assert_that(page_three["changes"][0]["newGroup"], is_(created_group))
 
 
-def test_get_group_changes_unauthed(shared_zone_test_context):
+def test_get_group_changes_unauthorized(shared_zone_test_context):
     """
-    Tests that non-group members can still get group changes
+    Tests that non-group members cannot get group changes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
@@ -154,7 +154,7 @@ def test_get_group_changes_unauthed(shared_zone_test_context):
         }
         saved_group = client.create_group(new_group, status=200)
 
-        dummy_client.get_group_changes(saved_group["id"], status=200)
+        dummy_client.get_group_changes(saved_group["id"], status=403)
         client.get_group_changes(saved_group["id"], status=200)
     finally:
         if saved_group:

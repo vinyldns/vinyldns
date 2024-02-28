@@ -6,7 +6,7 @@ section: "api"
 
 # Delete Group
 
-Deletes a Group in VinylDNS
+Deletes a Group in VinylDNS.
 
 #### HTTP REQUEST
 

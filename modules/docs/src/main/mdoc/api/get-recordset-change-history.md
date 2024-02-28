@@ -10,12 +10,13 @@ Gets the history of all the changes that has been made to a recordset
 
 #### HTTP REQUEST
 
-> GET /recordsetchange/history?fqdn={recordsetFqdn}&recordType={recordsetType}&startFrom={response.nextId}&maxItems={1 - 100}
+> GET /recordsetchange/history?zoneId={zoneId}&fqdn={recordsetFqdn}&recordType={recordsetType}&startFrom={response.nextId}&maxItems={1 - 100}
 
 #### HTTP REQUEST PARAMS
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
+zoneId        | string        | yes         | The id of the zone where the recordset is present |
 fqdn          | string        | yes         | The fqdn of the recordset whose history will be returned |
 recordType    | string        | yes         | The record type of the recordset |
 startFrom     | int           | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
