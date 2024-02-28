@@ -88,3 +88,7 @@ If you use any VinylDNS tools beyond the portal you will need to provide those t
 
 ### 9. How are requests authenticated to the VinylDNS API? <a id="9"></a>
 Refer to [API Authentication](api/auth-mechanism.html).
+
+### 10. Why am I not able to view the Change History tab on a Group? <a id="10"></a>
+To view a group's change history, you should be a member or admin of that group. Only individuals who are part of the 
+group can view the change history.
