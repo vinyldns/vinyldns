@@ -18,6 +18,7 @@ position: 6
 7. [When I try to connect to my zone, I am seeing "invalid name server" errors](#7)
 8. [How do I get API credentials?](#8)
 9. [How are requests authenticated to the VinylDNS API?](#9)
+10. [Why am I not able to view the Change History tab on a Group?](#10)
 
 
 ### 1. Can I create a zone in VinylDNS? <a id="1"></a>
