@@ -38,6 +38,13 @@ class AccessValidations(
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
     )
 
+  def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}' changes")
+    )(
+      auth.isSystemAdmin || zone.shared || auth.isGroupMember(zone.adminGroupId)
+    )
+
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,

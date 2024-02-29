@@ -6,7 +6,7 @@ section: "api"
 
 # Create RecordSet
 
-Creates a RecordSet in a specified zone
+Creates a RecordSet in a specified zone.
 
 #### HTTP REQUEST
 

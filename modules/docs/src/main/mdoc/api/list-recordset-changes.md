@@ -7,9 +7,9 @@ section: "api"
 # List RecordSet Changes
 
 RecordSet changes (Create, Update, Delete) are not immediately applied to the DNS backend; they are queued up for processing.  Most changes are applied within a few seconds.
-When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed)
+When you submit a change for processing, the response is a Change model.  You can use the information in that change model in order to poll for the status of the change until it completes (status = Complete) or fails (status = Failed).
 <br><br>
-Retrieves a list of RecordSet changes in a zone. All RecordSet changes are stored, including those coming from zone syncs. RecordSet changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters
+Retrieves a list of RecordSet changes in a zone. All RecordSet changes are stored, including those coming from zone syncs. RecordSet changes come in max page sizes of 100 changes, paging must be done independently using startFrom and nextId parameters.
 
 #### HTTP REQUEST
 
@@ -19,7 +19,7 @@ Retrieves a list of RecordSet changes in a zone. All RecordSet changes are store
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+startFrom     | int           | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
 
 #### HTTP RESPONSE TYPES
@@ -37,8 +37,8 @@ name          | type          | description |
  ------------ | ------------- | :---------- |
 zoneId        | string        | Id of zone used for request |
 recordSetChanges   | array of recordset changes | array of recordset changes sorted by created time in descending order |
-startFrom     | *any*         | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
-nextId        | *any*         | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present |
+startFrom     | int           | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
+nextId        | int           | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present |
 maxItems      | int           | The maxItems parameter that was sent in on the HTTP request.  This will be 100 if not sent |
 status        | string        | The status of the change (Pending, Complete, Failed) |
 
