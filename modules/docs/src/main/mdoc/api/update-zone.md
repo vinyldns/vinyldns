@@ -14,7 +14,7 @@ Updates an existing zone that has already been connected to.  Used to update the
 
 #### HTTP REQUEST PARAMS
 
-**zone fields**, refer to [zone model](zone-model.html) |
+**Zone fields** - Refer to [zone model](zone-model.html).
 
 #### EXAMPLE HTTP REQUEST
 
@@ -54,7 +54,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-zone          | map          | Zone sent with update request, refer to [zone model](zone-model.html)  |
+zone          | map           | Zone sent with update request. Refer to [zone model](zone-model.html)  |
 userId        | string        | The user id that initiated the change |
 changeType    | string        | Type of change requested (Create, Update, Sync, Delete); in this case Update |
 created       | string        | The timestamp (UTC) the change was initiated |

@@ -6,7 +6,7 @@ section: "api"
 
 # Delete RecordSet
 
-Delete a RecordSet in a specified zone
+Delete a RecordSet in a specified zone.
 
 #### HTTP REQUEST
 
