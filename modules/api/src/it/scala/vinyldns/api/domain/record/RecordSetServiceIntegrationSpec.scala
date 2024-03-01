@@ -62,6 +62,9 @@ class RecordSetServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val recordSetCacheRepo = recordSetCacheRepository
 
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
+
   private val zoneRepo: ZoneRepository = zoneRepository
   private val groupRepo: GroupRepository = groupRepository
 
