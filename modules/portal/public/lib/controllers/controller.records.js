@@ -31,6 +31,7 @@ angular.module('controller.records', [])
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.ownerShipTransferStatus = ['AutoApproved', 'Cancelled', 'ManuallyApproved', 'ManuallyRejected', 'Requested', 'PendingReview'];
     $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.selectedRecordTypes = [];
     $scope.naptrFlags = ["U", "S", "A", "P"];
@@ -55,6 +56,12 @@ angular.module('controller.records', [])
 
     var loadZonesPromise;
     var loadRecordsPromise;
+
+   	$scope.ownerShipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                           {value: 'ManuallyRejected',  label: 'Reject'}];
+
+	$scope.ownerShipTransferRequestorStatus = [{value: 'Requested',  label: 'Request'},
+	                                        {value: 'Cancelled',  label: 'Cancel'}];
 
     $scope.recordModalState = {
         CREATE: 0,
@@ -82,6 +89,7 @@ angular.module('controller.records', [])
     $scope.isZoneAdmin = false;
     $scope.canReadZone = false;
     $scope.canCreateRecords = false;
+    $scope.isCurrentRecordSetOwner = false;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -92,6 +100,42 @@ angular.module('controller.records', [])
     /**
       * Modal control functions
       */
+
+    $scope.recordSetGroupOwnerShipStatus = function recordSetGroupOwnerShipStatus(groupId, profileId, record) {
+        function success(response) {
+           var ownerShipTransferStatus;
+           if (response.data.members.some(x => x.id === profileId)){
+           ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
+           $scope.currentOwnerShipTransferApprover= true;
+            record.isCurrentRecordSetOwner = true;}
+           else{ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
+            $scope.currentOwnerShipTransferApprover= false;
+           record.isCurrentRecordSetOwner= false;}
+          $scope.ownerShipTransferStatus = ownerShipTransferStatus
+        }
+        return groupsService
+            .getGroupMemberList(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroupMemberList-failure');
+            });
+    };
+
+    function getGroup(groupId) {
+        if (groupId != undefined && groupId != "null"){
+            $log.log('groupsService::getGroup-success');
+            function success(response) {
+                 $scope.recordSetRequestedOwnerShipName = response.data.name;
+            }
+            return groupsService
+                .getGroup(groupId)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getGroup-failure');
+                });
+         }
+        else {$scope.recordSetRequestedOwnerShipName = "None";}
+    };
 
     $scope.deleteRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
@@ -131,6 +175,8 @@ angular.module('controller.records', [])
 
     $scope.editRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
+        $scope.currentRecord.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
+        getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.recordModal = {
             previous: angular.copy(record),
             action: $scope.recordModalState.UPDATE,
@@ -142,6 +188,72 @@ angular.module('controller.records', [])
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
+    };
+
+    $scope.requestOwnerShip = function(record) {
+            $scope.currentRecord = angular.copy(record);
+            $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved")
+            $scope.recordModal = {
+                action: $scope.recordModalState.UPDATE,
+                title: "Request OwnerShip transfer",
+                basics: $scope.recordModalParams.readOnly,
+                details: $scope.recordModalParams.editable,
+                sharedZone: $scope.zoneInfo.shared,
+                sharedDisplayEnabled: $scope.sharedDisplayEnabled,
+                isCurrentRecordOwnerGroup : false
+            };
+        $scope.addRecordForm.$setPristine();
+            $("#record_modal_ownership").modal("show");
+        };
+
+    $scope.requestOwnerShipTransfer = function(record) {
+            $scope.currentRecord = angular.copy(record);
+            $scope.currentRecord.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
+            $scope.recordModal = {
+                previous: angular.copy(record),
+                action: $scope.recordModalState.UPDATE,
+                title: "Request OwnerShip transfer",
+                basics: $scope.recordModalParams.readOnly,
+                details: $scope.recordModalParams.editable,
+                sharedZone: $scope.zoneInfo.shared,
+                sharedDisplayEnabled: $scope.sharedDisplayEnabled,
+                isCurrentRecordOwnerGroup : false
+            };
+
+        var currentRecordOwnerGroupId = $scope.currentRecord.ownerGroupId;
+        getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
+        $scope.ownerShipTransferApprover = false;
+        $scope.ownerShipTransferRequestor = false;
+
+        if (currentRecordOwnerGroupId != undefined){$scope.recordModal.isCurrentRecordOwnerGroup = true
+        }else{ $scope.recordModal.isCurrentRecordOwnerGroup = false }
+
+        if ($scope.zoneInfo.shared == true && $scope.recordModal.isCurrentRecordOwnerGroup){
+            $scope.recordSetGroupOwnerShipStatus(currentRecordOwnerGroupId, $scope.profile.id, record);
+            $scope.ownerShipTransferApproverStatus.forEach(function(ownerShipTransferApproverStatus, index) {
+                if (ownerShipTransferApproverStatus.value.indexOf($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus) > -1)
+                    {$scope.ownerShipTransferApprover = true}else{$scope.ownerShipTransferRequestor = true}})
+        }
+        $scope.addRecordForm.$setPristine();
+            $("#record_modal_ownership_transfer").modal("show");
+        };
+
+    $scope.requestedOwnerShip = function() {
+        var record = angular.copy($scope.currentRecord);
+        record['onlyFour'] = true;
+            updateRecordSet(record);
+            $scope.addRecordForm.$setPristine();
+            $("#record_modal_ownership").modal('hide');
+    };
+
+    $scope.submitRequestedOwnerShipTransfer = function () {
+        var record = angular.copy($scope.currentRecord);
+        record['onlyFour'] = true;
+        if ($scope.addRecordForm.$valid) {
+            updateRecordSet(record);
+            $scope.addRecordForm.$setPristine();
+            $("#record_modal_ownership_transfer").modal('hide');
+        }
     };
 
     $scope.confirmUpdate = function() {
@@ -189,6 +301,12 @@ angular.module('controller.records', [])
 
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
+        if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
+             if (record.ownerGroupId != $scope.recordModal.previous.ownerGroupId && $scope.isZoneAdmin){
+                    record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+                    record.recordSetGroupChange.ownerShipTransferStatus = angular.copy("ManuallyApproved");
+             }
+        }
         record['onlyFour'] = true;
 
         if ($scope.addRecordForm.$valid) {
@@ -493,6 +611,11 @@ angular.module('controller.records', [])
                 var newRecords = [];
                 angular.forEach(records, function(record) {
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
+                });
+                angular.forEach(newRecords, function(record) {
+                    if(record.ownerGroupId != undefined) {
+                        $scope.recordSetGroupOwnerShipStatus(record.ownerGroupId, $scope.profile.id, record);
+                    }else {record.isCurrentRecordSetOwner= null;}
                 });
                 $scope.records = newRecords;
                 $scope.getRecordSetCount();
