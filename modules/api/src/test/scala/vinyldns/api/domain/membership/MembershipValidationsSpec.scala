@@ -97,6 +97,20 @@ class MembershipValidationsSpec
       }
     }
 
+    "canSeeGroupChange" should {
+      "return true when the user is in the group" in {
+        canSeeGroup(okGroup.id, okAuth) should be(right)
+      }
+      "return true when the user is a super user" in {
+        canSeeGroup(okGroup.id, superUserAuth) should be(right)
+      }
+      "return true when the user is a support admin" in {
+        val user = User("some", "new", Encrypted("user"), isSupport = true)
+        val supportAuth = AuthPrincipal(user, Seq())
+        canSeeGroup(okGroup.id, supportAuth) should be(right)
+      }
+    }
+
     "User toString" should {
       "not display access and secret keys" in {
         val userString = s"""User: [id="ok"; userName="ok"; firstName="Some(ok)"; lastName="Some(ok)"; email="Some(test@test.com)"; created="${okUser.created}"; isSuper="false"; isSupport="false"; isTest="false"; lockStatus="Unlocked"; ]"""
