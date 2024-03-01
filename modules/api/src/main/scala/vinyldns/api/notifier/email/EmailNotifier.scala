@@ -46,6 +46,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
       case bc: BatchChange => sendBatchChangeNotification(bc)
+      case rsc: RecordSetChange => sendRecordSetOwnerTransferNotification(rsc)
       case _ => IO.unit
     }
 

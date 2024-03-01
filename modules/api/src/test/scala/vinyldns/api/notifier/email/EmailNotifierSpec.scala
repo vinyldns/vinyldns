@@ -187,6 +187,7 @@ class EmailNotifierSpec
 
       notifier.notify(Notification(rsc)).unsafeRunSync()
       val message = messageArgument.getValue
+      println(message)
 
       message.getFrom should be(Array(fromAddress))
       message.getContentType should be("text/html; charset=us-ascii")

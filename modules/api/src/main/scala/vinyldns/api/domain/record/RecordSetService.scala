@@ -163,14 +163,12 @@ class RecordSetService(
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") ))
         ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")))
         canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
       else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")))
         canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
-      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
