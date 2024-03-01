@@ -57,6 +57,8 @@ class RecordSetServiceIntegrationSpec
     with BeforeAndAfterAll
     with TransactionProvider {
 
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+
   private val vinyldnsConfig = VinylDNSConfig.load().unsafeRunSync()
 
   private val recordSetRepo = recordSetRepository
