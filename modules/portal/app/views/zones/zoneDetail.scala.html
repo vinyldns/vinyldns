@@ -42,7 +42,7 @@
                     <li class="active"><a href="#tab1" data-toggle="tab">Manage Records</a></li>
                     <li><a id="tab2-button" href="#tab2" data-toggle="tab">Manage Zone</a></li>
                     <li><a href="#tab3" data-toggle="tab">Record Change History</a></li>
-                    <li><a href="#tab4" data-toggle="tab">Zone Change History</a></li>
+                    <li ng-if="canViewZone"><a href="#tab4" data-toggle="tab">Zone Change History</a></li>
                 </ul>
                 <div class="panel-body tab-content">
 

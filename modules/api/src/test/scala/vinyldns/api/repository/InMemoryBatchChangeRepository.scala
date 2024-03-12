@@ -16,7 +16,8 @@
 
 package vinyldns.api.repository
 
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.format.DateTimeFormatter
 import vinyldns.core.domain.batch._
 
 import scala.collection.concurrent
@@ -116,14 +117,28 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList] = {
+
+    // Define the desired date-time format
+    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+    // Convert strings to Instant
+    val startInstant = dateTimeStartRange.map(dt => LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant)
+    val endInstant = dateTimeEndRange.map(dt => LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant)
+
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(bs => batchStatus.forall(_ == bs.batchStatus))
+      .filter(bu => userName.forall(_ == bu.userName))
+      .filter(bdtsi => startInstant.forall(_.isBefore(bdtsi.createdTimestamp)))
+      .filter(bdtei => endInstant.forall(_.isAfter(bdtei.createdTimestamp)))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
@@ -158,7 +173,10 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         maxItems = maxItems,
         ignoreAccess = ignoreAccess,
         batchStatus = batchStatus,
-        approvalStatus = approvalStatus
+        approvalStatus = approvalStatus,
+        userName = userName,
+        dateTimeStartRange = dateTimeStartRange,
+        dateTimeEndRange = dateTimeEndRange
       )
     )
   }

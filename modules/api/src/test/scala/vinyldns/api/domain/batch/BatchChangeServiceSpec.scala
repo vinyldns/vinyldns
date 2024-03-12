@@ -21,7 +21,7 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import java.time.temporal.ChronoUnit
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneId}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.matchers.should.Matchers
@@ -52,6 +52,7 @@ import org.mockito.Mockito._
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.access.AccessValidations
 
+import java.time.format.DateTimeFormatter
 import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
@@ -2129,6 +2130,224 @@ class BatchChangeServiceSpec
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChangeOne.createdTimestamp
+    }
+
+    "return list of batchChangeSummaries filtered by userName if some exist" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            userName = Some(auth.signedInUser.userName)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.userName shouldBe Some(auth.signedInUser.userName)
+
+      result.batchChanges.length shouldBe 2
+      result.batchChanges(0).userName shouldBe batchChangeOne.userName
+      result.batchChanges(1).userName shouldBe batchChangeTwo.userName
+    }
+
+    "return list of batchChangeSummaries filtered by date time range if some exist" in {
+
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      // Convert Instant to LocalDateTime in a specific time zone (e.g., UTC)
+      val zoneId: ZoneId = ZoneId.of("UTC")
+      val startDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.minusSeconds(5), zoneId)
+      val endDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.plusSeconds(5), zoneId)
+
+      // Define the desired date-time format
+      val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+      // Format LocalDateTime to a string
+      val startDateTimeRange: String = startDateTime.format(formatter)
+      val endDateTimeRange: String = endDateTime.format(formatter)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli).plusSeconds(10),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            dateTimeStartRange = Some(startDateTimeRange),
+            dateTimeEndRange = Some(endDateTimeRange)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.dateTimeStartRange shouldBe Some(startDateTimeRange)
+      result.dateTimeEndRange shouldBe Some(endDateTimeRange)
+
+      // only get the first batch saved as it is within the date time filter range
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.createdTimestamp shouldBe batchChangeOne.createdTimestamp
+      result.batchChanges.head.id shouldBe batchChangeOne.id
+    }
+
+    "return list of batchChangeSummaries filtered by date time range and submitter name if some exist" in {
+
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      // Convert Instant to LocalDateTime in a specific time zone (e.g., UTC)
+      val zoneId: ZoneId = ZoneId.of("UTC")
+      val startDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.minusSeconds(5), zoneId)
+      val endDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.plusSeconds(5), zoneId)
+
+      // Define the desired date-time format
+      val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+      // Format LocalDateTime to a string
+      val startDateTimeRange: String = startDateTime.format(formatter)
+      val endDateTimeRange: String = endDateTime.format(formatter)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli).plusSeconds(10),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            userName = Some(auth.signedInUser.userName),
+            dateTimeStartRange = Some(startDateTimeRange),
+            dateTimeEndRange = Some(endDateTimeRange)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.dateTimeStartRange shouldBe Some(startDateTimeRange)
+      result.dateTimeEndRange shouldBe Some(endDateTimeRange)
+      result.userName shouldBe Some(auth.signedInUser.userName)
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.createdTimestamp shouldBe batchChangeOne.createdTimestamp
+      result.batchChanges.head.id shouldBe batchChangeOne.id
+      result.batchChanges.head.userName shouldBe batchChangeOne.userName
+    }
+
+    "return list of batchChangeSummaries filtered by date time range, submitter name and approval status if some exist" in {
+
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      // Convert Instant to LocalDateTime in a specific time zone (e.g., UTC)
+      val zoneId: ZoneId = ZoneId.of("UTC")
+      val startDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.minusSeconds(5), zoneId)
+      val endDateTime: LocalDateTime = LocalDateTime.ofInstant(batchChangeOne.createdTimestamp.plusSeconds(5), zoneId)
+
+      // Define the desired date-time format
+      val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+      // Format LocalDateTime to a string
+      val startDateTimeRange: String = startDateTime.format(formatter)
+      val endDateTimeRange: String = endDateTime.format(formatter)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli).plusSeconds(10),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            userName = Some(auth.signedInUser.userName),
+            dateTimeStartRange = Some(startDateTimeRange),
+            dateTimeEndRange = Some(endDateTimeRange),
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.dateTimeStartRange shouldBe Some(startDateTimeRange)
+      result.dateTimeEndRange shouldBe Some(endDateTimeRange)
+      result.userName shouldBe Some(auth.signedInUser.userName)
+      result.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingReview)
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.createdTimestamp shouldBe batchChangeOne.createdTimestamp
+      result.batchChanges.head.id shouldBe batchChangeOne.id
+      result.batchChanges.head.userName shouldBe batchChangeOne.userName
     }
 
     "return an offset list of batchChangeSummaries if some exist" in {

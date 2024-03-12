@@ -6,7 +6,7 @@ section: "api"
 
 # Get Group
 
-Gets a group that you are a part of
+Gets a group that you are a part of.
 
 #### HTTP REQUEST
 

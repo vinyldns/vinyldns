@@ -300,7 +300,7 @@ class ZoneService(
   ): Result[ListZoneChangesResponse] =
     for {
       zone <- getZoneOrFail(zoneId)
-      _ <- canSeeZone(authPrincipal, zone).toResult
+      _ <- canSeeZoneChange(authPrincipal, zone).toResult
       zoneChangesResults <- zoneChangeRepository
         .listZoneChanges(zone.id, startFrom, maxItems)
         .toResult[ListZoneChangesResults]

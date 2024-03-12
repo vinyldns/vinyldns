@@ -52,6 +52,7 @@ angular.module('controller.records', [])
     $scope.zoneInfo = {};
     $scope.profile = {};
     $scope.recordSetCount = 0;
+    $scope.canViewZone = false;
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -375,6 +376,7 @@ angular.module('controller.records', [])
     function determineAdmin(){
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
+        $scope.canViewZone = $scope.canReadZone || $scope.isZoneAdmin || $scope.zoneInfo.shared;
         $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl() || $scope.zoneInfo.shared;
 
         function canCreateRecordsViaAcl() {

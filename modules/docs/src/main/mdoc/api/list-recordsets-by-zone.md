@@ -6,7 +6,7 @@ section: "api"
 
 # List / Search RecordSets by Zone
 
-Retrieves a list of RecordSets from the zone
+Retrieves a list of RecordSets from the zone.
 
 #### HTTP REQUEST
 
@@ -19,8 +19,8 @@ name          | type          | required?   | description |
 recordNameFilter    | string        | no          | Characters that are part of the record name to search for.  The wildcard character `*` is supported, for example `www*`.  Omit the wildcard when searching for an exact record name. |
 recordTypeFilter    | Array of RecordType | no | An array of record types to filter for listing record sets.  Refer to [recordset mode](recordset-model.html) for supported types.  Invalid record types will be ignored.  If left empty or no valid record types are provided, then all record types will be returned. |
 nameSort          | string        | no          | Name sort order for record sets returned by list record set response.  Valid values are `ASC` (ascending; default) and `DESC` (descending).
-startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
-maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
+startFrom     | string            | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+maxItems      | integer           | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
 
 #### HTTP RESPONSE TYPES
 
@@ -36,8 +36,8 @@ Code          | description |
 name          | type          | description |
  ------------ | ------------- | :---------- |
 recordSets    | Array of RecordSets | refer to [recordset model](recordset-model.html), the RecordSet data will also include the accessLevel the requesting user has based off acl rules and membership in Zone Admin Group |
-startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
-nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if record sets are exhausted |
+startFrom     | string        | startFrom sent in request, will not be returned if not provided |
+nextId        | string        | nextId, used as startFrom parameter of next page request, will not be returned if record sets are exhausted |
 maxItems      | integer       | maxItems sent in request, default is 100 |
 recordNameFilter    | string  | name filter sent in request |
 recordTypeFilter    | Array of RecordType | record type filter sent in request |
