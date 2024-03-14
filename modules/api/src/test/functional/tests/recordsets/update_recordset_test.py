@@ -1593,8 +1593,7 @@ def test_update_fails_for_unapplied_unsynced_record_change(shared_zone_test_cont
         ]
         update_response = client.update_recordset(update_rs, status=202)
         response = client.wait_until_recordset_change_status(update_response, "Failed")
-        assert_that(response["systemMessage"], is_(f"Failed validating update to DNS for change \"{response['id']}\": \"{a_rs['name']}\": "
-                                                   f"This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."))
+        assert_that(response["systemMessage"], is_(f"This record set is out of sync with the DNS backend. Sync this zone before attempting to update this record set."))
     finally:
         try:
             delete_result = client.delete_recordset(zone["id"], create_rs["id"], status=202)

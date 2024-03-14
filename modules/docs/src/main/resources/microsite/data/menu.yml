@@ -135,6 +135,9 @@ options:
       - title: List Zone Changes
         url: api/list-zone-changes.html
         menu_section: zoneapireference
+      - title: List Zone Change Failures
+        url: api/list-zone-change-failures.html
+        menu_section: zoneapireference
       - title: Abandoned Zones
         url: api/list-deleted-zones.html
         menu_section: zoneapireference
@@ -171,6 +174,12 @@ options:
       - title: Global List / Search RecordSets
         url: api/list-recordsets-global.html
         menu_sectioon: recordsetapireference
+      - title: Get RecordSet Count
+        url: api/get-recordset-count.html
+        menu_section: recordsetapireference
+      - title: List RecordSet Change Failures
+        url: api/list-recordset-change-failures.html
+        menu_section: recordsetapireference
       - title: Get RecordSet Change History
         url: api/get-recordset-change-history.html
         menu_section: recordsetapireference
@@ -240,5 +249,9 @@ options:
       - title: List Group Activity
         url: api/list-group-activity.html
         menu_section: membershipapireference
-
-
+      - title: Get Group Change
+        url: api/get-group-change.html
+        menu_section: membershipapireference
+      - title: Get Valid Email Domains
+        url: api/get-valid-email-domains.html
+        menu_section: membershipapireference

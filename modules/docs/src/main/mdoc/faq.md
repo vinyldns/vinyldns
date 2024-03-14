@@ -18,6 +18,7 @@ position: 6
 7. [When I try to connect to my zone, I am seeing "invalid name server" errors](#7)
 8. [How do I get API credentials?](#8)
 9. [How are requests authenticated to the VinylDNS API?](#9)
+10. [Why am I not able to view the Change History tab on a Group?](#10)
 
 
 ### 1. Can I create a zone in VinylDNS? <a id="1"></a>
@@ -88,3 +89,7 @@ If you use any VinylDNS tools beyond the portal you will need to provide those t
 
 ### 9. How are requests authenticated to the VinylDNS API? <a id="9"></a>
 Refer to [API Authentication](api/auth-mechanism.html).
+
+### 10. Why am I not able to view the Change History tab on a Group? <a id="10"></a>
+To view a group's change history, you should be a member or admin of that group. Only individuals who are part of the 
+group can view the change history.

@@ -233,6 +233,9 @@ class MySqlBatchChangeRepository
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus]
@@ -246,7 +249,13 @@ class MySqlBatchChangeRepository
 
           val uid = userId.map(u => s"bc.user_id = '$u'")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
-          val opts = uid ++ as
+          val uname = userName.map(uname => s"bc.user_name = '$uname'")
+          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
+            Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
+          } else {
+            None
+          }
+          val opts = uid ++ as ++ uname ++ dtRange
 
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
 
