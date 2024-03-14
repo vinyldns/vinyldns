@@ -152,7 +152,7 @@ class RecordSetService(
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
-        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) unchangedRecordSet(existing, recordSet).toResult else ().toResult
+        && !auth.isSuper) unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled && !auth.isSuper)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
       recordSet <- if (auth.isSuper) recordSet.toResult else updateRecordSetGroupChangeStatus(recordSet, existing, zone)
