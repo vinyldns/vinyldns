@@ -308,10 +308,8 @@ angular.module('controller.records', [])
              }
         }
         record['onlyFour'] = true;
-
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);
-
             $scope.addRecordForm.$setPristine();
             $("#record_modal").modal('hide');
         }

@@ -558,7 +558,6 @@
                         ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
                         ng-switch-when="false"
                         ng-disabled="recordModal.details.readOnly"
-                        ng-class="recordModal.details.class"
                         ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
                         required>
                     <option value="" selected="selected">Please choose a record owner group</option>
@@ -585,12 +584,14 @@
                         ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
                         ng-class="recordModal.details.class"
                         ng-options="ownerShipTransferApproverStatus.value as ownerShipTransferApproverStatus.label for ownerShipTransferApproverStatus in ownerShipTransferStatus">
+                    <option value= ""  selected="selected">Please choose a record owner group status</option>
                 </select>
                 <select name="ownerGroupStatus"
                         class="form-control"
                         ng-switch-default
                         ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
                         ng-class="recordModal.details.class">
+                    <option value= '? string:None ?'  selected="selected">Please choose a record owner group status</option>
                     <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'" value="Cancelled">Cancel</option>
                     <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus != 'PendingReview'" value="Requested">Request</option>
                 </select>

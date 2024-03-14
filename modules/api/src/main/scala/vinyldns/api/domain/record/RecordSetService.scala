@@ -152,21 +152,21 @@ class RecordSetService(
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
-        && !auth.isSuper) unchangedRecordSet(existing, recordSet).toResult else ().toResult
-      _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled)
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.get)) unchangedRecordSet(existing, recordSet).toResult else ().toResult
+      _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled && !auth.isSuper)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
-      recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
+      recordSet <- if (auth.isSuper) recordSet.toResult else updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") ))
-        ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
+      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")) && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.get))
+          ().toResult else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")))
+      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")) && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.get))
         canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
-      else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")))
+      else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")) && !auth.isSuper)
         canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
@@ -266,7 +266,7 @@ class RecordSetService(
                 recordSet.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(
                   ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
                   requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
-              case OwnerShipTransferStatus.Requested => recordSet.copy(
+              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview => recordSet.copy(
                 recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview)))
             }
           for {
