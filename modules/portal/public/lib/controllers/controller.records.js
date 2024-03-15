@@ -203,7 +203,7 @@ angular.module('controller.records', [])
                 sharedDisplayEnabled: $scope.sharedDisplayEnabled,
                 isCurrentRecordOwnerGroup : false
             };
-        $scope.addRecordForm.$setPristine();
+        $scope.recordOwnerShipForm.$setPristine();
             $("#record_modal_ownership").modal("show");
         };
 
@@ -235,24 +235,27 @@ angular.module('controller.records', [])
                 if (ownerShipTransferApproverStatus.value.indexOf($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus) > -1)
                     {$scope.ownerShipTransferApprover = true}else{$scope.ownerShipTransferRequestor = true}})
         }
-        $scope.addRecordForm.$setPristine();
+        $scope.recordOwnerShipForm.$setPristine();
             $("#record_modal_ownership_transfer").modal("show");
         };
 
     $scope.requestedOwnerShip = function() {
+
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
+        if ($scope.recordOwnerShipForm.$valid) {
             updateRecordSet(record);
-            $scope.addRecordForm.$setPristine();
+            $scope.recordOwnerShipForm.$setPristine();
             $("#record_modal_ownership").modal('hide');
+        }
     };
 
     $scope.submitRequestedOwnerShipTransfer = function () {
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
-        if ($scope.addRecordForm.$valid) {
+        if ($scope.recordOwnerShipForm.$valid) {
             updateRecordSet(record);
-            $scope.addRecordForm.$setPristine();
+            $scope.recordOwnerShipForm.$setPristine();
             $("#record_modal_ownership_transfer").modal('hide');
         }
     };
