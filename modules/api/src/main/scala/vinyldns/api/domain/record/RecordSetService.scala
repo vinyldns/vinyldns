@@ -155,7 +155,7 @@ class RecordSetService(
         && !auth.isSuper) unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled && !auth.isSuper)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
-      recordSet <- if (auth.isSuper) recordSet.toResult else updateRecordSetGroupChangeStatus(recordSet, existing, zone)
+      recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
