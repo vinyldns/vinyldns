@@ -47,6 +47,7 @@ angular.module('controller.records', [])
         {name: '(254) PRIVATEOID', number: 254}]
     $scope.dsDigestTypes = [{name: '(1) SHA1', number: 1}, {name: '(2) SHA256', number: 2}, {name: '(3) GOSTR341194', number: 3}, {name: '(4) SHA384', number: 4}]
     $scope.records = {};
+    $scope.isOwnerShipRequest = true;
     $scope.recordsetChangesPreview = {};
     $scope.recordsetChanges = {};
     $scope.currentRecord = {};
@@ -127,6 +128,7 @@ angular.module('controller.records', [])
             $log.log('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnerShipName = response.data.name;
+
             }
             return groupsService
                 .getGroup(groupId)
@@ -207,7 +209,7 @@ angular.module('controller.records', [])
             $("#record_modal_ownership").modal("show");
         };
 
-    $scope.requestOwnerShipTransfer = function(record) {
+    $scope.requestOwnerShipTransfer = function(record, isOwnerShipRequest) {
             $scope.currentRecord = angular.copy(record);
             $scope.currentRecord.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
             $scope.recordModal = {
@@ -222,6 +224,10 @@ angular.module('controller.records', [])
             };
 
         var currentRecordOwnerGroupId = $scope.currentRecord.ownerGroupId;
+        if (isOwnerShipRequest) {
+        $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(null);
+        $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null);
+        }
         getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.ownerShipTransferApprover = false;
         $scope.ownerShipTransferRequestor = false;

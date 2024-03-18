@@ -364,10 +364,10 @@
                                 ng-if="zoneInfo.shared && record.ownerGroupId != undefined && !canReadZone && record.canBeEdited"
                                 ng-switch="record.isCurrentRecordSetOwner">
                             <span ng-switch-when="false">
-                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Request</button>
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record, true)">Request</button>
                             </span>
                             <span ng-switch-when="true" ng-if= record.recordSetGroupChange.ownerShipTransferStatus=="PendingReview">
-                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record)">Close Request</button>
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record, false)">Close Request</button>
                             </span>
                         </span>
                     </td>
