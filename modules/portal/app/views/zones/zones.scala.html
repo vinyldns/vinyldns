@@ -310,26 +310,26 @@
                                     <div class="panel panel-default panel-tabs">
                                         <span class=" container-fluid" >
                                            <!-- MY DELETED ZONE PAGINATION -->
-                                            <div class="dataTables_paginate vinyldns_zones_paginate" ng-show="tab == 'myDeletedZones'">
-                                                <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
+                                            <div class="dataTables_paginate vinyldns_paginate" ng-show="tab == 'myDeletedZones'" >
+                                                <span class="vinyldns_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
                                                 <ul class="pagination">
-                                                    <li class="pull-right paginate_button previous">
+                                                    <li class="vinyldns_paginate_button previous">
                                                         <a ng-if="prevPageEnabled('myDeletedZones')" ng-click="prevPageMyDeletedZones()">Previous</a>
                                                     </li>
-                                                    <li class=" pull-right paginate_button next">
+                                                    <li class="vinyldns_paginate_button next">
                                                         <a ng-if="nextPageEnabled('myDeletedZones')" ng-click="nextPageMyDeletedZones()">Next</a>
                                                     </li>
                                                 </ul>
                                             </div>
                                             <!-- MY DELETED ZONE END PAGINATION -->
                                             <!-- ALL DELETED ZONE PAGINATION -->
-                                            <div class="dataTables_paginate vinyldns_zones_paginate" ng-show="tab == 'allDeletedZones'" >
-                                                <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
+                                            <div class="dataTables_paginate vinyldns_paginate"  ng-show="tab == 'allDeletedZones'" >
+                                                <span class="vinyldns_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
                                                 <ul class="pagination ">
-                                                    <li class="paginate_button previous  ">
+                                                    <li class="vinyldns_paginate_button previous">
                                                         <a ng-if="prevPageEnabled('allDeletedZones')" ng-click="prevPageAllDeletedZones()">Previous</a>
                                                     </li>
-                                                    <li class="paginate_button next " >
+                                                    <li class="vinyldns_paginate_button next">
                                                         <a ng-if="nextPageEnabled('allDeletedZones')" ng-click="nextPageAllDeletedZones()">Next</a>
                                                     </li>
                                                 </ul>
@@ -389,8 +389,8 @@
                                                         </table>
 
                                                         <!-- PAGINATION -->
-                                                        <div class="dataTables_paginate vinyldns_zones_paginate">
-                                                            <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
+                                                        <div class="dataTables_paginate vinyldns_paginate">
+                                                            <span class="vinyldns_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
                                                             <ul class="pagination">
                                                                 <li class="paginate_button previous">
                                                                     <a ng-if="prevPageEnabled('myDeletedZones')" ng-click="prevPageMyDeletedZones()">Previous</a>
@@ -453,8 +453,8 @@
                                                         </table>
 
                                                         <!-- PAGINATION -->
-                                                        <div class="dataTables_paginate vinyldns_zones_paginate">
-                                                            <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
+                                                        <div class="dataTables_paginate vinyldns_paginate">
+                                                            <span class="vinyldns_page_number">{{ getZonesPageNumber("allDeletedZones") }}</span>
                                                             <ul class="pagination">
                                                                 <li class="paginate_button previous">
                                                                     <a ng-if="prevPageEnabled('allDeletedZones')" ng-click="prevPageAllDeletedZones()">Previous</a>
