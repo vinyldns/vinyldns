@@ -6,7 +6,7 @@ section: "api"
 
 # Get RecordSet
 
-Gets a RecordSet in a specified zone
+Gets a RecordSet in a specified zone.
 
 #### HTTP REQUEST
 

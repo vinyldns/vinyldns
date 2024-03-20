@@ -972,11 +972,11 @@ class MembershipServiceSpec
           listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
 
         val result: GroupChangeInfo =
-          underTest.getGroupChange(dummyGroup.id, dummyAuth).value.unsafeRunSync().toOption.get
+          underTest.getGroupChange(groupChangeRepoResponse.id, dummyAuth).value.unsafeRunSync().toOption.get
         result shouldBe expected
       }
 
-      "return the single group change even if the user is not authorized" in {
+      "return an error if the user is not authorized" in {
         val groupChangeRepoResponse = listOfDummyGroupChanges.take(1).head
         doReturn(IO.pure(Some(groupChangeRepoResponse)))
           .when(mockGroupChangeRepo)
@@ -986,13 +986,9 @@ class MembershipServiceSpec
           .when(mockUserRepo)
           .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-        val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
-        val expected: GroupChangeInfo =
-          listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(1).head
-
-        val result: GroupChangeInfo =
-          underTest.getGroupChange(dummyGroup.id, okAuth).value.unsafeRunSync().toOption.get
-        result shouldBe expected
+        val error =
+          underTest.getGroupChange(dummyGroup.id, okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[NotAuthorizedError]
       }
 
       "return a InvalidGroupRequestError if the group change id is not valid" in {
@@ -1035,7 +1031,7 @@ class MembershipServiceSpec
         result.startFrom shouldBe None
       }
 
-    "return group activity even if the user is not authorized" in {
+    "return an error if the user is not authorized" in {
       val groupChangeRepoResponse = ListGroupChangesResults(
         listOfDummyGroupChanges.take(100),
         Some(listOfDummyGroupChanges.size)
@@ -1048,16 +1044,9 @@ class MembershipServiceSpec
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
-      val userMap = Seq(dummyUser).map(u => (u.id, u.userName)).toMap
-      val expected: List[GroupChangeInfo] =
-        listOfDummyGroupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))).take(100)
-
-      val result: ListGroupChangesResponse =
-        underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value.unsafeRunSync().toOption.get
-      result.changes should contain theSameElementsAs expected
-      result.maxItems shouldBe 100
-      result.nextId shouldBe Some(listOfDummyGroupChanges.size)
-      result.startFrom shouldBe None
+      val error =
+        underTest.getGroupActivity(dummyGroup.id, None, 100, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -1399,6 +1388,22 @@ class MembershipServiceSpec
       "return an error if the user is not found" in {
         doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(anyString)
         val error = underTest.getUser("notfound", okAuth).value.unsafeRunSync().swap.toOption.get
+        error shouldBe a[UserNotFoundError]
+      }
+    }
+    "get user info" should {
+      "return the user info" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
+        result.id shouldBe okUser.id
+        result.userName.get shouldBe okUser.userName
+        result.groupId shouldBe Set(okGroup.id)
+      }
+
+      "return an error if the user is not found" in {
+        doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(anyString)
+        val error = underTest.getUserDetails("notfound", okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[UserNotFoundError]
       }
     }

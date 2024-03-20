@@ -6,7 +6,7 @@ section: "api"
 
 # Get Zone by Name
 
-Retrieves a zone with the matching zone name
+Retrieves a zone with the matching zone name.
 
 #### HTTP REQUEST
 
@@ -25,7 +25,7 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-zone          | map          | refer to [zone model](zone-model.html) |
+zone          | map           | Refer to [zone model](zone-model.html) |
 
 #### EXAMPLE RESPONSE
 

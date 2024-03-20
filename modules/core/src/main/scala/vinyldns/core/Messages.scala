@@ -64,9 +64,6 @@ object Messages {
   // Error displayed when NSData field is not a positive integer
   val NSDataError = "NS data must be a positive integer"
 
-  // Error displayed when importing files other than .csv
-  val ImportError = "Import failed. Not a valid file. File should be of ‘.csv’ type."
-
   /*
    *  Error displayed when user is not authorized to make changes to the record
    *

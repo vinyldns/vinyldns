@@ -590,3 +590,36 @@ input[type="file"] {
 .flex-1{
     flex: 1;
 }
+
+.filter-margin {
+    margin: 5px;
+}
+
+.dropdown-bottom-margin {
+    margin-bottom: 5px;
+}
+
+.no-margin {
+   margin: 0px;
+}
+
+.dt-filter {
+    width: 400px;
+}
+
+.dt-select-box {
+    z-index: 9999 !important;
+}
+
+.float-right {
+    float: right;
+}
+
+.increase-dropdown-width {
+    width: 100%;
+}
+
+.set-flex {
+    display: flex;
+    flex-direction: column;
+}

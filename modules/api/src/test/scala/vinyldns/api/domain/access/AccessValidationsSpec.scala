@@ -131,6 +131,41 @@ class AccessValidationsSpec
     }
   }
 
+  "canSeeZoneChange" should {
+    "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
+      val error = leftValue(accessValidationTest.canSeeZoneChange(okAuth, zoneNotAuthorized))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the user is an admin or super user" in {
+      val auth = okAuth.copy(
+        signedInUser = okAuth.signedInUser.copy(isSuper = true),
+        memberGroupIds = Seq.empty
+      )
+      accessValidationTest.canSeeZoneChange(auth, okZone) should be(right)
+    }
+
+    "return false if there is an acl rule for the user in the zone" in {
+      val rule = ACLRule(AccessLevel.Read, userId = Some(okAuth.userId))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(rule)))
+
+      val error = leftValue(accessValidationTest.canSeeZoneChange(okAuth, zoneIn))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty
+      )
+      accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
+    }
+
+    "return true if the zone is shared and user does not have other access" in {
+      accessValidationTest.canSeeZone(okAuth, sharedZone) should be(right)
+    }
+  }
+
   "canChangeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user" in {
       val error = leftValue(
