@@ -335,8 +335,8 @@
                                                 </ul>
                                             </div>
                                             <!--ALL DELETED ZONE END PAGINATION -->
-                                            <ul class="nav nav-tabs bar_tabs"  >
-                                                <li class = "active"><a ng-class="{active: tab == 'myDeletedZones'}" href="#myDeletedZones" data-toggle="tab" ng-click="tab = 'myDeletedZones'; myZonesAccess()" >My Zones</a></li>
+                                            <ul class="nav nav-tabs bar_tabs" ng-init = "tab='myDeletedZones'">
+                                                <li class = "active"><a ng-class="{active: tab == 'myDeletedZones'}" id = "myDeletedZone" href="#myDeletedZones" data-toggle="tab" ng-click="tab = 'myDeletedZones'; myZonesAccess()" >My Zones</a></li>
                                                 <li><a ng-class="{active: tab == 'allDeletedZones'}" href="#allDeletedZones" data-toggle="tab"  ng-click="tab = 'allDeletedZones'; allZonesAccess()" >All Zones</a></li>
                                             </ul>
                                             <div class="tab-content">
