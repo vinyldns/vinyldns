@@ -227,7 +227,7 @@ angular.module('controller.records', [])
         if (isOwnerShipRequest) {
         $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(null);
         $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null);
-        }
+        }else ($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null))
         getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.ownerShipTransferApprover = false;
         $scope.ownerShipTransferRequestor = false;
