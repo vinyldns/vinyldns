@@ -2455,9 +2455,9 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
     Test that updating record "i.e.ttl" with requesting ownerShip transfer, where user not in the member of the owner group
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
-    ok_client = shared_zone_test_context.ok_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
     zone = shared_zone_test_context.shared_zone
-    shared_group = shared_zone_test_context.ok_group
+    shared_group = shared_zone_test_context.shared_record_group
     dummy_group = shared_zone_test_context.dummy_group
     update_rs = None
 
@@ -2474,7 +2474,7 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
         update["recordSetGroupChange"] = recordset_group_change_json
         update["ttl"] = update["ttl"] + 100
 
-        error = ok_client.update_recordset(update, status=422)
+        error = dummy_client.update_recordset(update, status=422)
         assert_that(error, is_(f"User not in record owner group with id \"{shared_group['id']}\""))
 
     finally:
