@@ -107,6 +107,8 @@ class BatchChangeRoute(
                         startFrom,
                         maxItems,
                         ignoreAccess,
+                        // TODO: Update batch status from None to its actual value when the feature is ready for release
+                        None,
                         convertApprovalStatus
                       )
                     ) { summaries =>
