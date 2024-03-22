@@ -2457,8 +2457,8 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     ok_client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.shared_zone
-    shared_group = shared_zone_test_context.dummy_group
-    ok_group = shared_zone_test_context.ok_group
+    shared_group = shared_zone_test_context.ok_group
+    dummy_group = shared_zone_test_context.dummy_group
     update_rs = None
 
     try:
@@ -2470,7 +2470,7 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
         assert_that(update["ownerGroupId"], is_(shared_group["id"]))
 
         recordset_group_change_json = {"ownerShipTransferStatus": "Requested",
-                                       "requestedOwnerGroupId": ok_group["id"]}
+                                       "requestedOwnerGroupId": dummy_group["id"]}
         update["recordSetGroupChange"] = recordset_group_change_json
         update["ttl"] = update["ttl"] + 100
 
