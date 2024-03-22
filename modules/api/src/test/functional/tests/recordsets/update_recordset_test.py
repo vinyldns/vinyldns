@@ -2457,7 +2457,7 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     ok_client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.shared_zone
-    shared_group = shared_zone_test_context.shared_record_group
+    shared_group = shared_zone_test_context.dummy_group
     ok_group = shared_zone_test_context.ok_group
     update_rs = None
 
