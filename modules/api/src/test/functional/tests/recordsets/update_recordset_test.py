@@ -2475,7 +2475,7 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
         update["ttl"] = update["ttl"] + 100
 
         error = dummy_client.update_recordset(update, status=422)
-        assert_that(error, is_(f"User not in record owner group with id \"{shared_group['id']}\""))
+        assert_that(error, is_(f"Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"))
 
     finally:
         if update_rs:
