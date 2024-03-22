@@ -155,7 +155,7 @@ class RecordSetService(
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
         unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
-        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
+        && !auth.isSuper)
         recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
       recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
