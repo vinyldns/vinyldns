@@ -17,7 +17,7 @@
 package vinyldns.api.notifier.sns
 
 import vinyldns.core.notifier.{Notifier, NotifierConfig, NotifierProvider}
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
@@ -35,7 +35,7 @@ class SnsNotifierProvider extends NotifierProvider {
     IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val logger = LoggerFactory.getLogger(classOf[SnsNotifierProvider])
 
-  def load(config: NotifierConfig, userRepository: UserRepository): IO[Notifier] =
+  def load(config: NotifierConfig, userRepository: UserRepository, groupRepository: GroupRepository): IO[Notifier] =
     for {
       snsConfig <- Blocker[IO].use(
         ConfigSource.fromConfig(config.settings).loadF[IO, SnsNotifierConfig](_)

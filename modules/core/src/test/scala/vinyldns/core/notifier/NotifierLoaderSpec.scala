@@ -19,7 +19,7 @@ package vinyldns.core.notifier
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatestplus.mockito.MockitoSugar
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import cats.effect.IO
 import org.mockito.Mockito._
 
@@ -37,13 +37,13 @@ object MockNotifierProvider extends MockitoSugar {
 
 class MockNotifierProvider extends NotifierProvider {
 
-  def load(config: NotifierConfig, userRepo: UserRepository): IO[Notifier] =
+  def load(config: NotifierConfig, userRepo: UserRepository, groupRepo: GroupRepository): IO[Notifier] =
     IO.pure(MockNotifierProvider.mockNotifier)
 }
 
 class FailingProvider extends NotifierProvider {
 
-  def load(config: NotifierConfig, userRepo: UserRepository): IO[Notifier] =
+  def load(config: NotifierConfig, userRepo: UserRepository, groupRepo: GroupRepository): IO[Notifier] =
     IO.raiseError(new IllegalStateException("always failing"))
 
 }
@@ -63,6 +63,7 @@ class NotifierLoaderSpec
   val goodConfig = NotifierConfig("vinyldns.core.notifier.MockNotifierProvider", placeholderConfig)
 
   val mockUserRepository: UserRepository = mock[UserRepository]
+  val mockGroupRepository: GroupRepository = mock[GroupRepository]
 
   import MockNotifierProvider._
 
@@ -73,14 +74,13 @@ class NotifierLoaderSpec
 
     "return some notifier with no configs" in {
 
-      val notifier = NotifierLoader.loadAll(List.empty, mockUserRepository).unsafeRunSync()
-
+      val notifier = NotifierLoader.loadAll(List.empty, mockUserRepository, mockGroupRepository).unsafeRunSync()
       notifier shouldBe a[AllNotifiers]
       notifier.notify(Notification(3)).unsafeRunSync() shouldBe (())
     }
 
     "return a notifier for valid config of one notifier" in {
-      val notifier = NotifierLoader.loadAll(List(goodConfig), mockUserRepository).unsafeRunSync()
+      val notifier = NotifierLoader.loadAll(List(goodConfig), mockUserRepository, mockGroupRepository).unsafeRunSync()
 
       notifier shouldNot be(null)
 
@@ -95,7 +95,7 @@ class NotifierLoaderSpec
 
     "return a notifier for valid config of multiple notifiers" in {
       val notifier =
-        NotifierLoader.loadAll(List(goodConfig, goodConfig), mockUserRepository).unsafeRunSync()
+        NotifierLoader.loadAll(List(goodConfig, goodConfig), mockUserRepository, mockGroupRepository).unsafeRunSync()
 
       notifier shouldNot be(null)
 
@@ -113,7 +113,7 @@ class NotifierLoaderSpec
       val badProvider =
         NotifierConfig("vinyldns.core.notifier.NotFoundNotifierProvider", placeholderConfig)
 
-      val load = NotifierLoader.loadAll(List(goodConfig, badProvider), mockUserRepository)
+      val load = NotifierLoader.loadAll(List(goodConfig, badProvider), mockUserRepository, mockGroupRepository)
 
       a[ClassNotFoundException] shouldBe thrownBy(load.unsafeRunSync())
     }
@@ -123,7 +123,7 @@ class NotifierLoaderSpec
       val exceptionProvider =
         NotifierConfig("vinyldns.core.notifier.FailingProvider", placeholderConfig)
 
-      val load = NotifierLoader.loadAll(List(goodConfig, exceptionProvider), mockUserRepository)
+      val load = NotifierLoader.loadAll(List(goodConfig, exceptionProvider), mockUserRepository, mockGroupRepository)
 
       a[IllegalStateException] shouldBe thrownBy(load.unsafeRunSync())
     }

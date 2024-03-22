@@ -205,7 +205,8 @@ trait DnsConversions {
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-      records = f(r)
+      records = f(r),
+      recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
     )
 
   // if we do not know the record type, then we cannot parse the records, but we should be able to get everything else
@@ -217,7 +218,8 @@ trait DnsConversions {
       ttl = r.getTTL,
       status = RecordSetStatus.Active,
       created = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-      records = Nil
+      records = Nil,
+      recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
     )
 
   def fromARecord(r: DNS.ARecord, zoneName: DNS.Name, zoneId: String): RecordSet =
