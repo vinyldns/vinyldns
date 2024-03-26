@@ -282,12 +282,10 @@
                 <div class="tab-pane" id="deletedZones">
                     <div class="row">
                         <div class="col-md-12">
-
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-
-                                    <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                    <button  id="deleted-zone-refresh-button"  class="btn btn-default" ng-click="refreshZones()">
                                         <span class="fa fa-refresh"></span> Refresh
                                     </button>
 
@@ -295,7 +293,7 @@
                                     <div class="pull-right">
                                         <form class="input-group" ng-submit="refreshZones()">
                                             <div class="input-group">
-                                                <span class="input-group-btn">
+                                                <span class="input-group-btn" >
                                                     <button id="my-deleted-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
                                                         <span class="fa fa-search"></span>
                                                     </button>
@@ -304,11 +302,12 @@
                                             </div>
                                         </form>
                                     </div>
+                                </div>
                                     <!-- END SEARCH BOX -->
 
                                     <!-- DELETED ZONES TABS -->
-                                    <div class="panel panel-default panel-tabs">
-                                        <span class=" container-fluid" >
+                                    <div class="panel-default panel-tabs">
+                                        <span class="container-fluid" >
                                            <!-- MY DELETED ZONE PAGINATION -->
                                             <div class="dataTables_paginate vinyldns_paginate" ng-show="tab == 'myDeletedZones'" >
                                                 <span class="vinyldns_page_number">{{ getZonesPageNumber("myDeletedZones") }}</span>
@@ -341,7 +340,7 @@
                                             </ul>
                                             <div class="tab-content">
                                                 <div class="tab-pane active" id="myDeletedZones">
-                                                    <div id="zone-list-table" class="panel-body">
+                                                    <div id="my-deleted-zone-list-table" class="panel-body">
                                                         <p ng-if="!myDeletedZonesLoaded">Loading my deleted zones...</p>
                                                         <p ng-if="myDeletedZonesLoaded && !myDeletedZones.length">No zones match the search criteria.</p>
                                                         <table class="table" ng-if="myDeletedZones.length">
@@ -401,11 +400,10 @@
                                                             </ul>
                                                         </div>
                                                         <!-- END PAGINATION -->
-
                                                     </div>
                                                 </div>
                                                 <div class="tab-pane" id="allDeletedZones">
-                                                    <div id="zone-list-table" class="panel-body">
+                                                    <div id="all-deleted-zone-list-table" class="panel-body">
                                                         <p ng-if="!allDeletedZonesLoaded">Loading all deleted zones...</p>
                                                         <p ng-if="allDeletedZonesLoaded && !allDeletedZones.length">No zones match the search criteria.</p>
                                                         <table class="table" ng-if="allDeletedZones.length">
@@ -465,27 +463,25 @@
                                                             </ul>
                                                         </div>
                                                         <!-- END PAGINATION -->
-
                                                     </div>
                                                 </div>
                                             </div>
                                         </span>
                                     </div>
-                                    <!-- END DELETED ZONES TABS -->
-                                </div>
+                            <!-- END DELETED ZONES TABS -->
                                 <div class="panel-footer"></div>
                             </div>
                             <!-- END SIMPLE DATATABLE -->
-
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
         <!-- END VERTICAL TABS -->
 
-
-    </div>
+</div>
     <!-- END PAGE CONTENT WRAPPER -->
 
 </div>
