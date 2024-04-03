@@ -575,23 +575,25 @@
                 </modal-element>
 
                 <modal-element label="Record Owner Group Status"
-                               invalid-when="recordOwnerShipForm.$submitted && (recordOwnerShipForm.ownerGroupStatus1.$invalid || recordOwnerShipForm.ownerGroupStatus2.$invalid)"
+                               invalid-when="recordOwnerShipForm.$submitted && (recordOwnerShipForm.ownerGroupStatus.$invalid
+                                             || recordOwnerShipForm.ownerGroupStatus.$viewValue == null || !recordOwnerShipForm.ownerGroupStatus.$viewValue)"
                                ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone "
                                ng-switch="!currentOwnerShipTransferApprover">
-                    <select name="ownerGroupStatus1"
+                    <select name="ownerGroupStatus"
                             class="form-control"
                             ng-switch-when="false"
                             ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
                             ng-class="recordModal.details.class"
                             ng-options="ownerShipTransferApproverStatus.value as ownerShipTransferApproverStatus.label for ownerShipTransferApproverStatus in ownerShipTransferStatus" required>
                         <option value= ""  selected="selected">Please choose a record owner group status</option>
+
                     </select>
-                    <select name="ownerGroupStatus2"
+                    <select name="ownerGroupStatus"
                             class="form-control"
                             ng-switch-default
                             ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
                             ng-class="recordModal.details.class">
-                        <option value= "" selected="selected">Please choose a record owner group status</option>
+                        <option value= ""  selected="selected">Please choose a record owner group status</option>
                         <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'" value="Cancelled" required>Cancel</option>
                         <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus != 'PendingReview'" value="Requested" required>Request</option>
                     </select>

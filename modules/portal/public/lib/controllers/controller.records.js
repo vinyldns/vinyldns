@@ -228,6 +228,7 @@ angular.module('controller.records', [])
         $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(null);
         $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null);
         }else ($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null))
+
         getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.ownerShipTransferApprover = false;
         $scope.ownerShipTransferRequestor = false;
@@ -259,7 +260,9 @@ angular.module('controller.records', [])
     $scope.submitRequestedOwnerShipTransfer = function () {
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
-        if ($scope.recordOwnerShipForm.$valid) {
+        var invalidRecordOwnerShipForm = $scope.recordOwnerShipForm.ownerGroupStatus.$viewValue != null &&
+                                         $scope.recordOwnerShipForm.ownerGroupStatus.$viewValue
+        if ($scope.recordOwnerShipForm.$valid && invalidRecordOwnerShipForm) {
             updateRecordSet(record);
             $scope.recordOwnerShipForm.$setPristine();
             $("#record_modal_ownership_transfer").modal('hide');
