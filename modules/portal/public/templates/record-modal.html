@@ -551,7 +551,7 @@
                 <modal-element label="Record Owner Group Request"
                                invalid-when="recordOwnerShipForm.$submitted && recordOwnerShipForm.requestedOwnerGroupId1.$invalid"
                                ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone"
-                               ng-switch="currentOwnerShipTransferApprover">
+                               ng-switch="currentOwnerShipTransferApprover || recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'">
                     <select name="requestedOwnerGroupId1"
                             class="form-control"
                             ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
@@ -605,7 +605,7 @@
             <modal-footer>
             <span>
                 <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
-                <button class="btn btn-primary pull-right" ng-click="submitRequestedOwnerShipTransfer()" id="update_recordset_ownership_request">Yes</button>
+                <button class="btn btn-primary pull-right" ng-click="submitRequestedOwnerShipTransfer()" id="update_recordset_ownership_request">Submit</button>
             </span>
             </modal-footer>
 </modal>
