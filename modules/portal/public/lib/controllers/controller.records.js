@@ -53,6 +53,8 @@ angular.module('controller.records', [])
     $scope.profile = {};
     $scope.recordSetCount = 0;
     $scope.canViewZone = false;
+    $scope.hasPtrNextPage = false;
+    $scope.hasPtrPrevPage = false;
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -85,7 +87,8 @@ angular.module('controller.records', [])
     $scope.canCreateRecords = false;
 
     // paging status for recordsets
-    var recordsPaging = pagingService.getNewPagingParams(100);
+    var recordsPagingMaxItems = 100;
+    var recordsPaging = pagingService.getNewPagingParams(recordsPagingMaxItems);
 
     // paging status for record changes
     var changePaging = pagingService.getNewPagingParams(100);
@@ -466,6 +469,48 @@ angular.module('controller.records', [])
             });
     };
 
+    // Paginator to be used only for ipv4 PTR zones
+    class Paginator {
+        constructor(array, perPage) {
+            this.array = array;
+            this.perPage = perPage;
+            this.currentPage = 1;
+        }
+        nextPage() {
+            if (this.hasNextPage()) {
+                this.currentPage++;
+            }
+        }
+        prevPage() {
+            if (this.hasPrevPage()) {
+                this.currentPage--;
+            }
+        }
+        getCurrentPageItems() {
+            const startIndex = (this.currentPage - 1) * this.perPage;
+            const endIndex = startIndex + this.perPage;
+            return this.array.slice(startIndex, endIndex);
+        }
+        hasNextPage() {
+            return this.currentPage < this.getTotalPages();
+        }
+        hasPrevPage() {
+            return this.currentPage > 1;
+        }
+        getTotalPages() {
+            return Math.ceil(this.array.length / this.perPage);
+        }
+        getCurrentPage() {
+            return this.currentPage;
+        }
+    }
+
+    // Initialize Paginator with initial items array
+    var paginator;
+    function initializePaginator(items, perPage) {
+        paginator = new Paginator(items, perPage);
+    }
+
     function updateChangeDisplay(changes) {
         var newChanges = [];
         angular.forEach(changes, function(change) {
@@ -474,12 +519,57 @@ angular.module('controller.records', [])
         $scope.recordsetChanges = newChanges;
     }
 
+    function sortPtrData(data) {
+        if($scope.nameSort == "asc"){
+            data.recordSets.forEach(item => {
+                if (item.type === "PTR") {
+                 item.name = parseInt(item.name);
+                }
+            });
+
+            // Sort the list numerically based on name if type is PTR
+            var ptrItems = data.recordSets.filter(item => item.type === "PTR");
+            ptrItems.sort((a, b) => a.name - b.name);
+
+            // Append SOA item to the sorted PTR items
+            var sortedData = ptrItems.concat(data.recordSets.filter(item => item.type !== "PTR"));
+
+            initializePaginator(sortedData, recordsPagingMaxItems);
+            $scope.hasPtrNextPage = paginator.hasNextPage();
+            updateRecordDisplay(paginator.getCurrentPageItems());
+        }
+        else {
+            data.recordSets.forEach(item => {
+                if (item.type === "PTR") {
+                 item.name = parseInt(item.name);
+                }
+            });
+
+            // Sort the list numerically based on name if type is PTR
+            var ptrItems = data.recordSets.filter(item => item.type === "PTR");
+            ptrItems.sort((a, b) => b.name - a.name);
+
+            // Append SOA item to the sorted PTR items
+            var sortedData = ptrItems.concat(data.recordSets.filter(item => item.type !== "PTR"));
+
+            initializePaginator(sortedData, recordsPagingMaxItems);
+            $scope.hasPtrNextPage = paginator.hasNextPage();
+            updateRecordDisplay(paginator.getCurrentPageItems());
+        }
+    }
+
     $scope.refreshRecords = function() {
         recordsPaging = pagingService.resetPaging(recordsPaging);
         function success(response) {
             $log.debug('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
-            recordsPaging.next = response.data.nextId;
-            updateRecordDisplay(response.data.recordSets);
+            // Check if name sort is enabled. If so sort numerically for PTR zone records.
+            if($scope.zoneInfo.name.endsWith(".in-addr.arpa.") && $scope.recordTypeSort == "none"){
+                sortPtrData(response.data);
+            }
+            else {
+                recordsPaging.next = response.data.nextId;
+                updateRecordDisplay(response.data.recordSets);
+            }
         }
         return recordsService
             .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
@@ -523,44 +613,76 @@ angular.module('controller.records', [])
      * Recordset paging
      */
     $scope.getRecordPageTitle = function() {
-        return pagingService.getPanelTitle(recordsPaging);
+        if(($scope.zoneInfo.name != undefined) && ($scope.zoneInfo.name.endsWith(".in-addr.arpa.")) && ($scope.recordTypeSort == "none")){
+            if(paginator && typeof paginator.getCurrentPage === 'function'){
+                return paginator.getCurrentPage() > 1 ? "[Page "+(paginator.getCurrentPage())+"]" : "";
+            }
+        } else {
+            return pagingService.getPanelTitle(recordsPaging);
+        }
     };
 
     $scope.prevPageEnabled = function() {
-        return pagingService.prevPageEnabled(recordsPaging);
+        if(($scope.zoneInfo.name != undefined) && ($scope.zoneInfo.name.endsWith(".in-addr.arpa.")) && ($scope.recordTypeSort == "none")){
+             return $scope.hasPtrPrevPage;
+        } else {
+            return pagingService.prevPageEnabled(recordsPaging);
+        }
     };
 
     $scope.nextPageEnabled = function() {
-        return pagingService.nextPageEnabled(recordsPaging);
+        if(($scope.zoneInfo.name != undefined) && ($scope.zoneInfo.name.endsWith(".in-addr.arpa.")) && ($scope.recordTypeSort == "none")){
+            return $scope.hasPtrNextPage;
+        } else {
+            return pagingService.nextPageEnabled(recordsPaging);
+        }
     };
 
     $scope.prevPage = function() {
-        var startFrom = pagingService.getPrevStartFrom(recordsPaging);
-        return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
-            .then(function(response) {
-                recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
-                updateRecordDisplay(response.data.recordSets);
-            })
-            .catch(function (error){
-                handleError(error, 'recordsService::prevPage-failure');
-            });
+        if($scope.zoneInfo.name.endsWith(".in-addr.arpa.") && $scope.recordTypeSort == "none"){
+            paginator.prevPage();
+            $scope.hasPtrPrevPage = paginator.hasPrevPage();
+            $scope.hasPtrNextPage = paginator.hasNextPage();
+            $scope.prevPageEnabled();
+            $scope.nextPageEnabled();
+            updateRecordDisplay(paginator.getCurrentPageItems());
+        } else {
+            var startFrom = pagingService.getPrevStartFrom(recordsPaging);
+            return recordsService
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+                .then(function(response) {
+                    recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
+                    updateRecordDisplay(response.data.recordSets);
+                })
+                .catch(function (error){
+                    handleError(error, 'recordsService::prevPage-failure');
+                });
+        }
     };
 
     $scope.nextPage = function() {
-        return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
-                .then(function(response) {
-                var recordSets = response.data.recordSets;
-                recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
+        if($scope.zoneInfo.name.endsWith(".in-addr.arpa.") && $scope.recordTypeSort == "none"){
+            paginator.nextPage();
+            $scope.hasPtrPrevPage = paginator.hasPrevPage();
+            $scope.hasPtrNextPage = paginator.hasNextPage();
+            $scope.prevPageEnabled();
+            $scope.nextPageEnabled();
+            updateRecordDisplay(paginator.getCurrentPageItems());
+        } else {
+            return recordsService
+                    .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+                    .then(function(response) {
+                    var recordSets = response.data.recordSets;
+                    recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
 
-                if (recordSets.length > 0){
-                    updateRecordDisplay(recordSets);
-                }
-            })
-            .catch(function (error){
-                handleError(error, 'recordsService::nextPage-failure');
-            });
+                    if (recordSets.length > 0){
+                        updateRecordDisplay(recordSets);
+                    }
+                })
+                .catch(function (error){
+                    handleError(error, 'recordsService::nextPage-failure');
+                });
+        }
     };
 
     $scope.toggleNameSort = function() {
