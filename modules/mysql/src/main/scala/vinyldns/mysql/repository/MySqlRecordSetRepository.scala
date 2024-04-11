@@ -187,18 +187,23 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
                       recordTypeSort: RecordTypeSort,
+                      isFromPortal: Boolean = false
                     ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
 
-        val zone = DB.readOnly { implicit s =>
-          GET_ZONE.bind(zoneId.get)
-            .map(extractZone(1))
-            .first()
-            .apply()
+        val zone = if(zoneId.nonEmpty){
+          DB.readOnly { implicit s =>
+            GET_ZONE.bind(zoneId.get)
+              .map(extractZone(1))
+              .first()
+              .apply()
+          }
+        } else {
+          None
         }
 
-        if(zone.get.name.endsWith(".in-addr.arpa.") && recordTypeSort.equals(NONE)){
+        if((zone.nonEmpty && zone.get.name.endsWith(".in-addr.arpa.")) && recordTypeSort.equals(NONE) && isFromPortal){
           val results = DB.readOnly { implicit s =>
             // setup optional filters
             val zoneAndNameFilters = (zoneId, recordNameFilter) match {
@@ -238,8 +243,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           ListRecordSetResults(
             recordSets = results,
             nextId = None,
-            startFrom = startFrom,
-            maxItems = maxItems,
+            startFrom = None,
+            maxItems = None,
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
             nameSort = nameSort,
@@ -345,7 +350,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
             // if size of results is less than the maxItems plus one, we don't have a next id
             // if maxItems is None, we don't have a next id
-
             val nextId = maxPlusOne
               .filter(_ == results.size)
               .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))

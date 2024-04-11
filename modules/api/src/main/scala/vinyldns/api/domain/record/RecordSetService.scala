@@ -526,7 +526,8 @@ class RecordSetService(
                             recordOwnerGroupFilter: Option[String],
                             nameSort: NameSort,
                             authPrincipal: AuthPrincipal,
-                            recordTypeSort: RecordTypeSort
+                            recordTypeSort: RecordTypeSort,
+                            isFromPortal: Boolean = false
                           ): Result[ListRecordSetsByZoneResponse] =
     for {
       zone <- getZone(zoneId)
@@ -540,7 +541,8 @@ class RecordSetService(
           recordTypeFilter,
           recordOwnerGroupFilter,
           nameSort,
-          recordTypeSort
+          recordTypeSort,
+          isFromPortal
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet

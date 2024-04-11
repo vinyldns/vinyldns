@@ -531,7 +531,7 @@ angular.module('controller.records', [])
             var ptrItems = data.recordSets.filter(item => item.type === "PTR");
             ptrItems.sort((a, b) => a.name - b.name);
 
-            // Append SOA item to the sorted PTR items
+            // Append other record type items to the sorted PTR items
             var sortedData = ptrItems.concat(data.recordSets.filter(item => item.type !== "PTR"));
 
             initializePaginator(sortedData, recordsPagingMaxItems);
@@ -549,7 +549,7 @@ angular.module('controller.records', [])
             var ptrItems = data.recordSets.filter(item => item.type === "PTR");
             ptrItems.sort((a, b) => b.name - a.name);
 
-            // Append SOA item to the sorted PTR items
+            // Append other record type items to the sorted PTR items
             var sortedData = ptrItems.concat(data.recordSets.filter(item => item.type !== "PTR"));
 
             initializePaginator(sortedData, recordsPagingMaxItems);
@@ -572,7 +572,7 @@ angular.module('controller.records', [])
             }
         }
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort, true)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::listRecordSetsByZone-failure');
@@ -649,7 +649,7 @@ angular.module('controller.records', [])
         } else {
             var startFrom = pagingService.getPrevStartFrom(recordsPaging);
             return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort, true)
                 .then(function(response) {
                     recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                     updateRecordDisplay(response.data.recordSets);
@@ -670,7 +670,7 @@ angular.module('controller.records', [])
             updateRecordDisplay(paginator.getCurrentPageItems());
         } else {
             return recordsService
-                    .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+                    .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort, true)
                     .then(function(response) {
                     var recordSets = response.data.recordSets;
                     recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);

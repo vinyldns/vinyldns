@@ -91,7 +91,8 @@ trait RecordSetServiceAlgebra {
                             recordOwnerGroupId: Option[String],
                             nameSort: NameSort,
                             authPrincipal: AuthPrincipal,
-                            recordTypeSort: RecordTypeSort
+                            recordTypeSort: RecordTypeSort,
+                            isFromPortal: Boolean = false
                           ): Result[ListRecordSetsByZoneResponse]
 
   def getRecordSetChange(
