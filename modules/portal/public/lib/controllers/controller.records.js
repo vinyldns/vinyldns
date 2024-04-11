@@ -639,7 +639,7 @@ angular.module('controller.records', [])
     };
 
     $scope.prevPage = function() {
-        if($scope.zoneInfo.name.endsWith(".in-addr.arpa.") && $scope.recordTypeSort == "none"){
+        if(($scope.zoneInfo.name != undefined && $scope.zoneInfo.name.endsWith(".in-addr.arpa.")) && $scope.recordTypeSort == "none"){
             paginator.prevPage();
             $scope.hasPtrPrevPage = paginator.hasPrevPage();
             $scope.hasPtrNextPage = paginator.hasNextPage();
@@ -661,7 +661,7 @@ angular.module('controller.records', [])
     };
 
     $scope.nextPage = function() {
-        if($scope.zoneInfo.name.endsWith(".in-addr.arpa.") && $scope.recordTypeSort == "none"){
+        if(($scope.zoneInfo.name != undefined && $scope.zoneInfo.name.endsWith(".in-addr.arpa.")) && $scope.recordTypeSort == "none"){
             paginator.nextPage();
             $scope.hasPtrPrevPage = paginator.hasPrevPage();
             $scope.hasPtrNextPage = paginator.hasNextPage();
