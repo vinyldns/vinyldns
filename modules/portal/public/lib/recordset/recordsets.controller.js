@@ -113,10 +113,10 @@
                           .append("<div>" + recordSet + "</div>")
                           .appendTo(ul); };
 
-            $scope.viewRecordHistory = function(recordFqdn, recordType) {
+            $scope.viewRecordHistory = function(recordFqdn, recordType, zoneId) {
                $scope.recordFqdn = recordFqdn;
                $scope.recordType = recordType;
-               $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType);
+               $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType, zoneId);
                $("#record_history_modal").modal("show");
             };
 
@@ -245,7 +245,7 @@
                     });
             };
 
-            $scope.refreshRecordChangeHistory = function(recordFqdn, recordType) {
+            $scope.refreshRecordChangeHistory = function(recordFqdn, recordType, zoneId) {
                 changePaging = pagingService.resetPaging(changePaging);
                 function success(response) {
                     $scope.zoneId = response.data.zoneId;
@@ -254,7 +254,7 @@
                     updateChangeDisplay(response.data.recordSetChanges)
                 }
                 return recordsService
-                    .listRecordSetChangeHistory(changePaging.maxItems, undefined, recordFqdn, recordType)
+                    .listRecordSetChangeHistory(zoneId, changePaging.maxItems, undefined, recordFqdn, recordType)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'recordsService::getRecordSetChangeHistory-failure');
@@ -264,6 +264,9 @@
             /**
              * Record change history paging
              */
+             $scope.getRecordChangePageTitle = function() {
+                return pagingService.getPanelTitle(changePaging);
+             };
 
             $scope.changeHistoryPrevPageEnabled = function() {
                 return pagingService.prevPageEnabled(changePaging);

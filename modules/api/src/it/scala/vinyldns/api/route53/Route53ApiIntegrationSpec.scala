@@ -57,6 +57,8 @@ class Route53ApiIntegrationSpec
           "test",
           Some("access"),
           Some("secret"),
+          None,
+          None,
           sys.env.getOrElse("R53_SERVICE_ENDPOINT", "http://localhost:19003"),
           "us-east-1"
         )

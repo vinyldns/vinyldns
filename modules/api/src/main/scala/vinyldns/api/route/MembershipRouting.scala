@@ -162,8 +162,8 @@ class MembershipRoute(
     } ~
     path("groups" / Segment / "activity") { groupId =>
       (get & monitor("Endpoint.groupActivity")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (startFrom: Option[String], maxItems: Int) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[Int], maxItems: Int) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
@@ -212,9 +212,9 @@ class MembershipRoute(
     } ~
     path("users" / Segment) { id =>
       (get & monitor("Endpoint.getUser")) {
-        authenticateAndExecute(membershipService.getUser(id, _)) {
+        authenticateAndExecute(membershipService.getUserDetails(id, _)) {
           user =>
-            complete(StatusCodes.OK, UserResponseInfo(user))
+            complete(StatusCodes.OK, user)
         }
       }
     }

@@ -104,14 +104,16 @@ object UserInfo {
 
 case class UserResponseInfo(
    id: String,
-   userName: Option[String] = None
+   userName: Option[String] = None,
+   groupId: Set[String] = Set.empty
  )
 
 object UserResponseInfo {
-  def apply(user: User): UserResponseInfo =
+  def apply(user: User , group: Group): UserResponseInfo =
     UserResponseInfo(
       id = user.id,
-      userName = Some(user.userName)
+      userName = Some(user.userName),
+      groupId = Set(group.id)
     )
 }
 
@@ -158,8 +160,8 @@ final case class ListAdminsResponse(admins: Seq[UserInfo])
 
 final case class ListGroupChangesResponse(
     changes: Seq[GroupChangeInfo],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
+    startFrom: Option[Int] = None,
+    nextId: Option[Int] = None,
     maxItems: Int
 )
 

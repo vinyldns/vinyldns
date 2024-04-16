@@ -51,6 +51,8 @@ angular.module('controller.records', [])
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
     $scope.profile = {};
+    $scope.recordSetCount = 0;
+    $scope.canViewZone = false;
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -374,6 +376,7 @@ angular.module('controller.records', [])
     function determineAdmin(){
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
+        $scope.canViewZone = $scope.canReadZone || $scope.isZoneAdmin || $scope.zoneInfo.shared;
         $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl() || $scope.zoneInfo.shared;
 
         function canCreateRecordsViaAcl() {
@@ -494,6 +497,7 @@ angular.module('controller.records', [])
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
                 $scope.records = newRecords;
+                $scope.getRecordSetCount();
                 if($scope.records.length > 0) {
                   $("td.dataTables_empty").hide();
                 } else {
@@ -501,6 +505,19 @@ angular.module('controller.records', [])
                 }
             });
     };
+
+    $scope.getRecordSetCount = function getRecordSetsCount() {
+        function success(response) {
+                 $log.debug('RecordService::getRecordSetsCount-success',  response.data);
+                 return $scope.recordSetCount = response.data.count
+             }
+             return recordsService
+                 .getRecordSetCount($scope.zoneId)
+                 .then(success)
+                 .catch(function (error) {
+                     handleError(error, 'groupsService::getRecordSetsCount-failure');
+                 });
+    }
 
     /**
      * Recordset paging

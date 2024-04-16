@@ -26,12 +26,6 @@ def test_list_group_activity_start_from_success(group_activity_context, shared_z
     # we grab 3 items, which when sorted by most recent will give the 3 most recent items
     page_one = client.get_group_changes(created_group["id"], max_items=3, status=200)
 
-    # our start from will align with the created on the 3rd change in the list
-    start_from_index = 2
-    # using epoch time to start from a timestamp
-    epoch = datetime.utcfromtimestamp(0)
-    # start from a known good timestamp
-    start_from = str(int((datetime.strptime(page_one["changes"][start_from_index]["created"], "%Y-%m-%dT%H:%M:%S.%fZ") - epoch).total_seconds() * 1000))
     # now, we say give me all changes since the start_from, which should yield 8-7-6-5-4
     result = client.get_group_changes(created_group["id"], start_from=page_one["nextId"], max_items=5, status=200)
 
@@ -50,26 +44,19 @@ def test_list_group_activity_start_from_success(group_activity_context, shared_z
         assert_that(result["changes"][i]["oldGroup"], is_(updated_groups[expected_start - i - 1]))
 
 
-def test_list_group_activity_start_from_fake_time(group_activity_context, shared_zone_test_context):
+def test_list_group_activity_start_from_random_number(group_activity_context, shared_zone_test_context):
     """
-    Test that we can start from a fake time stamp
+    Test that we can start from a random number, but it returns no changes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     created_group = group_activity_context["created_group"]
     updated_groups = group_activity_context["updated_groups"]
-    start_from = "9999999999999"  # start from a random timestamp far in the future
 
-    result = client.get_group_changes(created_group["id"], start_from=start_from, max_items=5, status=200)
+    result = client.get_group_changes(created_group["id"], start_from=999, max_items=5, status=200)
 
     # there are 10 updates, proceeded by 1 create
-    assert_that(result["changes"], has_length(5))
+    assert_that(result["changes"], has_length(0))
     assert_that(result["maxItems"], is_(5))
-    assert_that(result["startFrom"], is_(start_from))
-    assert_that(result["nextId"], is_not(none()))
-
-    for i in range(0, 5):
-        assert_that(result["changes"][i]["newGroup"], is_(updated_groups[9 - i]))
-        assert_that(result["changes"][i]["oldGroup"], is_(updated_groups[9 - i - 1]))
 
 
 def test_list_group_activity_max_item_success(group_activity_context, shared_zone_test_context):
@@ -151,9 +138,9 @@ def test_get_group_changes_paging(group_activity_context, shared_zone_test_conte
     assert_that(page_three["changes"][0]["newGroup"], is_(created_group))
 
 
-def test_get_group_changes_unauthed(shared_zone_test_context):
+def test_get_group_changes_unauthorized(shared_zone_test_context):
     """
-    Tests that non-group members can still get group changes
+    Tests that non-group members cannot get group changes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
@@ -167,7 +154,7 @@ def test_get_group_changes_unauthed(shared_zone_test_context):
         }
         saved_group = client.create_group(new_group, status=200)
 
-        dummy_client.get_group_changes(saved_group["id"], status=200)
+        dummy_client.get_group_changes(saved_group["id"], status=403)
         client.get_group_changes(saved_group["id"], status=200)
     finally:
         if saved_group:

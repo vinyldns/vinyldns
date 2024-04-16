@@ -300,7 +300,7 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="deleted-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Zone Name"/>
+                                                <input id="deleted-zones-search-text" ng-model="query" type="text" class="form-control"  placeholder="Deleted Zone Name"/>
                                             </div>
                                         </form>
                                     </div>
@@ -309,13 +309,13 @@
                                     <!-- DELETED ZONES TABS -->
                                     <div class="panel panel-default panel-tabs">
                                         <ul class="nav nav-tabs bar_tabs">
-                                            <li class="active"><a href="#myDeletedZones" data-toggle="tab">My Zones</a></li>
-                                            <li><a id="tab2-button" href="#allDeletedZones" data-toggle="tab">All Zones</a></li>
+                                            <li class="active"><a href="#myDeletedZones" data-toggle="tab" ng-click="myZonesAccess()" >My Zones</a></li>
+                                            <li><a id="tab2-button" href="#allDeletedZones" data-toggle="tab"  ng-click="allZonesAccess()">All Zones</a></li>
                                         </ul>
                                         <div class="panel-body tab-content">
                                             <div class="tab-pane active" id="myDeletedZones">
                                                 <div id="zone-list-table" class="panel-body">
-                                                    <p ng-if="!myDeletedZonesLoaded">Loading zones...</p>
+                                                    <p ng-if="!myDeletedZonesLoaded">Loading my deleted zones...</p>
                                                     <p ng-if="myDeletedZonesLoaded && !myDeletedZones.length">No zones match the search criteria.</p>
 
                                                     <!-- PAGINATION -->
@@ -394,7 +394,7 @@
                                             </div>
                                             <div class="tab-pane" id="allDeletedZones">
                                                 <div id="zone-list-table" class="panel-body">
-                                                    <p ng-if="!allDeletedZonesLoaded">Loading zones...</p>
+                                                    <p ng-if="!allDeletedZonesLoaded">Loading all deleted zones...</p>
                                                     <p ng-if="allDeletedZonesLoaded && !allDeletedZones.length">No zones match the search criteria.</p>
 
                                                     <!-- PAGINATION -->

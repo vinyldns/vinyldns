@@ -46,6 +46,11 @@ object MembershipValidations {
       authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin || canViewGroupDetails
     }
 
+  def canSeeGroupChange(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(NotAuthorizedError("Not authorized")) {
+      authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin
+    }
+
   def isGroupChangePresent(groupChange: Option[GroupChange]): Either[Throwable, Unit] =
     ensuring(InvalidGroupRequestError(InvalidGroupChangeIdErrorMsg)) {
       groupChange.isDefined

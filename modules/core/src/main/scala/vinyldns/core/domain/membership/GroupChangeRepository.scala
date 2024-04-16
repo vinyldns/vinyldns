@@ -28,7 +28,7 @@ trait GroupChangeRepository extends Repository {
 
   def getGroupChanges(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int
   ): IO[ListGroupChangesResults]
 
