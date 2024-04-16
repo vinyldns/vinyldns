@@ -485,9 +485,13 @@ object Messages {
   val AccountAccessKeyErrorMsg: String = "Account with accessKey %s specified was not found".orConfig
 
   /* RecordSetChangeHandler.scala */
-  val IncompatibleRecordMsg: String = "Incompatible record already exists in DNS.".orConfig
+  val OutOfSyncFailureMessage: String = "This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set.".orConfig
 
-  val OutOfSyncMsg: String = "This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set.".orConfig
+  val IncompatibleRecordFailureMessage: String = "Incompatible record in DNS.".orConfig
+
+  val SyncZoneMessage: String = "This record set is out of sync with the DNS backend. Sync this zone before attempting to update this record set.".orConfig
+
+  val RecordConflictMessage: String = "Conflict due to the record having the same name as an NS record in the same zone. Please create the record using the DNS service the NS record has been delegated to (ex. AWS r53), or use a different record name.".orConfig
 
   val UpdateValidateMsg: String = "Failed validating update to DNS for change \"%s\": \"%s\": %s".orConfig
 
