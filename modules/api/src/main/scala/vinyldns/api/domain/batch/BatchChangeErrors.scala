@@ -16,11 +16,12 @@
 
 package vinyldns.api.domain.batch
 
-import java.time.Instant
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
+import vinyldns.core.Messages._
 import vinyldns.core.domain.DomainValidationError
 import vinyldns.core.domain.batch.{BatchChange, SingleChange}
+import java.time.Instant
 
 /* Error response options */
 sealed trait BatchChangeErrorResponse
@@ -37,44 +38,37 @@ final case class BatchChangeFailedApproval(batchChange: BatchChange)
     extends BatchChangeErrorResponse
 
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {
-  def message: String = s"Batch change with id $id cannot be found"
+  def message: String = BatchChangeNotFoundErrorMsg.format(id)
 }
 final case class UserNotAuthorizedError(itemId: String) extends BatchChangeErrorResponse {
-  def message: String = s"User does not have access to item $itemId"
+  def message: String = UserNotAuthorizedErrorMsg.format(itemId)
 }
 final case class BatchConversionError(change: SingleChange) extends BatchChangeErrorResponse {
-  def message: String =
-    s"""Batch conversion for processing failed to convert change with name "${change.inputName}"
-       |and type "${change.typ}"""".stripMargin
+  def message: String = BatchConversionErrorMsg.format(change.inputName, change.typ).stripMargin
 }
 final case class UnknownConversionError(message: String) extends BatchChangeErrorResponse
 
 final case class BatchChangeNotPendingReview(id: String) extends BatchChangeErrorResponse {
-  def message: String =
-    s"""Batch change $id is not pending review, so it cannot be rejected."""
+  def message: String = BatchChangeNotPendingReviewErrorMsg.format(id)
 }
 
 final case class BatchRequesterNotFound(userId: String, userName: String)
     extends BatchChangeErrorResponse {
-  def message: String =
-    s"The requesting user with id $userId and name $userName cannot be found in VinylDNS"
+  def message: String = BatchRequesterNotFoundErrorMsg.format(userId, userName)
 }
 
 case object ScheduledChangesDisabled extends BatchChangeErrorResponse {
-  val message: String =
-    "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."
+  val message: String = ScheduledChangesDisabledErrorMsg
 }
 
 case object ScheduledTimeMustBeInFuture extends BatchChangeErrorResponse {
-  val message: String = "Scheduled time must be in the future."
+  val message: String = ScheduledTimeMustBeInFutureErrorMsg
 }
 
 final case class ScheduledChangeNotDue(scheduledTime: Instant) extends BatchChangeErrorResponse {
-  val message: String =
-    s"Cannot process scheduled change as it is not past the scheduled date of $scheduledTime"
+  val message: String = ScheduledChangeNotDueErrorMsg.format(scheduledTime)
 }
 
 case object ManualReviewRequiresOwnerGroup extends BatchChangeErrorResponse {
-  val message: String =
-    "Batch change requires owner group for manual review."
+  val message: String = ManualReviewRequiresOwnerGroupErrorMsg
 }

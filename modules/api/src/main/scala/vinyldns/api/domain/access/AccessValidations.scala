@@ -19,6 +19,7 @@ package vinyldns.api.domain.access
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.zone._
+import vinyldns.core.Messages._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordData, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -32,7 +33,7 @@ class AccessValidations(
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'")
+      NotAuthorizedError(CannotAccessZoneErrorMsg.format(auth.signedInUser.userName, zone.name))
     )(
       auth.isSystemAdmin || zone.shared || auth
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
@@ -52,8 +53,9 @@ class AccessValidations(
   ): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(
-        s"""User '${auth.signedInUser.userName}' cannot create or modify zone '$zoneName' because
-           |they are not in the Zone Admin Group '$zoneAdminGroupId'""".stripMargin
+        CannotChangeZoneErrorMsg
+          .format(auth.signedInUser.userName, zoneName, zoneAdminGroupId)
+          .stripMargin
           .replace("\n", " ")
       )
     )(auth.isSuper || auth.isGroupMember(zoneAdminGroupId))
@@ -68,8 +70,7 @@ class AccessValidations(
     val accessLevel = getAccessLevel(auth, recordName, recordType, zone, None, recordData)
     ensuring(
       NotAuthorizedError(
-        s"User ${auth.signedInUser.userName} does not have access to create " +
-          s"$recordName.${zone.name}"
+        CannotAddRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name)
       )
     )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
   }
@@ -87,8 +88,7 @@ class AccessValidations(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
     ensuring(
       NotAuthorizedError(
-        s"User ${auth.signedInUser.userName} does not have access to update " +
-          s"$recordName.${zone.name}"
+        CannotUpdateRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name)
       )
     )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOwnerGroup)
   }
@@ -102,10 +102,7 @@ class AccessValidations(
       existingRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(
-        s"User ${auth.signedInUser.userName} does not have access to delete " +
-          s"$recordName.${zone.name}"
-      )
+      NotAuthorizedError(CannotDeleteRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name))
     )(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, existingRecordData) == AccessLevel.Delete
     )
@@ -119,10 +116,7 @@ class AccessValidations(
       recordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(
-        s"User ${auth.signedInUser.userName} does not have access to view " +
-          s"$recordName.${zone.name}"
-      )
+      NotAuthorizedError(CannotViewRecordErrorMsg.format(auth.signedInUser.userName, recordName, zone.name))
     )(
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, recordData) != AccessLevel.NoAccess
     )

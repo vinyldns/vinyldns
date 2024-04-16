@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit
 import org.json4s._
 import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
+import vinyldns.core.Messages._
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
 
 object MembershipJsonProtocol {
@@ -63,22 +64,22 @@ trait MembershipJsonProtocol extends JsonValidation {
   case object CreateGroupInputSerializer extends ValidationSerializer[CreateGroupInput] {
     override def fromJson(js: JValue): ValidatedNel[String, CreateGroupInput] =
       (
-        (js \ "name").required[String]("Missing Group.name"),
-        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "name").required[String](MissingGroupNameMsg),
+        (js \ "email").required[String](MissingGroupEmailMsg),
         (js \ "description").optional[String],
-        (js \ "members").required[Set[UserId]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
+        (js \ "members").required[Set[UserId]](MissingGroupMembersMsg),
+        (js \ "admins").required[Set[UserId]](MissingGroupAdminsMsg)
       ).mapN(CreateGroupInput.apply)
   }
   case object UpdateGroupInputSerializer extends ValidationSerializer[UpdateGroupInput] {
     override def fromJson(js: JValue): ValidatedNel[String, UpdateGroupInput] =
       (
-        (js \ "id").required[String]("Missing Group.id"),
-        (js \ "name").required[String]("Missing Group.name"),
-        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "id").required[String](MissingGroupIdMsg),
+        (js \ "name").required[String](MissingGroupNameMsg),
+        (js \ "email").required[String](MissingGroupEmailMsg),
         (js \ "description").optional[String],
-        (js \ "members").required[Set[UserId]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
+        (js \ "members").required[Set[UserId]](MissingGroupMembersMsg),
+        (js \ "admins").required[Set[UserId]](MissingGroupAdminsMsg)
       ).mapN(UpdateGroupInput.apply)
   }
 
@@ -89,8 +90,8 @@ trait MembershipJsonProtocol extends JsonValidation {
   case object GroupSerializer extends ValidationSerializer[Group] {
     override def fromJson(js: JValue): ValidatedNel[String, Group] =
       (
-        (js \ "name").required[String]("Missing Group.name"),
-        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "name").required[String](MissingGroupNameMsg),
+        (js \ "email").required[String](MissingGroupEmailMsg),
         (js \ "description").optional[String],
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
@@ -104,8 +105,8 @@ trait MembershipJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] = {
       (
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "name").required[String]("Missing Group.name"),
-        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "name").required[String](MissingGroupNameMsg),
+        (js \ "email").required[String](MissingGroupEmailMsg),
         (js \ "description").optional[String],
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
@@ -125,17 +126,18 @@ trait MembershipJsonProtocol extends JsonValidation {
       ("admins" -> Extraction.decompose(gi.admins))
   }
 
+  // TODO: add error message
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {
     override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] = {
       (
-        (js \ "newGroup").required[GroupInfo]("Missing new group"),
-        (js \ "changeType").required(GroupChangeType, "Missing change type"),
-        (js \ "userId").required[String]("Missing userId"),
+        (js \ "newGroup").required[GroupInfo](MissingNewGroupMsg),
+        (js \ "changeType").required(GroupChangeType, MissingChangeTypeMsg),
+        (js \ "userId").required[String](MissingUserIdMsg),
         (js \ "oldGroup").optional[GroupInfo],
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
-        (js \ "userName").required[String]("Missing userName"),
-        (js \ "groupChangeMessage").required[String]("Missing groupChangeMessage"),
+        (js \ "userName").required[String](MissingUserNameMsg),
+        (js \ "groupChangeMessage").required[String](MissingGroupChangeMsg),
       ).mapN(GroupChangeInfo.apply)
     }
 
