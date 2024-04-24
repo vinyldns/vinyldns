@@ -370,7 +370,7 @@
                                                                 {{deletedZone.userName}}
                                                             </td>
                                                             @if(meta.sharedDisplayEnabled) {
-                                                            <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                            <td>{{deletedZone.zoneChange.zone.shared ? "Shared" : "Private"}}</td>
                                                             }
                                                         </tr>
                                                         </tbody>
@@ -449,7 +449,7 @@
                                                                 {{deletedZone.userName}}
                                                             </td>
                                                             @if(meta.sharedDisplayEnabled) {
-                                                            <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                            <td>{{deletedZone.zoneChange.zone.shared ? "Shared" : "Private"}}</td>
                                                             }
                                                         </tr>
                                                         </tbody>
