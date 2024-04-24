@@ -1,0 +1,348 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Portal Configuration Guide</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Portal Configuration Guide" /><meta name="title" property="og:title" content="VinylDNS: Portal Configuration Guide" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Portal Configuration Guide" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav">        <div class="sidebar-nav-item  "><a href="/operator/index.html" title="Operator Guide" class="">Operator Guide</a></div> <div class="sidebar-nav-item  "><a href="/operator/pre.html" title="Pre-requisites" class="drop-nested">Pre-requisites</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/setup-mysql.html" title="Setup MySQL" class="">Setup MySQL</a> <a href="/operator/setup-sqs.html" title="Setup AWS SQS" class="">Setup AWS SQS</a> <a href="/operator/setup-ldap.html" title="Setup LDAP" class="">Setup LDAP</a></div></div> <div class="sidebar-nav-item  "><a href="/operator/setup-api.html" title="Setup API Server" class="drop-nested">Setup API Server</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/config-api.html" title="API Configuration Guide" class="">API Configuration Guide</a></div></div> <div class="sidebar-nav-item  open"><a href="/operator/setup-portal.html" title="Setup the Portal Server" class="drop-nested">Setup the Portal Server</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/operator/config-portal.html" title="Portal Configuration Guide" class="active">Portal Configuration Guide</a></div></div>      </div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vinyldns" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="portal-configuration-guide">Portal Configuration Guide</h1>
+<p>The portal configuration is much smaller than the API Server.</p>
+
+<p><strong>Note: Unlike the API server, not all configuration resides under a <code class="language-plaintext highlighter-rouge">vinyldns</code> namespace.</strong></p>
+
+<h2 id="configuration">Configuration</h2>
+<ul>
+  <li><a href="#database-configuration">Database Configuration</a></li>
+  <li><a href="#ldap">LDAP</a></li>
+  <li><a href="#cryptography-settings">Cryptography</a></li>
+  <li><a href="#custom-links">Custom Links</a></li>
+  <li><a href="#additional-configuration-settings">Additional Configuration Settings</a></li>
+  <li><a href="#full-example-config">Full Example Config</a></li>
+</ul>
+
+<h2 id="database-configuration">Database Configuration</h2>
+<p>VinylDNS supports a MySQL backend (see <a href="config-api.html#database-configuration">API Database Configuration</a>).</p>
+
+<p>Follow the <a href="setup-mysql.html">MySQL Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>The Portal uses the following tables:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">user</code></li>
+  <li><code class="language-plaintext highlighter-rouge">userChanges</code></li>
+</ul>
+
+<p>Note that the user table is shared between the API and the portal, and <em>must</em> be configured with
+the same values in both configs:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">vinyldns {</span>
+
+  <span class="s"># this list should include only the datastores being used by your portal instance (user and userChange repo)</span>
+  <span class="s">data-stores = ["mysql"]</span>
+  
+  <span class="s">mysql {</span>
+    
+    <span class="s"># this is the path to the mysql provider. This should not be edited</span>
+    <span class="s"># from the default in reference.conf</span>
+    <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+    
+    <span class="s">settings {</span>
+      <span class="s"># the name of the database, recommend to leave this as is</span>
+      <span class="s">name = "vinyldns"</span>
+      
+      <span class="s"># the jdbc driver, recommended to leave this as is</span>
+      <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+  
+      <span class="s"># the URL used to create the schema, typically this will be without the "database" name</span>
+      <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+  
+      <span class="s"># the main connection URL</span>
+      <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+  
+      <span class="s"># the user to connect to MySQL</span>
+      <span class="s">user = "root"</span>
+  
+      <span class="s"># the password to connect to MySQL</span>
+      <span class="s">password = "pass"</span>
+  
+      <span class="s">## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields</span>
+      <span class="s"># the maximum number of connections to scale the connection pool to</span>
+      <span class="s">maximum-pool-size = </span><span class="m">20</span>
+  
+      <span class="c1"># the maximum number of milliseconds to wait for a connection from the connection pool</span>
+      <span class="s">connection-timeout-millis = </span><span class="m">1000</span>
+      
+      <span class="c1"># the minimum number of idle connections that HikariCP tries to maintain in the pool</span>
+      <span class="s">minimum-idle = </span><span class="m">10</span>
+            
+      <span class="c1"># the maximum number of milliseconds that a connection is can sit idle in the pool</span>
+      <span class="s">idle-timeout = </span><span class="m">10000</span>
+  
+      <span class="c1"># The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit</span>
+      <span class="s">max-lifetime = </span><span class="m">600000</span>
+      
+      <span class="c1"># controls whether JMX MBeans are registered</span>
+      <span class="s">register-mbeans = </span><span class="no">true</span>
+      
+      <span class="s"># my-sql-properties allows you to include any additional mysql performance settings you want.</span>
+      <span class="s"># Note that the properties within my-sql-properties must be camel case!</span>
+      <span class="s"># see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance</span>
+      <span class="s">my-sql-properties {</span>
+        <span class="s">prepStmtCacheSize = </span><span class="m">300</span>
+        <span class="s">prepStmtCacheSqlLimit = </span><span class="m">2048</span>
+        <span class="s">cachePrepStmts = </span><span class="no">true</span>
+        <span class="s">useServerPrepStmts = </span><span class="no">true</span>
+        <span class="s">rewriteBatchedStatements = </span><span class="no">true</span>
+      <span class="s">}</span>
+    <span class="s">}</span>
+    
+    <span class="s">repositories {</span>
+      <span class="s"># all repositories with config sections here will be enabled in mysql</span>
+      <span class="s">user {</span>
+      <span class="s"># no additional settings for repositories enabled in mysql</span>
+      <span class="s">}</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="ldap">LDAP</h2>
+<p>Be sure to follow the <a href="setup-ldap.html">LDAP Setup Guide</a> first to get the values you need to configure here.</p>
+
+<p>LDAP configuration connects VinylDNS to your Directory where user information is stored.</p>
+
+<p>The default value for user sync enabled is <em>false</em> and user sync hours polling interval is 24 (max value). If the hours polling interval
+is configured higher than 24, 24 hours will be used.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">LDAP {</span>
+  <span class="s"># The name of the user to connect VinylDNS to LDAP</span>
+  <span class="s">user="test"</span>
+
+  <span class="s"># The password for the user to connect VinylDNS to LDAP</span>
+  <span class="s">password="test"</span>
+
+  <span class="s"># The domain for the user connecting VinylDNS to LDAP</span>
+  <span class="s">domain="test"</span>
+
+  <span class="s"># One or more search bases to find users.  If users come from multiple domains, list them here</span>
+  <span class="s">searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]</span>
+
+  <span class="s"># Connection information to LDAP</span>
+  <span class="s">context {</span>
+    <span class="s">initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"</span>
+    <span class="s">securityAuthentication = "simple"</span>
+
+    <span class="s"># Set this to point to your LDAP</span>
+    <span class="s">providerUrl = "ldaps://somedomain.com:9999"</span>
+  <span class="s">}</span>
+  
+  <span class="s">user-sync {</span>
+    <span class="s">enabled = </span><span class="no">true</span> <span class="c1"># Default value is false</span>
+    <span class="s">hours-polling-interval = </span><span class="m">12</span> <span class="c1"># Default value is 24</span>
+  <span class="err">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="cryptography-settings">Cryptography Settings</h2>
+<p>The Portal encrypts user secrets at rest using the same mechanism as the API server.</p>
+
+<p><strong>Note: It is extremely important that these settings match the API server, otherwise the API server will not
+be able to decrypt user secrets and your installation will fail!</strong></p>
+
+<p>Cryptography is <em>pluggable</em>, meaning you can bring your own crypto with you.  All that is required is to provide an
+implementation of <a href="https://github.com/vinyldns/vinyldns/blob/master/modules/core/src/main/scala/vinyldns/core/crypto/CryptoAlgebra.scala">CryptoAlgebra</a>
+using a crypto library of choice.  The default implementation is <code class="language-plaintext highlighter-rouge">NoOpCrypto</code>, which does not do any encryption (not recommended for production).</p>
+
+<p>The following are the configuration settings for crypto.  Notice here the <em>only</em> thing we see is the <code class="language-plaintext highlighter-rouge">type</code>.  The <code class="language-plaintext highlighter-rouge">type</code>
+is the fully qualified class name for the <code class="language-plaintext highlighter-rouge">CryptoAlgebra</code> you will be using.  If your crypto implementation requires
+additional settings, they will be configured inside the <code class="language-plaintext highlighter-rouge">crypto</code> element, adjacent to the <code class="language-plaintext highlighter-rouge">type</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">crypto {</span>
+  <span class="s">type = "vinyldns.core.crypto.JavaCrypto"</span>
+  <span class="s">secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h2 id="custom-links">Custom Links</h2>
+<p>Custom links display either on the nav bar once logged in, or on the log in screen.  These links are useful to point
+to internal documentation and procedures.  For example, how to raise certain tickets with engineering, or
+internal slack channels.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># an array of links</span>
+<span class="s">links = [</span>
+  <span class="s">{</span>
+    <span class="s"># indicates that this link should be display on the sidebar once logged in</span>
+    <span class="s">displayOnSidebar = </span><span class="no">true</span>
+
+    <span class="s"># display this link also on the login screen</span>
+    <span class="s">displayOnLoginScreen = </span><span class="no">true</span>
+
+    <span class="s"># text to display for the link</span>
+    <span class="s">title = "API Documentation"</span>
+
+    <span class="s"># the hyperlink address being linked to</span>
+    <span class="s">href = "https://vinyldns.io"</span>
+
+    <span class="s"># a fa icon to display</span>
+    <span class="s">icon = "fa fa-file-text-o"</span>
+  <span class="s">}</span>
+<span class="err">]</span>
+</code></pre></div></div>
+
+<h2 id="additional-configuration-settings">Additional Configuration Settings</h2>
+
+<h3 id="play-secret">Play Secret</h3>
+<p>The play secret must be set to a secret value, and should be an environment variable</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># See https://www.playframework.com/documentation/latest/ApplicationSecret for more details.</span>
+<span class="s">play.http.secret.key = "vinyldnsportal-change-this-for-production"</span>
+</code></pre></div></div>
+
+<h3 id="play-allowed-hosts-filter">Play Allowed Hosts Filter</h3>
+<p>Play provides a filter that lets you configure which hosts can access your application. The filter introduces a 
+whitelist of allowed hosts and sends a 400 (Bad Request) response to all requests with a host that do not match 
+the whitelist.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># See https://www.playframework.com/documentation/2.8.x/AllowedHostsFilter for more details.</span>
+<span class="c1"># Note: allowed = ["."] matches all hosts hence would not be recommended in a production environment.</span>
+<span class="s">play.filters.hosts {</span>
+  <span class="s">allowed = ["."]</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<h3 id="test-login">Test Login</h3>
+<p>The test login should not be used for production environments.  It is useful to tinker with VinylDNS.  If this
+setting is true, then you can login with <code class="language-plaintext highlighter-rouge">testuser</code> and <code class="language-plaintext highlighter-rouge">testpassword</code>.  Logging in using the <code class="language-plaintext highlighter-rouge">testuser</code> will <em>not</em>
+contact LDAP.</p>
+
+<p><code class="language-plaintext highlighter-rouge">portal.test_login = false</code></p>
+
+<h3 id="http-port">HTTP Port</h3>
+<p>The HTTP Port that the Portal server will bind to</p>
+
+<p><code class="language-plaintext highlighter-rouge">http.port=9001</code></p>
+
+<h3 id="portal-url">Portal URL</h3>
+<p>Necessary to preview the metadata while sharing the portal link to social media</p>
+
+<p><code class="language-plaintext highlighter-rouge">portal.vinyldns.url = "http://localhost:9001"</code></p>
+
+<h3 id="shared-zones-display--record-owner-selection">Shared Zones Display / Record Owner Selection</h3>
+<p>Necessary to enable shared zones submission and record ownership</p>
+
+<p><code class="language-plaintext highlighter-rouge">shared-display-enabled = true</code></p>
+
+<h3 id="batch-change-limit">Batch Change Limit</h3>
+<p>How many changes are allowable in a single DNS change request</p>
+
+<p><code class="language-plaintext highlighter-rouge">batch-change-limit = 1000</code></p>
+
+<h3 id="manual-review-enabled">Manual Review Enabled</h3>
+<p>Triggers the manual review process for certain DNS requests</p>
+
+<p><code class="language-plaintext highlighter-rouge">manual-batch-review-enabled = true</code></p>
+
+<h3 id="scheduled-changes">Scheduled Changes</h3>
+<p>Allows users to schedule changes to be run sometime in the future</p>
+
+<p><code class="language-plaintext highlighter-rouge">scheduled-changes-enabled = true</code></p>
+
+<h2 id="full-example-config">Full Example Config</h2>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># This is the main configuration file for the application.</span>
+<span class="c1"># ~~~~~</span>
+
+<span class="c1"># Secret key</span>
+<span class="c1"># ~~~~~</span>
+<span class="c1"># The secret key is used to secure cryptographics functions.</span>
+<span class="c1">#</span>
+<span class="c1"># This must be changed for production, but we recommend not changing it in this file.</span>
+<span class="c1">#</span>
+<span class="c1"># See https://www.playframework.com/documentation/latest/ApplicationSecret for more details.</span>
+<span class="s">play.http.secret.key = "vinyldnsportal-change-this-for-production"</span>
+
+<span class="c1"># See https://www.playframework.com/documentation/2.8.x/AllowedHostsFilter for more details.</span>
+<span class="c1"># Note: allowed = ["."] matches all hosts hence would not be recommended in a production environment.</span>
+<span class="s">play.filters.hosts {</span>
+  <span class="s">allowed = ["."]</span>
+<span class="err">}</span>
+
+<span class="c1"># The application languages</span>
+<span class="c1"># ~~~~~</span>
+<span class="s">play.i18n.langs = [ "en" ]</span>
+<span class="s">portal.vinyldns.backend.url = "http://vinyldns-api:9000"</span>
+<span class="s">portal.vinyldns.url = "http://localhost:9001"</span>
+<span class="s">portal.test_login = </span><span class="no">false</span>
+
+<span class="c1"># configuration for the users and groups store</span>
+<span class="s">data-stores = ["mysql"]</span>
+
+<span class="s">mysql {</span>
+  <span class="s">class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"</span>
+  
+  <span class="s">settings {</span>
+    <span class="s">name = "vinyldns"</span>
+    <span class="s">driver = "org.mariadb.jdbc.Driver"</span>
+    <span class="s">migration-url = "jdbc:mariadb://localhost:19002/?user=root&amp;password=pass"</span>
+    <span class="s">url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&amp;password=pass"</span>
+    <span class="s">user = "root"</span>
+    <span class="s">password = "pass"</span>
+    <span class="s">maximum-pool-size = </span><span class="m">20</span>
+    <span class="s">minimum-idle = </span><span class="m">10</span>
+    <span class="s">connection-timeout-millis = </span><span class="m">1000</span>
+    <span class="s">idle-timeout = </span><span class="m">10000</span>
+    <span class="s">max-lifetime = </span><span class="m">600000</span>
+    <span class="s">register-mbeans = </span><span class="no">true</span>
+    <span class="s">my-sql-properties {</span>
+      <span class="s">prepStmtCacheSize = </span><span class="m">300</span>
+      <span class="s">prepStmtCacheSqlLimit = </span><span class="m">2048</span>
+      <span class="s">cachePrepStmts = </span><span class="no">true</span>
+      <span class="s">useServerPrepStmts = </span><span class="no">true</span>
+      <span class="s">rewriteBatchedStatements = </span><span class="no">true</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+  
+  <span class="s">repositories {</span>
+    <span class="s">user {</span>
+    <span class="s">}</span>
+  <span class="s">}</span>
+<span class="err">}</span>
+
+<span class="err">}</span>
+
+<span class="s">play.filters.enabled += "play.filters.csrf.CSRFFilter"</span>
+
+<span class="c1"># Expire session after 10 hours</span>
+<span class="s">play.http.session.maxAge = 10h</span>
+
+<span class="c1"># session secure should be false in order to run properly locally, this is set properly on deployment</span>
+<span class="s">play.http.session.secure = </span><span class="no">false</span>
+<span class="s">play.http.session.httpOnly = </span><span class="no">true</span>
+
+<span class="c1"># use no-op by default</span>
+<span class="s">crypto {</span>
+  <span class="s">type = "vinyldns.core.crypto.NoOpCrypto"</span>
+<span class="err">}</span>
+
+<span class="s">http.port=9001</span>
+
+<span class="s">links = [</span>
+  <span class="s">{</span>
+    <span class="s">displayOnSidebar = </span><span class="no">true</span>
+    <span class="s">displayOnLoginScreen = </span><span class="no">true</span>
+    <span class="s">title = "API Documentation"</span>
+    <span class="s">href = "https://vinyldns.io"</span>
+    <span class="s">icon = "fa fa-file-text-o"</span>
+  <span class="s">}</span>
+<span class="err">]</span>
+</code></pre></div></div>
+</section><div class="edit-button"><a href="https://github.com/vinyldns/vinyldns/edit/master/modules/docs/src/main/mdoc/operator/config-portal.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/search.js"></script><script src="/js/docs.js"></script></body></html>
