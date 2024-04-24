@@ -1,0 +1,414 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Zone Model</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Zone Model" /><meta name="title" property="og:title" content="VinylDNS: Zone Model" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Zone Model" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav">            <div class="sidebar-nav-item  "><a href="/api/index.html" title="API documentation" class="">API documentation</a></div> <div class="sidebar-nav-item  "><a href="/api/auth-mechanism.html" title="Authentication" class="">Authentication</a></div> <div class="sidebar-nav-item active open"><a href="/api/zone-model.html" title="Zone" class="drop-nested">Zone</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/zone-model.html" title="Zone Model" class="active">Zone Model</a> <a href="/api/create-zone.html" title="Create Zone" class="">Create Zone</a> <a href="/api/update-zone.html" title="Update Zone" class="">Update Zone</a> <a href="/api/delete-zone.html" title="Delete Zone" class="">Delete Zone</a> <a href="/api/get-zone-by-id.html" title="Get Zone by ID" class="">Get Zone by ID</a> <a href="/api/get-zone-by-name.html" title="Get Zone by Name" class="">Get Zone by Name</a> <a href="/api/list-zones.html" title="List / Search Zone" class="">List / Search Zone</a> <a href="/api/sync-zone.html" title="Sync Zone" class="">Sync Zone</a> <a href="/api/list-zone-changes.html" title="List Zone Changes" class="">List Zone Changes</a> <a href="/api/list-zone-change-failures.html" title="List Zone Change Failures" class="">List Zone Change Failures</a> <a href="/api/list-deleted-zones.html" title="Abandoned Zones" class="">Abandoned Zones</a></div></div> <div class="sidebar-nav-item  "><a href="/api/recordset-model.html" title="RecordSet" class="drop-nested">RecordSet</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/recordset-model.html" title="RecordSet Model" class="">RecordSet Model</a> <a href="/api/create-recordset.html" title="Create RecordSet" class="">Create RecordSet</a> <a href="/api/update-recordset.html" title="Update RecordSet" class="">Update RecordSet</a> <a href="/api/delete-recordset.html" title="Delete RecordSet" class="">Delete RecordSet</a> <a href="/api/get-recordset.html" title="Get RecordSet" class="">Get RecordSet</a> <a href="/api/list-recordsets-by-zone.html" title="List / Search RecordSets by Zone" class="">List / Search RecordSets by Zone</a> <a href="/api/get-recordset-change.html" title="Get RecordSet Change" class="">Get RecordSet Change</a> <a href="/api/list-recordset-changes.html" title="List RecordSet Changes" class="">List RecordSet Changes</a> <a href="/api/list-recordsets-global.html" title="Global List / Search RecordSets" class="">Global List / Search RecordSets</a> <a href="/api/get-recordset-count.html" title="Get RecordSet Count" class="">Get RecordSet Count</a> <a href="/api/list-recordset-change-failures.html" title="List RecordSet Change Failures" class="">List RecordSet Change Failures</a> <a href="/api/get-recordset-change-history.html" title="Get RecordSet Change History" class="">Get RecordSet Change History</a></div></div> <div class="sidebar-nav-item  "><a href="/api/batchchange-model.html" title="Batch Change" class="drop-nested">Batch Change</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/batchchange-model.html" title="Batch Change Model" class="">Batch Change Model</a> <a href="/api/create-batchchange.html" title="Create Batch Change" class="">Create Batch Change</a> <a href="/api/get-batchchange.html" title="Get Batch Change" class="">Get Batch Change</a> <a href="/api/list-batchchanges.html" title="List Batch Changes" class="">List Batch Changes</a> <a href="/api/batchchange-errors.html" title="Batch Change Errors" class="">Batch Change Errors</a> <a href="/api/cancel-batchchange.html" title="Cancel Batch Change" class="">Cancel Batch Change</a> <a href="/api/approve-batchchange.html" title="Approve Batch Change" class="">Approve Batch Change</a> <a href="/api/reject-batchchange.html" title="Reject Batch Change" class="">Reject Batch Change</a></div></div> <div class="sidebar-nav-item  "><a href="/api/membership-model.html" title="Membership" class="drop-nested">Membership</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/membership-model.html" title="Membership Model" class="">Membership Model</a> <a href="/api/get-user.html" title="Get User" class="">Get User</a> <a href="/api/create-group.html" title="Create Group" class="">Create Group</a> <a href="/api/update-group.html" title="Update Group" class="">Update Group</a> <a href="/api/delete-group.html" title="Delete Group" class="">Delete Group</a> <a href="/api/get-group.html" title="Get Group" class="">Get Group</a> <a href="/api/list-groups.html" title="List Groups" class="">List Groups</a> <a href="/api/list-group-admins.html" title="List Group Admins" class="">List Group Admins</a> <a href="/api/list-group-members.html" title="List Group Members" class="">List Group Members</a> <a href="/api/list-group-activity.html" title="List Group Activity" class="">List Group Activity</a> <a href="/api/get-group-change.html" title="Get Group Change" class="">Get Group Change</a> <a href="/api/get-valid-email-domains.html" title="Get Valid Email Domains" class="">Get Valid Email Domains</a></div></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vinyldns" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="zone-model">Zone Model</h1>
+
+<h4 id="table-of-contents">Table of Contents</h4>
+
+<ul>
+  <li><a href="#zone-attributes">Zone Attributes</a></li>
+  <li><a href="#zone-example">Zone JSON Example</a></li>
+  <li><a href="#zone-conn-attr">Zone Connection Attributes</a></li>
+  <li><a href="#zone-conn-example">Zone Connection JSON Example</a></li>
+  <li><a href="#zone-acl-rule-attr">Zone ACL Rule Attributes</a></li>
+  <li><a href="#zone-acl-rule-example">Zone ACL Rule Examples</a></li>
+  <li><a href="#ptr-acl-rule">PTR ACL Rule</a></li>
+  <li><a href="#ptr-acl-rule-example">PTR ACL Rule Examples</a></li>
+  <li><a href="#shared-zones">Shared Zones</a></li>
+</ul>
+
+<h4 id="zone-attributes-">ZONE ATTRIBUTES <a id="zone-attributes"></a></h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>field</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>status</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left"><em>Active</em> - the zone is connected and ready for use; <em>Syncing</em> - the zone is currently syncing with the DNS backend and is not available until syncing is complete.</td>
+    </tr>
+    <tr>
+      <td>updated</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">The last time the zone was changed.  Note: this does not include changes to record sets, only the zone entity itself</td>
+    </tr>
+    <tr>
+      <td>name</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the zone</td>
+    </tr>
+    <tr>
+      <td>adminGroupId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The id of the administrators group for the zone</td>
+    </tr>
+    <tr>
+      <td>created</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">The time when the zone was first created</td>
+    </tr>
+    <tr>
+      <td>account</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left"><strong>DEPRECATED</strong> The account that created the zone</td>
+    </tr>
+    <tr>
+      <td>email</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The distribution email for the zone</td>
+    </tr>
+    <tr>
+      <td>backendId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Optional. Recommended over <code class="language-plaintext highlighter-rouge">connection</code> and <code class="language-plaintext highlighter-rouge">transferConnection</code>. The configuration ID of the DNS backend server for the zone. If not provided, default keys will be used unless connection and transfer connection are provided.</td>
+    </tr>
+    <tr>
+      <td>connection</td>
+      <td style="text-align: left">ZoneConnection</td>
+      <td style="text-align: left">Optional. The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used unless backendId is provided.  See the <a href="#zone-conn-attr">Zone Connection Attributes</a> for more information</td>
+    </tr>
+    <tr>
+      <td>transferConnection</td>
+      <td style="text-align: left">ZoneConnection</td>
+      <td style="text-align: left">Optional. The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used unless backendId is provided.</td>
+    </tr>
+    <tr>
+      <td>shared</td>
+      <td style="text-align: left">boolean</td>
+      <td style="text-align: left">An indicator that the zone is shared with anyone. At this time only VinylDNS administrators can set this to true.</td>
+    </tr>
+    <tr>
+      <td>acl</td>
+      <td style="text-align: left">ZoneACL</td>
+      <td style="text-align: left">The access control rules governing the zone.  See the <a href="#zone-acl-rule-attr">Zone ACL Rule Attributes</a> for more information</td>
+    </tr>
+    <tr>
+      <td>id</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The unique identifier for this zone</td>
+    </tr>
+    <tr>
+      <td>latestSync</td>
+      <td style="text-align: left">date-time</td>
+      <td style="text-align: left">The last date and time the zone was synced</td>
+    </tr>
+    <tr>
+      <td>isTest</td>
+      <td style="text-align: left">boolean</td>
+      <td style="text-align: left">Defaults to <strong>false</strong>. Used for restricted access during VinylDNS testing, can be ignored by clients</td>
+    </tr>
+    <tr>
+      <td>accessLevel</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">Access level of the user requesting the zone. Current levels are Delete (full access), Read and NoAccess.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="zone-example-">ZONE EXAMPLE <a id="zone-example"></a></h4>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Active"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"updated"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2016-12-16T15:27:28Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"adminGroupId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"92b298e8-97db-4f1b-881b-fd08ca0dd311"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"created"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2016-12-16T15:27:26Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"account"</span><span class="p">:</span><span class="w"> </span><span class="s2">"92b298e8-97db-4f1b-881b-fd08ca0dd311"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test@test.com"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"connection"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"primaryServer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1:5301"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"keyName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vinyl."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"transferConnection"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"primaryServer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1:5301"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"keyName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vinyl."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"shared"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"acl"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Write"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some_test_rule"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">".*"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Write"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some_test_rule"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test.*"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"groupId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some_test_rule"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"latestSync"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2016-12-16T15:27:26Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"backendId"</span><span class="p">:</span><span class="s2">"func-test-backend"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h4 id="zone-acl-rule-attributes-">ZONE ACL RULE ATTRIBUTES <a id="zone-acl-rule-attr"></a></h4>
+<p>ACL Rules are used to govern user and group access to record operations on a zone.  ACL Rules can be associated with a specific user, or all users in a specified group.  If neither a user <em>or</em> a group is attached to an ACL rule, then the rule applies to <em>all</em> users in the system.
+<br /><br />
+Use the <a href="update-zone.html">Zone Update</a> endpoint to update the <strong>acl</strong> attribute of the zone</p>
+
+<blockquote>
+  <p><strong>Important!</strong> If a user is mentioned on an ACL Rule directly, or is a member of a group that is mentioned on an ACL Rule, that user will be able to see the zone.</p>
+</blockquote>
+
+<blockquote>
+  <p>Rules made without selecting a group or user will apply to all users in VinylDNS.</p>
+</blockquote>
+
+<table>
+  <thead>
+    <tr>
+      <th>field</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>recordMask</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">(optional) A regular expression that is used to match against <em>record names</em>.  If left empty, then <em>all</em> records will be matched for the rule.  All records matching the match will be governed by this rule.</td>
+    </tr>
+    <tr>
+      <td>recordTypes</td>
+      <td style="text-align: left">Array[String]</td>
+      <td style="text-align: left">An array of all record types that this rule applies to.  If left empty, then all record types will be governed by this rule.</td>
+    </tr>
+    <tr>
+      <td>accessLevel</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left"><strong>NoAccess</strong> - cannot see the data for the record; <strong>Read</strong> - can read only the record; <strong>Write</strong> - the user can create and edit records, but cannot delete them; <strong>Delete</strong> - the user can read, create, update, and delete records</td>
+    </tr>
+    <tr>
+      <td>userId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">(optional) The unique identifier for the user the rule applies to.  <em>Note: this is not the name of the user, but their uuid in VinylDNS</em></td>
+    </tr>
+    <tr>
+      <td>groupId</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">(optional) The unique identifier for the group the rule applies to.  <em>Note: you cannot set both the userId and groupId, only one</em></td>
+    </tr>
+    <tr>
+      <td>description</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">(optional) A user entered description for the rule</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The priority of ACL Rules in descending precedence: <br /></p>
+<ol>
+  <li>Individual rules placed on a user <br /></li>
+  <li>Rules placed on groups that a user is in <br /></li>
+  <li>Rules placed on all users in VinylDNS</li>
+</ol>
+
+<blockquote>
+  <p><em>Note: Being in the admin group of a zone will grant users full access regardless of ACL Rules</em></p>
+</blockquote>
+
+<p>For conflicting rules, the rule that is more specific will take precedence. For example, if the account <em>jdoe201</em> was given Read access to all records in a zone
+through the rule:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="p">,</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>and then Write access to only A records through the rule:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Write"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>and then Delete access to only A records that matched the expression *dev* through the rule:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"A"</span><span class="p">],</span><span class="w">
+  </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*dev*"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>then the rule with the recordMask will take precedence and give Delete access to matched A RecordSets, the rule with recordTypes will
+take precedence and give Write access to all other A records, and the more broad rule will give Read access to all other record types in the zone</p>
+
+<h4 id="zone-acl-rule-examples-">ZONE ACL RULE EXAMPLES <a id="zone-acl-rule-example"></a></h4>
+<p><strong>Grant read/write/delete access to www.* records of type <code class="language-plaintext highlighter-rouge">A</code>, <code class="language-plaintext highlighter-rouge">AAAA</code>, <code class="language-plaintext highlighter-rouge">CNAME</code> to one user</strong>
+Under this rule, the user specified will be able to view, create, edit, and delete records in the zone that match the expression <code class="language-plaintext highlighter-rouge">www.*</code> and are of type <code class="language-plaintext highlighter-rouge">A</code>, <code class="language-plaintext highlighter-rouge">AAAA</code>, or <code class="language-plaintext highlighter-rouge">CNAME</code>.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">"www.*"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"userId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="s2">"AAAA"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CNAME"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Grant read only access to all VinylDNS users to <code class="language-plaintext highlighter-rouge">A</code>, <code class="language-plaintext highlighter-rouge">AAAA</code>, <code class="language-plaintext highlighter-rouge">CNAME</code> records</strong></p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="s2">"AAAA"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CNAME"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Grant read/write/delete access to records of type <code class="language-plaintext highlighter-rouge">A</code>, <code class="language-plaintext highlighter-rouge">AAAA</code>, <code class="language-plaintext highlighter-rouge">CNAME</code> to one group</strong>*</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"groupId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;uuid&gt;"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="s2">"AAAA"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CNAME"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="ptr-acl-rules-with-cidr-masks-">PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a></h3>
+<p>ACL rules can be applied to specific record types and can include record masks to further narrow down which records they
+apply to. These record masks apply to record names, but because <code class="language-plaintext highlighter-rouge">PTR</code> record names are part their reverse zone ip, the use of regular
+expressions for record masks are not supported.
+<br /><br />
+Instead <code class="language-plaintext highlighter-rouge">PTR</code> record masks must be CIDR rules, which will denote a range of IP addresses that the rule will apply to.
+While more information and useful CIDR rule utility tools can be found online, CIDR rules describe how many bits of an ip address’ binary representation
+must be the same for a match.</p>
+
+<h3 id="ptr-acl-rules-with-cidr-masks-example-">PTR ACL RULES WITH CIDR MASKS EXAMPLE <a id="ptr-acl-rule-example"></a></h3>
+<p>The ACL Rule</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"PTR"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Will give Read permissions to <code class="language-plaintext highlighter-rouge">PTR</code> Record Sets to all users in VinylDNS
+<br /><br />
+The <strong>IPv4</strong> ACL Rule</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"PTR"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">"100.100.100.100/16"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Will give Read permissions to <code class="language-plaintext highlighter-rouge">PTR</code> Record Sets 100.100.000.000 to 100.100.255.255, as 16 bits is half of an IPv4 address
+<br /><br />
+The <strong>IPv6</strong> ACL Rule</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="nl">"recordTypes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"PTR"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"accessLevel"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"recordMask"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1000:1000:1000:1000:1000:1000:1000:1000/64"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Will give Read permissions to <code class="language-plaintext highlighter-rouge">PTR</code> Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.</p>
+
+<h4 id="zone-connection-attributes-">ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a></h4>
+<p>In order for VinylDNS to make updates in DNS, it needs key information for every zone. There are 3 ways to specify that key information; ask your VinylDNS admin which is appropriate for your zone based on the configuration of the service:</p>
+
+<ol>
+  <li>Leave connection, transfer connection, and backend ID blank: In this case, the default VinylDNS keys will be used</li>
+  <li>Specify a backend ID on the zone: if multiple backends are configured for your instance of VinylDNS, you can specify a backend ID on the zone and the keys associated with that backend will be used.</li>
+  <li>Specify zone connection and transfer connection on the zone itself: see below for details</li>
+</ol>
+
+<p>Note that if both a backend ID and specific connection keys are included on a zone, the specific connection keys will be used.</p>
+
+<p>Zone Connection specifies the connection information to the backend DNS server.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>field</th>
+      <th style="text-align: left">type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>primaryServer</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The IP address or host that is connected to.  This can take a port as well <code class="language-plaintext highlighter-rouge">127.0.0.1:5300</code>.  If no port is specified, 53 will be assumed.</td>
+    </tr>
+    <tr>
+      <td>keyName</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The name of the DNS key that has access to the DNS server and zone.  <strong>Note:</strong> For the transfer connection, the key must be given <em>allow-transfer</em> access to the zone.  For the primary connection, the key must be given <em>allow-update</em> access to the zone.</td>
+    </tr>
+    <tr>
+      <td>name</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">A user identifier for the connection.</td>
+    </tr>
+    <tr>
+      <td>key</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The TSIG secret key used to sign requests when communicating with the primary server.  <strong>Note:</strong> After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="zone-connection-example-">ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a></h4>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"primaryServer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1:5301"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"keyName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vinyl."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="shared-zones-">SHARED ZONES <a id="shared-zones"></a></h3>
+
+<p>Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of
+records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in
+those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with
+relevant ACL rules can modify or delete the record. The <a href="create-batchchange.html">batch change API endpoint</a>
+and <a href="../portal/dns-changes.html">DNS change area of the portal</a> are where users can create new records in shared zones,
+modify records they own, or claim unowned records. If a zone’s shared state changes to false the record ownership access
+is no longer applicable.</p>
+</section><div class="edit-button"><a href="https://github.com/vinyldns/vinyldns/edit/master/modules/docs/src/main/mdoc/api/zone-model.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/search.js"></script><script src="/js/docs.js"></script></body></html>

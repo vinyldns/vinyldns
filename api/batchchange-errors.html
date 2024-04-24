@@ -1,0 +1,571 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Batch Change Errors</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Batch Change Errors" /><meta name="title" property="og:title" content="VinylDNS: Batch Change Errors" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Batch Change Errors" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav">            <div class="sidebar-nav-item  "><a href="/api/index.html" title="API documentation" class="">API documentation</a></div> <div class="sidebar-nav-item  "><a href="/api/auth-mechanism.html" title="Authentication" class="">Authentication</a></div> <div class="sidebar-nav-item  "><a href="/api/zone-model.html" title="Zone" class="drop-nested">Zone</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/zone-model.html" title="Zone Model" class="">Zone Model</a> <a href="/api/create-zone.html" title="Create Zone" class="">Create Zone</a> <a href="/api/update-zone.html" title="Update Zone" class="">Update Zone</a> <a href="/api/delete-zone.html" title="Delete Zone" class="">Delete Zone</a> <a href="/api/get-zone-by-id.html" title="Get Zone by ID" class="">Get Zone by ID</a> <a href="/api/get-zone-by-name.html" title="Get Zone by Name" class="">Get Zone by Name</a> <a href="/api/list-zones.html" title="List / Search Zone" class="">List / Search Zone</a> <a href="/api/sync-zone.html" title="Sync Zone" class="">Sync Zone</a> <a href="/api/list-zone-changes.html" title="List Zone Changes" class="">List Zone Changes</a> <a href="/api/list-zone-change-failures.html" title="List Zone Change Failures" class="">List Zone Change Failures</a> <a href="/api/list-deleted-zones.html" title="Abandoned Zones" class="">Abandoned Zones</a></div></div> <div class="sidebar-nav-item  "><a href="/api/recordset-model.html" title="RecordSet" class="drop-nested">RecordSet</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/recordset-model.html" title="RecordSet Model" class="">RecordSet Model</a> <a href="/api/create-recordset.html" title="Create RecordSet" class="">Create RecordSet</a> <a href="/api/update-recordset.html" title="Update RecordSet" class="">Update RecordSet</a> <a href="/api/delete-recordset.html" title="Delete RecordSet" class="">Delete RecordSet</a> <a href="/api/get-recordset.html" title="Get RecordSet" class="">Get RecordSet</a> <a href="/api/list-recordsets-by-zone.html" title="List / Search RecordSets by Zone" class="">List / Search RecordSets by Zone</a> <a href="/api/get-recordset-change.html" title="Get RecordSet Change" class="">Get RecordSet Change</a> <a href="/api/list-recordset-changes.html" title="List RecordSet Changes" class="">List RecordSet Changes</a> <a href="/api/list-recordsets-global.html" title="Global List / Search RecordSets" class="">Global List / Search RecordSets</a> <a href="/api/get-recordset-count.html" title="Get RecordSet Count" class="">Get RecordSet Count</a> <a href="/api/list-recordset-change-failures.html" title="List RecordSet Change Failures" class="">List RecordSet Change Failures</a> <a href="/api/get-recordset-change-history.html" title="Get RecordSet Change History" class="">Get RecordSet Change History</a></div></div> <div class="sidebar-nav-item  open"><a href="/api/batchchange-model.html" title="Batch Change" class="drop-nested">Batch Change</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/batchchange-model.html" title="Batch Change Model" class="">Batch Change Model</a> <a href="/api/create-batchchange.html" title="Create Batch Change" class="">Create Batch Change</a> <a href="/api/get-batchchange.html" title="Get Batch Change" class="">Get Batch Change</a> <a href="/api/list-batchchanges.html" title="List Batch Changes" class="">List Batch Changes</a> <a href="/api/batchchange-errors.html" title="Batch Change Errors" class="active">Batch Change Errors</a> <a href="/api/cancel-batchchange.html" title="Cancel Batch Change" class="">Cancel Batch Change</a> <a href="/api/approve-batchchange.html" title="Approve Batch Change" class="">Approve Batch Change</a> <a href="/api/reject-batchchange.html" title="Reject Batch Change" class="">Reject Batch Change</a></div></div> <div class="sidebar-nav-item  "><a href="/api/membership-model.html" title="Membership" class="drop-nested">Membership</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/membership-model.html" title="Membership Model" class="">Membership Model</a> <a href="/api/get-user.html" title="Get User" class="">Get User</a> <a href="/api/create-group.html" title="Create Group" class="">Create Group</a> <a href="/api/update-group.html" title="Update Group" class="">Update Group</a> <a href="/api/delete-group.html" title="Delete Group" class="">Delete Group</a> <a href="/api/get-group.html" title="Get Group" class="">Get Group</a> <a href="/api/list-groups.html" title="List Groups" class="">List Groups</a> <a href="/api/list-group-admins.html" title="List Group Admins" class="">List Group Admins</a> <a href="/api/list-group-members.html" title="List Group Members" class="">List Group Members</a> <a href="/api/list-group-activity.html" title="List Group Activity" class="">List Group Activity</a> <a href="/api/get-group-change.html" title="Get Group Change" class="">Get Group Change</a> <a href="/api/get-valid-email-domains.html" title="Get Valid Email Domains" class="">Get Valid Email Domains</a></div></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vinyldns" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="batch-change-errors">Batch Change Errors</h1>
+<ul>
+  <li><a href="#single-change-errors">Single Change Errors</a>
+    <ul>
+      <li><a href="#non-fatal-errors">Non-Fatal Errors</a></li>
+      <li><a href="#fatal-errors">Fatal Errors</a></li>
+    </ul>
+  </li>
+  <li><a href="#full-request-errors">Full-Request Errors</a></li>
+</ul>
+
+<h3 id="single-change-errors-">SINGLE CHANGE ERRORS <a id="single-change-errors"></a></h3>
+<p>Single change errors are errors that get collected at different validation stages and correspond to individual
+change inputs. Each change can have its own list of one or more errors. Single change errors are grouped into the following stages:</p>
+
+<ul>
+  <li>Independent input validations: Validate invalid data input formats and values.</li>
+  <li>Record and zone discovery: Resolve record and zone from fully-qualified input name.</li>
+  <li>Dependent context validations: Check for sufficient user access and conflicts with existing records or other submissions within the batch.</li>
+</ul>
+
+<p>Since single change errors are collected at different stages, errors at later stages may exist but will not
+appear unless errors at earlier stages are addressed. An example is that a user may initially get an error about required data
+missing from the DNS request, and then after correcting the data encounter an issue about a conflicting record already existing
+in the DNS backend.</p>
+
+<h4 id="example-error-response-by-change-">EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change"></a></h4>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="w">
+   </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"changeType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"inputName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"good-A.another.example.com."</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"ttl"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"record"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.2.3.4"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+   </span><span class="p">},</span><span class="w">
+   </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"changeType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"inputName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"duplicate.example.com"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CNAME"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"ttl"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"record"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+         </span><span class="nl">"cname"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test.example.com."</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+         </span><span class="s2">"Record with name </span><span class="se">\"</span><span class="s2">duplicate.example.com.</span><span class="se">\"</span><span class="s2"> is not unique in the batch change. CNAME record cannot use duplicate name."</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+   </span><span class="p">},</span><span class="w">
+   </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"changeType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"inputName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"duplicate.example.com"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"ttl"</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"record"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+         </span><span class="nl">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.2.3.4"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+   </span><span class="p">},</span><span class="w">
+   </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"changeType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"inputName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bad-ttl-and-invalid-name$.sample.com."</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"ttl"</span><span class="p">:</span><span class="w"> </span><span class="mi">29</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"record"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+         </span><span class="nl">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.2.3.4"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+         </span><span class="s2">"Failed validation 29, TTL must be between 30 and 2147483647."</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"Failed validation bad-ttl-and-invalid-name$.sample.com., valid domain names are a series of one or more labels joined by dots and terminate on a dot."</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre></div></div>
+
+<h4 id="single-change-errors">Single Change Errors</h4>
+<p>Single change errors can be further classified as <em>non-fatal</em> or <em>fatal</em> errors. The presence of one or more fatal
+errors will result in an immediate failure (ie. hard stop) and no changes in the batch will be accepted. The behavior of non-fatal errors depends
+on whether <a href="../operator/config-api.html#additional-configuration-settings">manual review is configured on</a>: if manual review
+is disabled, non-fatal errors are treated as fatal errors; if manual review is enabled, batches with only non-fatal errors will enter
+a pending review state.</p>
+
+<p>When non-fatal errors are encountered with manual review enabled, the errors will be saved on the corresponding <code class="language-plaintext highlighter-rouge">SingleChange</code>s.
+The <code class="language-plaintext highlighter-rouge">SingleChange</code>s will also have a <code class="language-plaintext highlighter-rouge">status</code> of <code class="language-plaintext highlighter-rouge">NeedsReview</code>.</p>
+
+<p>The following chart provides a breakdown of batch change status outcome based on a combination of manual review
+configuration and error types present in the batch change:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: center">Manual Review Enabled?</th>
+      <th style="text-align: left">Errors in Batch?</th>
+      <th style="text-align: left">Status Outcome</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">Yes</td>
+      <td style="text-align: left">Both fatal and non-fatal</td>
+      <td style="text-align: left">Hard stop</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">Yes</td>
+      <td style="text-align: left">Fatal only</td>
+      <td style="text-align: left">Hard stop</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">Yes</td>
+      <td style="text-align: left">Non-fatal only</td>
+      <td style="text-align: left">PendingReview</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">Yes</td>
+      <td style="text-align: left">No</td>
+      <td style="text-align: left">PendingProcessing (will be or is being auto-processed)</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">No</td>
+      <td style="text-align: left">Both fatal and non-fatal</td>
+      <td style="text-align: left">Hard stop</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">No</td>
+      <td style="text-align: left">Fatal only</td>
+      <td style="text-align: left">Hard stop</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">No</td>
+      <td style="text-align: left">Non-fatal only</td>
+      <td style="text-align: left">Failed</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">No</td>
+      <td style="text-align: left">No</td>
+      <td style="text-align: left">PendingProcessing (will be or is being auto-processed)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note: if a user submits a batch change with <code class="language-plaintext highlighter-rouge">allowManualReview</code> set to false, the request will treat the request as though
+the VinylDNS instance is configured to have manual review disabled.</p>
+
+<h5 id="non-fatal-errors">Non-Fatal Errors</h5>
+
+<ul>
+  <li><a href="#ZoneDiscoveryFailed">Zone Discovery Failed</a></li>
+  <li><a href="#RecordRequiresManualReview">Record Requires Manual Review</a></li>
+</ul>
+
+<h5 id="fatal-errors">Fatal Errors</h5>
+
+<ul>
+  <li><a href="#InvalidDomainName">Invalid Domain Name</a></li>
+  <li><a href="#InvalidLength">Invalid Length</a></li>
+  <li><a href="#InvalidRecordType">Invalid Record Type</a></li>
+  <li><a href="#InvalidIpv4Address">Invalid IPv4 Address</a></li>
+  <li><a href="#InvalidIpv6Address">Invalid IPv6 Address</a></li>
+  <li><a href="#InvalidIPAddress">Invalid IP Address</a></li>
+  <li><a href="#InvalidTTL">Invalid TTL</a></li>
+  <li><a href="#InvalidBatchRecordType">Invalid Batch Record Type</a></li>
+  <li><a href="#RecordAlreadyExists">Record Already Exists</a></li>
+  <li><a href="#RecordDoesNotExist">Record Does Not Exist</a></li>
+  <li><a href="#CNAMEConflict">CNAME Conflict</a></li>
+  <li><a href="#UserIsNotAuthorized">User Is Not Authorized</a></li>
+  <li><a href="#RecordNameNotUniqueInBatchChange">Record Name Not Unique In Batch Change</a></li>
+  <li><a href="#InvalidRecordTypeInReverseZone">Invalid Record Type In Reverse Zone</a></li>
+  <li><a href="#MissingOwnerGroupId">Missing Owner Group Id</a></li>
+  <li><a href="#NotAMemberOfOwnerGroup">Not a Member of Owner Group</a></li>
+  <li><a href="#HighValueDomain">High Value Domain</a></li>
+  <li><a href="#CnameApexError">CNAME Cannot be the Same Name as Zone Name</a></li>
+</ul>
+
+<h3 id="non-fatal-errors-">Non-Fatal Errors <a id="non-fatal-errors"></a></h3>
+<h4 id="zone-discovery-failed-">Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a></h4>
+
+<h5 id="error-message">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Zone Discovery Failed: zone for "&lt;input&gt;" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
+</code></pre></div></div>
+
+<h5 id="details">Details:</h5>
+
+<p>Given an inputName, VinylDNS will determine the record and zone name for the requested change. For most records, the record
+names are the same as the zone name (apex), or split at at the first ‘.’, so the inputName ‘rname.zone.name.com’ will be split
+into record name ‘rname’ and zone name ‘zone.name.com’ (or ‘rname.zone.name.com’ for both the record and zone name if it’s an apex record).
+For <code class="language-plaintext highlighter-rouge">PTR</code> records, there is logic to determine the appropriate reverse zone from the given IP address.</p>
+
+<p>If this logic cannot find a matching zone in VinylDNS, you will see this error.
+In that case, you need to connect to the zone in VinylDNS.
+Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
+VinylDNS also does not support dotted records for forward zones (eg. record <code class="language-plaintext highlighter-rouge">baz.foo.bar.</code> in zone <code class="language-plaintext highlighter-rouge">bar.</code>), so encountering
+this error could indicate that a zone needs to be created outside of VinylDNS and then connected to within VinylDNS.</p>
+
+<h4 id="record-requires-manual-review-">Record Requires Manual Review <a id="RecordRequiresManualReview"></a></h4>
+
+<h5 id="error-message-1">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Record set with name &lt;input&gt; requires manual review.
+</code></pre></div></div>
+
+<h5 id="details-1">Details:</h5>
+
+<p>Based on a <a href="../operator/config-api.html#manual-review-domains">configurable list</a>, VinylDNS will determine if the given inputName requires manual review before it can be processed.</p>
+
+<h3 id="fatal-errors-">Fatal Errors <a id="fatal-errors"></a></h3>
+<h4 id="invalid-domain-name-">Invalid Domain Name <a id="InvalidDomainName"></a></h4>
+
+<h5 id="error-message-2">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid domain name: "&lt;input&gt;", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminate with a dot.
+</code></pre></div></div>
+
+<h5 id="details-2">Details:</h5>
+
+<p>Fully qualified domain names, must be comprised of <strong>labels</strong>, separated by dots.
+A <strong>label</strong> is a combination of letters, digits, underscores, and hyphens.
+They must also be absolute, which means they end with a dot.</p>
+
+<p>Syntax:</p>
+
+<pre><code class="language-bnf">&lt;domain&gt; ::= &lt;subdomain&gt; | " "
+
+&lt;subdomain&gt; ::= &lt;label&gt; | &lt;subdomain&gt; "." &lt;label&gt;
+
+&lt;label&gt; ::= &lt;letter&gt; [ [ &lt;ldh-str&gt; ] &lt;let-dig&gt; ]
+
+&lt;ldh-str&gt; ::= &lt;let-dig-hyp&gt; | &lt;let-dig-hyp&gt; &lt;ldh-str&gt;
+
+&lt;let-dig-hyp&gt; ::= &lt;let-dig&gt; | "-"
+
+&lt;let-dig&gt; ::= &lt;letter&gt; | &lt;digit&gt;
+
+&lt;letter&gt; ::= any one of the 52 alphabetic characters A through Z in
+upper case and a through z in lower case
+
+&lt;digit&gt; ::= any one of the ten digits 0 through 9
+</code></pre>
+
+<p>More info can be found at:</p>
+
+<p><a href="https://tools.ietf.org/html/rfc1035">RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, Section 2.3.1. Preferred name syntax</a></p>
+
+<h4 id="invalid-length-">Invalid Length <a id="InvalidLength"></a></h4>
+
+<h5 id="error-message-3">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid length: "&lt;input&gt;", length needs to be between &lt;minLengthInclusive&gt; and &lt;maxLengthInclusive&gt; characters.
+</code></pre></div></div>
+
+<h5 id="details-3">Details:</h5>
+
+<p>The length of the input did not fit in the range in [minLengthInclusive, maxLengthInclusive].</p>
+
+<h4 id="invalid-record-type-">Invalid Record Type <a id="InvalidRecordType"></a></h4>
+
+<h5 id="error-message-4">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid record type: "&lt;input&gt;", valid record types include &lt;valid record types&gt;.
+</code></pre></div></div>
+
+<h5 id="details-4">Details:</h5>
+
+<p>The record type input must match one of the valid record types. Not all DNS record types are currently supported.</p>
+
+<h4 id="invalid-ipv4-address-">Invalid IPv4 Address <a id="InvalidIpv4Address"></a></h4>
+
+<h5 id="error-message-5">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid IPv4 address: "&lt;input&gt;"
+</code></pre></div></div>
+
+<h5 id="details-5">Details:</h5>
+
+<p>The IPv4 address input is not a valid IPv4 address. Accepted inputs must be in dotted-decimal notation, with four
+groups of three decimal digits, separated by periods. Leading zeros in groups can be omitted.</p>
+
+<p>Range: 0.0.0.0 - 255.255.255.255</p>
+
+<p>Examples:</p>
+
+<ul>
+  <li>1.1.1.1</li>
+  <li>10.234.0.62</li>
+</ul>
+
+<h4 id="invalid-ipv6-address-">Invalid IPv6 Address <a id="InvalidIpv6Address"></a></h4>
+
+<h5 id="error-message-6">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid IPv6 address: "&lt;input&gt;".
+</code></pre></div></div>
+
+<h5 id="details-6">Details:</h5>
+
+<p>The IPv6 address input is not a valid IPv6 address. Accepted inputs must be eight groups of four hexadecimal digits,
+separated by colons. Leading zeros in groups can be emitted. Consecutive groups of all zeros can be replaced by a double colon.</p>
+
+<p>Range: 0000:0000:0000:0000:0000:0000:0000:0000 - ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff</p>
+
+<p>Examples:</p>
+
+<ul>
+  <li>2001:0db8:0000:0000:0000:ff00:0042:8329</li>
+  <li>2001:0db8::ff00:0042:8329</li>
+  <li>2001:db8::ff00:42:8329</li>
+</ul>
+
+<h4 id="invalid-ip-address-">Invalid IP Address <a id="InvalidIPAddress"></a></h4>
+
+<h5 id="error-message-7">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid IP address: "&lt;input&gt;".
+</code></pre></div></div>
+
+<h5 id="details-7">Details:</h5>
+
+<p>The IP address input is not a valid IPv4 or IPv6 address.</p>
+
+<h4 id="invalid-ttl-">Invalid TTL <a id="InvalidTTL"></a></h4>
+
+<h5 id="error-message-8">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid TTL: "&lt;input&gt;", must be a number between 30 and 2147483647.
+</code></pre></div></div>
+
+<h5 id="details-8">Details:</h5>
+
+<p>Time-to-live must be a number in the range [30, 2147483647].</p>
+
+<h4 id="invalid-batch-record-type-">Invalid Batch Record Type <a id="InvalidBatchRecordType"></a></h4>
+
+<h5 id="error-message-9">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid Batch Record Type: "&lt;input&gt;", valid record types for batch changes include &lt;valid record types&gt;.
+</code></pre></div></div>
+
+<h5 id="details-9">Details:</h5>
+
+<p>The DNS record type is not currently supported for batch changes.</p>
+
+<h4 id="record-already-exists-">Record Already Exists <a id="RecordAlreadyExists"></a></h4>
+
+<h5 id="error-message-10">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Record "&lt;input&gt;" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.
+</code></pre></div></div>
+
+<h5 id="details-10">Details:</h5>
+
+<p>A record with the given name already exists, and cannot be duplicated for the given type.</p>
+
+<h4 id="record-does-not-exist-">Record Does Not Exist <a id="RecordDoesNotExist"></a></h4>
+
+<h5 id="error-message-11">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Record "&lt;input&gt;" Does Not Exist: cannot delete a record that does not exist.
+</code></pre></div></div>
+
+<h5 id="details-11">Details:</h5>
+
+<p>A record with the given name could not be found in VinylDNS.
+If the record exists in DNS, then you should <a href="sync-zone.html">sync the zone</a> for that record to bring VinylDNS up to date with what is in the DNS backend.</p>
+
+<h4 id="cname-conflict-">CNAME Conflict <a id="CNAMEConflict"></a></h4>
+
+<h5 id="error-message-12">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CNAME conflict: CNAME record names must be unique. Existing record with name "&lt;name&gt;" and type "&lt;type&gt;" conflicts with this record.
+</code></pre></div></div>
+
+<h5 id="details-12">Details:</h5>
+
+<p>A <code class="language-plaintext highlighter-rouge">CNAME</code> record with the given name already exists. <code class="language-plaintext highlighter-rouge">CNAME</code> records must have unique names.</p>
+
+<h4 id="user-is-not-authorized-">User Is Not Authorized <a id="UserIsNotAuthorized"></a></h4>
+
+<h5 id="error-message-13">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>User "&lt;user&gt;" is not authorized.
+</code></pre></div></div>
+
+<h5 id="details-13">Details:</h5>
+
+<p>User must either be in the admin group for the zone being changed, or have an ACL rule.</p>
+
+<h4 id="record-name-not-unique-in-batch-change-">Record Name Not Unique In Batch Change <a id="RecordNameNotUniqueInBatchChange"></a></h4>
+
+<h5 id="error-message-14">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Record "&lt;name&gt;" Name Not Unique In Batch Change: cannot have multiple "&lt;type&gt;" records with the same name.
+</code></pre></div></div>
+
+<h5 id="details-14">Details:</h5>
+
+<p>Certain record types do not allow multiple records with the same name. If you get this error, it means you have
+illegally input two or more records with the same name and one of these types.</p>
+
+<h4 id="invalid-record-type-in-reverse-zone-">Invalid Record Type In Reverse Zone <a id="InvalidRecordTypeInReverseZone"></a></h4>
+
+<h5 id="error-message-15">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invalid Record Type In Reverse Zone: record with name "&lt;name&gt;" and type "&lt;type&gt;" is not allowed in a reverse zone.
+</code></pre></div></div>
+
+<h5 id="details-15">Details:</h5>
+
+<p>Not all record types are allowed in a DNS reverse zone. The given type is not supported.</p>
+
+<h4 id="missing-owner-group-id-">Missing Owner Group Id <a id="MissingOwnerGroupId"></a></h4>
+
+<h5 id="error-message-16">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Zone "&lt;zone name&gt;" is a shared zone, so owner group ID must be specified for record "&lt;record name&gt;".
+</code></pre></div></div>
+
+<h5 id="details-16">Details:</h5>
+
+<p>You are trying to create a new record or update an existing unowned record in a shared zone. This requires a record owner group ID in the batch change.</p>
+
+<h4 id="not-a-member-of-owner-group-">Not a Member of Owner Group <a id="NotAMemberOfOwnerGroup"></a></h4>
+
+<h5 id="error-message-17">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>User "&lt;user name&gt;" must be a member of group "&lt;group ID&gt;" to apply this group to batch changes.
+</code></pre></div></div>
+
+<h5 id="details-17">Details:</h5>
+
+<p>You must be a member of the group you are assigning for record ownership in the batch change.</p>
+
+<h4 id="high-value-domain-">High Value Domain <a id="HighValueDomain"></a></h4>
+
+<h5 id="error-message-18">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Record Name "&lt;record name&gt;" is configured as a High Value Domain, so it cannot be modified.
+</code></pre></div></div>
+
+<h5 id="details-18">Details:</h5>
+
+<p>You are trying to create a record with a name that is not permitted in VinylDNS.
+The list of high value domains is specific to each VinylDNS instance.
+You should reach out to your VinylDNS administrators for more information.</p>
+
+<h4 id="cname-at-the-zone-apex-is-not-allowed-">CNAME at the Zone Apex is not Allowed <a id="CnameApexError"></a></h4>
+
+<h5 id="error-message-19">Error Message:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CNAME cannot be the same name as zone "&lt;zone_name&gt;".
+</code></pre></div></div>
+
+<h5 id="details-19">Details:</h5>
+
+<p><code class="language-plaintext highlighter-rouge">CNAME</code> records cannot be <code class="language-plaintext highlighter-rouge">@</code> or the same name as the zone.</p>
+
+<h3 id="full-request-errors-">FULL-REQUEST ERRORS <a id="full-request-errors"></a></h3>
+
+<p>Fail-request errors cause the batch change processing to abort immediately upon encounter.</p>
+
+<ul>
+  <li><a href="#InvalidBatchChangeInput">Invalid Batch Change Input</a></li>
+  <li><a href="#BatchChangeNotFound">Batch Change Not Found</a></li>
+  <li><a href="#malformed-json-errors">Malformed JSON Errors</a></li>
+</ul>
+
+<h4 id="1-invalid-batch-change-input-">1. INVALID BATCH CHANGE INPUT <a id="InvalidBatchChangeInput"></a></h4>
+
+<h5 id="http-response-code">HTTP RESPONSE CODE</h5>
+
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>400</td>
+      <td style="text-align: left"><strong>Bad Request</strong> - There is a top-level issue with batch change, aborting batch processing.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>There are a series of different error messages that can be returned with this error code.</p>
+
+<h5 id="example-error-messages">EXAMPLE ERROR MESSAGES:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Batch change contained no changes. Batch change must have at least one change, up to a maximum of &lt;limit&gt; changes.
+
+Cannot request more than &lt;limit&gt; changes in a single batch change request
+</code></pre></div></div>
+
+<h5 id="details-20">DETAILS:</h5>
+
+<p>If there are issues with the batch change input data provided in the batch change request, errors will be returned and batch change validations will abort processing.</p>
+
+<h4 id="batch-change-not-found-">BATCH CHANGE NOT FOUND <a id="BatchChangeNotFound"></a></h4>
+
+<h5 id="http-response-code-1">HTTP RESPONSE CODE</h5>
+
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>404</td>
+      <td style="text-align: left"><strong>Not Found</strong> - batch change not found for specified ID in <a href="get-batchchange.html">get batch change</a> request.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h5 id="error-message-20">ERROR MESSAGE:</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Batch change with id &lt;id&gt; cannot be found
+</code></pre></div></div>
+
+<h5 id="details-21">DETAILS:</h5>
+
+<p>The batch ID specified in the <a href="get-batchchange.html">get batch change</a> request does not exist.</p>
+
+<h4 id="malformed-json-errors-">MALFORMED JSON ERRORS <a id="malformed-json-errors"></a></h4>
+
+<h5 id="details-22">DETAILS:</h5>
+
+<p>If there are issues with the JSON provided in a batch change request, errors will be returned (not in a single change format) and none of the batch change validations will run.</p>
+
+<h5 id="example-error-messages-1">EXAMPLE ERROR MESSAGES:</h5>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+   </span><span class="nl">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">"Missing BatchChangeInput.changes"</span><span class="w">
+   </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="p">{</span><span class="w">
+   </span><span class="nl">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">"Missing BatchChangeInput.changes.inputName"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"Missing BatchChangeInput.changes.type"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"Missing BatchChangeInput.changes.ttl"</span><span class="w">
+   </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="p">{</span><span class="w">
+   </span><span class="nl">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">"Invalid RecordType""
+   ]
+}
+</span></code></pre></div></div>
+</section><div class="edit-button"><a href="https://github.com/vinyldns/vinyldns/edit/master/modules/docs/src/main/mdoc/api/batchchange-errors.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/search.js"></script><script src="/js/docs.js"></script></body></html>

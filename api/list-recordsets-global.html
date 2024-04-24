@@ -1,0 +1,185 @@
+<!DOCTYPE html><html><head><title>VinylDNS: Global List / Search RecordSets</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="VinylDNS" /><meta name="description" content="DNS Automation and Governance" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="VinylDNS: Global List / Search RecordSets" /><meta name="title" property="og:title" content="VinylDNS: Global List / Search RecordSets" /><meta name="og:site_name" content="VinylDNS" /><meta name="og:url" content="https://vinyldns.io" /><meta name="og:type" content="website" /><meta name="og:description" content="DNS Automation and Governance" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="VinylDNS: Global List / Search RecordSets" /><meta name="twitter:image" content="/img/poster.png" /><meta name="twitter:description" content="DNS Automation and Governance" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@vinyldns_oss" /><meta name="twitter:creator" content="@vinyldns_oss" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/hybrid.css" /><link rel="stylesheet" href="/css/light-style.css" /><link rel="stylesheet" href="/css/custom.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"></div><span>VinylDNS</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav">            <div class="sidebar-nav-item  "><a href="/api/index.html" title="API documentation" class="">API documentation</a></div> <div class="sidebar-nav-item  "><a href="/api/auth-mechanism.html" title="Authentication" class="">Authentication</a></div> <div class="sidebar-nav-item  "><a href="/api/zone-model.html" title="Zone" class="drop-nested">Zone</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/zone-model.html" title="Zone Model" class="">Zone Model</a> <a href="/api/create-zone.html" title="Create Zone" class="">Create Zone</a> <a href="/api/update-zone.html" title="Update Zone" class="">Update Zone</a> <a href="/api/delete-zone.html" title="Delete Zone" class="">Delete Zone</a> <a href="/api/get-zone-by-id.html" title="Get Zone by ID" class="">Get Zone by ID</a> <a href="/api/get-zone-by-name.html" title="Get Zone by Name" class="">Get Zone by Name</a> <a href="/api/list-zones.html" title="List / Search Zone" class="">List / Search Zone</a> <a href="/api/sync-zone.html" title="Sync Zone" class="">Sync Zone</a> <a href="/api/list-zone-changes.html" title="List Zone Changes" class="">List Zone Changes</a> <a href="/api/list-zone-change-failures.html" title="List Zone Change Failures" class="">List Zone Change Failures</a> <a href="/api/list-deleted-zones.html" title="Abandoned Zones" class="">Abandoned Zones</a></div></div> <div class="sidebar-nav-item  open"><a href="/api/recordset-model.html" title="RecordSet" class="drop-nested">RecordSet</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/recordset-model.html" title="RecordSet Model" class="">RecordSet Model</a> <a href="/api/create-recordset.html" title="Create RecordSet" class="">Create RecordSet</a> <a href="/api/update-recordset.html" title="Update RecordSet" class="">Update RecordSet</a> <a href="/api/delete-recordset.html" title="Delete RecordSet" class="">Delete RecordSet</a> <a href="/api/get-recordset.html" title="Get RecordSet" class="">Get RecordSet</a> <a href="/api/list-recordsets-by-zone.html" title="List / Search RecordSets by Zone" class="">List / Search RecordSets by Zone</a> <a href="/api/get-recordset-change.html" title="Get RecordSet Change" class="">Get RecordSet Change</a> <a href="/api/list-recordset-changes.html" title="List RecordSet Changes" class="">List RecordSet Changes</a> <a href="/api/list-recordsets-global.html" title="Global List / Search RecordSets" class="active">Global List / Search RecordSets</a> <a href="/api/get-recordset-count.html" title="Get RecordSet Count" class="">Get RecordSet Count</a> <a href="/api/list-recordset-change-failures.html" title="List RecordSet Change Failures" class="">List RecordSet Change Failures</a> <a href="/api/get-recordset-change-history.html" title="Get RecordSet Change History" class="">Get RecordSet Change History</a></div></div> <div class="sidebar-nav-item  "><a href="/api/batchchange-model.html" title="Batch Change" class="drop-nested">Batch Change</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/batchchange-model.html" title="Batch Change Model" class="">Batch Change Model</a> <a href="/api/create-batchchange.html" title="Create Batch Change" class="">Create Batch Change</a> <a href="/api/get-batchchange.html" title="Get Batch Change" class="">Get Batch Change</a> <a href="/api/list-batchchanges.html" title="List Batch Changes" class="">List Batch Changes</a> <a href="/api/batchchange-errors.html" title="Batch Change Errors" class="">Batch Change Errors</a> <a href="/api/cancel-batchchange.html" title="Cancel Batch Change" class="">Cancel Batch Change</a> <a href="/api/approve-batchchange.html" title="Approve Batch Change" class="">Approve Batch Change</a> <a href="/api/reject-batchchange.html" title="Reject Batch Change" class="">Reject Batch Change</a></div></div> <div class="sidebar-nav-item  "><a href="/api/membership-model.html" title="Membership" class="drop-nested">Membership</a><i class="fa fa-angle-right"></i><div class="sub-section"> <a href="/api/membership-model.html" title="Membership Model" class="">Membership Model</a> <a href="/api/get-user.html" title="Get User" class="">Get User</a> <a href="/api/create-group.html" title="Create Group" class="">Create Group</a> <a href="/api/update-group.html" title="Update Group" class="">Update Group</a> <a href="/api/delete-group.html" title="Delete Group" class="">Delete Group</a> <a href="/api/get-group.html" title="Get Group" class="">Get Group</a> <a href="/api/list-groups.html" title="List Groups" class="">List Groups</a> <a href="/api/list-group-admins.html" title="List Group Admins" class="">List Group Admins</a> <a href="/api/list-group-members.html" title="List Group Members" class="">List Group Members</a> <a href="/api/list-group-activity.html" title="List Group Activity" class="">List Group Activity</a> <a href="/api/get-group-change.html" title="Get Group Change" class="">Get Group Change</a> <a href="/api/get-valid-email-domains.html" title="Get Valid Email Domains" class="">Get Valid Email Domains</a></div></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vinyldns/vinyldns" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vinyldns" data-github-repo="vinyldns"><div class="content-wrapper"><section><h1 id="global-list--search-recordsets">Global List / Search RecordSets</h1>
+
+<p>Retrieves a list of RecordSets globally in the VinylDNS database based on search criteria. A minimum of two alpha-numeric characters is required.</p>
+
+<h4 id="http-request">HTTP REQUEST</h4>
+
+<blockquote>
+  <p>GET /recordsets?startFrom={response.nextId}&amp;maxItems={1 - 100}&amp;recordNameFilter={recordNameFilter}&amp;recordTypeFilter={recordTypeFilter}&amp;recordOwnerGroupFilter={recordOwnerGroupFilter}&amp;nameSort={nameSort}</p>
+</blockquote>
+
+<h4 id="http-request-params">HTTP REQUEST PARAMS</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>type</th>
+      <th>required?</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>recordNameFilter</td>
+      <td>string</td>
+      <td>yes</td>
+      <td style="text-align: left">Characters that are part of the record name to search for.  The wildcard character <code class="language-plaintext highlighter-rouge">*</code> is supported, for example <code class="language-plaintext highlighter-rouge">www*</code>.  Omit the wildcard when searching for an exact record name. At least two alphanumeric characters are <strong>required</strong> for searching.</td>
+    </tr>
+    <tr>
+      <td>recordTypeFilter</td>
+      <td>Array of RecordType</td>
+      <td>no</td>
+      <td style="text-align: left">An array of record types to filter for listing record sets.  Refer to <a href="recordset-model.html">recordset mode</a> for supported types.  Invalid record types will be ignored.  If left empty or no valid record types are provided, then all record types will be returned.</td>
+    </tr>
+    <tr>
+      <td>recordOwnerGroupFilter</td>
+      <td>string</td>
+      <td>no</td>
+      <td style="text-align: left">Owner group ID for record set.</td>
+    </tr>
+    <tr>
+      <td>nameSort</td>
+      <td>string</td>
+      <td>no</td>
+      <td style="text-align: left">Name sort order for record sets returned by list record set response.  Valid values are <code class="language-plaintext highlighter-rouge">ASC</code> (ascending; default) and <code class="language-plaintext highlighter-rouge">DESC</code> (descending).</td>
+    </tr>
+    <tr>
+      <td>startFrom</td>
+      <td>string</td>
+      <td>no</td>
+      <td style="text-align: left">In order to advance through pages of results, the startFrom is set to the <code class="language-plaintext highlighter-rouge">nextId</code> that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results</td>
+    </tr>
+    <tr>
+      <td>maxItems</td>
+      <td>integer</td>
+      <td>no</td>
+      <td style="text-align: left">The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="http-response-types">HTTP RESPONSE TYPES</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>200</td>
+      <td style="text-align: left"><strong>OK</strong> - The record sets are returned in the response body</td>
+    </tr>
+    <tr>
+      <td>422</td>
+      <td style="text-align: left"><strong>Unprocessable Entity</strong> - <code class="language-plaintext highlighter-rouge">recordNameFilter</code> was either omitted or provided but does not contain at least two alphanumeric characters</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="http-response-attributes">HTTP RESPONSE ATTRIBUTES</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>type</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>recordSets</td>
+      <td>Array of RecordSets</td>
+      <td style="text-align: left">refer to <a href="recordset-model.html">recordset model</a></td>
+    </tr>
+    <tr>
+      <td>startFrom</td>
+      <td>string</td>
+      <td style="text-align: left">startFrom sent in request, will not be returned if not provided</td>
+    </tr>
+    <tr>
+      <td>nextId</td>
+      <td>string</td>
+      <td style="text-align: left">nextId, used as startFrom parameter of next page request, will not be returned if record sets are exhausted</td>
+    </tr>
+    <tr>
+      <td>maxItems</td>
+      <td>integer</td>
+      <td style="text-align: left"><code class="language-plaintext highlighter-rouge">maxItems</code> sent in request, default is 100</td>
+    </tr>
+    <tr>
+      <td>recordNameFilter</td>
+      <td>string</td>
+      <td style="text-align: left">name filter sent in request</td>
+    </tr>
+    <tr>
+      <td>recordTypeFilter</td>
+      <td>Array of RecordType</td>
+      <td style="text-align: left">record type filter sent in request</td>
+    </tr>
+    <tr>
+      <td>recordOwnerGroupFilter</td>
+      <td>string</td>
+      <td style="text-align: left">record owner group sent in request</td>
+    </tr>
+    <tr>
+      <td>nameSort</td>
+      <td>string</td>
+      <td style="text-align: left">name sort order sent in request</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="example-response">EXAMPLE RESPONSE</h4>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"recordSets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"zoneId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"5f5304ba-c81f-456c-9d33-bb6179c8b1f1"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"ttl"</span><span class="p">:</span><span class="w"> </span><span class="mi">7200</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Active"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"created"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2019-04-26T17:15:35Z"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"records"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.1.1.1"</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">],</span><span class="w">
+      </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"f802596f-4f0e-4e65-bb43-c7ca439d2608"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"account"</span><span class="p">:</span><span class="w"> </span><span class="s2">"system"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"fqdn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo.example.com."</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"zoneName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"example.com."</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"zoneShared"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"maxItems"</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordNameFilter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo*"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"recordTypeFilter"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="s2">"A"</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"nameSort"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ASC"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+</section><div class="edit-button"><a href="https://github.com/vinyldns/vinyldns/edit/master/modules/docs/src/main/mdoc/api/list-recordsets-global.md" target="_blank" rel="noopener noreferrer" class="btn-sm btn-info">Improve this page</a></div></div></div></div></div><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/json.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/yaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/bnf.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/plaintext.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','json','yaml','bnf','plaintext']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/js/search.js"></script><script src="/js/docs.js"></script></body></html>
