@@ -41,8 +41,9 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Khalid Reid
 - Timo Schmid
 - Trent Schmidt
-- Nick Spadaccino
+- Arpit Shah
 - Ghafar Shah
+- Nick Spadaccino
 - Rebecca Star
 - Jess Stodola
 - Juan Valencia
