@@ -303,10 +303,10 @@
                                         </form>
                                     </div>
                                 </div>
-                                    <!-- END SEARCH BOX -->
+                                <!-- END SEARCH BOX -->
 
-                                    <!-- DELETED ZONES TABS -->
-                                    <div class="panel-default panel-tabs">
+                                <!-- DELETED ZONES TABS -->
+                                <div class="panel-default panel-tabs">
                                         <span class="container-fluid" >
                                            <!-- MY DELETED ZONE PAGINATION -->
                                             <div class="dataTables_paginate vinyldns_paginate" ng-show="tab == 'myDeletedZones'" >
@@ -381,7 +381,7 @@
                                                                     {{deletedZone.userName}}
                                                                 </td>
                                                                 @if(meta.sharedDisplayEnabled) {
-                                                                <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                                <td>{{deletedZone.zoneChange.zone.shared ? "Shared" : "Private"}}</td>
                                                                 }
                                                             </tr>
                                                             </tbody>
@@ -444,7 +444,7 @@
                                                                     {{deletedZone.userName}}
                                                                 </td>
                                                                 @if(meta.sharedDisplayEnabled) {
-                                                                <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                                                <td>{{deletedZone.zoneChange.zone.shared ? "Shared" : "Private"}}</td>
                                                                 }
                                                             </tr>
                                                             </tbody>
@@ -467,8 +467,8 @@
                                                 </div>
                                             </div>
                                         </span>
-                                    </div>
-                            <!-- END DELETED ZONES TABS -->
+                                </div>
+                                <!-- END DELETED ZONES TABS -->
                                 <div class="panel-footer"></div>
                             </div>
                             <!-- END SIMPLE DATATABLE -->
