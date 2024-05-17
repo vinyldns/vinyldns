@@ -31,6 +31,7 @@ case class BatchChange(
     changes: List[SingleChange],
     ownerGroupId: Option[String] = None,
     approvalStatus: BatchChangeApprovalStatus,
+    batchStatus: BatchChangeStatus = BatchChangeStatus.PendingProcessing,
     reviewerId: Option[String] = None,
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[Instant] = None,
@@ -92,6 +93,12 @@ object BatchChangeStatus extends Enumeration {
           case _ => BatchChangeStatus.Complete
         }
     }
+
+  private val valueMap =
+    BatchChangeStatus.values.map(v => v.toString.toLowerCase -> v).toMap
+
+  def find(status: String): Option[BatchChangeStatus] =
+    valueMap.get(status.toLowerCase)
 }
 
 object BatchChangeApprovalStatus extends Enumeration {
