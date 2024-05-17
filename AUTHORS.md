@@ -21,6 +21,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Joe Crowe
 - Jearvon Dharrie
 - Andrew Dunn
+- Josh Edwards
 - Ryan Emerle
 - David Grizzanti
 - Alejandro Guirao
