@@ -584,21 +584,19 @@ class RecordSetService(
     } yield change
 
   def listRecordSetChanges(
-                            zoneId: Option[String] = None,
+                            zoneId: String,
                             startFrom: Option[Int] = None,
                             maxItems: Int = 100,
-                            fqdn: Option[String] = None,
-                            recordType: Option[RecordType] = None,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
       for {
-        zone <- getZone(zoneId.get)
+        zone <- getZone(zoneId)
         _ <- canSeeZone(authPrincipal, zone).toResult
         recordSetChangesResults <- recordChangeRepository
-          .listRecordSetChanges(Some(zone.id), startFrom, maxItems, fqdn, recordType)
+          .listRecordSetChanges(Some(zone.id), startFrom, maxItems, None, None)
           .toResult[ListRecordSetChangesResults]
         recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-      } yield ListRecordSetChangesResponse(zoneId.get, recordSetChangesResults, recordSetChangesInfo)
+      } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
   def listRecordSetChangeHistory(
                             zoneId: Option[String] = None,
