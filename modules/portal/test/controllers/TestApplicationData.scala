@@ -296,6 +296,7 @@ trait TestApplicationData { this: Mockito =>
       | "ttl":           "200",
       | "status":        "${RecordSetStatus.Active}",
       | "records":       [ { "address": "10.1.1.1" } ],
+      | "recordSetGroupChange": "None",
       | "id":            "$hobbitRecordSetId"
       | }
     """.stripMargin)

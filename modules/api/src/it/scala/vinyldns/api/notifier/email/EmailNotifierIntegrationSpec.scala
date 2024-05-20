@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.AData
+import vinyldns.core.domain.record.{AData, OwnerShipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.TestMembershipData._
@@ -35,6 +35,8 @@ import cats.effect.{IO, Resource}
 import scala.collection.JavaConverters._
 import org.scalatest.BeforeAndAfterEach
 import cats.implicits._
+import vinyldns.core.TestRecordSetData.{ownerShipTransfer, rsOk}
+import vinyldns.core.TestZoneData.okZone
 
 class EmailNotifierIntegrationSpec
     extends MySqlApiIntegrationSpec
@@ -57,7 +59,7 @@ class EmailNotifierIntegrationSpec
 
   "Email Notifier" should {
 
-    "send an email" taggedAs (SkipCI) in {
+    "send an email for batch change" taggedAs (SkipCI) in {
       val batchChange = BatchChange(
         okUser.id,
         okUser.userName,
@@ -84,7 +86,7 @@ class EmailNotifierIntegrationSpec
       val program = for {
         _ <- userRepository.save(okUser)
         notifier <- new EmailNotifierProvider()
-          .load(NotifierConfig("", emailConfig), userRepository)
+          .load(NotifierConfig("", emailConfig), userRepository, groupRepository)
         _ <- notifier.notify(Notification(batchChange))
         emailFiles <- retrieveEmailFiles(targetDirectory)
       } yield emailFiles
@@ -94,7 +96,29 @@ class EmailNotifierIntegrationSpec
       files.length should be(1)
 
     }
+    "send an email for recordSetChange ownerShip transfer" taggedAs (SkipCI) in {
+      val recordSetChange = RecordSetChange(
+        okZone,
+        rsOk.copy(ownerGroupId= Some(okGroup.id),recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(dummyGroup.id)))),
+        "system",
+        RecordSetChangeType.Create,
+        RecordSetChangeStatus.Complete
+      )
 
+      val program = for {
+        _ <- userRepository.save(okUser)
+        notifier <- new EmailNotifierProvider()
+          .load(NotifierConfig("", emailConfig), userRepository, groupRepository)
+        _ <- notifier.notify(Notification(recordSetChange))
+        emailFiles <- retrieveEmailFiles(targetDirectory)
+      } yield emailFiles
+
+      val files = program.unsafeRunSync()
+
+      files.length should be(1)
+
+    }
   }
 
   def deleteEmailFiles(path: Path): IO[Unit] =
