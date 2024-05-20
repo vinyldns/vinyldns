@@ -31,28 +31,28 @@ jobs:
 
       - name: Codecov
         id: codecov0
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Codecov Retry
         id: codecov1
         if: steps.codecov0.outcome=='failure'
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Codecov Retry 2
         id: codecov2
         if: steps.codecov1.outcome=='failure'
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Codecov Retry 3
         id: codecov3
         if: steps.codecov2.outcome=='failure'
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

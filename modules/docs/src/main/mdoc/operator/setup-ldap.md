@@ -17,7 +17,7 @@ can read data from the Directory.  Once you have that information, proceed to th
 **Considerations**
 You _should_ communicate to your Directory over LDAP using TLS.  To do so, the SSL certs should be installed
 on the portal servers, or provided via a java trust store (key store).  The portal provides an option to specific
-a java key store when it starts up.
+a java key store when it starts up. For more information: [Using Java Key Store In VinylDNS](https://github.com/vinyldns/vinyldns/tree/master/modules/portal#building-locally)
 
 ## Configuring LDAP
 Before you can configure LDAP, make note of the host, username, and password that you will be using.

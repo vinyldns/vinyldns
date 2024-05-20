@@ -230,8 +230,8 @@ class RecordSetRoute(
     } ~
     path("zones" / Segment / "recordsetchanges") { zoneId =>
       (get & monitor("Endpoint.listRecordSetChanges")) {
-        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "fqdn".as[String].?, "recordType".as[String].?) {
-          (startFrom: Option[Int], maxItems: Int, fqdn: Option[String], _: Option[String]) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[Int], maxItems: Int) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
@@ -240,7 +240,7 @@ class RecordSetRoute(
               ) {
                 authenticateAndExecute(
                   recordSetService
-                    .listRecordSetChanges(Some(zoneId), startFrom, maxItems, fqdn, None, _)
+                    .listRecordSetChanges(zoneId, startFrom, maxItems, _)
                 ) { changes =>
                   complete(StatusCodes.OK, changes)
                 }

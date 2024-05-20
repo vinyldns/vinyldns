@@ -23,7 +23,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
-import vinyldns.mysql.repository.MySqlRecordSetRepository.fromRecordType
+import vinyldns.mysql.repository.MySqlRecordSetRepository.{fromRecordType, toFQDN}
 import vinyldns.proto.VinylDNSProto
 
 class MySqlRecordChangeRepository
@@ -103,7 +103,7 @@ class MySqlRecordChangeRepository
                   change.zoneId,
                   change.created.toEpochMilli,
                   fromChangeType(change.changeType),
-                  if(change.recordSet.name == change.zone.name) change.zone.name else change.recordSet.name + "." + change.zone.name,
+                  toFQDN(change.zone.name, change.recordSet.name),
                   fromRecordType(change.recordSet.typ),
                   toPB(change).toByteArray,
                 )
