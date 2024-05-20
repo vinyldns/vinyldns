@@ -20,15 +20,12 @@ import cats.data.ValidatedNel
 import cats.implicits._
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.record.{
-  RecordChangeRepository,
-  RecordSetCacheRepository,
-  RecordSetRepository
-}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.task.TaskRepository
 
 object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
   def repoNames: List[RepositoryName] =
@@ -58,6 +55,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       getRepoOf[RecordSetCacheRepository](dataStores, recordSetCache),
       getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
       getRepoOf[ZoneRepository](dataStores, zone),
-      getRepoOf[BatchChangeRepository](dataStores, batchChange)
+      getRepoOf[BatchChangeRepository](dataStores, batchChange),
+      getRepoOf[TaskRepository](dataStores, task)
     ).mapN(ApiDataAccessor)
 }
