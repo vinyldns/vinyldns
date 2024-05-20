@@ -1699,7 +1699,8 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          recordTypeSort = any[RecordTypeSort.RecordTypeSort]
+          recordTypeSort = any[RecordTypeSort.RecordTypeSort],
+          isFromPortal = any[Boolean]
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1845,7 +1846,8 @@ class RecordSetServiceSpec
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
-          recordTypeSort = RecordTypeSort.ASC
+          recordTypeSort = RecordTypeSort.ASC,
+          isFromPortal = false
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1890,7 +1892,8 @@ class RecordSetServiceSpec
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
-          recordTypeSort = RecordTypeSort.ASC
+          recordTypeSort = RecordTypeSort.ASC,
+          isFromPortal = false
         )
 
       val result: ListRecordSetsByZoneResponse =

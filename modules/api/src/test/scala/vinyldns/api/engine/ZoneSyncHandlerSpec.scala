@@ -323,6 +323,7 @@ class ZoneSyncHandlerSpec
         any[Option[String]],
         any[NameSort],
         any[RecordTypeSort],
+        any[Boolean]
       )
 
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[DB], any[ChangeSet])

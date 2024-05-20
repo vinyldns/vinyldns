@@ -103,7 +103,8 @@ class RecordSetRoute(
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC"),
-          "recordTypeSort".as[String].?("None")
+          "recordTypeSort".as[String].?("None"),
+          "isFromPortal".as[Boolean].?(false)
         ) {
           (
             startFrom: Option[String],
@@ -112,7 +113,8 @@ class RecordSetRoute(
             recordTypeFilter: Option[String],
             recordOwnerGroupFilter: Option[String],
             nameSort: String,
-            recordTypeSort: String
+            recordTypeSort: String,
+            isFromPortal: Boolean
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -132,6 +134,7 @@ class RecordSetRoute(
                       NameSort.find(nameSort),
                       _,
                       RecordTypeSort.find(recordTypeSort),
+                      isFromPortal
                 )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)
