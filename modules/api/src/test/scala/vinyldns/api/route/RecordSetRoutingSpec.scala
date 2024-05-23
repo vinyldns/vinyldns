@@ -858,7 +858,7 @@ class RecordSetRoutingSpec
 
   "GET recordset change" should {
     "return the recordset change" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/good") ~> recordSetRoute ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchange/good") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
 
         status shouldBe StatusCodes.OK
@@ -871,19 +871,19 @@ class RecordSetRoutingSpec
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
-      Get(s"/zones/${zoneNotFound.id}/recordsets/test/changes/zoneNotFound") ~> recordSetRoute ~> check {
+      Get(s"/zones/${zoneNotFound.id}/recordsetchange/zoneNotFound") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 404 Not Found when the change doesn't exist" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/changeNotFound") ~> recordSetRoute ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchange/changeNotFound") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a forbidden when the user cant see the zone" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/forbidden") ~> recordSetRoute ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchange/forbidden") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
