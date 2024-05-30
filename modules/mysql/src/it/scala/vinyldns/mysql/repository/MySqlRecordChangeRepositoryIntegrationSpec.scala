@@ -87,7 +87,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(inserts))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      repo.getRecordSetChange(okZone.id, inserts(0).id).unsafeRunSync() shouldBe inserts.headOption
+      repo.getRecordSetChange(inserts(0).id).unsafeRunSync() shouldBe inserts.headOption
     }
     "saves record updates" in {
       val updates = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Update))
@@ -95,7 +95,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(updates))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      repo.getRecordSetChange(okZone.id, updates(0).id).unsafeRunSync() shouldBe updates.headOption
+      repo.getRecordSetChange(updates(0).id).unsafeRunSync() shouldBe updates.headOption
     }
     "saves record deletes" in {
       val deletes = generateInserts(okZone, 1).map(_.copy(changeType = RecordSetChangeType.Delete))
@@ -103,7 +103,7 @@ class MySqlRecordChangeRepositoryIntegrationSpec
         repo.save(db, ChangeSet(deletes))
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
-      repo.getRecordSetChange(okZone.id, deletes(0).id).unsafeRunSync() shouldBe deletes.headOption
+      repo.getRecordSetChange(deletes(0).id).unsafeRunSync() shouldBe deletes.headOption
     }
   }
   "list record changes" should {
