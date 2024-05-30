@@ -2097,7 +2097,7 @@ class RecordSetServiceSpec
     "return the record set change if it is found" in {
       doReturn(IO.pure(Some(pendingCreateAAAA)))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+        .getRecordSetChange(pendingCreateAAAA.id)
 
       val actual: RecordSetChange =
         underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().toOption.get
@@ -2107,7 +2107,7 @@ class RecordSetServiceSpec
     "return the record set change if the user is in the record owner group in a shared zone" in {
       doReturn(IO.pure(Some(pendingCreateSharedRecord)))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id)
+        .getRecordSetChange(pendingCreateSharedRecord.id)
 
       val actual: RecordSetChange =
           underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value.unsafeRunSync().toOption.get
@@ -2118,7 +2118,7 @@ class RecordSetServiceSpec
     "return a RecordSetChangeNotFoundError if it is not found" in {
       doReturn(IO.pure(None))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+        .getRecordSetChange(pendingCreateAAAA.id)
       val error =
         underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
@@ -2154,7 +2154,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(zoneActive))).when(mockZoneRepo).getZone(zoneActive.id)
       doReturn(IO.pure(Some(pendingCreateAAAA)))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
+        .getRecordSetChange(pendingCreateAAAA.id)
 
       val error =
         underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value.unsafeRunSync().swap.toOption.get
@@ -2166,7 +2166,7 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(zoneNotAuthorized))).when(mockZoneRepo).getZone(zoneNotAuthorized.id)
       doReturn(IO.pure(Some(pendingCreateSharedRecordNotSharedZone)))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(zoneNotAuthorized.id, pendingCreateSharedRecordNotSharedZone.id)
+        .getRecordSetChange(pendingCreateSharedRecordNotSharedZone.id)
 
       val error =
         underTest

@@ -567,7 +567,7 @@ class RecordSetService(
     for {
       zone <- getZone(zoneId)
       change <- recordChangeRepository
-        .getRecordSetChange(zone.id, changeId)
+        .getRecordSetChange(changeId)
         .orFail(
           RecordSetChangeNotFoundError(
             s"Unable to find record set change with id $changeId in zone ${zone.name}"
