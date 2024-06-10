@@ -26,7 +26,7 @@ requestedOwnerGroupId          | string    | yes  | UUID of the group |
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "Request",
+    "ownerShipTransferStatus": "Requested",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
