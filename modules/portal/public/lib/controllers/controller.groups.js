@@ -210,8 +210,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 handleError(error, 'groupsService::getGroups-failure');
             });
   }
-    //Function for fetching list of valid domains
 
+    //Function for fetching list of valid domains
      $scope.validDomains=function getValidEmailDomains() {
             function success(response) {
                  $log.debug('groupsService::listEmailDomains-success', response);
@@ -247,8 +247,23 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     $scope.editGroup = function (groupInfo) {
         $scope.currentGroup = groupInfo;
+        $scope.initialGroup = {
+            name: $scope.currentGroup.name,
+            email: $scope.currentGroup.email,
+            description: $scope.currentGroup.description
+        };
+        $scope.hasChanges = false;
         $scope.validDomains();
         $("#modal_edit_group").modal("show");
+    };
+
+    // Function to check for changes
+    $scope.checkForChanges = function() {
+        $scope.hasChanges =
+            $scope.currentGroup.name !== $scope.initialGroup.name ||
+            $scope.currentGroup.email !== $scope.initialGroup.email ||
+            ($scope.currentGroup.description !== $scope.initialGroup.description &&
+            !($scope.currentGroup.description === "" && $scope.initialGroup.description === undefined));
     };
 
     $scope.getGroupAndUpdate = function(groupId, name, email, description) {
@@ -281,6 +296,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             return groupsService.updateGroup(groupId, payload)
                 .then(success)
                 .catch(function (error) {
+                    $scope.closeEditModal();
                     handleError(error, 'groupsService::updateGroup-failure');
                 });
         }
