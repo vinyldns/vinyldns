@@ -128,8 +128,8 @@
                         if(payload.scheduledTime) {
                          $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
-                        // Handle timeout error (usually status code 503 or a specific message)
-                        if (error.status === 503 || (error.statusText && error.statusText.includes('timeout'))) {
+                        // Handle timeout error (status code 503)
+                        if (error.status === 503) {
                             var alert = utilityService.success('Successfully created DNS Change. Processing the change.', error, 'createBatchChange: createBatchChange successful');
                             $scope.alerts.push(alert);
                             $timeout(function(){
