@@ -128,7 +128,15 @@
                         if(payload.scheduledTime) {
                          $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
-                        if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
+                        // Handle timeout error (usually status code 503 or a specific message)
+                        if (error.status === 503 || (error.statusText && error.statusText.includes('timeout'))) {
+                            var alert = utilityService.success('Successfully created DNS Change. Processing the change.', error, 'createBatchChange: createBatchChange successful');
+                            $scope.alerts.push(alert);
+                            $timeout(function(){
+                               location.href = "/dnschanges";
+                            }, 2000);
+                        }
+                        else if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
                             handleError(error, 'dnsChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;

@@ -7,10 +7,6 @@
         </encoder>
     </appender>
 
-    <logger name="com.zaxxer.hikari" level="TRACE">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
