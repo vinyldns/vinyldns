@@ -16,13 +16,15 @@
 
 package vinyldns.api.route
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
-import vinyldns.api.config.LimitsConfig
+import com.typesafe.config.ConfigFactory
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.config.ManualReviewConfig
-import vinyldns.core.domain.batch._
+import vinyldns.api.config.{LimitsConfig, ManualReviewConfig}
 import vinyldns.api.domain.batch._
+import vinyldns.core.domain.batch._
+
+import scala.concurrent.duration.DurationLong
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
@@ -58,16 +60,28 @@ class BatchChangeRoute(
 
   final private val MAX_ITEMS_LIMIT: Int = limitsConfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT
 
+  val config = ConfigFactory.load()
+  val requestTimeout = config.getDuration("akka.http.server.request-timeout").toMillis.millis
+  val timeoutMessage = config.getString("akka.http.custom.timeout-response.message")
+  val customTimeoutResponse: HttpRequest => HttpResponse = { _ =>
+    HttpResponse(
+      status = StatusCodes.OK,
+      entity = HttpEntity(ContentTypes.`application/json`, s"""{"message": "$timeoutMessage"}""")
+    )
+  }
+
   val batchChangeRoute: Route = {
     val standardBatchChangeRoutes = path("zones" / "batchrecordchanges") {
-      (post & monitor("Endpoint.postBatchChange")) {
-        parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
-          authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
-            (authPrincipal, batchChangeInput) =>
-              batchChangeService
-                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)
-          ) { chg =>
-            complete(StatusCodes.Accepted, chg)
+      withRequestTimeout(requestTimeout, request => customTimeoutResponse(request)) {
+        (post & monitor("Endpoint.postBatchChange")) {
+          parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
+            authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
+              (authPrincipal, batchChangeInput) =>
+                batchChangeService
+                  .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)
+            ) { chg =>
+              complete(StatusCodes.Accepted, chg)
+            }
           }
         }
       } ~

@@ -58,7 +58,6 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         batchChange.userId,
         ownerGroupId
       ).toRightBatchResult
-      _ = println("recordSetChanges: ", recordSetChanges)
       _ <- allChangesWereConverted(batchChange.changes, recordSetChanges)
       _ <- batchChangeRepo
         .save(batchChange)

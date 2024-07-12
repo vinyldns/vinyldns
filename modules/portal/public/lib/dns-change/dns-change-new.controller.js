@@ -114,10 +114,17 @@
                 function success(response) {
                     var alert = utilityService.success('Successfully created DNS Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
-                    $timeout(function(){
-                        location.href = "/dnschanges/" + response.data.id;
-                     }, 2000);
-                    $scope.batch = response.data;
+                    // This is the message we have in akka http config to handle timeout
+                    if(response.data.message === "Successfully submitted DNS changes. Please wait a while for the changes to get processed."){
+                        $timeout(function(){
+                            location.href = "/dnschanges";
+                         }, 2000);
+                    } else {
+                        $timeout(function(){
+                            location.href = "/dnschanges/" + response.data.id;
+                         }, 2000);
+                        $scope.batch = response.data;
+                    }
                 }
 
                 formatData(payload);
@@ -128,15 +135,7 @@
                         if(payload.scheduledTime) {
                          $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
-                        // Handle timeout error (status code 503)
-                        if (error.status === 503) {
-                            var alert = utilityService.success('Successfully created DNS Change. Processing the change.', error, 'createBatchChange: createBatchChange successful');
-                            $scope.alerts.push(alert);
-                            $timeout(function(){
-                               location.href = "/dnschanges";
-                            }, 2000);
-                        }
-                        else if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
+                        if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
                             handleError(error, 'dnsChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;
