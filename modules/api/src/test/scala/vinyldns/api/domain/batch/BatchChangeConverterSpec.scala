@@ -62,7 +62,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     )
   }
 
-  private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone) = {
+  private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone, systemMessage: Option[String] = None) = {
     val fqdn = s"$name.${zone.name}"
     SingleDeleteRRSetChange(
       Some(zone.id),
@@ -72,7 +72,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       typ,
       None,
       SingleChangeStatus.Pending,
-      None,
+      systemMessage,
       None,
       None
     )
@@ -92,12 +92,13 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
   private def makeDeleteRRSetChangeForValidation(
                                                   recordName: String,
-                                                  typ: RecordType = RecordType.A
+                                                  typ: RecordType = RecordType.A,
+                                                  systemMessage: Option[String] = None
                                                 ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
-      DeleteRRSetChangeInput(s"$recordName.ok.", typ, None)
+      DeleteRRSetChangeInput(s"$recordName.ok.", typ, systemMessage, None)
     )
 
   private val addSingleChangesGood = List(
@@ -163,19 +164,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   )
 
   private val singleChangesOneDelete = List(
-    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A)
-  )
-
-  private val singleChangesOneDeleteGood = List(
-    makeSingleDeleteRRSetChange("aToDelete", A).copy(recordData = Some(AData("2.3.4.6"))),
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A, okZone, Some(nonExistentRecordDeleteMessage))
   )
 
   private val changeForValidationOneDelete = List(
-    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A)
-  )
-
-  private val changeForValidationOneDeleteGood = List(
-    makeDeleteRRSetChangeForValidation("aToDelete", A)
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A, Some(nonExistentRecordDeleteMessage))
   )
 
   private val singleChangesOneBad = List(
