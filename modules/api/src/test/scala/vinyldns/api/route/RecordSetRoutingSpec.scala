@@ -758,16 +758,14 @@ class RecordSetRoutingSpec
     }.toResult
 
     def listRecordSetChanges(
-                              zoneId: Option[String],
+                              zoneId: String,
                               startFrom: Option[Int],
                               maxItems: Int,
-                              fqdn: Option[String],
-                              recordType: Option[RecordType],
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
-        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
-        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
       }
     }.toResult
