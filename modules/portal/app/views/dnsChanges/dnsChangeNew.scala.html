@@ -326,7 +326,7 @@
                                 <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvImportLabel">
                                     <span><span class="glyphicon glyphicon-import"></span> Import CSV</span>
                                 </label>
-                                <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue)" batch-change-file>
+                                <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue, batchChangeLimit )" batch-change-file>
                                 <p><a href="https://www.vinyldns.io/portal/dns-changes#dns-change-csv-import" target="_blank" rel="noopener noreferrer">See documentation for sample CSV</a></p>
                             </div>
                             <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per DNS change.</p>
@@ -336,6 +336,9 @@
                                 <button type="button" id="create-batch-changes-button" class="btn btn-primary" ng-click="submitChange(manualReviewEnabled)">Submit</button>
                             </div>
                             <div ng-if="formStatus=='pendingConfirm'" class="pull-right">
+                                <div class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                                    <div class="spinner" ></div>
+                                </div>
                                 <span ng-if="!batchChangeErrors">{{ confirmationPrompt }}</span>
                                 <span ng-if="batchChangeErrors" class="batch-change-error-help">There were errors, please review the highlighted rows and then proceed.</span>
                                 <button class="btn btn-default" ng-click="cancelSubmit()">Cancel</button>

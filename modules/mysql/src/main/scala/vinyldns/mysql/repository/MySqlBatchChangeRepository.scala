@@ -17,9 +17,9 @@
 package vinyldns.mysql.repository
 
 import java.sql.Timestamp
-
 import cats.data._
 import cats.effect._
+
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
@@ -28,6 +28,10 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 /**
   * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
@@ -166,8 +170,8 @@ class MySqlBatchChangeRepository
       }
 
     def getBatchFromSingleChangeId(
-        singleChangeId: String
-    )(implicit s: DBSession): Option[BatchChange] =
+                                    singleChangeId: String
+                                  )(implicit s: DBSession): Option[BatchChange] =
       GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
         .bind(singleChangeId)
         .map(extractBatchChange(None))
@@ -182,11 +186,9 @@ class MySqlBatchChangeRepository
           batchMeta.copy(changes = changes)
         }
 
-    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
-      IO {
-        logger.info(
-          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}"
-        )
+    def updateSingleChangeStatus(singleChanges: Seq[SingleChange]): Future[Option[BatchChange]] = {
+      logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
+      Future {
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -194,11 +196,12 @@ class MySqlBatchChangeRepository
             _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             batchChange <- getBatchFromSingleChangeId(headChange.id)
           } yield batchChange
-        }
-      }
+        }}}
+
+    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
+      IO {Await.result(updateSingleChangeStatus(singleChanges), 50.seconds)}
     }
   }
-
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {
       IO.pure(List())
