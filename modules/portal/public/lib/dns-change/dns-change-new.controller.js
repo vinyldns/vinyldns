@@ -164,9 +164,7 @@
 
             $scope.uploadCSV = function(file, batchChangeLimit) {
                 parseFile(file, batchChangeLimit).then(function(dataLength){
-
                     $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' DNS changes.' });
-
                 }, function(error) {
                     $scope.alerts.push({type: 'danger', content: error});
                 });

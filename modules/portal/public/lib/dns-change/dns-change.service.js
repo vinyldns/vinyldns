@@ -30,7 +30,6 @@
                     "allowManualReview": allowManualReview
                 }
                 var url = utilityService.urlBuilder('/api/dnschanges', params);
-                return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
                 let loader = $("#loader");
                              loader.modal({
                                            backdrop: "static",
