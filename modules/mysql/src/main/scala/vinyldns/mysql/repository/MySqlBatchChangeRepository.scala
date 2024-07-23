@@ -29,10 +29,6 @@ import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-
 /**
   * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
   * BatchChange and SingleChange are stored in RDS as two tables.
@@ -185,10 +181,9 @@ class MySqlBatchChangeRepository
             .apply()
           batchMeta.copy(changes = changes)
         }
-
-    def updateSingleChangeStatus(singleChanges: Seq[SingleChange]): Future[Option[BatchChange]] = {
-      logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
-      Future {
+    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
+      IO {
+        logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -196,12 +191,10 @@ class MySqlBatchChangeRepository
             _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             batchChange <- getBatchFromSingleChangeId(headChange.id)
           } yield batchChange
-        }}}
-
-    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
-      IO {Await.result(updateSingleChangeStatus(singleChanges), 50.seconds)}
+        }}
     }
   }
+
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {
       IO.pure(List())
