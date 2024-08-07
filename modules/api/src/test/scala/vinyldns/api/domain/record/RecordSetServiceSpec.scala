@@ -1937,19 +1937,22 @@ class RecordSetServiceSpec
       val completeRecordSetChanges: List[RecordSetChange] =
         List(pendingCreateAAAA, pendingCreateCNAME, completeCreateAAAA, completeCreateCNAME)
 
+      doReturn(IO.pure(Some(zoneActive)))
+        .when(mockZoneRepo)
+        .getZone(zoneActive.id)
       doReturn(IO.pure(ListRecordSetChangesResults(completeRecordSetChanges)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = Some(okZone.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
+        .listRecordSetChanges(zoneId = Some(zoneActive.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
       doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(zoneActive.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         completeRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
-        zoneId = okZone.id,
+        zoneId = zoneActive.id,
         recordSetChanges = changesWithName,
         nextId = None,
         startFrom = None,
@@ -1996,7 +1999,7 @@ class RecordSetServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val expectedResults = ListRecordSetChangesResponse(
         zoneId = okZone.id,
         recordSetChanges = List(),
@@ -2062,7 +2065,7 @@ class RecordSetServiceSpec
 
     "return a NotAuthorizedError" in {
       val error =
-        underTest.listRecordSetChanges(Some(zoneNotAuthorized.id), authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -2079,7 +2082,7 @@ class RecordSetServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         List(RecordSetChangeInfo(rsChange2, Some("ok")), RecordSetChangeInfo(rsChange1, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(

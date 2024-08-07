@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
 
   # LDAP container hosting example users
@@ -9,7 +7,7 @@ services:
     ports:
       - "19004:19004"
 
-  # Integration image hosting r53, sns, sqs, bind, and mysql
+  # Integration image hosting r53, sns, sqs, bind and mysql
   integration:
     container_name: "vinyldns-api-integration"
     hostname: "vinyldns-integration"
