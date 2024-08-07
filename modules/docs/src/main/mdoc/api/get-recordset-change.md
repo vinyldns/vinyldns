@@ -11,7 +11,7 @@ When you submit a change for processing, the response is a Change model.  You ca
 
 #### HTTP REQUEST
 
-> GET /zones/{zoneId}/recordsets/{recordSetId}/changes/{recordChangeId}
+> GET /zones/{zoneId}/recordsetchange/{recordChangeId}
 
 #### HTTP RESPONSE TYPES
 
