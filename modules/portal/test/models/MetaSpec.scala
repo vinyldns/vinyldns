@@ -34,12 +34,12 @@ class MetaSpec extends Specification with Mockito {
       Meta(Configuration.from(config)).sharedDisplayEnabled must beTrue
     }
     "get the batch-change-limit value in config" in {
-      val config = Map("batch-change-limit" -> 21)
+      val config = Map("api.limits.batchchange-routing-max-items-limit" -> 21)
       Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(21)
     }
     "default to 1000 if batch-change-limit is not found" in {
       val config = Map("vinyldns.version" -> "foo-bar")
-      Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(1000)
+      Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(100)
     }
     "get the default-ttl value in config" in {
       val config = Map("default-ttl" -> 7210)

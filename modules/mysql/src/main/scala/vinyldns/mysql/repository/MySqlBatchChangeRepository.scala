@@ -17,9 +17,9 @@
 package vinyldns.mysql.repository
 
 import java.sql.Timestamp
-
 import cats.data._
 import cats.effect._
+
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
@@ -166,8 +166,8 @@ class MySqlBatchChangeRepository
       }
 
     def getBatchFromSingleChangeId(
-        singleChangeId: String
-    )(implicit s: DBSession): Option[BatchChange] =
+                                    singleChangeId: String
+                                  )(implicit s: DBSession): Option[BatchChange] =
       GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
         .bind(singleChangeId)
         .map(extractBatchChange(None))
@@ -181,12 +181,9 @@ class MySqlBatchChangeRepository
             .apply()
           batchMeta.copy(changes = changes)
         }
-
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       IO {
-        logger.info(
-          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}"
-        )
+        logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -194,8 +191,7 @@ class MySqlBatchChangeRepository
             _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             batchChange <- getBatchFromSingleChangeId(headChange.id)
           } yield batchChange
-        }
-      }
+        }}
     }
   }
 

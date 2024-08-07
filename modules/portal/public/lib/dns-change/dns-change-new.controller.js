@@ -44,6 +44,7 @@
             $scope.manualReviewEnabled;
             $scope.naptrFlags = ["U", "S", "A", "P"];
 
+
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
                 var changesLength = $scope.newBatch.changes.length;
@@ -161,14 +162,14 @@
                 $scope.alerts.push(alert);
             }
 
-            $scope.uploadCSV = function(file) {
-                parseFile(file).then(function(dataLength){
-                    $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' changes.' });
+            $scope.uploadCSV = function(file, batchChangeLimit) {
+                parseFile(file, batchChangeLimit).then(function(dataLength){
+                    $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' DNS changes.' });
                 }, function(error) {
                     $scope.alerts.push({type: 'danger', content: error});
                 });
 
-                function parseFile(file) {
+                function parseFile(file, batchChangeLimit) {
                   return $q(function(resolve, reject) {
                     if (!file.name.endsWith('.csv')) {
                       reject("Import failed. File should be of ‘.csv’ type.");
@@ -177,6 +178,9 @@
                       var reader = new FileReader();
                       reader.onload = function(e) {
                         var rows = e.target.result.split("\n");
+                        if(rows.length - 1  > batchChangeLimit)
+                        {reject("Import failed. Cannot add more than " + batchChangeLimit + " records per DNS change.");
+                        } else {
                         if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
                           $scope.newBatch.changes = [];
                           for(var i = 1; i < rows.length; i++) {
@@ -186,10 +190,10 @@
                           }
                           $scope.$apply()
                           resolve($scope.newBatch.changes.length);
-                        } else {
+                        }  else {
                           reject("Import failed. CSV header must be: Change Type,Record Type,Input Name,TTL,Record Data");
                         }
-                      }
+                      }}
                       reader.readAsText(file);
                     }
                   });
