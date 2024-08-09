@@ -91,7 +91,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange],
       batchChangeId: String
-  ): BatchResult[List[RecordSetChange]] =
+  ): BatchResult[List[RecordSetChange]] = {
+    logger.info("Putting changes to queue")
     recordSetChanges.toNel match {
       case None =>
         recordSetChanges.toRightBatchResult // If list is empty, return normally without queueing
@@ -106,6 +107,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             .toBatchResult
         } yield rscResult
     }
+  }
 
   def updateWithQueueingFailures(
       batchChange: BatchChange,
@@ -142,7 +144,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val failedAndNotExistsChanges = batchChange.changes.collect {
       case change if change.status == SingleChangeStatus.Failed || change.systemMessage.contains(nonExistentRecordDeleteMessage) || change.systemMessage.contains(nonExistentRecordDataDeleteMessage) => change
     }
-    batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    logger.info("Storing Queuing failures")
+    val storeChanges = batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    logger.info("Done saving queuing failures")
+
+    storeChanges
   }.toBatchResult
 
   def createRecordSetChangesForBatch(

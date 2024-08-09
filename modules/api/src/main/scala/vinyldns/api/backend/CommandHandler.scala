@@ -164,15 +164,19 @@ object CommandHandler {
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
+          logger.info("In case: ZoneChange sync")
           outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>
+          logger.info("In case: ZoneChange")
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
 
         case rcr: RecordSetChange =>
+          logger.info("In case: RecordSetChange")
           outcomeOf(message)(recordChangeProcessor(backendResolver.resolve(rcr.zone), rcr))
 
         case bcc: BatchChangeCommand =>
+          logger.info("In case: BatchChangeCommand")
           outcomeOf(message)(batchChangeProcessor(bcc))
       }
     }
