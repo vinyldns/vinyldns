@@ -216,13 +216,11 @@ class MySqlRecordChangeRepositoryIntegrationSpec
       }
       saveRecChange.attempt.unsafeRunSync() shouldBe right
       val page1 = repo.listFailedRecordSetChanges(Some(okZone.id), 2, 0).unsafeRunSync()
-      println(page1.items)
       page1.nextId shouldBe 3
       page1.maxItems shouldBe 2
       (page1.items should contain).theSameElementsInOrderAs(expectedOrder.take(2))
 
       val page2 = repo.listFailedRecordSetChanges(Some(okZone.id), 2, page1.nextId).unsafeRunSync()
-      println(page2.items)
       page2.nextId shouldBe 6
       page2.maxItems shouldBe 2
       (page2.items should contain).theSameElementsInOrderAs(expectedOrder.slice(3, 5))

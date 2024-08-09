@@ -109,7 +109,8 @@ object RecordSetChangeHandler extends TransactionProvider {
   def updateBatchStatuses(
       singleChanges: List[SingleChange],
       recordSetChange: RecordSetChange
-  ): List[SingleChange] =
+  ): List[SingleChange] = {
+    logger.info("Updating Batch Status")
     recordSetChange.status match {
       case RecordSetChangeStatus.Complete =>
         singleChanges.map(_.complete(recordSetChange.id, recordSetChange.recordSet.id))
@@ -117,6 +118,7 @@ object RecordSetChangeHandler extends TransactionProvider {
         singleChanges.map(_.withProcessingError(recordSetChange.systemMessage, recordSetChange.id))
       case _ => singleChanges
     }
+  }
 
   private sealed trait ProcessorState {
     def change: RecordSetChange

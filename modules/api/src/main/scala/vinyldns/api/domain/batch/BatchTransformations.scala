@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import java.net.InetAddress
 import java.util.UUID
 
 import vinyldns.api.domain.ReverseZoneHelpers
@@ -24,7 +23,7 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
 import vinyldns.api.backend.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.{AAAAData, RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -82,6 +81,7 @@ object BatchTransformations {
     val recordKey = RecordKey(zone.id, recordName, inputChange.typ)
     def asStoredChange(changeId: Option[String] = None): SingleChange
     def isAddChangeForValidation: Boolean
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation
   }
 
   object ChangeForValidation {
@@ -118,7 +118,7 @@ object BatchTransformations {
         ttl,
         inputChange.record,
         SingleChangeStatus.Pending,
-        None,
+        inputChange.systemMessage,
         None,
         None,
         List.empty,
@@ -127,6 +127,10 @@ object BatchTransformations {
     }
 
     def isAddChangeForValidation: Boolean = true
+
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation = {
+      this.copy(inputChange = inputChange.asInstanceOf[AddChangeInput])
+    }
   }
 
   final case class DeleteRRSetChangeForValidation(
@@ -143,7 +147,7 @@ object BatchTransformations {
         inputChange.typ,
         inputChange.record,
         SingleChangeStatus.Pending,
-        None,
+        inputChange.systemMessage,
         None,
         None,
         List.empty,
@@ -151,6 +155,10 @@ object BatchTransformations {
       )
 
     def isAddChangeForValidation: Boolean = false
+
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation = {
+      this.copy(inputChange = inputChange.asInstanceOf[DeleteRRSetChangeInput])
+    }
   }
 
   final case class BatchConversionOutput(
@@ -197,13 +205,6 @@ object BatchTransformations {
   }
 
   object ValidationChanges {
-    def matchRecordData(existingRecord: RecordData, recordData: String): Boolean =
-      existingRecord match {
-        case AAAAData(address) =>
-          InetAddress.getByName(address).getHostName ==
-            InetAddress.getByName(recordData).getHostName
-        case _ => false
-      }
 
     def apply(
         changes: List[ChangeForValidation],
@@ -223,16 +224,11 @@ object BatchTransformations {
           case DeleteRRSetChangeForValidation(
               _,
               _,
-              DeleteRRSetChangeInput(_, AAAA, Some(AAAAData(address)))
-              ) =>
-            existingRecords.filter(r => matchRecordData(r, address))
-          case DeleteRRSetChangeForValidation(
-              _,
-              _,
-              DeleteRRSetChangeInput(_, _, Some(recordData))
+              DeleteRRSetChangeInput(_, _, _, Some(recordData))
               ) =>
             Set(recordData)
-          case _: DeleteRRSetChangeForValidation => existingRecords
+          case _: DeleteRRSetChangeForValidation =>
+            existingRecords
         }
         .toSet
         .flatten

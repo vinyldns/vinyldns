@@ -31,16 +31,16 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
 
   "BatchChangeInput" should {
     "ensure trailing dot on A, AAAA, and CNAME fqdn" in {
-      val changeA = AddChangeInput("apex.test.com", A, Some(100), AData("1.1.1.1"))
+      val changeA = AddChangeInput("apex.test.com", A, None, Some(100), AData("1.1.1.1"))
       val changeAAAA =
-        AddChangeInput("aaaa.test.com", AAAA, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
+        AddChangeInput("aaaa.test.com", AAAA, None, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
       val changeCname =
-        AddChangeInput("cname.test.com", CNAME, Some(100), CNAMEData(Fqdn("testing.test.com")))
-      val changeADotted = AddChangeInput("adot.test.com.", A, Some(100), AData("1.1.1.1"))
+        AddChangeInput("cname.test.com", CNAME, None, Some(100), CNAMEData(Fqdn("testing.test.com")))
+      val changeADotted = AddChangeInput("adot.test.com.", A, None, Some(100), AData("1.1.1.1"))
       val changeAAAADotted =
-        AddChangeInput("aaaadot.test.com.", AAAA, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
+        AddChangeInput("aaaadot.test.com.", AAAA, None, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
       val changeCnameDotted =
-        AddChangeInput("cnamedot.test.com.", CNAME, Some(100), CNAMEData(Fqdn("testing.test.com.")))
+        AddChangeInput("cnamedot.test.com.", CNAME, None, Some(100), CNAMEData(Fqdn("testing.test.com.")))
 
       val input = BatchChangeInput(
         None,
@@ -58,7 +58,7 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
   }
   "asNewStoredChange" should {
     "Convert an AddChangeInput into SingleAddChange" in {
-      val changeA = AddChangeInput("some.test.com", A, None, AData("1.1.1.1"))
+      val changeA = AddChangeInput("some.test.com", A, None, None, AData("1.1.1.1"))
       val converted = changeA.asNewStoredChange(
         NonEmptyList.of(ZoneDiscoveryError("test")),
         VinylDNSTestHelpers.defaultTtl
@@ -80,7 +80,7 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
       asAdd.recordSetId shouldBe None
     }
     "Convert a DeleteChangeInput into SingleDeleteRRSetChange" in {
-      val changeA = DeleteRRSetChangeInput("some.test.com", A)
+      val changeA = DeleteRRSetChangeInput("some.test.com", A, None)
       val converted = changeA.asNewStoredChange(
         NonEmptyList.of(ZoneDiscoveryError("test")),
         VinylDNSTestHelpers.defaultTtl
@@ -111,14 +111,14 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
         1234,
         AData("1.2.3.4"),
         SingleChangeStatus.NeedsReview,
-        Some("msg"),
+        None,
         None,
         None,
         List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
       )
 
       val expectedAddChange =
-        AddChangeInput("testRname.testZoneName.", A, Some(1234), AData("1.2.3.4"))
+        AddChangeInput("testRname.testZoneName.", A, None, Some(1234), AData("1.2.3.4"))
 
       val singleDelChange = SingleDeleteRRSetChange(
         Some("testZoneId"),
@@ -128,14 +128,14 @@ class BatchChangeInputSpec extends AnyWordSpec with Matchers {
         A,
         None,
         SingleChangeStatus.NeedsReview,
-        Some("msg"),
+        None,
         None,
         None,
         List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
       )
 
       val expectedDelChange =
-        DeleteRRSetChangeInput("testRname.testZoneName.", A)
+        DeleteRRSetChangeInput("testRname.testZoneName.", A, None)
 
       val change = BatchChange(
         "userId",

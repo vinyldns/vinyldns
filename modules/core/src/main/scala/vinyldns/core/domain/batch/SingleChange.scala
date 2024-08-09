@@ -46,11 +46,11 @@ sealed trait SingleChange {
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
-  def withDoesNotExistMessage(error: String): SingleChange = this match {
+  def withDoesNotExistMessage: SingleChange = this match {
     case add: SingleAddChange =>
-      add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
+      add.copy(status = SingleChangeStatus.Failed)
     case delete: SingleDeleteRRSetChange =>
-      delete.copy(status = SingleChangeStatus.Complete, systemMessage = Some(error))
+      delete.copy(status = SingleChangeStatus.Complete)
   }
 
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
