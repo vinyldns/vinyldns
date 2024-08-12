@@ -329,7 +329,7 @@
                                 <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue, batchChangeLimit )" batch-change-file>
                                 <p><a href="https://www.vinyldns.io/portal/dns-changes#dns-change-csv-import" target="_blank" rel="noopener noreferrer">See documentation for sample CSV</a></p>
                             </div>
-                            <p ng-if="newBatch.changes.length > batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per DNS change.</p>
+                            <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per DNS change.</p>
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
