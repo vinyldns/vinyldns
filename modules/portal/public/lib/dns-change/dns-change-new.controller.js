@@ -114,17 +114,10 @@
                 function success(response) {
                     var alert = utilityService.success('Successfully created DNS Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
-                    // This is the message we have in akka http config to handle timeout
-                    if(response.data.message === "Successfully submitted DNS changes. Please wait a while for the changes to get processed."){
-                        $timeout(function(){
-                            location.href = "/dnschanges";
-                         }, 2000);
-                    } else {
-                        $timeout(function(){
-                            location.href = "/dnschanges/" + response.data.id;
-                         }, 2000);
-                        $scope.batch = response.data;
-                    }
+                    $timeout(function(){
+                        location.href = "/dnschanges/" + response.data.id;
+                    }, 2000);
+                    $scope.batch = response.data;
                 }
 
                 formatData(payload);
