@@ -14,7 +14,7 @@
 
     <logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF"/>
 
-    <logger name="com.zaxxer.hikari" level="TRACE">
+    <logger name="com.zaxxer.hikari" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
