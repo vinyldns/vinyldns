@@ -44,12 +44,14 @@ object BatchChangeInput {
 sealed trait ChangeInput {
   val inputName: String
   val typ: RecordType
+  val systemMessage: Option[String]
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError], defaultTtl: Long): SingleChange
 }
 
 final case class AddChangeInput(
     inputName: String,
     typ: RecordType,
+    systemMessage: Option[String],
     ttl: Option[Long],
     record: RecordData
 ) extends ChangeInput {
@@ -68,7 +70,7 @@ final case class AddChangeInput(
       knownTtl,
       record,
       SingleChangeStatus.NeedsReview,
-      None,
+      systemMessage,
       None,
       None,
       errors.toList.map(SingleChangeError(_))
@@ -79,6 +81,7 @@ final case class AddChangeInput(
 final case class DeleteRRSetChangeInput(
     inputName: String,
     typ: RecordType,
+    systemMessage: Option[String],
     record: Option[RecordData]
 ) extends ChangeInput {
   def asNewStoredChange(
@@ -93,7 +96,7 @@ final case class DeleteRRSetChangeInput(
       typ,
       record,
       SingleChangeStatus.NeedsReview,
-      None,
+      systemMessage,
       None,
       None,
       errors.toList.map(SingleChangeError(_))
@@ -104,6 +107,7 @@ object AddChangeInput {
   def apply(
       inputName: String,
       typ: RecordType,
+      systemMessage: Option[String],
       ttl: Option[Long],
       record: RecordData
   ): AddChangeInput = {
@@ -111,28 +115,29 @@ object AddChangeInput {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new AddChangeInput(transformName, typ, ttl, record)
+    new AddChangeInput(transformName, typ, systemMessage, ttl, record)
   }
 
   def apply(sc: SingleAddChange): AddChangeInput =
-    AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData)
+    AddChangeInput(sc.inputName, sc.typ, sc.systemMessage, Some(sc.ttl), sc.recordData)
 }
 
 object DeleteRRSetChangeInput {
   def apply(
       inputName: String,
       typ: RecordType,
+      systemMessage: Option[String],
       record: Option[RecordData] = None
   ): DeleteRRSetChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteRRSetChangeInput(transformName, typ, record)
+    new DeleteRRSetChangeInput(transformName, typ, systemMessage, record)
   }
 
   def apply(sc: SingleDeleteRRSetChange): DeleteRRSetChangeInput =
-    DeleteRRSetChangeInput(sc.inputName, sc.typ, sc.recordData)
+    DeleteRRSetChangeInput(sc.inputName, sc.typ, sc.systemMessage, sc.recordData)
 }
 
 object ChangeInputType extends Enumeration {

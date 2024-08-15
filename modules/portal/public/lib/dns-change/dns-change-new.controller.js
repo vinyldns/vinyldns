@@ -116,7 +116,7 @@
                     $scope.alerts.push(alert);
                     $timeout(function(){
                         location.href = "/dnschanges/" + response.data.id;
-                     }, 2000);
+                    }, 2000);
                     $scope.batch = response.data;
                 }
 

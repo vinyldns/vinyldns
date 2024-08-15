@@ -354,6 +354,7 @@ class MySqlBatchChangeRepository
   private def saveBatchChange(
       batchChange: BatchChange
   )(implicit session: DBSession): BatchChange = {
+    logger.info("Saving Batch Change")
     PUT_BATCH_CHANGE
       .bindByName(
         Seq(
@@ -373,6 +374,7 @@ class MySqlBatchChangeRepository
       )
       .update()
       .apply()
+    logger.info("Done saving Batch Change")
 
     val singleChangesParams = batchChange.changes.zipWithIndex.map {
       case (singleChange, seqNum) =>
@@ -395,7 +397,13 @@ class MySqlBatchChangeRepository
         }
     }
 
+    logger.info("Saving Single Changes")
+    val startTime = System.nanoTime()
     PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
+    val endTime = System.nanoTime()
+    val totalDuration = (endTime - startTime) / 1e6d // Convert to milliseconds
+    logger.info("Done saving Single Changes")
+    logger.info(s"Total time taken for batch update: $totalDuration ms")
     batchChange
   }
 
