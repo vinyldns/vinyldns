@@ -38,7 +38,6 @@ object RecordSetChangeHandler extends TransactionProvider {
   private val outOfSyncFailureMessage: String = "This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."
   private val incompatibleRecordFailureMessage: String = "Incompatible record in DNS."
   private val syncZoneMessage: String = "This record set is out of sync with the DNS backend. Sync this zone before attempting to update this record set."
-  private val wrongRecordDataMessage: String = "The record data entered doesn't exist. Please enter the correct record data or leave the field empty if it's a delete operation."
   private val recordConflictMessage: String = "Conflict due to the record having the same name as an NS record in the same zone. Please create the record using the DNS service the NS record has been delegated to (ex. AWS r53), or use a different record name."
 
   final case class Requeue(change: RecordSetChange) extends Throwable
@@ -393,16 +392,10 @@ object RecordSetChangeHandler extends TransactionProvider {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
-        if(message == outOfSyncFailureMessage){
+        if(message == outOfSyncFailureMessage || message == incompatibleRecordFailureMessage){
           Completed(
             change.failed(
               syncZoneMessage
-            )
-          )
-        } else if (message == incompatibleRecordFailureMessage) {
-          Completed(
-            change.failed(
-              wrongRecordDataMessage
             )
           )
         } else if (message == "referral") {
