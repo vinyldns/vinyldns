@@ -34,7 +34,7 @@ class MetaSpec extends Specification with Mockito {
       Meta(Configuration.from(config)).sharedDisplayEnabled must beTrue
     }
     "get the batch-change-limit value in config" in {
-      val config = Map("api.limits.batchchange-routing-max-items-limit" -> 21)
+      val config = Map("batch-change-limit" -> 21)
       Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(21)
     }
     "default to 1000 if batch-change-limit is not found" in {
