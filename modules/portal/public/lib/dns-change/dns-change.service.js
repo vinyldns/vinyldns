@@ -38,8 +38,8 @@
                                           })
                 let promis =  $http.post(url, data, {headers: utilityService.getCsrfHeader()});
                     // Hide loader when api gets response
-                    promis.then(()=>loader.modal("hide"))
-                          .catch(()=>loader.modal("hide"))
+                promis.then(()=>loader.modal("hide")
+                          ,()=>loader.modal("hide"))
                 return promis
             };
 
