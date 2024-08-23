@@ -181,7 +181,6 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
     }
 
   private[dns] def addRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
-    logger.info("In addRecord")
     for {
       change <- recordsArePresent(change)
       addRecord <- toDnsRRset(change.recordSet, change.zone.name)
@@ -191,7 +190,6 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
   }
 
   private[dns] def updateRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
-    logger.info("In updateRecord")
     for {
       change <- recordsArePresent(change)
       dnsRecord <- toDnsRRset(change.recordSet, change.zone.name)
@@ -202,7 +200,6 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
   }
 
   private[dns] def deleteRecord(change: RecordSetChange): IO[DnsResponse] = IO.fromEither {
-    logger.info("In deleteRecord")
     for {
       change <- recordsArePresent(change)
       dnsRecord <- toDnsRRset(change.recordSet, change.zone.name)
