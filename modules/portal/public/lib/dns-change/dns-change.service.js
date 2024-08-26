@@ -37,9 +37,16 @@
                                            show: true //Display loader!
                                           })
                 let promis =  $http.post(url, data, {headers: utilityService.getCsrfHeader()});
+
+                function hideLoader() {
+                    loader.modal("hide");
+
+                    // Manually remove the backdrop after the modal is hidden
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open');  // Remove the class that prevents scrolling
+                }
                     // Hide loader when api gets response
-                    promis.then(()=>loader.modal("hide"))
-                          .catch(()=>loader.modal("hide"))
+                promis.then(hideLoader, hideLoader).catch(hideLoader).finally(hideLoader);
                 return promis
             };
 
