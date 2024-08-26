@@ -1,0 +1,149 @@
+name: VinylDNS Beta Release
+concurrency:
+  cancel-in-progress: true
+  group: "release"
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  workflow_dispatch:
+    inputs:
+      verify-first:
+        description: 'Verify First?'
+        required: true
+        default: 'true'
+      create-gh-release:
+        description: 'Create a GitHub Release?'
+        required: true
+        default: 'true'
+      publish-images:
+        description: 'Publish Docker Images?'
+        required: true
+        default: 'true'
+      pre-release:
+        description: 'Is this a pre-release?'
+        required: true
+        default: 'true'
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  verify:
+    name: Verify Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch
+        if: github.event.inputs.verify-first == 'true'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Run Tests
+        id: verify
+        if: github.event.inputs.verify-first == 'true'
+        run: cd build/ && ./assemble_api.sh && ./run_all_tests.sh
+
+  create-gh-release:
+    name: Create GitHub Release
+    needs: verify
+    runs-on: ubuntu-latest
+    if: github.event.inputs.create-gh-release == 'true'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build Artifacts
+        id: build
+        run: cd build/ && ./assemble_api.sh && ./assemble_portal.sh
+
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(awk -F'"' '{print $2}' ./version.sbt)"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v0.1.14
+        with:
+          tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
+          generate_release_notes: true
+          files: artifacts/*
+          prerelease: ${{ github.event.inputs['pre-release'] == 'true' }}
+
+  docker-release-api:
+    name: Release API Docker Image
+    needs: [ verify, create-gh-release ]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.publish-images == 'true'
+
+    steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Import Content Trust Key
+        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+      # This will publish the latest release
+      - name: Publish API Docker Image
+        run: make -C build/docker/api publish
+        env:
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+  docker-release-portal:
+    name: Release Portal Docker Image
+    needs: [ verify, create-gh-release ]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.publish-images == 'true'
+
+    steps:
+      - name: Get Version
+        id: get-version
+        run: echo "::set-output name=vinyldns_version::$(curl -s https://api.github.com/repos/vinyldns/vinyldns/releases | jq -rc '.[0].tag_name')"
+
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.get-version.outputs.vinyldns_version }}
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Import Content Trust Key
+        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+
+      # This will publish the latest release
+      - name: Publish Portal Docker Image
+        run: make -C build/docker/portal publish
+        env:
+          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
