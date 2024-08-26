@@ -32,7 +32,7 @@ object Meta {
     Meta(
       config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
       config.getOptional[Boolean]("shared-display-enabled").getOrElse(false),
-      config.getOptional[Int]("api.limits.batchchange-routing-max-items-limit").getOrElse(1000),
+      config.getOptional[Int]("batch-change-limit").getOrElse(1000),
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
       config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false),
