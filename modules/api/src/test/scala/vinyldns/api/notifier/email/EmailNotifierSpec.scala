@@ -20,6 +20,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
+
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
 import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
@@ -30,8 +31,10 @@ import org.mockito.Matchers.{eq => eqArg, _}
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
+
 import javax.mail.{Address, Message}
 import _root_.vinyldns.core.domain.batch._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.record.{AData, OwnerShipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
@@ -157,8 +160,10 @@ class EmailNotifierSpec
         mockGroupRepository
       )
       val expectedAddresses = Array[Address](new InternetAddress("test@test.com"),new InternetAddress("test@test.com"))
-
       val messageArgument = ArgumentCaptor.forClass(classOf[Message])
+      val dummyGrp = dummyGroup.copy(memberIds = Set(dummyUser.id))
+      val dummyUsr = dummyUser.copy(id=dummyUser.id,email = Some("test@test.com"))
+
       doNothing().when(mockTransport).connect()
       doNothing()
         .when(mockTransport)
@@ -167,28 +172,20 @@ class EmailNotifierSpec
       doReturn(IO.pure(Some(okGroup)))
         .when(mockGroupRepository)
         .getGroup(okGroup.id)
-      doReturn(IO.pure(Some(okUser)))
-        .when(mockUserRepository)
-        .getUser(okGroup.memberIds.head)
+      doReturn(IO.pure(Some(dummyGrp)))
+        .when(mockGroupRepository)
+        .getGroup(dummyGrp.id)
       doReturn(IO.pure(Some(okUser)))
         .when(mockUserRepository)
         .getUser(okUser.id)
-      doReturn(IO.pure(Some(dummyGroup)))
-        .when(mockGroupRepository)
-        .getGroup(dummyGroup.id)
-      doReturn(IO.pure(Some(dummyUser.copy(email = Some("test@test.com")))))
+      doReturn(IO.pure(Some(dummyUsr)))
         .when(mockUserRepository)
-        .getUser(dummyGroup.memberIds.head)
-      doReturn(IO.pure(Some(dummyUser.copy(email = Some("test@test.com")))))
-        .when(mockUserRepository)
-        .getUser(dummyUser.id)
+        .getUser(dummyGrp.memberIds.head)
 
       val rsc = reccordSetChange.copy(userId = okUser.id)
 
       notifier.notify(Notification(rsc)).unsafeRunSync()
       val message = messageArgument.getValue
-      println(message)
-
       message.getFrom should be(Array(fromAddress))
       message.getContentType should be("text/html; charset=us-ascii")
       message.getAllRecipients should be(expectedAddresses)

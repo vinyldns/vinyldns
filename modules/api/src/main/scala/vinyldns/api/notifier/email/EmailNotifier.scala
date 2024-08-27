@@ -18,7 +18,8 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
-import cats.implicits.toFoldableOps
+import cats.implicits._
+import cats.effect.IO
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
 import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import org.slf4j.LoggerFactory
@@ -88,24 +89,24 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       ccGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
       _ <- toGroup match {
         case Some(group) =>
-          group.memberIds.toList.traverse_ { id =>
+          group.memberIds.toList.traverse { id =>
             userRepository.getUser(id).flatMap {
               case Some(UserWithEmail(toEmail)) =>
                 ccGroup match {
                   case Some(ccg) =>
-                    ccg.memberIds.toList.traverse_ { ccId =>
-                      userRepository.getUser(ccId).flatMap {
-                        case Some(ccUser) =>
-                            val ccEmail = ccUser.email.get
-                            send(toEmail)(new InternetAddress(ccEmail) ){ message =>
+                    ccg.memberIds.toList.traverse { id =>
+                        userRepository.getUser(id).flatMap {
+                          case Some(ccUser) =>
+                            val ccEmail = ccUser.email.getOrElse("<none>")
+                            send(toEmail)(new InternetAddress(ccEmail)) { message =>
                               message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
                               message.setContent(formatRecordSetChange(rsc), "text/html")
                               message
                             }
-                        case None =>
-                          IO.unit
+                          case None =>
+                            IO.unit
+                        }
                       }
-                    }
                   case None => IO.unit
                 }
               case Some(user: User) if user.email.isDefined =>
