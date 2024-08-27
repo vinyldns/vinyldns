@@ -18,24 +18,21 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  BatchChangeApprovalStatus,
-  SingleAddChange,
-  SingleChange,
-  SingleDeleteRRSetChange
-}
+import cats.implicits.toFoldableOps
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
 import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import org.slf4j.LoggerFactory
+
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
-
 import scala.util.Try
-import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, PTRData, RecordData, RecordSetChange, TXTData, OwnerShipTransferStatus}
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, OwnerShipTransferStatus, PTRData, RecordData, RecordSetChange, TXTData}
 import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+
 import java.time.ZoneId
 
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository, groupRepository: GroupRepository)
@@ -86,44 +83,51 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   }
 
   def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] = {
-    val toUser =
-      for{
-        group  <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
-        member <- userRepository.getUser(group.map(_.memberIds.head).getOrElse("<none>"))
-        user  <- userRepository.getUser(member.get.id)}
-      yield user
-
-    val cCUser =
-      for{
-        group  <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
-        member <- userRepository.getUser(group.map(_.memberIds.head).getOrElse("<none>"))
-        user  <- userRepository.getUser(member.get.id)}
-      yield user
-
-    toUser.flatMap {
-      case Some(UserWithEmail(email)) =>
-        cCUser.flatMap { ccEmail =>
-          send(email)(new InternetAddress(ccEmail.get.email.get)) { message =>
-            message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
-            message.setContent(formatRecordSetChange(rsc), "text/html")
-            message
+    for {
+      toGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
+      ccGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
+      _ <- toGroup match {
+        case Some(group) =>
+          group.memberIds.toList.traverse_ { id =>
+            userRepository.getUser(id).flatMap {
+              case Some(UserWithEmail(toEmail)) =>
+                ccGroup match {
+                  case Some(ccg) =>
+                    ccg.memberIds.toList.traverse_ { ccId =>
+                      userRepository.getUser(ccId).flatMap {
+                        case Some(ccUser) =>
+                            val ccEmail = ccUser.email.get
+                            send(toEmail)(new InternetAddress(ccEmail) ){ message =>
+                              message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
+                              message.setContent(formatRecordSetChange(rsc), "text/html")
+                              message
+                            }
+                        case None =>
+                          IO.unit
+                      }
+                    }
+                  case None => IO.unit
+                }
+              case Some(user: User) if user.email.isDefined =>
+                IO {
+                  logger.warn(
+                    s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
+                  )
+                }
+              case None =>
+                IO {
+                  logger.warn(s"Unable to find user: ${rsc.userId}")
+                }
+              case _ =>
+                IO.unit
+            }
           }
-        }
-      case Some(user: User) if user.email.isDefined =>
-        IO {
-          logger.warn(
-            s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
-          )
-        }
-      case None =>
-        IO {
-          logger.warn(s"Unable to find user: ${rsc.userId}")
-
-        }
-      case _ =>
-        IO.unit
-    }
+        case None => IO.unit // Handle case where toGroup is None
+      }
+    } yield ()
   }
+
+
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
     // Batch change info
