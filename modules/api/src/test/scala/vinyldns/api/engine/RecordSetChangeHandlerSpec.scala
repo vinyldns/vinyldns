@@ -27,9 +27,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
-import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue}
+import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue, Failure}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, BatchChangeRepository, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
 import vinyldns.core.TestRecordSetData._
@@ -51,6 +51,7 @@ class RecordSetChangeHandlerSpec
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private val mockBackend = mock[Backend]
   private val mockRsRepo = mock[RecordSetRepository]
+  private val mockBatchChangeRepo = mock[BatchChangeRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
   private val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
@@ -865,6 +866,25 @@ class RecordSetChangeHandlerSpec
         )
         .unsafeRunSync()
       processorStatus shouldBe a[AlreadyApplied]
+    }
+
+    "return Failed if there is a record in the DNS backend but not in vinyldns, and we try to delete it " in {
+      doReturn(IO.pure(List(rs)))
+        .when(mockBackend)
+        .resolve(rs.name, rsChange.zone.name, rs.typ)
+      doReturn(IO.pure(List(rs))).when(mockRsRepo).getRecordSetsByName(cs.zoneId, rs.name)
+
+      val processorStatus = RecordSetChangeHandler
+        .syncAndGetProcessingStatusFromDnsBackend(
+          rsChange.copy(changeType = RecordSetChangeType.Sync),
+          mockBackend,
+          mockRsRepo,
+          mockChangeRepo,
+          mockRecordSetDataRepo,
+          true
+        )
+        .unsafeRunSync()
+      processorStatus shouldBe a[Failure]
     }
 
     "sync in the DNS backend for Delete change if record exists" in {

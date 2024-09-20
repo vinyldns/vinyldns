@@ -193,6 +193,12 @@ object RecordSetChangeHandler extends TransactionProvider {
         case RecordSetChangeType.Delete =>
           if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
           else AlreadyApplied(change) // we did not find the record set, so already applied
+
+        case RecordSetChangeType.Sync =>
+          Failure(
+            change,
+            outOfSyncFailureMessage
+          )
       }
     }
 

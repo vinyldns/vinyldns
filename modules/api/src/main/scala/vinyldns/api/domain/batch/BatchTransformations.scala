@@ -249,12 +249,23 @@ object BatchTransformations {
           }
         case (true, false) => LogicalChangeType.Add
         case (false, true) =>
-          if ((existingRecords -- deleteChangeSet).isEmpty) {
+          if (existingRecords == deleteChangeSet) {
             LogicalChangeType.FullDelete
-          } else {
+          } else if (deleteChangeSet.exists(existingRecords.contains)) {
             LogicalChangeType.Update
+          } else {
+            LogicalChangeType.OutOfSync
           }
-        case (false, false) => LogicalChangeType.NotEditedInBatch
+        case (false, false) =>
+          if(changes.exists {
+            case _: DeleteRRSetChangeForValidation => true
+            case _ => false
+            }
+          ){
+            LogicalChangeType.OutOfSync
+          } else {
+            LogicalChangeType.NotEditedInBatch
+          }
       }
 
       new ValidationChanges(addChangeRecordDataSet, deleteChangeSet, proposedRecordData, logicalChangeType)
@@ -276,6 +287,6 @@ object BatchTransformations {
 
   object LogicalChangeType extends Enumeration {
     type LogicalChangeType = Value
-    val Add, FullDelete, Update, NotEditedInBatch = Value
+    val Add, FullDelete, Update, NotEditedInBatch, OutOfSync = Value
   }
 }

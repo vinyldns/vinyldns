@@ -862,12 +862,6 @@ class VinylDNSClient(object):
             if type(latest_change) != str:
                 change = latest_change
 
-        if change["status"] != expected_status:
-            print("Failed waiting for record change status")
-            print(json.dumps(change, indent=3))
-            if "systemMessage" in change:
-                print("systemMessage is " + change["systemMessage"])
-
         assert_that(change["status"], is_(expected_status))
         return change
 
@@ -891,10 +885,6 @@ class VinylDNSClient(object):
                 change = change
             else:
                 change = latest_change
-
-        if not self.batch_is_completed(change):
-            print("Failed waiting for record change status")
-            print(change)
 
         assert_that(self.batch_is_completed(change), is_(True))
         return change
