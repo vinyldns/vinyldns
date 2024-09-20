@@ -29,7 +29,7 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.backend.dns.DnsProtocol.{NotAuthorized, TryAgain}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, ReadyToApply, Requeue, Failure}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, BatchChangeRepository, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
 import vinyldns.core.TestRecordSetData._
@@ -51,7 +51,6 @@ class RecordSetChangeHandlerSpec
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private val mockBackend = mock[Backend]
   private val mockRsRepo = mock[RecordSetRepository]
-  private val mockBatchChangeRepo = mock[BatchChangeRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
   private val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
