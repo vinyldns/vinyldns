@@ -1,4 +1,4 @@
-name: VinylDNS Official Release
+name: VinylDNS Beta Release
 concurrency:
   cancel-in-progress: true
   group: "release"
@@ -20,6 +20,10 @@ on:
         default: 'true'
       publish-images:
         description: 'Publish Docker Images?'
+        required: true
+        default: 'true'
+      pre-release:
+        description: 'Is this a pre-release?'
         required: true
         default: 'true'
 
@@ -72,6 +76,7 @@ jobs:
           tag_name: v${{ steps.get-version.outputs.vinyldns_version }}
           generate_release_notes: true
           files: artifacts/*
+          prerelease: ${{ github.event.inputs['pre-release'] == 'true' }}
 
   docker-release-api:
     name: Release API Docker Image
