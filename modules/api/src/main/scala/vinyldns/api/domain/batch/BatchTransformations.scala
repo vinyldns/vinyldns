@@ -236,9 +236,6 @@ object BatchTransformations {
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
 
-      println("deleteChangeSet: ",deleteChangeSet)
-      println("existingRecords: ", existingRecords)
-
       val logicalChangeType = (addChangeRecordDataSet.nonEmpty, deleteChangeSet.nonEmpty) match {
         case (true, true) =>
           if (existingRecords.isEmpty) {
@@ -252,7 +249,6 @@ object BatchTransformations {
           }
         case (true, false) => LogicalChangeType.Add
         case (false, true) =>
-          println("In false true")
           if (existingRecords == deleteChangeSet) {
             LogicalChangeType.FullDelete
           } else if (deleteChangeSet.exists(existingRecords.contains)) {
@@ -261,7 +257,6 @@ object BatchTransformations {
             LogicalChangeType.OutOfSync
           }
         case (false, false) =>
-          println("In false false")
           if(changes.exists {
             case _: DeleteRRSetChangeForValidation => true
             case _ => false
