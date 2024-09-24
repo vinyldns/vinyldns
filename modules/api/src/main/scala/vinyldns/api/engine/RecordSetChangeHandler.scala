@@ -195,10 +195,14 @@ object RecordSetChangeHandler extends TransactionProvider {
           else AlreadyApplied(change) // we did not find the record set, so already applied
 
         case RecordSetChangeType.Sync =>
-          Failure(
-            change,
-            outOfSyncFailureMessage
-          )
+          if (existingRecords.nonEmpty) {
+            Failure(
+              change,
+              outOfSyncFailureMessage
+            )
+          } else {
+            AlreadyApplied(change)
+          }
       }
     }
 
