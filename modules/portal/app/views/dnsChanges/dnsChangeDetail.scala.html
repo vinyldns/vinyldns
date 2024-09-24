@@ -41,7 +41,9 @@
 
         <div class="row">
             <div class="col-md-12">
-                <p><strong>ID:</strong> {{batch.id}}</p>
+                <p><strong>ID:</strong> {{batch.id}}
+                    <button class="btn-right-corner" ng-click="exportToCSV(batch.id)">Export CSV</button>
+                </p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="'@rootAccountName' != batch.userName"><strong>Submitter:</strong> {{batch.userName}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
