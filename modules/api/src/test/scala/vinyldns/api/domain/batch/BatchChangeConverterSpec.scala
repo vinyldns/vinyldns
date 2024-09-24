@@ -546,7 +546,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       savedBatch shouldBe Some(returnedBatch)
     }
 
-    "set status to complete when deleting a record that does not exist" in {
+    "set status to pending when deleting a record that does not exist" in {
       val batchWithBadChange =
         BatchChange(
           okUser.id,
@@ -570,10 +570,10 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
       // validate completed status returned
       val receivedChange = returnedBatch.changes(0)
-      receivedChange.status shouldBe SingleChangeStatus.Complete
+      receivedChange.status shouldBe SingleChangeStatus.Pending
       receivedChange.recordChangeId shouldBe None
       receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Complete)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Pending)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
