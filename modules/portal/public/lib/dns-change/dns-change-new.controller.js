@@ -44,6 +44,11 @@
             $scope.manualReviewEnabled;
             $scope.naptrFlags = ["U", "S", "A", "P"];
 
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});

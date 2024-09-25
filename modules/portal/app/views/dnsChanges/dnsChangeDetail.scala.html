@@ -24,6 +24,10 @@
             <span ng-if="batch.status == 'Rejected'" class="label label-danger">{{batch.status}}</span>
             <span ng-if="batch.status == 'Scheduled'" class="label label-info">{{batch.status}}</span>
             <span ng-if="batch.status == 'Cancelled'" class="label label-default">{{batch.status}}</span>
+            <span class="copy-icon" ng-click="copyToClipboard()"
+                  data-toggle="tooltip" data-placement="top" title="Copy batch id to clipboard">
+                📋
+            </span>
         </h3>
     </div>
     <!-- END PAGE TITLE -->

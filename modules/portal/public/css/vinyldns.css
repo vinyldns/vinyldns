@@ -627,3 +627,12 @@ input[type="file"] {
     display: flex;
     flex-direction: column;
 }
+
+/* Style for the copy icon */
+.copy-icon {
+    cursor: pointer;
+    font-size: 16px;
+    position: relative;
+    display: inline-block;
+    margin-left: 5px;
+}

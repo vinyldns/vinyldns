@@ -16,7 +16,13 @@
 
             <!-- PAGE TITLE -->
             <div class="page-title">
-                <h3><span class="fa fa-group"></span> Group {{membership.group.name}}</h3>
+                <h3>
+                    <span class="fa fa-group"></span> Group: {{membership.group.name}}
+                    <span class="copy-icon" ng-click="copyToClipboard()"
+                          data-toggle="tooltip" data-placement="top" title="Copy group id to clipboard">
+                        📋
+                    </span>
+                </h3>
             </div>
             <!-- END PAGE TITLE -->
 

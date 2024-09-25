@@ -14,7 +14,7 @@ angular.module('vinyldns', [
         $animateProvider
             .classNameFilter(/toshow/);
         // turning off $log. Change to true for local development and testing
-        $logProvider.debugEnabled(false);
+        $logProvider.debugEnabled(true);
     })
     .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
