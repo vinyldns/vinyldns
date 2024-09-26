@@ -33,7 +33,7 @@
                 <div class="panel panel-default panel-tabs">
                     <ul class="nav nav-tabs bar_tabs">
                         <li class="active"><a href="#tab1" data-toggle="tab">Manage Groups</a></li>
-                        <li><a href="#tab2" data-toggle="tab">Change History</a></li>
+                        <li ng-if="canViewGroup"><a href="#tab2" data-toggle="tab">Change History</a></li>
                     </ul>
                     <div class="panel-body tab-content">
 

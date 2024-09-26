@@ -62,11 +62,12 @@
     <div class="panel-heading">
         <div class="row">
             <div class="col-md-10">
-                <span class="panel-title bolder-font-weight">Records</span>
+                <span class="panel-title bolder-font-weight">Records - {{recordSetCount}}</span>
             </div>
             <div class="col-md-2 pull-right">
                 <form class="input-group remove-bottom-margin" ng-submit="refreshRecords()">
                     <div class="input-group remove-bottom-margin">
+
                         <span class="input-group-btn">
                             <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
                         </span>
@@ -86,6 +87,9 @@
     <div class="panel-body">
         <div class="vinyldns-panel-top">
             <div class="btn-group">
+                <span class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                            <span class="spinner" ></span>
+                        </span>
                 <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
                 <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
                 <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
@@ -339,7 +343,7 @@
                         </td>
                     }
                     <td>
-                        <span ng-if="(canReadZone && record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
                             <div class="table-form-group">
                                 <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
                                 <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>

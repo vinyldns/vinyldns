@@ -992,7 +992,10 @@ dotted-hosts = {
         # The time period within which the TCP binding process must be completed.
         # Set to `infinite` to disable.
         bind-timeout = 5s
-      
+        # A default request timeout is applied globally to all routes and can be configured using the 
+        # akka.http.server.request-timeout setting (which defaults to 20 seconds).
+        # request-timeout = 60s      
+  
         # Show verbose error messages back to the client
         verbose-error-messages = on
      }

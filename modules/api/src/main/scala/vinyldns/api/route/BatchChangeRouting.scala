@@ -16,13 +16,12 @@
 
 package vinyldns.api.route
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
-import vinyldns.api.config.LimitsConfig
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.config.ManualReviewConfig
-import vinyldns.core.domain.batch._
+import vinyldns.api.config.{LimitsConfig, ManualReviewConfig}
 import vinyldns.api.domain.batch._
+import vinyldns.core.domain.batch._
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
@@ -71,43 +70,52 @@ class BatchChangeRoute(
           }
         }
       } ~
-        (get & monitor("Endpoint.listBatchChangeSummaries")) {
-          parameters(
-            "startFrom".as[Int].?,
-            "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
-            "ignoreAccess".as[Boolean].?(false),
-            "approvalStatus".as[String].?
-          ) {
-            (
-                startFrom: Option[Int],
-                maxItems: Int,
-                ignoreAccess: Boolean,
-                approvalStatus: Option[String]
-            ) =>
-              {
-                val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
+      (get & monitor("Endpoint.listBatchChangeSummaries")) {
+        parameters(
+          "userName".as[String].?,
+          "dateTimeRangeStart".as[String].?,
+          "dateTimeRangeEnd".as[String].?,
+          "startFrom".as[Int].?,
+          "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
+          "ignoreAccess".as[Boolean].?(false),
+          "approvalStatus".as[String].?
+        ) {
+          (
+              userName: Option[String],
+              dateTimeRangeStart: Option[String],
+              dateTimeRangeEnd: Option[String],
+              startFrom: Option[Int],
+              maxItems: Int,
+              ignoreAccess: Boolean,
+              approvalStatus: Option[String]
+          ) =>
+            {
+              val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
 
-                handleRejections(invalidQueryHandler) {
-                  validate(
-                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
-                  ) {
-                    authenticateAndExecute(
-                      batchChangeService.listBatchChangeSummaries(
-                        _,
-                        startFrom,
-                        maxItems,
-                        ignoreAccess,
-                        convertApprovalStatus
-                      )
-                    ) { summaries =>
-                      complete(StatusCodes.OK, summaries)
-                    }
+              handleRejections(invalidQueryHandler) {
+                validate(
+                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                  s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
+                ) {
+                  authenticateAndExecute(
+                    batchChangeService.listBatchChangeSummaries(
+                      _,
+                      userName,
+                      dateTimeRangeStart,
+                      dateTimeRangeEnd,
+                      startFrom,
+                      maxItems,
+                      ignoreAccess,
+                      convertApprovalStatus
+                    )
+                  ) { summaries =>
+                    complete(StatusCodes.OK, summaries)
                   }
                 }
               }
-          }
+            }
         }
+      }
     } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {

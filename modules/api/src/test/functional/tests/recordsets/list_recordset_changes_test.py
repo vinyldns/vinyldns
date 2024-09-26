@@ -209,107 +209,107 @@ def test_list_recordset_changes_max_items_boundaries(shared_zone_test_context):
     assert_that(too_small, is_("maxItems was 0, maxItems must be between 0 exclusive and 100 inclusive"))
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_no_authorization(shared_zone_test_context):
     """
     Test that recordset history without authorization fails
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    client.list_recordset_change_history(fqdn, type, sign_request=False, status=401)
+    client.list_recordset_change_history(zone_id, fqdn, type, sign_request=False, status=401)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_member_auth_success(shared_zone_test_context):
     """
     Test recordset history succeeds with membership auth for member of admin group
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    response = client.list_recordset_change_history(fqdn, type, status=200)
+    response = client.list_recordset_change_history(zone_id, fqdn, type, status=200)
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_member_auth_no_access(shared_zone_test_context):
     """
     Test recordset history fails for user not in admin group with no acl rules
     """
     client = shared_zone_test_context.ok_vinyldns_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    client.list_recordset_change_history(fqdn, type, status=403)
+    client.list_recordset_change_history(zone_id, fqdn, type, status=403)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_success(shared_zone_test_context):
     """
     Test recordset history succeeds with membership auth for member of admin group
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    response = client.list_recordset_change_history(fqdn, type, status=200)
+    response = client.list_recordset_change_history(zone_id, fqdn, type, status=200)
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_paging(shared_zone_test_context):
     """
     Test paging for recordset history can use previous nextId as start key of next page
     """
     client = shared_zone_test_context.history_client
 
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
 
-    response_1 = client.list_recordset_change_history(fqdn, type, start_from=None, max_items=1)
-    response_2 = client.list_recordset_change_history(fqdn, type, start_from=response_1["nextId"], max_items=1)
+    response_1 = client.list_recordset_change_history(zone_id, fqdn, type, start_from=None, max_items=1)
+    response_2 = client.list_recordset_change_history(zone_id, fqdn, type, start_from=response_1["nextId"], max_items=1)
 
     check_change_history_response(response_1, fqdn, type, recordChanges=True, nextId=True, startFrom=False, maxItems=1)
     check_change_history_response(response_2, fqdn, type, recordChanges=True, nextId=True, startFrom=response_1["nextId"], maxItems=1)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_returning_no_changes(shared_zone_test_context):
     """
     Pass in startFrom of "2000" should return empty list because start key exceeded number of recordset change history
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
-    response = client.list_recordset_change_history(fqdn, type, start_from=2000, max_items=None)
+    response = client.list_recordset_change_history(zone_id, fqdn, type, start_from=2000, max_items=None)
     assert_that(response["recordSetChanges"], has_length(0))
     assert_that(response["startFrom"], is_(2000))
     assert_that(response["maxItems"], is_(100))
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_default_max_items(shared_zone_test_context):
     """
     Test default max items is 100
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
 
-    response = client.list_recordset_change_history(fqdn, type, start_from=None, max_items=None)
+    response = client.list_recordset_change_history(zone_id, fqdn, type, start_from=None, max_items=None)
     check_change_history_response(response, fqdn, type, recordChanges=True, startFrom=False, nextId=False, maxItems=100)
 
 
-@pytest.mark.skip(reason="since record change history route is temporarily removed")
 def test_list_recordset_history_max_items_boundaries(shared_zone_test_context):
     """
     Test 0 < max_items <= 100
     """
     client = shared_zone_test_context.history_client
+    zone_id = shared_zone_test_context.history_zone["id"]
     fqdn = "test-create-cname-ok.system-test-history1."
     type = "CNAME"
 
-    too_large = client.list_recordset_change_history(fqdn, type, start_from=None, max_items=101, status=400)
-    too_small = client.list_recordset_change_history(fqdn, type, start_from=None, max_items=0, status=400)
+    too_large = client.list_recordset_change_history(zone_id, fqdn, type, start_from=None, max_items=101, status=400)
+    too_small = client.list_recordset_change_history(zone_id, fqdn, type, start_from=None, max_items=0, status=400)
 
     assert_that(too_large, is_("maxItems was 101, maxItems must be between 0 exclusive and 100 inclusive"))
     assert_that(too_small, is_("maxItems was 0, maxItems must be between 0 exclusive and 100 inclusive"))

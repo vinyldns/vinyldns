@@ -494,7 +494,7 @@ describe('Controller: MembershipController', function () {
             .and.stub()
             .and.returnValue(this.q.when(response));
 
-        this.scope.refresh();
+        this.scope.refreshGroupChanges();
         this.scope.$digest();
 
         expect(getGroupChangesSets.calls.count()).toBe(1);

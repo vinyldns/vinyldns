@@ -53,7 +53,7 @@ def test_list_zone_changes_member_auth_no_access(shared_zone_test_context):
 @pytest.mark.serial
 def test_list_zone_changes_member_auth_with_acl(shared_zone_test_context):
     """
-    Test list zone changes succeeds for user with acl rules
+    Test list zone changes fails for user with acl rules
     """
     zone = shared_zone_test_context.ok_zone
     acl_rule = generate_acl_rule("Write", userId="dummy")
@@ -62,7 +62,7 @@ def test_list_zone_changes_member_auth_with_acl(shared_zone_test_context):
 
         client.list_zone_changes(zone["id"], status=403)
         add_ok_acl_rules(shared_zone_test_context, [acl_rule])
-        client.list_zone_changes(zone["id"], status=200)
+        client.list_zone_changes(zone["id"], status=403)
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
 

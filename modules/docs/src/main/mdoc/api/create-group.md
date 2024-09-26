@@ -6,7 +6,7 @@ section: "api"
 
 # Create Group
 
-Creates a Group in VinylDNS
+Creates a Group in VinylDNS.
 
 #### HTTP REQUEST
 

@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import java.net.InetAddress
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import cats.data._
@@ -315,16 +314,34 @@ class BatchChangeValidations(
     else
       ().validNel
 
-  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
-    existingRecordSetData.exists { rd =>
-      (rd, recordData) match {
-        case (AAAAData(rdAddress), AAAAData(proposedAddress)) =>
-          InetAddress.getByName(proposedAddress).getHostName == InetAddress
-            .getByName(rdAddress)
-            .getHostName
-        case _ => rd == recordData
-      }
+  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean = {
+    existingRecordSetData.par.exists { rd =>
+      rd == recordData
     }
+  }
+
+  def ensureRecordExists(
+    change: ChangeForValidation,
+    groupedChanges: ChangeForValidationMap
+  ): Boolean = {
+    change match {
+      // For DeleteRecord inputs, need to verify that the record data actually exists
+      case DeleteRRSetChangeForValidation(_, _, DeleteRRSetChangeInput(_, _, _, Some(recordData)))
+        if !groupedChanges
+          .getExistingRecordSet(change.recordKey)
+          .exists(rs => matchRecordData(rs.records, recordData)) =>
+        false
+      case _ =>
+        true
+    }
+  }
+
+  def updateSystemMessage(changeInput: ChangeInput, systemMessage: String): ChangeInput = {
+    changeInput match {
+      case dci: DeleteRRSetChangeInput => dci.copy(systemMessage = Some(systemMessage))
+      case _ => changeInput
+    }
+  }
 
   def validateDeleteWithContext(
       change: ChangeForValidation,
@@ -333,26 +350,37 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
 
-    // To handle add and delete for the record with same record data is present in the batch
+    val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
+    val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
+
     val recordData = change match {
       case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
-      case DeleteRRSetChangeForValidation(_, _, inputChange) => if(inputChange.record.isDefined) inputChange.record.get.toString else ""
+      case DeleteRRSetChangeForValidation(_, _, inputChange) => inputChange.record.map(_.toString).getOrElse("")
     }
 
     val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
-    val isSameRecordUpdateInBatch = if(recordData.nonEmpty){
-      if(addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)) true else false
-    } else false
+    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
 
-    val validations =
-      groupedChanges.getExistingRecordSet(change.recordKey) match {
-        case Some(rs) =>
-          userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            zoneDoesNotRequireManualReview(change, isApproved)
-        case None =>
-          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(change.inputChange.inputName).invalidNel else ().validNel
-      }
-    validations.map(_ => change)
+    // Perform the system message update based on the condition
+    val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else if (!ensureRecordExists(change, groupedChanges)) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else {
+      change
+    }
+
+    val validations = groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
+      case Some(rs) =>
+        userCanDeleteRecordSet(updatedChange, auth, rs.ownerGroupId, rs.records) |+|
+          zoneDoesNotRequireManualReview(updatedChange, isApproved)
+      case None =>
+        if (isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
+    }
+
+    validations.map(_ => updatedChange)
   }
 
   def validateAddUpdateWithContext(
@@ -397,28 +425,40 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
 
+    val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
+    val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
+
     // To handle add and delete for the record with same record data is present in the batch
     val recordData = change match {
       case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
-      case DeleteRRSetChangeForValidation(_, _, inputChange) => if(inputChange.record.isDefined) inputChange.record.get.toString else ""
+      case DeleteRRSetChangeForValidation(_, _, inputChange) => inputChange.record.map(_.toString).getOrElse("")
     }
 
     val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
-    val isSameRecordUpdateInBatch = if(recordData.nonEmpty){
-      if(addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)) true else false
-    } else false
+    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
+
+    // Perform the system message update based on the condition
+    val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else if (!ensureRecordExists(change, groupedChanges)) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else {
+      change
+    }
 
     val validations =
-      groupedChanges.getExistingRecordSet(change.recordKey) match {
+      groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
         case Some(rs) =>
-          val adds = groupedChanges.getProposedAdds(change.recordKey).toList
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            zoneDoesNotRequireManualReview(change, isApproved)
+          val adds = groupedChanges.getProposedAdds(updatedChange.recordKey).toList
+          userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds) |+|
+            zoneDoesNotRequireManualReview(updatedChange, isApproved)
         case None =>
-          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(change.inputChange.inputName).invalidNel else ().validNel
+          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
       }
 
-    validations.map(_ => change)
+    validations.map(_ => updatedChange)
   }
 
   def validateAddWithContext(

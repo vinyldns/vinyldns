@@ -17,9 +17,9 @@
 package vinyldns.mysql.repository
 
 import java.sql.Timestamp
-
 import cats.data._
 import cats.effect._
+
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
@@ -166,8 +166,8 @@ class MySqlBatchChangeRepository
       }
 
     def getBatchFromSingleChangeId(
-        singleChangeId: String
-    )(implicit s: DBSession): Option[BatchChange] =
+                                    singleChangeId: String
+                                  )(implicit s: DBSession): Option[BatchChange] =
       GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
         .bind(singleChangeId)
         .map(extractBatchChange(None))
@@ -181,12 +181,9 @@ class MySqlBatchChangeRepository
             .apply()
           batchMeta.copy(changes = changes)
         }
-
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       IO {
-        logger.info(
-          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}"
-        )
+        logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -194,8 +191,7 @@ class MySqlBatchChangeRepository
             _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             batchChange <- getBatchFromSingleChangeId(headChange.id)
           } yield batchChange
-        }
-      }
+        }}
     }
   }
 
@@ -233,6 +229,9 @@ class MySqlBatchChangeRepository
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       approvalStatus: Option[BatchChangeApprovalStatus]
@@ -246,7 +245,13 @@ class MySqlBatchChangeRepository
 
           val uid = userId.map(u => s"bc.user_id = '$u'")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
-          val opts = uid ++ as
+          val uname = userName.map(uname => s"bc.user_name = '$uname'")
+          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
+            Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
+          } else {
+            None
+          }
+          val opts = uid ++ as ++ uname ++ dtRange
 
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
 
@@ -385,7 +390,6 @@ class MySqlBatchChangeRepository
           case Left(e) => throw e
         }
     }
-
     PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
     batchChange
   }

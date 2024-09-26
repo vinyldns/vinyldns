@@ -194,6 +194,9 @@
                                              && change.status =='Complete'">
                                         ℹ️ {{change.systemMessage}}
                                     </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && change.status =='Failed'">
+                                        {{change.systemMessage}}
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>

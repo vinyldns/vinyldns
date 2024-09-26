@@ -850,9 +850,7 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
-      doReturn(IO.pure(Some(okZone)))
-        .when(mockZoneRepo)
-        .getZone(okZone.id)
+
       doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(newRecord.id)
@@ -1939,19 +1937,22 @@ class RecordSetServiceSpec
       val completeRecordSetChanges: List[RecordSetChange] =
         List(pendingCreateAAAA, pendingCreateCNAME, completeCreateAAAA, completeCreateCNAME)
 
+      doReturn(IO.pure(Some(zoneActive)))
+        .when(mockZoneRepo)
+        .getZone(zoneActive.id)
       doReturn(IO.pure(ListRecordSetChangesResults(completeRecordSetChanges)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = Some(okZone.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
+        .listRecordSetChanges(zoneId = Some(zoneActive.id), startFrom = None, maxItems = 100, fqdn = None, recordType = None)
       doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(zoneActive.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         completeRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
-        zoneId = okZone.id,
+        zoneId = zoneActive.id,
         recordSetChanges = changesWithName,
         nextId = None,
         startFrom = None,
@@ -1965,15 +1966,18 @@ class RecordSetServiceSpec
         List(pendingCreateAAAA, completeCreateAAAA)
       val zoneId = filteredRecordSetChanges.head.zoneId
 
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(zoneId)
       doReturn(IO.pure(ListRecordSetChangesResults(filteredRecordSetChanges)))
         .when(mockRecordChangeRepo)
-        .listRecordSetChanges(zoneId = None, startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
+        .listRecordSetChanges(zoneId = Some(zoneId), startFrom = None, maxItems = 100, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA))
       doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetHistoryResponse =
-        underTest.listRecordSetChangeHistory(None, fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChangeHistory(zoneId = Some(zoneId), fqdn = Some("aaaa.ok.zone.recordsets."), recordType = Some(RecordType.AAAA), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         filteredRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetHistoryResponse(
@@ -1995,7 +1999,7 @@ class RecordSetServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val expectedResults = ListRecordSetChangesResponse(
         zoneId = okZone.id,
         recordSetChanges = List(),
@@ -2061,7 +2065,7 @@ class RecordSetServiceSpec
 
     "return a NotAuthorizedError" in {
       val error =
-        underTest.listRecordSetChanges(Some(zoneNotAuthorized.id), authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -2078,7 +2082,7 @@ class RecordSetServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        underTest.listRecordSetChanges(Some(okZone.id), authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+        underTest.listRecordSetChanges(okZone.id, authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       val changesWithName =
         List(RecordSetChangeInfo(rsChange2, Some("ok")), RecordSetChangeInfo(rsChange1, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
@@ -2122,6 +2126,32 @@ class RecordSetServiceSpec
         underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
     }
+
+    "return a RecordSets Count" in {
+      doReturn(IO.pure(Some(okZone)))
+        .when(mockZoneRepo)
+        .getZone(okZone.id)
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+      doReturn(IO.pure(10))
+        .when(mockRecordRepo).getRecordSetCount(okZone.id)
+
+      val result = underTest.getRecordSetCount(okZone.id,authPrincipal = okAuth).value.unsafeRunSync().toOption.get
+      result shouldBe RecordSetCount(10)
+
+    }
+
+    "return a NotAuthorizedError for getRecordSetCount if the user is not authorized to access the zone" in {
+      doReturn(IO.pure(10))
+        .when(mockRecordRepo).getRecordSetCount(zoneNotAuthorized.id)
+      val error =
+        underTest.getRecordSetCount((zoneNotAuthorized.id), authPrincipal = okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[NotAuthorizedError]
+
+    }
+
 
     "return a NotAuthorizedError if the user is not authorized to access the zone" in {
       doReturn(IO.pure(Some(zoneActive))).when(mockZoneRepo).getZone(zoneActive.id)

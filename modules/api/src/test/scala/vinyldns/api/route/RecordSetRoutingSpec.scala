@@ -56,6 +56,7 @@ class RecordSetRoutingSpec
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
   private val invalidChangeZone = Zone("invalidChange", "test@test.com")
+  private val recordSetCount = RecordSetCount(5)
 
   private val rsAlreadyExists = RecordSet(
     okZone.id,
@@ -745,17 +746,26 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
+    def getRecordSetCount(
+                           zoneId: String,
+                           authPrincipal: AuthPrincipal
+                         ): Result[RecordSetCount] = {
+      zoneId match {
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(recordSetCount)
+      }
+    }.toResult
+
     def listRecordSetChanges(
-                              zoneId: Option[String],
+                              zoneId: String,
                               startFrom: Option[Int],
                               maxItems: Int,
-                              fqdn: Option[String],
-                              recordType: Option[RecordType],
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
       zoneId match {
-        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
-        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
       }
     }.toResult
@@ -905,6 +915,33 @@ class RecordSetRoutingSpec
         status shouldBe StatusCodes.BadRequest
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET recordset change history" should {
+    "return the recordset change" in {
+      Get(s"/recordsetchange/history?zoneId=${okZone.id}&fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
+        val response = responseAs[ListRecordSetHistoryResponse]
+
+        response.zoneId shouldBe Some(okZone.id)
+        (response.recordSetChanges.map(_.id) should contain)
+          .only(rsChange1.id)
+      }
+    }
+
+    "return an error when the record fqdn and type is not defined" in {
+      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a Bad Request when maxItems is out of Bounds" in {
+      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -1667,6 +1704,21 @@ class RecordSetRoutingSpec
         testRecordType(RecordType.TXT, "text" -> Random.alphanumeric.take(70000).mkString),
         "TXT record must be less than 64764 characters"
       )
+    }
+  }
+  "GET recordset count by zone" should {
+    "return recordset count" in {
+      Get(s"/zones/${okZone.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[RecordSetCount]
+        resultRs shouldBe recordSetCount
+      }
+    }
+
+    "return a 404 Not Found when the zone doesn't exist" in {
+      Get(s"/zones/${zoneNotFound.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
     }
   }
 }

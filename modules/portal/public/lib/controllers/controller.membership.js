@@ -49,6 +49,40 @@ angular.module('controller.membership', []).controller('MembershipController', f
         $scope.alerts.push(alert);
     }
 
+    $scope.canViewGroup = false;
+    $scope.canSeeGroup = function (members) {
+        if (members && members.length > 0) {
+            var isMember = members.some(x => x.id === $scope.profile.id);
+            var isSupport = $scope.profile.isSupport;
+            var isSuper = $scope.profile.isSuper;
+            return isMember || isSupport || isSuper;
+        }
+        else {
+            return false
+        }
+    }
+
+    function profileSuccess(results) {
+        //if data is provided
+        if (results.data) {
+            //update user profile data
+            //make user profile available to page
+            $scope.profile = results.data;
+            $log.debug($scope.profile);
+            //load data in grid
+            $scope.refresh();
+        }
+    }
+
+    function profileFailure(results) {
+        $scope.profile = $scope.profile || {};
+    }
+
+    //get user data on groups view load
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
+
     $scope.getGroupMemberList = function(groupId) {
         function success(response) {
             $log.debug('groupsService::getGroupMemberList-success');
@@ -203,6 +237,10 @@ angular.module('controller.membership', []).controller('MembershipController', f
                 //update groups
                 $scope.membership.members = result.members;
                 $scope.membershipLoaded = true;
+                $scope.canViewGroup = $scope.canSeeGroup($scope.membership.members);
+                if($scope.canViewGroup){
+                    $scope.refreshGroupChanges(id);
+                }
                 return result;
             }
 
@@ -229,7 +267,6 @@ angular.module('controller.membership', []).controller('MembershipController', f
 
         $scope.resetNewMemberData();
         $scope.getGroupInfo(id);
-        $scope.refreshGroupChanges(id);
     };
 
     $scope.refreshGroupChanges = function(id) {
