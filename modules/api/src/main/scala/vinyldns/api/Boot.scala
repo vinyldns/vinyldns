@@ -18,9 +18,8 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.{Materializer, ActorMaterializer}
-import cats.effect.{Timer, IO, ContextShift}
-import cats.data.NonEmptyList
+import akka.stream.{ActorMaterializer, Materializer}
+import cats.effect.{ContextShift, IO, Timer}
 import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
@@ -29,32 +28,28 @@ import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
 import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
-import vinyldns.api.domain.access.{GlobalAcls, AccessValidations}
+import vinyldns.api.domain.access.{AccessValidations, GlobalAcls}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
-import vinyldns.api.domain.batch.{BatchChangeService, BatchChangeConverter, BatchChangeValidations}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.metrics.APIMetrics
-import vinyldns.api.repository.{ApiDataAccessorProvider, ApiDataAccessor, TestDataLoader}
+import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.health.HealthService
-import vinyldns.core.queue.{MessageQueueLoader, MessageCount}
-
+import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
 import vinyldns.core.repository.DataStoreLoader
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import vinyldns.core.task.TaskScheduler
 
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
-
-  // Create a ScheduledExecutorService with a new single thread
-  private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
@@ -100,18 +95,16 @@ object Boot extends App {
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the zone sync task to be executed every 5 seconds
-      _ <- if (vinyldnsConfig.serverConfig.isZoneSyncScheduleAllowed){ IO(executor.scheduleAtFixedRate(() => {
-        val zoneChanges = for {
-          zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
-          _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
-        } yield ()
-        zoneChanges.unsafeRunAsync {
-          case Right(_) =>
-            logger.debug("Zone sync scheduler ran successfully!")
-          case Left(error) =>
-            logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
-        }
-      }, 0, 1, TimeUnit.SECONDS)) } else IO.unit
+      _ <- if (vinyldnsConfig.serverConfig.isZoneSyncScheduleAllowed) {
+        TaskScheduler
+          .schedule(
+            new ZoneSyncTask(repositories.zoneRepository, messageQueue),
+            repositories.taskRepository
+          )
+          .compile
+          .drain
+          .start
+      } else IO.unit
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,

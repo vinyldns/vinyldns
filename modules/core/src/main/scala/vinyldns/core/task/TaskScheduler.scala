@@ -66,10 +66,10 @@ object TaskScheduler extends Monitored {
     def claimTask(): IO[Option[Task]] =
       taskRepository.claimTask(task.name, task.timeout, task.runEvery).map {
         case true =>
-          logger.info(s"""Successfully found and claimed task; taskName="${task.name}" """)
+          logger.debug(s"""Successfully found and claimed task; taskName="${task.name}" """)
           Some(task)
         case false =>
-          logger.info(s"""No task claimed; taskName="${task.name}" """)
+          logger.debug(s"""No task claimed; taskName="${task.name}" """)
           None
       }
 
@@ -80,7 +80,7 @@ object TaskScheduler extends Monitored {
           t =>
             taskRepository
               .releaseTask(t.name)
-              .as(logger.info(s"""Released task; taskName="${task.name}" """))
+              .as(logger.debug(s"""Released task; taskName="${task.name}" """))
         )
         .getOrElse(IO.unit)
     }
