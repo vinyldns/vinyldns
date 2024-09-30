@@ -118,8 +118,7 @@ class BatchChangeRoute(
               }
             }
         }
-      }
-    } ~
+      } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
