@@ -17,9 +17,9 @@
 package vinyldns.mysql.repository
 
 import java.sql.Timestamp
-
 import cats.data._
 import cats.effect._
+
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
@@ -174,8 +174,8 @@ class MySqlBatchChangeRepository
       }
 
     def getBatchFromSingleChangeId(
-        singleChangeId: String
-    )(implicit s: DBSession): Option[BatchChange] =
+                                    singleChangeId: String
+                                  )(implicit s: DBSession): Option[BatchChange] =
       GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
         .bind(singleChangeId)
         .map(extractBatchChange(None))
@@ -209,9 +209,7 @@ class MySqlBatchChangeRepository
 
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       IO {
-        logger.info(
-          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}"
-        )
+        logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
         DB.localTx { implicit s =>
           for {
             headChange <- singleChanges.headOption
@@ -221,8 +219,7 @@ class MySqlBatchChangeRepository
             batchStatus = BatchChangeStatus.calculateBatchStatus(batchChange.approvalStatus, pendingCount > 0, failCount > 0, completeCount > 0, batchChange.scheduledTime.isDefined)
             _ = UPDATE_BATCH_CHANGE.bindByName('batchStatus -> batchStatus.toString, 'id -> batchChange.id).update().apply()
           } yield batchChange
-        }
-      }
+        }}
     }
   }
 
@@ -447,7 +444,6 @@ class MySqlBatchChangeRepository
           case Left(e) => throw e
         }
     }
-
     PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
     batchChange
   }

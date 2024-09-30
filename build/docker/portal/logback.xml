@@ -15,7 +15,7 @@
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
 
-  <logger name="com.zaxxer.hikari" level="TRACE">
+  <logger name="com.zaxxer.hikari" level="ERROR">
     <appender-ref ref="CONSOLE"/>
   </logger>
 
