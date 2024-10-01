@@ -627,3 +627,11 @@ input[type="file"] {
     display: flex;
     flex-direction: column;
 }
+
+.dt-select-box {
+    top: 318.883px !important;
+    left: 1275.34px !important;
+    right: auto !important;
+    margin-top: 60px !important;
+    z-index: 9999 !important;
+}

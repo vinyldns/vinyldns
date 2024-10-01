@@ -78,6 +78,7 @@ class BatchChangeRoute(
           "startFrom".as[Int].?,
           "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
           "ignoreAccess".as[Boolean].?(false),
+          "batchStatus".as[String].?,
           "approvalStatus".as[String].?
         ) {
           (
@@ -87,36 +88,39 @@ class BatchChangeRoute(
               startFrom: Option[Int],
               maxItems: Int,
               ignoreAccess: Boolean,
+              batchStatus: Option[String],
               approvalStatus: Option[String]
           ) =>
             {
               val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
-
-              handleRejections(invalidQueryHandler) {
-                validate(
-                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                  s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
-                ) {
-                  authenticateAndExecute(
-                    batchChangeService.listBatchChangeSummaries(
-                      _,
-                      userName,
-                      dateTimeRangeStart,
-                      dateTimeRangeEnd,
-                      startFrom,
-                      maxItems,
-                      ignoreAccess,
-                      convertApprovalStatus
-                    )
-                  ) { summaries =>
-                    complete(StatusCodes.OK, summaries)
+              val convertBatchStatus = batchStatus.flatMap(BatchChangeStatus.find)
+              
+                handleRejections(invalidQueryHandler) {
+                  validate(
+                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
+                  ) {
+                    authenticateAndExecute(
+                      batchChangeService.listBatchChangeSummaries(
+                        _,
+                        userName,
+                        dateTimeRangeStart,
+                        dateTimeRangeEnd,
+                        startFrom,
+                        maxItems,
+                        ignoreAccess,
+                        convertBatchStatus,
+                        convertApprovalStatus
+                      )
+                    ) { summaries =>
+                      complete(StatusCodes.OK, summaries)
+                    }
                   }
                 }
               }
             }
         }
-      }
-    } ~
+      } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
