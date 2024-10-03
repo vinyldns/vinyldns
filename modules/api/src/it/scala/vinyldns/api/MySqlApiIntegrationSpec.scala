@@ -34,6 +34,6 @@ trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
 
   def clearGroupRepo(): Unit =
     DB.localTx { s =>
-      s.executeUpdate("DELETE FROM groups")
+      s.executeUpdate("DELETE FROM `groups`")
     }
 }
