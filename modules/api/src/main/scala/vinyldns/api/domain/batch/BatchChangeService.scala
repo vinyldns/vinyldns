@@ -596,10 +596,11 @@ class BatchChangeService(
   ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     val submitterUserName = if(userName.isDefined && userName.get.isEmpty) None else userName
+    val gName = if (groupName.isDefined && groupName.get.isEmpty) None else groupName
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     val memberId = for {
-      groupId <- membershipService.listMyGroups(groupName,None,100,auth,false,false).map(_.groups.map(_.id))
+      groupId <- membershipService.listMyGroups(gName,None,100,auth,false,false).map(_.groups.map(_.id))
      member <- membershipService.listMembers(groupId.mkString,None,100,auth)
      }yield member.members.map(_.id).mkString("', '")
     for {

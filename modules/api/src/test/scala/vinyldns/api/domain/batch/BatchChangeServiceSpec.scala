@@ -20,6 +20,7 @@ import cats.data.Validated.Valid
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
+
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDateTime, ZoneId}
 import org.scalatestplus.mockito.MockitoSugar
@@ -31,13 +32,7 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain._
-import vinyldns.api.repository.{
-  EmptyGroupRepo,
-  EmptyRecordSetRepo,
-  EmptyUserRepo,
-  EmptyZoneRepo,
-  InMemoryBatchChangeRepository
-}
+import vinyldns.api.repository.{EmptyGroupRepo, EmptyRecordSetRepo, EmptyUserRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -51,6 +46,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.membership.MembershipService
 
 import java.time.format.DateTimeFormatter
 import scala.concurrent.ExecutionContext
@@ -218,6 +214,7 @@ class BatchChangeServiceSpec
   private val batchChangeRepo = new InMemoryBatchChangeRepository
   private val mockNotifier = mock[Notifier]
   private val mockNotifiers = AllNotifiers(List(mockNotifier))
+  private val mockMembershipService = mock[MembershipService]
 
   object EmptyBatchConverter extends BatchChangeConverterAlgebra {
     def sendBatchForProcessing(
@@ -418,6 +415,7 @@ class BatchChangeServiceSpec
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -434,6 +432,7 @@ class BatchChangeServiceSpec
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -450,6 +449,7 @@ class BatchChangeServiceSpec
   private val underTestScheduledEnabled = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -476,6 +476,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         TestZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -508,6 +509,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         TestZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1147,6 +1149,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1188,6 +1191,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1214,6 +1218,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
