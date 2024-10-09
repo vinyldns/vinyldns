@@ -30,6 +30,17 @@
         <!-- PAGE CONTENT WRAPPER -->
         <div class="page-content-wrap">
 
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong>Zone ID:</strong> {{zoneInfo.id}}
+                        <span class="copy-button" ng-click="copyToClipboard()"
+                              data-toggle="tooltip" data-placement="top" title="Copy zone id to clipboard">
+                            <i class="fa fa-clone"></i> Copy
+                        </span>
+                    </p>
+                </div>
+            </div>
+
             <div class="alert-wrapper">
                 <div ng-repeat="alert in alerts">
                     <notification ng-model="alert"></notification>

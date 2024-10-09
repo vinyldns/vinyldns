@@ -99,6 +99,19 @@ angular.module('controller.records', [])
     // paging status for record changes
     var changePaging = pagingService.getNewPagingParams(100);
 
+    // Initialize Bootstrap tooltips
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    // Function to copy the ID to clipboard
+    $scope.copyToClipboard = function() {
+        utilityService.copyToClipboard($scope.zoneInfo.id);
+        // Trigger success alert using utilityService
+        var alert = utilityService.success('Successfully copied zone id to clipboard');
+        $scope.alerts.push(alert);
+    };
+
     /**
       * Modal control functions
       */

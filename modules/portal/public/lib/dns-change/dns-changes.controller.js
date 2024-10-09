@@ -50,6 +50,19 @@
                 $scope.alerts.push(alert);
             }
 
+            // Initialize tooltips after the view has rendered
+            $timeout(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            }, 0);
+
+            // Function to copy the ID to clipboard
+            $scope.copyToClipboard = function(copyText) {
+                utilityService.copyToClipboard(copyText);
+                // Trigger success alert using utilityService
+                var alert = utilityService.success('Successfully copied batch id to clipboard');
+                $scope.alerts.push(alert);
+            };
+
             $scope.refreshBatchChanges = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
 

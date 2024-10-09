@@ -46,12 +46,38 @@ angular.module('service.utility', [])
     };
 
     this.success = function(message, response, type) {
-        var msg = "HTTP " + response.status + " (" + response.statusText + "): " + message;
-        $log.debug(type, response);
-        return {
-            type: "success", content: msg
-        };
+        if (response && type) {
+            var msg = "HTTP " + response.status + " (" + response.statusText + "): " + message;
+            $log.debug(type, response);
+            return {
+                type: "success",
+                content: msg
+            };
+        } else {
+            return {
+                type: "success",
+                content: message
+            };
+        }
     };
+
+    // Function to copy the ID to clipboard
+    this.copyToClipboard = function(id) {
+        // Create a temporary input element to hold the ID
+        var tempInput = document.createElement("input");
+        tempInput.style.position = "absolute";
+        tempInput.style.left = "-9999px";
+        tempInput.value = id;
+        document.body.appendChild(tempInput);
+
+        // Select the input value and copy it
+        tempInput.select();
+        document.execCommand("copy");
+
+        // Remove the temporary input
+        document.body.removeChild(tempInput);
+    };
+
 
     this.urlBuilder = function (url, obj) {
         var result = [];

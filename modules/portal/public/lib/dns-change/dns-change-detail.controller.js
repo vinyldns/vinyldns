@@ -26,6 +26,19 @@
             $scope.reviewConfirmationMsg;
             $scope.reviewType;
 
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
+            // Function to copy the ID to clipboard
+            $scope.copyToClipboard = function() {
+                utilityService.copyToClipboard($scope.batch.id);
+                // Trigger success alert using utilityService
+                var alert = utilityService.success('Successfully copied batch id to clipboard');
+                $scope.alerts.push(alert);
+            };
+
             $scope.getBatchChange = function(batchChangeId) {
                 function success(response) {
                     $scope.batch = response.data;
