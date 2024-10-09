@@ -2474,6 +2474,81 @@ class BatchChangeServiceSpec
       result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
     }
 
+    "only return summaries associated with group who called" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeUserTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
+      val result =
+        underTest.listBatchChangeSummaries(auth, None, Some(okGroup.name), maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
+
+      result.length shouldBe 1
+      result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
+    }
+
+    "return empty summaries with group name not exists" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeUserTwo)
+      val listOfXyzGroupInfo: List[GroupInfo] = {List(xyzGroup).map(GroupInfo.apply)}
+
+      val listMyGroupsResponses = ListMyGroupsResponse(
+        groups = listOfXyzGroupInfo,
+        None,
+        None,
+        nextId = None,
+        maxItems = 100,
+        ignoreAccess = false
+      )
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponses)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
+      val result =
+        underTest.listBatchChangeSummaries(auth, None, Some(xyzGroup.name), maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
+
+      result.length shouldBe 0
+    }
+
     "only return summaries associated with user who called even if ignoreAccess is true if user is not super" in {
       val batchChangeUserOne =
         BatchChange(
