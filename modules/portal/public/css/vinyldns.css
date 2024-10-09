@@ -656,3 +656,19 @@ input[type="file"] {
     margin-right: 4px;
     font-size: 12px;
 }
+
+.small-copy-button {
+    font-size: 12px;
+    padding: 2px 6px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.small-copy-button i {
+    font-size: 12px;
+}
+
+.small-copy-button:hover {
+    background-color: #f0f0f0;
+    border-radius: 4px;
+}
