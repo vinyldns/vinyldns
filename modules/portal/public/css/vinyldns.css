@@ -133,6 +133,11 @@ a.action-link {
     border-bottom-left-radius: 4px;
 }
 
+.btn-right-corner {
+    float: right;
+    margin-left: 10px;
+}
+
 .form-control.zone-edit {
     background: #F9F9F9;
     color:#555;

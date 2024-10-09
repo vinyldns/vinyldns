@@ -46,6 +46,7 @@
                           data-toggle="tooltip" data-placement="top" title="Copy batch id to clipboard">
                         <i class="fa fa-clone"></i> Copy
                     </span>
+                    <button class="btn-right-corner" ng-click="exportToCSV(batch.id)">Export CSV</button>
                 </p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="'@rootAccountName' != batch.userName"><strong>Submitter:</strong> {{batch.userName}}</p>

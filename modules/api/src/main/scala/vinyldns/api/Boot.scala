@@ -96,7 +96,8 @@ object Boot extends App {
       msgsPerPoll <- IO.fromEither(MessageCount(vinyldnsConfig.messageQueueConfig.messagesPerPoll))
       notifiers <- NotifierLoader.loadAll(
         vinyldnsConfig.notifierConfigs,
-        repositories.userRepository
+        repositories.userRepository,
+        repositories.groupRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the zone sync task to be executed every 5 seconds
@@ -161,7 +162,8 @@ object Boot extends App {
           vinyldnsConfig.highValueDomainConfig,
           vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
-          vinyldnsConfig.serverConfig.useRecordSetCache
+          vinyldnsConfig.serverConfig.useRecordSetCache,
+          notifiers
         )
       val zoneService = ZoneService(
         repositories,
