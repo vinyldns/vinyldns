@@ -17,6 +17,7 @@ GET           /dnschanges                        @controllers.FrontendController
 GET           /dnschanges/new                    @controllers.FrontendController.viewNewBatchChange
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
 GET           /recordsets                        @controllers.FrontendController.viewRecordSets
+GET           /settings                          @controllers.FrontendController.viewSettings
 
 ### Routes to process requests, get data ###
 GET           /health                            @controllers.HealthController.health
@@ -49,7 +50,7 @@ GET           /api/recordsetchange/history       @controllers.VinylDNS.listRecor
 
 GET           /api/groups                        @controllers.VinylDNS.getGroups
 GET           /api/groups/:gid                   @controllers.VinylDNS.getGroup(gid: String)
-GET           /api/groups/valid/domains           @controllers.VinylDNS.getValidEmailDomains
+GET           /api/groups/valid/domains          @controllers.VinylDNS.getValidEmailDomains
 GET           /api/groups/:gid/groupchanges      @controllers.VinylDNS.listGroupChanges(gid: String)
 GET           /api/groups/change/:gcid           @controllers.VinylDNS.getGroupChange(gcid: String)
 POST          /api/groups                        @controllers.VinylDNS.newGroup
@@ -62,6 +63,7 @@ GET           /api/users/currentuser             @controllers.VinylDNS.getAuthen
 GET           /api/users/lookupuser/:uname       @controllers.VinylDNS.getUserDataByUsername(uname: String)
 PUT           /api/users/:uid/lock               @controllers.VinylDNS.lockUser(uid: String)
 PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUser(uid: String)
+PUT           /api/users/:uid/update/:status     @controllers.VinylDNS.updateUserPermission(uid: String, status: String)
 GET           /api/users/:uid                    @controllers.VinylDNS.getUser(uid: String)
 
 GET           /api/dnschanges/:id                @controllers.VinylDNS.getBatchChange(id: String)

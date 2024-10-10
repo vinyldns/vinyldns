@@ -23,11 +23,23 @@ import java.time.Instant
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
 import vinyldns.core.domain.membership.LockStatus.LockStatus
+import vinyldns.core.domain.membership.PermissionStatus.PermissionStatus
 import java.time.temporal.ChronoUnit
 
 object LockStatus extends Enumeration {
   type LockStatus = Value
   val Locked, Unlocked = Value
+}
+
+object PermissionStatus extends Enumeration {
+  type PermissionStatus = Value
+  val MakeSuper, RemoveSuper, MakeSupport, RemoveSupport = Value
+
+  private val valueMap =
+    PermissionStatus.values.map(v => v.toString.toLowerCase -> v).toMap
+
+  def find(status: String): PermissionStatus =
+    valueMap(status.toLowerCase)
 }
 
 final case class User(
@@ -47,6 +59,15 @@ final case class User(
 
   def updateUserLockStatus(lockStatus: LockStatus): User =
     this.copy(lockStatus = lockStatus)
+
+  def updateUserPermissionStatus(permissionStatus: PermissionStatus): User = {
+    permissionStatus match {
+      case PermissionStatus.MakeSuper => this.copy(isSuper = true)
+      case PermissionStatus.RemoveSuper => this.copy(isSuper = false)
+      case PermissionStatus.MakeSupport => this.copy(isSupport = true)
+      case PermissionStatus.RemoveSupport => this.copy(isSupport = false)
+    }
+  }
 
   def regenerateCredentials(): User =
     copy(accessKey = User.generateKey, secretKey = Encrypted(User.generateKey))
