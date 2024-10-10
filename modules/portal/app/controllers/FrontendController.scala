@@ -112,10 +112,16 @@ class FrontendController @Inject() (
 
   def viewSettings(): Action[AnyContent] = userAction.async { implicit request =>
     val isAdmin = request.user.isSuper || request.user.isSupport
-    Future(
-      Ok(
-        views.html.settings.settings(request.user.userName, isAdmin)
+    if(isAdmin){
+      Future(
+        Ok(
+          views.html.settings.settings(request.user.userName, isAdmin)
+        )
       )
-    )
+    } else {
+      Future(
+        Forbidden("You are not authorized to access this page.")
+      )
+    }
   }
 }
