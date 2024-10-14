@@ -23,6 +23,7 @@ import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
@@ -92,15 +93,31 @@ object RecordSetChangeHandler extends TransactionProvider {
   ): IO[Unit] =
     executeWithinTransaction { db: DB =>
       for {
-       _ <-  recordSetRepository.apply(db, changeSet)
-       _ <-  recordChangeRepository.save(db, changeSet)
-       _ <-  recordSetCacheRepository.save(db, changeSet)
        // Update single changes within this transaction to rollback the changes made to recordset and record change repo
        // when exception occurs while updating single changes
        singleBatchChanges <- batchChangeRepository.getSingleChanges(
          recordSetChange.singleBatchChangeIds
        )
        singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
+       updatedChangeSet = if (singleChangeStatusUpdates.size == 1) {
+         // Filter out RecordSetChange from changeSet if systemMessage matches
+         val filteredChangeSetChanges = changeSet.changes.filterNot { recordSetChange =>
+           // Find the corresponding singleChangeStatusUpdate by recordChangeId
+           singleChangeStatusUpdates.exists { singleChange =>
+             singleChange.recordChangeId.contains(recordSetChange.id) &&
+               singleChange.systemMessage.exists(msg =>
+                 msg == nonExistentRecordDeleteMessage || msg == nonExistentRecordDataDeleteMessage
+               )
+           }
+         }
+         // Create a new ChangeSet with filtered changes
+         changeSet.copy(changes = filteredChangeSetChanges)
+       } else {
+         changeSet
+       }
+       _ <-  recordSetRepository.apply(db, updatedChangeSet)
+       _ <-  recordChangeRepository.save(db, updatedChangeSet)
+       _ <-  recordSetCacheRepository.save(db, updatedChangeSet)
        _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
       } yield ()
     }

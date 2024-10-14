@@ -26,6 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
+import vinyldns.core.Messages.nonExistentRecordDeleteMessage
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
@@ -37,8 +38,6 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
-  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
-    "No further action is required."
 
   private def makeSingleAddChange(
                                    name: String,
