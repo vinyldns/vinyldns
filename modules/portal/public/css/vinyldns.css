@@ -636,9 +636,14 @@ input[type="file"] {
 
 .small-copy-button {
     font-size: 12px;
-    padding: 2px 6px;
-    display: inline-block;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
 }
 
 .small-copy-button i {
