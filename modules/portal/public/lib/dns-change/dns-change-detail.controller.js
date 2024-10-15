@@ -157,7 +157,6 @@
                 csv.push(row.join(","));
               }
               var csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
-
               // link to export csv
               var downloadBatchChanges = document.createElement("a");
               downloadBatchChanges.download = filename;
