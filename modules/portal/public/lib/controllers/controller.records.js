@@ -108,7 +108,7 @@ angular.module('controller.records', [])
     $scope.copyToClipboard = function() {
         utilityService.copyToClipboard($scope.zoneInfo.id);
         // Trigger success alert using utilityService
-        var alert = utilityService.success('Successfully copied zone id to clipboard');
+        var alert = utilityService.success('Successfully copied Zone ID to clipboard');
         $scope.alerts.push(alert);
     };
 
