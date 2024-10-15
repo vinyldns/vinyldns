@@ -634,34 +634,16 @@ input[type="file"] {
     flex-direction: column;
 }
 
-.copy-button {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 6px;
-    border: 1px solid #d1d5da;
-    background-color: #f6f8fa;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #24292e;
-    margin-left: 8px;
-    transition: background-color 0.3s ease;
-}
-
-.copy-button:hover {
-    background-color: #e1e4e8;
-}
-
-.copy-button i {
-    margin-right: 4px;
-    font-size: 12px;
-}
-
 .small-copy-button {
     font-size: 12px;
-    padding: 2px 6px;
-    display: inline-block;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
 }
 
 .small-copy-button i {

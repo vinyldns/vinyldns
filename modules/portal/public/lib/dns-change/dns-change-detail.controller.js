@@ -35,7 +35,7 @@
             $scope.copyToClipboard = function() {
                 utilityService.copyToClipboard($scope.batch.id);
                 // Trigger success alert using utilityService
-                var alert = utilityService.success('Successfully copied batch id to clipboard');
+                var alert = utilityService.success('Successfully copied Batch ID to clipboard');
                 $scope.alerts.push(alert);
             };
 

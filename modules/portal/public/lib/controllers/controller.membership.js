@@ -50,7 +50,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
     $scope.copyToClipboard = function() {
         utilityService.copyToClipboard($scope.membership.group.id);
         // Trigger success alert using utilityService
-        var alert = utilityService.success('Successfully copied group id to clipboard');
+        var alert = utilityService.success('Successfully copied Group ID to clipboard');
         $scope.alerts.push(alert);
     };
 
