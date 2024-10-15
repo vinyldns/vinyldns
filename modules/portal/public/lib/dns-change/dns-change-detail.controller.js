@@ -156,21 +156,23 @@
               var csv = [];
               var changes = document.querySelectorAll("table tr");
               $log.debug(batchId)
-              for (var i = 0; i < changes.length; i++) {
-                var row = [], cols = changes[i].querySelectorAll("td, th");
+              var colOrder = [0, 4, 1, 6, 5, 2, 3, 7, 8];
 
-                for (var j = 0; j < cols.length; j++) {
-                  row.push('"' + cols[j].innerText + '"');
-                }
+                for (var i = 0; i < changes.length; i++) {
+                    var row = [], cols = changes[i].querySelectorAll("td, th");
+
+                    for (var j = 0; j < colOrder.length; j++) {
+                        var colIndex = colOrder[j];
+                        if (cols[colIndex]) {
+                            row.push('"' + cols[colIndex].innerText + '"');
+                        }
+                    }
                 csv.push(row.join(","));
               }
               var csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
-
-              // Create a link to download it
+              // link to export csv
               var downloadBatchChanges = document.createElement("a");
               downloadBatchChanges.download = filename;
-
-              // Create a URL for the link
               downloadBatchChanges.href = window.URL.createObjectURL(csvFile);
               document.body.appendChild(downloadBatchChanges);
               downloadBatchChanges.click();
