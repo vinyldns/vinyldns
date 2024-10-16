@@ -251,7 +251,7 @@ object BatchTransformations {
         case (false, true) =>
           if (existingRecords == deleteChangeSet) {
             LogicalChangeType.FullDelete
-          } else if (deleteChangeSet.exists(existingRecords.contains)) {
+          } else if (existingRecords.nonEmpty) {
             LogicalChangeType.Update
           } else {
             LogicalChangeType.OutOfSync

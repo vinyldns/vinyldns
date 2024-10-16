@@ -26,6 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
@@ -37,8 +38,6 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
-  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
-    "No further action is required."
 
   private def makeSingleAddChange(
                                    name: String,
@@ -169,6 +168,14 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
   private val changeForValidationOneDelete = List(
     makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A, Some(nonExistentRecordDeleteMessage))
+  )
+
+  private val singleChangesOneDataDelete = List(
+    makeSingleDeleteRRSetChange("DataDoesNotExistToDelete", A, okZone, Some(nonExistentRecordDataDeleteMessage))
+  )
+
+  private val changeForValidationOneDataDelete = List(
+    makeDeleteRRSetChangeForValidation("DataDoesNotExistToDelete", A, Some(nonExistentRecordDataDeleteMessage))
   )
 
   private val singleChangesOneBad = List(
@@ -574,6 +581,41 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       receivedChange.recordChangeId shouldBe None
       receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
       returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Pending)
+
+      // check the update has been made in the DB
+      val savedBatch: Option[BatchChange] =
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
+      savedBatch shouldBe Some(returnedBatch)
+    }
+
+    "set status to pending when deleting a record data that does not exist" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          singleChangesOneDataDelete,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result =
+        underTest
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneDataDelete.map(_.validNel), existingRecordSets),
+            None
+          )
+          .value.unsafeRunSync().toOption.get
+
+      val returnedBatch = result.batchChange
+
+      // validate completed status returned
+      val receivedChange = returnedBatch.changes(0)
+      receivedChange.status shouldBe SingleChangeStatus.Pending
+      receivedChange.recordChangeId shouldBe None
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDataDelete(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage), status = SingleChangeStatus.Pending)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
