@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -444,4 +444,4 @@
     <script type='text/javascript' src='/public/js/ui.js'></script>
 }
 
-@main(rootAccountName)("GroupsController")("Groups")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("GroupsController")("Groups")(content)(plugins)

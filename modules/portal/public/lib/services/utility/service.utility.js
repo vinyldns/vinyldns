@@ -46,11 +46,19 @@ angular.module('service.utility', [])
     };
 
     this.success = function(message, response, type) {
-        var msg = "HTTP " + response.status + " (" + response.statusText + "): " + message;
-        $log.debug(type, response);
-        return {
-            type: "success", content: msg
-        };
+        if (response && type) {
+            var msg = "HTTP " + response.status + " (" + response.statusText + "): " + message;
+            $log.debug(type, response);
+            return {
+                type: "success",
+                content: msg
+            };
+        } else {
+            return {
+                type: "success",
+                content: message
+            };
+        }
     };
 
     this.urlBuilder = function (url, obj) {

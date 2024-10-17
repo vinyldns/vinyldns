@@ -1,4 +1,4 @@
-@(rootAccountName: String, rootAccountCanReview: Boolean, zoneId: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean, zoneId: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 @import zoneTabs._
 
 @content = {
@@ -50,7 +50,7 @@
                         @manageRecords(request, meta)
                     </div>
                     <div class="tab-pane" id="tab2" ng-controller="ManageZonesController">
-                        @manageZone(rootAccountCanReview, request, meta)
+                        @manageZone(rootAccountIsAdmin, request, meta)
                     </div>
                     <div class="tab-pane" id="tab3">
                         @changeHistory(request)
@@ -75,4 +75,4 @@
     <script type='text/javascript' src='/public/js/ui.js'></script>
 }
 
-@main(rootAccountName)("RecordsController")("Zone")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("RecordsController")("Zone")(content)(plugins)

@@ -87,6 +87,8 @@ case class UserInfo(
     lastName: Option[String] = None,
     email: Option[String] = None,
     created: Option[Instant] = None,
+    isSuper: Option[Boolean] = None,
+    isSupport: Option[Boolean] = None,
     lockStatus: LockStatus
 )
 object UserInfo {
@@ -98,6 +100,8 @@ object UserInfo {
       lastName = user.lastName,
       email = user.email,
       created = Some(user.created),
+      isSuper = Some(user.isSuper),
+      isSupport = Some(user.isSupport),
       lockStatus = user.lockStatus
     )
 }

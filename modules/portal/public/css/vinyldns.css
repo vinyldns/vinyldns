@@ -627,3 +627,21 @@ input[type="file"] {
     display: flex;
     flex-direction: column;
 }
+
+.form-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 40px;
+    width: 100%;
+}
+
+.form-control.w-30 {
+    max-width: 30%;
+}
+
+.divider {
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 40px;
+}
