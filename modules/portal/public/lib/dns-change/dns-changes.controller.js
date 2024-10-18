@@ -53,6 +53,7 @@
             $scope.refreshBatchChanges = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
                 $scope.groupName = null;
+                $scope.submitterName = null;
                  if ($scope.searchByGroup) {
                     $scope.groupName = $scope.searchName;
                  } else {
