@@ -33,7 +33,8 @@ trait GroupProtobufConversions {
       created = Instant.ofEpochMilli(pb.getCreated),
       status = GroupStatus.withName(pb.getStatus),
       memberIds = pb.getMemberIdsList.asScala.toSet,
-      adminUserIds = pb.getAdminUserIdsList.asScala.toSet
+      adminUserIds = pb.getAdminUserIdsList.asScala.toSet,
+      customMessage = if (pb.hasCustomMessage) Option(pb.getCustomMessage) else None
     )
 
   def fromPB(groupChange: VinylDNSProto.GroupChange): GroupChange = {
@@ -61,6 +62,7 @@ trait GroupProtobufConversions {
     group.memberIds.foreach(pb.addMemberIds)
     group.adminUserIds.foreach(pb.addAdminUserIds)
     group.description.foreach(pb.setDescription)
+    group.customMessage.foreach(pb.setCustomMessage)
 
     pb.build()
   }

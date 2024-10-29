@@ -51,6 +51,7 @@ message Zone {
   optional string backendId = 15;
   optional string recurrenceSchedule = 16;
   optional string scheduleRequestor = 17;
+  optional string customMessage = 18;
 }
 
 message AData {
@@ -176,6 +177,7 @@ message Group {
   repeated string memberIds = 6;
   repeated string adminUserIds = 7;
   optional string description = 8;
+  optional string customMessage = 9;
 }
 
 message GroupChange {

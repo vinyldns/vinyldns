@@ -111,7 +111,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                   .appendTo(ul);
     };
 
-    $scope.createGroup = function (name, email, description) {
+    $scope.createGroup = function (name, email, description, customMessage) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
@@ -130,6 +130,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 'name': name,
                 'email': email,
                 'description': description,
+                'customMessage': customMessage,
                 'members': [{id: $scope.profile.id}],
                 'admins': [{id: $scope.profile.id}]
             };
@@ -250,7 +251,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.initialGroup = {
             name: $scope.currentGroup.name,
             email: $scope.currentGroup.email,
-            description: $scope.currentGroup.description
+            description: $scope.currentGroup.description,
+            customMessage: $scope.currentGroup.customMessage
         };
         $scope.hasChanges = false;
         $scope.validDomains();
@@ -263,10 +265,12 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             $scope.currentGroup.name !== $scope.initialGroup.name ||
             $scope.currentGroup.email !== $scope.initialGroup.email ||
             ($scope.currentGroup.description !== $scope.initialGroup.description &&
-            !($scope.currentGroup.description === "" && $scope.initialGroup.description === undefined));
+            !($scope.currentGroup.description === "" && $scope.initialGroup.description === undefined)) ||
+            ($scope.currentGroup.customMessage !== $scope.initialGroup.customMessage &&
+            !($scope.currentGroup.customMessage === "" && $scope.initialGroup.customMessage === undefined));;
     };
 
-    $scope.getGroupAndUpdate = function(groupId, name, email, description) {
+    $scope.getGroupAndUpdate = function(groupId, name, email, description, customMessage) {
         function success(response) {
             $log.debug('groupsService::getGroup-success');
             $scope.currentGroup = response.data;
@@ -282,6 +286,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 };
             if (description) {
                 payload['description'] = description;
+            }
+            if (customMessage) {
+                payload['customMessage'] = customMessage;
             }
 
             //update group success callback
@@ -309,7 +316,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
-    $scope.submitEditGroup = function (name, email, description) {
+    $scope.submitEditGroup = function (name, email, description, customMessage) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
@@ -320,7 +327,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-        $scope.getGroupAndUpdate($scope.currentGroup.id, name, email, description);
+        $scope.getGroupAndUpdate($scope.currentGroup.id, name, email, description, customMessage);
     };
 
     $scope.confirmDeleteGroup = function (groupInfo) {
