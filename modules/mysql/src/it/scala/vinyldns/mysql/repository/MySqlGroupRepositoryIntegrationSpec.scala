@@ -50,7 +50,7 @@ class MySqlGroupRepositoryIntegrationSpec
 
   override protected def beforeAll(): Unit = {
     DB.localTx { s =>
-      s.executeUpdate("DELETE FROM groups")
+      s.executeUpdate("DELETE FROM `groups`")
     }
 
     for (group <- groups) {
@@ -60,7 +60,7 @@ class MySqlGroupRepositoryIntegrationSpec
 
   override protected def afterAll(): Unit = {
     DB.localTx { s =>
-      s.executeUpdate("DELETE FROM groups")
+      s.executeUpdate("DELETE FROM `groups`")
     }
     super.afterAll()
   }
