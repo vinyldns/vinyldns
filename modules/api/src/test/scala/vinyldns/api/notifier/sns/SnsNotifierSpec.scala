@@ -20,21 +20,17 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.notifier.Notification
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
-import vinyldns.core.domain.batch.BatchChange
+import _root_.vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, BatchChangeStatus, SingleAddChange, SingleChange, SingleChangeStatus, SingleDeleteRRSetChange}
 import java.time.Instant
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus
-import vinyldns.core.domain.batch.SingleChange
-import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteRRSetChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
-import _root_.vinyldns.core.domain.batch.SingleChangeStatus
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
@@ -51,6 +47,7 @@ class SnsNotifierSpec
     with CatsHelpers {
 
   val mockUserRepository = mock[UserRepository]
+  val mockGroupRepository = mock[GroupRepository]
   val mockSns = mock[AmazonSNS]
 
   override protected def beforeEach(): Unit =
@@ -68,6 +65,7 @@ class SnsNotifierSpec
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,
+      BatchChangeStatus.PendingProcessing,
       None,
       None,
       None,
@@ -86,7 +84,7 @@ class SnsNotifierSpec
         ).asJava
       )
       val notifier = new SnsNotifierProvider()
-        .load(NotifierConfig("", snsConfig), mockUserRepository)
+        .load(NotifierConfig("", snsConfig), mockUserRepository, mockGroupRepository)
         .unsafeRunSync()
 
       notifier.notify(Notification("this won't be supported ever")) should be(IO.unit)

@@ -44,6 +44,11 @@
             $scope.manualReviewEnabled;
             $scope.naptrFlags = ["U", "S", "A", "P"];
 
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -162,16 +167,32 @@
                 $scope.alerts.push(alert);
             }
 
+            function resetFileInput() {
+              $scope.csvInput = null;
+              var inputElement = document.getElementById('batchChangeCsv');
+              if (inputElement) {
+                inputElement.value = null;
+              }
+              if ($scope.createBatchChangeForm && $scope.createBatchChangeForm.batchChangeCsv) {
+                $scope.createBatchChangeForm.batchChangeCsv.$setViewValue(null);
+                $scope.createBatchChangeForm.batchChangeCsv.$render();
+              }
+            }
+
             $scope.uploadCSV = function(file, batchChangeLimit) {
                 parseFile(file, batchChangeLimit).then(function(dataLength){
                     $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' DNS changes.' });
+                    resetFileInput();
                 }, function(error) {
                     $scope.alerts.push({type: 'danger', content: error});
                 });
 
                 function parseFile(file, batchChangeLimit) {
                   return $q(function(resolve, reject) {
-                    if (!file.name.endsWith('.csv')) {
+                     if (!file || !file.name) {
+                        $log.debug('No file selected or file has no name property');
+                      }
+                    else if (!file.name.endsWith('.csv')) {
                       reject("Import failed. File should be of ‘.csv’ type.");
                     }
                     else {
