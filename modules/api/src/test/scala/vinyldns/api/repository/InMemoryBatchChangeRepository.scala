@@ -39,7 +39,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       ownerGroupId: Option[String],
       id: String,
       approvalStatus: BatchChangeApprovalStatus,
-      batchStatus: BatchChangeStatus,
       reviewerId: Option[String],
       reviewComment: Option[String],
       reviewTimestamp: Option[Instant]
@@ -55,7 +54,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         batchChange.ownerGroupId,
         batchChange.id,
         batchChange.approvalStatus,
-        batchChange.batchStatus,
         batchChange.reviewerId,
         batchChange.reviewComment,
         batchChange.reviewTimestamp
@@ -90,7 +88,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           singleChangesFromRepo,
           sc.ownerGroupId,
           sc.approvalStatus,
-          sc.batchStatus,
           sc.reviewerId,
           sc.reviewComment,
           sc.reviewTimestamp,
@@ -135,7 +132,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
-      .filter(bs => batchStatus.forall(_ == bs.batchStatus))
       .filter(bu => userName.forall(_ == bu.userName))
       .filter(bdtsi => startInstant.forall(_.isBefore(bdtsi.createdTimestamp)))
       .filter(bdtei => endInstant.forall(_.isAfter(bdtei.createdTimestamp)))
@@ -152,7 +148,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         changes,
         sc.ownerGroupId,
         sc.approvalStatus,
-        sc.batchStatus,
         sc.reviewerId,
         sc.reviewComment,
         sc.reviewTimestamp,
