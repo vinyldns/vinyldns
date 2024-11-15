@@ -33,7 +33,7 @@ import vinyldns.core.domain.{SingleChangeError, ZoneDiscoveryError}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlBatchChangeRepositoryIntegrationSpec
-  extends AnyWordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
@@ -47,11 +47,11 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
   object TestData {
     def generateSingleAddChange(
-                                 recordType: RecordType,
-                                 recordData: RecordData,
-                                 status: SingleChangeStatus = Pending,
-                                 errors: List[SingleChangeError] = List.empty
-                               ): SingleAddChange =
+      recordType: RecordType,
+      recordData: RecordData,
+      status: SingleChangeStatus = Pending,
+      errors: List[SingleChangeError] = List.empty
+    ): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
         Some(okZone.name),
