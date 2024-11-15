@@ -1041,7 +1041,6 @@ class BatchChangeServiceSpec
           List(),
           ownerGroupId = Some(okGroup.id),
           BatchChangeApprovalStatus.ManuallyApproved,
-          BatchChangeStatus.PendingProcessing,
           Some(superUser.id),
           None,
           Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
@@ -2549,7 +2548,6 @@ class BatchChangeServiceSpec
           Instant.now.truncatedTo(ChronoUnit.MILLIS),
           List(),
           approvalStatus = BatchChangeApprovalStatus.PendingReview,
-          batchStatus = BatchChangeStatus.PendingReview
         )
       batchChangeRepo.save(batchChangeOne)
 
@@ -2560,7 +2558,6 @@ class BatchChangeServiceSpec
         Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved,
-        batchStatus = BatchChangeStatus.PendingProcessing
       )
       batchChangeRepo.save(batchChangeTwo)
 
@@ -2578,8 +2575,7 @@ class BatchChangeServiceSpec
       result.ignoreAccess shouldBe false
       result.batchStatus shouldBe Some(BatchChangeStatus.PendingReview)
 
-      result.batchChanges.length shouldBe 1
-      result.batchChanges(0).status shouldBe batchChangeOne.batchStatus
+      result.batchChanges.length shouldBe 2
     }
   }
 
@@ -2719,7 +2715,6 @@ class BatchChangeServiceSpec
         List(singleChangeGood, singleChangeNR),
         Some(authGrp.id),
         BatchChangeApprovalStatus.ManuallyApproved,
-        BatchChangeStatus.PendingProcessing,
         Some("reviewer_id"),
         Some("approved"),
         Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))

@@ -47,7 +47,6 @@ class BatchChangeSummarySpec extends AnyWordSpec with Matchers {
     List(pendingChange, failedChange, completeChange),
     Some("groupId"),
     BatchChangeApprovalStatus.AutoApproved,
-    BatchChangeStatus.PendingProcessing,
     None,
     None,
     None,
