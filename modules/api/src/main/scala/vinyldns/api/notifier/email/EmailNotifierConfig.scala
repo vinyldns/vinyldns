@@ -33,15 +33,18 @@ object EmailNotifierConfig {
       val props = new Properties()
 
       def convertToProperties(baseKey: String, config: ConfigObject): Unit =
-        config.keySet().asScala.foreach {
-          case key =>
-            config.get(key) match {
-              case value: ConfigObject =>
-                convertToProperties(s"${baseKey}.${key}", value)
-              case value: ConfigValue if value.valueType != ConfigValueType.NULL =>
-                props.put(s"${baseKey}.${key}", value.unwrapped())
-              case _ =>
-            }
+        config.keySet().asScala.foreach { key =>
+          config.get(key) match {
+            case value: ConfigObject =>
+              convertToProperties(s"${baseKey}.${key}", value)
+            case value: ConfigValue if value.valueType != ConfigValueType.NULL =>
+              val propValue = value.unwrapped() match {
+                case b: java.lang.Boolean => b.toString
+                case v => v
+              }
+              props.put(s"${baseKey}.${key}", propValue)
+            case _ =>
+          }
         }
 
       convertToProperties("mail.smtp", config)
