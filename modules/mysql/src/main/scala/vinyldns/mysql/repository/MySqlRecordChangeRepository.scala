@@ -202,6 +202,7 @@ object MySqlRecordChangeRepository extends ProtobufConversions {
     case RecordSetChangeType.Create => 1
     case RecordSetChangeType.Delete => 2
     case RecordSetChangeType.Update => 3
+    case RecordSetChangeType.Sync => 4
   }
 
   def toRecordSetChange(ws: WrappedResultSet): RecordSetChange =

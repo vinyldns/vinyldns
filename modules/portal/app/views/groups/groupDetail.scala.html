@@ -16,12 +16,32 @@
 
             <!-- PAGE TITLE -->
             <div class="page-title">
-                <h3><span class="fa fa-group"></span> Group {{membership.group.name}}</h3>
+                <h3>
+                    <span class="fa fa-group"></span> Group: {{membership.group.name}}
+                </h3>
             </div>
             <!-- END PAGE TITLE -->
 
             <!-- PAGE CONTENT WRAPPER -->
             <div class="page-content-wrap">
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3 class="batch-change-error-help">
+                            <i class="fa fa-info-circle" style="font-size:18px;color:red">
+                                Updates to group require a valid email. If group email is invalid please enter a valid email.
+                            </i>
+                        </h3>
+                        <p><strong>Group ID:</strong> {{membership.group.id}}
+                            <span class="small-copy-button" ng-click="copyToClipboard()"
+                                  data-toggle="tooltip" data-placement="top" title="Copy Group ID to clipboard">
+                                <i class="fa fa-clone"></i>
+                            </span>
+                        </p>
+                        <p><strong>Group Email:</strong> {{membership.group.email}}</p>
+                        <p ng-if="membership.group.description"><strong>Description:</strong> {{membership.group.description}}</p>
+                    </div>
+                </div>
 
                 <div class="alert-wrapper">
                     <div ng-repeat="alert in alerts">
@@ -36,19 +56,9 @@
                         <li ng-if="canViewGroup"><a href="#tab2" data-toggle="tab">Change History</a></li>
                     </ul>
                     <div class="panel-body tab-content">
-
                         <div class="tab-pane active" id="tab1">
-
-                                <h3 class="batch-change-error-help">
-                                    <i class="fa fa-info-circle" style="font-size:18px;color:red">
-                                        Updates to group require a valid email. If group email is invalid please enter a valid email.
-                                    </i>
-                                </h3>
-
                             <div class="row">
                                 <div class="col-md-12">
-                                    <p ng-if="membership.group.description"><strong>Description:</strong> {{membership.group.description}}</p>
-                                    <p><strong>Group Email:</strong> {{membership.group.email}}</p>
                                     <!-- START SIMPLE DATATABLE -->
                                     <div class="panel panel-default">
                                         <div class="panel-heading">

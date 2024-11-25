@@ -84,4 +84,8 @@ object Messages {
   val InvalidEmailValidationErrorMsg = "Please enter a valid Email."
 
   val DotsValidationErrorMsg = "Please enter a valid Email. Number of dots allowed after @ is"
+
+  val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
+
+  val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
 }

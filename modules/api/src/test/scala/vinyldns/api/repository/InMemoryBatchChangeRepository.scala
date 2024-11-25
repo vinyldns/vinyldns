@@ -24,6 +24,7 @@ import scala.collection.concurrent
 import cats.effect._
 import cats.implicits._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 
 class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
@@ -118,6 +119,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList] = {
 
@@ -165,6 +167,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         nextId = nextId,
         maxItems = maxItems,
         ignoreAccess = ignoreAccess,
+        batchStatus = batchStatus,
         approvalStatus = approvalStatus,
         userName = userName,
         dateTimeStartRange = dateTimeStartRange,

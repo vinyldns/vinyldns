@@ -2538,6 +2538,45 @@ class BatchChangeServiceSpec
       result.batchChanges(0).ownerGroupId shouldBe Some("no-existo")
       result.batchChanges(0).ownerGroupName shouldBe None
     }
+
+    "return list of batchChangeSummaries filtered by batch change status" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview,
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved,
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            batchStatus = Some(BatchChangeStatus.PendingReview)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.batchStatus shouldBe Some(BatchChangeStatus.PendingReview)
+
+      result.batchChanges.length shouldBe 2
+    }
   }
 
   "getOwnerGroup" should {

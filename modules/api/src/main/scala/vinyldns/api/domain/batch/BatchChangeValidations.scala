@@ -28,6 +28,7 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations.isStringInRegexList
 import vinyldns.api.domain.zone.ZoneRecordValidations
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
@@ -350,9 +351,6 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
 
-    val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
-    val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
-
     val recordData = change match {
       case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
       case DeleteRRSetChangeForValidation(_, _, inputChange) => inputChange.record.map(_.toString).getOrElse("")
@@ -424,9 +422,6 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
-
-    val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
-    val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
 
     // To handle add and delete for the record with same record data is present in the batch
     val recordData = change match {

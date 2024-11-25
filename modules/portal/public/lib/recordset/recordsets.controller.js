@@ -80,6 +80,11 @@
             var recordType = [];
             var recordName = [];
 
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
             $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
                 $.ajax({
