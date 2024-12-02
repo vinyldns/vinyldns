@@ -19,12 +19,13 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s._
 import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
-import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
+import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus, Theme}
 
 object MembershipJsonProtocol {
   final case class CreateGroupInput(
@@ -57,7 +58,8 @@ trait MembershipJsonProtocol extends JsonValidation {
     UpdateGroupInputSerializer,
     JsonEnumV(LockStatus),
     JsonEnumV(GroupStatus),
-    JsonEnumV(GroupChangeType)
+    JsonEnumV(GroupChangeType),
+    JsonEnumV(Theme)
   )
 
   case object CreateGroupInputSerializer extends ValidationSerializer[CreateGroupInput] {
