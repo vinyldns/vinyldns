@@ -64,7 +64,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     sql"""
          | SELECT data
          |   FROM user
-         |  WHERE ? IN(id, user_name)
+         |    WHERE id = {id} OR user_name LIKE {userName}
      """.stripMargin
 
   private final val BASE_GET_USERS: String =
@@ -176,7 +176,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID_OR_NAME
-            .bind(userIdentifier)
+            .bindByName('id -> userIdentifier,'userName ->s"$userIdentifier%")
             .map(toUser(1))
             .first()
             .apply()
