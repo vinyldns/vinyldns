@@ -861,7 +861,7 @@ class MembershipRoutingSpec
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
-        result.groupId shouldBe dummyUserResponseInfo.groupId
+        result.groupIds shouldBe dummyUserResponseInfo.groupIds
       }
     }
 

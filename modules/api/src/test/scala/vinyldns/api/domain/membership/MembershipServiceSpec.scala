@@ -1398,7 +1398,7 @@ class MembershipServiceSpec
         val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
         result.id shouldBe okUser.id
         result.userName.get shouldBe okUser.userName
-        result.groupId shouldBe Set(okGroup.id)
+        result.groupIds shouldBe Set(okGroup.id)
       }
 
       "return an error if the user is not found" in {
