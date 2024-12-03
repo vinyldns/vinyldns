@@ -161,9 +161,8 @@ class RecordSetService(
         && !auth.isSuper) {
         recordSetOwnerShipApproveStatus(recordSet).toResult
       } else ().toResult
-      _ = logger.debug(s"updated recordsetgroupchange: ${recordSet.recordSetGroupChange}")
-      _ = logger.debug(s"existing recordsetgroupchange: ${existing.recordSetGroupChange}")
-//      recordSet <- if(zone.shared) updateRecordSetGroupChangeStatus(recordSet, existing, zone)
+      _ = logger.info(s"updated recordsetgroupchange: ${recordSet.recordSetGroupChange}")
+      _ = logger.info(s"existing recordsetgroupchange: ${existing.recordSetGroupChange}")
       recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that

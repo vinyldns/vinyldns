@@ -495,7 +495,7 @@ object RecordSetValidations {
                                          existing: RecordSet
                                        ): Either[Throwable, Unit] =
     Either.cond(
-      updates.recordSetGroupChange == existing.recordSetGroupChange,
+      updates.recordSetGroupChange == existing.recordSetGroupChange || existing.recordSetGroupChange.isEmpty,
       (),
       InvalidRequest("Cannot update RecordSet OwnerShip Status when zone is not shared.")
     )
