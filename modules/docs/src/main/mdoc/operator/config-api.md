@@ -535,6 +535,11 @@ email = {
       smtp {
          # Host SMTP server
          host = "example.host"
+         # if smtp host requires authentication we can enable auth
+         auth = true
+         username = ${MDP_MAIL_USERNAME}
+         password = ${MDP_MAIL_PASSWORD}
+         starttls.enable = true
       }
    }
 }
