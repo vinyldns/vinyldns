@@ -2432,8 +2432,9 @@ def test_update_owner_group_transfer_on_non_shared_zones_in_fails(shared_zone_te
     update_rs = None
 
     try:
+        # record_json = create_recordset(ok_zone, "test_update_success", "A", [{"address": "1.1.1.1"}], recordSetGroupChange={"ownerShipTransferStatus": None, "requestedOwnerGroupId": None})
         record_json = {
-            "zoneId": ok_zone,
+            "zoneId": ok_zone["id"],
             "name": "test_update_success",
             "type": "A",
             "ttl": 38400,
