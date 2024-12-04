@@ -303,7 +303,7 @@ def test_update_recordset_replace_2_records_with_1_different_record(shared_zone_
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        
+
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -373,7 +373,7 @@ def test_update_existing_record_set_add_record(shared_zone_test_context):
             ]
         }
         result = client.create_recordset(new_rs, status=202)
-        
+
         assert_that(result["changeType"], is_("Create"))
         assert_that(result["status"], is_("Pending"))
         assert_that(result["created"], is_not(none()))
@@ -2432,9 +2432,17 @@ def test_update_owner_group_transfer_on_non_shared_zones_in_fails(shared_zone_te
     update_rs = None
 
     try:
-        record_json = create_recordset(ok_zone, "test_update_success", "A", [{"address": "1.1.1.1"}])
-        record_json["recordSetGroupChange"] = {"ownerShipTransferStatus": None,
-                                               "requestedOwnerGroupId": None}
+        record_json = {
+            "zoneId": ok_zone,
+            "name": "test_update_success",
+            "type": "A",
+            "ttl": 38400,
+            "records": [
+                {"address": "1.1.1.1"}
+            ],
+            "recordSetGroupChange": {"ownerShipTransferStatus": None,
+                                     "requestedOwnerGroupId": None}
+        }
 
         create_response = ok_client.create_recordset(record_json, status=202)
         update = ok_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
