@@ -2433,6 +2433,8 @@ def test_update_owner_group_transfer_on_non_shared_zones_in_fails(shared_zone_te
 
     try:
         record_json = create_recordset(ok_zone, "test_update_success", "A", [{"address": "1.1.1.1"}])
+        record_json["recordSetGroupChange"] = {"ownerShipTransferStatus": None,
+                                               "requestedOwnerGroupId": None}
 
         create_response = ok_client.create_recordset(record_json, status=202)
         update = ok_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
