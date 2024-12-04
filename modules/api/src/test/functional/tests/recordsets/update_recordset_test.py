@@ -2441,7 +2441,7 @@ def test_update_owner_group_transfer_on_non_shared_zones_in_fails(shared_zone_te
             "records": [
                 {"address": "1.1.1.1"}
             ],
-            "recordSetGroupChange": {"ownerShipTransferStatus": None,
+            "recordSetGroupChange": {"ownerShipTransferStatus": "None",
                                      "requestedOwnerGroupId": None}
         }
 
