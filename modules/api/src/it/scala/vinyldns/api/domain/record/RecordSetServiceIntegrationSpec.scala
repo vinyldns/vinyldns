@@ -128,7 +128,10 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     None,
-    List(AAAAData("fd69:27cc:fe91::60"))
+    List(AAAAData("fd69:27cc:fe91::60")),
+    recordSetGroupChange =
+      Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None,
+        requestedOwnerGroupId = None))
   )
   private val subTestRecordA = RecordSet(
     zone.id,

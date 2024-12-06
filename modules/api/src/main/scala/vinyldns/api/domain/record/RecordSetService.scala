@@ -27,6 +27,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
+import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS.ReverseMap
 import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
@@ -94,6 +95,8 @@ class RecordSetService(
   import RecordSetValidations._
   import accessValidation._
 
+  val logger: Logger = LoggerFactory.getLogger(classOf[RecordSetService])
+
   val approverOwnerShipTransferStatus = List(OwnerShipTransferStatus.ManuallyApproved , OwnerShipTransferStatus.AutoApproved, OwnerShipTransferStatus.ManuallyRejected)
   val requestorOwnerShipTransferStatus = List(OwnerShipTransferStatus.Cancelled , OwnerShipTransferStatus.Requested, OwnerShipTransferStatus.PendingReview)
 
@@ -155,8 +158,11 @@ class RecordSetService(
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
         unchangedRecordSet(existing, recordSet).toResult else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
-        && !auth.isSuper)
-        recordSetOwnerShipApproveStatus(recordSet).toResult else ().toResult
+        && !auth.isSuper) {
+        recordSetOwnerShipApproveStatus(recordSet).toResult
+      } else ().toResult
+      _ = logger.info(s"updated recordsetgroupchange: ${recordSet.recordSetGroupChange}")
+      _ = logger.info(s"existing recordsetgroupchange: ${existing.recordSetGroupChange}")
       recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
