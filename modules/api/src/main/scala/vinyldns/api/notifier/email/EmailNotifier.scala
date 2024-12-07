@@ -88,45 +88,37 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       currentUser <-  userRepository.getUser(rsc.userId)
       currentGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
       ownerGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
-      _ <- currentGroup match {
+      currentUsers <- currentGroup match {
         case Some(group) =>
-          group.memberIds.toList.traverse { id =>
-            userRepository.getUser(id).flatMap {
-              case Some(UserWithEmail(toEmail)) =>
-                ownerGroup match {
-                  case Some(ccg) =>
-                    ccg.memberIds.toList.traverse { id =>
-                        userRepository.getUser(id).flatMap {
-                          case Some(ccUser) =>
-                            val ccEmail = ccUser.email.getOrElse("<none>")
-                            send(toEmail)(new InternetAddress(ccEmail)) { message =>
-                              message.setSubject(s"VinylDNS RecordSet Ownership transfer for ${rsc.recordSet.name} ")
-                              message.setContent(formatRecordSetOwnerShipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
-                              message
-                            }
-                          case None =>
-                            IO.unit
-                        }
-                      }
-                  case None => IO.unit
-                }
-              case Some(user: User) if user.email.isDefined =>
-                IO {
-                  logger.warn(
-                    s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
-                  )
-                }
-              case None =>
-                IO {
-                  logger.warn(s"Unable to find user: ${rsc.userId}")
-                }
-              case _ =>
-                IO.unit
+          val users = group.memberIds.toList.map { id =>
+            userRepository.getUser(id).map {
+              case Some(user) => user
+              case None => null
             }
           }
-        case None => IO.unit // Handle case where toGroup is None
+          users.traverse(identity)
+        case None => IO.pure(List.empty)
       }
-    } yield ()
+      ownerUsers <- ownerGroup match {
+        case Some(group) =>
+          val users = group.memberIds.toList.map { id =>
+            userRepository.getUser(id).map {
+              case Some(user) => user
+              case None => null
+            }
+          }
+          users.traverse(identity)
+        case None => IO.pure(List.empty)
+      }
+    } yield {
+      val toEmails = currentUsers.collect { case UserWithEmail(address) => address }
+      val ccEmails = ownerUsers.collect { case UserWithEmail(address) => address }
+      send(toEmails: _*)(ccEmails: _*) { message =>
+        message.setSubject(s"VinylDNS RecordSet Ownership transfer")
+        message.setContent(formatRecordSetOwnerShipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
+        message
+      }.unsafeRunSync()
+    }
   }
 
 
@@ -182,26 +174,41 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def formatRecordSetOwnerShipTransfer(rsc: RecordSetChange,
                                        currentUser: Option[User],
                                        currentGroup: Option[Group],
-                                       ownerGroup: Option[Group]): String = {
+                                       ownerGroup: Option[Group]
+                                       ): String = {
     val sb = new StringBuilder
-    sb.append(s"""<h2>RecordSet Ownership Transfer Alert: </h2>
-                 | <b>Zone: </b> ${rsc.zone.name}</a><br/><br/>
-                 | <b>RecordSet: </b> ${rsc.recordSet.name}<br/><br/>
-                 | <b>Current Group: </b> ${currentGroup.get.name} <br/><br/>
-                 | <b>Transfer Group: </b> ${ownerGroup.get.name} <br/><br/>
-                 | <b>Status: </b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}
+    sb.append(s"""<h2><u>RecordSet Ownership Transfer Alert: </u></h2>
+                 |<b>Submitted time: </b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/><br/>
                  | <b>Submitter: </b> ${currentUser.get.userName}<br/><br/>
-                 | <b>Submitted time: </b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/><br/>
+                 | <b>Zone: </b> ${rsc.zone.name}</a><br/>
+                 | <br/><table border = "1">
+                 |  <tr>
+                 |   <th>RecordSet</th>
+                 |   <th>Record Type</th>
+                 |   <th>TTL</th>
+                 |   <th>Record Data</th>
+                 |  </tr>
+                 |  <tr>
+                 |   <td>${rsc.recordSet.name}</td>
+                 |   <td>${rsc.recordSet.typ}</td>
+                 |   <td>${rsc.recordSet.ttl}</td>
+                 |   <td>${rsc.recordSet.records.map(id =>id)}</td>
+                 |  </tr>
+                 | </table><br/>
+                 | <b>Current Owner Group: </b> ${currentGroup.get.name} <br/><br/>
+                 | <b>Transfer Owner Group: </b> ${ownerGroup.get.name} <br/><br/>
+                 | <b>Status: ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}</b>
+                 | <br/><br/>
                """.stripMargin)
     sb.toString
   }
 
   def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
     status match {
-      case OwnerShipTransferStatus.ManuallyRejected => "Rejected"
-      case OwnerShipTransferStatus.PendingReview => "Pending Review"
-      case OwnerShipTransferStatus.ManuallyApproved => "Approved"
-      case OwnerShipTransferStatus.Cancelled => "Cancelled"
+      case OwnerShipTransferStatus.ManuallyRejected => "<i style=\"color: red;\">Rejected</i>"
+      case OwnerShipTransferStatus.PendingReview => "<i style=\"color: blue;\">Pending Review </i> (Action to be taken)"
+      case OwnerShipTransferStatus.ManuallyApproved => "<i style=\"color: green;\">Approved</i>"
+      case OwnerShipTransferStatus.Cancelled => "<i style=\"color: dark grey;\">Cancelled</i>"
     }
 
   def formatSingleChange(sc: SingleChange, index: Int): String = sc match {
