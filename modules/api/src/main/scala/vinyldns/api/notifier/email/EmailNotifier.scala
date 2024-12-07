@@ -21,7 +21,7 @@ import cats.effect.IO
 import cats.implicits._
 import cats.effect.IO
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
-import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import org.slf4j.LoggerFactory
 
 import javax.mail.internet.{InternetAddress, MimeMessage}
@@ -85,22 +85,23 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
 
   def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] = {
     for {
-      toGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
-      ccGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
-      _ <- toGroup match {
+      currentUser <-  userRepository.getUser(rsc.userId)
+      currentGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
+      ownerGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
+      _ <- currentGroup match {
         case Some(group) =>
           group.memberIds.toList.traverse { id =>
             userRepository.getUser(id).flatMap {
               case Some(UserWithEmail(toEmail)) =>
-                ccGroup match {
+                ownerGroup match {
                   case Some(ccg) =>
                     ccg.memberIds.toList.traverse { id =>
                         userRepository.getUser(id).flatMap {
                           case Some(ccUser) =>
                             val ccEmail = ccUser.email.getOrElse("<none>")
                             send(toEmail)(new InternetAddress(ccEmail)) { message =>
-                              message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
-                              message.setContent(formatRecordSetChange(rsc), "text/html")
+                              message.setSubject(s"VinylDNS RecordSet Ownership transfer for ${rsc.recordSet.name} ")
+                              message.setContent(formatRecordSetOwnerShipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
                               message
                             }
                           case None =>
@@ -178,27 +179,30 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case (_, status) => status.toString
     }
 
-  def formatRecordSetChange(rsc: RecordSetChange): String = {
-
-          val sb = new StringBuilder
-          sb.append(s"""<h1>RecordSet Ownership Transfer</h1>
-                       | <b>Submitter:</b>  ${ userRepository.getUser(rsc.userId).map(_.get.userName)}
-                       | <b>Id:</b> ${rsc.id}<br/>
-                       | <b>Submitted time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/>
-                       | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId.getOrElse("none")} <br/>
-                       | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("none")).getOrElse("none")} <br/>
-                       | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}<br/>
-                 """.stripMargin)
-          sb.toString
+  def formatRecordSetOwnerShipTransfer(rsc: RecordSetChange,
+                                       currentUser: Option[User],
+                                       currentGroup: Option[Group],
+                                       ownerGroup: Option[Group]): String = {
+    val sb = new StringBuilder
+    sb.append(s"""<h2>RecordSet Ownership Transfer Alert: </h2>
+                 | <b>Zone: </b> ${rsc.zone.name}</a><br/><br/>
+                 | <b>RecordSet: </b> ${rsc.recordSet.name}<br/><br/>
+                 | <b>Current Group: </b> ${currentGroup.get.name} <br/><br/>
+                 | <b>Transfer Group: </b> ${ownerGroup.get.name} <br/><br/>
+                 | <b>Status: </b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}
+                 | <b>Submitter: </b> ${currentUser.get.userName}<br/><br/>
+                 | <b>Submitted time: </b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/><br/>
+               """.stripMargin)
+    sb.toString
   }
 
   def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
-          status match {
-            case OwnerShipTransferStatus.ManuallyRejected => "Rejected"
-            case OwnerShipTransferStatus.PendingReview => "Pending Review"
-            case OwnerShipTransferStatus.ManuallyApproved => "Approved"
-            case OwnerShipTransferStatus.Cancelled => "Cancelled"
-  }
+    status match {
+      case OwnerShipTransferStatus.ManuallyRejected => "Rejected"
+      case OwnerShipTransferStatus.PendingReview => "Pending Review"
+      case OwnerShipTransferStatus.ManuallyApproved => "Approved"
+      case OwnerShipTransferStatus.Cancelled => "Cancelled"
+    }
 
   def formatSingleChange(sc: SingleChange, index: Int): String = sc match {
     case SingleAddChange(
