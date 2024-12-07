@@ -189,7 +189,7 @@ class EmailNotifierSpec
       message.getFrom should be(Array(fromAddress))
       message.getContentType should be("text/html; charset=us-ascii")
       message.getAllRecipients should be(expectedAddresses)
-      message.getSubject should be(s"VinylDNS RecordSet change ${rsc.id} results")
+      message.getSubject should be(s"VinylDNS RecordSet Ownership transfer")
 
       val content = message.getContent.asInstanceOf[String]
 
