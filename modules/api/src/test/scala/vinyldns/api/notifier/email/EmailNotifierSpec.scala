@@ -193,9 +193,8 @@ class EmailNotifierSpec
 
       val content = message.getContent.asInstanceOf[String]
 
-      content.contains(rsc.id) should be(true)
-      content.contains(rsc.recordSet.ownerGroupId.get) should be(true)
-      content.contains(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get).get) should be(true)
+      content.contains(rsc.zone.name) should be(true)
+      content.contains(rsc.recordSet.name) should be(true)
     }
 
     "do nothing when user not found" in {
