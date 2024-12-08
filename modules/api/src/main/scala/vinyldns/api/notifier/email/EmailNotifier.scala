@@ -83,7 +83,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     }
   }
 
-  def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] = {
+  def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] =
     for {
       currentUser <-  userRepository.getUser(rsc.userId)
       currentGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
@@ -110,17 +110,14 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
           users.traverse(identity)
         case None => IO.pure(List.empty)
       }
-    } yield {
-      val toEmails = currentUsers.collect { case UserWithEmail(address) => address }
-      val ccEmails = ownerUsers.collect { case UserWithEmail(address) => address }
-      send(toEmails: _*)(ccEmails: _*) { message =>
+      toEmails = currentUsers.collect { case UserWithEmail(address) => address }
+      ccEmails = ownerUsers.collect { case UserWithEmail(address) => address }
+      _ <- send(toEmails: _*)(ccEmails: _*) { message =>
         message.setSubject(s"VinylDNS RecordSet Ownership transfer")
         message.setContent(formatRecordSetOwnerShipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
         message
-      }.unsafeRunSync()
-    }
-  }
-
+      }
+    } yield ()
 
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
@@ -206,7 +203,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
     status match {
       case OwnerShipTransferStatus.ManuallyRejected => "<i style=\"color: red;\">Rejected</i>"
-      case OwnerShipTransferStatus.PendingReview => "<i style=\"color: blue;\">Pending Review </i> (Action to be taken)"
+      case OwnerShipTransferStatus.PendingReview => "<i style=\"color: blue;\">Pending Review  </i> (Action to be taken)"
       case OwnerShipTransferStatus.ManuallyApproved => "<i style=\"color: green;\">Approved</i>"
       case OwnerShipTransferStatus.Cancelled => "<i style=\"color: dark grey;\">Cancelled</i>"
     }
