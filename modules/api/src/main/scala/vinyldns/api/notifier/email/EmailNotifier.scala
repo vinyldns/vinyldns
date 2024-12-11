@@ -33,6 +33,7 @@ import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStat
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.domain.zone.Zone
 
 import java.time.ZoneId
 
@@ -173,11 +174,13 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
                                        currentGroup: Option[Group],
                                        ownerGroup: Option[Group]
                                        ): String = {
+    val portalHost = config.smtp.getProperty("mail.smtp.portal.url")
     val sb = new StringBuilder
     sb.append(s"""<h2><u>RecordSet Ownership Transfer Alert: </u></h2>
                  |<b>Submitted time: </b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/><br/>
                  | <b>Submitter: </b> ${currentUser.get.userName}<br/><br/>
-                 | <b>Zone: </b> ${rsc.zone.name}</a><br/>
+                 | <b>Zone: </b> ${if(portalHost != null) s"""<a href="$portalHost/zones/${rsc.zone.id}">${rsc.zone.name}</a> <br/>"""
+                   else s"${rsc.zone.name} <br/>"}
                  | <br/><table border = "1">
                  |  <tr>
                  |   <th>RecordSet</th>
@@ -194,16 +197,21 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
                  | </table><br/>
                  | <b>Current Owner Group: </b> ${currentGroup.get.name} <br/><br/>
                  | <b>Transfer Owner Group: </b> ${ownerGroup.get.name} <br/><br/>
-                 | <b>Status: ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}</b>
+                 | <b>Status: ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get,rsc.zone,portalHost)}</b>
                  | <br/><br/>
                """.stripMargin)
     sb.toString
   }
 
-  def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
+  def formatOwnerShipStatus(status: OwnerShipTransferStatus, zone:Zone, portalHost: String): String =
     status match {
       case OwnerShipTransferStatus.ManuallyRejected => "<i style=\"color: red;\">Rejected</i>"
-      case OwnerShipTransferStatus.PendingReview => "<i style=\"color: blue;\">Pending Review  </i> (Action to be taken)"
+      case OwnerShipTransferStatus.PendingReview => s"""<i style=\"color: blue;\">Pending Review </i> <br/><br/>
+                                                    Requesting your review for the Ownership transfer. <br/>
+                                                    ${if(portalHost != null)
+                                                    s"""<a href="$portalHost/zones/${zone.id}">Go to Zones </a>
+                                                     >>>  Search by RecordSet Name  >>>  Click Close Request </i><br/>"""
+                                                    else s""}"""
       case OwnerShipTransferStatus.ManuallyApproved => "<i style=\"color: green;\">Approved</i>"
       case OwnerShipTransferStatus.Cancelled => "<i style=\"color: dark grey;\">Cancelled</i>"
     }

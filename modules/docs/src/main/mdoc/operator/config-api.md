@@ -534,6 +534,9 @@ email = {
 
       smtp {
          # Host SMTP server
+         portal {
+            url= "http://127.0.0.1:9001" # portal uri for email link
+         }
          host = "example.host"
          # if smtp host requires authentication we can enable auth
          auth = true
@@ -864,11 +867,20 @@ dotted-hosts = {
      settings = {
      # Sender address for e-mail notifications
      from = "Sender <do-not-reply@example.sender>"
-   
+
      smtp {
-        # Host SMTP server
-        host = "example.host"
+         # Host SMTP server
+         portal {
+            url= "http://127.0.0.1:9001" # portal uri for email link
+         }
+         host = "example.host"
+         # if smtp host requires authentication we can enable auth
+         auth = true
+         username = sampleUser
+         password = samplePassword
+         starttls.enable = true
      }
+   }
   }
 
   # Valid Email Domains
