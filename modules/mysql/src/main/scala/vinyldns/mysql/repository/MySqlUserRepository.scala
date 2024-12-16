@@ -172,11 +172,15 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
    */
   def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
+      val userInfo=
+        if (userIdentifier.endsWith("%"))
+        userIdentifier.dropRight(1)
+      else  userIdentifier
       logger.debug(s"Getting user with id: $userIdentifier")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID_OR_NAME
-            .bindByName('id -> userIdentifier,'userName ->s"$userIdentifier%")
+            .bindByName('id -> userInfo,'userName ->s"$userInfo%")
             .map(toUser(1))
             .first()
             .apply()

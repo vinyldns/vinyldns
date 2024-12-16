@@ -157,9 +157,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
         const groupsSearchByUser = [];
         if($scope.isSearchByUser){
-        try {
-            if($scope.query==""){
-                throw new Error("User name should not empty.");
+            if($scope.query.endsWith("%")){
+                $scope.query = str.substring(0, str.length - 1);
             }
             profileService.getUserDataById($scope.query)
             .then(function (result) {
@@ -176,10 +175,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             .catch(function (error) {
                 handleError(error, 'getGroupsByUser::refresh-failure');
             });
-           }
-         catch (error) {
-               alert(error.message);
-                }
         }
         else {
             groupsService
