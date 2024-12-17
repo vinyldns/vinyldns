@@ -156,11 +156,15 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         groupsPaging = pagingService.resetPaging(groupsPaging);
         allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
         const groupsSearchByUser = [];
+        userNameQuery = "";
         if($scope.isSearchByUser){
-            if($scope.query.endsWith("%")){
-                $scope.query = str.substring(0, str.length - 1);
-            }
-            profileService.getUserDataById($scope.query)
+        try {
+            if ($scope.query.endsWith("%%") || $scope.query.endsWith("**")){
+                throw new Error("User name should not end with multiple * or %");
+            }else if($scope.query.endsWith("%") || $scope.query.endsWith("*")){
+                userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
+            }else {userNameQuery = $scope.query}
+            profileService.getUserDataById(userNameQuery)
             .then(function (result) {
                   var groupIds = result.data.groupIds
                   groupIds.forEach((groupId) => {
@@ -175,6 +179,10 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             .catch(function (error) {
                 handleError(error, 'getGroupsByUser::refresh-failure');
             });
+        }
+        catch (error) {
+               alert(error.message);
+                }
         }
         else {
             groupsService
