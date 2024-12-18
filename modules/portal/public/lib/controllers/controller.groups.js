@@ -159,7 +159,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         userNameQuery = "";
         if($scope.isSearchByUser){
         try {
-            if ($scope.query.endsWith("%%") || $scope.query.endsWith("**")){
+            if ($scope.query === "%" || $scope.query === "*"){
+                throw new Error("User name should at least one other character for wildcard search");
+            }else if($scope.query.endsWith("%%") || $scope.query.endsWith("**")){
                 throw new Error("User name should not end with multiple * or %");
             }else if($scope.query.endsWith("%") || $scope.query.endsWith("*")){
                 userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
