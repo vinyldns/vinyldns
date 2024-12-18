@@ -24,6 +24,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.allGroup = {items: []};
     $scope.groupsLoaded = false;
     $scope.allGroupsLoaded = false;
+    $scope.isSearchByUser = false;
     $scope.alerts = [];
     $scope.ignoreAccess = false;
     $scope.hasGroups = false;
@@ -154,33 +155,65 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.refresh = function () {
         groupsPaging = pagingService.resetPaging(groupsPaging);
         allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
-
-        groupsService
-            .getGroupsAbridged(groupsPaging.maxItems, undefined, false, $scope.query)
+        const groupsSearchByUser = [];
+        userNameQuery = "";
+        if($scope.isSearchByUser){
+        try {
+            if ($scope.query === "%" || $scope.query === "*"){
+                throw new Error("User name should at least one other character for wildcard search");
+            }else if($scope.query.endsWith("%%") || $scope.query.endsWith("**")){
+                throw new Error("User name should not end with multiple * or %");
+            }else if($scope.query.endsWith("%") || $scope.query.endsWith("*")){
+                userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
+            }else {userNameQuery = $scope.query}
+            profileService.getUserDataById(userNameQuery)
             .then(function (result) {
-                  $log.debug('getGroups:refresh-success', result);
-                  //update groups
-                  groupsPaging.next = result.data.nextId;
-                  updateGroupDisplay(result.data.groups);
-                  if (!$scope.query.length) {
-                      $scope.hasGroups = $scope.groups.items.length > 0;
-                  }
+                  var groupIds = result.data.groupIds
+                  groupIds.forEach((groupId) => {
+                    groupsService.getGroup(groupId)
+                        .then(function (result) {
+                            groupsSearchByUser.push(result.data);
+                         })
+                  });
+            $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
+            updateAllGroupDisplay(groupsSearchByUser)
             })
             .catch(function (error) {
-                handleError(error, 'getGroups::refresh-failure');
+                handleError(error, 'getGroupsByUser::refresh-failure');
             });
+        }
+        catch (error) {
+               alert(error.message);
+                }
+        }
+        else {
+            groupsService
+                .getGroupsAbridged(groupsPaging.maxItems, undefined, false, $scope.query)
+                .then(function (result) {
+                      $log.debug('getGroups:refresh-success', result);
+                      //update groups
+                      groupsPaging.next = result.data.nextId;
+                      updateGroupDisplay(result.data.groups);
+                      if (!$scope.query.length) {
+                          $scope.hasGroups = $scope.groups.items.length > 0;
+                      }
+                })
+                .catch(function (error) {
+                    handleError(error, 'getGroups::refresh-failure');
+                });
 
-        groupsService
-            .getGroupsAbridged(allGroupsPaging.maxItems, undefined, true, $scope.query)
-            .then(function (result) {
-                $log.debug('getGroups:refresh-success', result);
-                //update groups
-                allGroupsPaging.next = result.data.nextId;
-                updateAllGroupDisplay(result.data.groups);
-            })
-            .catch(function (error) {
-                handleError(error, 'getGroups::refresh-failure');
-            });
+            groupsService
+                .getGroupsAbridged(allGroupsPaging.maxItems, undefined, true, $scope.query)
+                .then(function (result) {
+                    $log.debug('getGroups:refresh-success', result);
+                    //update groups
+                    allGroupsPaging.next = result.data.nextId;
+                    updateAllGroupDisplay(result.data.groups);
+                })
+                .catch(function (error) {
+                    handleError(error, 'getGroups::refresh-failure');
+                });
+        }
     };
 
     $scope.reset = function () {
