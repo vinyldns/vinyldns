@@ -553,7 +553,14 @@ specific exchange service that you are interfacing with.
 
 Below is an example e-mail notification:
 
-![Sample E-mail Notification](../img/sample-email-nofitication.png)
+1. Batch change
+
+   ![Sample Batch Change E-mail Notification](../img/sample-batchchange-email-nofity.png)
+
+2. RecordSet Ownership transfer
+
+   ![Sample OwnerShip transfer E-mail Notification](../img/sample-ownership-transfer-email-nofity.png)
+
 
 #### AWD Simple Notification Service (SNS) notifier
 
