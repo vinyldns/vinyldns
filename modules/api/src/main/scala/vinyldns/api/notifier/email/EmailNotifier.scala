@@ -18,33 +18,25 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  BatchChangeApprovalStatus,
-  SingleAddChange,
-  SingleChange,
-  SingleDeleteRRSetChange
-}
-import vinyldns.core.domain.membership.UserRepository
-import vinyldns.core.domain.membership.User
+import cats.implicits._
+import cats.effect.IO
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
+import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import org.slf4j.LoggerFactory
+
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
-
 import scala.util.Try
-import vinyldns.core.domain.record.AData
-import vinyldns.core.domain.record.AAAAData
-import vinyldns.core.domain.record.CNAMEData
-import vinyldns.core.domain.record.MXData
-import vinyldns.core.domain.record.TXTData
-import vinyldns.core.domain.record.PTRData
-import vinyldns.core.domain.record.RecordData
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, OwnerShipTransferStatus, PTRData, RecordData, RecordSetChange, TXTData}
+import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+
 import java.time.ZoneId
 
-class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
+class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository, groupRepository: GroupRepository)
     extends Notifier {
 
   private val logger = LoggerFactory.getLogger(classOf[EmailNotifier])
@@ -52,12 +44,15 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
       case bc: BatchChange => sendBatchChangeNotification(bc)
+      case rsc: RecordSetChange => sendRecordSetOwnerTransferNotification(rsc)
       case _ => IO.unit
     }
 
-  def send(addresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
+
+  def send(toAddresses: Address*)(ccAddresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
     val message = new MimeMessage(session)
-    message.setRecipients(Message.RecipientType.TO, addresses.toArray)
+    message.setRecipients(Message.RecipientType.TO, toAddresses.toArray)
+    message.setRecipients(Message.RecipientType.CC, ccAddresses.toArray)
     message.setFrom(config.from)
     buildMessage(message)
     message.saveChanges()
@@ -67,10 +62,10 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     transport.close()
   }
 
-  def sendBatchChangeNotification(bc: BatchChange): IO[Unit] =
+  def sendBatchChangeNotification(bc: BatchChange): IO[Unit] = {
     userRepository.getUser(bc.userId).flatMap {
-      case Some(UserWithEmail(email)) =>
-        send(email) { message =>
+      case Some(UserWithEmail(email))  =>
+        send(email)() { message =>
           message.setSubject(s"VinylDNS Batch change ${bc.id} results")
           message.setContent(formatBatchChange(bc), "text/html")
           message
@@ -81,9 +76,58 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
             s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
           )
         }
-      case None => IO { logger.warn(s"Unable to find user: ${bc.userId}") }
+      case None => IO {
+        logger.warn(s"Unable to find user: ${bc.userId}")
+      }
       case _ => IO.unit
     }
+  }
+
+  def sendRecordSetOwnerTransferNotification(rsc: RecordSetChange): IO[Unit] = {
+    for {
+      toGroup <- groupRepository.getGroup(rsc.recordSet.ownerGroupId.getOrElse("<none>"))
+      ccGroup <- groupRepository.getGroup(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")).getOrElse("<none>"))
+      _ <- toGroup match {
+        case Some(group) =>
+          group.memberIds.toList.traverse { id =>
+            userRepository.getUser(id).flatMap {
+              case Some(UserWithEmail(toEmail)) =>
+                ccGroup match {
+                  case Some(ccg) =>
+                    ccg.memberIds.toList.traverse { id =>
+                        userRepository.getUser(id).flatMap {
+                          case Some(ccUser) =>
+                            val ccEmail = ccUser.email.getOrElse("<none>")
+                            send(toEmail)(new InternetAddress(ccEmail)) { message =>
+                              message.setSubject(s"VinylDNS RecordSet change ${rsc.id} results")
+                              message.setContent(formatRecordSetChange(rsc), "text/html")
+                              message
+                            }
+                          case None =>
+                            IO.unit
+                        }
+                      }
+                  case None => IO.unit
+                }
+              case Some(user: User) if user.email.isDefined =>
+                IO {
+                  logger.warn(
+                    s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}"
+                  )
+                }
+              case None =>
+                IO {
+                  logger.warn(s"Unable to find user: ${rsc.userId}")
+                }
+              case _ =>
+                IO.unit
+            }
+          }
+        case None => IO.unit // Handle case where toGroup is None
+      }
+    } yield ()
+  }
+
 
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
@@ -93,7 +137,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       | ${bc.comments.map(comments => s"<b>Description:</b> $comments</br>").getOrElse("")}
       | <b>Created:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(bc.createdTimestamp)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
-      | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
+      | <b>Status:</b> ${formatBatchStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
 
     // For manually reviewed e-mails, add additional info; e-mails are not sent for pending batch changes
     if (bc.approvalStatus != AutoApproved) {
@@ -125,13 +169,36 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     sb.toString
   }
 
-  def formatStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
+
+  def formatBatchStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
     (approval, status) match {
       case (ManuallyRejected, _) => "Rejected"
       case (BatchChangeApprovalStatus.PendingReview, _) => "Pending Review"
       case (_, PartialFailure) => "Partially Failed"
       case (_, status) => status.toString
     }
+
+  def formatRecordSetChange(rsc: RecordSetChange): String = {
+
+          val sb = new StringBuilder
+          sb.append(s"""<h1>RecordSet Ownership Transfer</h1>
+                       | <b>Submitter:</b>  ${ userRepository.getUser(rsc.userId).map(_.get.userName)}
+                       | <b>Id:</b> ${rsc.id}<br/>
+                       | <b>Submitted time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(rsc.created)} <br/>
+                       | <b>OwnerShip Current Group:</b> ${rsc.recordSet.ownerGroupId.getOrElse("none")} <br/>
+                       | <b>OwnerShip Transfer Group:</b> ${rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("none")).getOrElse("none")} <br/>
+                       | <b>OwnerShip Transfer Status:</b> ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get)}<br/>
+                 """.stripMargin)
+          sb.toString
+  }
+
+  def formatOwnerShipStatus(status: OwnerShipTransferStatus): String =
+          status match {
+            case OwnerShipTransferStatus.ManuallyRejected => "Rejected"
+            case OwnerShipTransferStatus.PendingReview => "Pending Review"
+            case OwnerShipTransferStatus.ManuallyApproved => "Approved"
+            case OwnerShipTransferStatus.Cancelled => "Cancelled"
+  }
 
   def formatSingleChange(sc: SingleChange, index: Int): String = sc match {
     case SingleAddChange(

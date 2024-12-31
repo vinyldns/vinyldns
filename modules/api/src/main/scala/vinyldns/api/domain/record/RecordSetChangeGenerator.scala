@@ -113,6 +113,25 @@ object RecordSetChangeGenerator extends DnsConversions {
       singleBatchChangeIds = singleBatchChangeIds
     )
 
+  def forOutOfSync(
+   recordSet: RecordSet,
+   zone: Zone,
+   userId: String,
+   singleBatchChangeIds: List[String]
+ ): RecordSetChange =
+    RecordSetChange(
+      zone = zone,
+      recordSet = recordSet.copy(
+        name = relativize(recordSet.name, zone.name),
+        status = RecordSetStatus.PendingDelete,
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+      ),
+      userId = userId,
+      changeType = RecordSetChangeType.Sync,
+      updates = Some(recordSet),
+      singleBatchChangeIds = singleBatchChangeIds
+    )
+
   def forDelete(
       recordSet: RecordSet,
       zone: Zone,

@@ -5,7 +5,7 @@ USE ${dbName};
 /*
 Create table to store groups
 */
-CREATE TABLE groups (
+CREATE TABLE `groups` (
   id CHAR(36) NOT NULL,
   name VARCHAR(256) NOT NULL,
   data BLOB NOT NULL,

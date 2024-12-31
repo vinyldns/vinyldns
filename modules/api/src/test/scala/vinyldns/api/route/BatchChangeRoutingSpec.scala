@@ -38,6 +38,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -316,6 +317,7 @@ class BatchChangeRoutingSpec()
         startFrom: Option[Int],
         maxItems: Int,
         ignoreAccess: Boolean = false,
+        batchStatus: Option[BatchChangeStatus] = None,
         approvalStatus: Option[BatchChangeApprovalStatus] = None
     ): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
