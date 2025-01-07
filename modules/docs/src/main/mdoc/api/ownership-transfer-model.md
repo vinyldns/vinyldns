@@ -4,14 +4,14 @@ title: "Ownership Transfer Model"
 section: "api"
 ---
 
-# Ownership transfer Model
+# Ownership Transfer Model
 
 #### Table of Contents
 
-- [Ownership transfer Attributes](#ownership-transfer-attributes)
-- [Ownership transfer Example](#ownership-transfer-example)
+- [Ownership Transfer Attributes](#ownership-transfer-attributes)
+- [Ownership Transfer Example](#ownership-transfer-example)
 
-#### Ownership transfer ATTRIBUTES <a id="ownership-transfer-attributes"></a>
+#### Ownership Transfer ATTRIBUTES <a id="ownership-transfer-attributes"></a>
 
 1. User can claim their own group for the unowned record by their own. Group will be Auto-assigned to the record, once user requested with group id.
 2. User can request their own group for the record already assigned. Once requested, the request will be send to the existing assigned group members(Approvers). The request will be notified in email.
