@@ -415,9 +415,9 @@ object RecordSetValidations {
                                       ownerShipTransferStatus: Option[String],
                                ): Either[Throwable, Unit] =
   Either.cond(
-    ownerShipTransferStatus.get == OwnerShipTransferStatus.PendingReview,
+    ownerShipTransferStatus.getOrElse("none") == OwnerShipTransferStatus.PendingReview,
     (),
-    InvalidRequest(s"Invalid Ownership transfer status:git ${ownerShipTransferStatus.get}")
+    InvalidRequest(s"Invalid Ownership transfer status:git ${ownerShipTransferStatus.getOrElse("none")}")
   )
 
 
