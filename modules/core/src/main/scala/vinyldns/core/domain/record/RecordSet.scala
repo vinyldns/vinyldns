@@ -19,7 +19,6 @@ package vinyldns.core.domain.record
 import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
 
 import java.util.UUID
-
 import java.time.Instant
 
 object RecordType extends Enumeration {
@@ -37,7 +36,10 @@ object RecordSetStatus extends Enumeration {
 
 object OwnerShipTransferStatus extends Enumeration {
   type OwnerShipTransferStatus = Value
-  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None  = Value
+  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None = Value
+
+  def isStatus(value: String): Boolean =
+    OwnerShipTransferStatus.values.find(v => v.toString == value).isDefined
 }
 
 import RecordSetStatus._
@@ -89,7 +91,6 @@ case class OwnerShipTransfer(
                               ownerShipTransferStatus: OwnerShipTransferStatus,
                               requestedOwnerGroupId: Option[String] = None
                             ){
-
   override def toString: String = {
     val sb = new StringBuilder
     sb.append("OwnerShipTransfer: [")

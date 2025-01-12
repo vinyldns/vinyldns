@@ -400,11 +400,26 @@ object RecordSetValidations {
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
       case (Some(groupId), None) =>
-        InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+          InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
+
+  def isAlreadyOwnerGroupMember(
+                                 ownerGroupId: String
+                      ): Either[Throwable, Unit] =
+    InvalidRequest(s"""Record owner group with id "$ownerGroupId" already owns the record, new request is not needed"""").asLeft
+
+  def inValidOwnerShipTransferStatus(
+                                      ownerShipTransferStatus: Option[String],
+                               ): Either[Throwable, Unit] =
+  Either.cond(
+    ownerShipTransferStatus.get == OwnerShipTransferStatus.PendingReview,
+    (),
+    InvalidRequest(s"Invalid Ownership transfer status:git ${ownerShipTransferStatus.get}")
+  )
+
 
   def unchangedRecordName(
       existing: RecordSet,

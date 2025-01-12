@@ -27,8 +27,10 @@ import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
-import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType, RecordTypeSort}
+import vinyldns.core.domain.record.{NameSort, OwnerShipTransferStatus, RecordSet, RecordType, RecordTypeSort}
 import vinyldns.core.domain.zone.ZoneCommandResult
+import akka.http.scaladsl.model.HttpEntity
+import spray.json._
 
 import scala.concurrent.duration._
 
@@ -205,17 +207,32 @@ class RecordSetRoute(
             complete(StatusCodes.Accepted, rc)
           }
         } ~
-        (put & monitor("Endpoint.updateRecordSet")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
-            (authPrincipal, recordSet) =>
-              recordSet match {
-                case badRs if badRs.zoneId != zoneId =>
-                  Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
-                case goodRs =>
-                  recordSetService.updateRecordSet(goodRs, authPrincipal)
+        (put & monitor("Endpoint.updateRecordSet") & extractRequest) { request =>
+          request.entity match {
+            case HttpEntity.Strict(_, data) =>
+              val jsonString = data.utf8String
+              val json = jsonString.parseJson.asJsObject
+              val ownerShipTransferStatus = json.fields("recordSetGroupChange").asJsObject.fields("ownerShipTransferStatus").asInstanceOf[JsString].value
+              OwnerShipTransferStatus.isStatus(ownerShipTransferStatus) match {
+                case false =>
+                  complete(
+                    StatusCodes.BadRequest,
+                    InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransferStatus}")
+                  )
+                case true=>
+                  authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
+                    (authPrincipal, recordSet) =>
+                      recordSet match {
+                        case badRs if badRs.zoneId != zoneId =>
+                          Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
+                        case goodRs =>
+                          recordSetService.updateRecordSet(goodRs, authPrincipal)
+                      }
+                  } { rc => complete(StatusCodes.Accepted, rc)
+                  }
               }
-          } { rc =>
-            complete(StatusCodes.Accepted, rc)
+            case _ =>
+              complete(StatusCodes.BadRequest, InvalidRequest("Request body not available"))
           }
         }
     } ~
