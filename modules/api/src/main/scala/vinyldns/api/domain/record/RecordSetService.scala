@@ -174,7 +174,7 @@ class RecordSetService(
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) ().toResult
       else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      ownerTransferGroup <- getGroupIfProvided(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get)
+      ownerTransferGroup <- getGroupIfProvided(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")))
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
         canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerTransferGroup, auth).toResult
@@ -183,7 +183,7 @@ class RecordSetService(
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- if(OwnerShipTransferStatus.PendingReview == recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")
       && existing.ownerGroupId == rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get)
-        isAlreadyOwnerGroupMember(existing.ownerGroupId.get).toResult else ().toResult
+        isAlreadyOwnerGroupMember(existing.ownerGroupId.getOrElse("<none>")).toResult else ().toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
