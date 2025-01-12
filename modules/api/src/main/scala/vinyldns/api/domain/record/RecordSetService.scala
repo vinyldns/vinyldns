@@ -147,7 +147,7 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] = {
+  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
@@ -224,7 +224,6 @@ class RecordSetService(
         notifiers.notify(Notification(change)).toResult
       else ().toResult
     } yield change
-  }
 
   def deleteRecordSet(
                        recordSetId: String,

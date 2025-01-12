@@ -38,8 +38,8 @@ object OwnerShipTransferStatus extends Enumeration {
   type OwnerShipTransferStatus = Value
   val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None = Value
 
-  def isStatus(value: String): Boolean =
-    OwnerShipTransferStatus.values.find(v => v.toString == value).isDefined
+  def isStatus(status: String): Boolean =
+    OwnerShipTransferStatus.values.find(value => value.toString == status).isDefined
 }
 
 import RecordSetStatus._
