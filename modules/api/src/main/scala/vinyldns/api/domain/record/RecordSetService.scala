@@ -154,7 +154,8 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      _ <- inValidOwnerShipTransferStatus(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus.toString)).toResult
+      _ = if (recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.PendingReview)
+        InvalidRequest(s"Invalid Ownership transfer status: ${OwnerShipTransferStatus.PendingReview}").toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
         unchangedRecordSet(existing, recordSet).toResult else ().toResult
@@ -177,7 +178,7 @@ class RecordSetService(
       ownerTransferGroup <- getGroupIfProvided(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")))
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerTransferGroup, auth).toResult
+        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("<none>")), ownerTransferGroup, auth).toResult
       else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper) canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
