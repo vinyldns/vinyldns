@@ -249,10 +249,8 @@ class RecordSetRoute(
                 }
               } catch {
                 case e: Exception =>
-                  println(s"Error processing request: ${e.getMessage}")
-                  complete(StatusCodes.InternalServerError, InvalidRequest(e.getMessage))
+                  complete(StatusCodes.Accepted, InvalidRequest(e.getMessage))
               }
-
             case _ =>
               complete(StatusCodes.Accepted, InvalidRequest("Request body not available"))
           }
