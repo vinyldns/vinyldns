@@ -211,19 +211,13 @@ class RecordSetRoute(
           request.entity match {
             case HttpEntity.Strict(_, data) =>
               val jsonString = data.utf8String
-              println(s"Received JSON: $jsonString")
-
               try {
                 val json = jsonString.parseJson.asJsObject
-
                 // If recordSetGroupChange is missing or null, proceed with normal update
                 val hasGroupChange = json.fields.get("recordSetGroupChange").exists(_ != JsNull)
-
                 if (hasGroupChange) {
-                  // Original ownership transfer status check logic
                   val groupChange = json.fields("recordSetGroupChange").asJsObject
                   val ownerShipTransferStatus = groupChange.fields("ownerShipTransferStatus").asInstanceOf[JsString].value
-
                   OwnerShipTransferStatus.isStatus(ownerShipTransferStatus) match {
                     case false =>
                       complete(
@@ -260,7 +254,7 @@ class RecordSetRoute(
               }
 
             case _ =>
-              complete(StatusCodes.BadRequest, InvalidRequest("Request body not available"))
+              complete(StatusCodes.Accepted, InvalidRequest("Request body not available"))
           }
         }
     } ~
