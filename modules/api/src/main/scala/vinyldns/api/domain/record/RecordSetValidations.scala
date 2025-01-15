@@ -399,8 +399,7 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
-      case (Some(groupId), None) =>
-          InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+      case (Some(groupId), None) =>{InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft}
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
