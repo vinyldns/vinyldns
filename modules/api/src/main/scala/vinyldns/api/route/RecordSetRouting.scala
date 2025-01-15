@@ -211,15 +211,38 @@ class RecordSetRoute(
           request.entity match {
             case HttpEntity.Strict(_, data) =>
               val jsonString = data.utf8String
-              val json = jsonString.parseJson.asJsObject
-              val ownerShipTransferStatus = json.fields("recordSetGroupChange").asJsObject.fields("ownerShipTransferStatus").asInstanceOf[JsString].value
-              OwnerShipTransferStatus.isStatus(ownerShipTransferStatus) match {
-                case false =>
-                  complete(
-                    StatusCodes.BadRequest,
-                    InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransferStatus}")
-                  )
-                case true=>
+              println(s"Received JSON: $jsonString")
+
+              try {
+                val json = jsonString.parseJson.asJsObject
+
+                // If recordSetGroupChange is missing or null, proceed with normal update
+                val hasGroupChange = json.fields.get("recordSetGroupChange").exists(_ != JsNull)
+
+                if (hasGroupChange) {
+                  // Original ownership transfer status check logic
+                  val groupChange = json.fields("recordSetGroupChange").asJsObject
+                  val ownerShipTransferStatus = groupChange.fields("ownerShipTransferStatus").asInstanceOf[JsString].value
+
+                  OwnerShipTransferStatus.isStatus(ownerShipTransferStatus) match {
+                    case false =>
+                      complete(
+                        StatusCodes.BadRequest,
+                        InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransferStatus}")
+                      )
+                    case true =>
+                      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
+                        (authPrincipal, recordSet) =>
+                          recordSet match {
+                            case badRs if badRs.zoneId != zoneId =>
+                              Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
+                            case goodRs =>
+                              recordSetService.updateRecordSet(goodRs, authPrincipal)
+                          }
+                      } { rc => complete(StatusCodes.Accepted, rc) }
+                  }
+                } else {
+                  // Direct update without ownership transfer checks
                   authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
                     (authPrincipal, recordSet) =>
                       recordSet match {
@@ -228,9 +251,14 @@ class RecordSetRoute(
                         case goodRs =>
                           recordSetService.updateRecordSet(goodRs, authPrincipal)
                       }
-                  } { rc => complete(StatusCodes.Accepted, rc)
-                  }
+                  } { rc => complete(StatusCodes.Accepted, rc) }
+                }
+              } catch {
+                case e: Exception =>
+                  println(s"Error processing request: ${e.getMessage}")
+                  complete(StatusCodes.InternalServerError, InvalidRequest(e.getMessage))
               }
+
             case _ =>
               complete(StatusCodes.BadRequest, InvalidRequest("Request body not available"))
           }
