@@ -239,13 +239,9 @@ class RecordSetRoute(
                       )
                     case true => executeUpdate
                   }
-
                 case None => executeUpdate
               }
-
-            case _ =>
-              println("case")
-              complete(StatusCodes.Accepted, InvalidRequest("Request body not available"))
+            case _ => executeUpdate
           }
         }
     } ~
