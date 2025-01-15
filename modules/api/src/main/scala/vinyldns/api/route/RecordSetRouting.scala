@@ -208,50 +208,43 @@ class RecordSetRoute(
           }
         } ~
         (put & monitor("Endpoint.updateRecordSet") & extractRequest) { request =>
+          def executeUpdate = {
+            authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
+              (authPrincipal, recordSet) =>
+                recordSet match {
+                  case badRs if badRs.zoneId != zoneId =>
+                    Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
+                  case goodRs =>
+                    recordSetService.updateRecordSet(goodRs, authPrincipal)
+                }
+            } { rc => complete(StatusCodes.Accepted, rc) }
+          }
           request.entity match {
             case HttpEntity.Strict(_, data) =>
               val jsonString = data.utf8String
-              try {
-                val json = jsonString.parseJson.asJsObject
-                // If recordSetGroupChange is missing or null, proceed with normal update
-                val hasGroupChange = json.fields.get("recordSetGroupChange").exists(_ != JsNull)
-                if (hasGroupChange) {
-                  val groupChange = json.fields("recordSetGroupChange").asJsObject
-                  val ownerShipTransferStatus = groupChange.fields("ownerShipTransferStatus").asInstanceOf[JsString].value
-                  OwnerShipTransferStatus.isStatus(ownerShipTransferStatus) match {
+              println("jsonString", jsonString)
+              val json = jsonString.parseJson.asJsObject
+              // Check if both fields exist and process accordingly
+              json.fields.get("recordSetGroupChange")
+                .flatMap(groupChange => if (groupChange != JsNull) {
+                  groupChange.asJsObject.fields.get("ownerShipTransferStatus")
+                } else None) match {
+                case Some(status) =>
+                  println("hasGroupChange", status.toString())
+                  OwnerShipTransferStatus.isStatus(status.toString) match {
                     case false =>
                       complete(
-                        StatusCodes.BadRequest,
-                        InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransferStatus}")
+                        StatusCodes.Accepted,
+                        InvalidRequest(s"Invalid Ownership transfer status: ${status}")
                       )
-                    case true =>
-                      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
-                        (authPrincipal, recordSet) =>
-                          recordSet match {
-                            case badRs if badRs.zoneId != zoneId =>
-                              Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
-                            case goodRs =>
-                              recordSetService.updateRecordSet(goodRs, authPrincipal)
-                          }
-                      } { rc => complete(StatusCodes.Accepted, rc) }
+                    case true => executeUpdate
                   }
-                } else {
-                  // Direct update without ownership transfer checks
-                  authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
-                    (authPrincipal, recordSet) =>
-                      recordSet match {
-                        case badRs if badRs.zoneId != zoneId =>
-                          Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
-                        case goodRs =>
-                          recordSetService.updateRecordSet(goodRs, authPrincipal)
-                      }
-                  } { rc => complete(StatusCodes.Accepted, rc) }
-                }
-              } catch {
-                case e: Exception =>
-                  complete(StatusCodes.Accepted, InvalidRequest(e.getMessage))
+
+                case None => executeUpdate
               }
+
             case _ =>
+              println("case")
               complete(StatusCodes.Accepted, InvalidRequest("Request body not available"))
           }
         }
