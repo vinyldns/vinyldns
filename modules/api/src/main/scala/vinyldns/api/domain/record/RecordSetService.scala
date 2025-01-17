@@ -147,18 +147,17 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
+  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] = {
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      _ = if (recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.PendingReview)
-        InvalidRequest(s"Invalid Ownership transfer status: ${OwnerShipTransferStatus.PendingReview}").toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
-        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) {
+        isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange.map (_.ownerShipTransferStatus)).toResult
+        unchangedRecordSet (existing, recordSet).toResult} else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
         && !auth.isSuper) {
         recordSetOwnerShipApproveStatus(recordSet).toResult
@@ -225,6 +224,7 @@ class RecordSetService(
         notifiers.notify(Notification(change)).toResult
       else ().toResult
     } yield change
+  }
 
   def deleteRecordSet(
                        recordSetId: String,

@@ -30,6 +30,7 @@ import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{OwnerShipTransferStatus, RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
+import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
 
 import scala.util.matching.Regex
 
@@ -399,7 +400,9 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
-      case (Some(groupId), None) =>{InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft}
+      case (Some(groupId), None) => {
+        InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+      }
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
@@ -410,14 +413,14 @@ object RecordSetValidations {
                       ): Either[Throwable, Unit] =
     InvalidRequest(s"""Record owner group with id "$ownerGroupId" already owns the record, new request is not needed"""").asLeft
 
-  def inValidOwnerShipTransferStatus(
-                                      ownerShipTransferStatus: Option[String],
+  def isValidOwnerShipTransferStatus(
+                                      ownerShipTransferStatus: Option[OwnerShipTransferStatus],
                                ): Either[Throwable, Unit] =
-  Either.cond(
-    ownerShipTransferStatus.getOrElse("none") == OwnerShipTransferStatus.PendingReview,
+    Either.cond(
+      ownerShipTransferStatus.get != OwnerShipTransferStatus.PendingReview,
     (),
-    InvalidRequest(s"Invalid Ownership transfer status:git ${ownerShipTransferStatus.getOrElse("none")}")
-  )
+    InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransferStatus.getOrElse("none")}")
+    )
 
 
   def unchangedRecordName(

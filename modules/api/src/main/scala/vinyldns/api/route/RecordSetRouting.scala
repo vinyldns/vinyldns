@@ -222,15 +222,13 @@ class RecordSetRoute(
           request.entity match {
             case HttpEntity.Strict(_, data) =>
               val jsonString = data.utf8String
-              println("jsonString", jsonString)
               val json = jsonString.parseJson.asJsObject
               // Check if both fields exist and process accordingly
               json.fields.get("recordSetGroupChange")
                 .flatMap(groupChange => if (groupChange != JsNull) {
                   groupChange.asJsObject.fields.get("ownerShipTransferStatus")
-                } else None) match {
+                } else None ) match {
                 case Some(status) =>
-                  println("hasGroupChange", status.toString())
                   OwnerShipTransferStatus.isStatus(status.toString) match {
                     case false =>
                       complete(
