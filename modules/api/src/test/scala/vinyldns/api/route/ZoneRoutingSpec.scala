@@ -178,25 +178,25 @@ class ZoneRoutingSpec
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
-        createZoneInput: CreateZoneInput,
+        ConnectZoneInput: ConnectZoneInput,
         auth: AuthPrincipal
     ): Result[ZoneCommandResult] = {
-      val outcome = createZoneInput.email match {
-        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
-        case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
-        case notAuthorized.email => Left(NotAuthorizedError(s"$createZoneInput"))
-        case badAdminId.email => Left(InvalidGroupError(s"$createZoneInput"))
+      val outcome = ConnectZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$ConnectZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$ConnectZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$ConnectZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$ConnectZoneInput"))
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Synced,
-              zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)
+              zone = Zone(ConnectZoneInput, false).copy(status = ZoneStatus.Active)
             )
           )
         case error.email => Left(new RuntimeException("fail"))
-        case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput, false), "fail"))
+        case connectionFailed.email => Left(ConnectionFailed(Zone(ConnectZoneInput, false), "fail"))
         case zoneValidationFailed.email =>
-          Left(ZoneValidationFailed(Zone(createZoneInput, false), List("fail"), "failure message"))
+          Left(ZoneValidationFailed(Zone(ConnectZoneInput, false), List("fail"), "failure message"))
         case nonSuperUserSharedZone.email =>
           Left(NotAuthorizedError("unauth"))
       }
@@ -942,7 +942,7 @@ class ZoneRoutingSpec
       }
     }
 
-    "ignore fields not defined in CreateZoneInput" in {
+    "ignore fields not defined in ConnectZoneInput" in {
       post(zoneWithInvalidId) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe Accepted
       }

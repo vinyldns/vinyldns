@@ -23,9 +23,11 @@ import vinyldns.core.domain.zone._
 trait ZoneServiceAlgebra {
 
   def connectToZone(
-      createZoneInput: CreateZoneInput,
+      ConnectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
+
+  def handleGenerateZone(request: ZoneGenerationInput): Result[ZoneCommandResult]
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 

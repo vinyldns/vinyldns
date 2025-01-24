@@ -88,8 +88,8 @@ final case class Zone(
 }
 
 object Zone {
-  def apply(createZoneInput: CreateZoneInput, isTest: Boolean): Zone = {
-    import createZoneInput._
+  def apply(ConnectZoneInput: ConnectZoneInput, isTest: Boolean): Zone = {
+    import ConnectZoneInput._
 
     Zone(
       name,
@@ -124,7 +124,7 @@ object Zone {
   }
 }
 
-final case class CreateZoneInput(
+final case class ConnectZoneInput(
     name: String,
     email: String,
     connection: Option[ZoneConnection] = None,
@@ -150,6 +150,36 @@ final case class UpdateZoneInput(
     scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
 )
+
+case class ZoneGenerationInput(
+    provider: String, // "powerdns", "cloudflare", "google"
+    zoneName: String, // The DNS zone name (e.g., "example.com.") (All)
+    serverId: Option[String] = None, // The ID of the sever (PowerDNS)
+    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare)
+    masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
+    nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+    description: Option[String] = None, // Optional description (Google)
+    visibility: Option[String] = None, // Public or Private (Google)
+    accountId: Option[String] = None, // Optional Account ID (Cloudflare)
+    projectId: Option[String] = None // GCP Project ID (Google)
+  ) {
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append("ZoneGenerationInput: [")
+    sb.append("provider=\"").append(provider).append("\"; ")
+    sb.append("zoneName=\"").append(zoneName).append("\"; ")
+    sb.append("serverId=\"").append(serverId.toString).append("\"; ")
+    sb.append("kind=\"").append(kind.toString).append("\"; ")
+    sb.append("masters=\"").append(masters.toString).append("\"; ")
+    sb.append("nameservers=\"").append(nameservers.toString).append("\"; ")
+    sb.append("description=\"").append(description.toString).append("\"; ")
+    sb.append("visibility=\"").append(visibility.toString).append("\"; ")
+    sb.append("accountId=\"").append(accountId.toString).append("\"; ")
+    sb.append("projectId=\"").append(projectId.toString).append("\"; ")
+    sb.append("]")
+    sb.toString
+  }
+}
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 

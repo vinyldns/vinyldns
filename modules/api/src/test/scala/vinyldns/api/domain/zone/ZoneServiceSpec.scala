@@ -123,7 +123,7 @@ class ZoneServiceSpec
       mockValidEmailConfigNew)
   )
 
-  private val createZoneAuthorized = CreateZoneInput(
+  private val createZoneAuthorized = ConnectZoneInput(
     "ok.zone.recordsets.",
     "test@test.com",
     connection = testConnection,

@@ -79,26 +79,35 @@ class ZoneService(
   import Interfaces._
 
   def connectToZone(
-      createZoneInput: CreateZoneInput,
+      ConnectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
   ): Result[ZoneCommandResult] =
     for {
-      _ <- isValidZoneAcl(createZoneInput.acl).toResult
-      _ <- membershipService.emailValidation(createZoneInput.email)
-      _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
-      _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
-      _ <- zoneDoesNotExist(createZoneInput.name)
-      _ <- adminGroupExists(createZoneInput.adminGroupId)
-      _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
-      isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
+      _ <- isValidZoneAcl(ConnectZoneInput.acl).toResult
+      _ <- membershipService.emailValidation(ConnectZoneInput.email)
+      _ <- connectionValidator.isValidBackendId(ConnectZoneInput.backendId).toResult
+      _ <- validateSharedZoneAuthorized(ConnectZoneInput.shared, auth.signedInUser).toResult
+      _ <- zoneDoesNotExist(ConnectZoneInput.name)
+      _ <- adminGroupExists(ConnectZoneInput.adminGroupId)
+      _ <- if(ConnectZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(ConnectZoneInput.recurrenceSchedule.isDefined) isValidCronString(ConnectZoneInput.recurrenceSchedule.get) else true
       _ <- validateCronString(isCronStringValid).toResult
-      _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
+      _ <- canChangeZone(auth, ConnectZoneInput.name, ConnectZoneInput.adminGroupId).toResult
+      createdZoneInput = if(ConnectZoneInput.recurrenceSchedule.isDefined) ConnectZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else ConnectZoneInput
       zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
+
+  def handleGenerateZone(request: ZoneGenerationInput): Result[ZoneCommandResult] = {
+    // validations here
+    request.provider.toLowerCase match {
+      case "powerdns" => powerDnsService.createZone(request)
+      case "cloudflare" => cloudflareService.createZone(request)
+      case "google" => googleDnsService.createZone(request)
+    }
+  }
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
