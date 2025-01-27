@@ -182,6 +182,13 @@ message Group {
   repeated string memberIds = 6;
   repeated string adminUserIds = 7;
   optional string description = 8;
+  optional MembershipStatus memberStatus = 9;
+}
+
+message MembershipStatus {
+  repeated string pendingReviewMember = 1;
+  repeated string rejectedMember = 2;
+  repeated string approvedMember = 3;
 }
 
 message GroupChange {

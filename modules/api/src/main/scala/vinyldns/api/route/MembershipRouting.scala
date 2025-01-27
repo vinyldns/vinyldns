@@ -126,6 +126,7 @@ class MembershipRoute(
               input.description,
               (input.members ++ input.admins).map(_.id),
               input.admins.map(_.id),
+              input.memberStatus,
               authPrincipal
             )
         ) { group =>
@@ -157,6 +158,13 @@ class MembershipRoute(
       (get & monitor("Endpoint.listGroupAdmins")) {
         authenticateAndExecute(membershipService.listAdmins(groupId, _)) { admins =>
           complete(StatusCodes.OK, admins)
+        }
+      }
+    } ~
+    path("groups" / Segment / "users" / Segment / Segment) { (groupId , userId, memberStatus) =>
+      (put & monitor("Endpoint.memberStatus")) {
+        authenticateAndExecute(membershipService.requestGroupMember(memberStatus, groupId, userId,  _)) { group =>
+          complete(StatusCodes.OK, GroupInfo(group))
         }
       }
     } ~

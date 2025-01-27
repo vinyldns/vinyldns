@@ -17,7 +17,7 @@
 package vinyldns.core.protobuf
 
 import java.time._
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, GroupStatus}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, GroupStatus, MembershipStatus}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -33,7 +33,8 @@ trait GroupProtobufConversions {
       created = Instant.ofEpochMilli(pb.getCreated),
       status = GroupStatus.withName(pb.getStatus),
       memberIds = pb.getMemberIdsList.asScala.toSet,
-      adminUserIds = pb.getAdminUserIdsList.asScala.toSet
+      adminUserIds = pb.getAdminUserIdsList.asScala.toSet,
+      memberStatus = Some(fromPB(pb.getMemberStatus)),
     )
 
   def fromPB(groupChange: VinylDNSProto.GroupChange): GroupChange = {
@@ -57,10 +58,13 @@ trait GroupProtobufConversions {
     pb.setEmail(group.email)
     pb.setCreated(group.created.toEpochMilli)
     pb.setStatus(group.status.toString)
-
     group.memberIds.foreach(pb.addMemberIds)
     group.adminUserIds.foreach(pb.addAdminUserIds)
     group.description.foreach(pb.setDescription)
+    group.memberStatus match {
+      case Some(status) => pb.setMemberStatus(toPB(status))
+      case None => pb.clearMemberStatus()
+    }
 
     pb.build()
   }
@@ -78,4 +82,21 @@ trait GroupProtobufConversions {
 
     pb.build()
   }
+
+  def toPB(membershipStatus: MembershipStatus): VinylDNSProto.MembershipStatus = {
+    val pb = VinylDNSProto.MembershipStatus.newBuilder()
+
+    membershipStatus.pendingReviewMember.foreach(pb.addPendingReviewMember)
+    membershipStatus.approvedMember.foreach(pb.addApprovedMember)
+    membershipStatus.rejectedMember.foreach(pb.addRejectedMember)
+
+    pb.build()
+  }
+
+  def fromPB(pb: VinylDNSProto.MembershipStatus): MembershipStatus =
+    MembershipStatus(
+      pendingReviewMember = pb.getPendingReviewMemberList.asScala.toSet,
+      approvedMember = pb.getApprovedMemberList.asScala.toSet,
+      rejectedMember = pb.getRejectedMemberList.asScala.toSet,
+    )
 }
