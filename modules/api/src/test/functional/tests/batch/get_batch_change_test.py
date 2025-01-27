@@ -88,7 +88,12 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
         "email": "test@test.com",
         "description": "for testing that a get batch change still works when record owner group is deleted",
         "members": [{"id": "sharedZoneUser"}],
-        "admins": [{"id": "sharedZoneUser"}]
+        "admins": [{"id": "sharedZoneUser"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
 
     rs_name = generate_record_name()

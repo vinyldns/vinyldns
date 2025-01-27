@@ -16,7 +16,7 @@
 
 package vinyldns.core.protobuf
 
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, MembershipAccessStatus}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -30,7 +30,8 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
           "test@test.com",
           Some("a test group"),
           memberIds = Set("foo", "bar"),
-          adminUserIds = Set("foo", "bar")
+          adminUserIds = Set("foo", "bar"),
+          membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
         )
 
       val roundTrip = fromPB(toPB(group))
@@ -45,7 +46,8 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
           "test@test.com",
           description = None,
           memberIds = Set("foo", "bar"),
-          adminUserIds = Set("foo", "bar")
+          adminUserIds = Set("foo", "bar"),
+          membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
         )
 
       val roundTrip = fromPB(toPB(group))
@@ -61,14 +63,16 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
         "test@test.com",
         Some("a test group"),
         memberIds = Set("foo", "bar"),
-        adminUserIds = Set("foo", "bar")
+        adminUserIds = Set("foo", "bar"),
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
       val oldGroup = Group(
         "ok",
         "changed@test.com",
         Some("a changed group"),
         memberIds = Set("foo"),
-        adminUserIds = Set("foo")
+        adminUserIds = Set("foo"),
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
 
       val groupChange =
@@ -80,6 +84,8 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
           oldGroup = Some(oldGroup)
         )
       val roundTrip = fromPB(toPB(groupChange))
+      println(roundTrip)
+      println(groupChange)
 
       roundTrip shouldBe groupChange
     }
@@ -90,7 +96,8 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
         "test@test.com",
         Some("a test group"),
         memberIds = Set("foo", "bar"),
-        adminUserIds = Set("foo", "bar")
+        adminUserIds = Set("foo", "bar"),
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
 
       val groupChange =

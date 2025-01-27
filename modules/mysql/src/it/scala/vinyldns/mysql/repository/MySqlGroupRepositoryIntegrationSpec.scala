@@ -20,7 +20,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
+import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus, MembershipAccessStatus}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import cats.effect.IO
 
@@ -37,7 +37,7 @@ class MySqlGroupRepositoryIntegrationSpec
 
   private val testGroupNames = (for { i <- 0 to 100 } yield s"test-group-$i").toList.sorted
   private val groups = testGroupNames.map { testName =>
-    Group(name = testName, email = "test@email.com")
+    Group(name = testName, email = "test@email.com", membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set())))
   }
 
   def saveGroupData(

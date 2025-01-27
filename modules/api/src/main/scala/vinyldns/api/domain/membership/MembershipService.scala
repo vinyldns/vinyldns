@@ -81,11 +81,12 @@ class MembershipService(
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
+      membershipStatus: Option[MembershipAccessStatus],
       authPrincipal: AuthPrincipal
   ): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds, membershipStatus)
       _ <- groupValidation(newGroup)
       _ <- emailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
@@ -109,6 +110,39 @@ class MembershipService(
       _ <- isNotInZoneAclRule(existingGroup)
       deletedGroup <- deleteGroupData(GroupChange.forDelete(existingGroup, authPrincipal), existingGroup).toResult[Group]
     } yield deletedGroup
+
+  def requestGroupMember(
+                          userId: String,
+                          description: Option[String],
+                          status: String,
+                          groupId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[Group] =
+    for{
+      existingGroup <- getExistingGroup(groupId)
+      user <- getUser(userId, authPrincipal)
+      _ <- if (existingGroup.memberIds.contains(userId))
+        GroupAlreadyExistsError(s"User $userId is already a member of the group").asLeft.toResult else ().asRight.toResult
+      newGroup <- status match {
+        case "Request" =>
+          IO(existingGroup.pendingReviewMember(user, description, authPrincipal)).toResult
+        case "Approved" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.approvedMember(user, description, authPrincipal)
+        case "Rejected" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.rejectedMember(user, description, authPrincipal)
+        case _ =>
+          InvalidGroupRequestError("Invalid membership transfer status").asLeft.toResult
+      }
+      addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
+      addedNonAdmins = newGroup.memberIds.diff(existingGroup.memberIds).diff(addedAdmins) ++
+        existingGroup.adminUserIds.diff(newGroup.adminUserIds).intersect(newGroup.memberIds)
+      removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
+      _ <- updateGroupData(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal), newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
+    } yield newGroup
 
   def createGroupData(
    groupChangeData: GroupChange,

@@ -39,7 +39,7 @@ import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupI
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
-import vinyldns.core.domain.membership.{Group, LockStatus}
+import vinyldns.core.domain.membership.{Group, LockStatus, MembershipAccessStatus}
 
 class MembershipRoutingSpec
     extends AnyWordSpec
@@ -89,7 +89,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
       val expected = GroupInfo(okGroup)
 
@@ -115,7 +116,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
@@ -128,7 +130,7 @@ class MembershipRoutingSpec
     }
 
     "return a 400 response if the group doesn't have members or admins" in {
-      val badRequest = CreateGroupInput("bad", "test@test.com", Some("describe me"), Set(), Set())
+      val badRequest = CreateGroupInput("bad", "test@test.com", Some("describe me"), Set(), Set(), None)
       doReturn(result(InvalidGroupError("fail")))
         .when(membershipService)
         .createGroup(any[Group], any[AuthPrincipal])
@@ -166,7 +168,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
       doReturn(result(UserNotFoundError("not found")))
         .when(membershipService)
@@ -184,7 +187,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
@@ -357,7 +361,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
 
       doReturn(result(okGroup))
@@ -369,6 +374,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -393,7 +399,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
       doReturn(result(GroupAlreadyExistsError("fail")))
         .when(membershipService)
@@ -404,6 +411,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -421,7 +429,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set.empty,
-        Set.empty
+        Set.empty,
+        None
       )
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
@@ -432,6 +441,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
       Put("/groups/notFound").withEntity(
@@ -448,7 +458,8 @@ class MembershipRoutingSpec
         "test@test.com",
         Some("describe me"),
         Set(okUserId),
-        Set(okUserId)
+        Set(okUserId),
+        None
       )
 
       doReturn(result(NotAuthorizedError("fail")))
@@ -460,6 +471,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
       Put("/groups/forbidden").withEntity(
@@ -471,7 +483,7 @@ class MembershipRoutingSpec
 
     "return a 500 response when fails" in {
       val badRequest =
-        UpdateGroupInput("bad", "bad", "test@test.com", Some("describe me"), Set.empty, Set.empty)
+        UpdateGroupInput("bad", "bad", "test@test.com", Some("describe me"), Set.empty, Set.empty, None)
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
         .updateGroup(
@@ -481,6 +493,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -492,7 +505,7 @@ class MembershipRoutingSpec
 
     "return a 400 response if the group doesn't have members or admins" in {
       val badRequest =
-        UpdateGroupInput("bad", "bad", "test@test.com", Some("describe me"), Set(), Set())
+        UpdateGroupInput("bad", "bad", "test@test.com", Some("describe me"), Set(), Set(),None)
       doReturn(result(InvalidGroupError("fail")))
         .when(membershipService)
         .updateGroup(
@@ -502,6 +515,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
