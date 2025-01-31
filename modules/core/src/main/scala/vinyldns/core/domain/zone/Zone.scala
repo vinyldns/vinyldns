@@ -161,7 +161,14 @@ case class ZoneGenerationInput(
     description: Option[String] = None, // Optional description (Google)
     visibility: Option[String] = None, // Public or Private (Google)
     accountId: Option[String] = None, // Optional Account ID (Cloudflare)
-    projectId: Option[String] = None // GCP Project ID (Google)
+    projectId: Option[String] = None, // GCP Project ID (Google)
+    ns_ipaddress: Option[String] = None,
+    admin_email: Option[String] = None,
+    ttl: Option[Int] = None,
+    refresh: Option[Int] = None,
+    retry: Option[Int] = None,
+    expire: Option[Int] = None,
+    negative_cache_ttl: Option[Int] = None,
   ) {
   override def toString: String = {
     val sb = new StringBuilder

@@ -110,18 +110,7 @@ class ZoneRoute(
             }
         }
       }
-  } ~
-    path("zones" / "generate") {
-      (post & monitor("Endpoint.generateZone")) {
-        authenticateAndExecuteWithEntity[ZoneCommandResult, ZoneGenerationInput](
-          (authPrincipal, zoneGenerationInput) =>
-            zoneService.handleGenerateZone(zoneGenerationInput, authPrincipal)
-        ) { chg =>
-          complete(StatusCodes.Accepted, chg)
-        }
-      }
-    } ~
-    path("zones" / "deleted" / "changes") {
+  } ~ path("zones" / "deleted" / "changes") {
       (get & monitor("Endpoint.listDeletedZones")) {
         parameters(
           "nameFilter".?,
@@ -150,6 +139,16 @@ class ZoneRoute(
               }
             }
           }
+        }
+      }
+    } ~
+    path("zones" / "generate") {
+      (put & monitor("Endpoint.generateZone")) {
+        authenticateAndExecuteWithEntity[Unit, ZoneGenerationInput](
+          (authPrincipal, zoneGenerationInput) =>
+            zoneService.handleGenerateZoneRequest(zoneGenerationInput, authPrincipal)
+        ) { chg =>
+          complete(StatusCodes.Accepted, chg)
         }
       }
     } ~

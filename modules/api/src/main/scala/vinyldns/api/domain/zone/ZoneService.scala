@@ -24,7 +24,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ZoneCommandResult, _}
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
@@ -32,7 +32,12 @@ import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
+import io.circe.syntax.EncoderOps
+import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
+
+import java.io.OutputStream
+import java.net.{HttpURLConnection, URL}
 
 object ZoneService {
   def apply(
@@ -100,14 +105,77 @@ class ZoneService(
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
 
-  def handleGenerateZone(request: ZoneGenerationInput): Result[ZoneCommandResult] = {
-    // validations here
-    request.provider.toLowerCase match {
-      case "powerdns" => powerDnsService.createZone(request)
-      case "cloudflare" => cloudflareService.createZone(request)
-      case "google" => googleDnsService.createZone(request)
+
+  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[Unit]  = {
+
+    //TODO Get the api from config
+    val bindCreateZoneApi = "http://localhost:9002/api/zones/generate"
+    val powerdnsCreateZoneApi = "http://localhost:9002/api/zones/generate"
+
+    val bindGenerateZoneRequestJson = (
+      request.zoneName,
+      request.nameservers.getOrElse("none"),
+      request.ns_ipaddress.getOrElse("none"),
+      request.admin_email.getOrElse("none"),
+      request.ttl,
+      request.refresh,
+      request.retry,
+      request.expire,
+      request.negative_cache_ttl
+      ).toString
+
+    val powerdnsGenerateZoneRequestJson = (
+      request.zoneName,
+      request.kind.getOrElse("none"),
+      request.masters.getOrElse("none"),
+      request.nameservers.getOrElse("none")
+      ).toString
+
+    val createZoneApi = request.provider.toLowerCase match {
+      case "bind" => bindCreateZoneApi
+      case "powerdns" => powerdnsCreateZoneApi
+
+    }
+
+    val generateZoneRequestJson = request.provider.toLowerCase match {
+      case "bind" => bindGenerateZoneRequestJson
+      case "powerdns" => powerdnsGenerateZoneRequestJson
+
+    }
+
+    for{
+      bindDns <- CreateDnsZoneService(createZoneApi,generateZoneRequestJson).toResult
+    }yield{
+      bindDns
     }
   }
+
+  private val logger = LoggerFactory.getLogger("zoneCreate")
+
+
+  def CreateDnsZoneService(dnsApiUrl: String, request: String): Unit = {
+      val jsonRequest = request.asJson.noSpaces
+
+    println("jsonRequestCreateZone                         ",jsonRequest)
+
+      val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
+      try {
+        connection.setRequestMethod("POST")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setDoOutput(true)
+
+        // Write JSON payload to the request body
+        val outputStream: OutputStream = connection.getOutputStream
+        outputStream.write(jsonRequest.getBytes("UTF-8"))
+        outputStream.close()
+
+        val responseCode = connection.getResponseCode
+        logger.debug(s"Response Code: $responseCode")
+      }
+      finally {
+        connection.disconnect()
+      }
+    }
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {

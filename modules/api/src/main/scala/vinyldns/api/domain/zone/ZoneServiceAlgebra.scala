@@ -27,7 +27,7 @@ trait ZoneServiceAlgebra {
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
 
-  def handleGenerateZone(request: ZoneGenerationInput): Result[ZoneCommandResult]
+  def handleGenerateZoneRequest(request: ZoneGenerationInput,  auth : AuthPrincipal): Result[Unit]
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
