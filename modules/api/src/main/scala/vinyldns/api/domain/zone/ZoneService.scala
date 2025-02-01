@@ -35,7 +35,6 @@ import com.cronutils.model.CronType
 import io.circe.syntax.EncoderOps
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
-
 import java.io.OutputStream
 import java.net.{HttpURLConnection, URL}
 
@@ -48,8 +47,9 @@ object ZoneService {
       accessValidation: AccessValidationsAlgebra,
       backendResolver: BackendResolver,
       crypto: CryptoAlgebra,
-      membershipService:MembershipService
-  ): ZoneService =
+      membershipService:MembershipService,
+      dnsProviderApiConnection : DnsProviderApiConnection
+           ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -61,7 +61,8 @@ object ZoneService {
       accessValidation,
       backendResolver,
       crypto,
-      membershipService
+      membershipService,
+      dnsProviderApiConnection
     )
 }
 
@@ -76,8 +77,9 @@ class ZoneService(
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
     crypto: CryptoAlgebra,
-    membershipService:MembershipService
-) extends ZoneServiceAlgebra {
+    membershipService:MembershipService,
+    dnsProviderApiConnection : DnsProviderApiConnection
+                 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
@@ -108,10 +110,6 @@ class ZoneService(
 
   def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[Unit]  = {
 
-    //TODO Get the api from config
-    val bindCreateZoneApi = "http://localhost:9002/api/zones/generate"
-    val powerdnsCreateZoneApi = "http://localhost:9002/api/zones/generate"
-
     val bindGenerateZoneRequestJson = (
       request.zoneName,
       request.nameservers.getOrElse("none"),
@@ -132,15 +130,13 @@ class ZoneService(
       ).toString
 
     val createZoneApi = request.provider.toLowerCase match {
-      case "bind" => bindCreateZoneApi
-      case "powerdns" => powerdnsCreateZoneApi
-
+      case "bind" => dnsProviderApiConnection.bindCreateZoneApi
+      case "powerdns" => dnsProviderApiConnection.PowerDnsCreateZoneApi
     }
 
     val generateZoneRequestJson = request.provider.toLowerCase match {
       case "bind" => bindGenerateZoneRequestJson
       case "powerdns" => powerdnsGenerateZoneRequestJson
-
     }
 
     for{

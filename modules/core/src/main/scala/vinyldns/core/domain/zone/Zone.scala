@@ -18,7 +18,8 @@ package vinyldns.core.domain.zone
 
 import java.util.UUID
 import cats.effect.IO
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
+
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
@@ -26,6 +27,7 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
+
 import scala.collection.JavaConverters._
 
 object ZoneStatus extends Enumeration {
@@ -183,6 +185,11 @@ case class ZoneGenerationInput(
     sb.append("visibility=\"").append(visibility.toString).append("\"; ")
     sb.append("accountId=\"").append(accountId.toString).append("\"; ")
     sb.append("projectId=\"").append(projectId.toString).append("\"; ")
+    sb.append("ttl=\"").append(ttl).append("\"; ")
+    sb.append("refresh=\"").append(refresh).append("\"; ")
+    sb.append("retry=\"").append(retry).append("\"; ")
+    sb.append("expire=\"").append(expire).append("\"; ")
+    sb.append("negative_cache_ttl=\"").append(negative_cache_ttl).append("\"; ")
     sb.append("]")
     sb.toString
   }
@@ -262,10 +269,17 @@ final case class LegacyDnsBackend(
   )
 }
 
+final case class DnsProviderApiConnection(
+                                           bindCreateZoneApi: String,
+                                           PowerDnsCreateZoneApi: String
+                                         )
+
+
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
-    dnsBackends: List[LegacyDnsBackend]
+    dnsBackends: List[LegacyDnsBackend],
+    dnsProviderApiConnection : DnsProviderApiConnection
 )
 object ConfiguredDnsConnections {
   def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
@@ -309,6 +323,23 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
+      val dnsProviderCreateZoneApiConfig = {
+        if (config.hasPath("vinyldns.backend.backend-providers")) {
+          config
+            .getConfigList("vinyldns.backend.backend-providers")
+            .asScala
+            .find(_.hasPath("settings.dns-provider-api.create-zone-uri"))
+            .map(_.getConfig("settings.dns-provider-api.create-zone-uri"))
+            .getOrElse(ConfigFactory.empty())
+        } else ConfigFactory.empty()
+      }
+
+      val dnsProviderApiConnection = {
+        val bindCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("bind")
+        val powerdnsCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("powerdns")
+        DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi)
+      }
+
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConnection)
     }
 }
