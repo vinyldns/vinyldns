@@ -154,23 +154,24 @@ final case class UpdateZoneInput(
 )
 
 case class ZoneGenerationInput(
-    provider: String, // "powerdns", "cloudflare", "google"
-    zoneName: String, // The DNS zone name (e.g., "example.com.") (All)
+    groupId: String,
+    provider: String, // "powerdns", "cloudflare", "google", "bind"
+    zoneName: String,
     serverId: Option[String] = None, // The ID of the sever (PowerDNS)
-    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare)
+    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
     masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
     nameservers: Option[List[String]] = None, // NS records (PowerDNS)
-    description: Option[String] = None, // Optional description (Google)
+    description: Option[String] = None, // description (Google)
     visibility: Option[String] = None, // Public or Private (Google)
-    accountId: Option[String] = None, // Optional Account ID (Cloudflare)
+    accountId: Option[String] = None, // Account ID (Cloudflare)
     projectId: Option[String] = None, // GCP Project ID (Google)
-    ns_ipaddress: Option[String] = None,
-    admin_email: Option[String] = None,
-    ttl: Option[Int] = None,
-    refresh: Option[Int] = None,
-    retry: Option[Int] = None,
-    expire: Option[Int] = None,
-    negative_cache_ttl: Option[Int] = None,
+    ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
+    admin_email: Option[String] = None, // NS IpAddress (Bind)
+    ttl: Option[Int] = None, // TTL (Bind)
+    refresh: Option[Int] = None, // Refresh (Bind)
+    retry: Option[Int] = None, // Retry (Bind)
+    expire: Option[Int] = None, // Expire (Bind)
+    negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
   ) {
   override def toString: String = {
     val sb = new StringBuilder

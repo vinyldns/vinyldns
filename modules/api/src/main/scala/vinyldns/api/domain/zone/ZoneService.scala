@@ -32,7 +32,6 @@ import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
-import io.circe.syntax.EncoderOps
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
 import java.io.OutputStream
@@ -85,6 +84,8 @@ class ZoneService(
   import zoneValidations._
   import Interfaces._
 
+  private val logger = LoggerFactory.getLogger("zoneCreate")
+
   def connectToZone(
       ConnectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
@@ -106,72 +107,6 @@ class ZoneService(
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
-
-
-  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[Unit]  = {
-
-    val bindGenerateZoneRequestJson = (
-      request.zoneName,
-      request.nameservers.getOrElse("none"),
-      request.ns_ipaddress.getOrElse("none"),
-      request.admin_email.getOrElse("none"),
-      request.ttl,
-      request.refresh,
-      request.retry,
-      request.expire,
-      request.negative_cache_ttl
-      ).toString
-
-    val powerdnsGenerateZoneRequestJson = (
-      request.zoneName,
-      request.kind.getOrElse("none"),
-      request.masters.getOrElse("none"),
-      request.nameservers.getOrElse("none")
-      ).toString
-
-    val createZoneApi = request.provider.toLowerCase match {
-      case "bind" => dnsProviderApiConnection.bindCreateZoneApi
-      case "powerdns" => dnsProviderApiConnection.PowerDnsCreateZoneApi
-    }
-
-    val generateZoneRequestJson = request.provider.toLowerCase match {
-      case "bind" => bindGenerateZoneRequestJson
-      case "powerdns" => powerdnsGenerateZoneRequestJson
-    }
-
-    for{
-      bindDns <- CreateDnsZoneService(createZoneApi,generateZoneRequestJson).toResult
-    }yield{
-      bindDns
-    }
-  }
-
-  private val logger = LoggerFactory.getLogger("zoneCreate")
-
-
-  def CreateDnsZoneService(dnsApiUrl: String, request: String): Unit = {
-      val jsonRequest = request.asJson.noSpaces
-
-    println("jsonRequestCreateZone                         ",jsonRequest)
-
-      val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
-      try {
-        connection.setRequestMethod("POST")
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.setDoOutput(true)
-
-        // Write JSON payload to the request body
-        val outputStream: OutputStream = connection.getOutputStream
-        outputStream.write(jsonRequest.getBytes("UTF-8"))
-        outputStream.close()
-
-        val responseCode = connection.getResponseCode
-        logger.debug(s"Response Code: $responseCode")
-      }
-      finally {
-        connection.disconnect()
-      }
-    }
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -207,6 +142,67 @@ class ZoneService(
       deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
       _ <- messageQueue.send(deleteZoneChange).toResult[Unit]
     } yield deleteZoneChange
+
+
+  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[Unit]  = {
+
+    val bindGenerateZoneRequestJson =
+      s"""{
+          "zoneName": "${request.zoneName}",
+          "nameservers": "${request.nameservers.getOrElse("none")}",
+          "ns_ipaddress": "${request.ns_ipaddress.getOrElse("none")}",
+          "admin_email": "${request.admin_email.getOrElse("none")}",
+          "ttl": "${request.ttl.getOrElse("none")}",
+          "refresh": "${request.refresh.getOrElse("none")}",
+          "retry": "${request.retry.getOrElse("none")}",
+          "expire": "${request.expire.getOrElse("none")}",
+          "negative_cache_ttl": "${request.negative_cache_ttl.getOrElse("none")}",
+      }""".stripMargin.replace(""""\n \""", "").replace("  ", "")
+
+    val powerdnsGenerateZoneRequestJson = (
+      request.zoneName,
+      request.kind.getOrElse("none"),
+      request.masters.getOrElse("none"),
+      request.nameservers.getOrElse("none")
+      ).toString
+
+    val createZoneApi = request.provider.toLowerCase match {
+      case "bind" => dnsProviderApiConnection.bindCreateZoneApi
+      case "powerdns" => dnsProviderApiConnection.PowerDnsCreateZoneApi
+    }
+
+    val generateZoneRequestJson = request.provider.toLowerCase match {
+      case "bind" => bindGenerateZoneRequestJson
+      case "powerdns" => powerdnsGenerateZoneRequestJson
+    }
+
+    for{
+      _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
+      bindDns <- CreateDnsZoneService(createZoneApi,generateZoneRequestJson).toResult
+    } yield bindDns
+  }
+
+  def CreateDnsZoneService(dnsApiUrl: String, request: String): Unit = {
+    println("jsonRequestCreateZone",request)
+    println("dnsApiUrl",dnsApiUrl)
+
+    val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
+    try {
+      connection.setRequestMethod("POST")
+      connection.setRequestProperty("Content-Type", "application/json")
+      connection.setDoOutput(true)
+
+      val outputStream: OutputStream = connection.getOutputStream
+      outputStream.write(request.getBytes("UTF-8"))
+      outputStream.close()
+
+      val responseCode = connection.getResponseCode
+      logger.debug(s"Response Code: $responseCode")
+    }
+    finally {
+      connection.disconnect()
+    }
+  }
 
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {

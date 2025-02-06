@@ -127,6 +127,7 @@ trait DnsJsonProtocol extends JsonValidation {
   case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] =
       (
+        (js \ "groupId").required[String]("Missing group id"),
         (js \ "provider").required[String]("Missing provider"),
         (js \ "zoneName").required[String]("Missing zone name"),
         (js \ "serverId").optional[String],
@@ -137,15 +138,13 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "visibility").optional[String],
         (js \ "accountId").optional[String],
         (js \ "projectId").optional[String],
-        (js \ "ns_ipaddress").optional[String],
+        (js \ "ns_ipaddress").optional[List[String]],
         (js \ "admin_email").optional[String],
         (js \ "ttl").optional[Int],
         (js \ "refresh").optional[Int],
         (js \ "retry").optional[Int],
         (js \ "expire").optional[Int],
-        (js \ "negative_cache_ttl").optional[Int],
-
-
+        (js \ "negative_cache_ttl").optional[Int]
       ).mapN(ZoneGenerationInput.apply)
   }
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
