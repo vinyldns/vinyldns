@@ -34,6 +34,7 @@ import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
+
 import java.io.OutputStream
 import java.net.{HttpURLConnection, URL}
 
@@ -149,22 +150,23 @@ class ZoneService(
     val bindGenerateZoneRequestJson =
       s"""{
           "zoneName": "${request.zoneName}",
-          "nameservers": "${request.nameservers.getOrElse("none")}",
-          "ns_ipaddress": "${request.ns_ipaddress.getOrElse("none")}",
+          "nameservers": ${request.nameservers.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
+          "ns_ipaddress": ${request.ns_ipaddress.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
           "admin_email": "${request.admin_email.getOrElse("none")}",
-          "ttl": "${request.ttl.getOrElse("none")}",
-          "refresh": "${request.refresh.getOrElse("none")}",
-          "retry": "${request.retry.getOrElse("none")}",
-          "expire": "${request.expire.getOrElse("none")}",
-          "negative_cache_ttl": "${request.negative_cache_ttl.getOrElse("none")}",
-      }""".stripMargin.replace(""""\n \""", "").replace("  ", "")
+          "ttl": ${request.ttl.getOrElse("none")},
+          "refresh": ${request.refresh.getOrElse("none")},
+          "retry": ${request.retry.getOrElse("none")},
+          "expire": ${request.expire.getOrElse("none")},
+          "negative_cache_ttl": ${request.negative_cache_ttl.getOrElse("none")}
+      }"""
 
-    val powerdnsGenerateZoneRequestJson = (
-      request.zoneName,
-      request.kind.getOrElse("none"),
-      request.masters.getOrElse("none"),
-      request.nameservers.getOrElse("none")
-      ).toString
+    val powerdnsGenerateZoneRequestJson =
+      s"""{
+          "name": "${request.zoneName}",
+          "kind": "${request.kind.getOrElse("none")}",
+          "masters": ${request.masters.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
+          "nameservers": ${request.nameservers.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")}
+      }"""
 
     val createZoneApi = request.provider.toLowerCase match {
       case "bind" => dnsProviderApiConnection.bindCreateZoneApi
@@ -190,6 +192,7 @@ class ZoneService(
     try {
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Content-Type", "application/json")
+      connection.setRequestProperty("X-API-Key", "apiKey") //For P-DNS Authentication
       connection.setDoOutput(true)
 
       val outputStream: OutputStream = connection.getOutputStream
