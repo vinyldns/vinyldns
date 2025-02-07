@@ -350,12 +350,6 @@ object ConfiguredDnsConnections {
         } else DnsProviderApiConnection("", "", "", "")
       }
 
-//      val dnsProviderApiConnection = {
-//        val bindCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("bind")
-//        val powerdnsCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("powerdns")
-//        DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi)
-//      }
-
       ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderCreateZoneApiConfig)
     }
 }
