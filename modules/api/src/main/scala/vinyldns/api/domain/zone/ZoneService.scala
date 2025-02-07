@@ -168,9 +168,13 @@ class ZoneService(
           "nameservers": ${request.nameservers.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")}
       }"""
 
-    val createZoneApi = request.provider.toLowerCase match {
-      case "bind" => dnsProviderApiConnection.bindCreateZoneApi
-      case "powerdns" => dnsProviderApiConnection.PowerDnsCreateZoneApi
+    val (createZoneApi, apiKey) = request.provider.toLowerCase match {
+      case "bind" =>
+        (dnsProviderApiConnection.bindCreateZoneApi, dnsProviderApiConnection.bindApiKey)
+      case "powerdns" =>
+        (dnsProviderApiConnection.powerDnsCreateZoneApi, dnsProviderApiConnection.powerDnsApiKey)
+      case _ =>
+        throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")
     }
 
     val generateZoneRequestJson = request.provider.toLowerCase match {
@@ -180,19 +184,20 @@ class ZoneService(
 
     for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
-      bindDns <- CreateDnsZoneService(createZoneApi,generateZoneRequestJson).toResult
+      bindDns <- CreateDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
     } yield bindDns
   }
 
-  def CreateDnsZoneService(dnsApiUrl: String, request: String): Unit = {
-    println("jsonRequestCreateZone",request)
-    println("dnsApiUrl",dnsApiUrl)
+  def CreateDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Unit = {
+    println("json Request CreateZone",request)
+    println("dns Api Url",dnsApiUrl)
+    println("dns Api Key",dnsApiKey)
 
     val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
     try {
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Content-Type", "application/json")
-      connection.setRequestProperty("X-API-Key", "apiKey") //For P-DNS Authentication
+      connection.setRequestProperty("X-API-Key", dnsApiKey)
       connection.setDoOutput(true)
 
       val outputStream: OutputStream = connection.getOutputStream

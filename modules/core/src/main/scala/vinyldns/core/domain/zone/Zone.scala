@@ -272,7 +272,9 @@ final case class LegacyDnsBackend(
 
 final case class DnsProviderApiConnection(
                                            bindCreateZoneApi: String,
-                                           PowerDnsCreateZoneApi: String
+                                           powerDnsCreateZoneApi: String,
+                                           powerDnsApiKey: String,
+                                           bindApiKey: String
                                          )
 
 
@@ -326,21 +328,34 @@ object ConfiguredDnsConnections {
 
       val dnsProviderCreateZoneApiConfig = {
         if (config.hasPath("vinyldns.backend.backend-providers")) {
-          config
+          val createZoneUri= config
             .getConfigList("vinyldns.backend.backend-providers")
             .asScala
             .find(_.hasPath("settings.dns-provider-api.create-zone-uri"))
             .map(_.getConfig("settings.dns-provider-api.create-zone-uri"))
             .getOrElse(ConfigFactory.empty())
-        } else ConfigFactory.empty()
+          val apiKey= config
+            .getConfigList("vinyldns.backend.backend-providers")
+            .asScala
+            .find(_.hasPath("settings.dns-provider-api.api-key"))
+            .map(_.getConfig("settings.dns-provider-api.api-key"))
+            .getOrElse(ConfigFactory.empty())
+          val bindCreateZoneApi = createZoneUri.getString("bind")
+          val powerdnsCreateZoneApi = createZoneUri.getString("powerdns")
+          val powerdnsApiKey = apiKey.getString("powerdns")
+          val bindApiKey = apiKey.getString("bind")
+
+          DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi, powerdnsApiKey, bindApiKey)
+
+        } else DnsProviderApiConnection("", "", "", "")
       }
 
-      val dnsProviderApiConnection = {
-        val bindCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("bind")
-        val powerdnsCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("powerdns")
-        DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi)
-      }
+//      val dnsProviderApiConnection = {
+//        val bindCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("bind")
+//        val powerdnsCreateZoneApi = dnsProviderCreateZoneApiConfig.getString("powerdns")
+//        DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi)
+//      }
 
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConnection)
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderCreateZoneApiConfig)
     }
 }
