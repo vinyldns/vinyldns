@@ -16,6 +16,8 @@
 
 package vinyldns.api.domain.zone
 
+import cats.data.EitherT
+import cats.effect.IO
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
@@ -27,7 +29,7 @@ trait ZoneServiceAlgebra {
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
 
-  def handleGenerateZoneRequest(request: ZoneGenerationInput,  auth : AuthPrincipal): Result[Unit]
+  def handleGenerateZoneRequest(request: ZoneGenerationInput,  auth : AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse]
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 

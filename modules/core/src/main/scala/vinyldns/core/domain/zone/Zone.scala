@@ -126,6 +126,49 @@ object Zone {
   }
 }
 
+case class PowerDNSResponse(
+                             account: String,
+                             api_rectify: Boolean,
+                             catalog: String,
+                             dnssec: Boolean,
+                             edited_serial: Long,
+                             id: String,
+                             kind: String,
+                             last_check: Int,
+                             master_tsig_key_ids: List[String],
+                             masters: List[String],
+                             name: String,
+                             notified_serial: Int,
+                             nsec3narrow: Boolean,
+                             nsec3param: String,
+                             rrsets: List[RRSet],
+                             serial: Long,
+                             slave_tsig_key_ids: List[String],
+                             soa_edit: String,
+                             soa_edit_api: String,
+                             url: String
+                           )
+
+case class RRSet(
+                  comments: List[String],
+                  name: String,
+                  records: List[Record],
+                  ttl: Int,
+                  `type`: String
+                )
+
+case class Record(
+    content: String,
+    disabled: Boolean
+)
+
+case class ZoneGenerationResponse(
+    provider: String,
+    responseCode: Int,
+    Status: String,
+    message: String
+)
+
 final case class ConnectZoneInput(
     name: String,
     email: String,

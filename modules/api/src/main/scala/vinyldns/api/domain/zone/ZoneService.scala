@@ -145,28 +145,36 @@ class ZoneService(
     } yield deleteZoneChange
 
 
-  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[Unit]  = {
+  def buildGenerateZoneRequestJson(request: ZoneGenerationInput): String = {
 
     val bindGenerateZoneRequestJson =
-      s"""{
+    s"""{
           "zoneName": "${request.zoneName}",
-          "nameservers": ${request.nameservers.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
-          "ns_ipaddress": ${request.ns_ipaddress.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
-          "admin_email": "${request.admin_email.getOrElse("none")}",
-          "ttl": ${request.ttl.getOrElse("none")},
-          "refresh": ${request.refresh.getOrElse("none")},
-          "retry": ${request.retry.getOrElse("none")},
-          "expire": ${request.expire.getOrElse("none")},
-          "negative_cache_ttl": ${request.negative_cache_ttl.getOrElse("none")}
+          "nameservers": ${request.nameservers.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
+          "ns_ipaddress": ${request.ns_ipaddress.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
+          "admin_email": "${request.admin_email.getOrElse("""""""")}",
+          "ttl": ${request.ttl.getOrElse("""""""")},
+          "refresh": ${request.refresh.getOrElse("""""""")},
+          "retry": ${request.retry.getOrElse("""""""")},
+          "expire": ${request.expire.getOrElse("""""""")},
+          "negative_cache_ttl": ${request.negative_cache_ttl.getOrElse("""""""")}
       }"""
 
     val powerdnsGenerateZoneRequestJson =
-      s"""{
+    s"""{
           "name": "${request.zoneName}",
-          "kind": "${request.kind.getOrElse("none")}",
-          "masters": ${request.masters.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")},
-          "nameservers": ${request.nameservers.map(_.mkString("""["""", ", ", """"]""")).getOrElse("none")}
+          "kind": "${request.kind.getOrElse("")}",
+          "masters": ${request.masters.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
+          "nameservers": ${request.nameservers.map(_.mkString("""["""", """", """", """"]""")).getOrElse("")}
       }"""
+
+    request.provider.toLowerCase match {
+        case "bind" => bindGenerateZoneRequestJson
+        case "powerdns" => powerdnsGenerateZoneRequestJson
+    }
+  }
+
+  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[ZoneGenerationResponse]  = {
 
     val (createZoneApi, apiKey) = request.provider.toLowerCase match {
       case "bind" =>
@@ -174,27 +182,42 @@ class ZoneService(
       case "powerdns" =>
         (dnsProviderApiConnection.powerDnsCreateZoneApi, dnsProviderApiConnection.powerDnsApiKey)
       case _ =>
-        throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")
-    }
+        throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")}
 
-    val generateZoneRequestJson = request.provider.toLowerCase match {
-      case "bind" => bindGenerateZoneRequestJson
-      case "powerdns" => powerdnsGenerateZoneRequestJson
-    }
-
-    for{
+   for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
-      bindDns <- CreateDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
-    } yield bindDns
+      generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
+      dnsConnResponse <- CreateDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
+   } yield {
+       val responseCode = dnsConnResponse.getResponseCode
+       logger.debug(s"Response Code: $responseCode")
+
+       val inputStream = if (responseCode >= 400) {
+         dnsConnResponse.getErrorStream
+       } else {
+         dnsConnResponse.getInputStream
+       }
+
+       val responseMessage = new String(inputStream.readAllBytes(), "UTF-8")
+       inputStream.close()
+       dnsConnResponse.disconnect()
+       println("Response received: ", responseMessage)
+
+       ZoneGenerationResponse(
+         request.provider,
+         dnsConnResponse.getResponseCode,
+         dnsConnResponse.getResponseMessage,
+         responseMessage
+       )}
   }
 
-  def CreateDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Unit = {
-    println("json Request CreateZone",request)
-    println("dns Api Url",dnsApiUrl)
-    println("dns Api Key",dnsApiKey)
+  def CreateDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
+    println("json Request CreateZone", request)
+    println("dns Api Url", dnsApiUrl)
+    println("dns Api Key", dnsApiKey)
 
-    val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
     try {
+      val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Content-Type", "application/json")
       connection.setRequestProperty("X-API-Key", dnsApiKey)
@@ -203,12 +226,10 @@ class ZoneService(
       val outputStream: OutputStream = connection.getOutputStream
       outputStream.write(request.getBytes("UTF-8"))
       outputStream.close()
-
-      val responseCode = connection.getResponseCode
-      logger.debug(s"Response Code: $responseCode")
-    }
-    finally {
-      connection.disconnect()
+      Right(connection)
+    } catch {
+      case e: Exception =>
+        Left(e)
     }
   }
 
