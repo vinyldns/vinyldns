@@ -46,20 +46,6 @@ class BindDNSManager:
 
             admin_email = admin_email.replace('@', '.')
             serial = datetime.now().strftime("%Y%m%d01")
-
-#             zone_content = f"""$TTL    {ttl}
-# {zoneName}       IN      SOA     {nameservers[0]} {admin_email}. (
-#                                   {serial} ; Serial
-#                                   {refresh} ; Refresh
-#                                   {retry} ; Retry
-#                                   {expire} ; Expire
-#                                   {negative_cache_ttl} ) ; Negative Cache TTL
-# """
-#             # Add NS and NS_A records for each nameserver
-#             for ns, ip in zip(nameservers, ns_ipaddress):
-#                 zone_content += f"@       IN      NS      {ns}\n"
-#                 zone_content += f"{ns}    IN      A       {ip}\n"
-
             zone_content = f""
             # Add NS and NS_A records for each nameserver
             for ns, ip in zip(nameservers, ns_ipaddress):
@@ -130,20 +116,6 @@ zone "{zoneName}" {{
                 return False, check_zone_result.stderr
             else:
                 logger.info(f"BIND {zoneName} zone validated successfully")
-
-            # Check Conf
-            # check_conf_result = subprocess.run(
-            #     ['named-checkconf', '-z'],
-            #     capture_output=True,
-            #     text=True,
-            #     timeout=10
-            # )
-
-            # if check_conf_result.returncode != 0:
-            #     logger.error(f"Configuration check failed: {check_conf_result.stderr}")
-            #     return False, check_conf_result.stderr
-            # else:
-            #     logger.info("BIND all zones configuration validated successfully")
 
                 # Restart Named (Only if both zone and conf are valid)
                 stop_result = subprocess.run(
