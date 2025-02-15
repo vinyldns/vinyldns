@@ -19,6 +19,11 @@ SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
 
+# Start create zones api
+RUN pip install --no-cache-dir fastapi uvicorn pydantic[email]
+RUN sed -i '/if \[\[ \$START_BIND -eq 1 \]\]; then/a\
+         \  echo -n "Starting create zones API.." & python3 /build/utils/generate_zones_bind_api.py &' /initialize.sh
+
 # Local bind server files
 COPY quickstart/bind9/etc/named.conf.* /etc/bind/
 COPY quickstart/bind9/zones/ /var/bind/

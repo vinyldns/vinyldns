@@ -22,7 +22,7 @@ services:
     env_file:
       - "${ENV_FILE:-.env}"
     ports:
-      - "19001-19003:19001-19003/tcp"
+      - "19000-19003:19000-19003/tcp"
       - "19001:19001/udp"
 
   # The VinylDNS API

@@ -37,6 +37,7 @@ import vinyldns.api.domain.membership.MembershipService
 
 import java.io.OutputStream
 import java.net.{HttpURLConnection, URL}
+import scala.io.Source
 
 object ZoneService {
   def apply(
@@ -198,17 +199,17 @@ class ZoneService(
          dnsConnResponse.getInputStream
        }
 
-       val responseMessage = new String(inputStream.readAllBytes(), "UTF-8")
-       inputStream.close()
-       dnsConnResponse.disconnect()
-       println("Response received: ", responseMessage)
+     val responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
+     inputStream.close()
+     dnsConnResponse.disconnect()
+     println("Response received: ", responseMessage)
 
-       ZoneGenerationResponse(
-         request.provider,
-         dnsConnResponse.getResponseCode,
-         dnsConnResponse.getResponseMessage,
-         responseMessage
-       )}
+     ZoneGenerationResponse(
+       request.provider,
+       dnsConnResponse.getResponseCode,
+       dnsConnResponse.getResponseMessage,
+       responseMessage
+     )}
   }
 
   def CreateDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
