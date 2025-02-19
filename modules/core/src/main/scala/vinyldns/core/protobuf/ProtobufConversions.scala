@@ -183,6 +183,34 @@ trait ProtobufConversions {
     builder.build()
   }
 
+  def fromPB(zn: VinylDNSProto.GenerateZone): GenerateZone = {
+
+    zone.GenerateZone(
+      groupId = zn.getGroupId,
+      provider = zn.getProvider,
+      zoneName = zn.getZoneName,
+      status = zn.getStatus,
+      serverId = if (zn.hasServerId) Some(zn.getServerId) else None,
+      kind = if (zn.hasKind) Some(zn.getKind) else None,
+      masters = if (zn.getMastersList.isEmpty) None else Some(zn.getMastersList.asScala.toList),
+      nameservers =
+        if (zn.getNameserversList.isEmpty) None else Some(zn.getNameserversList.asScala.toList),
+      description = if (zn.hasDescription) Some(zn.getDescription) else None,
+      visibility = if (zn.hasServerId) Some(zn.getVisibility) else None,
+      accountId = if (zn.hasServerId) Some(zn.getAccountId) else None,
+      projectId = if (zn.hasServerId) Some(zn.getProjectId) else None,
+      ns_ipaddress = if (zn.getNsIpaddressList.isEmpty) None else Some(zn.getNsIpaddressList.asScala.toList),
+      admin_email = if (zn.hasAdminEmail) Some(zn.getAdminEmail) else None,
+      ttl = if (zn.hasTtl) Some(zn.getTtl.toInt) else None,
+      refresh = if (zn.hasRefresh) Some(zn.getRefresh.toInt) else None,
+      retry = if (zn.hasRetry) Some(zn.getRetry.toInt) else None,
+      expire = if (zn.hasExpire) Some(zn.getExpire.toInt) else None,
+      negative_cache_ttl = if (zn.hasNegativeCacheTtl) Some(zn.getNegativeCacheTtl.toInt) else None,
+      id = zn.getId,
+      response = if (zn.hasResponse) Some(zn.getResponse) else None,
+    )
+  }
+
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =
     rt match {
       case RecordType.A => fromPB(VinylDNSProto.AData.parseFrom(rd.getData))
@@ -453,6 +481,41 @@ trait ProtobufConversions {
       .setZone(toPB(zoneChange.zone))
 
     zoneChange.systemMessage.map(builder.setSystemMessage)
+
+    builder.build()
+  }
+
+  def toPB(generateZone: GenerateZone): VinylDNSProto.GenerateZone = {
+    val builder = VinylDNSProto.GenerateZone
+      .newBuilder()
+      .setId(generateZone.id)
+      .setGroupId(generateZone.groupId)
+      .setProvider(generateZone.provider)
+      .setZoneName(generateZone.zoneName)
+      .setStatus(generateZone.status)
+
+    generateZone.serverId.foreach(gz => builder.setServerId(gz))
+    generateZone.kind.foreach(gz => builder.setKind(gz))
+    generateZone.masters.foreach(serverIds =>
+      builder.addAllMasters(serverIds.asJava)
+    )
+    generateZone.nameservers.foreach(serverIds =>
+      builder.addAllNameservers(serverIds.asJava)
+    )
+    generateZone.description.foreach(gz => builder.setDescription(gz))
+    generateZone.visibility.foreach(gz => builder.setVisibility(gz))
+    generateZone.accountId.foreach(gz => builder.setAccountId(gz))
+    generateZone.projectId.foreach(gz => builder.setProjectId(gz))
+    generateZone.ns_ipaddress.foreach(serverIds =>
+      builder.addAllNsIpaddress(serverIds.asJava)
+    )
+    generateZone.admin_email.foreach(gz => builder.setAdminEmail(gz))
+    generateZone.ttl.foreach(gz => builder.setTtl(gz))
+    generateZone.refresh.foreach(gz => builder.setRefresh(gz))
+    generateZone.retry.foreach(gz => builder.setRetry(gz))
+    generateZone.expire.foreach(gz => builder.setExpire(gz))
+    generateZone.negative_cache_ttl.foreach(gz => builder.setNegativeCacheTtl(gz))
+    generateZone.response.foreach(gz => builder.setResponse(gz))
 
     builder.build()
   }

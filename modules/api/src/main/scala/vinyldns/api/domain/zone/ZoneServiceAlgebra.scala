@@ -29,7 +29,7 @@ trait ZoneServiceAlgebra {
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
 
-  def handleGenerateZoneRequest(request: ZoneGenerationInput,  auth : AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse]
+  def handleGenerateZoneRequest(request: GenerateZone,  auth : AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse]
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 

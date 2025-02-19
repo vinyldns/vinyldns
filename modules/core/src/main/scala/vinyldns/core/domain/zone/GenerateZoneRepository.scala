@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.core.repository
+package vinyldns.core.domain.zone
 
-trait Repository
+import cats.effect._
+import vinyldns.core.repository.Repository
 
-object RepositoryName extends Enumeration {
-  type RepositoryName = Value
-  val user, group, membership, groupChange, recordSet, recordChange, recordSetCache, zoneChange,
-      zone, batchChange, userChange, task, generateZone = Value
+trait GenerateZoneRepository extends Repository {
+
+  def save(generateZone: GenerateZone): IO[GenerateZone]
+
+}
+
+object GenerateZoneRepository {
+  final case class DuplicateZoneError(zoneName: String) {
+    def message: String = s"""Zone with name "$zoneName" already exists."""
+  }
 }

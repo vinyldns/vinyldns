@@ -63,7 +63,8 @@ object ZoneService {
       backendResolver,
       crypto,
       membershipService,
-      dnsProviderApiConnection
+      dnsProviderApiConnection,
+      dataAccessor.generateZoneRepository
     )
 }
 
@@ -78,8 +79,9 @@ class ZoneService(
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
     crypto: CryptoAlgebra,
-    membershipService:MembershipService,
-    dnsProviderApiConnection : DnsProviderApiConnection
+    membershipService: MembershipService,
+    dnsProviderApiConnection: DnsProviderApiConnection,
+    generateZoneRepository: GenerateZoneRepository
                  ) extends ZoneServiceAlgebra {
 
   import accessValidation._
@@ -146,7 +148,7 @@ class ZoneService(
     } yield deleteZoneChange
 
 
-  def buildGenerateZoneRequestJson(request: ZoneGenerationInput): String = {
+  def buildGenerateZoneRequestJson(request: GenerateZone): String = {
 
     val bindGenerateZoneRequestJson =
     s"""{
@@ -175,7 +177,7 @@ class ZoneService(
     }
   }
 
-  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[ZoneGenerationResponse]  = {
+  def handleGenerateZoneRequest(request: GenerateZone, auth : AuthPrincipal): Result[ZoneGenerationResponse]  = {
 
     val (createZoneApi, apiKey) = request.provider.toLowerCase match {
       case "bind" =>
@@ -188,7 +190,8 @@ class ZoneService(
    for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
-      dnsConnResponse <- CreateDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
+      dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
+      _ = generateZoneRepository.save(request).toResult
    } yield {
        val responseCode = dnsConnResponse.getResponseCode
        logger.debug(s"Response Code: $responseCode")
@@ -212,7 +215,7 @@ class ZoneService(
      )}
   }
 
-  def CreateDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
+  def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
     println("json Request CreateZone", request)
     println("dns Api Url", dnsApiUrl)
     println("dns Api Key", dnsApiKey)

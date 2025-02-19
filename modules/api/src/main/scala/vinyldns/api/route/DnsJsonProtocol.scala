@@ -130,6 +130,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "groupId").required[String]("Missing group id"),
         (js \ "provider").required[String]("Missing provider"),
         (js \ "zoneName").required[String]("Missing zone name"),
+        (js \ "status").required[String]("Missing status"),
         (js \ "serverId").optional[String],
         (js \ "kind").optional[String],
         (js \ "masters").optional[List[String]],
@@ -144,7 +145,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "refresh").optional[Int],
         (js \ "retry").optional[Int],
         (js \ "expire").optional[Int],
-        (js \ "negative_cache_ttl").optional[Int]
+        (js \ "negative_cache_ttl").optional[Int],
+        (js \ "response").optional[String],
+        (js \ "id").default[String](UUID.randomUUID().toString),
       ).mapN(ZoneGenerationInput.apply)
   }
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {

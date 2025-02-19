@@ -90,8 +90,8 @@ final case class Zone(
 }
 
 object Zone {
-  def apply(ConnectZoneInput: ConnectZoneInput, isTest: Boolean): Zone = {
-    import ConnectZoneInput._
+  def apply(connectZoneInput: ConnectZoneInput, isTest: Boolean): Zone = {
+    import connectZoneInput._
 
     Zone(
       name,
@@ -122,6 +122,85 @@ object Zone {
       backendId = backendId,
       recurrenceSchedule = recurrenceSchedule,
       scheduleRequestor = scheduleRequestor
+    )
+  }
+}
+final case class GenerateZone(
+                               groupId: String,
+                               provider: String, // "powerdns", "cloudflare", "google", "bind"
+                               zoneName: String,
+                               status: String,
+                               serverId: Option[String] = None, // The ID of the sever (PowerDNS)
+                               kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
+                               masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
+                               nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                               description: Option[String] = None, // description (Google)
+                               visibility: Option[String] = None, // Public or Private (Google)
+                               accountId: Option[String] = None, // Account ID (Cloudflare)
+                               projectId: Option[String] = None, // GCP Project ID (Google)
+                               ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
+                               admin_email: Option[String] = None, // NS IpAddress (Bind)
+                               ttl: Option[Int] = None, // TTL (Bind)
+                               refresh: Option[Int] = None, // Refresh (Bind)
+                               retry: Option[Int] = None, // Retry (Bind)
+                               expire: Option[Int] = None, // Expire (Bind)
+                               negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                               response: Option[String] = None,
+                               id: String = UUID.randomUUID().toString
+                     )
+
+object GenerateZone {
+  def apply(zoneGenerationInput: ZoneGenerationInput): GenerateZone = {
+    import zoneGenerationInput._
+
+    GenerateZone(
+      groupId,
+      provider,
+      zoneName,
+      status,
+      serverId,
+      kind,
+      masters,
+      nameservers,
+      description,
+      visibility,
+      accountId,
+      projectId,
+      ns_ipaddress,
+      admin_email,
+      ttl,
+      refresh,
+      retry,
+      expire,
+      negative_cache_ttl,
+      response
+    )
+  }
+
+  def apply(updateGenerateZoneInput: UpdateGenerateZoneInput, currentGenerateZone: GenerateZone): GenerateZone = {
+    import updateGenerateZoneInput._
+
+    currentGenerateZone.copy(
+      groupId,
+      provider,
+      zoneName ,
+      status,
+      serverId,
+      kind,
+      masters,
+      nameservers,
+      description,
+      visibility,
+      accountId,
+      projectId,
+      ns_ipaddress,
+      admin_email,
+      ttl,
+      refresh,
+      retry,
+      expire,
+      negative_cache_ttl,
+      response
     )
   }
 }
@@ -162,13 +241,6 @@ case class Record(
     disabled: Boolean
 )
 
-case class ZoneGenerationResponse(
-    provider: String,
-    responseCode: Int,
-    Status: String,
-    message: String
-)
-
 final case class ConnectZoneInput(
     name: String,
     email: String,
@@ -196,10 +268,43 @@ final case class UpdateZoneInput(
     backendId: Option[String] = None
 )
 
+final case class UpdateGenerateZoneInput(
+                                  groupId: String,
+                                  provider: String, // "powerdns", "cloudflare", "google", "bind"
+                                  zoneName: String,
+                                  status: String,
+                                  serverId: Option[String] = None, // The ID of the sever (PowerDNS)
+                                  kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
+                                  masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
+                                  nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                                  description: Option[String] = None, // description (Google)
+                                  visibility: Option[String] = None, // Public or Private (Google)
+                                  accountId: Option[String] = None, // Account ID (Cloudflare)
+                                  projectId: Option[String] = None, // GCP Project ID (Google)
+                                  ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
+                                  admin_email: Option[String] = None, // NS IpAddress (Bind)
+                                  ttl: Option[Int] = None, // TTL (Bind)
+                                  refresh: Option[Int] = None, // Refresh (Bind)
+                                  retry: Option[Int] = None, // Retry (Bind)
+                                  expire: Option[Int] = None, // Expire (Bind)
+                                  negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                                  response: Option[String] = None,
+                                  id: String = UUID.randomUUID().toString,
+
+                                )
+
+case class ZoneGenerationResponse(
+                                   provider: String,
+                                   responseCode: Int,
+                                   Status: String,
+                                   message: String
+                                 )
+
 case class ZoneGenerationInput(
     groupId: String,
     provider: String, // "powerdns", "cloudflare", "google", "bind"
     zoneName: String,
+    status: String,
     serverId: Option[String] = None, // The ID of the sever (PowerDNS)
     kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
     masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
@@ -215,12 +320,17 @@ case class ZoneGenerationInput(
     retry: Option[Int] = None, // Retry (Bind)
     expire: Option[Int] = None, // Expire (Bind)
     negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
-  ) {
+    response: Option[String] = None,
+    id: String = UUID.randomUUID().toString
+                              ) {
   override def toString: String = {
     val sb = new StringBuilder
     sb.append("ZoneGenerationInput: [")
+    sb.append("id=\"").append(id).append("\"; ")
+    sb.append("groupId=\"").append(groupId).append("\"; ")
     sb.append("provider=\"").append(provider).append("\"; ")
     sb.append("zoneName=\"").append(zoneName).append("\"; ")
+    sb.append("status=\"").append(zoneName).append("\"; ")
     sb.append("serverId=\"").append(serverId.toString).append("\"; ")
     sb.append("kind=\"").append(kind.toString).append("\"; ")
     sb.append("masters=\"").append(masters.toString).append("\"; ")
@@ -229,6 +339,7 @@ case class ZoneGenerationInput(
     sb.append("visibility=\"").append(visibility.toString).append("\"; ")
     sb.append("accountId=\"").append(accountId.toString).append("\"; ")
     sb.append("projectId=\"").append(projectId.toString).append("\"; ")
+    sb.append("ns_ipaddress=\"").append(ns_ipaddress.toString).append("\"; ")
     sb.append("ttl=\"").append(ttl).append("\"; ")
     sb.append("refresh=\"").append(refresh).append("\"; ")
     sb.append("retry=\"").append(retry).append("\"; ")
