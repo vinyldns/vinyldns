@@ -30,7 +30,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
 
   /**
-    * use INSERT INTO ON DUPLICATE KEY UPDATE for the zone, which will update the values if the zone already exists
+    * use INSERT INTO ON DUPLICATE KEY UPDATE for the generate zone, which will update the values if the zone already exists
     * similar to a PUT in a KV store
     */
   private final val PUT_GENERATE_ZONE =
@@ -57,22 +57,6 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 //         |  FROM generate_zone
 //         | WHERE name = ?
 //        """.stripMargin
-
-  /**
-    * When we save a zone, if it is deleted we actually delete it from the repo.  This will force a cascade
-    * delete on all linked records in the zone_access table.
-    *
-    * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
-    */
-//  def save(zone: GenerateZone): IO[Either[DuplicateZoneError, GenerateZone]] =
-//    zone.status match {
-//      case "Deleted" =>
-//        val doDelete: GenerateZone => IO[Either[DuplicateZoneError, GenerateZone]] = z => deleteTx(z).map(Right(_))
-//        retryWithBackoff(doDelete, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
-//      case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
-//    }
-
-
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -118,31 +102,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 //  private def getZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[GenerateZone] =
 //    GET_GENERATED_ZONE_BY_NAME.bind(zoneName).map(extractGenerateZone(1)).first().apply()
 
-//  def saveTx(zone: GenerateZone): IO[Either[DuplicateZoneError, GenerateZone]] =
-//    monitor("repo.ZoneJDBC.save") {
-//      IO {
-//        DB.localTx { implicit s =>
-//          getZoneByNameInSession(zone.zoneName) match {
-//            case Some(foundZone) if zone.id != foundZone.id => DuplicateZoneError(zone.zoneName).asLeft
-//            case _ =>
-//              putGenerateZone(zone)
-//              zone.asRight
-//          }
-//        }
-//      }
-//    }
-//
-//  def retryWithBackoff[E, A](
-//                              f: A => IO[Either[E, A]],
-//                              a: A,
-//                              delay: FiniteDuration,
-//                              maxRetries: Int
-//                            ): IO[Either[E, A]] =
-//    f(a).handleErrorWith { error =>
-//      if (maxRetries > 0)
-//        IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)
-//      else
-//        IO.raiseError(error)
-//    }
+
+
 }
 
