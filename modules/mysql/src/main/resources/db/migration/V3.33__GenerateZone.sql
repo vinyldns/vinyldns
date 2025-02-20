@@ -10,6 +10,7 @@ CREATE TABLE generate_zone (
   id CHAR(36) NOT NULL,
   name VARCHAR(256) NOT NULL,
   admin_group_id CHAR(36) NOT NULL,
+  response BLOB NOT NULL,
   data BLOB NOT NULL,
   PRIMARY KEY (id),
   INDEX generate_zone_name_index (name),

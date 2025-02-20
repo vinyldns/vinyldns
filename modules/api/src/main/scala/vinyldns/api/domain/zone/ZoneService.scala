@@ -32,7 +32,6 @@ import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
-import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
 
 import java.io.OutputStream
@@ -87,8 +86,6 @@ class ZoneService(
   import accessValidation._
   import zoneValidations._
   import Interfaces._
-
-  private val logger = LoggerFactory.getLogger("zoneCreate")
 
   def connectToZone(
       ConnectZoneInput: ConnectZoneInput,
@@ -187,26 +184,24 @@ class ZoneService(
       case _ =>
         throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")}
 
+
    for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
       dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
-      _ = generateZoneRepository.save(request).toResult
+      responseCode = dnsConnResponse.getResponseCode
+      inputStream = if (responseCode >= 400) {
+        dnsConnResponse.getErrorStream
+      } else {
+        dnsConnResponse.getInputStream
+      }
+      responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZone(responseCode, responseMessage).toResult
+      _ <- generateZoneRepository.save(request.copy(response = Some(responseMessage))).toResult[GenerateZone]
+
    } yield {
-       val responseCode = dnsConnResponse.getResponseCode
-       logger.debug(s"Response Code: $responseCode")
-
-       val inputStream = if (responseCode >= 400) {
-         dnsConnResponse.getErrorStream
-       } else {
-         dnsConnResponse.getInputStream
-       }
-
-     val responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
      inputStream.close()
      dnsConnResponse.disconnect()
-     println("Response received: ", responseMessage)
-
      ZoneGenerationResponse(
        request.provider,
        dnsConnResponse.getResponseCode,

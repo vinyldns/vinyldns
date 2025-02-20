@@ -16,7 +16,7 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect.{ _}
+import cats.effect.IO
 import scalikejdbc._
 import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository}
 import vinyldns.core.protobuf.ProtobufConversions
@@ -75,26 +75,24 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
-    monitor("repo.generatazone.save") {
-      IO {
-        DB.localTx { implicit s =>
+      monitor("repo.generateZone.save") {
+        IO {
+            DB.localTx { implicit s =>
+              PUT_GENERATE_ZONE
+              .bindByName(
+                  'id -> generateZone.id,
+                  'name -> generateZone.zoneName,
+                  'adminGroupId -> generateZone.groupId,
+                  'response -> generateZone.response,
+                  'data -> toPB(generateZone).toByteArray
+              )
+              .update()
+              .apply()
+            }
+        generateZone
 
-        PUT_GENERATE_ZONE
-          .bindByName(
-            Seq(
-              'id -> generateZone.id,
-              'name -> generateZone.zoneName,
-              'adminGroupId -> generateZone.groupId,
-              'response -> generateZone.response,
-              'data -> toPB(generateZone).toByteArray
-            ): _*
-          )
-          .update()
-          .apply()
-        }
-    generateZone
-      }
-  }}
+          }
+      }}
 
 //
 //  private def deleteGeneratedZone(zone: GenerateZone)(implicit session: DBSession): GenerateZone = {

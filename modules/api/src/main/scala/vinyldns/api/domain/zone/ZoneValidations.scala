@@ -54,6 +54,11 @@ class ZoneValidations(syncDelayMillis: Int) {
       (rule.groupId ++ rule.userId).size == 1
     }
 
+  def isValidGenerateZone(responseCode : Int, responseMsg : String): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(responseMsg)) {
+      responseCode <= 400
+    }
+
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
     rule.recordMask match {
       case Some(mask) if rule.recordTypes == Set(RecordType.PTR) =>
