@@ -145,7 +145,7 @@ final case class GenerateZone(
                                retry: Option[Int] = None, // Retry (Bind)
                                expire: Option[Int] = None, // Expire (Bind)
                                negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
-                               response: Option[String] = None,
+                               response: Option[ZoneGenerationResponse] = None,
                                id: String = UUID.randomUUID().toString
                      )
 
@@ -288,7 +288,7 @@ final case class UpdateGenerateZoneInput(
                                   retry: Option[Int] = None, // Retry (Bind)
                                   expire: Option[Int] = None, // Expire (Bind)
                                   negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
-                                  response: Option[String] = None,
+                                  response: Option[ZoneGenerationResponse] = None,
                                   id: String = UUID.randomUUID().toString,
 
                                 )
@@ -296,7 +296,7 @@ final case class UpdateGenerateZoneInput(
 case class ZoneGenerationResponse(
                                    provider: String,
                                    responseCode: Int,
-                                   Status: String,
+                                   status: String,
                                    message: String
                                  )
 
@@ -320,7 +320,7 @@ case class ZoneGenerationInput(
     retry: Option[Int] = None, // Retry (Bind)
     expire: Option[Int] = None, // Expire (Bind)
     negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
-    response: Option[String] = None,
+    response: Option[ZoneGenerationResponse] = None,
     id: String = UUID.randomUUID().toString
                               ) {
   override def toString: String = {

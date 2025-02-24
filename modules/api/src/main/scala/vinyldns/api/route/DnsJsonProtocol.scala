@@ -146,7 +146,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "retry").optional[Int],
         (js \ "expire").optional[Int],
         (js \ "negative_cache_ttl").optional[Int],
-        (js \ "response").optional[String],
+        (js \ "response").optional[ZoneGenerationResponse],
         (js \ "id").default[String](UUID.randomUUID().toString),
       ).mapN(ZoneGenerationInput.apply)
   }

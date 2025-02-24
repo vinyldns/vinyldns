@@ -21,6 +21,7 @@ import scalikejdbc._
 import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
+import vinyldns.proto.VinylDNSProto
 
 
 class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufConversions with Monitored {
@@ -43,20 +44,20 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
          |            data=VALUES(data);
         """.stripMargin
 
-//  private final val DELETE_GENERATED_ZONE =
-//    sql"""
-//         |DELETE
-//         |  FROM generate_zone
-//         | WHERE id = (?)
-//         |
-//      """.stripMargin
-//
-//  private final val GET_GENERATED_ZONE_BY_NAME =
-//    sql"""
-//         |SELECT data
-//         |  FROM generate_zone
-//         | WHERE name = ?
-//        """.stripMargin
+  private final val DELETE_GENERATED_ZONE =
+    sql"""
+         |DELETE
+         |  FROM generate_zone
+         | WHERE id = (?)
+         |
+      """.stripMargin
+
+  private final val GET_GENERATED_ZONE_BY_NAME =
+    sql"""
+         |SELECT data
+         |  FROM generate_zone
+         | WHERE name = ?
+        """.stripMargin
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -67,7 +68,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
                   'id -> generateZone.id,
                   'name -> generateZone.zoneName,
                   'adminGroupId -> generateZone.groupId,
-                  'response -> generateZone.response,
+                  'response -> toPB(generateZone.response.get).toByteArray,
                   'data -> toPB(generateZone).toByteArray
               )
               .update()
@@ -78,29 +79,36 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
           }
       }}
 
-//
-//  private def deleteGeneratedZone(zone: GenerateZone)(implicit session: DBSession): GenerateZone = {
-//    DELETE_GENERATED_ZONE.bind(zone.id).update().apply()
-//    zone
-//  }
 
-//  private def extractGenerateZone(columnIndex: Int): WrappedResultSet => GenerateZone = res => {
-//    fromPB(VinylDNSProto.GenerateZone.parseFrom(res.bytes(columnIndex)))
-//  }
+  private def deleteGeneratedZone(generateZone: GenerateZone)(implicit session: DBSession): GenerateZone = {
+    DELETE_GENERATED_ZONE.bind(generateZone.id).update().apply()
+    generateZone
+  }
 
-//  def deleteTx(zone: GenerateZone): IO[GenerateZone] =
-//    monitor("repo.ZoneJDBC.delete") {
-//      IO {
-//        DB.localTx { implicit s =>
-//          deleteGeneratedZone(zone)
-//        }
-//      }
-//    }
+  private def extractGenerateZone(columnIndex: Int): WrappedResultSet => GenerateZone = res => {
+    fromPB(VinylDNSProto.GenerateZone.parseFrom(res.bytes(columnIndex)))
+  }
 
+  def deleteTx(generateZone: GenerateZone): IO[GenerateZone] =
+    monitor("repo.ZoneJDBC.generateZoneDelete") {
+      IO {
+        DB.localTx { implicit s =>
+          deleteGeneratedZone(generateZone)
+        }
+      }
+    }
 
+  private def getGenerateZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[GenerateZone] =
+    GET_GENERATED_ZONE_BY_NAME.bind(zoneName).map(extractGenerateZone(1)).first().apply()
 
-//  private def getZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[GenerateZone] =
-//    GET_GENERATED_ZONE_BY_NAME.bind(zoneName).map(extractGenerateZone(1)).first().apply()
+  def getGenerateZoneByName(zoneName: String): IO[Option[GenerateZone]] =
+    monitor("repo.ZoneJDBC.getGenerateZoneByName") {
+      IO {
+        DB.readOnly { implicit s =>
+          getGenerateZoneByNameInSession(zoneName)
+        }
+      }
+    }
 
 
 

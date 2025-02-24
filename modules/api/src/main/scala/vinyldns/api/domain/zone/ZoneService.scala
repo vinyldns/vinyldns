@@ -144,6 +144,11 @@ class ZoneService(
       _ <- messageQueue.send(deleteZoneChange).toResult[Unit]
     } yield deleteZoneChange
 
+  def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] =
+    for {
+      generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
+    } yield generateZone
+
 
   def buildGenerateZoneRequestJson(request: GenerateZone): String = {
 
@@ -187,27 +192,27 @@ class ZoneService(
 
    for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
+      _ <- generateZoneDoesNotExist(request.zoneName)
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
       dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
       responseCode = dnsConnResponse.getResponseCode
-      inputStream = if (responseCode >= 400) {
-        dnsConnResponse.getErrorStream
-      } else {
-        dnsConnResponse.getInputStream
-      }
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream
+                    else dnsConnResponse.getInputStream
       responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
       _ <- isValidGenerateZone(responseCode, responseMessage).toResult
-      _ <- generateZoneRepository.save(request.copy(response = Some(responseMessage))).toResult[GenerateZone]
+      zoneGenerateResponse = ZoneGenerationResponse.apply(
+        provider = request.provider,
+        responseCode = dnsConnResponse.getResponseCode,
+        status = dnsConnResponse.getResponseMessage,
+        message = responseMessage
+      )
+      _ <- generateZoneRepository.save(request.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
 
    } yield {
      inputStream.close()
      dnsConnResponse.disconnect()
-     ZoneGenerationResponse(
-       request.provider,
-       dnsConnResponse.getResponseCode,
-       dnsConnResponse.getResponseMessage,
-       responseMessage
-     )}
+     zoneGenerateResponse
+   }
   }
 
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
@@ -514,6 +519,19 @@ class ZoneService(
       }
       .toResult
 
+  def generateZoneDoesNotExist(zoneName: String): Result[Unit] =
+    generateZoneRepository
+      .getGenerateZoneByName(zoneName)
+      .map {
+        case Some(existingZone) =>
+          ZoneAlreadyExistsError(
+            s"Zone with name $zoneName already exists. " +
+              s"Please contact ${existingZone.groupId} to request access to the zone."
+          ).asLeft
+        case _ => ().asRight
+      }
+      .toResult
+
   def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User '${auth.signedInUser.userName}' is not authorized to schedule zone sync in this zone.")
@@ -548,6 +566,12 @@ class ZoneService(
       .getZoneByName(zoneName)
       .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
       .toResult[Zone]
+
+  def getGenerateZoneByNameOrFail(zoneName: String): Result[GenerateZone] =
+    generateZoneRepository
+      .getGenerateZoneByName(zoneName)
+      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
+      .toResult[GenerateZone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =
     if (newZone.connection != existingZone.connection

@@ -31,6 +31,8 @@ trait ZoneServiceAlgebra {
 
   def handleGenerateZoneRequest(request: GenerateZone,  auth : AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse]
 
+  def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone]
+
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult]

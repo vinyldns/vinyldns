@@ -50,7 +50,14 @@ message GenerateZone {
   optional int64 retry = 18;
   optional int64 expire = 19;
   optional int64 negative_cache_ttl = 20;
-  optional string response = 21;
+  optional ZoneGenerationResponse response = 21;
+}
+
+message ZoneGenerationResponse {
+  required string provider = 1;
+  required int64 responseCode = 2;
+  required string Status = 3;
+  required string message = 4;
 }
 
 message ZoneACL {

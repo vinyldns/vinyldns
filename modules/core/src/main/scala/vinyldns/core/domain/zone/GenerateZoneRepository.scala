@@ -23,10 +23,5 @@ trait GenerateZoneRepository extends Repository {
 
   def save(generateZone: GenerateZone): IO[GenerateZone]
 
-}
-
-object GenerateZoneRepository {
-  final case class DuplicateZoneError(zoneName: String) {
-    def message: String = s"""Zone with name "$zoneName" already exists."""
-  }
+  def getGenerateZoneByName(zoneName: String): IO[Option[GenerateZone]]
 }

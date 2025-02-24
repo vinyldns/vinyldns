@@ -152,6 +152,11 @@ class ZoneRoute(
         }
       }
     } ~
+    path("zones" /"generate"/ "name" / Segment) { zoneName =>
+      authenticateAndExecute(zoneService.getGenerateZoneByName(zoneName, _)) { zone =>
+        complete(StatusCodes.OK, zone)
+      }
+    } ~
     path("zones" / "backendids") {
       (get & monitor("Endpoint.getBackendIds")) {
         authenticateAndExecute(_ => zoneService.getBackendIds()) { ids =>

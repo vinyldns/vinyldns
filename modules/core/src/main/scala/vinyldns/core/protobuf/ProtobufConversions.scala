@@ -207,9 +207,17 @@ trait ProtobufConversions {
       expire = if (zn.hasExpire) Some(zn.getExpire.toInt) else None,
       negative_cache_ttl = if (zn.hasNegativeCacheTtl) Some(zn.getNegativeCacheTtl.toInt) else None,
       id = zn.getId,
-      response = if (zn.hasResponse) Some(zn.getResponse) else None,
+      response = if (zn.hasResponse) Some(fromPB(zn.getResponse)) else None,
     )
   }
+
+  def fromPB(zgr: VinylDNSProto.ZoneGenerationResponse): ZoneGenerationResponse =
+    ZoneGenerationResponse(
+      zgr.getProvider,
+      zgr.getResponseCode.toInt,
+      zgr.getStatus,
+      zgr.getMessage
+    )
 
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =
     rt match {
@@ -515,10 +523,19 @@ trait ProtobufConversions {
     generateZone.retry.foreach(gz => builder.setRetry(gz))
     generateZone.expire.foreach(gz => builder.setExpire(gz))
     generateZone.negative_cache_ttl.foreach(gz => builder.setNegativeCacheTtl(gz))
-    generateZone.response.foreach(gz => builder.setResponse(gz))
+    generateZone.response.foreach(gz => builder.setResponse(toPB(gz)))
 
     builder.build()
   }
+
+  def toPB(zgr: ZoneGenerationResponse): VinylDNSProto.ZoneGenerationResponse =
+    VinylDNSProto.ZoneGenerationResponse
+      .newBuilder()
+      .setProvider(zgr.provider)
+      .setResponseCode(zgr.responseCode.toLong)
+      .setStatus(zgr.status)
+      .setMessage(zgr.message)
+      .build()
 
   def fromPB(data: VinylDNSProto.User): User =
     User(
