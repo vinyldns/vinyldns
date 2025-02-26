@@ -32,9 +32,11 @@ import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
+import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
+import vinyldns.core.Messages
 
-import java.io.OutputStream
+import java.io.{ByteArrayInputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
 import scala.io.Source
 
@@ -86,6 +88,8 @@ class ZoneService(
   import accessValidation._
   import zoneValidations._
   import Interfaces._
+
+  private val logger = LoggerFactory.getLogger(classOf[ZoneService])
 
   def connectToZone(
       ConnectZoneInput: ConnectZoneInput,
@@ -189,11 +193,11 @@ class ZoneService(
       case _ =>
         throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")}
 
-
    for{
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
+      _ = logger.info(s"Request: provider=${request.provider}, path=$createZoneApi, request=$generateZoneRequestJson")
       dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
       responseCode = dnsConnResponse.getResponseCode
       inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream
@@ -207,7 +211,6 @@ class ZoneService(
         message = responseMessage
       )
       _ <- generateZoneRepository.save(request.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
-
    } yield {
      inputStream.close()
      dnsConnResponse.disconnect()
@@ -216,10 +219,6 @@ class ZoneService(
   }
 
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
-    println("json Request CreateZone", request)
-    println("dns Api Url", dnsApiUrl)
-    println("dns Api Key", dnsApiKey)
-
     try {
       val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
@@ -233,7 +232,19 @@ class ZoneService(
       Right(connection)
     } catch {
       case e: Exception =>
-        Left(e)
+        val errorConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
+          private val errorJson = Messages.dnsProviderConnRefusedMessage(e, dnsApiUrl)
+          private val errorBytes = errorJson.getBytes("UTF-8")
+          private val errorByteStream = new ByteArrayInputStream(errorBytes)
+
+          override def disconnect(): Unit = {}
+          override def usingProxy(): Boolean = false
+          override def connect(): Unit = {}
+
+          override def getResponseCode: Int = 500
+          override def getErrorStream: InputStream = errorByteStream
+        }
+        Right(errorConnection)
     }
   }
 

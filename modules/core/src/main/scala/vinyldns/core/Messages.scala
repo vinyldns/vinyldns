@@ -88,4 +88,11 @@ object Messages {
   val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
 
   val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
+
+  def dnsProviderConnRefusedMessage(e : Exception, dnsApiUrl : String) =
+     s"""{"success":false,
+         |"hostUri": $dnsApiUrl,
+         |"message": "DNS Provider host connection failed: ${e.getMessage}",
+         |"exception":"${e.getClass.getName}"
+         |}""".stripMargin
 }
