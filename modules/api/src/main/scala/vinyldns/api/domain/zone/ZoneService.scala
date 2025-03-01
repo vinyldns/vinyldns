@@ -155,7 +155,6 @@ class ZoneService(
 
 
   def buildGenerateZoneRequestJson(request: GenerateZone): String = {
-
     val bindGenerateZoneRequestJson =
     s"""{
           "zoneName": "${request.zoneName}",
