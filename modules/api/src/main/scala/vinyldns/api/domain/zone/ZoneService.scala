@@ -154,7 +154,7 @@ class ZoneService(
     } yield generateZone
 
 
-  def buildGenerateZoneRequestJson(request: GenerateZone): String = {
+  private def buildGenerateZoneRequestJson(request: GenerateZone): String = {
     val bindGenerateZoneRequestJson =
     s"""{
           "zoneName": "${request.zoneName}",
@@ -183,7 +183,6 @@ class ZoneService(
   }
 
   def handleGenerateZoneRequest(request: GenerateZone, auth : AuthPrincipal): Result[ZoneGenerationResponse]  = {
-
     val (createZoneApi, apiKey) = request.provider.toLowerCase match {
       case "bind" =>
         (dnsProviderApiConnection.bindCreateZoneApi, dnsProviderApiConnection.bindApiKey)
@@ -217,7 +216,7 @@ class ZoneService(
    }
   }
 
-  def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
+  private def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
     try {
       val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")

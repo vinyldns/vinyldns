@@ -3,8 +3,7 @@ CREATE SCHEMA IF NOT EXISTS ${dbName};
 USE ${dbName};
 
 /*
-Create the Zone table  We are not storing the shared flag or the account here as the new Zone repo
-is not planned on being backward compatible, and we would have data in the table that we do not need
+Create the Generate Zone table
 */
 CREATE TABLE generate_zone (
   id CHAR(36) NOT NULL,
