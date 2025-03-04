@@ -184,12 +184,16 @@ trait ProtobufConversions {
   }
 
   def fromPB(zn: VinylDNSProto.GenerateZone): GenerateZone = {
+    val pbStatus = zn.getStatus
+    val status =
+      if (pbStatus.startsWith("Pending")) GenerateZoneStatus.Active
+      else GenerateZoneStatus.withName(pbStatus)
 
     zone.GenerateZone(
       groupId = zn.getGroupId,
       provider = zn.getProvider,
       zoneName = zn.getZoneName,
-      status = zn.getStatus,
+      status = status,
       serverId = if (zn.hasServerId) Some(zn.getServerId) else None,
       kind = if (zn.hasKind) Some(zn.getKind) else None,
       masters = if (zn.getMastersList.isEmpty) None else Some(zn.getMastersList.asScala.toList),
@@ -500,7 +504,7 @@ trait ProtobufConversions {
       .setGroupId(generateZone.groupId)
       .setProvider(generateZone.provider)
       .setZoneName(generateZone.zoneName)
-      .setStatus(generateZone.status)
+      .setStatus(generateZone.status.toString)
 
     generateZone.serverId.foreach(gz => builder.setServerId(gz))
     generateZone.kind.foreach(gz => builder.setKind(gz))

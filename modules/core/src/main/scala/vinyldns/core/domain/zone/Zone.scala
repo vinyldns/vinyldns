@@ -26,12 +26,18 @@ import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.{Encrypted, Encryption}
 
 import scala.collection.JavaConverters._
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
+  val Active, Deleted, Syncing = Value
+}
+
+object GenerateZoneStatus extends Enumeration {
+  type GenerateZoneStatus = Value
   val Active, Deleted, Syncing = Value
 }
 
@@ -129,7 +135,7 @@ final case class GenerateZone(
                                groupId: String,
                                provider: String, // "powerdns", "cloudflare", "google", "bind"
                                zoneName: String,
-                               status: String,
+                               status:  GenerateZoneStatus = GenerateZoneStatus.Active,
                                serverId: Option[String] = None, // The ID of the sever (PowerDNS)
                                kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
                                masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
@@ -272,7 +278,7 @@ final case class UpdateGenerateZoneInput(
                                   groupId: String,
                                   provider: String, // "powerdns", "cloudflare", "google", "bind"
                                   zoneName: String,
-                                  status: String,
+                                  status: GenerateZoneStatus = GenerateZoneStatus.Active,
                                   serverId: Option[String] = None, // The ID of the sever (PowerDNS)
                                   kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
                                   masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
@@ -304,7 +310,7 @@ case class ZoneGenerationInput(
     groupId: String,
     provider: String, // "powerdns", "cloudflare", "google", "bind"
     zoneName: String,
-    status: String,
+    status: GenerateZoneStatus = GenerateZoneStatus.Active,
     serverId: Option[String] = None, // The ID of the sever (PowerDNS)
     kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
     masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
