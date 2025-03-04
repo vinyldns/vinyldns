@@ -29,7 +29,7 @@ object Dependencies {
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
-    "com.google.protobuf"       %  "protobuf-java"                  % "3.15.8",
+    "com.google.protobuf"       %  "protobuf-java"                  % "3.21.7",
     "dnsjava"                   %  "dnsjava"                        % "3.4.2",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",

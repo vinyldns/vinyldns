@@ -114,7 +114,7 @@ lazy val coreBuildSettings = Seq(
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params"),
   PB.targets in Compile := Seq(PB.gens.java("3.21.7") -> (sourceManaged in Compile).value),
-  PB.protocVersion := "-v3.21.7"
+  PB.protocVersion := "3.21.7"
 )
 
 lazy val corePublishSettings = Seq(
