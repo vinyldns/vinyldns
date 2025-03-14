@@ -59,7 +59,8 @@ class ApiDataAccessorProviderSpec
       enabled,
       enabled,
       enabled,
-      None
+      None,
+      enabled
     )
 
     val user = mock[UserRepository]
