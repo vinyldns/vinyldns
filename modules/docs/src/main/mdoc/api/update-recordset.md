@@ -24,12 +24,12 @@ type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.html) |
 ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
-recordSetGroupChange | OwnerShipTransfer| sometimes*   | Record ownership transfer, where ownership can be transfer from one to another. See [Ownership Transfer Model](ownership-transfer-model.html#ownership-transfer-example)
+recordSetGroupChange | OwnerShipTransfer| sometimes†   | Record ownership transfer, requesting ownership to be transferred from one group to another. See [Ownership Transfer Model](ownership-transfer-model.html#ownership-transfer-example)
 
-*Note: 
+* If a RecordSet has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value.
 
-1. If a recordset has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value
-2. If a recordset ownership wants to be change , you must include [recordSetGroupChange](recordset-model.html) value in the update request, otherwise the update will remove the recordSetGroupChange value
+† If you want to change RecordSet ownership using an Ownership Transfer Request, or if the RecordSet has an active Ownership Transfer Request in the PendingReview state, you must include a [recordSetGroupChange](recordset-model.html) value in the update request, otherwise the update will remove the recordSetGroupChange value.
+
 #### EXAMPLE HTTP REQUEST
 ```json
 {

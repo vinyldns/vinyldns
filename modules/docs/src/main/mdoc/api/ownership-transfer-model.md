@@ -11,17 +11,17 @@ section: "api"
 - [Ownership Transfer Attributes](#ownership-transfer-attributes)
 - [Ownership Transfer Example](#ownership-transfer-example)
 
-#### Ownership Transfer ATTRIBUTES <a id="ownership-transfer-attributes"></a>
+#### OWNERSHIP TRANSFER ATTRIBUTES <a id="ownership-transfer-attributes"></a>
 
-1. User can claim their own group for the unowned record by their own. Group will be Auto-assigned to the record, once user requested with group id.
-2. User can request their own group for the record already assigned. Once requested, the request will be send to the existing assigned group members(Approvers). The request will be notified in email.
+1. Users can claim unowned records for themselves. The user's group will be auto-assigned to the record when the user requests ownership with their group ID.
+2. Users can request ownership transfer for records already assigned to a group. An ownership transfer request will be sent to the members of the record's current owner group for their approval in VinylDNS. The request will also notify the approvers by email.
 
 field         | type        | required?  | description |
 ------------- | :---------- | :--------- |:----------- |
-ownerShipTransferStatus        | OwnerShipTransferStatus   | yes   | Ownership transfer Status for this RecordSet change. Can be one of: **AutoApproved**, **Cancelled**, **ManuallyApproved**, **ManuallyRejected**, **Requested** or **PendingReview**. |
+ownerShipTransferStatus        | OwnerShipTransferStatus   | yes   | Ownership transfer status for this RecordSet change. Must be one of: **AutoApproved**, **Cancelled**, **ManuallyApproved**, **ManuallyRejected**, **Requested** or **PendingReview**. |
 requestedOwnerGroupId          | string    | yes  | UUID of the group |
 
-#### Ownership transfer EXAMPLE <a id="ownership-transfer-example"></a>
+#### OWNERSHIP TRANSFER EXAMPLE <a id="ownership-transfer-example"></a>
 
 ```json
 {
@@ -34,7 +34,7 @@ requestedOwnerGroupId          | string    | yes  | UUID of the group |
 
 #### EXAMPLE HTTP REQUEST AND RESPONSE
 
-Requested `ownerShipTransferStatus` in Recordsets:
+Requested `ownerShipTransferStatus` in RecordSets:
 
 ```json
 {
@@ -45,7 +45,7 @@ Requested `ownerShipTransferStatus` in Recordsets:
 }
 ```
 
-Cancelled `ownerShipTransferStatus` in Recordsets:
+Cancelled `ownerShipTransferStatus` in RecordSets:
 
 ```json
 {
@@ -56,7 +56,7 @@ Cancelled `ownerShipTransferStatus` in Recordsets:
 }
 ```
 
-Approved `ownerShipTransferStatus` in Recordsets:
+Approved `ownerShipTransferStatus` in RecordSets:
 
 ```json
 {
@@ -75,7 +75,7 @@ Approved `ownerShipTransferStatus` in Recordsets:
 }
 ```
 
-Rejected `ownerShipTransferStatus` in Recordsets:
+Rejected `ownerShipTransferStatus` in RecordSets:
 
 ```json
 {
