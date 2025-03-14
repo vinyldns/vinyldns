@@ -29,8 +29,6 @@ import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.core.domain.record.RecordSetRepository
-import vinyldns.mysql.TestMySqlInstance.generateZoneRepository
-//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
@@ -68,7 +66,7 @@ class ZoneServiceSpec
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
   private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
-  private val mockGenerateZoneRepository = generateZoneRepository
+  private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
 
   private val mockMembershipService = new MembershipService(mockGroupRepo,
     mockUserRepo,
