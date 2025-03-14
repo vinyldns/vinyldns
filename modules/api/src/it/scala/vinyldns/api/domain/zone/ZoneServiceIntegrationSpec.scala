@@ -65,6 +65,8 @@ class ZoneServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
   private val mockMembershipService = mock[MembershipService]
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
+  private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
@@ -130,7 +132,9 @@ class ZoneServiceIntegrationSpec
       new AccessValidations(),
       mockBackendResolver,
       NoOpCrypto.instance,
-      mockMembershipService
+      mockMembershipService,
+      mockDnsProviderApiConnection,
+      mockGenerateZoneRepository
     )
   }
 

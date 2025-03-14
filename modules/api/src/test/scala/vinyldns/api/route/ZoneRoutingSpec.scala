@@ -20,6 +20,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.data.EitherT
+import cats.effect.IO
 import com.typesafe.config.ConfigFactory
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -178,9 +180,9 @@ class ZoneRoutingSpec
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
-        ConnectZoneInput: ConnectZoneInput,
-        auth: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
+                       ConnectZoneInput: ConnectZoneInput,
+                       auth: AuthPrincipal
+                     ): Result[ZoneCommandResult] = {
       val outcome = ConnectZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$ConnectZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$ConnectZoneInput"))
@@ -579,6 +581,10 @@ class ZoneRoutingSpec
     }
 
     def getBackendIds(): Result[List[String]] = List("backend-1", "backend-2").toResult
+
+    override def handleGenerateZoneRequest(request: GenerateZone, auth: AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse] = ???
+
+    override def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] = ???
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService

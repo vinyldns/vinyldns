@@ -17,6 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -29,7 +30,7 @@ import cats.effect._
 import org.mockito.Matchers.any
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, LegacyDnsBackend, Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsProviderApiConnection, LegacyDnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 import scala.util.matching.Regex
@@ -140,7 +141,9 @@ class ZoneConnectionValidatorSpec
     zc.copy(name = "backend-conn"),
     transfer.copy(name = "backend-transfer")
   )
-  val connections = ConfiguredDnsConnections(zc, transfer, List(backend))
+  val dnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
+
+  val connections = ConfiguredDnsConnections(zc, transfer, List(backend),dnsProviderApiConnection)
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
