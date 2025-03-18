@@ -142,27 +142,28 @@ class ZoneServiceSpec
 
   val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
 
-//  private val generateZoneAuthorized = GenerateZone(
+  private val generateBindZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "bind",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(zoneGenerationResponse)
+  )
+
+//  private val generatePdnsZoneAuthorized = GenerateZone(
 //    okGroup.id,
-//    "bind",
+//    "powerdns",
 //    okZone.name,
-//    GenerateZoneStatus.Active,
-//    Some("bind"),
-//    Some("bind"),
-//    Some(List("bind")),
-//    Some(List("bind")),
-//    Some("bind"),
-//    Some("bind"),
-//    Some("bind"),
-//    Some("bind"),
-//    Some(List("bind")),
-//    Some("bind"),
-//    Some(5),
-//    Some(5),
-//    Some(5),
-//    Some(5),
-//    Some(5),
-//    Some(zoneGenerationResponse)
+//    kind = Some("bind"),
+//    nameservers = Some(List("bind")),
+//    response=Some(zoneGenerationResponse)
 //  )
 
   private val updateZoneAuthorized = UpdateZoneInput(
@@ -180,15 +181,21 @@ class ZoneServiceSpec
   }
 
   "Generating Zones" should {
-//    "return an appropriate zone response" in {
+    "return an error response for invalid bind uri" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      val result =
+        underTest.handleGenerateZoneRequest(generateBindZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe an[InvalidRequest]
+    }
+
+//    "return an appropriate powerdns generate zone response" in {
 //      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+//      val resultChange=
+//        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
 //
-//
-//      val resultChange: GenerateZone =
-//        underTest.handleGenerateZoneRequest(generateZoneAuthorized, okAuth).map(_.asInstanceOf[GenerateZone]).value.unsafeRunSync().toOption.get
-//
-//      println(resultChange.groupId)
-//      resultChange.groupId shouldBe okGroup.id
+//      println(resultChange)
+//      resultChange shouldBe an[InvalidRequest]
 //    }
 
     "createDnsZoneService return a valid HttpURLConnection on success" in {
