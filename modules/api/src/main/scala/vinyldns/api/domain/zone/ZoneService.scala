@@ -216,7 +216,7 @@ class ZoneService(
    }
   }
 
-  private def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
+  def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
     try {
       val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")

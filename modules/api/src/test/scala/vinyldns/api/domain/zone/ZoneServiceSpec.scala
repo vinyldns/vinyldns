@@ -32,13 +32,16 @@ import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ZoneGenerationResponse, _}
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
+
+import java.net.HttpURLConnection
+
 
 class ZoneServiceSpec
     extends AnyWordSpec
@@ -64,8 +67,8 @@ class ZoneServiceSpec
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
+  private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://bind.com", "http://pdns.com", "bind-test-key", "pdns-test-key")
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
 
   private val mockMembershipService = new MembershipService(mockGroupRepo,
@@ -125,7 +128,7 @@ class ZoneServiceSpec
       mockZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      mockValidEmailConfigNew),
+      mockValidEmailConfigEmpty),
     mockDnsProviderApiConnection,
     mockGenerateZoneRepository
   )
@@ -136,6 +139,31 @@ class ZoneServiceSpec
     connection = testConnection,
     adminGroupId = okGroup.id
   )
+
+  val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+
+//  private val generateZoneAuthorized = GenerateZone(
+//    okGroup.id,
+//    "bind",
+//    okZone.name,
+//    GenerateZoneStatus.Active,
+//    Some("bind"),
+//    Some("bind"),
+//    Some(List("bind")),
+//    Some(List("bind")),
+//    Some("bind"),
+//    Some("bind"),
+//    Some("bind"),
+//    Some("bind"),
+//    Some(List("bind")),
+//    Some("bind"),
+//    Some(5),
+//    Some(5),
+//    Some(5),
+//    Some(5),
+//    Some(5),
+//    Some(zoneGenerationResponse)
+//  )
 
   private val updateZoneAuthorized = UpdateZoneInput(
     okZone.id,
@@ -151,7 +179,38 @@ class ZoneServiceSpec
     doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
-  "Creating Zones" should {
+  "Generating Zones" should {
+//    "return an appropriate zone response" in {
+//      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+//
+//
+//      val resultChange: GenerateZone =
+//        underTest.handleGenerateZoneRequest(generateZoneAuthorized, okAuth).map(_.asInstanceOf[GenerateZone]).value.unsafeRunSync().toOption.get
+//
+//      println(resultChange.groupId)
+//      resultChange.groupId shouldBe okGroup.id
+//    }
+
+    "createDnsZoneService return a valid HttpURLConnection on success" in {
+      val dnsApiUrl = "http://example.com"
+      val dnsApiKey = "test-api-key"
+      val request = """{"zone": "example.com"}"""
+
+      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, request).toOption.get
+      result shouldBe a[HttpURLConnection]
+    }
+
+    "return an error connection on failure" in {
+      val dnsApiUrl = "http://invalid-url"
+      val dnsApiKey = "test-api-key"
+      val request = """{"zone": "example.com"}"""
+
+      val result =underTest. createDnsZoneService(dnsApiUrl, dnsApiKey, request).toOption.get
+      result.getResponseCode shouldBe 500
+    }
+  }
+
+  "Connecting Zones" should {
     "return an appropriate zone change response" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
