@@ -144,7 +144,7 @@ class ZoneRoute(
     } ~
     path("zones" / "generate") {
       (put & monitor("Endpoint.generateZone")) {
-        authenticateAndExecuteWithEntity[ZoneGenerationResponse, GenerateZone](
+        authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
           (authPrincipal, generateZone) =>
             zoneService.handleGenerateZoneRequest(generateZone, authPrincipal)
         ) { response =>

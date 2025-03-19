@@ -142,7 +142,7 @@ class ZoneServiceSpec
 
   val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
 
-  private val generateBindZoneAuthorized = GenerateZone(
+  private val generateBindZoneAuthorized = ZoneGenerationInput(
     okGroup.id,
     "bind",
     okZone.name,
@@ -157,7 +157,7 @@ class ZoneServiceSpec
     response=Some(zoneGenerationResponse)
   )
 
-//  private val generatePdnsZoneAuthorized = GenerateZone(
+//  private val generatePdnsZoneAuthorized = ZoneGenerationInput(
 //    okGroup.id,
 //    "powerdns",
 //    okZone.name,
