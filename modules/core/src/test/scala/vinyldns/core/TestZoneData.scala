@@ -76,6 +76,56 @@ object TestZoneData {
   val sharedZone: Zone =
     zoneActive.copy(id = "sharedZoneId", shared = true, adminGroupId = abcGroup.id)
 
+
+  val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+
+  val generateBindZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "bind",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(zoneGenerationResponse),
+    id = "bindZoneId"
+  )
+  val updateBindZone = UpdateGenerateZoneInput(
+    okGroup.id,
+    "bind",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(zoneGenerationResponse),
+    id = "bindZoneId"
+  )
+
+  val inputBindZone = ZoneGenerationInput(
+    okGroup.id,
+    "bind",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(zoneGenerationResponse),
+    id = "bindZoneId"
+  )
+
   /* ACL RULES */
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 

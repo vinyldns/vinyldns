@@ -29,6 +29,7 @@ import vinyldns.proto.VinylDNSProto
 import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import java.time.temporal.ChronoUnit
 
 class ProtobufConversionsSpec
@@ -78,6 +79,21 @@ class ProtobufConversionsSpec
     ZoneChangeStatus.Synced,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
+  )
+  private val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+  private val generateBindZone = GenerateZone(
+    "test.zone.actor.groupId",
+    "bind",
+    "test.zone.actor.zone",
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(zoneGenerationResponse)
   )
   private val aRs = RecordSet(
     "id",
@@ -294,6 +310,13 @@ class ProtobufConversionsSpec
     }
   }
 
+  def generateZoneMatches(pb: VinylDNSProto.GenerateZone, gzn: GenerateZone): Unit = {
+    pb.getGroupId shouldBe gzn.groupId
+    pb.getProvider shouldBe gzn.provider
+    pb.getZoneName shouldBe gzn.zoneName
+    pb.getStatus shouldBe gzn.status.toString
+  }
+
   def rsMatches(pb: VinylDNSProto.RecordSet, rs: RecordSet): Assertion = {
     pb.getCreated shouldBe rs.created.toEpochMilli
     pb.getId shouldBe rs.id
@@ -481,6 +504,42 @@ class ProtobufConversionsSpec
 
       pb.getBackendId shouldBe "test-backend-id"
       fromPB(pb).backendId shouldBe defined
+    }
+  }
+
+
+  "Generation Zone conversion" should {
+    "convert to protobuf for a generate Zone including a connection" in {
+      val pb = toPB(generateBindZone)
+
+      generateZoneMatches(pb, generateBindZone)
+    }
+
+    "convert from a protobuf with only required fields" in {
+      // build a proto that does not have any optional fields
+      val pb = VinylDNSProto.GenerateZone
+        .newBuilder()
+        .setId(generateBindZone.id)
+        .setGroupId(generateBindZone.groupId)
+        .setProvider(generateBindZone.provider)
+        .setZoneName(generateBindZone.zoneName)
+        .setStatus(generateBindZone.status.toString)
+
+      val convertedNoOptional = fromPB(pb.build)
+
+      convertedNoOptional.id shouldBe generateBindZone.id
+      convertedNoOptional.groupId shouldBe generateBindZone.groupId
+      convertedNoOptional.provider shouldBe "bind"
+      convertedNoOptional.zoneName shouldBe generateBindZone.zoneName
+      convertedNoOptional.status shouldBe generateBindZone.status
+
+    }
+
+    "convert from protobuf to Generate Zone" in {
+      val pb = toPB(generateBindZone)
+      val z = fromPB(pb)
+
+      z shouldBe generateBindZone
     }
   }
 

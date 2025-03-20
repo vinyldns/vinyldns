@@ -140,7 +140,7 @@ class ZoneServiceSpec
     adminGroupId = okGroup.id
   )
 
-  val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+  private val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
 
   private val generateBindZoneAuthorized = ZoneGenerationInput(
     okGroup.id,

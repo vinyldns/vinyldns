@@ -153,7 +153,33 @@ final case class GenerateZone(
                                negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
                                response: Option[ZoneGenerationResponse] = None,
                                id: String = UUID.randomUUID().toString
-                     )
+                     ){
+    override def toString: String = {
+      val sb = new StringBuilder
+      sb.append("GenerateZone: [")
+      sb.append("id=\"").append(id).append("\"; ")
+      sb.append("groupId=\"").append(groupId).append("\"; ")
+      sb.append("provider=\"").append(provider).append("\"; ")
+      sb.append("zoneName=\"").append(zoneName).append("\"; ")
+      sb.append("status=\"").append(zoneName).append("\"; ")
+      sb.append("serverId=\"").append(serverId.toString).append("\"; ")
+      sb.append("kind=\"").append(kind.toString).append("\"; ")
+      sb.append("masters=\"").append(masters.toString).append("\"; ")
+      sb.append("nameservers=\"").append(nameservers.toString).append("\"; ")
+      sb.append("description=\"").append(description.toString).append("\"; ")
+      sb.append("visibility=\"").append(visibility.toString).append("\"; ")
+      sb.append("accountId=\"").append(accountId.toString).append("\"; ")
+      sb.append("projectId=\"").append(projectId.toString).append("\"; ")
+      sb.append("ns_ipaddress=\"").append(ns_ipaddress.toString).append("\"; ")
+      sb.append("ttl=\"").append(ttl).append("\"; ")
+      sb.append("refresh=\"").append(refresh).append("\"; ")
+      sb.append("retry=\"").append(retry).append("\"; ")
+      sb.append("expire=\"").append(expire).append("\"; ")
+      sb.append("negative_cache_ttl=\"").append(negative_cache_ttl).append("\"; ")
+      sb.append("]")
+      sb.toString
+    }
+}
 
 object GenerateZone {
   def apply(zoneGenerationInput: ZoneGenerationInput): GenerateZone = {
@@ -329,31 +355,7 @@ case class ZoneGenerationInput(
     response: Option[ZoneGenerationResponse] = None,
     id: String = UUID.randomUUID().toString
                               ) {
-  override def toString: String = {
-    val sb = new StringBuilder
-    sb.append("ZoneGenerationInput: [")
-    sb.append("id=\"").append(id).append("\"; ")
-    sb.append("groupId=\"").append(groupId).append("\"; ")
-    sb.append("provider=\"").append(provider).append("\"; ")
-    sb.append("zoneName=\"").append(zoneName).append("\"; ")
-    sb.append("status=\"").append(zoneName).append("\"; ")
-    sb.append("serverId=\"").append(serverId.toString).append("\"; ")
-    sb.append("kind=\"").append(kind.toString).append("\"; ")
-    sb.append("masters=\"").append(masters.toString).append("\"; ")
-    sb.append("nameservers=\"").append(nameservers.toString).append("\"; ")
-    sb.append("description=\"").append(description.toString).append("\"; ")
-    sb.append("visibility=\"").append(visibility.toString).append("\"; ")
-    sb.append("accountId=\"").append(accountId.toString).append("\"; ")
-    sb.append("projectId=\"").append(projectId.toString).append("\"; ")
-    sb.append("ns_ipaddress=\"").append(ns_ipaddress.toString).append("\"; ")
-    sb.append("ttl=\"").append(ttl).append("\"; ")
-    sb.append("refresh=\"").append(refresh).append("\"; ")
-    sb.append("retry=\"").append(retry).append("\"; ")
-    sb.append("expire=\"").append(expire).append("\"; ")
-    sb.append("negative_cache_ttl=\"").append(negative_cache_ttl).append("\"; ")
-    sb.append("]")
-    sb.toString
-  }
+
 }
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
