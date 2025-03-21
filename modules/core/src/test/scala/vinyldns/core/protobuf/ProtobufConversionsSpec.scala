@@ -524,6 +524,7 @@ class ProtobufConversionsSpec
         .setProvider(generateBindZone.provider)
         .setZoneName(generateBindZone.zoneName)
         .setStatus(generateBindZone.status.toString)
+        .setCreated(generateBindZone.created.toEpochMilli)
 
       val convertedNoOptional = fromPB(pb.build)
 
