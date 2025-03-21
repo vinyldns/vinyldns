@@ -81,34 +81,36 @@ class BatchChangeServiceSpec
   )
   private val ttl = Some(200L)
 
-  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
+  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, None, ttl, AData("1.1.1.1"))
   private val nonApexAddA =
-    AddChangeInput("non-apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
+    AddChangeInput("non-apex.test.com", RecordType.A, None, ttl, AData("1.1.1.1"))
   private val onlyApexAddA =
-    AddChangeInput("only.apex.exists", RecordType.A, ttl, AData("1.1.1.1"))
+    AddChangeInput("only.apex.exists", RecordType.A, None, ttl, AData("1.1.1.1"))
   private val onlyBaseAddAAAA =
-    AddChangeInput("have.only.base", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
-  private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, ttl, AData("1.1.1.1"))
+    AddChangeInput("have.only.base", RecordType.AAAA, None, ttl, AAAAData("1:2:3:4:5:6:7:8"))
+  private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, None, ttl, AData("1.1.1.1"))
   private val dottedAddA =
-    AddChangeInput("dot.ted.apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
+    AddChangeInput("dot.ted.apex.test.com", RecordType.A, None, ttl, AData("1.1.1.1"))
   private val cnameAdd =
-    AddChangeInput("cname.test.com", RecordType.CNAME, ttl, CNAMEData(Fqdn("testing.test.com.")))
+    AddChangeInput("cname.test.com", RecordType.CNAME, None, ttl, CNAMEData(Fqdn("testing.test.com.")))
   private val cnameApexAdd =
-    AddChangeInput("apex.test.com", RecordType.CNAME, ttl, CNAMEData(Fqdn("testing.test.com.")))
+    AddChangeInput("apex.test.com", RecordType.CNAME, None, ttl, CNAMEData(Fqdn("testing.test.com.")))
   private val cnameReverseAdd = AddChangeInput(
     "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
+    None,
     ttl,
     CNAMEData(Fqdn("testing.cname.com."))
   )
-  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
-  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, None, ttl, PTRData(Fqdn("ptr")))
+  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, None, ttl, PTRData(Fqdn("ptr")))
   private val ptrDelegatedAdd =
-    AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+    AddChangeInput("192.0.2.193", RecordType.PTR, None, ttl, PTRData(Fqdn("ptr")))
   private val ptrV6Add =
     AddChangeInput(
       "2001:0000:0000:0000:0000:ff00:0042:8329",
       RecordType.PTR,
+      None,
       ttl,
       PTRData(Fqdn("ptr"))
     )
@@ -489,6 +491,7 @@ class BatchChangeServiceSpec
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
+        None,
         ttl,
         PTRData(Fqdn("ptr"))
       )
@@ -520,6 +523,7 @@ class BatchChangeServiceSpec
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
         RecordType.PTR,
+        None,
         ttl,
         PTRData(Fqdn("ptr"))
       )
@@ -577,12 +581,12 @@ class BatchChangeServiceSpec
     }
 
     "succeed with excluded TTL" in {
-      val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
+      val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, None, AData("1.1.1.1"))
       val withTtl =
-        AddChangeInput("with-ttl-add-2.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
-      val noTtlDel = DeleteRRSetChangeInput("non-apex.test.com.", RecordType.TXT)
+        AddChangeInput("with-ttl-add-2.test.com", RecordType.A, None, Some(900), AData("1.1.1.1"))
+      val noTtlDel = DeleteRRSetChangeInput("non-apex.test.com.", RecordType.TXT, None)
       val noTtlUpdate =
-        AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
+        AddChangeInput("non-apex.test.com.", RecordType.TXT, None, None, TXTData("hello"))
 
       val input = BatchChangeInput(None, List(noTtl, withTtl, noTtlDel, noTtlUpdate))
       val result = underTest.applyBatchChange(input, auth, true).value.unsafeRunSync().toOption.get
@@ -1172,7 +1176,7 @@ class BatchChangeServiceSpec
         "0.1.0.0.2.ip6.arpa."
       )
 
-      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
+      val ptr = AddChangeInput(ip, RecordType.PTR, None, ttl, PTRData(Fqdn("ptr."))).validNel
       val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(List(ptr)).unsafeRunSync()
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
@@ -1198,7 +1202,7 @@ class BatchChangeServiceSpec
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
-      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
+      val ptr = AddChangeInput(ip, RecordType.PTR, None, ttl, PTRData(Fqdn("ptr."))).validNel
       val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(List(ptr)).unsafeRunSync()
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
@@ -1245,7 +1249,7 @@ class BatchChangeServiceSpec
 
       val ips = ip1 :: ip2s
       val ptrs = ips.map { v6Name =>
-        AddChangeInput(v6Name, RecordType.PTR, ttl, PTRData(Fqdn("ptr."))).validNel
+        AddChangeInput(v6Name, RecordType.PTR, None, ttl, PTRData(Fqdn("ptr."))).validNel
       }
 
       val underTestPTRZonesList: ExistingZones = underTest.getZonesForRequest(ptrs).unsafeRunSync()
@@ -1300,10 +1304,10 @@ class BatchChangeServiceSpec
     "properly discover records in forward zones" in {
       val apex = apexZone.name
 
-      val aApex = AddChangeInput(apex, RecordType.A, ttl, AData("1.2.3.4"))
-      val aNormal = AddChangeInput(s"record.$apex", RecordType.A, ttl, AData("1.2.3.4"))
+      val aApex = AddChangeInput(apex, RecordType.A, None, ttl, AData("1.2.3.4"))
+      val aNormal = AddChangeInput(s"record.$apex", RecordType.A, None, ttl, AData("1.2.3.4"))
       val aDotted =
-        AddChangeInput(s"some.dotted.record.$apex", RecordType.A, ttl, AData("1.2.3.4"))
+        AddChangeInput(s"some.dotted.record.$apex", RecordType.A, None, ttl, AData("1.2.3.4"))
 
       val expected = List(
         AddChangeForValidation(apexZone, apex, aApex, 7200L),
@@ -1322,10 +1326,10 @@ class BatchChangeServiceSpec
     "properly discover TXT records" in {
       val apex = apexZone.name
 
-      val txtApex = AddChangeInput(apex, RecordType.TXT, ttl, TXTData("test"))
-      val txtNormal = AddChangeInput(s"record.$apex", RecordType.TXT, ttl, TXTData("test"))
+      val txtApex = AddChangeInput(apex, RecordType.TXT, None, ttl, TXTData("test"))
+      val txtNormal = AddChangeInput(s"record.$apex", RecordType.TXT, None, ttl, TXTData("test"))
       val txtDotted =
-        AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, ttl, TXTData("test"))
+        AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, None, ttl, TXTData("test"))
 
       val expected = List(
         AddChangeForValidation(apexZone, apex, txtApex, 7200L),
@@ -1419,20 +1423,22 @@ class BatchChangeServiceSpec
       val ptrv6ZoneBig = Zone("0.1.0.0.2.ip6.arpa.", "email", id = "ptrv6big")
 
       val smallZoneAdd =
-        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, None, ttl, PTRData(Fqdn("ptr")))
       val medZoneAdd = AddChangeInput(
         "2001:0db8:0111:0000:0000:ff00:0042:8329",
         RecordType.PTR,
+        None,
         ttl,
         PTRData(Fqdn("ptr"))
       )
       val bigZoneAdd = AddChangeInput(
         "2001:0000:0000:0000:0000:ff00:0042:8329",
         RecordType.PTR,
+        None,
         ttl,
         PTRData(Fqdn("ptr"))
       )
-      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, ttl, PTRData(Fqdn("ptr")))
+      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, None, ttl, PTRData(Fqdn("ptr")))
 
       val ptripv6Adds = List(
         smallZoneAdd.validNel,
@@ -1678,7 +1684,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled and owner group ID " +
       "is provided" in {
-      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT, None)
       val result = underTestManualEnabled
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
@@ -1805,7 +1811,7 @@ class BatchChangeServiceSpec
     }
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
-      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT, None)
       val result = underTest
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
@@ -1825,7 +1831,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures, scheduled, " +
       "and manual review is disabled" in {
-      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT, None)
       val result = underTest
         .buildResponse(
           BatchChangeInput(
@@ -1872,7 +1878,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures, manual review is enabled, " +
       "but batch change allowManualReview attribute is false" in {
-      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT, None)
       val result = underTestManualEnabled
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
@@ -2531,6 +2537,45 @@ class BatchChangeServiceSpec
       result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
       result.batchChanges(0).ownerGroupId shouldBe Some("no-existo")
       result.batchChanges(0).ownerGroupName shouldBe None
+    }
+
+    "return list of batchChangeSummaries filtered by batch change status" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview,
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved,
+      )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            batchStatus = Some(BatchChangeStatus.PendingReview)
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.batchStatus shouldBe Some(BatchChangeStatus.PendingReview)
+
+      result.batchChanges.length shouldBe 2
     }
   }
 

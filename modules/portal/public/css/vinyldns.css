@@ -133,6 +133,11 @@ a.action-link {
     border-bottom-left-radius: 4px;
 }
 
+.btn-right-corner {
+    float: right;
+    margin-left: 10px;
+}
+
 .form-control.zone-edit {
     background: #F9F9F9;
     color:#555;
@@ -283,6 +288,7 @@ body {
 
 .page-title {
     padding: 10px 20px 0;
+    height: 100%;
 }
 
 .page-content-wrap {
@@ -626,4 +632,25 @@ input[type="file"] {
 .set-flex {
     display: flex;
     flex-direction: column;
+}
+
+.small-copy-button {
+    font-size: 12px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
+}
+
+.small-copy-button i {
+    font-size: 12px;
+}
+
+.small-copy-button:hover {
+    background-color: #f0f0f0;
+    border-radius: 4px;
 }

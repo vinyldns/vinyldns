@@ -3803,7 +3803,7 @@ def test_create_batch_delete_record_that_does_not_exists_completes(shared_zone_t
     ok_zone_name = shared_zone_test_context.ok_zone["name"]
 
     batch_change_input = {
-        "comments": "test delete record failures",
+        "comments": "test delete record",
         "changes": [
             get_change_A_AAAA_json(f"delete-non-existent-record.{ok_zone_name}", change_type="DeleteRecordSet")
         ]
@@ -3816,6 +3816,40 @@ def test_create_batch_delete_record_that_does_not_exists_completes(shared_zone_t
                                                               "No further action is required."))
 
     assert_successful_change_in_error_response(response["changes"][0], input_name=f"delete-non-existent-record.{ok_zone_name}", record_data="1.1.1.1", change_type="DeleteRecordSet")
+
+
+def test_create_batch_delete_record_data_that_does_not_exists_completes(shared_zone_test_context):
+    """
+    Test delete record set completes for non-existent record data
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json(f"delete-non-existent-record-data.{ok_zone_name}", address="4.5.6.7"),
+        ]
+    }
+    batch_change_delete_input = {
+        "comments": "test delete record",
+        "changes": [
+            get_change_A_AAAA_json(f"delete-non-existent-record-data.{ok_zone_name}", address="1.1.1.1", change_type="DeleteRecordSet")
+        ]
+    }
+
+    to_delete = []
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(result)
+        record_set_list = [(change["zoneId"], change["recordSetId"]) for change in completed_batch["changes"]]
+        to_delete = set(record_set_list)
+        response = client.create_batch_change(batch_change_delete_input, status=202)
+        get_batch = client.get_batch_change(response["id"])
+        assert_that(get_batch["changes"][0]["systemMessage"], is_("Record data entered does not exist. " +
+                                                                  "No further action is required."))
+        assert_successful_change_in_error_response(response["changes"][0], input_name=f"delete-non-existent-record-data.{ok_zone_name}", record_data="1.1.1.1", change_type="DeleteRecordSet")
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
 
 
 @pytest.mark.serial

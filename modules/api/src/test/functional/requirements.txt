@@ -2,10 +2,10 @@ pyhamcrest==2.0.2
 pytz>=2014
 pytest==6.2.5
 mock==4.0.3
-dnspython==2.1.0
+dnspython==2.6.1
 boto3==1.18.51
 botocore==1.21.51
-requests==2.31.0
+requests==2.32.3
 pytest-xdist==2.4.0
 python-dateutil==2.8.2
 filelock==3.2.0

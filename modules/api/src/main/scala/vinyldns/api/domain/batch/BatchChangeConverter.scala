@@ -30,15 +30,10 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType.{RecordType, UNKNOWN}
 import vinyldns.core.queue.MessageQueue
-import java.net.InetAddress
 
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
-    "No further action is required."
-  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist. " +
-    "No further action is required."
   private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
@@ -52,17 +47,16 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       s"Converting BatchChange [${batchChange.id}] with SingleChanges [${batchChange.changes.map(_.id)}]"
     )
     for {
-      updatedBatchChange <- updateBatchChange(batchChange, groupedChanges).toRightBatchResult
       recordSetChanges <- createRecordSetChangesForBatch(
-        updatedBatchChange.changes,
+        batchChange.changes,
         existingZones,
         groupedChanges,
         batchChange.userId,
         ownerGroupId
       ).toRightBatchResult
-      _ <- allChangesWereConverted(updatedBatchChange.changes, recordSetChanges)
+      _ <- allChangesWereConverted(batchChange.changes, recordSetChanges)
       _ <- batchChangeRepo
-        .save(updatedBatchChange)
+        .save(batchChange)
         .toBatchResult // need to save the change before queueing, backend processing expects the changes to exist
       queued <- putChangesOnQueue(recordSetChanges, batchChange.id)
       changeToStore = updateWithQueueingFailures(batchChange, queued)
@@ -129,7 +123,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           change match {
             case _: SingleDeleteRRSetChange if change.recordSetId.isEmpty =>
               // Mark as Complete since we don't want to throw it as an error
-              change.withDoesNotExistMessage(nonExistentRecordDeleteMessage)
+              change.withDoesNotExistMessage
             case _ =>
               // Failure here means there was a message queue issue for this change
               change.withFailureMessage(failedMessage)
@@ -142,34 +136,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     // Update if Single change is Failed or if a record that does not exist is deleted
     val failedAndNotExistsChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed || change.systemMessage.contains(nonExistentRecordDeleteMessage) => change
+      case change if change.status == SingleChangeStatus.Failed => change
     }
-    batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    val storeChanges = batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    storeChanges
   }.toBatchResult
-
-  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
-    existingRecordSetData.exists { rd =>
-      (rd, recordData) match {
-        case (AAAAData(rdAddress), AAAAData(proposedAddress)) =>
-          InetAddress.getByName(proposedAddress).getHostName == InetAddress
-            .getByName(rdAddress)
-            .getHostName
-        case _ => rd == recordData
-      }
-    }
-
-  def updateBatchChange(batchChange: BatchChange, groupedChanges: ChangeForValidationMap): BatchChange = {
-    // Update system message to be display the information if record data doesn't exist for the delete request
-    val singleChanges = batchChange.changes.map {
-      case change@(sd: SingleDeleteRRSetChange) =>
-        if (sd.recordData.isDefined && !groupedChanges.getExistingRecordSet(change.recordKey.get).exists(rs => matchRecordData(rs.records, sd.recordData.get))) {
-          sd.copy(systemMessage = Some(nonExistentRecordDataDeleteMessage))
-        }
-        else change
-      case change => change
-    }
-    batchChange.copy(changes = singleChanges)
-  }
 
   def createRecordSetChangesForBatch(
       changes: List[SingleChange],
@@ -243,7 +214,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         }
     }
 
-    // New record set for add/update or single delete
+    // New record set for add/update/full deletes
     lazy val newRecordSet = {
       val firstAddChange = singleChangeNel.collect {
         case sac: SingleAddChange => sac
@@ -261,6 +232,33 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             recordName,
             recordType,
             ttl,
+            RecordSetStatus.Pending,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS),
+            None,
+            proposedRecordData.toList,
+            ownerGroupId = setOwnerGroupId,
+            recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
+          )
+      }
+    }
+
+    // New record set for single delete which exists in dns backend but not in vinyl
+    lazy val newDeleteRecordSet = {
+      val firstDeleteChange = singleChangeNel.collect {
+        case sad: SingleDeleteRRSetChange => sad
+      }.headOption
+
+      val newTtlRecordNameTuple = firstDeleteChange
+        .map(del => del.recordName)
+        .orElse(existingRecordSet.map(rs => Some(rs.name)))
+
+      newTtlRecordNameTuple.collect{
+        case Some(recordName) =>
+          RecordSet(
+            zone.id,
+            recordName,
+            recordType,
+            7200L,
             RecordSetStatus.Pending,
             Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
@@ -285,7 +283,12 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           existingRs <- existingRecordSet
           newRs <- newRecordSet
         } yield RecordSetChangeGenerator.forUpdate(existingRs, newRs, zone, userId, singleChangeIds)
-      case _ => None // This case should never happen
+      case OutOfSync =>
+        newDeleteRecordSet.map { newDelRs =>
+          RecordSetChangeGenerator.forOutOfSync(newDelRs, zone, userId, singleChangeIds)
+        }
+      case _ =>
+        None // This case should never happen
     }
   }
 }

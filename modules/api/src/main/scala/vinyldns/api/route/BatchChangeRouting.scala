@@ -16,13 +16,12 @@
 
 package vinyldns.api.route
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
-import vinyldns.api.config.LimitsConfig
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.config.ManualReviewConfig
-import vinyldns.core.domain.batch._
+import vinyldns.api.config.{LimitsConfig, ManualReviewConfig}
 import vinyldns.api.domain.batch._
+import vinyldns.core.domain.batch._
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
@@ -71,28 +70,28 @@ class BatchChangeRoute(
           }
         }
       } ~
-        (get & monitor("Endpoint.listBatchChangeSummaries")) {
-          parameters(
-            "userName".as[String].?,
-            "dateTimeRangeStart".as[String].?,
-            "dateTimeRangeEnd".as[String].?,
-            "startFrom".as[Int].?,
-            "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
-            "ignoreAccess".as[Boolean].?(false),
-            "approvalStatus".as[String].?
-          ) {
-            (
-                userName: Option[String],
-                dateTimeRangeStart: Option[String],
-                dateTimeRangeEnd: Option[String],
-                startFrom: Option[Int],
-                maxItems: Int,
-                ignoreAccess: Boolean,
-                approvalStatus: Option[String]
-            ) =>
-              {
-                val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
-
+      (get & monitor("Endpoint.listBatchChangeSummaries")) {
+        parameters(
+          "userName".as[String].?,
+          "dateTimeRangeStart".as[String].?,
+          "dateTimeRangeEnd".as[String].?,
+          "startFrom".as[Int].?,
+          "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
+          "ignoreAccess".as[Boolean].?(false),
+          "approvalStatus".as[String].?
+        ) {
+          (
+              userName: Option[String],
+              dateTimeRangeStart: Option[String],
+              dateTimeRangeEnd: Option[String],
+              startFrom: Option[Int],
+              maxItems: Int,
+              ignoreAccess: Boolean,
+              approvalStatus: Option[String]
+          ) =>
+            {
+              val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
+              
                 handleRejections(invalidQueryHandler) {
                   validate(
                     0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
@@ -107,6 +106,8 @@ class BatchChangeRoute(
                         startFrom,
                         maxItems,
                         ignoreAccess,
+                        // TODO: Update batch status from None to its actual value when the feature is ready for release
+                        None,
                         convertApprovalStatus
                       )
                     ) { summaries =>
@@ -115,9 +116,9 @@ class BatchChangeRoute(
                   }
                 }
               }
-          }
+            }
         }
-    } ~
+      } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
