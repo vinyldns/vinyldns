@@ -297,7 +297,6 @@ class MySqlBatchChangeRepository
                 val complete = res.int("complete_count")
                 val cancelled = res.int("cancelled_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
-                val batchChangeStatus = toBatchChangeStatus(res.stringOpt("batch_status"))
                 val schedTime =
                   res.timestampOpt("scheduled_time").map(st => st.toInstant)
                 val cancelledTimestamp =
@@ -308,7 +307,14 @@ class MySqlBatchChangeRepository
                   Option(res.string("comments")),
                   res.timestamp("created_time").toInstant,
                   pending + failed + complete + cancelled,
-                  batchChangeStatus,
+                  BatchChangeStatus
+                    .calculateBatchStatus(
+                      approvalStatus,
+                      pending > 0,
+                      failed > 0,
+                      complete > 0,
+                      schedTime.isDefined
+                    ),
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,
@@ -363,7 +369,6 @@ class MySqlBatchChangeRepository
         Nil,
         result.stringOpt("owner_group_id"),
         toApprovalStatus(result.intOpt("approval_status")),
-        toBatchChangeStatus(result.stringOpt("batch_status")),
         result.stringOpt("reviewer_id"),
         result.stringOpt("review_comment"),
         result.timestampOpt("review_timestamp").map(toDateTime),

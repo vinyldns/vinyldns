@@ -47,10 +47,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
   object TestData {
     def generateSingleAddChange(
-        recordType: RecordType,
-        recordData: RecordData,
-        status: SingleChangeStatus = Pending,
-        errors: List[SingleChangeError] = List.empty
+      recordType: RecordType,
+      recordData: RecordData,
+      status: SingleChangeStatus = Pending,
+      errors: List[SingleChangeError] = List.empty
     ): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
@@ -103,7 +103,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         changes,
         Some(UUID.randomUUID().toString),
         BatchChangeApprovalStatus.AutoApproved,
-        BatchChangeStatus.PendingProcessing,
         Some(UUID.randomUUID().toString),
         Some("review comment"),
         Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).plusSeconds(2))
@@ -456,8 +455,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         } yield (updated, saved)
 
       val (retrieved, saved) = f.unsafeRunSync
-      // Batch Change Status will be updated once saved
-      retrieved.map(x => x.copy(batchStatus = BatchChangeStatus.Complete)) shouldBe saved
+      retrieved shouldBe saved
     }
 
     "return no batch when single changes list is empty" in {

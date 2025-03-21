@@ -133,7 +133,6 @@ class BatchChangeRoutingSpec()
         ),
         ownerGroupId,
         approvalStatus,
-        BatchChangeStatus.PendingProcessing,
         None,
         None,
         None,

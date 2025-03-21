@@ -443,7 +443,6 @@ class BatchChangeService(
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.PendingReview,
-        BatchChangeStatus.PendingReview,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     }
@@ -459,7 +458,6 @@ class BatchChangeService(
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved,
-        BatchChangeStatus.PendingProcessing,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     }

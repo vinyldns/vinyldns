@@ -100,7 +100,6 @@ class EmailNotifierSpec
       changes,
       None,
       BatchChangeApprovalStatus.AutoApproved,
-      BatchChangeStatus.PendingProcessing,
       None,
       None,
       None,

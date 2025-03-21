@@ -31,7 +31,6 @@ case class BatchChange(
     changes: List[SingleChange],
     ownerGroupId: Option[String] = None,
     approvalStatus: BatchChangeApprovalStatus,
-    batchStatus: BatchChangeStatus = BatchChangeStatus.PendingProcessing,
     reviewerId: Option[String] = None,
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[Instant] = None,
