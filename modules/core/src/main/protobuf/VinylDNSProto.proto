@@ -51,6 +51,8 @@ message GenerateZone {
   optional int64 expire = 19;
   optional int64 negative_cache_ttl = 20;
   optional ZoneGenerationResponse response = 21;
+  required int64 created = 22;
+  optional int64 updated = 23;
 }
 
 message ZoneGenerationResponse {

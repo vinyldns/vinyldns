@@ -212,6 +212,8 @@ trait ProtobufConversions {
       negative_cache_ttl = if (zn.hasNegativeCacheTtl) Some(zn.getNegativeCacheTtl.toInt) else None,
       id = zn.getId,
       response = if (zn.hasResponse) Some(fromPB(zn.getResponse)) else None,
+      created = Instant.ofEpochMilli(zn.getCreated),
+      updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None,
     )
   }
 
@@ -502,6 +504,7 @@ trait ProtobufConversions {
       .newBuilder()
       .setId(generateZone.id)
       .setGroupId(generateZone.groupId)
+      .setCreated(generateZone.created.toEpochMilli)
       .setProvider(generateZone.provider)
       .setZoneName(generateZone.zoneName)
       .setStatus(generateZone.status.toString)
@@ -528,6 +531,7 @@ trait ProtobufConversions {
     generateZone.expire.foreach(gz => builder.setExpire(gz))
     generateZone.negative_cache_ttl.foreach(gz => builder.setNegativeCacheTtl(gz))
     generateZone.response.foreach(gz => builder.setResponse(toPB(gz)))
+    generateZone.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
 
     builder.build()
   }

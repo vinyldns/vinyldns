@@ -152,7 +152,9 @@ final case class GenerateZone(
                                expire: Option[Int] = None, // Expire (Bind)
                                negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
                                response: Option[ZoneGenerationResponse] = None,
-                               id: String = UUID.randomUUID().toString
+                               id: String = UUID.randomUUID().toString,
+                               created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                               updated: Option[Instant] = None,
                      ){
     override def toString: String = {
       val sb = new StringBuilder
@@ -176,6 +178,8 @@ final case class GenerateZone(
       sb.append("retry=\"").append(retry).append("\"; ")
       sb.append("expire=\"").append(expire).append("\"; ")
       sb.append("negative_cache_ttl=\"").append(negative_cache_ttl).append("\"; ")
+      sb.append("created=\"").append(created).append("\"; ")
+      updated.map(sb.append("updated=\"").append(_).append("\"; "))
       sb.append("]")
       sb.toString
     }
