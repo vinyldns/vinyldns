@@ -196,7 +196,8 @@ class ZoneService(
       _ <- generateZoneDoesNotExist(request.zoneName)
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
       _ = logger.info(s"Request: provider=${request.provider}, path=$createZoneApi, request=$generateZoneRequestJson")
-      dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson).toResult
+      dnsProviderConn = new URL(createZoneApi).openConnection().asInstanceOf[HttpURLConnection]
+      dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson, dnsProviderConn).toResult
       responseCode = dnsConnResponse.getResponseCode
       inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream
                     else dnsConnResponse.getInputStream
@@ -217,9 +218,10 @@ class ZoneService(
    }
   }
 
-  def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String): Either[Throwable, HttpURLConnection] = {
+  def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String, connection: HttpURLConnection): Either[Throwable, HttpURLConnection] =
+  {
     try {
-      val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
+      //val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Content-Type", "application/json")
       connection.setRequestProperty("X-API-Key", dnsApiKey)
@@ -228,6 +230,7 @@ class ZoneService(
       val outputStream: OutputStream = connection.getOutputStream
       outputStream.write(request.getBytes("UTF-8"))
       outputStream.close()
+
       Right(connection)
     } catch {
       case e: Exception =>
