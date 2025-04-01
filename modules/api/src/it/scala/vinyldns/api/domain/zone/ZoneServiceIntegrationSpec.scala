@@ -176,6 +176,17 @@ class ZoneServiceIntegrationSpec
     }
   }
 
+  "Generate Zone" should {
+    "return a zone with appropriate response" in {
+        val result =
+          testZoneService
+            .getGenerateZoneByName("test-zone", okAuth)
+            .value
+            .unsafeRunSync()
+        result shouldBe Left(ZoneNotFoundError("Zone with name test-zone. does not exists"))
+    }
+  }
+
   "getBackendIds" should {
     "return backend ids in config" in {
       testZoneService.getBackendIds().value.unsafeRunSync() shouldBe Right(

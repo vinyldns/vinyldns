@@ -110,7 +110,6 @@ class ZoneServiceSpec
     mockMembershipService,
     mockDnsProviderApiConnection,
     mockGenerateZoneRepository
-
   )
   private val underTestNew = new ZoneService(
     mockZoneRepo,
@@ -192,7 +191,7 @@ class ZoneServiceSpec
       result shouldBe an[InvalidRequest]
     }
 
-    "return an appropriate powerdns generate zone response" in {
+    "return an error response for invalid pdns uri" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =
         underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
@@ -201,13 +200,13 @@ class ZoneServiceSpec
     }
 
     "createDnsZoneService return a valid HttpURLConnection on success" in {
-      val dnsApiUrl = "http://example.com"
+      val dnsApiUrl = "http://valid.com"
       val dnsApiKey = "test-api-key"
       val request = """{"zone": "example.com"}"""
 
       // Mock the HttpURLConnection
       val mockConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
-        private val responseJson = """{"message": "Zone created successfully"}"""
+        private val responseJson = """{"message": "Zone creation successfully"}"""
         private val responseBytes = responseJson.getBytes("UTF-8")
         private val responseByteStream = new ByteArrayInputStream(responseBytes)
 
@@ -232,15 +231,14 @@ class ZoneServiceSpec
       // Mock the HttpURLConnection
       val mockConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
         private val responseJson = """{"message": "Zone created successfully"}"""
-        private val responseBytes = responseJson.getBytes("UTF-8")
-        private val responseByteStream = new ByteArrayInputStream(responseBytes)
+        private val responseStream = new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
 
         override def disconnect(): Unit = {}
         override def usingProxy(): Boolean = false
         override def connect(): Unit = {}
 
         override def getResponseCode: Int = 500
-        override def getInputStream: InputStream = responseByteStream
+        override def getInputStream: InputStream = responseStream
       }
 
       val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, request, mockConnection).toOption.get
@@ -248,7 +246,7 @@ class ZoneServiceSpec
     }
 
     "createDnsZoneService return a valid HttpURLConnection 200 response code on success" in {
-      val dnsApiUrl = "http://valid-url"
+      val dnsApiUrl = "http://valid-url.com"
       val dnsApiKey = "test-api-key"
       val request = """{"zone": "example.com"}"""
 

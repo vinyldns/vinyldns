@@ -54,7 +54,7 @@ class ZoneValidations(syncDelayMillis: Int) {
       (rule.groupId ++ rule.userId).size == 1
     }
 
-  def isValidGenerateZone(responseCode : Int, responseMsg : String): Either[Throwable, Unit] =
+  def isValidGenerateZoneConn(responseCode : Int, responseMsg : String): Either[Throwable, Unit] =
     ensuring(InvalidRequest(responseMsg)) {
       responseCode <= 400
     }

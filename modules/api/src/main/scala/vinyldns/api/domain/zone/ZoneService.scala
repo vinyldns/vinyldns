@@ -83,6 +83,7 @@ class ZoneService(
     membershipService: MembershipService,
     dnsProviderApiConnection: DnsProviderApiConnection,
     generateZoneRepository: GenerateZoneRepository
+
                  ) extends ZoneServiceAlgebra {
 
   import accessValidation._
@@ -182,28 +183,34 @@ class ZoneService(
     }
   }
 
-  def handleGenerateZoneRequest(request: ZoneGenerationInput, auth : AuthPrincipal): Result[ZoneGenerationResponse]  = {
-    val (createZoneApi, apiKey) = request.provider.toLowerCase match {
-      case "bind" =>
-        (dnsProviderApiConnection.bindCreateZoneApi, dnsProviderApiConnection.bindApiKey)
-      case "powerdns" =>
-        (dnsProviderApiConnection.powerDnsCreateZoneApi, dnsProviderApiConnection.powerDnsApiKey)
-      case _ =>
-        throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")}
+  private def createConnection(apiUrl: String): HttpURLConnection = {
+   new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+  }
 
-   for{
+  def handleGenerateZoneRequest(
+                                 request: ZoneGenerationInput,
+                                 auth: AuthPrincipal
+                               ): Result[ZoneGenerationResponse] = {
+
+    val (createZoneApi, apiKey) = request.provider.toLowerCase match {
+      case "bind"      => (dnsProviderApiConnection.bindCreateZoneApi, dnsProviderApiConnection.bindApiKey)
+      case "powerdns"  => (dnsProviderApiConnection.powerDnsCreateZoneApi, dnsProviderApiConnection.powerDnsApiKey)
+      case _           => throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")
+    }
+
+    for {
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
       generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
       _ = logger.info(s"Request: provider=${request.provider}, path=$createZoneApi, request=$generateZoneRequestJson")
-      dnsProviderConn = new URL(createZoneApi).openConnection().asInstanceOf[HttpURLConnection]
+      dnsProviderConn <- createConnection(createZoneApi).toResult
       dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson, dnsProviderConn).toResult
       responseCode = dnsConnResponse.getResponseCode
-      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream
-                    else dnsConnResponse.getInputStream
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
       responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
-      _ <- isValidGenerateZone(responseCode, responseMessage).toResult
-      zoneGenerateResponse = ZoneGenerationResponse.apply(
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      zoneGenerateResponse = ZoneGenerationResponse(
         provider = request.provider,
         responseCode = dnsConnResponse.getResponseCode,
         status = dnsConnResponse.getResponseMessage,
@@ -211,11 +218,11 @@ class ZoneService(
       )
       zoneToGenerate = GenerateZone(request)
       _ <- generateZoneRepository.save(zoneToGenerate.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
-   } yield {
-     inputStream.close()
-     dnsConnResponse.disconnect()
-     zoneGenerateResponse
-   }
+    } yield {
+      inputStream.close()
+      dnsConnResponse.disconnect()
+      zoneGenerateResponse
+    }
   }
 
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String, connection: HttpURLConnection): Either[Throwable, HttpURLConnection] =
@@ -230,6 +237,7 @@ class ZoneService(
       val outputStream: OutputStream = connection.getOutputStream
       outputStream.write(request.getBytes("UTF-8"))
       outputStream.close()
+
 
       Right(connection)
     } catch {
@@ -532,7 +540,7 @@ class ZoneService(
       }
       .toResult
 
-  def generateZoneDoesNotExist(zoneName: String): Result[Unit] =
+  private def generateZoneDoesNotExist(zoneName: String): Result[Unit] =
     generateZoneRepository
       .getGenerateZoneByName(zoneName)
       .map {
