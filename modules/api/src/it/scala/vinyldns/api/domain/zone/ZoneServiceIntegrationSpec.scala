@@ -178,12 +178,12 @@ class ZoneServiceIntegrationSpec
 
   "Generate Zone" should {
     "return a zone with appropriate response" in {
-        val result =
-          testZoneService
-            .getGenerateZoneByName("test-zone", okAuth)
-            .value
-            .unsafeRunSync()
-        result shouldBe Left(ZoneNotFoundError("Zone with name test-zone. does not exists"))
+      val result =
+        testZoneService
+          .getGenerateZoneByName(okZone.name, okAuth)
+          .value
+          .unsafeRunSync()
+      result shouldBe Left(ZoneNotFoundError(s"Zone with name ${okZone.name} does not exists"))
     }
   }
 
