@@ -77,9 +77,10 @@ object TestZoneData {
     zoneActive.copy(id = "sharedZoneId", shared = true, adminGroupId = abcGroup.id)
 
 
-  val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+  val bindZoneGenerationResponse: ZoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+  val pDnsZoneGenerationResponse: ZoneGenerationResponse = ZoneGenerationResponse("pdns",5, "pdns", "pdns")
 
-  val generateBindZoneAuthorized = GenerateZone(
+  val generateBindZoneAuthorized: GenerateZone = GenerateZone(
     okGroup.id,
     "bind",
     okZone.name,
@@ -91,10 +92,25 @@ object TestZoneData {
     retry=Some(86400),
     expire=Some(24192000),
     negative_cache_ttl=Some(6048000),
-    response=Some(zoneGenerationResponse),
+    response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
-  val updateBindZone = UpdateGenerateZoneInput(
+  val generatePdnsZoneAuthorized: GenerateZone = GenerateZone(
+    okGroup.id,
+    "powerdns",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+    ns_ipaddress=Some(List("bind_ip")),
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(pDnsZoneGenerationResponse),
+    id = "pDnsZoneId"
+  )
+  val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
     okGroup.id,
     "bind",
     okZone.name,
@@ -106,11 +122,11 @@ object TestZoneData {
     retry=Some(86400),
     expire=Some(24192000),
     negative_cache_ttl=Some(6048000),
-    response=Some(zoneGenerationResponse),
+    response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
 
-  val inputBindZone = ZoneGenerationInput(
+  val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(
     okGroup.id,
     "bind",
     okZone.name,
@@ -122,7 +138,7 @@ object TestZoneData {
     retry=Some(86400),
     expire=Some(24192000),
     negative_cache_ttl=Some(6048000),
-    response=Some(zoneGenerationResponse),
+    response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
 

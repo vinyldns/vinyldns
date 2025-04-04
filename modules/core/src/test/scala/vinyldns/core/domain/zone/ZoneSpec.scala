@@ -109,7 +109,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.retry shouldEqual Some(86400)
       result.expire shouldEqual Some(24192000)
       result.negative_cache_ttl shouldEqual Some(6048000)
-      result.response shouldEqual Some(zoneGenerationResponse)
+      result.response shouldEqual Some(bindZoneGenerationResponse)
       result.id shouldEqual "bindZoneId"
     }
     "update a GenerateZone instance from ZoneGenerationInput" in {
@@ -126,7 +126,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.retry shouldEqual Some(86400)
       result.expire shouldEqual Some(24192000)
       result.negative_cache_ttl shouldEqual Some(6048000)
-      result.response shouldEqual Some(zoneGenerationResponse)
+      result.response shouldEqual Some(bindZoneGenerationResponse)
     }
   }
 }
