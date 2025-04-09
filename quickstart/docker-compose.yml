@@ -14,8 +14,11 @@ services:
       - ./pdns/pdns.conf:/etc/powerdns/pdns.conf
     environment:
       PDNS_AUTH_API_KEY: "vinyldns_pdns_auth_api_key"
+
     ports:
       - "19005:19005"
+      - "1053:53"
+      - "1053:53/udp"
 
   # Integration image hosting r53, sns, sqs, bind and mysql
   integration:
