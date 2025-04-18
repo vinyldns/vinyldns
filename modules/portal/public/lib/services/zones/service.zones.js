@@ -222,4 +222,3 @@ angular.module('service.zones', [])
             return sanitizedConnection;
         }
     });
-
