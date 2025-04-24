@@ -22,6 +22,8 @@ angular.module('controller.zones', [])
     $scope.zonesLoaded = false;
     $scope.allZonesLoaded = false;
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
+    $scope.hasGeneratedZones = false;
+    $scope.generatedZonesLoaded = false;
     $scope.allGroups = [];
     $scope.myDeletedZones = [];
     $scope.allDeletedZones = [];
@@ -37,7 +39,7 @@ angular.module('controller.zones', [])
 
     $scope.query = "";
     $scope.includeReverse = true;
-
+    $scope.kind = ["Native", "Master", "Slave", "Forward"];
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
     // Paging status for zone sets
@@ -59,11 +61,41 @@ angular.module('controller.zones', [])
         $scope.currentZone = {};
         $scope.validDomains();
         if($scope.myGroups && $scope.myGroups.length) {
-            $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
+                $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
 
         $scope.currentZone.connection = {};
         $scope.currentZone.transferConnection = {};
+    };
+
+    $scope.resetCreateZone = function () {
+        $scope.createZone = {};
+        if($scope.myGroups && $scope.myGroups.length) {
+            $scope.createZone.groupId = $scope.myGroups[0].id;
+        }
+        $scope.createZone.nameservers = [];
+    };
+
+    $scope.createZone = {
+      nameservers: []
+
+    };
+
+    $(document).ready(function () {
+      $('#zone-nameservers').multiselect({
+        includeSelectAllOption: true,
+        enableFiltering: true,
+        buttonWidth: '100%'
+      });
+    });
+
+    $scope.toggleNameserver = function (ns) {
+      const idx = $scope.createZone.nameservers.indexOf(ns);
+      if (idx > -1) {
+        $scope.createZone.nameservers.splice(idx, 1);
+      } else {
+        $scope.createZone.nameservers.push(ns);
+      }
     };
 
     groupsService.getGroups(true, "").then(function (results) {
@@ -79,6 +111,18 @@ angular.module('controller.zones', [])
     zonesService.getBackendIds().then(function (results) {
         if (results.data) {
             $scope.backendIds = results.data;
+        }
+    });
+
+    zonesService.getNameservers().then(function (results) {
+        if (results.data) {
+            $scope.nameservers = results.data;
+        }
+    });
+
+    zonesService.getAllowedDNSProviders().then(function (results) {
+        if (results.data) {
+            $scope.provider = results.data;
         }
     });
 
@@ -228,6 +272,25 @@ angular.module('controller.zones', [])
 
     };
 
+    $scope.refreshGeneratedZones = function () {
+        zonesService
+            .getGeneratedZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchByAdminGroup, false)
+            .then(function (response) {
+                $log.debug('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
+                updateGeneratedZoneDisplay(response.data.zones);
+
+                if (!$scope.query.length) {
+                    $scope.hasGeneratedZones = response.data.zones.length > 0;
+                }
+            })
+            .catch(function (error) {
+                handleError(error, 'zonesService::getZones-failure');
+            });
+
+
+
+    };
+
     function updateMyDeletedZoneDisplay (myDeletedZones) {
         $scope.myDeletedZones = myDeletedZones;
         $scope.myDeletedZonesLoaded = true;
@@ -248,6 +311,19 @@ angular.module('controller.zones', [])
                 } else {
                     $("td.dataTables_empty").show();
                 }
+    }
+
+    function updateGeneratedZoneDisplay (zones) {
+    console.log("adsfdasfads                                              ",zones)
+        $scope.generatedZones = zones;
+        $scope.myGeneratedZoneIds = zones.map(function(zone) {return zone['id']});
+        $scope.generatedZonesLoaded = true;
+        $log.debug("Displaying my zones: ", $scope.generatedZones);
+        if($scope.generatedZones.length > 0) {
+            $("td.dataTables_empty").hide();
+        } else {
+            $("td.dataTables_empty").show();
+        }
     }
 
     function updateZoneDisplay (zones) {
@@ -308,6 +384,29 @@ angular.module('controller.zones', [])
                 $("#zone_connection_modal").modal("hide");
                 $scope.zoneError = true;
                 handleError(error, 'zonesService::sendZone-failure');
+                $scope.processing = false;
+            });
+    };
+
+    $scope.addZoneCreation = function () {
+        if ($scope.processing) {
+            $log.debug('zoneCreation::processing is true; exiting');
+            return;
+        }
+
+        //flag to prevent multiple clicks until previous promise has resolved.
+        console.log("asfdsfs",$scope.createZone)
+        $scope.processing = true;
+        zonesService.generateZone($scope.createZone)
+            .then(function () {
+                $timeout($scope.refreshZones(), 1000);
+                $("#zone_creation_modal").modal("hide");
+                $scope.processing = false;
+            })
+            .catch(function (error){
+                $("#zone_creation_modal").modal("hide");
+                $scope.zoneError = true;
+                handleError(error, 'zonesService::generateZone-failure');
                 $scope.processing = false;
             });
     };

@@ -293,6 +293,24 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getNameservers: Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/generate/nameservers")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
+  def getAllowedDNSProviders: Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/generate/allowedDNSProviders")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getValidEmailDomains(): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/valid/domains")
@@ -300,6 +318,34 @@ class VinylDNS @Inject() (
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+  }
+
+  def generateZone(): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val json = request.body.asJson
+    val payload = json.map(Json.stringify)
+    val vinyldnsRequest =
+      new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "zones/generate", payload)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
+  def getGeneratedZones: Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val queryParameters = new HashMap[String, java.util.List[String]]()
+    for {
+      (name, values) <- request.queryString
+    } queryParameters.put(name, values.asJava)
+    val vinyldnsRequest =
+      new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "zones/generate", parameters = queryParameters)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
   }
 
   def getRecordSetCount(zoneId : String): Action[AnyContent] = userAction.async { implicit request =>

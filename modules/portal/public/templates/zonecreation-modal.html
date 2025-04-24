@@ -6,36 +6,36 @@
             </p>
             <br />
             <modal-element label="Zone Name" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameval.$invalid">
-                <input id="zone-name" type="text" ng-model="createZone.name" name="nameval" class="form-control" required/>
+                <input id="zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" required/>
                 <span class="help-block">Name for the DNS zone, for example "vinyldns.example.net.".</span>
             </modal-element>
-            <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">
-                <input id="zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>
-                <span class="help-block">
-                    The email distribution list for the zone.  Typically the distribution email for the org that owns
-                    the zone.
-                </span>
-                <div>
-                    <h5>
-                        <a data-toggle="collapse" data-target="#collapseCreateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
-                            <span class="badge" id="validDomainsCreateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
-                        </a>
-                    </h5>
-                </div>
-                <div class="collapse" id="collapseCreateZoneInstruction">
-                    <div class="well">
-                        <p>
-                            List Of Valid Email Domains:
-                            <li ng-repeat="validDomains in validEmailDomains">
-                                {{validDomains}}
-                            </li>
-                        </p>
-                        <hr/>
-                    </div>
-                </div>
-            </modal-element>
+<!--            <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">-->
+<!--                <input id="zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>-->
+<!--                <span class="help-block">-->
+<!--                    The email distribution list for the zone.  Typically the distribution email for the org that owns-->
+<!--                    the zone.-->
+<!--                </span>-->
+<!--                <div>-->
+<!--                    <h5>-->
+<!--                        <a data-toggle="collapse" data-target="#collapseCreateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">-->
+<!--                            <span class="badge" id="validDomainsCreateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>-->
+<!--                        </a>-->
+<!--                    </h5>-->
+<!--                </div>-->
+<!--                <div class="collapse" id="collapseCreateZoneInstruction">-->
+<!--                    <div class="well">-->
+<!--                        <p>-->
+<!--                            List Of Valid Email Domains:-->
+<!--                            <li ng-repeat="validDomains in validEmailDomains">-->
+<!--                                {{validDomains}}-->
+<!--                            </li>-->
+<!--                        </p>-->
+<!--                        <hr/>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </modal-element>-->
             <modal-element label="Admin Group" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.admingroup.$invalid">
-                <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.adminGroupId" required>
+                <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" required>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
                         {{group.name}}
                         <span ng-show="group.description">({{group.description}})</span></option>
@@ -49,11 +49,13 @@
             </modal-element>
 
             <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.provider.$invalid">
-                <select id="zone-provider" name="backendIdVal" class="form-control" ng-model="createZone.provider" required>
-                    <option ng-repeat="id in backendIds" value="{{id}}">
-                        {{id}}
-                    </option>
+                <select id="zone-provider"
+                        name="allowedDNSProviders"
+                        class="form-control"
+                        ng-model="createZone.provider"
+                        ng-options="dnsProvider for dnsProvider in provider" required>
                 </select>
+
                 <span class="help-block">
                     The DNS Provider for a pre-configured DNS connection configuration. Please contact your DNS admin team
                     for more information if you believe you need a custom connection. In most cases, the default
@@ -62,17 +64,33 @@
             </modal-element>
 
             <modal-element label="Name Server" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameservers.$invalid">
-                <select id="zone-nameservers" name="backendIdVal" class="form-control" ng-model="createZone.nameservers" required>
-                    <option value=""></option>
-                    <option ng-repeat="id in backendIds" value="{{id}}">
-                        {{id}}
-                    </option>
-                </select>
+                <div class="dropdown" style="width: 100%;">
+                    <button class="btn btn-default dropdown-toggle form-control text-left" type="button" data-toggle="dropdown">
+                        <span ng-bind="createZone.nameservers.length > 0 ? createZone.nameservers.join(', ') : 'Select nameservers'"></span>
+                        <span class="caret pull-right" style="margin-top: 8px;"></span>
+                    </button>
+
+                    <ul class="dropdown-menu" style="padding: 10px; width: 100%; max-height: 200px; overflow-y: auto;">
+                        <li ng-repeat="ns in nameservers">
+                            <label style="width: 100%; font-weight: normal;">
+                                <input type="checkbox"
+                                       ng-checked="createZone.nameservers.indexOf(ns) > -1"
+                                       ng-click="toggleNameserver(ns)">
+                                {{ ns }}
+                            </label>
+                        </li>
+                    </ul>
+                </div>
                 <span class="help-block">
                     The Name Server for a pre-configured DNS connection configuration. Please contact your DNS admin team
                     for more information if you believe you need a custom connection. In most cases, the default
                     connection will suffice.
                 </span>
+            </modal-element>
+            <modal-element ng-show="createZone.provider === 'powerdns'" label="Kind" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameservers.$invalid">
+                <select id="zone-creation-kind" name="zone-creation-kind" class="form-control" ng-model="createZone.kind"
+                        ng-options="pDnskind for pDnskind in kind" required>
+                </select>
             </modal-element>
         </modal-body>
         <modal-footer>

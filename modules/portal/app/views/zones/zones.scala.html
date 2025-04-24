@@ -27,13 +27,14 @@
         <!-- START VERTICAL TABS -->
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
-                <li class="active"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
-                <li><a id="tab2-button" href="#allZones" data-toggle="tab" ng-click="allZonesAccess()">All Zones</a></li>
-                <li><a id="tab3-button" href="#deletedZones" data-toggle="tab">Abandoned Zones</a></li>
+                <li class="active"><a href="#createdZones" data-toggle="tab">Created Zones</a></li>
+                <li class="tab2-button"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
+                <li><a id="tab3-button" href="#allZones" data-toggle="tab" ng-click="allZonesAccess()">All Zones</a></li>
+                <li><a id="tab4-button" href="#deletedZones" data-toggle="tab">Abandoned Zones</a></li>
             </ul>
 
             <div class="panel-body tab-content">
-                <div class="tab-pane active" id="myZones">
+                <div class="tab-pane active" id="createdZones">
                     <div class="row">
                         <div class="col-md-12">
 
@@ -45,6 +46,91 @@
                                             <button class="btn btn-default" data-toggle="modal" data-target="#zone_creation_modal" id="open-zone-create-modal-button">
                                                 <span class="fa fa-plus"></span> New Zone
                                             </button>
+                                            <button id="generate-zone-refresh-button" class="btn btn-default" ng-click="refreshGeneratedZones()">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 pull-right">
+                                            <!-- SEARCH BOX -->
+                                            <form class="input-group remove-bottom-margin full-width" ng-submit="refreshGeneratedZones()">
+                                                <div class="input-group remove-bottom-margin">
+                                                    <span class="input-group-btn">
+                                                        <button id="generateZone-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input ng-model="query" type="text" class="form-control generate-zone-search-text"  placeholder="{{!searchByAdminGroup ? 'Zone Name' : 'Admin Group Name'}}"/>
+                                                </div>
+                                            </form>
+                                            <!-- END SEARCH BOX -->
+                                            <div class="flex">
+                                                <label class="reduce-font-weight remove-bottom-margin flex-1">
+                                                    <input class="isGroupSearch" type="checkbox" ng-model="searchByAdminGroup" ng-change="refreshGeneratedZones()"> Search by admin group
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="created-zone-list-table" class="panel-body">
+                                    <p ng-if="!generatedZonesLoaded">Loading zones...</p>
+                                    <p ng-if="!hasGeneratedZones && generatedZonesLoaded">No zones found. You do not own any zones in VinylDNS. You can manage records in shared zones through <a href="../dnschanges">DNS Changes</a>.</p>
+                                    <p ng-if="hasGeneratedZones && generatedZonesLoaded && !generatedZones.length">No zones match the search criteria.</p>
+
+                                    <!-- PAGINATION -->
+                                    <!-- END PAGINATION -->
+
+                                    <table class="table" ng-if="generatedZones.length">
+                                        <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Provider</th>
+                                            <th>Admin Group</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr ng-repeat="zone in generatedZones">
+                                            <td class="wrap-long-text"><a ng-href="/zones/{{ zone.id }}" ng-bind="zone.zoneName"></a></td>
+                                            <td class="wrap-long-text" ng-bind="zone.provider"></td>
+                                            <td>
+                                                <a ng-if="canAccessGroup(zone.groupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.groupId}}"></a>
+                                                <span ng-if="!canAccessGroup(zone.groupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
+                                            </td>
+                                            <td ng-bind="zone.status"></td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("myZones") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZones()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('myZones')" ng-click="nextPageMyZones()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- END PAGINATION -->
+
+                                </div>
+                                <div class="panel-footer"></div>
+                            </div>
+                            <!-- END SIMPLE DATATABLE -->
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="myZones">
+                    <div class="row">
+                        <div class="col-md-12">
+
+                            <!-- SIMPLE DATATABLE -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <div class="row flex">
+                                        <div class="btn-group col-md-9 flex-1">
                                             <button class="btn btn-default" ng-click="resetCurrentZone()" data-toggle="modal" data-target="#zone_connection_modal" id="open-zone-modal-button">
                                                 <span class="fa fa-arrow-right"></span> Connect
                                             </button>

@@ -38,6 +38,12 @@ PUT           /api/zones/:id                     @controllers.VinylDNS.updateZon
 DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZone(id: String)
 POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(id: String)
 
+GET           /api/zones/generate/allowedDNSProviders     @controllers.VinylDNS.getAllowedDNSProviders
+GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
+POST          /api/zones/generate                @controllers.VinylDNS.generateZone
+GET           /api/zones/generate                @controllers.VinylDNS.getGeneratedZones
+
+
 GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)
 POST          /api/zones/:id/recordsets          @controllers.VinylDNS.addRecordSet(id: String)
 DELETE        /api/zones/:zid/recordsets/:rid    @controllers.VinylDNS.deleteRecordSet(zid: String, rid:String)
