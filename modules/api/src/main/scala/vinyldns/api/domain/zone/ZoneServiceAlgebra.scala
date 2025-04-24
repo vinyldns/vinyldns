@@ -33,6 +33,19 @@ trait ZoneServiceAlgebra {
 
   def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone]
 
+  def listGeneratedZones(
+                          authPrincipal: AuthPrincipal,
+                          nameFilter: Option[String],
+                          startFrom: Option[String],
+                          maxItems: Int,
+                          searchByAdminGroup: Boolean,
+                          ignoreAccess: Boolean
+                        ): Result[ListGeneratedZonesResponse]
+
+  def allowedDNSProviders(): Result[List[String]]
+
+  def dnsNameServers(): Result[List[String]]
+
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult]

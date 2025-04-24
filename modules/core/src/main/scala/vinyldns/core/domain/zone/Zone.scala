@@ -440,7 +440,9 @@ final case class DnsProviderApiConnection(
                                            bindCreateZoneApi: String,
                                            powerDnsCreateZoneApi: String,
                                            powerDnsApiKey: String,
-                                           bindApiKey: String
+                                           bindApiKey: String,
+                                           nameServers: List[String],
+                                           allowedProviders : List[String]
                                          )
 
 
@@ -506,16 +508,29 @@ object ConfiguredDnsConnections {
             .find(_.hasPath("settings.dns-provider-api.api-key"))
             .map(_.getConfig("settings.dns-provider-api.api-key"))
             .getOrElse(ConfigFactory.empty())
+          val nameServers = config
+            .getConfigList("vinyldns.backend.backend-providers")
+            .asScala
+            .find(_.hasPath("settings.dns-provider-api.name-servers"))
+            .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
+            .getOrElse(List.empty[String])
+
+          val allowedProviders = config
+            .getConfigList("vinyldns.backend.backend-providers")
+            .asScala
+            .find(_.hasPath("settings.dns-provider-api.allowed-dns-provider"))
+            .map(_.getStringList("settings.dns-provider-api.allowed-dns-provider").asScala.toList)
+            .getOrElse(List.empty[String])
+
           val bindCreateZoneApi = createZoneUri.getString("bind")
           val powerdnsCreateZoneApi = createZoneUri.getString("powerdns")
           val powerdnsApiKey = apiKey.getString("powerdns")
           val bindApiKey = apiKey.getString("bind")
 
-          DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi, powerdnsApiKey, bindApiKey)
+          DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi, powerdnsApiKey, bindApiKey, nameServers, allowedProviders)
 
-        } else DnsProviderApiConnection("", "", "", "")
+        } else DnsProviderApiConnection("", "", "", "", List.empty[String], List.empty[String])
       }
-
       ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderCreateZoneApiConfig)
     }
 }

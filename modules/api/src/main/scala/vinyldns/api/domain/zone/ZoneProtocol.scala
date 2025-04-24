@@ -21,8 +21,8 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnerShipTransfer}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
+import vinyldns.core.domain.record.{OwnerShipTransfer, RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, Zone, ZoneACL, ZoneChange, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
@@ -326,6 +326,15 @@ case class ListZonesResponse(
                               ignoreAccess: Boolean = false,
                               includeReverse: Boolean = true
                             )
+
+case class ListGeneratedZonesResponse(
+                                       zones: List[GenerateZone],
+                                       nameFilter: Option[String],
+                                       startFrom: Option[String] = None,
+                                       nextId: Option[String] = None,
+                                       maxItems: Int = 100,
+                                       ignoreAccess: Boolean = false
+                                     )
 
 case class RecordSetCount( count: Int = 0 )
 

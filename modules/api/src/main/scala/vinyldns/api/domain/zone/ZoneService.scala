@@ -154,7 +154,6 @@ class ZoneService(
       generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
     } yield generateZone
 
-
   private def buildGenerateZoneRequestJson(request: ZoneGenerationInput): String = {
     val bindGenerateZoneRequestJson =
     s"""{
@@ -257,6 +256,63 @@ class ZoneService(
         Right(errorConnection)
     }
   }
+
+  def listGeneratedZones(
+                          authPrincipal: AuthPrincipal,
+                          nameFilter: Option[String] = None,
+                          startFrom: Option[String] = None,
+                          maxItems: Int = 100,
+                          searchByAdminGroup: Boolean = false,
+                          ignoreAccess: Boolean = false
+                        ): Result[ListGeneratedZonesResponse] = {
+    if(!searchByAdminGroup || nameFilter.isEmpty){
+      for {
+        listZonesResult <- generateZoneRepository.listGenerateZones(
+          authPrincipal,
+          nameFilter,
+          startFrom,
+          maxItems,
+          ignoreAccess
+        )
+        generatedZones = listZonesResult.generatedZones
+        _ = println("fasdfasfadfdafdafdsfdadsfdfdasafds                                                  ",generatedZones)
+
+      } yield ListGeneratedZonesResponse(
+        generatedZones,
+        listZonesResult.zonesFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
+      )}
+    else {
+      for {
+        groupIds <- getGroupsIdsByName(nameFilter.get)
+        listZonesResult <- generateZoneRepository.listGeneratedZonesByAdminGroupIds(
+          authPrincipal,
+          startFrom,
+          maxItems,
+          groupIds,
+          ignoreAccess
+        )
+        generatedZones = listZonesResult.generatedZones
+        _ = println("fasdfasfadfdafdafdsfdadsfdfdasafds                                                  ",generatedZones)
+      } yield ListGeneratedZonesResponse(
+        generatedZones,
+        nameFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
+      )
+    }
+  }.toResult
+
+  def allowedDNSProviders(): Result[List[String]] =
+    dnsProviderApiConnection.allowedProviders.toResult
+
+  def dnsNameServers(): Result[List[String]] =
+    dnsProviderApiConnection.nameServers.toResult
 
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {

@@ -143,18 +143,63 @@ class ZoneRoute(
       }
     } ~
     path("zones" / "generate") {
-      (put & monitor("Endpoint.generateZone")) {
+      (post & monitor("Endpoint.generateZone")) {
         authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
           (authPrincipal, generateZone) =>
             zoneService.handleGenerateZoneRequest(generateZone, authPrincipal)
         ) { response =>
           complete(StatusCodes.Accepted -> response)
         }
-      }
-    } ~
+      } ~
+        (get & monitor("Endpoint.listGeneratedZones")) {
+          parameters(
+            "nameFilter".?,
+            "startFrom".as[String].?,
+            "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+            "searchByAdminGroup".as[Boolean].?(false),
+            "ignoreAccess".as[Boolean].?(false)
+          ) {
+            (
+              nameFilter: Option[String],
+              startFrom: Option[String],
+              maxItems: Int,
+              searchByAdminGroup: Boolean,
+              ignoreAccess: Boolean
+            ) => {
+              handleRejections(invalidQueryHandler) {
+                validate(
+                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                  s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+                ) {
+                  authenticateAndExecute(
+                    zoneService
+                      .listGeneratedZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess)
+                  ) { result =>
+                    complete(StatusCodes.OK, result)
+                  }
+                }
+              }
+            }
+          }
+        }
+    }~
     path("zones" /"generate"/ "name" / Segment) { zoneName =>
       authenticateAndExecute(zoneService.getGenerateZoneByName(zoneName, _)) { zone =>
         complete(StatusCodes.OK, zone)
+      }
+    } ~
+    path("zones" / "generate" / "allowedDNSProviders") {
+      (get & monitor("Endpoint.getBackendIds")) {
+        authenticateAndExecute(_ => zoneService.allowedDNSProviders()) { allowedProviders =>
+          complete(StatusCodes.OK, allowedProviders)
+        }
+      }
+    } ~
+    path("zones" / "generate" / "nameservers") {
+      (get & monitor("Endpoint.getBackendIds")) {
+        authenticateAndExecute(_ => zoneService.dnsNameServers()) { NS =>
+          complete(StatusCodes.OK, NS)
+        }
       }
     } ~
     path("zones" / "backendids") {

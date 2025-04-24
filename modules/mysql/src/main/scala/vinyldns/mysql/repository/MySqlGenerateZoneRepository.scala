@@ -18,7 +18,9 @@ package vinyldns.mysql.repository
 
 import cats.effect.IO
 import scalikejdbc._
-import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository}
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -58,6 +60,12 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
          |  FROM generate_zone
          | WHERE name = ?
         """.stripMargin
+
+  private final val BASE_GENERATE_ZONE_SEARCH_SQL =
+    """
+      |SELECT gz.data
+      |  FROM generate_zone gz
+       """.stripMargin
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -106,6 +114,117 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
       IO {
         DB.readOnly { implicit s =>
           getGenerateZoneByNameInSession(zoneName)
+        }
+      }
+    }
+
+  def listGenerateZones(
+                         authPrincipal: AuthPrincipal,
+                         zoneNameFilter: Option[String] = None,
+                         startFrom: Option[String] = None,
+                         maxItems: Int = 100,
+                         ignoreAccess: Boolean = false
+                       ): IO[ListGeneratedZonesResults] =
+    monitor("repo.ZoneJDBC.listGeneratedZones") {
+      IO {
+        DB.readOnly { implicit s =>
+          val sb = new StringBuilder
+          sb.append(BASE_GENERATE_ZONE_SEARCH_SQL)
+
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"gz.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"gz.name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"gz.name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"gz.name > '$os'")
+            ).flatten
+          }
+
+          if (filters.nonEmpty) {
+            sb.append(" WHERE ")
+            sb.append(filters.mkString(" AND "))
+          }
+
+          sb.append(s" GROUP BY gz.name ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+
+          val results: List[GenerateZone] = SQL(query)
+            .map(extractGenerateZone(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.zoneName))
+            else (results, None)
+
+          ListGeneratedZonesResults(
+            generatedZones = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = zoneNameFilter,
+            ignoreAccess = ignoreAccess
+          )
+        }
+      }
+    }
+
+  def listGeneratedZonesByAdminGroupIds(
+                                         authPrincipal: AuthPrincipal,
+                                         startFrom: Option[String] = None,
+                                         maxItems: Int = 100,
+                                         adminGroupIds: Set[String],
+                                         ignoreAccess: Boolean = false
+                                       ): IO[ListGeneratedZonesResults] =
+    monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
+      IO {
+        DB.readOnly { implicit s =>
+
+          val sb = new StringBuilder
+          sb.append(BASE_GENERATE_ZONE_SEARCH_SQL)
+
+          if(adminGroupIds.nonEmpty) {
+            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          } else {
+            sb.append(s" WHERE admin_group_id IN ('') ")
+          }
+
+          if(startFrom.isDefined){
+            sb.append(" AND ")
+            sb.append(s"gz.name > '${startFrom.get}'")
+          }
+
+          sb.append(s" GROUP BY gz.name ")
+          sb.append(s" LIMIT ${maxItems + 1}")
+
+          val query = sb.toString
+
+          val results: List[GenerateZone] = SQL(query)
+            .map(extractGenerateZone(1))
+            .list()
+            .apply()
+
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.zoneName))
+            else (results, None)
+
+
+          ListGeneratedZonesResults(
+            generatedZones = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = None,
+            ignoreAccess = ignoreAccess
+          )
         }
       }
     }
