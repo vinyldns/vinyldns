@@ -275,8 +275,6 @@ class ZoneService(
           ignoreAccess
         )
         generatedZones = listZonesResult.generatedZones
-        _ = println("fasdfasfadfdafdafdsfdadsfdfdasafds                                                  ",generatedZones)
-
       } yield ListGeneratedZonesResponse(
         generatedZones,
         listZonesResult.zonesFilter,
@@ -296,7 +294,6 @@ class ZoneService(
           ignoreAccess
         )
         generatedZones = listZonesResult.generatedZones
-        _ = println("fasdfasfadfdafdafdsfdadsfdfdasafds                                                  ",generatedZones)
       } yield ListGeneratedZonesResponse(
         generatedZones,
         nameFilter,

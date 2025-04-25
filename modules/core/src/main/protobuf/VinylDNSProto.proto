@@ -53,6 +53,7 @@ message GenerateZone {
   optional ZoneGenerationResponse response = 21;
   required int64 created = 22;
   optional int64 updated = 23;
+  required string email = 24;
 }
 
 message ZoneGenerationResponse {

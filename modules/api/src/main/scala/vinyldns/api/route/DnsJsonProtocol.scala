@@ -129,6 +129,7 @@ trait DnsJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] =
       (
         (js \ "groupId").required[String]("Missing group id"),
+        (js \ "email").required[String]("Missing email id"),
         (js \ "provider").required[String]("Missing provider"),
         (js \ "zoneName").required[String]("Missing zone name"),
         (js \ "status").default(GenerateZoneStatus, GenerateZoneStatus.Active),

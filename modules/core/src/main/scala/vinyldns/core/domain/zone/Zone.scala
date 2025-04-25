@@ -133,6 +133,7 @@ object Zone {
 }
 final case class GenerateZone(
                                groupId: String,
+                               email: String,
                                provider: String, // "powerdns", "cloudflare", "google", "bind"
                                zoneName: String,
                                status:  GenerateZoneStatus = GenerateZoneStatus.Active,
@@ -155,12 +156,14 @@ final case class GenerateZone(
                                id: String = UUID.randomUUID().toString,
                                created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
                                updated: Option[Instant] = None,
+
                      ){
     override def toString: String = {
       val sb = new StringBuilder
       sb.append("GenerateZone: [")
       sb.append("id=\"").append(id).append("\"; ")
       sb.append("groupId=\"").append(groupId).append("\"; ")
+      sb.append("email=\"").append(email).append("\"; ")
       sb.append("provider=\"").append(provider).append("\"; ")
       sb.append("zoneName=\"").append(zoneName).append("\"; ")
       sb.append("status=\"").append(zoneName).append("\"; ")
@@ -191,6 +194,7 @@ object GenerateZone {
 
     GenerateZone(
       groupId,
+      email,
       provider,
       zoneName,
       status,
@@ -218,6 +222,7 @@ object GenerateZone {
 
     currentGenerateZone.copy(
       groupId,
+      email,
       provider,
       zoneName ,
       status,
@@ -306,6 +311,7 @@ final case class UpdateZoneInput(
 
 final case class UpdateGenerateZoneInput(
                                   groupId: String,
+                                  email: String,
                                   provider: String, // "powerdns", "cloudflare", "google", "bind"
                                   zoneName: String,
                                   status: GenerateZoneStatus = GenerateZoneStatus.Active,
@@ -318,14 +324,14 @@ final case class UpdateGenerateZoneInput(
                                   accountId: Option[String] = None, // Account ID (Cloudflare)
                                   projectId: Option[String] = None, // GCP Project ID (Google)
                                   ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
-                                  admin_email: Option[String] = None, // NS IpAddress (Bind)
+                                  admin_email: Option[String] = None, // Admin Email (Bind)
                                   ttl: Option[Int] = None, // TTL (Bind)
                                   refresh: Option[Int] = None, // Refresh (Bind)
                                   retry: Option[Int] = None, // Retry (Bind)
                                   expire: Option[Int] = None, // Expire (Bind)
                                   negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
                                   response: Option[ZoneGenerationResponse] = None,
-                                  id: String = UUID.randomUUID().toString,
+                                  id: String = UUID.randomUUID().toString
 
                                 )
 
@@ -338,6 +344,7 @@ case class ZoneGenerationResponse(
 
 case class ZoneGenerationInput(
     groupId: String,
+    email: String,
     provider: String, // "powerdns", "cloudflare", "google", "bind"
     zoneName: String,
     status: GenerateZoneStatus = GenerateZoneStatus.Active,

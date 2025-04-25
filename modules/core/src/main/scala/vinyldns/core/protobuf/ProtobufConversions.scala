@@ -191,6 +191,7 @@ trait ProtobufConversions {
 
     zone.GenerateZone(
       groupId = zn.getGroupId,
+      email = zn.getEmail,
       provider = zn.getProvider,
       zoneName = zn.getZoneName,
       status = status,
@@ -213,7 +214,7 @@ trait ProtobufConversions {
       id = zn.getId,
       response = if (zn.hasResponse) Some(fromPB(zn.getResponse)) else None,
       created = Instant.ofEpochMilli(zn.getCreated),
-      updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None,
+      updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None
     )
   }
 
@@ -504,6 +505,7 @@ trait ProtobufConversions {
       .newBuilder()
       .setId(generateZone.id)
       .setGroupId(generateZone.groupId)
+      .setEmail(generateZone.email)
       .setCreated(generateZone.created.toEpochMilli)
       .setProvider(generateZone.provider)
       .setZoneName(generateZone.zoneName)
