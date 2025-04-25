@@ -22,9 +22,13 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{OwnerShipTransfer, RecordData, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, Zone, ZoneACL, ZoneChange, ZoneConnection}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, GenerateZoneStatus, Zone, ZoneACL, ZoneChange, ZoneConnection, ZoneGenerationResponse}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
+import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
+
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 
@@ -142,6 +146,67 @@ object ZoneSummaryInfo {
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
+    )
+}
+
+case class GenerateZoneSummaryInfo(
+                                    groupId: String,
+                                    email: String,
+                                    provider: String, // "powerdns", "cloudflare", "google", "bind"
+                                    zoneName: String,
+                                    status:  GenerateZoneStatus = GenerateZoneStatus.Active,
+                                    serverId: Option[String] = None, // The ID of the sever (PowerDNS)
+                                    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
+                                    masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
+                                    nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                                    description: Option[String] = None, // description (Google)
+                                    visibility: Option[String] = None, // Public or Private (Google)
+                                    accountId: Option[String] = None, // Account ID (Cloudflare)
+                                    projectId: Option[String] = None, // GCP Project ID (Google)
+                                    ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
+                                    admin_email: Option[String] = None, // NS IpAddress (Bind)
+                                    ttl: Option[Int] = None, // TTL (Bind)
+                                    refresh: Option[Int] = None, // Refresh (Bind)
+                                    retry: Option[Int] = None, // Retry (Bind)
+                                    expire: Option[Int] = None, // Expire (Bind)
+                                    negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                                    response: Option[ZoneGenerationResponse] = None,
+                                    id: String = UUID.randomUUID().toString,
+                                    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                                    updated: Option[Instant] = None,
+                                    groupName: String,
+                                    accessLevel: AccessLevel
+                          )
+
+object GenerateZoneSummaryInfo {
+  def apply(zone: GenerateZone, groupName: String, accessLevel: AccessLevel): GenerateZoneSummaryInfo =
+    GenerateZoneSummaryInfo(
+      zone.groupId,
+      zone.email,
+      zone.provider,
+      zone.zoneName,
+      zone.status,
+      zone.serverId,
+      zone.kind,
+      zone.masters,
+      zone.nameservers,
+      zone.description,
+      zone.visibility,
+      zone.accountId,
+      zone.projectId,
+      zone.ns_ipaddress,
+      zone.admin_email,
+      zone.ttl,
+      zone.refresh,
+      zone.retry,
+      zone.expire,
+      zone.negative_cache_ttl,
+      zone.response,
+      zone.id,
+      zone.created,
+      zone.updated,
+      groupName,
+      accessLevel
     )
 }
 
@@ -328,7 +393,7 @@ case class ListZonesResponse(
                             )
 
 case class ListGeneratedZonesResponse(
-                                       zones: List[GenerateZone],
+                                       zones: List[GenerateZoneSummaryInfo],
                                        nameFilter: Option[String],
                                        startFrom: Option[String] = None,
                                        nextId: Option[String] = None,

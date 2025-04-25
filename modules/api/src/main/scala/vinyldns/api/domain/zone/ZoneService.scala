@@ -275,8 +275,11 @@ class ZoneService(
           ignoreAccess
         )
         generatedZones = listZonesResult.generatedZones
+        groupIds = generatedZones.map(_.groupId).toSet
+        groups <- groupRepository.getGroups(groupIds)
+        generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
       } yield ListGeneratedZonesResponse(
-        generatedZones,
+        generateZoneSummaryInfos,
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
@@ -294,8 +297,10 @@ class ZoneService(
           ignoreAccess
         )
         generatedZones = listZonesResult.generatedZones
+        groups <- groupRepository.getGroups(groupIds)
+        generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
       } yield ListGeneratedZonesResponse(
-        generatedZones,
+        generateZoneSummaryInfos,
         nameFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
@@ -466,6 +471,20 @@ class ZoneService(
       }
       val zoneAccess = getZoneAccess(auth, zn)
       ZoneSummaryInfo(zn, groupName, zoneAccess)
+    }
+
+  def generateZoneSummaryInfoMapping(
+                              zones: List[GenerateZone],
+                              auth: AuthPrincipal,
+                              groups: Set[Group]
+                            ): List[GenerateZoneSummaryInfo] =
+    zones.map { zn =>
+      val groupName = groups.find(_.id == zn.groupId) match {
+        case Some(group) => group.name
+        case None => "Unknown group name"
+      }
+      val zoneAccess = getGenerateZoneAccess(auth, zn)
+      GenerateZoneSummaryInfo(zn, groupName, zoneAccess)
     }
 
   def listZoneChanges(
