@@ -39,7 +39,7 @@ DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZon
 POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(id: String)
 
 GET           /api/zones/generate/allowedDNSProviders     @controllers.VinylDNS.getAllowedDNSProviders
-GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
+GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameserverIpAddresses
 POST          /api/zones/generate                @controllers.VinylDNS.generateZone
 GET           /api/zones/generate                @controllers.VinylDNS.getGeneratedZones
 

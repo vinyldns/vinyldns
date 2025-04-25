@@ -7,33 +7,33 @@
             <br />
             <modal-element label="Zone Name" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameval.$invalid">
                 <input id="zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" required/>
-                <span class="help-block">Name for the DNS zone, for example "vinyldns.example.net.".</span>
+                <span class="help-block">Name for the DNS zone, for example:<code>"vinyldns.example.net."</code>.</span>
             </modal-element>
-<!--            <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">-->
-<!--                <input id="zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>-->
-<!--                <span class="help-block">-->
-<!--                    The email distribution list for the zone.  Typically the distribution email for the org that owns-->
-<!--                    the zone.-->
-<!--                </span>-->
-<!--                <div>-->
-<!--                    <h5>-->
-<!--                        <a data-toggle="collapse" data-target="#collapseCreateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">-->
-<!--                            <span class="badge" id="validDomainsCreateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>-->
-<!--                        </a>-->
-<!--                    </h5>-->
-<!--                </div>-->
-<!--                <div class="collapse" id="collapseCreateZoneInstruction">-->
-<!--                    <div class="well">-->
-<!--                        <p>-->
-<!--                            List Of Valid Email Domains:-->
-<!--                            <li ng-repeat="validDomains in validEmailDomains">-->
-<!--                                {{validDomains}}-->
-<!--                            </li>-->
-<!--                        </p>-->
-<!--                        <hr/>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </modal-element>-->
+            <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">
+                <input id="zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>
+                <span class="help-block">
+                    The email distribution list for the zone.  Typically the distribution email for the org that owns
+                    the zone.
+                </span>
+                <div>
+                    <h5>
+                        <a data-toggle="collapse" data-target="#collapseCreateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                            <span class="badge" id="validDomainsCreateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                        </a>
+                    </h5>
+                </div>
+                <div class="collapse" id="collapseCreateZoneInstruction">
+                    <div class="well">
+                        <p>
+                            List Of Valid Email Domains:
+                            <li ng-repeat="validDomains in validEmailDomains">
+                                {{validDomains}}
+                            </li>
+                        </p>
+                        <hr/>
+                    </div>
+                </div>
+            </modal-element>
             <modal-element label="Admin Group" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.admingroup.$invalid">
                 <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" required>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
@@ -48,12 +48,13 @@
                 </span>
             </modal-element>
 
-            <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.provider.$invalid">
+            <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.allowedDNSProviders.$invalid">
                 <select id="zone-provider"
                         name="allowedDNSProviders"
                         class="form-control"
                         ng-model="createZone.provider"
                         ng-options="dnsProvider for dnsProvider in provider" required>
+                    <option value="" disabled selected >Select a provider</option>
                 </select>
 
                 <span class="help-block">
@@ -63,34 +64,98 @@
                 </span>
             </modal-element>
 
-            <modal-element label="Name Server" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameservers.$invalid">
+            <modal-element
+                    label="Name Server IP-Address"
+                    invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.ns_ipaddress.$invalid">
+
+                <!-- Fake required input for validation -->
+                <input type="text"
+                       name="ns_ipaddress"
+                       ng-model="createZone.ns_ipaddress"
+                       required
+                       style="display: none;"
+                       ng-model-options="{ getterSetter: true }"
+                       ng-required="createZone.ns_ipaddress.length === 0"/>
+
                 <div class="dropdown" style="width: 100%;">
-                    <button class="btn btn-default dropdown-toggle form-control text-left" type="button" data-toggle="dropdown">
-                        <span ng-bind="createZone.nameservers.length > 0 ? createZone.nameservers.join(', ') : 'Select nameservers'"></span>
+                    <button class="btn btn-default dropdown-toggle form-control text-left"
+                            type="button"
+                            data-toggle="dropdown"
+                            style="text-align: left;">
+                        <span ng-bind="createZone.ns_ipaddress.length > 0 ? createZone.ns_ipaddress.join(', ') : 'Select a NameServer IP-Address'"></span>
                         <span class="caret pull-right" style="margin-top: 8px;"></span>
                     </button>
 
                     <ul class="dropdown-menu" style="padding: 10px; width: 100%; max-height: 200px; overflow-y: auto;">
-                        <li ng-repeat="ns in nameservers">
+                        <li ng-repeat="nsips in ns_ipaddress">
                             <label style="width: 100%; font-weight: normal;">
                                 <input type="checkbox"
-                                       ng-checked="createZone.nameservers.indexOf(ns) > -1"
-                                       ng-click="toggleNameserver(ns)">
-                                {{ ns }}
+                                       ng-checked="createZone.ns_ipaddress.indexOf(nsips) > -1"
+                                       ng-click="toggleNameserverIPAddress(nsips)">
+                                {{ nsips }}
                             </label>
                         </li>
                     </ul>
                 </div>
+
                 <span class="help-block">
-                    The Name Server for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                    The Name Server IP-Address for a pre-configured DNS connection configuration. Please contact your DNS admin team
                     for more information if you believe you need a custom connection. In most cases, the default
                     connection will suffice.
                 </span>
             </modal-element>
-            <modal-element ng-show="createZone.provider === 'powerdns'" label="Kind" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameservers.$invalid">
-                <select id="zone-creation-kind" name="zone-creation-kind" class="form-control" ng-model="createZone.kind"
-                        ng-options="pDnskind for pDnskind in kind" required>
+            <modal-element ng-if="createZone.provider === 'powerdns'" label="Kind" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.kind.$invalid">
+                <select id="kind" name="kind" class="form-control" ng-model="createZone.kind"
+                        ng-options="pDnskind for pDnskind in kind" ng-required="createZone.provider === 'powerdns'">
+                    <option value="" disabled selected >Select a provider</option>
                 </select>
+                <span class="help-block">Kind for the PowerDNS zone, for example:<code>"Native, Master etc...."</code>.</span>
+            </modal-element>
+            <modal-element
+                    ng-if="createZone.provider === 'bind'"
+                    label="Name Servers"
+                    invalid-when="addZoneCreationForm.$submitted && createZone.nameservers.length === 0">
+                <div ng-repeat="ns in createZone.nameservers track by $index" class="input-group" style="margin-bottom: 10px;">
+                    <input
+                            type="text"
+                            class="form-control"
+                            ng-model="createZone.nameservers[$index]"
+                            name="nameserver-{{$index}}"
+                            ng-required="createZone.provider === 'bind'"/>
+                    <span class="input-group-btn">
+                        <button type="button" class="btn btn-danger" ng-click="removeNameserver($index)">
+                            <span class="glyphicon glyphicon-remove"></span>
+                        </button>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-primary" ng-click="addNameserver()">
+                    <span class="glyphicon glyphicon-plus"></span> Add Nameserver
+                </button>
+                <span class="help-block">Name Servers for the DNS zone, for example: <code>ns1.vinyldns.com.</code></span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="Bind Admin Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.bindEmail.$invalid">
+                <input id="bind_admin_email" type="text" ng-model="createZone.admin_email" name="bindEmail" class="form-control" ng-required="createZone.provider === 'bind'"/>
+                <span class="help-block">Bind Admin Email for the DNS zone, for example:<code>"admin@test.com"</code>.</span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="TTL" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.ttl.$invalid">
+                <input id="zone-ttl" type="number" ng-model="createZone.ttl" name="ttl" class="form-control" ng-required="createZone.provider === 'bind'" min="30" max="2147483647" placeholder="3600"/>
+                <span class="help-block">TTL for the DNS zone, for example: <code>"3600"</code>.</span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="Refresh" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.refresh.$invalid">
+                <input id="zone-refresh" type="number" ng-model="createZone.refresh" name="refresh" class="form-control" ng-required="createZone.provider === 'bind'" min="30" max="2147483647" placeholder="6048000"/>
+                <span class="help-block">Refresh for the DNS zone, for example: <code>"6048000"</code>.</span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="Retry" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.retry.$invalid">
+                <input id="zone-retry" type="number" ng-model="createZone.retry" name="retry" class="form-control" ng-required="createZone.provider === 'bind'" min="30" max="2147483647" placeholder="86400"/>
+                <span class="help-block">Retry for the DNS zone, for example:<code>"86400"</code>.</span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="Expire" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.expire.$invalid">
+                <input id="zone-expire" type="number" ng-model="createZone.expire" name="expire" class="form-control" ng-required="createZone.provider === 'bind'" min="30" max="2147483647" placeholder="24192000"/>
+                <span class="help-block">Expire for the DNS zone, for example:<code>"24192000"</code>.</span>
+            </modal-element>
+            <modal-element ng-if="createZone.provider === 'bind'" label="Negative Cache TTL" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.negative_cache_ttl.$invalid">
+                <input id="zone-negative_cache_ttl" type="number" ng-model="createZone.negative_cache_ttl" name="negative_cache_ttl" class="form-control" ng-required="createZone.provider === 'bind'" min="30" max="2147483647" placeholder="6048000"/>
+                <span class="help-block">Negative Cache TTL for the DNS zone, for example:<code>"6048000"</code>.</span>
             </modal-element>
         </modal-body>
         <modal-footer>

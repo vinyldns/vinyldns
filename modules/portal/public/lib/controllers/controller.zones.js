@@ -74,11 +74,22 @@ angular.module('controller.zones', [])
             $scope.createZone.groupId = $scope.myGroups[0].id;
         }
         $scope.createZone.nameservers = [];
+        $scope.createZone.ns_ipaddress = [];
     };
 
     $scope.createZone = {
-      nameservers: []
+      nameservers: [],
+      ns_ipaddress:[]
+    };
 
+    $scope.createZone.nameservers = [];
+
+    $scope.addNameserver = function () {
+      $scope.createZone.nameservers.push('');
+    };
+
+    $scope.removeNameserver = function (index) {
+      $scope.createZone.nameservers.splice(index, 1);
     };
 
     $(document).ready(function () {
@@ -89,12 +100,12 @@ angular.module('controller.zones', [])
       });
     });
 
-    $scope.toggleNameserver = function (ns) {
-      const idx = $scope.createZone.nameservers.indexOf(ns);
+    $scope.toggleNameserverIPAddress = function (ns) {
+      const idx = $scope.createZone.ns_ipaddress.indexOf(ns);
       if (idx > -1) {
-        $scope.createZone.nameservers.splice(idx, 1);
+        $scope.createZone.ns_ipaddress.splice(idx, 1);
       } else {
-        $scope.createZone.nameservers.push(ns);
+        $scope.createZone.ns_ipaddress.push(ns);
       }
     };
 
@@ -114,9 +125,9 @@ angular.module('controller.zones', [])
         }
     });
 
-    zonesService.getNameservers().then(function (results) {
+    zonesService.getNameserverIpAddresses().then(function (results) {
         if (results.data) {
-            $scope.nameservers = results.data;
+            $scope.ns_ipaddress = results.data;
         }
     });
 

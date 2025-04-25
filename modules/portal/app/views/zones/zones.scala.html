@@ -86,6 +86,7 @@
                                             <th>Provider</th>
                                             <th>Admin Group</th>
                                             <th>Status</th>
+                                            <th>Access</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -93,10 +94,11 @@
                                             <td class="wrap-long-text"><a ng-href="/zones/{{ zone.id }}" ng-bind="zone.zoneName"></a></td>
                                             <td class="wrap-long-text" ng-bind="zone.provider"></td>
                                             <td>
-                                                <a ng-if="canAccessGroup(zone.groupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.groupId}}"></a>
-                                                <span ng-if="!canAccessGroup(zone.groupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
+                                                <a ng-if="canAccessGroup(zone.groupId)" ng-bind="zone.groupName" href="/groups/{{zone.groupId}}"></a>
+                                                <span ng-if="!canAccessGroup(zone.groupId)" ng-bind="zone.groupName" style="line-height: 0"></span>
                                             </td>
                                             <td ng-bind="zone.status"></td>
+                                            <td ng-bind="zone.accessLevel"></td>
                                         </tr>
                                         </tbody>
                                     </table>
