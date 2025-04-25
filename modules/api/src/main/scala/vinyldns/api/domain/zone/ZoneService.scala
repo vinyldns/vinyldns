@@ -173,7 +173,7 @@ class ZoneService(
           "name": "${request.zoneName}",
           "kind": "${request.kind.getOrElse("")}",
           "masters": ${request.masters.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
-          "nameservers": ${request.nameservers.map(_.mkString("""["""", """", """", """"]""")).getOrElse("")}
+          "nameservers": ${request.ns_ipaddress.map(_.mkString("""["""", """", """", """"]""")).getOrElse("")}
       }"""
 
     request.provider.toLowerCase match {
