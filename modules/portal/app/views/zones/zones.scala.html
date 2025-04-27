@@ -34,6 +34,7 @@
             </ul>
 
             <div class="panel-body tab-content">
+
                 <div class="tab-pane active" id="createdZones">
                     <div class="row">
                         <div class="col-md-12">
@@ -86,19 +87,32 @@
                                             <th>Provider</th>
                                             <th>Admin Group</th>
                                             <th>Status</th>
-                                            <th>Access</th>
+                                            <th>Actions</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr ng-repeat="zone in generatedZones">
-                                            <td class="wrap-long-text"><a ng-href="/zones/{{ zone.id }}" ng-bind="zone.zoneName"></a></td>
+                                            <td class="wrap-long-text" ng-bind="zone.zoneName"></td>
                                             <td class="wrap-long-text" ng-bind="zone.provider"></td>
                                             <td>
                                                 <a ng-if="canAccessGroup(zone.groupId)" ng-bind="zone.groupName" href="/groups/{{zone.groupId}}"></a>
                                                 <span ng-if="!canAccessGroup(zone.groupId)" ng-bind="zone.groupName" style="line-height: 0"></span>
                                             </td>
                                             <td ng-bind="zone.status"></td>
-                                            <td ng-bind="zone.accessLevel"></td>
+                                            <td>
+                                                <span ng-if="zone.accessLevel !== 'NoAccess'">
+                                                    <button class="btn btn-info btn-sm me-2" data-toggle="modal" data-target="#zone_creation_view_modal"
+                                                            ng-if="zone.accessLevel === 'Read' || zone.accessLevel === 'Delete'"
+                                                            ng-click="viewCreatedZone(zone)">
+                                                      View
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm"
+                                                            ng-if="zone.accessLevel === 'Delete'"
+                                                            ng-click="deleteCreatedZone(zone)">
+                                                      Delete
+                                                    </button>
+                                                </span>
+                                            </td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -245,9 +259,6 @@
 
                         </div>
                     </div>
-                </div>
-                <div class="modal fade" id="loader" tabindex="-1" role="dialog" >
-                    <div class="spinner" ></div>
                 </div>
                 <div class="tab-pane" id="allZones">
                     <div class="row">
@@ -566,6 +577,9 @@
                         </div>
                     </div>
                 </div>
+                <div class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                    <div class="spinner" ></div>
+                </div>
             </div>
         </div>
         <!-- END VERTICAL TABS -->
@@ -573,10 +587,11 @@
     <!-- END PAGE CONTENT WRAPPER -->
 </div>
 <!-- END PAGE CONTENT -->
-
 <zoneconnection></zoneconnection>
 <zonecreation></zonecreation>
+<zonecreatedview></zonecreatedview>
 }
+
 
 @plugins = {
     <script type='text/javascript' src='/public/js/ui.js'></script>

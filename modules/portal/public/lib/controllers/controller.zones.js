@@ -41,6 +41,10 @@ angular.module('controller.zones', [])
     $scope.includeReverse = true;
     $scope.kind = ["Native", "Master", "Slave", "Forward"];
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
+    $scope.createZone = {
+          nameservers: [],
+        };
+    $scope.createZone.ns_ipaddress = [];
 
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
@@ -77,12 +81,9 @@ angular.module('controller.zones', [])
         $scope.createZone.ns_ipaddress = [];
     };
 
-    $scope.createZone = {
-      nameservers: [],
-      ns_ipaddress:[]
+    $scope.viewCreatedZone = function (createdZone) {
+        $scope.createZone = createdZone;
     };
-
-    $scope.createZone.nameservers = [];
 
     $scope.addNameserver = function () {
       $scope.createZone.nameservers.push('');
@@ -297,9 +298,6 @@ angular.module('controller.zones', [])
             .catch(function (error) {
                 handleError(error, 'zonesService::getZones-failure');
             });
-
-
-
     };
 
     function updateMyDeletedZoneDisplay (myDeletedZones) {
@@ -325,11 +323,10 @@ angular.module('controller.zones', [])
     }
 
     function updateGeneratedZoneDisplay (zones) {
-    console.log("adsfdasfads                                              ",zones)
         $scope.generatedZones = zones;
         $scope.myGeneratedZoneIds = zones.map(function(zone) {return zone['id']});
         $scope.generatedZonesLoaded = true;
-        $log.debug("Displaying my zones: ", $scope.generatedZones);
+        $log.debug("Displaying generated zones: ", $scope.generatedZones);
         if($scope.generatedZones.length > 0) {
             $("td.dataTables_empty").hide();
         } else {
@@ -406,11 +403,10 @@ angular.module('controller.zones', [])
         }
 
         //flag to prevent multiple clicks until previous promise has resolved.
-        console.log("asfdsfs",$scope.createZone)
         $scope.processing = true;
         zonesService.generateZone($scope.createZone)
             .then(function () {
-                $timeout($scope.refreshZones(), 1000);
+                $timeout($scope.refreshGeneratedZones(), 1000);
                 $("#zone_creation_modal").modal("hide");
                 $scope.processing = false;
             })
@@ -594,4 +590,5 @@ angular.module('controller.zones', [])
     };
 
     $timeout($scope.refreshZones, 0);
+    $timeout($scope.refreshGeneratedZones, 0);
 });
