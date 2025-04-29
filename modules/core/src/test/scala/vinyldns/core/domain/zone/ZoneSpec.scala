@@ -87,7 +87,6 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result should include("visibility=\"" + generateBindZoneAuthorized.visibility + "\"")
       result should include("accountId=\"" + generateBindZoneAuthorized.accountId + "\"")
       result should include("projectId=\"" + generateBindZoneAuthorized.projectId + "\"")
-      result should include("ns_ipaddress=\"" + generateBindZoneAuthorized.ns_ipaddress + "\"")
       result should include("ttl=\"" + generateBindZoneAuthorized.ttl + "\"")
       result should include("refresh=\"" + generateBindZoneAuthorized.refresh + "\"")
       result should include("retry=\"" + generateBindZoneAuthorized.retry + "\"")
@@ -102,7 +101,6 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.provider shouldEqual "bind"
       result.zoneName shouldEqual okZone.name
       result.nameservers shouldEqual Some(List("bind_ns"))
-      result.ns_ipaddress shouldEqual Some(List("bind_ip"))
       result.admin_email shouldEqual Some("test@test.com")
       result.ttl shouldEqual Some(3600)
       result.refresh shouldEqual Some(6048000)
@@ -119,7 +117,6 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.provider shouldEqual "bind"
       result.zoneName shouldEqual okZone.name
       result.nameservers shouldEqual Some(List("bind_ns"))
-      result.ns_ipaddress shouldEqual Some(List("bind_ip"))
       result.admin_email shouldEqual Some("test@test.com")
       result.ttl shouldEqual Some(3600)
       result.refresh shouldEqual Some(6048000)

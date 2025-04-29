@@ -93,10 +93,10 @@ class ZoneRoutingSpec
   private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name, AccessLevel.Read)
   private val generateBindZoneAuthorized = GenerateZone(
     okGroup.id,
+    "test@test.com",
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com")
   )
   private val okAsZoneDetails = ZoneDetails(ok, okGroup.name)

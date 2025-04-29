@@ -83,10 +83,10 @@ class ProtobufConversionsSpec
   private val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
   private val generateBindZone = GenerateZone(
     "test.zone.actor.groupId",
+    "test@test.com",
     "bind",
     "test.zone.actor.zone",
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),

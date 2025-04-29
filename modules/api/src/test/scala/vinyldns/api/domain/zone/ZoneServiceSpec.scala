@@ -146,10 +146,10 @@ class ZoneServiceSpec
 
   private val generateBindZoneAuthorized = ZoneGenerationInput(
     okGroup.id,
+    "test@test.com",
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),
@@ -161,6 +161,7 @@ class ZoneServiceSpec
 
   private val generatePdnsZoneAuthorized = ZoneGenerationInput(
     okGroup.id,
+    "test@test.com",
     "powerdns",
     okZone.name,
     nameservers=Some(List("pdns_ns")),
