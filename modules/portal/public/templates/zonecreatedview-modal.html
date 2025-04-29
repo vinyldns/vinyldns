@@ -26,16 +26,6 @@
                     <input type="text" class="form-control" id="provider" ng-model="createZone.provider" name="provider" disabled/>
                 </div>
             </modal-element>
-            <modal-element label="Name Server IP-Address">
-                <div ng-repeat="ns in createZone.ns_ipaddress track by $index" class="form-group" style="margin-bottom: 10px;">
-                    <input
-                            type="text"
-                            class="form-control"
-                            ng-model="createZone.ns_ipaddress[$index]"
-                            name="ns_ipaddress-view-{{$index}}"
-                            disabled />
-                </div>
-            </modal-element>
             <modal-element ng-if="createZone.provider === 'powerdns'" label="Kind">
                 <div class="form-group">
                     <input type="text" class="form-control" id="kind" ng-model="createZone.kind" name="kind" disabled/>
