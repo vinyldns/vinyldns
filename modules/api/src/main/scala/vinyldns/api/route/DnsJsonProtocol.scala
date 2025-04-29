@@ -141,7 +141,6 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "visibility").optional[String],
         (js \ "accountId").optional[String],
         (js \ "projectId").optional[String],
-        (js \ "ns_ipaddress").optional[List[String]],
         (js \ "admin_email").optional[String],
         (js \ "ttl").optional[Int],
         (js \ "refresh").optional[Int],

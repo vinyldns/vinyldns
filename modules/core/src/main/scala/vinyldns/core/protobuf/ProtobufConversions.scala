@@ -204,7 +204,6 @@ trait ProtobufConversions {
       visibility = if (zn.hasServerId) Some(zn.getVisibility) else None,
       accountId = if (zn.hasServerId) Some(zn.getAccountId) else None,
       projectId = if (zn.hasServerId) Some(zn.getProjectId) else None,
-      ns_ipaddress = if (zn.getNsIpaddressList.isEmpty) None else Some(zn.getNsIpaddressList.asScala.toList),
       admin_email = if (zn.hasAdminEmail) Some(zn.getAdminEmail) else None,
       ttl = if (zn.hasTtl) Some(zn.getTtl.toInt) else None,
       refresh = if (zn.hasRefresh) Some(zn.getRefresh.toInt) else None,
@@ -523,9 +522,6 @@ trait ProtobufConversions {
     generateZone.visibility.foreach(gz => builder.setVisibility(gz))
     generateZone.accountId.foreach(gz => builder.setAccountId(gz))
     generateZone.projectId.foreach(gz => builder.setProjectId(gz))
-    generateZone.ns_ipaddress.foreach(serverIds =>
-      builder.addAllNsIpaddress(serverIds.asJava)
-    )
     generateZone.admin_email.foreach(gz => builder.setAdminEmail(gz))
     generateZone.ttl.foreach(gz => builder.setTtl(gz))
     generateZone.refresh.foreach(gz => builder.setRefresh(gz))

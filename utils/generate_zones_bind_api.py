@@ -33,7 +33,7 @@ class VinylDNSBindDNSManager:
             logger.error(f"Failed to VinylDNS create zones directory: {e}")
             raise
 
-    def create_zone_file(self, zoneName: str, nameservers: List[str], ns_ipaddress: List[str],
+    def create_zone_file(self, zoneName: str, nameservers: List[str],
                         admin_email: str, ttl: int = 3600, refresh: int = 604800,
                         retry: int = 86400, expire: int = 2419200,
                         negative_cache_ttl: int = 604800) -> str:
@@ -41,22 +41,19 @@ class VinylDNSBindDNSManager:
         Create a VinylDNS zone file for BIND DNS server with multiple nameservers
         """
         try:
-            if len(nameservers) != len(ns_ipaddress):
-                raise ValueError("Number of nameservers must match number of IP addresses")
-
             admin_email = admin_email.replace('@', '.')
             serial = datetime.now().strftime("%Y%m%d01")
             zone_content = f""
             # Add NS and NS_A records for each nameserver
-            for ns, ip in zip(nameservers, ns_ipaddress):
+            for ns in zip(nameservers):
                 zone_content = f"""$TTL    {ttl}
-{zoneName}       IN      SOA     {ip} {admin_email}. (
+{zoneName}       IN      SOA     {ns} {admin_email}. (
                                  {serial} ; Serial
                                  {refresh} ; Refresh
                                  {retry} ; Retry
                                  {expire} ; Expire
                                  {negative_cache_ttl} ) ; Negative Cache TTL
-{zoneName}    IN      NS      {ip}
+{zoneName}    IN      NS      {ns}
 """
 
             zone_file_path = os.path.join(self.zones_dir, f"{zoneName}")
@@ -177,7 +174,6 @@ dns_manager = VinylDNSBindDNSManager()
 class ZoneCreateRequest(BaseModel):
     zoneName: str
     nameservers: List[str]
-    ns_ipaddress: List[str]
     admin_email: EmailStr
     ttl: Optional[int] = 3600
     refresh: Optional[int] = 604800
@@ -200,7 +196,6 @@ async def create_zone(zone_request: ZoneCreateRequest):
         zone_file = dns_manager.create_zone_file(
             zoneName=zone_request.zoneName,
             nameservers=zone_request.nameservers,
-            ns_ipaddress=zone_request.ns_ipaddress,
             admin_email=str(zone_request.admin_email),
             ttl=zone_request.ttl,
             refresh=zone_request.refresh,

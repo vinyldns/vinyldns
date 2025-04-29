@@ -158,12 +158,11 @@ case class GenerateZoneSummaryInfo(
                                     serverId: Option[String] = None, // The ID of the sever (PowerDNS)
                                     kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
                                     masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                                    nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                                    nameservers: Option[List[String]] = None, // NS records
                                     description: Option[String] = None, // description (Google)
                                     visibility: Option[String] = None, // Public or Private (Google)
                                     accountId: Option[String] = None, // Account ID (Cloudflare)
                                     projectId: Option[String] = None, // GCP Project ID (Google)
-                                    ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
                                     admin_email: Option[String] = None, // NS IpAddress (Bind)
                                     ttl: Option[Int] = None, // TTL (Bind)
                                     refresh: Option[Int] = None, // Refresh (Bind)
@@ -194,7 +193,6 @@ object GenerateZoneSummaryInfo {
       zone.visibility,
       zone.accountId,
       zone.projectId,
-      zone.ns_ipaddress,
       zone.admin_email,
       zone.ttl,
       zone.refresh,

@@ -140,12 +140,11 @@ final case class GenerateZone(
                                serverId: Option[String] = None, // The ID of the sever (PowerDNS)
                                kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
                                masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                               nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                               nameservers: Option[List[String]] = None, // NS records
                                description: Option[String] = None, // description (Google)
                                visibility: Option[String] = None, // Public or Private (Google)
                                accountId: Option[String] = None, // Account ID (Cloudflare)
                                projectId: Option[String] = None, // GCP Project ID (Google)
-                               ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
                                admin_email: Option[String] = None, // NS IpAddress (Bind)
                                ttl: Option[Int] = None, // TTL (Bind)
                                refresh: Option[Int] = None, // Refresh (Bind)
@@ -175,7 +174,6 @@ final case class GenerateZone(
       sb.append("visibility=\"").append(visibility.toString).append("\"; ")
       sb.append("accountId=\"").append(accountId.toString).append("\"; ")
       sb.append("projectId=\"").append(projectId.toString).append("\"; ")
-      sb.append("ns_ipaddress=\"").append(ns_ipaddress.toString).append("\"; ")
       sb.append("ttl=\"").append(ttl).append("\"; ")
       sb.append("refresh=\"").append(refresh).append("\"; ")
       sb.append("retry=\"").append(retry).append("\"; ")
@@ -206,7 +204,6 @@ object GenerateZone {
       visibility,
       accountId,
       projectId,
-      ns_ipaddress,
       admin_email,
       ttl,
       refresh,
@@ -234,7 +231,6 @@ object GenerateZone {
       visibility,
       accountId,
       projectId,
-      ns_ipaddress,
       admin_email,
       ttl,
       refresh,
@@ -318,12 +314,11 @@ final case class UpdateGenerateZoneInput(
                                   serverId: Option[String] = None, // The ID of the sever (PowerDNS)
                                   kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
                                   masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                                  nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+                                  nameservers: Option[List[String]] = None, // NS records
                                   description: Option[String] = None, // description (Google)
                                   visibility: Option[String] = None, // Public or Private (Google)
                                   accountId: Option[String] = None, // Account ID (Cloudflare)
                                   projectId: Option[String] = None, // GCP Project ID (Google)
-                                  ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
                                   admin_email: Option[String] = None, // Admin Email (Bind)
                                   ttl: Option[Int] = None, // TTL (Bind)
                                   refresh: Option[Int] = None, // Refresh (Bind)
@@ -351,12 +346,11 @@ case class ZoneGenerationInput(
     serverId: Option[String] = None, // The ID of the sever (PowerDNS)
     kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
     masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-    nameservers: Option[List[String]] = None, // NS records (PowerDNS)
+    nameservers: Option[List[String]] = None, // NS records
     description: Option[String] = None, // description (Google)
     visibility: Option[String] = None, // Public or Private (Google)
     accountId: Option[String] = None, // Account ID (Cloudflare)
     projectId: Option[String] = None, // GCP Project ID (Google)
-    ns_ipaddress: Option[List[String]] = None, // NS IpAddress (Bind)
     admin_email: Option[String] = None, // NS IpAddress (Bind)
     ttl: Option[Int] = None, // TTL (Bind)
     refresh: Option[Int] = None, // Refresh (Bind)
