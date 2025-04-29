@@ -101,12 +101,19 @@ angular.module('controller.zones', [])
       });
     });
 
-    $scope.toggleNameserverIPAddress = function (ns) {
-      const idx = $scope.createZone.ns_ipaddress.indexOf(ns);
-      if (idx > -1) {
-        $scope.createZone.ns_ipaddress.splice(idx, 1);
+    $scope.nameserverSelection = {};
+
+    // Sync model with checkbox state
+    $scope.updateNameserverSelection = function(ns) {
+      if ($scope.nameserverSelection[ns]) {
+        if ($scope.createZone.nameservers.indexOf(ns) === -1) {
+          $scope.createZone.nameservers.push(ns);
+        }
       } else {
-        $scope.createZone.ns_ipaddress.push(ns);
+        const idx = $scope.createZone.nameservers.indexOf(ns);
+        if (idx !== -1) {
+          $scope.createZone.nameservers.splice(idx, 1);
+        }
       }
     };
 
@@ -126,9 +133,9 @@ angular.module('controller.zones', [])
         }
     });
 
-    zonesService.getNameserverIpAddresses().then(function (results) {
+    zonesService.getNameservers().then(function (results) {
         if (results.data) {
-            $scope.ns_ipaddress = results.data;
+            $scope.nameservers = results.data;
         }
     });
 

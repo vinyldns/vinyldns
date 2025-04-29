@@ -84,7 +84,7 @@ angular.module('service.zones', [])
             return $http.get(url);
         }
 
-        this.getNameserverIpAddresses = function() {
+        this.getNameservers = function() {
             var url = "/api/zones/generate/nameservers";
             return $http.get(url);
         }

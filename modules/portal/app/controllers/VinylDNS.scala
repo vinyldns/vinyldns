@@ -293,7 +293,7 @@ class VinylDNS @Inject() (
     })
   }
 
-  def getNameserverIpAddresses: Action[AnyContent] = userAction.async { implicit request =>
+  def getNameservers: Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/generate/nameservers")
     executeRequest(vinyldnsRequest, request.user).map(response => {

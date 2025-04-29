@@ -64,45 +64,42 @@
                 </span>
             </modal-element>
 
-            <modal-element
-                    label="Name Server IP-Address"
-                    invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.ns_ipaddress.$invalid">
+<!--            <modal-element label="Name Server"-->
+<!--                           invalid-when="addZoneCreationForm.$submitted && createZone.nameservers.length === 0">-->
 
-                <input type="text"
-                       name="ns_ipaddress"
-                       ng-model="createZone.ns_ipaddress"
-                       required
-                       style="display: none;"
-                       ng-model-options="{ getterSetter: true }"
-                       ng-required="createZone.ns_ipaddress.length === 0"/>
+<!--                &lt;!&ndash; Hidden input to trigger validation &ndash;&gt;-->
+<!--                <input type="hidden"-->
+<!--                       name="nameservers"-->
+<!--                       ng-model="createZone.nameservers"-->
+<!--                       ng-required="createZone.nameservers.length === 0" />-->
 
-                <div class="dropdown" style="width: 100%;">
-                    <button class="btn btn-default dropdown-toggle form-control text-left"
-                            type="button"
-                            data-toggle="dropdown"
-                            style="text-align: left;">
-                        <span ng-bind="createZone.ns_ipaddress.length > 0 ? createZone.ns_ipaddress.join(', ') : 'Select a NameServer IP-Address'"></span>
-                        <span class="caret pull-right" style="margin-top: 8px;"></span>
-                    </button>
+<!--                &lt;!&ndash; Dropdown toggle &ndash;&gt;-->
+<!--                <div class="dropdown" style="width: 100%;">-->
+<!--                    <button class="btn btn-default dropdown-toggle form-control text-left"-->
+<!--                            type="button"-->
+<!--                            data-toggle="dropdown"-->
+<!--                            aria-haspopup="true"-->
+<!--                            aria-expanded="false"-->
+<!--                            style="text-align: left; padding-right: 30px;">-->
+<!--                        &lt;!&ndash; Left-align the dropdown text &ndash;&gt;-->
+<!--                        <span ng-if="createZone.nameservers.length === 0">Select a NameServer</span>-->
+<!--                        <span ng-if="createZone.nameservers.length > 0">{{ createZone.nameservers.join(', ') }}</span>-->
+<!--                        <span class="caret pull-right" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></span>-->
+<!--                    </button>-->
 
-                    <ul class="dropdown-menu" style="padding: 10px; width: 100%; max-height: 200px; overflow-y: auto;">
-                        <li ng-repeat="nsips in ns_ipaddress">
-                            <label style="width: 100%; font-weight: normal;">
-                                <input type="checkbox"
-                                       ng-checked="createZone.ns_ipaddress.indexOf(nsips) > -1"
-                                       ng-click="toggleNameserverIPAddress(nsips)">
-                                {{ nsips }}
-                            </label>
-                        </li>
-                    </ul>
-                </div>
-
-                <span class="help-block">
-                    The Name Server IP-Address for a pre-configured DNS connection configuration. Please contact your DNS admin team
-                    for more information if you believe you need a custom connection. In most cases, the default
-                    connection will suffice.
-                </span>
-            </modal-element>
+<!--                    &lt;!&ndash; Dropdown content &ndash;&gt;-->
+<!--                    <ul class="dropdown-menu" style="padding: 10px; width: 100%; max-height: 200px; overflow-y: auto;">-->
+<!--                        <li ng-repeat="ns in nameservers">-->
+<!--                            <label style="width: 100%; font-weight: normal;">-->
+<!--                                <input type="checkbox"-->
+<!--                                       ng-model="nameserverSelection[ns]"-->
+<!--                                       ng-change="updateNameserverSelection(ns)">-->
+<!--                                {{ ns }}-->
+<!--                            </label>-->
+<!--                        </li>-->
+<!--                    </ul>-->
+<!--                </div>-->
+<!--            </modal-element>-->
             <modal-element ng-if="createZone.provider === 'powerdns'" label="Kind" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.kind.$invalid">
                 <select id="kind" name="kind" class="form-control" ng-model="createZone.kind"
                         ng-options="pDnskind for pDnskind in kind" ng-required="createZone.provider === 'powerdns'">
