@@ -35,6 +35,9 @@ import com.cronutils.model.CronType
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
 import vinyldns.core.Messages
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
 import java.io.{ByteArrayInputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
@@ -155,30 +158,31 @@ class ZoneService(
     } yield generateZone
 
   private def buildGenerateZoneRequestJson(request: ZoneGenerationInput): String = {
-    val bindGenerateZoneRequestJson =
-    s"""{
-          "zoneName": "${request.zoneName}",
-          "nameservers": ${request.nameservers.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
-          "ns_ipaddress": ${request.ns_ipaddress.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
-          "admin_email": "${request.admin_email.getOrElse("""""""")}",
-          "ttl": ${request.ttl.getOrElse("""""""")},
-          "refresh": ${request.refresh.getOrElse("""""""")},
-          "retry": ${request.retry.getOrElse("""""""")},
-          "expire": ${request.expire.getOrElse("""""""")},
-          "negative_cache_ttl": ${request.negative_cache_ttl.getOrElse("""""""")}
-      }"""
 
-    val powerdnsGenerateZoneRequestJson =
-    s"""{
-          "name": "${request.zoneName}",
-          "kind": "${request.kind.getOrElse("")}",
-          "masters": ${request.masters.map(_.mkString("""["""", """", """", """"]""")).getOrElse("""""""")},
-          "nameservers": ${request.ns_ipaddress.map(_.mkString("""["""", """", """", """"]""")).getOrElse("")}
-      }"""
+    // omit missing fields
+    val bindGenerateZoneRequestFields: List[Option[JField]] = List(
+        Some("zoneName" -> request.zoneName),
+        request.nameservers.map("nameservers" -> _),
+        request.ns_ipaddress.map("ns_ipaddress" -> _),
+        request.admin_email.map("admin_email" -> _),
+        request.ttl.map("ttl" -> _),
+        request.refresh.map("refresh" -> _),
+        request.retry.map("retry" -> _),
+        request.expire.map("expire" -> _),
+        request.negative_cache_ttl.map("negative_cache_ttl" -> _)
+    )
+
+    val bindGenerateZoneRequestJson: JObject = JObject(bindGenerateZoneRequestFields.flatten)
+
+    val powerdnsGenerateZoneRequestJson: JObject =
+        ("name" -> request.zoneName) ~
+        ("kind" -> request.kind.getOrElse("")) ~
+        ("masters" -> request.masters.getOrElse(Seq.empty[String])) ~
+        ("nameservers" -> request.nameservers.getOrElse(Seq.empty[String]))
 
     request.provider.toLowerCase match {
-        case "bind" => bindGenerateZoneRequestJson
-        case "powerdns" => powerdnsGenerateZoneRequestJson
+        case "bind" => compact(render(bindGenerateZoneRequestJson))
+        case "powerdns" => compact(render(powerdnsGenerateZoneRequestJson))
     }
   }
 
