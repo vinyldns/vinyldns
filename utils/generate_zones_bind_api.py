@@ -44,8 +44,8 @@ class VinylDNSBindDNSManager:
             admin_email = admin_email.replace('@', '.')
             serial = datetime.now().strftime("%Y%m%d01")
             zone_content = f""
-            # Add NS and NS_A records for each nameserver
-            for ns in zip(nameservers):
+            # Add NS records for each nameserver
+            for ns in nameservers:
                 zone_content = f"""$TTL    {ttl}
 {zoneName}       IN      SOA     {ns} {admin_email}. (
                                  {serial} ; Serial

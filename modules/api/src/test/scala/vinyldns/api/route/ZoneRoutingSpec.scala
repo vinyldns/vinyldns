@@ -55,12 +55,12 @@ class ZoneRoutingSpec
   private val nonSuperUserSharedZone =
     Zone("non-super-user-shared-zone.", "non-super-user-shared-zone@test.com")
 
-  private val alreadyExistsGenerateZone = GenerateZone("already.exists.groupID", "bind", "already.exists.")
-  private val notFoundGenerateZone = GenerateZone("not.found.groupID", "bind", "not.found.")
-  private val notAuthorizedGenerateZone = GenerateZone("not.authorized.groupID", "bind","not.authorized.")
-  private val badAdminIdGenerateZone = GenerateZone("bad.admin.groupID", "bind","bad.admin.")
+  private val alreadyExistsGenerateZone = GenerateZone("already.exists.groupID","test@test.com", "bind", "already.exists.")
+  private val notFoundGenerateZone = GenerateZone("not.found.groupID","test@test.com", "bind", "not.found.")
+  private val notAuthorizedGenerateZone = GenerateZone("not.authorized.groupID","test@test.com", "bind","not.authorized.")
+  private val badAdminIdGenerateZone = GenerateZone("bad.admin.groupID","test@test.com", "bind","bad.admin.")
   private val nonSuperUserSharedZoneGenerateZone =
-    GenerateZone("non-super-user-shared-zone.groupID", "bind","non-super-user-shared-zone.")
+    GenerateZone("non-super-user-shared-zone.groupID","test@test.com", "bind","non-super-user-shared-zone.")
 
   private val userAclRule = ACLRule(
     AccessLevel.Read,
@@ -120,6 +120,8 @@ class ZoneRoutingSpec
   )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
+  private val genetateZoneSummaryInfo = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+
   private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name, AccessLevel.NoAccess)
   private val zone3 = Zone("zone3.", "zone3@test.com", ZoneStatus.Active)
@@ -134,7 +136,7 @@ class ZoneRoutingSpec
     Zone("zone6.in-addr.arpa.", "zone6@test.com", ZoneStatus.Active, adminGroupId = xyzGroup.id)
   private val zoneSummaryInfo6 = ZoneSummaryInfo(zone6, xyzGroup.name, AccessLevel.NoAccess)
   private val error = Zone("error.", "error@test.com")
-  private val errorGenerateZone = GenerateZone("error.groupId", "bind", "error.")
+  private val errorGenerateZone = GenerateZone("error.groupId","error@test.com", "bind", "error.")
   private val deletedZone1 = Zone("ok1.", "ok1@test.com", ZoneStatus.Deleted , acl = zoneAcl)
   private val deletedZoneChange1 = ZoneChange(deletedZone1, "ok1", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo1 = ZoneChangeDeletedInfo(
@@ -433,6 +435,100 @@ class ZoneRoutingSpec
       outcome.toResult
     }
 
+    def listGeneratedZones(
+                   authPrincipal: AuthPrincipal,
+                   nameFilter: Option[String],
+                   startFrom: Option[String],
+                   maxItems: Int,
+                   searchByAdminGroup: Boolean,
+                   ignoreAccess: Boolean = false
+                 ): Result[ListGeneratedZonesResponse] = {
+
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
+        case (_, None, Some("zone3."), 3, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = None,
+              startFrom = Some("zone3."),
+              nextId = Some("zone6."),
+              maxItems = 3
+            )
+          )
+        case (_, None, Some("zone4."), 4, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = None,
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4
+            )
+          )
+
+        case (_, None, None, 3, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = None,
+              startFrom = None,
+              nextId = Some("zone3."),
+              maxItems = 3
+            )
+          )
+
+        case (_, None, None, 6, true) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 6,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = Some(filter),
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, true) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = Some(filter),
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, None, None, _, _) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(genetateZoneSummaryInfo),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None
+            )
+          )
+
+        case _ => Left(InvalidRequest("shouldnt get here"))
+      }
+
+      outcome.toResult
+    }
+
+
     def listDeletedZones(
                           authPrincipal: AuthPrincipal,
                           nameFilter: Option[String],
@@ -597,6 +693,10 @@ class ZoneRoutingSpec
     }
 
     def getBackendIds(): Result[List[String]] = List("backend-1", "backend-2").toResult
+
+    def allowedDNSProviders(): Result[List[String]] = List("bind", "pdns").toResult
+
+    def dnsNameServers(): Result[List[String]] = List("127.0.0.1", "localhost").toResult
 
     def handleGenerateZoneRequest(request: ZoneGenerationInput, auth: AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse] = {
       val outcome = request.zoneName match {

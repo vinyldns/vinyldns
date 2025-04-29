@@ -141,7 +141,7 @@ class ZoneConnectionValidatorSpec
     zc.copy(name = "backend-conn"),
     transfer.copy(name = "backend-transfer")
   )
-  val dnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
+  val dnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("test"),List("test"))
 
   val connections = ConfiguredDnsConnections(zc, transfer, List(backend),dnsProviderApiConnection)
 
