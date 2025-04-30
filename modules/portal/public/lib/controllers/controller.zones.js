@@ -103,7 +103,6 @@ angular.module('controller.zones', [])
 
     $scope.nameserverSelection = {};
 
-    // Sync model with checkbox state
     $scope.updateNameserverSelection = function(ns) {
       if ($scope.nameserverSelection[ns]) {
         if ($scope.createZone.nameservers.indexOf(ns) === -1) {
