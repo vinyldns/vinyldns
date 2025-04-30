@@ -351,7 +351,7 @@ case class ZoneGenerationInput(
     visibility: Option[String] = None, // Public or Private (Google)
     accountId: Option[String] = None, // Account ID (Cloudflare)
     projectId: Option[String] = None, // GCP Project ID (Google)
-    admin_email: Option[String] = None, // NS IpAddress (Bind)
+    admin_email: Option[String] = None, // Admin Email (Bind)
     ttl: Option[Int] = None, // TTL (Bind)
     refresh: Option[Int] = None, // Refresh (Bind)
     retry: Option[Int] = None, // Retry (Bind)

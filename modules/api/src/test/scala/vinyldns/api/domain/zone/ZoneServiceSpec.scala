@@ -69,7 +69,7 @@ class ZoneServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://bind.com", "http://test-pdns.com",  "bind-test-key", "pdns-test-key",List("test"),List("test"))
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://test.com", "http://test-pdns.com",  "bind-test-key", "pdns-test-key",List("test"),List("test"))
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
 
   private val mockMembershipService = new MembershipService(mockGroupRepo,
@@ -140,8 +140,8 @@ class ZoneServiceSpec
     adminGroupId = okGroup.id
   )
 
-  private val bindZoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
-  private val pdnsZoneGenerationResponse = ZoneGenerationResponse("pdns",5, "pdns", "pdns")
+  private val bindZoneGenerationResponse = ZoneGenerationResponse("bind", 200, "bind", "bind")
+  private val pdnsZoneGenerationResponse = ZoneGenerationResponse("pdns", 200, "pdns", "pdns")
 
 
   private val generateBindZoneAuthorized = ZoneGenerationInput(
@@ -150,6 +150,7 @@ class ZoneServiceSpec
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
+
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),
