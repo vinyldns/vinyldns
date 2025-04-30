@@ -33,7 +33,7 @@ class VinylDNSBindDNSManager:
             logger.error(f"Failed to VinylDNS create zones directory: {e}")
             raise
 
-    def create_zone_file(self, zoneName: str, nameservers: List[str], ns_ipaddress: List[str],
+    def create_zone_file(self, zoneName: str, nameservers: List[str],
                         admin_email: str, ttl: int = 3600, refresh: int = 604800,
                         retry: int = 86400, expire: int = 2419200,
                         negative_cache_ttl: int = 604800) -> str:
@@ -41,23 +41,24 @@ class VinylDNSBindDNSManager:
         Create a VinylDNS zone file for BIND DNS server with multiple nameservers
         """
         try:
-            if len(nameservers) != len(ns_ipaddress):
-                raise ValueError("Number of nameservers must match number of IP addresses")
-
             admin_email = admin_email.replace('@', '.')
             serial = datetime.now().strftime("%Y%m%d01")
+            primary_ns = nameservers[0]
+            secondary_ns = nameservers[1:]
+
             zone_content = f""
-            # Add NS and NS_A records for each nameserver
-            for ns, ip in zip(nameservers, ns_ipaddress):
-                zone_content = f"""$TTL    {ttl}
-{zoneName}       IN      SOA     {ip} {admin_email}. (
+            # Add NS records for each nameserver
+            zone_content = f"""$TTL    {ttl}
+{zoneName}       IN      SOA     {primary_ns} {admin_email}. (
                                  {serial} ; Serial
                                  {refresh} ; Refresh
                                  {retry} ; Retry
                                  {expire} ; Expire
                                  {negative_cache_ttl} ) ; Negative Cache TTL
-{zoneName}    IN      NS      {ip}
+{zoneName}    IN         NS      {primary_ns}
 """
+            for ns in secondary_ns:
+                zone_content += f"                     IN        NS      {ns}\n"
 
             zone_file_path = os.path.join(self.zones_dir, f"{zoneName}")
 
@@ -98,14 +99,70 @@ zone "{zoneName}" {{
             logger.error(f"Failed to add VinylDNS zone configuration: {e}")
             raise
 
+    def delete_zone(self, zoneName: str) -> Tuple[bool, Optional[str]]:
+        """
+        Delete VinylDNS zone file and its configuration from named.conf.vinyldns-zones.
+        """
+        import re
+
+        zone_file_path = os.path.join(self.zones_dir, zoneName)
+
+        if not os.path.exists(zone_file_path):
+            logger.warning(f"No zone file found for: {zone_file_path}")
+            return False, "No zone records found"
+
+        try:
+            os.remove(zone_file_path)
+            logger.info(f"Deleted zone file: {zone_file_path}")
+
+            if os.path.exists(self.vinyldns_zone_config):
+                with open(self.vinyldns_zone_config, 'r') as f:
+                    lines = f.readlines()
+
+                new_lines = []
+                inside_zone_block = False
+                brace_count = 0
+
+                zone_start_pattern = re.compile(rf'zone\s+"{re.escape(zoneName)}"\s*{{')
+                for line in lines:
+                    if not inside_zone_block and zone_start_pattern.search(line):
+                        inside_zone_block = True
+                        brace_count = line.count('{') - line.count('}')
+                        continue
+
+                    if inside_zone_block:
+                        brace_count += line.count('{') - line.count('}')
+                        if brace_count <= 0:
+                            inside_zone_block = False
+                        continue
+
+                    new_lines.append(line)
+
+                with open(self.vinyldns_zone_config, 'w') as f:
+                    f.writelines(new_lines)
+
+                logger.info(f"Removed zone configuration for {zoneName}")
+            else:
+                logger.warning(f"{self.vinyldns_zone_config} does not exist")
+            # Step 3: Restart BIND
+            success, error = self.reload_bind(zoneName)
+            if not success:
+                return False, f"Zone deleted, but BIND reload failed: {error}"
+
+            return True, None
+
+        except Exception as e:
+            logger.error(f"Failed to delete zone: {e}")
+            return False, str(e)
+
+
     def reload_bind(self, zoneName: str) -> Tuple[bool, Optional[str]]:
         """
-        Reload BIND configuration with error handling
+        Reload BIND configuration with optional zone validation if zone file exists.
         """
         try:
-            # Step 1: Check if the BIND configuration file is valid
             check_zone_config_result = subprocess.run(
-                ['named-checkconf', "/etc/bind/named.conf"],
+                ['named-checkconf', self.zone_config],
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -113,56 +170,46 @@ zone "{zoneName}" {{
 
             if check_zone_config_result.returncode != 0:
                 logger.error(f"VinylDNS BIND config validation failed: {check_zone_config_result.stderr}")
-                return False, check_zone_config_result.stderr
+                return False, check_zone_config_result.stderr or check_zone_config_result.stdout or "Config validation failed"
+
+            logger.info("VinylDNS BIND configuration validated successfully")
+
+            zone_file_path = os.path.join(self.zones_dir, zoneName)
+            if os.path.exists(zone_file_path):
+                check_zone_result = subprocess.run(
+                    ['named-checkzone', zoneName, zone_file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+
+                if check_zone_result.returncode != 0:
+                    logger.error(f"VinylDNS Zone file validation failed: {check_zone_result.stderr}")
+                    return False, check_zone_result.stderr or check_zone_result.stdout or "Zone validation failed"
+                else:
+                    logger.info(f"VinylDNS Zone file '{zoneName}' validated successfully")
             else:
-                logger.info(f"VinylDNS BIND configuration validated successfully")
+                logger.warning(f"Zone file for '{zoneName}' not found. Skipping zone validation (possibly deleted).")
 
-            # Step 2: Check if the DNS zone file is valid using named-checkzone
-            check_zone_result = subprocess.run(
-                ['named-checkzone', f'{zoneName}', f'{self.zones_dir}/{zoneName}'],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            # Step 3: Restart BIND
+            subprocess.run(['pkill', '-f', '/usr/sbin/named'], capture_output=True, text=True, check=True)
+            subprocess.run(['/usr/sbin/named', '-c', self.zone_config], capture_output=True, text=True, check=True)
 
-            if check_zone_result.returncode != 0:
-                logger.error(f"VinylDNS Zone file validation failed: {check_zone_result.stderr}")
-                return False, check_zone_result.stderr
-            else:
-                logger.info(f"VinylDNS Zone file '{zoneName}' validated successfully")
-
-            # Step 3: Stop the named service if config and zone checks pass
-            stop_result = subprocess.run(
-                ['pkill', '-f', '/usr/sbin/named'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            print("Stop command output:", stop_result.stdout)
-
-            # Step 4: Restart named service
-            restart_result = subprocess.run(
-                ['/usr/sbin/named', '-c', '/etc/bind/named.conf'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            print("Named command output:", restart_result.stdout)
-
-            logger.info("VinylDNS BIND service restarted successfully with the new zone file")
+            logger.info("VinylDNS BIND service restarted successfully")
             return True, None
 
         except subprocess.TimeoutExpired:
-            logger.error("Configuration or VinylDNS zone file check timed out")
-            return False, "Configuration or VinylDNS zone file check timed out"
+            logger.error("Configuration or zone validation timed out")
+            return False, "Timeout during configuration or zone validation"
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Error restarting the service: {e.stderr}")
-            return False, e.stderr
+            logger.error(f"Error restarting BIND: {e.stderr}")
+            return False, e.stderr or e.stdout or "BIND restart failed"
 
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return False, str(e)
+
 
 # FastAPI Application Setup
 app = FastAPI(
@@ -177,7 +224,6 @@ dns_manager = VinylDNSBindDNSManager()
 class ZoneCreateRequest(BaseModel):
     zoneName: str
     nameservers: List[str]
-    ns_ipaddress: List[str]
     admin_email: EmailStr
     ttl: Optional[int] = 3600
     refresh: Optional[int] = 604800
@@ -190,7 +236,8 @@ class APIResponse(BaseModel):
     message: str
     data: Optional[dict] = None
 
-# API Endpoints
+
+# API Endpoints for VinylDNS Bind Management
 @app.post("/api/zones/generate", response_model=APIResponse)
 async def create_zone(zone_request: ZoneCreateRequest):
     logger.info(f"Creating vinylDNS zone with request: {zone_request}")
@@ -200,7 +247,6 @@ async def create_zone(zone_request: ZoneCreateRequest):
         zone_file = dns_manager.create_zone_file(
             zoneName=zone_request.zoneName,
             nameservers=zone_request.nameservers,
-            ns_ipaddress=zone_request.ns_ipaddress,
             admin_email=str(zone_request.admin_email),
             ttl=zone_request.ttl,
             refresh=zone_request.refresh,
@@ -213,9 +259,10 @@ async def create_zone(zone_request: ZoneCreateRequest):
 
         success, error = dns_manager.reload_bind(zone_request.zoneName)
         if not success:
+            logger.error(f"Zone reload failed with error: {error}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to reload vinylDNS BIND: {error}"
+                detail=f"Failed to reload vinylDNS BIND: {error}" if error else "Failed to reload vinylDNS BIND: Unknown error"
             )
 
         return APIResponse(
@@ -234,6 +281,39 @@ async def create_zone(zone_request: ZoneCreateRequest):
             detail=str(e)
         )
 
+@app.delete("/api/zones/delete", response_model=APIResponse)
+async def delete_zone(zoneName: str):
+    logger.info(f"Deleting vinylDNS zone: {zoneName}")
+
+    try:
+        success, error = dns_manager.delete_zone(zoneName)
+        if not success:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete vinylDNS BIND zone: {error}" if error else "Unknown error during zone deletion"
+            )
+
+        # Reload BIND after deletion
+        reload_success, reload_error = dns_manager.reload_bind(zoneName)
+        if not reload_success:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Zone deleted, but BIND reload failed: {reload_error}"
+            )
+
+        return APIResponse(
+            success=True,
+            message=f"vinylDNS Zone {zoneName} deleted and BIND reloaded successfully",
+            data={"zoneName": zoneName}
+        )
+
+    except Exception as e:
+        logger.error(f"Zone deletion failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
 @app.get("/api/health", response_model=APIResponse)
 async def health_check():
     return APIResponse(
@@ -243,7 +323,7 @@ async def health_check():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "generate_zones_bind_api:app",
+        "manage_vinyldns_zones_bind_api:app",
         host="0.0.0.0",
         port=19000,
         reload=False

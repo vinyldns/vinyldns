@@ -82,10 +82,10 @@ object TestZoneData {
 
   val generateBindZoneAuthorized: GenerateZone = GenerateZone(
     okGroup.id,
+    "test@test.com",
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),
@@ -97,10 +97,10 @@ object TestZoneData {
   )
   val generatePdnsZoneAuthorized: GenerateZone = GenerateZone(
     okGroup.id,
+    "test@test.com",
     "powerdns",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),
@@ -112,10 +112,10 @@ object TestZoneData {
   )
   val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
     okGroup.id,
+    "test@test.com",
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),
@@ -128,10 +128,10 @@ object TestZoneData {
 
   val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(
     okGroup.id,
+    "test@test.com",
     "bind",
     okZone.name,
     nameservers=Some(List("bind_ns")),
-    ns_ipaddress=Some(List("bind_ip")),
     admin_email=Some("test@test.com"),
     ttl=Some(3600),
     refresh=Some(6048000),

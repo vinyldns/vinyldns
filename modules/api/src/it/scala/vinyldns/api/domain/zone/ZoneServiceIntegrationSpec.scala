@@ -65,7 +65,7 @@ class ZoneServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
   private val mockMembershipService = mock[MembershipService]
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test")
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("test"),List("test"))
   private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
 

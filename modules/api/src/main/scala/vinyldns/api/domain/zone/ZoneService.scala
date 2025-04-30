@@ -163,7 +163,6 @@ class ZoneService(
     val bindGenerateZoneRequestFields: List[Option[JField]] = List(
         Some("zoneName" -> request.zoneName),
         request.nameservers.map("nameservers" -> _),
-        request.ns_ipaddress.map("ns_ipaddress" -> _),
         request.admin_email.map("admin_email" -> _),
         request.ttl.map("ttl" -> _),
         request.refresh.map("refresh" -> _),
