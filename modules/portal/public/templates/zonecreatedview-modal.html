@@ -31,7 +31,7 @@
                     <input type="text" class="form-control" id="kind" ng-model="createZone.kind" name="kind" disabled/>
                 </div>
             </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Name Servers">
+            <modal-element label="Name Servers">
                 <div ng-repeat="ns in createZone.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
                     <input
                             type="text"
