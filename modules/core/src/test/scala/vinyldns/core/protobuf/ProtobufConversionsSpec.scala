@@ -520,6 +520,7 @@ class ProtobufConversionsSpec
       val pb = VinylDNSProto.GenerateZone
         .newBuilder()
         .setId(generateBindZone.id)
+        .setEmail(generateBindZone.email)
         .setGroupId(generateBindZone.groupId)
         .setProvider(generateBindZone.provider)
         .setZoneName(generateBindZone.zoneName)
