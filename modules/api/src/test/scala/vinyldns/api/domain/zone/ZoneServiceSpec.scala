@@ -69,7 +69,7 @@ class ZoneServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://test.com", "http://test-pdns.com",  "bind-test-key", "pdns-test-key",List("test"),List("test"))
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://testbind.com", "http://test-pdns.com",  "bind-test-key", "pdns-test-key",List("test"),List("test"))
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
 
   private val mockMembershipService = new MembershipService(mockGroupRepo,
