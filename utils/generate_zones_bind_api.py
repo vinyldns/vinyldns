@@ -43,18 +43,22 @@ class VinylDNSBindDNSManager:
         try:
             admin_email = admin_email.replace('@', '.')
             serial = datetime.now().strftime("%Y%m%d01")
+            primary_ns = nameservers[0]
+            secondary_ns = nameservers[1:]
+
             zone_content = f""
             # Add NS records for each nameserver
-            for ns in nameservers:
-                zone_content = f"""$TTL    {ttl}
-{zoneName}       IN      SOA     {ns} {admin_email}. (
+            zone_content = f"""$TTL    {ttl}
+{zoneName}       IN      SOA     {primary_ns} {admin_email}. (
                                  {serial} ; Serial
                                  {refresh} ; Refresh
                                  {retry} ; Retry
                                  {expire} ; Expire
                                  {negative_cache_ttl} ) ; Negative Cache TTL
-{zoneName}    IN      NS      {ns}
+{zoneName}    IN         NS      {primary_ns}
 """
+            for ns in secondary_ns:
+                zone_content += f"                     IN        NS      {ns}\n"
 
             zone_file_path = os.path.join(self.zones_dir, f"{zoneName}")
 
@@ -110,7 +114,7 @@ zone "{zoneName}" {{
 
             if check_zone_config_result.returncode != 0:
                 logger.error(f"VinylDNS BIND config validation failed: {check_zone_config_result.stderr}")
-                return False, check_zone_config_result.stderr
+                return False, check_zone_config_result.stderr or check_zone_config_result.stdout or "Config validation failed with no specific error"
             else:
                 logger.info(f"VinylDNS BIND configuration validated successfully")
 
@@ -124,7 +128,7 @@ zone "{zoneName}" {{
 
             if check_zone_result.returncode != 0:
                 logger.error(f"VinylDNS Zone file validation failed: {check_zone_result.stderr}")
-                return False, check_zone_result.stderr
+                return False, check_zone_result.stderr or check_zone_result.stdout or "Zone file validation failed with no specific error"
             else:
                 logger.info(f"VinylDNS Zone file '{zoneName}' validated successfully")
 
@@ -154,8 +158,8 @@ zone "{zoneName}" {{
             return False, "Configuration or VinylDNS zone file check timed out"
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Error restarting the service: {e.stderr}")
-            return False, e.stderr
+            logger.error(f"Error restarting the vinylDNS bind service: {e.stderr}")
+            return False, e.stderr or e.stdout or "VinylDNS BIND service restart failed with no specific error"
 
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
@@ -208,9 +212,10 @@ async def create_zone(zone_request: ZoneCreateRequest):
 
         success, error = dns_manager.reload_bind(zone_request.zoneName)
         if not success:
+            logger.error(f"Zone reload failed with error: {error}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to reload vinylDNS BIND: {error}"
+                detail=f"Failed to reload vinylDNS BIND: {error}" if error else "Failed to reload vinylDNS BIND: Unknown error"
             )
 
         return APIResponse(
