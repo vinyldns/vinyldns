@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
 import vinyldns.core.Messages
 import org.json4s._
-import org.json4s.JsonDSL._
+//import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
 import java.io.{ByteArrayInputStream, InputStream, OutputStream}
@@ -157,32 +157,39 @@ class ZoneService(
       generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
     } yield generateZone
 
-  private def buildGenerateZoneRequestJson(request: ZoneGenerationInput): String = {
+  private def buildGenerateZoneRequestJson(template: String, request: ZoneGenerationInput): String = {
 
-    // omit missing fields
-    val bindGenerateZoneRequestFields: List[Option[JField]] = List(
-        Some("zoneName" -> request.zoneName),
-        request.nameservers.map("nameservers" -> _),
-        request.admin_email.map("admin_email" -> _),
-        request.ttl.map("ttl" -> _),
-        request.refresh.map("refresh" -> _),
-        request.retry.map("retry" -> _),
-        request.expire.map("expire" -> _),
-        request.negative_cache_ttl.map("negative_cache_ttl" -> _)
+    logger.info(s"request: $request")
+    // Parse the request template into a JValue
+    val requestTemplate = parse(template)
+    logger.info(s"Request template: $requestTemplate")
+
+    // Build a map of values to replace placeholders
+    val values = Map(
+      "zoneName" -> Some(JString(request.zoneName)),
+      "nameservers" -> request.nameservers.map(ns => JArray(ns.map(JString))),
+      "admin_email" -> request.admin_email.map(JString),
+      "ttl" -> request.ttl.map(JInt(_)),
+      "refresh" -> request.refresh.map(JInt(_)),
+      "retry" -> request.retry.map(JInt(_)),
+      "expire" -> request.expire.map(JInt(_)),
+      "negative_cache_ttl" -> request.negative_cache_ttl.map(JInt(_)),
+      "kind" -> request.kind.map(JString),
+      "masters" -> request.masters.map(masters => JArray(masters.map(JString)))
     )
+    logger.info(s"$values")
 
-    val bindGenerateZoneRequestJson: JObject = JObject(bindGenerateZoneRequestFields.flatten)
-
-    val powerdnsGenerateZoneRequestJson: JObject =
-        ("name" -> request.zoneName) ~
-        ("kind" -> request.kind.getOrElse("")) ~
-        ("masters" -> request.masters.getOrElse(Seq.empty[String])) ~
-        ("nameservers" -> request.nameservers.getOrElse(Seq.empty[String]))
-
-    request.provider.toLowerCase match {
-        case "bind" => compact(render(bindGenerateZoneRequestJson))
-        case "powerdns" => compact(render(powerdnsGenerateZoneRequestJson))
+    // Replace placeholders in the template
+    val resolvedJson = requestTemplate transformField {
+      case JField(fieldName, _) =>
+        values.get(fieldName).flatten match {
+          case Some(value: JValue) => JField(fieldName, value) // Replace with actual value
+          case None                => JField(fieldName, JNull) // Replace with null for missing fields
+          case _                   => JField(fieldName, JNull) // Handle unexpected types
+        }
     }
+    logger.info(s"Resolved JSON: ${compact(render(resolvedJson))}")
+    compact(render(resolvedJson))
   }
 
   private def createConnection(apiUrl: String): HttpURLConnection = {
@@ -194,16 +201,16 @@ class ZoneService(
                                  auth: AuthPrincipal
                                ): Result[ZoneGenerationResponse] = {
 
-    val (createZoneApi, apiKey) = request.provider.toLowerCase match {
-      case "bind"      => (dnsProviderApiConnection.bindCreateZoneApi, dnsProviderApiConnection.bindApiKey)
-      case "powerdns"  => (dnsProviderApiConnection.powerDnsCreateZoneApi, dnsProviderApiConnection.powerDnsApiKey)
-      case _           => throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}")
-    }
+    val providerConfig = dnsProviderApiConnection.providers.getOrElse(request.provider.toLowerCase, throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}"))
+
+    val createZoneApi = providerConfig.createZoneEndpoint
+    val apiKey = providerConfig.apiKey
+    val requestTemplate = providerConfig.createZoneTemplate
 
     for {
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
-      generateZoneRequestJson <- buildGenerateZoneRequestJson(request).toResult
+      generateZoneRequestJson <- buildGenerateZoneRequestJson(requestTemplate, request).toResult
       _ = logger.info(s"Request: provider=${request.provider}, path=$createZoneApi, request=$generateZoneRequestJson")
       dnsProviderConn <- createConnection(createZoneApi).toResult
       dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson, dnsProviderConn).toResult

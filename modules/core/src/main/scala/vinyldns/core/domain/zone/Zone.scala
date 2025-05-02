@@ -437,14 +437,21 @@ final case class LegacyDnsBackend(
   )
 }
 
-final case class DnsProviderApiConnection(
-                                           bindCreateZoneApi: String,
-                                           powerDnsCreateZoneApi: String,
-                                           powerDnsApiKey: String,
-                                           bindApiKey: String,
-                                           nameServers: List[String],
-                                           allowedProviders : List[String]
-                                         )
+case class DnsProviderConfig(
+    createZoneEndpoint: String,
+    deleteZoneEndpoint: String,
+    updateZoneEndpoint: String,
+    createZoneTemplate: String,
+    deleteZoneTemplate: String,
+    updateZoneTemplate: String,
+    apiKey: String
+  )
+
+case class DnsProviderApiConnection(
+    providers: Map[String, DnsProviderConfig],
+    nameServers: List[String],
+    allowedProviders: List[String]
+  )
 
 
 final case class ConfiguredDnsConnections(
@@ -495,43 +502,51 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-      val dnsProviderCreateZoneApiConfig = {
-        if (config.hasPath("vinyldns.backend.backend-providers")) {
-          val createZoneUri= config
-            .getConfigList("vinyldns.backend.backend-providers")
-            .asScala
-            .find(_.hasPath("settings.dns-provider-api.create-zone-uri"))
-            .map(_.getConfig("settings.dns-provider-api.create-zone-uri"))
-            .getOrElse(ConfigFactory.empty())
-          val apiKey= config
-            .getConfigList("vinyldns.backend.backend-providers")
-            .asScala
-            .find(_.hasPath("settings.dns-provider-api.api-key"))
-            .map(_.getConfig("settings.dns-provider-api.api-key"))
-            .getOrElse(ConfigFactory.empty())
-          val nameServers = config
-            .getConfigList("vinyldns.backend.backend-providers")
-            .asScala
-            .find(_.hasPath("settings.dns-provider-api.name-servers"))
-            .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
-            .getOrElse(List.empty[String])
+  val dnsProviderApiConfig = {
+    if (config.hasPath("vinyldns.backend.backend-providers")) {
+      val providersConfig = config
+        .getConfigList("vinyldns.backend.backend-providers")
+        .asScala
+        .find(_.hasPath("settings.dns-provider-api.providers"))
+        .map(_.getConfig("settings.dns-provider-api.providers"))
+        .getOrElse(ConfigFactory.empty())
 
-          val allowedProviders = config
-            .getConfigList("vinyldns.backend.backend-providers")
-            .asScala
-            .find(_.hasPath("settings.dns-provider-api.allowed-dns-provider"))
-            .map(_.getStringList("settings.dns-provider-api.allowed-dns-provider").asScala.toList)
-            .getOrElse(List.empty[String])
+      val allowedProviders = config
+        .getConfigList("vinyldns.backend.backend-providers")
+        .asScala
+        .find(_.hasPath("settings.dns-provider-api.allowed-providers"))
+        .map(_.getStringList("settings.dns-provider-api.allowed-providers").asScala.toList)
+        .getOrElse(List.empty[String])
 
-          val bindCreateZoneApi = createZoneUri.getString("bind")
-          val powerdnsCreateZoneApi = createZoneUri.getString("powerdns")
-          val powerdnsApiKey = apiKey.getString("powerdns")
-          val bindApiKey = apiKey.getString("bind")
+      val nameServers = config
+        .getConfigList("vinyldns.backend.backend-providers")
+        .asScala
+        .find(_.hasPath("settings.dns-provider-api.name-servers"))
+        .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
+        .getOrElse(List.empty[String])
 
-          DnsProviderApiConnection(bindCreateZoneApi, powerdnsCreateZoneApi, powerdnsApiKey, bindApiKey, nameServers, allowedProviders)
+      val providerConfigs = providersConfig.root().keySet().asScala.map { provider =>
+        val providerConfig = providersConfig.getConfig(provider)
+        val endpoints = providerConfig.getConfig("endpoints")
+        val requestTemplates = providerConfig.getConfig("request-templates")
+        val apiKey = providerConfig.getString("api-key")
 
-        } else DnsProviderApiConnection("", "", "", "", List.empty[String], List.empty[String])
-      }
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderCreateZoneApiConfig)
+        provider -> DnsProviderConfig(
+          createZoneEndpoint = endpoints.getString("create-zone"),
+          deleteZoneEndpoint = endpoints.getString("delete-zone"),
+          updateZoneEndpoint = endpoints.getString("update-zone"),
+          createZoneTemplate = requestTemplates.getString("create-zone"),
+          deleteZoneTemplate = requestTemplates.getString("delete-zone"),
+          updateZoneTemplate = requestTemplates.getString("update-zone"),
+          apiKey = apiKey
+        )
+      }.toMap
+
+      DnsProviderApiConnection(providerConfigs, nameServers, allowedProviders)
+    } else {
+      DnsProviderApiConnection(Map.empty, List.empty[String], List.empty[String])
     }
+  }
+  ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
+}
 }
