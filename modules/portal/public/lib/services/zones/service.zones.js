@@ -79,6 +79,33 @@ angular.module('service.zones', [])
             return promis;
         };
 
+        this.getGeneratedZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess) {
+            if (query == "") {
+                query = null;
+            }
+            var params = {
+                "maxItems": limit,
+                "startFrom": startFrom,
+                "nameFilter": query,
+                "searchByAdminGroup": searchByAdminGroup,
+                "ignoreAccess": ignoreAccess
+            };
+
+            var url = groupsService.urlBuilder("/api/zones/generate/info", params);
+
+            let loader = $("#loader");
+            loader.modal({
+                          backdrop: "static", //remove ability to close modal with click
+                          keyboard: false, //remove option to close with keyboard
+                          show: true //Display loader!
+                          })
+
+            let promis =  $http.get(url);
+            // Hide loader when api gets response
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            return promis;
+        };
+
         this.getBackendIds = function() {
             var url = "/api/zones/backendids";
             return $http.get(url);
@@ -104,30 +131,6 @@ angular.module('service.zones', [])
             var sanitizedPayload = this.sanitizeConnections(payload);
             $log.debug("service.zones: sending zone", sanitizedPayload);
             return $http.post("/api/zones/generate", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
-        };
-
-        this.getGeneratedZones = function (limit, startFrom, query, searchByAdminGroup, ignoreAccess) {
-            if (query == "") {
-                query = null;
-            }
-            var params = {
-                "maxItems": limit,
-                "startFrom": startFrom,
-                "nameFilter": query,
-                "searchByAdminGroup": searchByAdminGroup,
-                "ignoreAccess": ignoreAccess
-            };
-            var url = groupsService.urlBuilder("/api/zones/generate", params);
-            let loader = $("#loader");
-            loader.modal({
-                          backdrop: "static", //remove ability to close modal with click
-                          keyboard: false, //remove option to close with keyboard
-                          show: true //Display loader!
-                          })
-            let promis =  $http.get(url);
-            // Hide loader when api gets response
-            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
-            return promis
         };
 
         this.delZone = function (id) {

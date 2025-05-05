@@ -41,7 +41,7 @@ POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(
 GET           /api/zones/generate/allowedDNSProviders     @controllers.VinylDNS.getAllowedDNSProviders
 GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
 POST          /api/zones/generate                @controllers.VinylDNS.generateZone
-GET           /api/zones/generate                @controllers.VinylDNS.getGeneratedZones
+GET           /api/zones/generate/info           @controllers.VinylDNS.getGeneratedZones
 
 
 GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)

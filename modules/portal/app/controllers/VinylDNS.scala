@@ -340,7 +340,7 @@ class VinylDNS @Inject() (
       (name, values) <- request.queryString
     } queryParameters.put(name, values.asJava)
     val vinyldnsRequest =
-      new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "zones/generate", parameters = queryParameters)
+      new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "zones/generate/info", parameters = queryParameters)
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
