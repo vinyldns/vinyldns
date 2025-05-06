@@ -78,6 +78,17 @@
                                     <p ng-if="hasGeneratedZones && generatedZonesLoaded && !generatedZones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("generatedZones") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('generatedZones')" ng-click="prevPageGeneratedZones()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('generatedZones')" ng-click="nextPageGeneratedZones()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                     <!-- END PAGINATION -->
 
                                     <table class="table" ng-if="generatedZones.length">
@@ -118,6 +129,17 @@
                                     </table>
 
                                     <!-- PAGINATION -->
+                                    <div class="dataTables_paginate vinyldns_paginate paginate_left">
+                                        <span class="vinyldns_page_number">{{ getZonesPageNumber("generatedZones") }}</span>
+                                        <ul class="pagination">
+                                            <li class="paginate_button previous">
+                                                <a ng-if="prevPageEnabled('generatedZones')" ng-click="prevPageGeneratedZones()">Previous</a>
+                                            </li>
+                                            <li class="paginate_button next">
+                                                <a ng-if="nextPageEnabled('generatedZones')" ng-click="nextPageGeneratedZones()">Next</a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                     <!-- END PAGINATION -->
 
                                 </div>
