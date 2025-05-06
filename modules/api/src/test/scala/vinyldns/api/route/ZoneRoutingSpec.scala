@@ -99,6 +99,23 @@ class ZoneRoutingSpec
     nameservers=Some(List("bind_ns")),
     admin_email=Some("test@test.com")
   )
+  private val generatePdnsZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "pdns",
+    okZone.name,
+    nameservers=Some(List("pdns_ns")),
+    admin_email=Some("test@test.com")
+  )
+
+  private val generateMarkTwainZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "markTwain",
+    okZone.name,
+    nameservers=Some(List("pdns_ns")),
+    admin_email=Some("test@test.com")
+  )
   private val okAsZoneDetails = ZoneDetails(ok, okGroup.name)
   private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
   private val trailingDot = Zone("trailing.dot", "trailing-dot@test.com")
@@ -120,8 +137,12 @@ class ZoneRoutingSpec
   )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
-  private val genetateZoneSummaryInfo = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
-
+  private val generateZoneSummaryInfoBind = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoPDNS = GenerateZoneSummaryInfo(generatePdnsZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoMarkTwain = GenerateZoneSummaryInfo(generateMarkTwainZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoBindAll = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.Delete)
+  private val generateZoneSummaryInfoPDNSAll= GenerateZoneSummaryInfo(generatePdnsZoneAuthorized, okGroup.name, AccessLevel.Delete)
+  private val generateZoneSummaryInfoMarkTwainAll = GenerateZoneSummaryInfo(generateMarkTwainZoneAuthorized, okGroup.name, AccessLevel.Delete)
   private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name, AccessLevel.NoAccess)
   private val zone3 = Zone("zone3.", "zone3@test.com", ZoneStatus.Active)
@@ -448,7 +469,7 @@ class ZoneRoutingSpec
         case (_, None, Some("zone3."), 3, false) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = None,
               startFrom = Some("zone3."),
               nextId = Some("zone6."),
@@ -458,7 +479,7 @@ class ZoneRoutingSpec
         case (_, None, Some("zone4."), 4, false) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = None,
               startFrom = Some("zone4."),
               nextId = None,
@@ -469,7 +490,7 @@ class ZoneRoutingSpec
         case (_, None, None, 3, false) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = None,
               startFrom = None,
               nextId = Some("zone3."),
@@ -477,22 +498,10 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 6, true) =>
-          Right(
-            ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
-              nameFilter = None,
-              startFrom = None,
-              nextId = None,
-              maxItems = 6,
-              ignoreAccess = true
-            )
-          )
-
         case (_, Some(filter), Some("zone4."), 4, false) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = Some(filter),
               startFrom = Some("zone4."),
               nextId = None,
@@ -503,7 +512,7 @@ class ZoneRoutingSpec
         case (_, Some(filter), Some("zone4."), 4, true) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = Some(filter),
               startFrom = Some("zone4."),
               nextId = None,
@@ -512,10 +521,29 @@ class ZoneRoutingSpec
             )
           )
 
+        case (_, None, None, 6, true) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(
+                generateZoneSummaryInfoBind,
+                generateZoneSummaryInfoPDNS,
+                generateZoneSummaryInfoMarkTwain,
+                generateZoneSummaryInfoBindAll,
+                generateZoneSummaryInfoPDNSAll,
+                generateZoneSummaryInfoMarkTwainAll
+              ),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 6,
+              ignoreAccess = true,
+            )
+          )
+
         case (_, None, None, _, _) =>
           Right(
             ListGeneratedZonesResponse(
-              zones = List(genetateZoneSummaryInfo),
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
               nameFilter = None,
               startFrom = None,
               nextId = None
@@ -1315,6 +1343,97 @@ class ZoneRoutingSpec
 
     "return an error if the max items is out of range" in {
       Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseEntity.toString should include(
+          "maxItems was 700, maxItems must be between 0 and 100"
+        )
+      }
+    }
+  }
+
+  "GET generated zones" should {
+    "return the next id when more results exist" in {
+      Get(s"/zones/generate/info?startFrom=zone3.&maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe Some("zone6.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe Some("zone3.")
+      }
+    }
+
+    "not return the next id when there are no more results" in {
+      Get(s"/zones/generate/info?startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "not return the start from when not provided" in {
+      Get(s"/zones/generate/info?maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe Some("zone3.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe None
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return the name filter when provided" in {
+      Get(s"/zones/generate/info?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("foo")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return zones by admin group name when searchByAdminGroup is true" in {
+      Get(s"/zones/generate/info?nameFilter=ok&startFrom=zone4.&maxItems=4&searchByAdminGroup=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("ok")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return all zones when list all is true" in {
+      Get(s"/zones/generate/info?maxItems=6&ignoreAccess=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 6
+        resp.startFrom shouldBe None
+        resp.nameFilter shouldBe None
+        resp.ignoreAccess shouldBe true
+      }
+    }
+
+    "return an error if the max items is out of range" in {
+      Get(s"/zones/generate/info?maxItems=700") ~> zoneRoute ~> check {
         status shouldBe BadRequest
         responseEntity.toString should include(
           "maxItems was 700, maxItems must be between 0 and 100"

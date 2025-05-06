@@ -35,8 +35,8 @@ import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
-import vinyldns.core.TestMembershipData.{okAuth, okUser}
-import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser}
+import vinyldns.core.TestZoneData.{abcZone, bindZoneGenerationResponse, okZone}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -65,11 +65,27 @@ class ZoneServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
   private val mockMembershipService = mock[MembershipService]
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("test"),List("test"))
+  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("name-servers"),List("bind","powerdns"))
   private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
+
+  private val generateBindZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    nameservers=Some(List("bind_ns")),
+
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(bindZoneGenerationResponse)
+  )
 
   private val testRecordSOA = RecordSet(
     zoneId = okZone.id,
@@ -109,8 +125,10 @@ class ZoneServiceIntegrationSpec
   override protected def beforeEach(): Unit = {
     clearRecordSetRepo()
     clearZoneRepo()
+    clearGenerateZoneRepo()
 
     waitForSuccess(zoneRepo.save(okZone))
+    waitForSuccess(mockGenerateZoneRepository.save(generateBindZoneAuthorized))
     // Seeding records in DB
     executeWithinTransaction { db: DB =>
       IO {
@@ -183,7 +201,37 @@ class ZoneServiceIntegrationSpec
           .getGenerateZoneByName(okZone.name, okAuth)
           .value
           .unsafeRunSync()
-      result shouldBe Left(ZoneNotFoundError(s"Zone with name ${okZone.name} does not exists"))
+      result shouldBe Right(generateBindZoneAuthorized)
+    }
+
+    "return a ZoneNotFoundError for zone does not exists" in {
+      val result =
+        testZoneService
+          .getGenerateZoneByName(abcZone.name, abcAuth)
+          .value
+          .unsafeRunSync()
+      result shouldBe Left(ZoneNotFoundError("Zone with name abc.zone.recordsets. does not exists"))
+    }
+
+    "return a name servers with appropriate response" in {
+      val result =
+        testZoneService
+          .dnsNameServers()
+          .value
+          .unsafeRunSync()
+      result shouldBe Right(
+        List("name-servers")
+      )
+    }
+    "return a allowed providers with appropriate response" in {
+      val result =
+        testZoneService
+          .allowedDNSProviders()
+          .value
+          .unsafeRunSync()
+      result shouldBe Right(
+        List("bind","powerdns")
+      )
     }
   }
 
