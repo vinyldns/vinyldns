@@ -54,6 +54,15 @@ describe('Controller: ZonesController', function () {
                 }
             });
         };
+
+        zonesService.getGeneratedZones = function() {
+            return $q.when({
+                data: {
+                    zones: ["all generated zones"]
+                }
+            });
+        };
+
         zonesService.getBackendIds = function() {
             return $q.when({
                 data: ['backend-1', 'backend-2']
@@ -186,5 +195,48 @@ describe('Controller: ZonesController', function () {
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
 
+    });
+
+    it('nextPageGeneratedZones should call getGeneratedZones with the correct parameters', function () {
+        var getZoneSets = spyOn(this.zonesService, 'getGeneratedZones')
+            .and.stub()
+            .and.returnValue(this.zonesService.q.when(mockZone));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
+        var expectedignoreAccess = false;
+
+        this.scope.nextPageGeneratedZones();
+
+        expect(getZoneSets.calls.count()).toBe(1);
+        expect(getZoneSets.calls.mostRecent().args).toEqual(
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
+    });
+
+    it('prevPageGeneratedZones should call getGeneratedZones with the correct parameters', function () {
+        var getZoneSets = spyOn(this.zonesService, 'getGeneratedZones')
+            .and.stub()
+            .and.returnValue(this.zonesService.q.when(mockZone));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
+        var expectedignoreAccess = false;
+
+        this.scope.prevPageGeneratedZones();
+
+        expect(getZoneSets.calls.count()).toBe(1);
+        expect(getZoneSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
+
+        this.scope.nextPageGeneratedZones();
+        this.scope.prevPageGeneratedZones();
+
+        expect(getZoneSets.calls.count()).toBe(3);
+        expect(getZoneSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 });

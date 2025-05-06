@@ -540,17 +540,17 @@ angular.module('controller.zones', [])
     }
 
     $scope.prevPageGeneratedZones = function() {
-            var startFrom = pagingService.getPrevStartFrom(generatedZonesPaging);
-            return zonesService
-                .getGeneratedZones(generatedZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false)
-                .then(function(response) {
-                    generatedZonesPaging = pagingService.prevPageUpdate(response.data.nextId, generatedZonesPaging);
-                    updateGeneratedZoneDisplay(response.data.zones);
-                })
-                .catch(function (error) {
-                    handleError(error,'zonesService::prevPage-failure');
-                });
-        }
+        var startFrom = pagingService.getPrevStartFrom(generatedZonesPaging);
+        return zonesService
+            .getGeneratedZones(generatedZonesPaging.maxItems, startFrom, $scope.query, $scope.searchByAdminGroup, false)
+            .then(function(response) {
+                generatedZonesPaging = pagingService.prevPageUpdate(response.data.nextId, generatedZonesPaging);
+                updateGeneratedZoneDisplay(response.data.zones);
+            })
+            .catch(function (error) {
+                handleError(error,'zonesService::prevPage-failure');
+            });
+    }
 
     $scope.nextPageMyZones = function () {
         return zonesService
