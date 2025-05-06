@@ -75,7 +75,9 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
-    "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4"
+    "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4",
+    "org.json4s"                %% "json4s-ext"                     % "3.6.1",
+    "org.json4s"                %% "json4s-jackson"                 % "3.5.3"
   )
 
   lazy val mysqlDependencies = Seq(

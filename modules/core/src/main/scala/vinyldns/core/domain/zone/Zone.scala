@@ -30,6 +30,9 @@ import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.{Encrypted, Encryption}
 
 import scala.collection.JavaConverters._
+import org.json4s._
+import org.json4s.JsonAST.JValue
+
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
@@ -137,20 +140,7 @@ final case class GenerateZone(
                                provider: String, // "powerdns", "cloudflare", "google", "bind"
                                zoneName: String,
                                status:  GenerateZoneStatus = GenerateZoneStatus.Active,
-                               serverId: Option[String] = None, // The ID of the sever (PowerDNS)
-                               kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
-                               masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                               nameservers: Option[List[String]] = None, // NS records
-                               description: Option[String] = None, // description (Google)
-                               visibility: Option[String] = None, // Public or Private (Google)
-                               accountId: Option[String] = None, // Account ID (Cloudflare)
-                               projectId: Option[String] = None, // GCP Project ID (Google)
-                               admin_email: Option[String] = None, // NS IpAddress (Bind)
-                               ttl: Option[Int] = None, // TTL (Bind)
-                               refresh: Option[Int] = None, // Refresh (Bind)
-                               retry: Option[Int] = None, // Retry (Bind)
-                               expire: Option[Int] = None, // Expire (Bind)
-                               negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                               providerParams: Map[String, JValue] = Map.empty,
                                response: Option[ZoneGenerationResponse] = None,
                                id: String = UUID.randomUUID().toString,
                                created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
@@ -166,19 +156,6 @@ final case class GenerateZone(
       sb.append("provider=\"").append(provider).append("\"; ")
       sb.append("zoneName=\"").append(zoneName).append("\"; ")
       sb.append("status=\"").append(zoneName).append("\"; ")
-      sb.append("serverId=\"").append(serverId.toString).append("\"; ")
-      sb.append("kind=\"").append(kind.toString).append("\"; ")
-      sb.append("masters=\"").append(masters.toString).append("\"; ")
-      sb.append("nameservers=\"").append(nameservers.toString).append("\"; ")
-      sb.append("description=\"").append(description.toString).append("\"; ")
-      sb.append("visibility=\"").append(visibility.toString).append("\"; ")
-      sb.append("accountId=\"").append(accountId.toString).append("\"; ")
-      sb.append("projectId=\"").append(projectId.toString).append("\"; ")
-      sb.append("ttl=\"").append(ttl).append("\"; ")
-      sb.append("refresh=\"").append(refresh).append("\"; ")
-      sb.append("retry=\"").append(retry).append("\"; ")
-      sb.append("expire=\"").append(expire).append("\"; ")
-      sb.append("negative_cache_ttl=\"").append(negative_cache_ttl).append("\"; ")
       sb.append("created=\"").append(created).append("\"; ")
       updated.map(sb.append("updated=\"").append(_).append("\"; "))
       sb.append("]")
@@ -196,20 +173,7 @@ object GenerateZone {
       provider,
       zoneName,
       status,
-      serverId,
-      kind,
-      masters,
-      nameservers,
-      description,
-      visibility,
-      accountId,
-      projectId,
-      admin_email,
-      ttl,
-      refresh,
-      retry,
-      expire,
-      negative_cache_ttl,
+      providerParams,
       response
     )
   }
@@ -223,20 +187,7 @@ object GenerateZone {
       provider,
       zoneName ,
       status,
-      serverId,
-      kind,
-      masters,
-      nameservers,
-      description,
-      visibility,
-      accountId,
-      projectId,
-      admin_email,
-      ttl,
-      refresh,
-      retry,
-      expire,
-      negative_cache_ttl,
+      providerParams,
       response
     )
   }
@@ -311,20 +262,7 @@ final case class UpdateGenerateZoneInput(
                                   provider: String, // "powerdns", "cloudflare", "google", "bind"
                                   zoneName: String,
                                   status: GenerateZoneStatus = GenerateZoneStatus.Active,
-                                  serverId: Option[String] = None, // The ID of the sever (PowerDNS)
-                                  kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
-                                  masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                                  nameservers: Option[List[String]] = None, // NS records
-                                  description: Option[String] = None, // description (Google)
-                                  visibility: Option[String] = None, // Public or Private (Google)
-                                  accountId: Option[String] = None, // Account ID (Cloudflare)
-                                  projectId: Option[String] = None, // GCP Project ID (Google)
-                                  admin_email: Option[String] = None, // Admin Email (Bind)
-                                  ttl: Option[Int] = None, // TTL (Bind)
-                                  refresh: Option[Int] = None, // Refresh (Bind)
-                                  retry: Option[Int] = None, // Retry (Bind)
-                                  expire: Option[Int] = None, // Expire (Bind)
-                                  negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                                  providerParams: Map[String, JValue] = Map.empty,
                                   response: Option[ZoneGenerationResponse] = None,
                                   id: String = UUID.randomUUID().toString
 
@@ -343,20 +281,7 @@ case class ZoneGenerationInput(
     provider: String, // "powerdns", "cloudflare", "google", "bind"
     zoneName: String,
     status: GenerateZoneStatus = GenerateZoneStatus.Active,
-    serverId: Option[String] = None, // The ID of the sever (PowerDNS)
-    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
-    masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-    nameservers: Option[List[String]] = None, // NS records
-    description: Option[String] = None, // description (Google)
-    visibility: Option[String] = None, // Public or Private (Google)
-    accountId: Option[String] = None, // Account ID (Cloudflare)
-    projectId: Option[String] = None, // GCP Project ID (Google)
-    admin_email: Option[String] = None, // Admin Email (Bind)
-    ttl: Option[Int] = None, // TTL (Bind)
-    refresh: Option[Int] = None, // Refresh (Bind)
-    retry: Option[Int] = None, // Retry (Bind)
-    expire: Option[Int] = None, // Expire (Bind)
-    negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+    providerParams: Map[String, JValue] = Map.empty,
     response: Option[ZoneGenerationResponse] = None,
     id: String = UUID.randomUUID().toString
                               ) {
@@ -444,6 +369,9 @@ case class DnsProviderConfig(
     createZoneTemplate: String,
     deleteZoneTemplate: String,
     updateZoneTemplate: String,
+    createZoneRequiredFields: List[String],
+    deleteZoneRequiredFields: List[String],
+    updateZoneRequiredFields: List[String],
     apiKey: String
   )
 
@@ -529,6 +457,7 @@ object ConfiguredDnsConnections {
         val providerConfig = providersConfig.getConfig(provider)
         val endpoints = providerConfig.getConfig("endpoints")
         val requestTemplates = providerConfig.getConfig("request-templates")
+        val requiredFields = providerConfig.getConfig("required-fields")
         val apiKey = providerConfig.getString("api-key")
 
         provider -> DnsProviderConfig(
@@ -538,6 +467,9 @@ object ConfiguredDnsConnections {
           createZoneTemplate = requestTemplates.getString("create-zone"),
           deleteZoneTemplate = requestTemplates.getString("delete-zone"),
           updateZoneTemplate = requestTemplates.getString("update-zone"),
+          createZoneRequiredFields = requiredFields.getStringList("create-zone").asScala.toList,
+          deleteZoneRequiredFields = requiredFields.getStringList("delete-zone").asScala.toList,
+          updateZoneRequiredFields = requiredFields.getStringList("update-zone").asScala.toList,
           apiKey = apiKey
         )
       }.toMap

@@ -35,24 +35,11 @@ message GenerateZone {
   required string provider = 3;
   required string zoneName = 4;
   required string status = 5;
-  optional string serverId = 6;
-  optional string kind = 7;
-  repeated string masters = 8;
-  repeated string nameservers = 9;
-  optional string description = 10;
-  optional string visibility = 11;
-  optional string accountId = 12;
-  optional string projectId = 13;
-  optional string admin_email = 14;
-  optional int64 ttl = 15;
-  optional int64 refresh = 16;
-  optional int64 retry = 17;
-  optional int64 expire = 18;
-  optional int64 negative_cache_ttl = 19;
-  optional ZoneGenerationResponse response = 20;
-  required int64 created = 21;
-  optional int64 updated = 22;
-  required string email = 23;
+  required string email = 6;
+  map<string, string> provider_params = 7;  // All provider-specific config
+  optional ZoneGenerationResponse response = 8;
+  required int64 created = 9;
+  optional int64 updated = 10;
 }
 
 message ZoneGenerationResponse {
