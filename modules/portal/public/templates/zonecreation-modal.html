@@ -6,11 +6,11 @@
             </p>
             <br />
             <modal-element label="Zone Name" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameval.$invalid">
-                <input id="zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" required/>
+                <input id="generate-zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" required/>
                 <span class="help-block">Name for the DNS zone, for example:<code>"vinyldns.example.net."</code>.</span>
             </modal-element>
             <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">
-                <input id="zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>
+                <input id="generate-zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>
                 <span class="help-block">
                     The email distribution list for the zone.  Typically the distribution email for the org that owns
                     the zone.
@@ -35,7 +35,7 @@
                 </div>
             </modal-element>
             <modal-element label="Admin Group" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.admingroup.$invalid">
-                <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" required>
+                <select id="generate-zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" required>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
                         {{group.name}}
                         <span ng-show="group.description">({{group.description}})</span></option>
@@ -67,30 +67,35 @@
             <modal-element label="Name Server"
                            invalid-when="addZoneCreationForm.$submitted && createZone.nameservers.length === 0">
 
-                <!-- Hidden input to trigger validation -->
                 <input type="hidden"
                        name="nameservers"
                        ng-model="createZone.nameservers"
                        ng-required="createZone.nameservers.length === 0" />
 
-                <!-- Dropdown toggle -->
-                <div class="dropdown" style="width: 100%;">
-                    <button class="btn btn-default dropdown-toggle form-control text-left"
+                <!-- Dropdown -->
+                <div class="dropdown dropdown-container">
+                    <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
                             type="button"
                             data-toggle="dropdown"
                             aria-haspopup="true"
-                            aria-expanded="false"
-                            style="text-align: left; padding-right: 30px;">
-                        <!-- Left-align the dropdown text -->
+                            aria-expanded="false">
                         <span ng-if="createZone.nameservers.length === 0">Select a NameServer</span>
                         <span ng-if="createZone.nameservers.length > 0">{{ createZone.nameservers.join(', ') }}</span>
-                        <span class="caret pull-right" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></span>
+                        <span class="caret pull-right dropdown-caret"></span>
                     </button>
 
-                    <!-- Dropdown content -->
-                    <ul class="dropdown-menu" style="padding: 10px; width: 100%; max-height: 200px; overflow-y: auto;">
-                        <li ng-repeat="ns in nameservers">
-                            <label style="width: 100%; font-weight: normal;">
+                    <ul class="dropdown-menu dropdown-menu-box">
+                        <!-- Search Input -->
+                        <li>
+                            <input type="text"
+                                   class="form-control dropdown-search-input"
+                                   placeholder="Search..."
+                                   ng-model="searchNs" />
+                        </li>
+
+                        <!-- Filtered List -->
+                        <li ng-repeat="ns in nameservers | filter:searchNs">
+                            <label class="dropdown-label">
                                 <input type="checkbox"
                                        ng-model="nameserverSelection[ns]"
                                        ng-change="updateNameserverSelection(ns)">

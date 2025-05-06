@@ -3,12 +3,12 @@
         <modal-body>
             <modal-element label="Zone Name">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="zoneName" ng-model="createZone.zoneName" name="nameval" disabled/>
+                    <input type="text" class="form-control" id="zoneNameView" ng-model="createZone.zoneName" name="nameval" disabled/>
                 </div>
             </modal-element>
             <modal-element label="Email">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="zoneEmail" ng-model="createZone.email" name="emailval" disabled/>
+                    <input type="text" class="form-control" id="zoneEmailView" ng-model="createZone.email" name="emailval" disabled/>
                 </div>
             </modal-element>
             <modal-element label="Admin Group">
@@ -16,7 +16,7 @@
                     <input
                             type="text"
                             class="form-control"
-                            id="zone-admin-group"
+                            id="zoneAdminGroupView"
                             ng-disabled="true"
                             ng-value="(myGroups | filter:{id: createZone.groupId})[0].name || ''" />
                 </div>
