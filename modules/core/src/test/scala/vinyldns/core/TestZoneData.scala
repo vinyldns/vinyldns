@@ -142,6 +142,38 @@ object TestZoneData {
     id = "bindZoneId"
   )
 
+  val abcGenerateZone = GenerateZone(
+    abcGroup.id,
+    "test@test.com",
+    "bind",
+    abcZone.name,
+    nameservers=Some(List("bind_ns")),
+
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(bindZoneGenerationResponse)
+  )
+
+  val xyzGenerateZone = GenerateZone(
+    xyzGroup.id,
+    "test@test.com",
+    "bind",
+    xyzZone.name,
+    nameservers=Some(List("bind_ns")),
+
+    admin_email=Some("test@test.com"),
+    ttl=Some(3600),
+    refresh=Some(6048000),
+    retry=Some(86400),
+    expire=Some(24192000),
+    negative_cache_ttl=Some(6048000),
+    response=Some(bindZoneGenerationResponse)
+  )
+
   /* ACL RULES */
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 
