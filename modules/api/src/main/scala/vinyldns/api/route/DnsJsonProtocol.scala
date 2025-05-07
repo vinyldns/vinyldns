@@ -126,14 +126,8 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
-    // Standard fields that are not provider-specific
-    private val standardFields = Set(
-      "groupId", "email", "provider", "zoneName",
-      "status", "id", "response", "providerParams"
-    )
-
     override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
-      // Validate standard fields
+      // Validate standard fields (not provider specific)
       val std = (
         (js \ "groupId").required[String]("Missing group id"),
         (js \ "email").required[String]("Missing email"),
@@ -144,18 +138,14 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "response").optional[ZoneGenerationResponse]
       )
 
-      // Extract nested providerParams + top-level non-standard fields
-      val (nestedParams, topLevelParams) = (js \ "providerParams") match {
-        case JObject(fields) => (fields.toMap, Map.empty[String, JValue])
-        case _ => (Map.empty[String, JValue], Map.empty[String, JValue])
+      // Extract providerParams from the nested "providerParams" field
+      // should providerParams be required?
+      val providerParams = (js \ "providerParams") match {
+        case JObject(fields) => fields.toMap  // Convert JObject to Map[String, JValue]
+        case _ => Map.empty[String, JValue]   // Default to empty map if missing/invalid
       }
 
-      val topLevelNonStandard = js.removeField {
-        case JField(name, _) => standardFields.contains(name)
-      }.asInstanceOf[JObject].obj.toMap
-
-      val providerParams = nestedParams ++ topLevelNonStandard ++ topLevelParams
-
+      // Build the result (ignores any non-standard fields outside "providerParams")
       std.mapN { (groupId, email, provider, zoneName, status, id, response) =>
         ZoneGenerationInput(
           groupId = groupId,

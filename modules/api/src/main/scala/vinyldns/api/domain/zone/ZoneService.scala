@@ -253,12 +253,13 @@ class ZoneService(
       val templateJson = parse(template)
 
       // First pass: Replace entire fields
+      // allows you to inject not just strings, but also arrays or objects directly into the JSON
       val fieldReplaced = templateJson.transformField {
         case (key, _) if params.contains(key) =>
           (key, params(key))
       }
 
-      // Second pass: Replace {{key}} patterns in strings
+      // Second pass: Replace {{value}} patterns in strings
       val placeholdersReplaced = fieldReplaced.transform {
         case JString(s) if s.startsWith("{{") && s.endsWith("}}") =>
           val key = s.substring(2, s.length-2).trim
