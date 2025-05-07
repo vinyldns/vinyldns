@@ -29,6 +29,8 @@ import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import org.json4s._
+import org.json4s.JsonAST.JValue
 
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 
@@ -152,23 +154,10 @@ object ZoneSummaryInfo {
 case class GenerateZoneSummaryInfo(
                                     groupId: String,
                                     email: String,
-                                    provider: String, // "powerdns", "cloudflare", "google", "bind"
+                                    provider: String,
                                     zoneName: String,
                                     status:  GenerateZoneStatus = GenerateZoneStatus.Active,
-                                    serverId: Option[String] = None, // The ID of the sever (PowerDNS)
-                                    kind: Option[String] = None, // Zone type (PowerDNS/Cloudflare/Bind)
-                                    masters: Option[List[String]] = None, // Master servers (for slave zones, PowerDNS)
-                                    nameservers: Option[List[String]] = None, // NS records
-                                    description: Option[String] = None, // description (Google)
-                                    visibility: Option[String] = None, // Public or Private (Google)
-                                    accountId: Option[String] = None, // Account ID (Cloudflare)
-                                    projectId: Option[String] = None, // GCP Project ID (Google)
-                                    admin_email: Option[String] = None, // NS IpAddress (Bind)
-                                    ttl: Option[Int] = None, // TTL (Bind)
-                                    refresh: Option[Int] = None, // Refresh (Bind)
-                                    retry: Option[Int] = None, // Retry (Bind)
-                                    expire: Option[Int] = None, // Expire (Bind)
-                                    negative_cache_ttl: Option[Int] = None, // Negative Cache TTL (Bind)
+                                    providerParams: Map[String, JValue] = Map.empty,
                                     response: Option[ZoneGenerationResponse] = None,
                                     id: String = UUID.randomUUID().toString,
                                     created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
@@ -185,20 +174,7 @@ object GenerateZoneSummaryInfo {
       zone.provider,
       zone.zoneName,
       zone.status,
-      zone.serverId,
-      zone.kind,
-      zone.masters,
-      zone.nameservers,
-      zone.description,
-      zone.visibility,
-      zone.accountId,
-      zone.projectId,
-      zone.admin_email,
-      zone.ttl,
-      zone.refresh,
-      zone.retry,
-      zone.expire,
-      zone.negative_cache_ttl,
+      zone.providerParams,
       zone.response,
       zone.id,
       zone.created,

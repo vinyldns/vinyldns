@@ -137,7 +137,7 @@ object Zone {
 final case class GenerateZone(
                                groupId: String,
                                email: String,
-                               provider: String, // "powerdns", "cloudflare", "google", "bind"
+                               provider: String,
                                zoneName: String,
                                status:  GenerateZoneStatus = GenerateZoneStatus.Active,
                                providerParams: Map[String, JValue] = Map.empty,
@@ -155,7 +155,7 @@ final case class GenerateZone(
       sb.append("email=\"").append(email).append("\"; ")
       sb.append("provider=\"").append(provider).append("\"; ")
       sb.append("zoneName=\"").append(zoneName).append("\"; ")
-      sb.append("status=\"").append(zoneName).append("\"; ")
+      sb.append("status=\"").append(status).append("\"; ")
       sb.append("created=\"").append(created).append("\"; ")
       updated.map(sb.append("updated=\"").append(_).append("\"; "))
       sb.append("]")
@@ -192,29 +192,6 @@ object GenerateZone {
     )
   }
 }
-
-case class PowerDNSResponse(
-                             account: String,
-                             api_rectify: Boolean,
-                             catalog: String,
-                             dnssec: Boolean,
-                             edited_serial: Long,
-                             id: String,
-                             kind: String,
-                             last_check: Int,
-                             master_tsig_key_ids: List[String],
-                             masters: List[String],
-                             name: String,
-                             notified_serial: Int,
-                             nsec3narrow: Boolean,
-                             nsec3param: String,
-                             rrsets: List[RRSet],
-                             serial: Long,
-                             slave_tsig_key_ids: List[String],
-                             soa_edit: String,
-                             soa_edit_api: String,
-                             url: String
-                           )
 
 case class RRSet(
                   comments: List[String],
@@ -259,7 +236,7 @@ final case class UpdateZoneInput(
 final case class UpdateGenerateZoneInput(
                                   groupId: String,
                                   email: String,
-                                  provider: String, // "powerdns", "cloudflare", "google", "bind"
+                                  provider: String,
                                   zoneName: String,
                                   status: GenerateZoneStatus = GenerateZoneStatus.Active,
                                   providerParams: Map[String, JValue] = Map.empty,
@@ -278,15 +255,13 @@ case class ZoneGenerationResponse(
 case class ZoneGenerationInput(
     groupId: String,
     email: String,
-    provider: String, // "powerdns", "cloudflare", "google", "bind"
+    provider: String,
     zoneName: String,
     status: GenerateZoneStatus = GenerateZoneStatus.Active,
     providerParams: Map[String, JValue] = Map.empty,
     response: Option[ZoneGenerationResponse] = None,
     id: String = UUID.randomUUID().toString
-                              ) {
-
-}
+                              )
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 

@@ -157,40 +157,6 @@ class ZoneService(
       generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
     } yield generateZone
 
-  private def buildGenerateZoneRequestJson(template: String, request: ZoneGenerationInput): String = {
-
-    logger.info(s"request: $request")
-    // Parse the request template into a JValue
-    val requestTemplate = parse(template)
-    logger.info(s"Request template: $requestTemplate")
-
-    // Build a map of values to replace placeholders
-    val values = Map(
-      "zoneName" -> Some(JString(request.zoneName)),
-      "nameservers" -> request.nameservers.map(ns => JArray(ns.map(JString))),
-      "admin_email" -> request.admin_email.map(JString),
-      "ttl" -> request.ttl.map(JInt(_)),
-      "refresh" -> request.refresh.map(JInt(_)),
-      "retry" -> request.retry.map(JInt(_)),
-      "expire" -> request.expire.map(JInt(_)),
-      "negative_cache_ttl" -> request.negative_cache_ttl.map(JInt(_)),
-      "kind" -> request.kind.map(JString),
-      "masters" -> request.masters.map(masters => JArray(masters.map(JString)))
-    )
-    logger.info(s"$values")
-
-    // Replace placeholders in the template
-    val resolvedJson = requestTemplate transformField {
-      case JField(fieldName, _) =>
-        values.get(fieldName).flatten match {
-          case Some(value: JValue) => JField(fieldName, value) // Replace with actual value
-          case None                => JField(fieldName, JNull) // Replace with null for missing fields
-          case _                   => JField(fieldName, JNull) // Handle unexpected types
-        }
-    }
-    logger.info(s"Resolved JSON: ${compact(render(resolvedJson))}")
-    compact(render(resolvedJson))
-  }
 
   private def createConnection(apiUrl: String): HttpURLConnection = {
    new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
@@ -201,19 +167,44 @@ class ZoneService(
                                  auth: AuthPrincipal
                                ): Result[ZoneGenerationResponse] = {
 
-    val providerConfig = dnsProviderApiConnection.providers.getOrElse(request.provider.toLowerCase, throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}"))
+    val providerConfig = dnsProviderApiConnection.providers.getOrElse(request.provider.toLowerCase,
+      throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}"))
 
-    val createZoneApi = providerConfig.createZoneEndpoint
-    val apiKey = providerConfig.apiKey
-    val requestTemplate = providerConfig.createZoneTemplate
+    // debugging
+    logger.info(s"Provider config required fields: ${providerConfig.createZoneRequiredFields}")
+    logger.info(s"Request providerParams keys: ${request.providerParams.keys.mkString(", ")}")
+    logger.info(s"Request providerParams: ${request.providerParams}")
+
+    // Validate required fields from config
+    val missingFields = providerConfig.createZoneRequiredFields.filterNot(request.providerParams.contains)
+    if (missingFields.nonEmpty) {
+      throw new IllegalArgumentException(s"Missing required fields for ${request.provider}: ${missingFields.mkString(", ")}")
+    }
+
+    // Build JSON request using template engine
+    val generateZoneRequestJson = buildGenerateZoneRequestJson(
+      providerConfig.createZoneTemplate,
+      request.zoneName,
+      request.provider,
+      request.groupId,
+      request.email,
+      request.providerParams
+    )
+
+    logger.info(s"Generated JSON request: $generateZoneRequestJson")
 
     for {
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
-      generateZoneRequestJson <- buildGenerateZoneRequestJson(requestTemplate, request).toResult
-      _ = logger.info(s"Request: provider=${request.provider}, path=$createZoneApi, request=$generateZoneRequestJson")
-      dnsProviderConn <- createConnection(createZoneApi).toResult
-      dnsConnResponse <- createDnsZoneService(createZoneApi, apiKey, generateZoneRequestJson, dnsProviderConn).toResult
+      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.createZoneEndpoint}, request=$generateZoneRequestJson")
+      dnsProviderConn <- createConnection(providerConfig.createZoneEndpoint).toResult
+      dnsConnResponse <- createDnsZoneService(
+        providerConfig.createZoneEndpoint,
+        providerConfig.apiKey,
+        generateZoneRequestJson,
+        dnsProviderConn
+      ).toResult
+
       responseCode = dnsConnResponse.getResponseCode
       inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
       responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
@@ -221,16 +212,61 @@ class ZoneService(
 
       zoneGenerateResponse = ZoneGenerationResponse(
         provider = request.provider,
-        responseCode = dnsConnResponse.getResponseCode,
+        responseCode = responseCode,
         status = dnsConnResponse.getResponseMessage,
         message = responseMessage
       )
+
       zoneToGenerate = GenerateZone(request)
       _ <- generateZoneRepository.save(zoneToGenerate.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
     } yield {
       inputStream.close()
       dnsConnResponse.disconnect()
       zoneGenerateResponse
+    }
+  }
+  // Build a Generate Zone JSON request using template engine
+  private def buildGenerateZoneRequestJson(
+                                        template: String,
+                                        zoneName: String,
+                                        provider: String,
+                                        groupId: String,
+                                        email: String,
+                                        providerParams: Map[String, JValue]
+                                      ): String = {
+    val baseParams = Map(
+      "zoneName" -> JString(zoneName),
+      "provider" -> JString(provider),
+      "groupId" -> JString(groupId),
+      "email" -> JString(email)
+    )
+
+    TemplateEngine.renderTemplate(template, baseParams ++ providerParams)
+  }
+    // Template engine to replace placeholders in JSON template
+  private object TemplateEngine {
+    def renderTemplate(
+                        template: String,
+                        params: Map[String, JValue]
+                      ): String = {
+      // Parse template into JValue
+      val templateJson = parse(template)
+
+      // First pass: Replace entire fields
+      val fieldReplaced = templateJson.transformField {
+        case (key, _) if params.contains(key) =>
+          (key, params(key))
+      }
+
+      // Second pass: Replace {{key}} patterns in strings
+      val placeholdersReplaced = fieldReplaced.transform {
+        case JString(s) if s.startsWith("{{") && s.endsWith("}}") =>
+          val key = s.substring(2, s.length-2).trim
+          params.getOrElse(key, JString(s))
+        case other => other
+      }
+
+      compact(render(placeholdersReplaced))
     }
   }
 

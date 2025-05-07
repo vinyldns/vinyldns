@@ -187,13 +187,15 @@ trait ProtobufConversions {
   }
 
   def fromPB(zn: VinylDNSProto.GenerateZone): GenerateZone = {
+    // status conversion, is this necessary?
     val pbStatus = zn.getStatus
     val status =
       if (pbStatus.startsWith("Pending")) GenerateZoneStatus.Active
       else GenerateZoneStatus.withName(pbStatus)
 
+    // convert the providerParams map from protobuf Map[String, String] to scala Map[String, JValue]
     val providerParams: Map[String, JValue] = zn.getProviderParamsMap.asScala
-      .map { case (k, v) => k -> parseParamValue(v) }
+      .map { case (k, v) => k -> parseParamValue(v) } // convert the JSON string into a json4s JValue
       .toMap
 
     zone.GenerateZone(
@@ -511,16 +513,16 @@ trait ProtobufConversions {
       .setZoneName(generateZone.zoneName)
       .setStatus(generateZone.status.toString)
 
+    // Handle optional standard fields
+    generateZone.response.foreach(gz => builder.setResponse(toPB(gz)))
+    generateZone.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
+
     // Convert providerParams map to Protobuf map
     generateZone.providerParams.foreach {
       case (key, value) =>
-        val strValue = compact(render(value))
+        val strValue = compact(render(value))  // Convert JValue to String
         builder.putProviderParams(key, strValue)
     }
-
-    // Handle remaining standard fields
-    generateZone.response.foreach(gz => builder.setResponse(toPB(gz)))
-    generateZone.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
 
     builder.build()
   }

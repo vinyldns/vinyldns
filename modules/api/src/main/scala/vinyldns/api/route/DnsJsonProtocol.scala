@@ -126,30 +126,49 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
-    override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] =
-      (
+    // Standard fields that are not provider-specific
+    private val standardFields = Set(
+      "groupId", "email", "provider", "zoneName",
+      "status", "id", "response", "providerParams"
+    )
+
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
+      // Validate standard fields
+      val std = (
         (js \ "groupId").required[String]("Missing group id"),
-        (js \ "email").required[String]("Missing email id"),
+        (js \ "email").required[String]("Missing email"),
         (js \ "provider").required[String]("Missing provider"),
         (js \ "zoneName").required[String]("Missing zone name"),
         (js \ "status").default(GenerateZoneStatus, GenerateZoneStatus.Active),
-        (js \ "serverId").optional[String],
-        (js \ "kind").optional[String],
-        (js \ "masters").optional[List[String]],
-        (js \ "nameservers").optional[List[String]],
-        (js \ "description").optional[String],
-        (js \ "visibility").optional[String],
-        (js \ "accountId").optional[String],
-        (js \ "projectId").optional[String],
-        (js \ "admin_email").optional[String],
-        (js \ "ttl").optional[Int],
-        (js \ "refresh").optional[Int],
-        (js \ "retry").optional[Int],
-        (js \ "expire").optional[Int],
-        (js \ "negative_cache_ttl").optional[Int],
-        (js \ "response").optional[ZoneGenerationResponse],
         (js \ "id").default[String](UUID.randomUUID().toString),
-      ).mapN(ZoneGenerationInput.apply)
+        (js \ "response").optional[ZoneGenerationResponse]
+      )
+
+      // Extract nested providerParams + top-level non-standard fields
+      val (nestedParams, topLevelParams) = (js \ "providerParams") match {
+        case JObject(fields) => (fields.toMap, Map.empty[String, JValue])
+        case _ => (Map.empty[String, JValue], Map.empty[String, JValue])
+      }
+
+      val topLevelNonStandard = js.removeField {
+        case JField(name, _) => standardFields.contains(name)
+      }.asInstanceOf[JObject].obj.toMap
+
+      val providerParams = nestedParams ++ topLevelNonStandard ++ topLevelParams
+
+      std.mapN { (groupId, email, provider, zoneName, status, id, response) =>
+        ZoneGenerationInput(
+          groupId = groupId,
+          email = email,
+          provider = provider,
+          zoneName = zoneName,
+          status = status,
+          id = id,
+          response = response,
+          providerParams = providerParams
+        )
+      }
+    }
   }
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
     override def fromJson(js: JValue): ValidatedNel[String, UpdateZoneInput] =
