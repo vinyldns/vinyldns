@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
 import vinyldns.core.Messages
 import org.json4s._
-//import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
 import java.io.{ByteArrayInputStream, InputStream, OutputStream}
@@ -166,37 +165,35 @@ class ZoneService(
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
                                ): Result[ZoneGenerationResponse] = {
-
-    val providerConfig = dnsProviderApiConnection.providers.getOrElse(request.provider.toLowerCase,
-      throw new IllegalArgumentException(s"Unsupported DNS provider: ${request.provider}"))
-
-    // debugging
-    logger.info(s"Provider config required fields: ${providerConfig.createZoneRequiredFields}")
-    logger.info(s"Request providerParams keys: ${request.providerParams.keys.mkString(", ")}")
-    logger.info(s"Request providerParams: ${request.providerParams}")
-
-    // Validate required fields from config
-    val missingFields = providerConfig.createZoneRequiredFields.filterNot(request.providerParams.contains)
-    if (missingFields.nonEmpty) {
-      throw new IllegalArgumentException(s"Missing required fields for ${request.provider}: ${missingFields.mkString(", ")}")
-    }
-
-    // Build JSON request using template engine
-    val generateZoneRequestJson = buildGenerateZoneRequestJson(
-      providerConfig.createZoneTemplate,
-      request.zoneName,
-      request.provider,
-      request.groupId,
-      request.email,
-      request.providerParams
-    )
-
-    logger.info(s"Generated JSON request: $generateZoneRequestJson")
-
     for {
+      // Validate input
+      providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
+      _ <- validateZoneName(request.zoneName).toResult
+      _ <- validateRequiredFields(
+        providerConfig.createZoneRequiredFields,
+        request.providerParams,
+        request.provider
+      ).toResult
+
+      _ <- logger.info(s"Provider config required fields: ${providerConfig.createZoneRequiredFields}").toResult
+      _ <- logger.info(s"Request providerParams keys: ${request.providerParams.keys.mkString(", ")}").toResult
+      _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
+
+      // Build JSON request
+      generateZoneRequestJson: String = buildGenerateZoneRequestJson(
+        providerConfig.createZoneTemplate,
+        request.zoneName,
+        request.provider,
+        request.groupId,
+        request.email,
+        request.providerParams
+      )
+
+      // Authorization checks
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
-      _ <- generateZoneDoesNotExist(request.zoneName)
-      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.createZoneEndpoint}, request=$generateZoneRequestJson")
+      _ <- generateZoneDoesNotExist(request.zoneName).toResult
+
+      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.createZoneEndpoint}, request=$generateZoneRequestJson").toResult
       dnsProviderConn <- createConnection(providerConfig.createZoneEndpoint).toResult
       dnsConnResponse <- createDnsZoneService(
         providerConfig.createZoneEndpoint,
@@ -205,11 +202,13 @@ class ZoneService(
         dnsProviderConn
       ).toResult
 
+      // Process response
       responseCode = dnsConnResponse.getResponseCode
       inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
-      responseMessage = Source.fromInputStream(inputStream, "UTF-8").mkString
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
       _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
 
+      // Create response object
       zoneGenerateResponse = ZoneGenerationResponse(
         provider = request.provider,
         responseCode = responseCode,
@@ -217,14 +216,18 @@ class ZoneService(
         message = responseMessage
       )
 
+      // Save to repository
       zoneToGenerate = GenerateZone(request)
       _ <- generateZoneRepository.save(zoneToGenerate.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
+
     } yield {
-      inputStream.close()
-      dnsConnResponse.disconnect()
+      // Cleanup resources
+      Option(inputStream).foreach(_.close())
+      Option(dnsConnResponse).foreach(_.disconnect())
       zoneGenerateResponse
     }
   }
+
   // Build a Generate Zone JSON request using template engine
   private def buildGenerateZoneRequestJson(
                                         template: String,
@@ -267,9 +270,27 @@ class ZoneService(
         case other => other
       }
 
-      compact(render(placeholdersReplaced))
+      // Third pass: Prune fields with unresolved placeholders
+      val prunedJson = placeholdersReplaced.pruneUnusedFields()
+
+      compact(render(prunedJson))
     }
-  }
+      implicit class JsonPruner(json: JValue) {
+        def pruneUnusedFields(): JValue = json match {
+          case JObject(fields) =>
+            JObject(fields.flatMap {
+              case (key, value) =>
+                val prunedValue = value.pruneUnusedFields()
+                prunedValue match {
+                  case JString(s) if s.startsWith("{{") && s.endsWith("}}") => None
+                  case _ => Some((key, prunedValue))
+                }
+            })
+          case JArray(items) => JArray(items.map(_.pruneUnusedFields()))
+          case other => other
+        }
+      }
+    }
 
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String, connection: HttpURLConnection): Either[Throwable, HttpURLConnection] =
   {
@@ -659,18 +680,20 @@ class ZoneService(
       }
       .toResult
 
-  private def generateZoneDoesNotExist(zoneName: String): Result[Unit] =
-    generateZoneRepository
-      .getGenerateZoneByName(zoneName)
-      .map {
-        case Some(existingZone) =>
-          ZoneAlreadyExistsError(
-            s"Zone with name $zoneName already exists. " +
-              s"Please contact ${existingZone.groupId} to request access to the zone."
-          ).asLeft
-        case _ => ().asRight
-      }
-      .toResult
+  private def generateZoneDoesNotExist(zoneName: String): Either[Throwable, Unit] = {
+    val existingZoneOpt: Option[GenerateZone] =
+      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
+
+    existingZoneOpt match {
+      case Some(existingZone) =>
+        Left(ZoneAlreadyExistsError(
+          s"Zone with name $zoneName already exists. " +
+            s"Please contact ${existingZone.groupId} to request access."
+        ))
+      case None =>
+        Right(())
+    }
+  }
 
   def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(

@@ -23,7 +23,8 @@ import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
+import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL, DnsProviderConfig}
+import org.json4s._
 
 import scala.util.{Failure, Success, Try}
 
@@ -94,4 +95,29 @@ class ZoneValidations(syncDelayMillis: Int) {
         s"Not authorized to update zone shared status from $currentShared to $updateShared."
       )
     )(currentShared == updateShared || user.isSuper || user.isSupport)
+
+  def validateProvider(
+                        provider: String,
+                        availableProviders: Map[String, DnsProviderConfig]
+                      ): Either[Throwable, DnsProviderConfig] =
+    availableProviders.get(provider.toLowerCase) match {
+      case Some(config) => Right(config)
+      case None => Left(InvalidRequest(s"Unsupported DNS provider: $provider"))
+    }
+
+  def validateRequiredFields(
+                              requiredFields: List[String],
+                              providedFields: Map[String, JValue],
+                              providerName: String
+                            ): Either[Throwable, Unit] = {
+    val missing = requiredFields.filterNot(providedFields.contains)
+    ensuring(InvalidRequest(
+      s"Missing required fields for $providerName: ${missing.mkString(", ")}"
+    ))(missing.isEmpty)
+  }
+
+  def validateZoneName(zoneName: String): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(s"Invalid zone name: $zoneName")) {
+      zoneName.matches("""^[a-zA-Z0-9.-]+\.$""")
+    }
 }
