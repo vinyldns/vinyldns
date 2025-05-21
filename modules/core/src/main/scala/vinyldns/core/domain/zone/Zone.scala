@@ -249,7 +249,7 @@ case class ZoneGenerationResponse(
                                    provider: String,
                                    responseCode: Int,
                                    status: String,
-                                   message: String
+                                   message: JValue
                                  )
 
 case class ZoneGenerationInput(

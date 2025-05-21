@@ -224,7 +224,7 @@ trait ProtobufConversions {
       zgr.getProvider,
       zgr.getResponseCode.toInt,
       zgr.getStatus,
-      zgr.getMessage
+      parse(zgr.getMessage)
     )
 
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =
@@ -533,7 +533,7 @@ trait ProtobufConversions {
       .setProvider(zgr.provider)
       .setResponseCode(zgr.responseCode.toLong)
       .setStatus(zgr.status)
-      .setMessage(zgr.message)
+      .setMessage(compact(render(zgr.message)))
       .build()
 
   def fromPB(data: VinylDNSProto.User): User =

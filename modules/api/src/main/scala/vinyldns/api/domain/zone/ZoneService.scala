@@ -214,12 +214,15 @@ class ZoneService(
       responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
       _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
 
+      // Parse response
+      responseJson = parse(responseMessage)
+
       // Create response object
       zoneGenerateResponse = ZoneGenerationResponse(
         provider = request.provider,
         responseCode = responseCode,
         status = dnsConnResponse.getResponseMessage,
-        message = responseMessage
+        message = responseJson
       )
 
       // Save to repository
