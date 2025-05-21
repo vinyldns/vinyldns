@@ -338,15 +338,9 @@ final case class LegacyDnsBackend(
 }
 
 case class DnsProviderConfig(
-    createZoneEndpoint: String,
-    deleteZoneEndpoint: String,
-    updateZoneEndpoint: String,
-    createZoneTemplate: String,
-    deleteZoneTemplate: String,
-    updateZoneTemplate: String,
-    createZoneRequiredFields: List[String],
-    deleteZoneRequiredFields: List[String],
-    updateZoneRequiredFields: List[String],
+    endpoints: Map[String, String],
+    requestTemplates: Map[String, String],
+    schemas: Map[String, String],
     apiKey: String
   )
 
@@ -414,12 +408,7 @@ object ConfiguredDnsConnections {
         .map(_.getConfig("settings.dns-provider-api.providers"))
         .getOrElse(ConfigFactory.empty())
 
-      val allowedProviders = config
-        .getConfigList("vinyldns.backend.backend-providers")
-        .asScala
-        .find(_.hasPath("settings.dns-provider-api.allowed-providers"))
-        .map(_.getStringList("settings.dns-provider-api.allowed-providers").asScala.toList)
-        .getOrElse(List.empty[String])
+      val allowedProviders: List[String] = providersConfig.root().keySet().asScala.toList
 
       val nameServers = config
         .getConfigList("vinyldns.backend.backend-providers")
@@ -428,23 +417,26 @@ object ConfiguredDnsConnections {
         .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
         .getOrElse(List.empty[String])
 
-      val providerConfigs = providersConfig.root().keySet().asScala.map { provider =>
+      val providerConfigs: Map[String, DnsProviderConfig] = providersConfig.root().keySet().asScala.map { provider =>
         val providerConfig = providersConfig.getConfig(provider)
-        val endpoints = providerConfig.getConfig("endpoints")
-        val requestTemplates = providerConfig.getConfig("request-templates")
-        val requiredFields = providerConfig.getConfig("required-fields")
+
+        // Helper to turn a Config section into a Map[String, String]
+        def configToMap(config: com.typesafe.config.Config): Map[String, String] =
+          config.entrySet().asScala.map { entry =>
+            val key = entry.getKey
+            val value = config.getString(key)
+            key -> value
+          }.toMap
+
+        val endpoints = configToMap(providerConfig.getConfig("endpoints"))
+        val requestTemplates = configToMap(providerConfig.getConfig("request-templates"))
+        val schemas = configToMap(providerConfig.getConfig("schemas"))
         val apiKey = providerConfig.getString("api-key")
 
         provider -> DnsProviderConfig(
-          createZoneEndpoint = endpoints.getString("create-zone"),
-          deleteZoneEndpoint = endpoints.getString("delete-zone"),
-          updateZoneEndpoint = endpoints.getString("update-zone"),
-          createZoneTemplate = requestTemplates.getString("create-zone"),
-          deleteZoneTemplate = requestTemplates.getString("delete-zone"),
-          updateZoneTemplate = requestTemplates.getString("update-zone"),
-          createZoneRequiredFields = requiredFields.getStringList("create-zone").asScala.toList,
-          deleteZoneRequiredFields = requiredFields.getStringList("delete-zone").asScala.toList,
-          updateZoneRequiredFields = requiredFields.getStringList("update-zone").asScala.toList,
+          endpoints = endpoints,
+          requestTemplates = requestTemplates,
+          schemas = schemas,
           apiKey = apiKey
         )
       }.toMap

@@ -37,6 +37,12 @@ import vinyldns.api.domain.membership.MembershipService
 import vinyldns.core.Messages
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.networknt.schema.{JsonSchemaFactory, SpecVersion}
+import org.json4s.{JValue, JObject}
+import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 import java.io.{ByteArrayInputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
@@ -169,19 +175,19 @@ class ZoneService(
       // Validate input
       providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
       _ <- validateZoneName(request.zoneName).toResult
-      _ <- validateRequiredFields(
-        providerConfig.createZoneRequiredFields,
-        request.providerParams,
-        request.provider
-      ).toResult
 
-      _ <- logger.info(s"Provider config required fields: ${providerConfig.createZoneRequiredFields}").toResult
-      _ <- logger.info(s"Request providerParams keys: ${request.providerParams.keys.mkString(", ")}").toResult
+      // JSON Schema validation for providerParams
+      _ <- JsonSchemaValidator
+        .validate(
+          providerConfig.schemas("create-zone"),
+          request.providerParams
+        ).toResult
+
       _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
 
       // Build JSON request
-      generateZoneRequestJson: String = buildGenerateZoneRequestJson(
-        providerConfig.createZoneTemplate,
+      generateZoneRequestJson = buildGenerateZoneRequestJson(
+        providerConfig.requestTemplates("create-zone"),
         request.zoneName,
         request.provider,
         request.groupId,
@@ -193,10 +199,10 @@ class ZoneService(
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName).toResult
 
-      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.createZoneEndpoint}, request=$generateZoneRequestJson").toResult
-      dnsProviderConn <- createConnection(providerConfig.createZoneEndpoint).toResult
+      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.endpoints("create-zone")}, request=$generateZoneRequestJson").toResult
+      dnsProviderConn <- createConnection(providerConfig.endpoints("create-zone")).toResult
       dnsConnResponse <- createDnsZoneService(
-        providerConfig.createZoneEndpoint,
+        providerConfig.endpoints("create-zone"),
         providerConfig.apiKey,
         generateZoneRequestJson,
         dnsProviderConn
@@ -291,6 +297,35 @@ class ZoneService(
         }
       }
     }
+
+  object JsonSchemaValidator {
+    private val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
+    private val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+
+    def validate(
+                  schemaJson: String,
+                  data: Map[String, JValue]
+                ): Either[Throwable, Unit] = {
+      for {
+        dataNode <- {
+          val dataJson = JObject(data.toList)
+          val dataString = compact(render(dataJson))
+          Try(objectMapper.readTree(dataString)).toEither.left.map(e =>
+            InvalidRequest(s"Could not parse data as JSON: ${e.getMessage}")
+          )
+        }
+        schema <- Try(schemaFactory.getSchema(schemaJson)).toEither.left.map(e =>
+          InvalidRequest(s"Could not parse schema: ${e.getMessage}")
+        )
+        _ <- {
+          val errors = schema.validate(dataNode).asScala.toSet
+          if (errors.nonEmpty)
+            Left(InvalidRequest(s"JSON schema validation error: ${errors.map(_.getMessage).mkString("; ")}"))
+          else Right(())
+        }
+      } yield ()
+    }
+  }
 
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String, connection: HttpURLConnection): Either[Throwable, HttpURLConnection] =
   {
