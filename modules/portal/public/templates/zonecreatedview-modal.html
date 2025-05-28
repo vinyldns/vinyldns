@@ -3,75 +3,47 @@
         <modal-body>
             <modal-element label="Zone Name">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="zoneNameView" ng-model="createZone.zoneName" name="nameval" disabled/>
+                    <input type="text" class="form-control" ng-model="createZone.zoneName" name="namevalue" disabled />
                 </div>
             </modal-element>
+
             <modal-element label="Email">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="zoneEmailView" ng-model="createZone.email" name="emailval" disabled/>
+                    <input type="text" class="form-control" ng-model="createZone.email" name="emailval" disabled />
                 </div>
             </modal-element>
+
             <modal-element label="Admin Group">
                 <div class="form-group">
-                    <input
-                            type="text"
-                            class="form-control"
-                            id="zoneAdminGroupView"
-                            ng-disabled="true"
-                            ng-value="(myGroups | filter:{id: createZone.groupId})[0].name || ''" />
+                    <input type="text" class="form-control"
+                           ng-disabled="true"
+                           ng-value="(myGroups | filter:{id: createZone.groupId})[0].name || ''" />
                 </div>
             </modal-element>
+
             <modal-element label="DNS Provider">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="provider" ng-model="createZone.provider" name="provider" disabled/>
+                    <input type="text" class="form-control" ng-model="createZone.provider" name="provider" disabled />
                 </div>
             </modal-element>
-            <modal-element ng-if="createZone.provider === 'powerdns'" label="Kind">
-                <div class="form-group">
-                    <input type="text" class="form-control" id="kind" ng-model="createZone.kind" name="kind" disabled/>
-                </div>
-            </modal-element>
+
             <modal-element label="Name Servers">
                 <div ng-repeat="ns in createZone.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
-                    <input
-                            type="text"
-                            class="form-control"
-                            ng-model="createZone.nameservers[$index]"
-                            name="nameserver-view-{{$index}}"
-                            disabled />
+                    <input type="text" class="form-control"
+                           ng-model="createZone.nameservers[$index]"
+                           name="nameserver-view-{{$index}}"
+                           disabled />
                 </div>
             </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Bind Admin Email">
+
+            <!-- Dynamic Fields -->
+            <modal-element ng-repeat="field in zoneFields" label="{{ field.label }}">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="admin_email" ng-model="createZone.admin_email" name="admin_email" disabled/>
-                </div>
-            </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="TTL">
-                <div class="form-group">
-                    <input type="text" class="form-control" id="ttl" ng-model="createZone.ttl" name="ttl" disabled/>
-                </div>
-            </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Refresh" >
-                <div class="form-group">
-                    <input type="text" class="form-control" id="refresh" ng-model="createZone.refresh" name="refresh" disabled/>
-                </div>
-            </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Retry">
-                <div class="form-group">
-                    <input type="text" class="form-control" id="retry" ng-model="createZone.retry" name="retry" disabled/>
-                </div>
-            </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Expire">
-                <div class="form-group">
-                    <input type="text" class="form-control" id="expire" ng-model="createZone.expire" name="expire" disabled/>
-                </div>
-            </modal-element>
-            <modal-element ng-if="createZone.provider === 'bind'" label="Negative Cache TTL">
-                <div class="form-group">
-                    <input type="text" class="form-control" id="negative_cache_ttl" ng-model="createZone.negative_cache_ttl" name="negative_cache_ttl" disabled/>
+                    <input type="text" class="form-control" ng-model="createZone[field.field]" disabled />
                 </div>
             </modal-element>
         </modal-body>
+
         <modal-footer>
             <button type="button" class="btn btn-default" data-dismiss="modal">
                 Close

@@ -302,15 +302,6 @@ class VinylDNS @Inject() (
     })
   }
 
-  def getAllowedDNSProviders: Action[AnyContent] = userAction.async { implicit request =>
-    val vinyldnsRequest =
-      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/generate/allowedDNSProviders")
-    executeRequest(vinyldnsRequest, request.user).map(response => {
-      Status(response.status)(response.body)
-        .withHeaders(cacheHeaders: _*)
-    })
-  }
-
   def getValidEmailDomains(): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/valid/domains")

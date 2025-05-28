@@ -29,6 +29,7 @@ angular.module('controller.zones', [])
     $scope.allDeletedZones = [];
     $scope.ignoreAccess = false;
     $scope.validEmailDomains= [];
+    $scope.nameserverSelection = {};
     $scope.allZonesAccess = function () {
         $scope.ignoreAccess = true;
     }
@@ -44,6 +45,7 @@ angular.module('controller.zones', [])
     $scope.createZone = {
           nameservers: [],
         };
+
     $scope.createZone.ns_ipaddress = [];
 
     // Paging status for zone sets
@@ -83,7 +85,19 @@ angular.module('controller.zones', [])
     };
 
     $scope.viewCreatedZone = function (createdZone) {
-        $scope.createZone = createdZone;
+        $scope.createZone = angular.copy(createdZone);
+
+        if (createdZone.provider) {
+            $scope.getCreateZoneTemplate(createdZone.provider).then(function () {
+                $scope.zoneFields.forEach(function (field) {
+                    const fieldKey = field.field;
+                    if ($scope.createZone[fieldKey] === undefined || $scope.createZone[fieldKey] === null) {
+                        $scope.createZone[fieldKey] = '';
+                    }
+                });
+            });
+        }
+
     };
 
     $scope.addNameserver = function () {
@@ -102,7 +116,7 @@ angular.module('controller.zones', [])
       });
     });
 
-    $scope.nameserverSelection = {};
+
 
     $scope.updateNameserverSelection = function(ns) {
       if ($scope.nameserverSelection[ns]) {
@@ -141,9 +155,51 @@ angular.module('controller.zones', [])
 
     zonesService.getAllowedDNSProviders().then(function (results) {
         if (results.data) {
-            $scope.provider = results.data;
+            $scope.provider = results.data.allowedDNSProviders;
         }
     });
+
+    $scope.getCreateZoneTemplate = function(provider) {
+        return zonesService.getCreateZoneTemplate(provider).then(function(results) {
+            const createZoneFields = results.data["request-templates"]["create-zone"];
+            $scope.requiredFields = results.data["required-fields"]["create-zone"];
+            const createZone = JSON.parse(createZoneFields);
+            $scope.createZoneTemplate = createZone;
+
+            $scope.zoneFields = Object.entries(createZone).map(([label, config]) => {
+                const field = label.replace(/ /g, '').toLowerCase();
+                const isSelect = config.type.toLowerCase().includes('select');
+                const value = isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
+
+                // 💡 Only initialize if undefined (optional safeguard)
+                if ($scope.createZone[field] === undefined) {
+                    $scope.createZone[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
+                }
+
+                return {
+                    label,
+                    type: config.type,
+                    value,
+                    field
+                };
+            });
+        });
+    };
+
+
+    $scope.isDynamicZoneFieldRequired = function(fieldName) {
+      return $scope.requiredFields && $scope.requiredFields.indexOf(fieldName) !== -1;
+    };
+
+    $scope.dynamicZoneFieldToggleSelection = function(fieldKey, value) {
+        const list = $scope.createZone[fieldKey];
+        const idx = list.indexOf(value);
+        if (idx > -1) {
+            list.splice(idx, 1);
+        } else {
+            list.push(value);
+        }
+    };
 
     $scope.canAccessGroup = function(groupId) {
          return $scope.myGroupIds !== undefined &&  $scope.myGroupIds.indexOf(groupId) > -1;

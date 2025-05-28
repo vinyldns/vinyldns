@@ -117,7 +117,12 @@ angular.module('service.zones', [])
         }
 
         this.getAllowedDNSProviders = function() {
-            var url = "/api/zones/generate/allowedDNSProviders";
+            var url = "config/allowedDNSProviders";
+            return $http.get(url);
+        }
+
+        this.getCreateZoneTemplate = function(provider) {
+            var url = "config/createZoneTemplate/" + provider;
             return $http.get(url);
         }
 
