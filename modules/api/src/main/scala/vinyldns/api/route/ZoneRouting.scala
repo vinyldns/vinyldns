@@ -146,9 +146,25 @@ class ZoneRoute(
       (post & monitor("Endpoint.generateZone")) {
         authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
           (authPrincipal, generateZone) =>
-            zoneService.handleGenerateZoneRequest(generateZone, authPrincipal)
+            zoneService.handleGenerateZoneRequest("create-zone", generateZone, authPrincipal)
         ) { response =>
           complete(StatusCodes.Accepted -> response)
+        }
+      } ~
+      (delete & monitor("Endpoint.deleteGeneratedZone")) {
+        authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
+          (authPrincipal, generateZone) =>
+            zoneService.handleGenerateZoneRequest("delete-zone", generateZone, authPrincipal)
+        ) { response =>
+          complete(StatusCodes.Accepted, response)
+        }
+      } ~
+      (put & monitor("Endpoint.updateGeneratedZone")) {
+        authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
+          (authPrincipal, generateZone) =>
+            zoneService.handleGenerateZoneRequest("update-zone", generateZone, authPrincipal)
+        ) { response =>
+          complete(StatusCodes.Accepted, response)
         }
       }
     } ~

@@ -170,6 +170,7 @@ class ZoneService(
   }
 
   def handleGenerateZoneRequest(
+                                 operation: String,
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
                                ): Result[ZoneGenerationResponse] = {
@@ -181,7 +182,7 @@ class ZoneService(
       // JSON Schema validation for providerParams
       _ <- JsonSchemaValidator
         .validate(
-          providerConfig.schemas("create-zone"),
+          providerConfig.schemas(operation),
           request.providerParams
         ).toResult
 
@@ -189,22 +190,20 @@ class ZoneService(
 
       // Build JSON request
       generateZoneRequestJson = buildGenerateZoneRequestJson(
-        providerConfig.requestTemplates("create-zone"),
-        request.zoneName,
-        request.provider,
-        request.groupId,
-        request.email,
-        request.providerParams
+        providerConfig.requestTemplates(operation),
+        request
       )
 
       // Authorization checks
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName).toResult
 
-      _ = logger.info(s"Request: provider=${request.provider}, path=${providerConfig.endpoints("create-zone")}, request=$generateZoneRequestJson").toResult
-      dnsProviderConn <- createConnection(providerConfig.endpoints("create-zone")).toResult
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints(operation), request)
+
+      _ = logger.info(s"Request: provider=${request.provider}, path=${endpoint}, request=$generateZoneRequestJson").toResult
+      dnsProviderConn <- createConnection(endpoint).toResult
       dnsConnResponse <- createDnsZoneService(
-        providerConfig.endpoints("create-zone"),
+        endpoint,
         providerConfig.apiKey,
         generateZoneRequestJson,
         dnsProviderConn
@@ -241,23 +240,42 @@ class ZoneService(
 
   // Build a Generate Zone JSON request using template engine
   private def buildGenerateZoneRequestJson(
-                                        template: String,
-                                        zoneName: String,
-                                        provider: String,
-                                        groupId: String,
-                                        email: String,
-                                        providerParams: Map[String, JValue]
+                                      requestTemplate: String,
+                                      zoneGenerationInput: ZoneGenerationInput
                                       ): String = {
     val baseParams = Map(
-      "zoneName" -> JString(zoneName),
-      "provider" -> JString(provider),
-      "groupId" -> JString(groupId),
-      "email" -> JString(email)
+      "zoneName" -> JString(zoneGenerationInput.zoneName),
+      "provider" -> JString(zoneGenerationInput.provider),
+      "groupId" -> JString(zoneGenerationInput.groupId),
+      "email" -> JString(zoneGenerationInput.email)
     )
 
-    TemplateEngine.renderTemplate(template, baseParams ++ providerParams)
+    TemplateEngine.renderTemplate(requestTemplate, baseParams ++ zoneGenerationInput.providerParams)
   }
-    // Template engine to replace placeholders in JSON template
+
+  private def buildGenerateZoneEndpoint(
+                                         endpointTemplate: String,
+                                         zoneGenerationInput: ZoneGenerationInput
+                                       ): String = {
+    val baseParams = Map(
+      "zoneName" -> zoneGenerationInput.zoneName,
+      "provider" -> zoneGenerationInput.provider,
+      "groupId" -> zoneGenerationInput.groupId,
+      "email" -> zoneGenerationInput.email
+    )
+
+    val providerParams = zoneGenerationInput.providerParams.map {
+      case (k, JString(v)) => k -> v
+      case (k, JInt(v)) => k -> v.toString
+      case (k, JDouble(v)) => k -> v.toString
+      case (k, JBool(v)) => k -> v.toString
+      case (k, JNull) => k -> ""
+      case (k, v) => k -> compact(render(v)) // for arrays/objects
+    }
+
+    TemplateEngine.substituteEndpoint(endpointTemplate, baseParams ++ providerParams)
+  }
+
   object TemplateEngine {
     /** Renders a JSON template, substituting fields and string placeholders with provided params. */
     def renderTemplate(template: String, params: Map[String, JValue]): String = {
