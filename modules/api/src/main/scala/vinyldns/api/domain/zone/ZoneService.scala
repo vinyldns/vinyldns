@@ -43,6 +43,8 @@ import com.networknt.schema.{JsonSchemaFactory, SpecVersion}
 import org.json4s.{JValue, JObject}
 import scala.util.Try
 import scala.jdk.CollectionConverters._
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 import java.io.{ByteArrayInputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
@@ -256,50 +258,54 @@ class ZoneService(
     TemplateEngine.renderTemplate(template, baseParams ++ providerParams)
   }
     // Template engine to replace placeholders in JSON template
-  private object TemplateEngine {
-    def renderTemplate(
-                        template: String,
-                        params: Map[String, JValue]
-                      ): String = {
-      // Parse template into JValue
+  object TemplateEngine {
+    /** Renders a JSON template, substituting fields and string placeholders with provided params. */
+    def renderTemplate(template: String, params: Map[String, JValue]): String = {
       val templateJson = parse(template)
+      val withFieldsReplaced = replaceFields(templateJson, params)
+      val withPlaceholdersReplaced = replacePlaceholders(withFieldsReplaced, params)
+      val pruned = withPlaceholdersReplaced.pruneUnusedFields()
+      compact(render(pruned))
+    }
 
-      // First pass: Replace entire fields
-      // allows you to inject not just strings, but also arrays or objects directly into the JSON
-      val fieldReplaced = templateJson.transformField {
-        case (key, _) if params.contains(key) =>
-          (key, params(key))
+    /** Substitutes {{key}} in a plain string template with URL-encoded values from params. */
+    def substituteEndpoint(endpointTemplate: String, params: Map[String, String]): String =
+      params.foldLeft(endpointTemplate) { case (url, (key, value)) =>
+        val encoded = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
+        url.replace(s"{{$key}}", encoded)
       }
 
-      // Second pass: Replace {{value}} patterns in strings
-      val placeholdersReplaced = fieldReplaced.transform {
+    // --- Helpers ---
+
+    private def replaceFields(json: JValue, params: Map[String, JValue]): JValue =
+      json.transformField {
+        case (key, _) if params.contains(key) => (key, params(key))
+      }
+
+    private def replacePlaceholders(json: JValue, params: Map[String, JValue]): JValue =
+      json.transform {
         case JString(s) if s.startsWith("{{") && s.endsWith("}}") =>
-          val key = s.substring(2, s.length-2).trim
+          val key = s.substring(2, s.length - 2).trim
           params.getOrElse(key, JString(s))
         case other => other
       }
 
-      // Third pass: Prune fields with unresolved placeholders
-      val prunedJson = placeholdersReplaced.pruneUnusedFields()
-
-      compact(render(prunedJson))
-    }
-      implicit class JsonPruner(json: JValue) {
-        def pruneUnusedFields(): JValue = json match {
-          case JObject(fields) =>
-            JObject(fields.flatMap {
-              case (key, value) =>
-                val prunedValue = value.pruneUnusedFields()
-                prunedValue match {
-                  case JString(s) if s.startsWith("{{") && s.endsWith("}}") => None
-                  case _ => Some((key, prunedValue))
-                }
-            })
-          case JArray(items) => JArray(items.map(_.pruneUnusedFields()))
-          case other => other
-        }
+    implicit class JsonPruner(json: JValue) {
+      def pruneUnusedFields(): JValue = json match {
+        case JObject(fields) =>
+          JObject(fields.flatMap {
+            case (key, value) =>
+              val pruned = value.pruneUnusedFields()
+              pruned match {
+                case JString(s) if s.startsWith("{{") && s.endsWith("}}") => None
+                case _ => Some((key, pruned))
+              }
+          })
+        case JArray(items) => JArray(items.map(_.pruneUnusedFields()))
+        case other => other
       }
     }
+  }
 
   object JsonSchemaValidator {
     private val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
