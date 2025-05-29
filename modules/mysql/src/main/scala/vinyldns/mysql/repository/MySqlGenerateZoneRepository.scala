@@ -82,8 +82,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
               .update()
               .apply()
             }
-        generateZone
-
+            generateZone
           }
       }}
 
@@ -97,7 +96,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     fromPB(VinylDNSProto.GenerateZone.parseFrom(res.bytes(columnIndex)))
   }
 
-  def deleteTx(generateZone: GenerateZone): IO[GenerateZone] =
+  def deleteTx(generateZone: GenerateZone): IO[Unit] =
     monitor("repo.ZoneJDBC.generateZoneDelete") {
       IO {
         DB.localTx { implicit s =>
