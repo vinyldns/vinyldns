@@ -8,6 +8,7 @@ Create the Generate Zone table
 CREATE TABLE generate_zone (
   id CHAR(36) NOT NULL,
   name VARCHAR(256) NOT NULL,
+  provider VARCHAR(256) NOT NULL,
   admin_group_id CHAR(36) NOT NULL,
   response BLOB NOT NULL,
   data BLOB NOT NULL,

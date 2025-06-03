@@ -38,9 +38,10 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     */
   private final val PUT_GENERATE_ZONE =
     sql"""
-         |INSERT INTO generate_zone(id, name, admin_group_id, response, data)
-         |     VALUES ({id}, {name}, {adminGroupId}, {response}, {data}) ON DUPLICATE KEY
+         |INSERT INTO generate_zone(id, name, provider, admin_group_id, response, data)
+         |     VALUES ({id}, {name}, {provider}, {adminGroupId}, {response}, {data}) ON DUPLICATE KEY
          |     UPDATE name=VALUES(name),
+         |            provider=VALUES(provider),
          |            admin_group_id=VALUES(admin_group_id),
          |            response=VALUES(response),
          |            data=VALUES(data);
@@ -61,6 +62,13 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
          | WHERE name = ?
         """.stripMargin
 
+  private final val GET_GENERATED_ZONE_BY_ID =
+    sql"""
+         |SELECT data
+         |  FROM generate_zone
+         | WHERE id = ?
+        """.stripMargin
+
   private final val BASE_GENERATE_ZONE_SEARCH_SQL =
     """
       |SELECT gz.data
@@ -75,6 +83,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
               .bindByName(
                   'id -> generateZone.id,
                   'name -> generateZone.zoneName,
+                  'provider -> generateZone.provider,
                   'adminGroupId -> generateZone.groupId,
                   'response -> toPB(generateZone.response.get).toByteArray,
                   'data -> toPB(generateZone).toByteArray
@@ -96,11 +105,13 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     fromPB(VinylDNSProto.GenerateZone.parseFrom(res.bytes(columnIndex)))
   }
 
-  def deleteTx(generateZone: GenerateZone): IO[Unit] =
+  def delete(generateZone: GenerateZone): IO[GenerateZone] =
     monitor("repo.ZoneJDBC.generateZoneDelete") {
       IO {
         DB.localTx { implicit s =>
           deleteGeneratedZone(generateZone)
+
+          generateZone
         }
       }
     }
@@ -108,11 +119,23 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
   private def getGenerateZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[GenerateZone] =
     GET_GENERATED_ZONE_BY_NAME.bind(zoneName).map(extractGenerateZone(1)).first().apply()
 
+  private def getGenerateZoneByIdInSession(zoneId: String)(implicit session: DBSession): Option[GenerateZone] =
+    GET_GENERATED_ZONE_BY_ID.bind(zoneId).map(extractGenerateZone(1)).first().apply()
+
   def getGenerateZoneByName(zoneName: String): IO[Option[GenerateZone]] =
     monitor("repo.ZoneJDBC.getGenerateZoneByName") {
       IO {
         DB.readOnly { implicit s =>
           getGenerateZoneByNameInSession(zoneName)
+        }
+      }
+    }
+
+  def getGenerateZoneById(id: String): IO[Option[GenerateZone]] =
+    monitor("repo.ZoneJDBC.getGenerateZoneById") {
+      IO {
+        DB.readOnly { implicit s =>
+          getGenerateZoneByIdInSession(id)
         }
       }
     }

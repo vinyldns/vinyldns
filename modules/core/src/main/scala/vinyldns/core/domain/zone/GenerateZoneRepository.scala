@@ -26,7 +26,9 @@ trait GenerateZoneRepository extends Repository {
 
   def getGenerateZoneByName(zoneName: String): IO[Option[GenerateZone]]
 
-  def deleteTx(generateZone: GenerateZone): IO[Unit]
+  def getGenerateZoneById(id: String): IO[Option[GenerateZone]]
+
+  def delete(generateZone: GenerateZone): IO[GenerateZone]
 
   def listGenerateZones(
                          authPrincipal: AuthPrincipal,

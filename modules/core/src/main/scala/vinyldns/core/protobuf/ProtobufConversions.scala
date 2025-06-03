@@ -224,7 +224,7 @@ trait ProtobufConversions {
       zgr.getProvider,
       zgr.getResponseCode.toInt,
       zgr.getStatus,
-      parse(zgr.getMessage)
+      if (Option(zgr.getMessage).exists(_.trim.nonEmpty)) parse(zgr.getMessage) else JNothing
     )
 
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =

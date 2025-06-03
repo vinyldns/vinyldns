@@ -146,24 +146,23 @@ class ZoneRoute(
       (post & monitor("Endpoint.generateZone")) {
         authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
           (authPrincipal, generateZone) =>
-            zoneService.handleGenerateZoneRequest("create-zone", generateZone, authPrincipal)
+            zoneService.handleGenerateZoneRequest(generateZone, authPrincipal)
         ) { response =>
           complete(StatusCodes.Accepted -> response)
-        }
-      } ~
-      (delete & monitor("Endpoint.deleteGeneratedZone")) {
-        authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
-          (authPrincipal, generateZone) =>
-            zoneService.handleGenerateZoneRequest("delete-zone", generateZone, authPrincipal)
-        ) { response =>
-          complete(StatusCodes.Accepted, response)
         }
       } ~
       (put & monitor("Endpoint.updateGeneratedZone")) {
         authenticateAndExecuteWithEntity[ZoneGenerationResponse, ZoneGenerationInput](
           (authPrincipal, generateZone) =>
-            zoneService.handleGenerateZoneRequest("update-zone", generateZone, authPrincipal)
+            zoneService.handleUpdateGeneratedZoneRequest(generateZone, authPrincipal)
         ) { response =>
+          complete(StatusCodes.Accepted, response)
+        }
+      }
+    } ~
+    path("zones" / "generate" / Segment) { id =>
+      (delete & monitor("Endpoint.deleteGeneratedZone")) {
+        authenticateAndExecute(zoneService.handleDeleteGeneratedZoneRequest(id, _)) { response =>
           complete(StatusCodes.Accepted, response)
         }
       }

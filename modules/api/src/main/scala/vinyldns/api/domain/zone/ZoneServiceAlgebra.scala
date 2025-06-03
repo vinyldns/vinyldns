@@ -16,8 +16,6 @@
 
 package vinyldns.api.domain.zone
 
-import cats.data.EitherT
-import cats.effect.IO
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
@@ -29,18 +27,34 @@ trait ZoneServiceAlgebra {
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
 
-  def handleGenerateZoneRequest(operation: String, request: ZoneGenerationInput, auth: AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse]
+  def handleGenerateZoneRequest(
+      request: ZoneGenerationInput,
+      auth: AuthPrincipal
+  ): Result[ZoneGenerationResponse]
 
-  def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone]
+  def handleUpdateGeneratedZoneRequest(
+      request: ZoneGenerationInput,
+      auth: AuthPrincipal
+  ): Result[ZoneGenerationResponse]
+
+  def handleDeleteGeneratedZoneRequest(
+      generatedZoneId: String,
+      auth: AuthPrincipal
+  ): Result[ZoneGenerationResponse]
+
+  def getGenerateZoneByName(
+      zoneName: String,
+      auth: AuthPrincipal
+  ): Result[GenerateZone]
 
   def listGeneratedZones(
-                          authPrincipal: AuthPrincipal,
-                          nameFilter: Option[String],
-                          startFrom: Option[String],
-                          maxItems: Int,
-                          searchByAdminGroup: Boolean,
-                          ignoreAccess: Boolean
-                        ): Result[ListGeneratedZonesResponse]
+      authPrincipal: AuthPrincipal,
+      nameFilter: Option[String],
+      startFrom: Option[String],
+      maxItems: Int,
+      searchByAdminGroup: Boolean,
+      ignoreAccess: Boolean
+  ): Result[ListGeneratedZonesResponse]
 
   def allowedDNSProviders(): Result[List[String]]
 
@@ -69,12 +83,12 @@ trait ZoneServiceAlgebra {
   ): Result[ListZonesResponse]
 
   def listDeletedZones(
-                        authPrincipal: AuthPrincipal,
-                        nameFilter: Option[String],
-                        startFrom: Option[String],
-                        maxItems: Int,
-                        ignoreAccess: Boolean
-                      ): Result[ListDeletedZoneChangesResponse]
+      authPrincipal: AuthPrincipal,
+      nameFilter: Option[String],
+      startFrom: Option[String],
+      maxItems: Int,
+      ignoreAccess: Boolean
+  ): Result[ListDeletedZoneChangesResponse]
 
   def listZoneChanges(
       zoneId: String,
@@ -98,8 +112,8 @@ trait ZoneServiceAlgebra {
   def getBackendIds(): Result[List[String]]
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal,
-                             startFrom: Int,
-                             maxItems: Int
-                           ): Result[ListFailedZoneChangesResponse]
+      authPrincipal: AuthPrincipal,
+      startFrom: Int,
+      maxItems: Int
+  ): Result[ListFailedZoneChangesResponse]
 }

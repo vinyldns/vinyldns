@@ -175,28 +175,7 @@ class ZoneService(
     case None => result(())
   }
 
-  private def existenceCheck(operation: String, zoneName: String): Result[Unit] = operation match {
-    case "create-zone" => generateZoneDoesNotExist(zoneName).toResult
-    case "delete-zone" => generateZoneExists(zoneName).toResult
-    case "update-zone" => generateZoneExists(zoneName).toResult
-    case _ => Left(InvalidRequest(s"Unsupported operation: $operation")).toResult
-  }
-
-  private def executeRepoAction(
-                                 operation: String,
-                                 request: ZoneGenerationInput,
-                                 response: ZoneGenerationResponse
-                               ): Result[Unit] = {
-    val zoneToGenerate = GenerateZone(request)
-    operation match {
-      case "delete-zone" => generateZoneRepository.deleteTx(zoneToGenerate).toResult
-      case "create-zone" => generateZoneRepository.save(zoneToGenerate.copy(response = Some(response))).toResult
-      case "update-zone" => generateZoneRepository.save(zoneToGenerate.copy(response = Some(response))).toResult
-      case _ => Left(InvalidRequest(s"Unsupported operation: $operation")).toResult
-    }
-  }
   def handleGenerateZoneRequest(
-                                 operation: String,
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
                                ): Result[ZoneGenerationResponse] = {
@@ -204,22 +183,22 @@ class ZoneService(
       // Validate input
       providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
       _ <- validateZoneName(request.zoneName).toResult
-      _ <- schemaValidationResult(providerConfig, operation, request.providerParams)
+      _ <- schemaValidationResult(providerConfig, "create-zone", request.providerParams)
 
       _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
 
       // Build request and endpoint
-      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints(operation), request)
-      requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get(operation), request)
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("create-zone"), request)
+      requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("create-zone"), request)
 
       // Authorization and existence checks
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
-      _ <- existenceCheck(operation, request.zoneName)
+      _ <- generateZoneDoesNotExist(request.zoneName).toResult
 
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, operation, requestJsonOpt, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "create-zone", requestJsonOpt, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -240,7 +219,107 @@ class ZoneService(
       )
       _ <- logger.info(s"response: $zoneGenerateResponse").toResult
 
-      _ <- executeRepoAction(operation, request, zoneGenerateResponse)
+      zoneToGenerate = GenerateZone(request)
+      _ <- generateZoneRepository.save(zoneToGenerate.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
+
+    } yield zoneGenerateResponse
+  }
+
+  def handleUpdateGeneratedZoneRequest(
+                                 request: ZoneGenerationInput,
+                                 auth: AuthPrincipal
+                               ): Result[ZoneGenerationResponse] = {
+    for {
+      existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
+      _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
+
+      // Validate input
+      providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
+      _ <- validateZoneName(request.zoneName).toResult
+      _ <- schemaValidationResult(providerConfig, "update-zone", request.providerParams)
+
+      _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
+
+      // Build request and endpoint
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("update-zone"), request)
+      requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("update-zone"), request)
+
+      // Send request
+      _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
+      dnsProviderConn <- createConnection(endpoint).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "update-zone", requestJsonOpt, dnsProviderConn).toResult
+
+      // Process response
+      responseCode = dnsConnResponse.getResponseCode
+      _ <- logger.info(s"response code: $responseCode").toResult
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      // Only parse JSON if the response is non-empty
+      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
+
+      // Create response object
+      zoneGenerateResponse = ZoneGenerationResponse(
+        provider = request.provider,
+        responseCode = responseCode,
+        status = dnsConnResponse.getResponseMessage,
+        message = responseJson
+      )
+      _ <- logger.info(s"response: $zoneGenerateResponse").toResult
+
+      updatedZone = existingGeneratedZone.copy(
+        email = request.email,
+        groupId = request.groupId,
+        providerParams = request.providerParams,
+        response = Some(zoneGenerateResponse)
+      )
+      _ <- generateZoneRepository.save(updatedZone).toResult[GenerateZone]
+
+    } yield zoneGenerateResponse
+  }
+
+  def handleDeleteGeneratedZoneRequest(
+                                           generatedZoneId: String,
+                                           auth: AuthPrincipal
+                                       ): Result[ZoneGenerationResponse] = {
+    for {
+      generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
+      _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
+
+      providerConfig <- validateProvider(generatedZone.provider, dnsProviderApiConnection.providers).toResult
+      request = ZoneGenerationInput(
+        zoneName = generatedZone.zoneName,
+        provider = generatedZone.provider,
+        groupId = generatedZone.groupId,
+        email = generatedZone.email,
+        providerParams = generatedZone.providerParams
+      )
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("delete-zone"), request)
+
+      dnsProviderConn <- createConnection(endpoint).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "delete-zone", None, dnsProviderConn).toResult
+
+      // Process response
+      responseCode = dnsConnResponse.getResponseCode
+      _ <- logger.info(s"response code: $responseCode").toResult
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      // Only parse JSON if the response is non-empty
+      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
+
+      // Create response object
+      zoneGenerateResponse = ZoneGenerationResponse(
+        provider = generatedZone.provider,
+        responseCode = responseCode,
+        status = dnsConnResponse.getResponseMessage,
+        message = responseJson
+      )
+      _ <- logger.info(s"response: $zoneGenerateResponse").toResult
+
+      _ <- generateZoneRepository.delete(generatedZone).toResult[GenerateZone]
 
     } yield zoneGenerateResponse
   }
@@ -771,19 +850,19 @@ class ZoneService(
     }
   }
 
-  private def generateZoneExists(zoneName: String): Either[Throwable, Unit] = {
-    val existingZoneOpt: Option[GenerateZone] =
-      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
-
-    existingZoneOpt match {
-      case Some(_) =>
-        Right(())
-      case None =>
-        Left(ZoneNotFoundError(
-          s"Zone with name $zoneName does not exist."
-        ))
-    }
-  }
+//  private def generateZoneExists(zoneName: String): Either[Throwable, Unit] = {
+//    val existingZoneOpt: Option[GenerateZone] =
+//      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
+//
+//    existingZoneOpt match {
+//      case Some(_) =>
+//        Right(())
+//      case None =>
+//        Left(ZoneNotFoundError(
+//          s"Zone with name $zoneName does not exist."
+//        ))
+//    }
+//  }
 
   def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(
@@ -824,6 +903,12 @@ class ZoneService(
     generateZoneRepository
       .getGenerateZoneByName(zoneName)
       .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
+      .toResult[GenerateZone]
+
+  def getGeneratedZoneOrFail(generatedZoneId: String): Result[GenerateZone] =
+    generateZoneRepository
+      .getGenerateZoneById(generatedZoneId)
+      .orFail(ZoneNotFoundError(s"Generated zone with id $generatedZoneId does not exists"))
       .toResult[GenerateZone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =
