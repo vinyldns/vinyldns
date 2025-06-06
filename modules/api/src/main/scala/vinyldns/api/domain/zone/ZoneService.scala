@@ -333,7 +333,6 @@ class ZoneService(
   def createDnsZoneService(dnsApiUrl: String, dnsApiKey: String, request: String, connection: HttpURLConnection): Either[Throwable, HttpURLConnection] =
   {
     try {
-      //val connection = new URL(dnsApiUrl).openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Content-Type", "application/json")
       connection.setRequestProperty("X-API-Key", dnsApiKey)
@@ -342,8 +341,6 @@ class ZoneService(
       val outputStream: OutputStream = connection.getOutputStream
       outputStream.write(request.getBytes("UTF-8"))
       outputStream.close()
-
-
       Right(connection)
     } catch {
       case e: Exception =>
