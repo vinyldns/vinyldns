@@ -28,20 +28,38 @@
             </modal-element>
 
             <modal-element label="Name Servers">
-                <div ng-repeat="ns in createZone.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
+                <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
                     <input type="text" class="form-control"
-                           ng-model="createZone.nameservers[$index]"
-                           name="nameserver-view-{{$index}}"
+                           ng-model="createZone.providerParams.nameservers[$index]"
+                           name="nameserver-{{$index}}"
                            disabled />
                 </div>
             </modal-element>
 
             <!-- Dynamic Fields -->
-            <modal-element ng-repeat="field in zoneFields" label="{{ field.label }}">
-                <div class="form-group">
-                    <input type="text" class="form-control" ng-model="createZone[field.field]" disabled />
+            <modal-element ng-repeat="field in zoneFields"
+                           label="{{ field.label }}"
+                           ng-if="createZone.providerParams[field.field] && createZone.providerParams[field.field].length">
+
+                <!-- Render multiple input fields if it's an array -Multi-Select -->
+                <div class="form-group" ng-if="field.type === 'Multi-Select'">
+                    <div ng-repeat="(idx, value) in createZone.providerParams[field.field] track by $index" style="margin-bottom: 10px;">
+                        <input type="text" class="form-control"
+                               ng-model="createZone.providerParams[field.field][idx]"
+                               name="{{ field.field + '-' + idx }}"
+                               disabled />
+                    </div>
+                </div>
+
+                <!-- Single value - Int, String, Select -->
+                <div class="form-group" ng-if="field.type !== 'Multi-Select'">
+                    <input type="text" class="form-control"
+                           ng-model="createZone.providerParams[field.field]"
+                           name="{{ field.field }}"
+                           disabled />
                 </div>
             </modal-element>
+
         </modal-body>
 
         <modal-footer>

@@ -40,12 +40,12 @@ angular.module('controller.zones', [])
 
     $scope.query = "";
     $scope.includeReverse = true;
-    $scope.kind = ["Native", "Master", "Slave", "Forward"];
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
     $scope.createZone = {
-          nameservers: [],
-        };
-
+        providerParams : {
+            nameservers: [],
+        }
+    };
     $scope.createZone.ns_ipaddress = [];
 
     // Paging status for zone sets
@@ -80,11 +80,13 @@ angular.module('controller.zones', [])
         if($scope.myGroups && $scope.myGroups.length) {
             $scope.createZone.groupId = $scope.myGroups[0].id;
         }
-        $scope.createZone.nameservers = [];
+        $scope.createZone.providerParams = {};
+        $scope.createZone.providerParams.nameservers = [];
         $scope.createZone.ns_ipaddress = [];
     };
 
     $scope.viewCreatedZone = function (createdZone) {
+        $log.debug(createdZone)
         $scope.createZone = angular.copy(createdZone);
 
         if (createdZone.provider) {
@@ -101,11 +103,11 @@ angular.module('controller.zones', [])
     };
 
     $scope.addNameserver = function () {
-      $scope.createZone.nameservers.push('');
+      $scope.createZone.providerParams.nameservers.push('');
     };
 
     $scope.removeNameserver = function (index) {
-      $scope.createZone.nameservers.splice(index, 1);
+      $scope.createZone.providerParams.nameservers.splice(index, 1);
     };
 
     $(document).ready(function () {
@@ -120,13 +122,13 @@ angular.module('controller.zones', [])
 
     $scope.updateNameserverSelection = function(ns) {
       if ($scope.nameserverSelection[ns]) {
-        if ($scope.createZone.nameservers.indexOf(ns) === -1) {
-          $scope.createZone.nameservers.push(ns);
+        if ($scope.createZone.providerParams.nameservers.indexOf(ns) === -1) {
+          $scope.createZone.providerParams.nameservers.push(ns);
         }
       } else {
-        const idx = $scope.createZone.nameservers.indexOf(ns);
+        const idx = $scope.createZone.providerParams.nameservers.indexOf(ns);
         if (idx !== -1) {
-          $scope.createZone.nameservers.splice(idx, 1);
+          $scope.createZone.providerParams.nameservers.splice(idx, 1);
         }
       }
     };
@@ -192,7 +194,10 @@ angular.module('controller.zones', [])
     };
 
     $scope.dynamicZoneFieldToggleSelection = function(fieldKey, value) {
-        const list = $scope.createZone[fieldKey];
+        if (!$scope.createZone.providerParams[fieldKey]) {
+            $scope.createZone.providerParams[fieldKey] = [];
+        }
+        const list = $scope.createZone.providerParams[fieldKey];
         const idx = list.indexOf(value);
         if (idx > -1) {
             list.splice(idx, 1);

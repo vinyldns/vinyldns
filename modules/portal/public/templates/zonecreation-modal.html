@@ -48,12 +48,12 @@
                 </span>
             </modal-element>
             <modal-element label="Name Server"
-                           invalid-when="addZoneCreationForm.$submitted && createZone.nameservers.length === 0">
+                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0">
 
                 <input type="hidden"
                        name="nameservers"
-                       ng-model="createZone.nameservers"
-                       ng-required="createZone.nameservers.length === 0" />
+                       ng-model="createZone.providerParams.nameservers"
+                       ng-required="createZone.providerParams.nameservers.length === 0" />
 
                 <!-- Dropdown -->
                 <div class="dropdown dropdown-container">
@@ -62,8 +62,8 @@
                             data-toggle="dropdown"
                             aria-haspopup="true"
                             aria-expanded="false">
-                        <span ng-if="createZone.nameservers.length === 0">Select a NameServer</span>
-                        <span ng-if="createZone.nameservers.length > 0">{{ createZone.nameservers.join(', ') }}</span>
+                        <span ng-if="createZone.providerParams.nameservers.length === 0">Select a NameServer</span>
+                        <span ng-if="createZone.providerParams.nameservers.length > 0">{{ createZone.providerParams.nameservers.join(', ') }}</span>
                         <span class="caret pull-right dropdown-caret"></span>
                     </button>
 
@@ -114,11 +114,13 @@
             <div ng-repeat="field in zoneFields">
 
                 <!-- Multi-Select -->
-                <modal-element ng-if="field.type === 'Multi-Select'" label="{{ field.label }}" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm[field.field].$invalid">
+                <modal-element ng-if="field.type === 'Multi-Select'" label="{{ field.label }}"
+                               invalid-when="addZoneCreationForm.$submitted && (createZone.providerParams[field.field] || []).length === 0"
+                >
                     <input type="hidden"
-                           name="{{ field.field }}"
-                           ng-model="createZone[field.field]"
-                           ng-required="isDynamicZoneFieldRequired(field.field)"/>
+                           name="providerParams_{{ field.field }}"
+                           ng-model="createZone.providerParams[field.field]"
+                           ng-required="isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"/>
 
                     <div class="dropdown dropdown-container">
                         <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
@@ -126,8 +128,12 @@
                                 data-toggle="dropdown"
                                 aria-haspopup="true"
                                 aria-expanded="false">
-                            <span ng-if="createZone[field.field].length === 0">Select {{ field.label }}</span>
-                            <span ng-if="createZone[field.field].length > 0">{{ createZone[field.field].join(', ') }}</span>
+                            <span ng-if="!createZone.providerParams[field.field] || createZone.providerParams[field.field].length === 0">
+                                Select {{ field.label }}
+                            </span>
+                            <span ng-if="createZone.providerParams[field.field] && createZone.providerParams[field.field].length > 0">
+                                {{ createZone.providerParams[field.field].join(', ') }}
+                            </span>
                             <span class="caret pull-right dropdown-caret"></span>
                         </button>
 
@@ -141,7 +147,7 @@
                             <li ng-repeat="value in field.value | filter:search[field.field]">
                                 <label class="dropdown-label">
                                     <input type="checkbox"
-                                           ng-checked="createZone[field.field].indexOf(value) > -1"
+                                           ng-checked="createZone.providerParams[field.field].indexOf(value) > -1"
                                            ng-click="dynamicZoneFieldToggleSelection(field.field, value)">
                                     {{ value }}
                                 </label>
@@ -156,11 +162,11 @@
 
                 <!-- Select -->
                 <modal-element ng-if="field.type === 'Select'" label="{{ field.label }}"
-                               ng-init="createZone[field.field] = createZone[field.field] || null"
-                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm[field.field].$invalid">
+                               ng-init="createZone.providerParams[field.field] = createZone.providerParams[field.field] || null"
+                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
                     <select class="form-control"
-                            name="{{ field.field }}"
-                            ng-model="createZone[field.field]"
+                            name="providerParams_{{ field.field }}"
+                            ng-model="createZone.providerParams[field.field]"
                             ng-required="isDynamicZoneFieldRequired(field.field)"
                             ng-options="opt for opt in field.value track by opt">
                         <option value="" disabled selected hidden> Select {{ field.label }} </option>
@@ -173,12 +179,11 @@
                 <!-- String/Integer -->
                 <modal-element ng-if="field.type === 'String' || field.type === 'Integer'"
                                label="{{ field.label }}"
-                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm[field.field].$invalid">
+                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
                     <input type="{{ field.type === 'Integer' ? 'number' : 'text' }}"
                            class="form-control"
-                           id="zone-{{ field.field }}"
-                           ng-model="createZone[field.field]"
-                           name="{{ field.field }}"
+                           name="providerParams_{{ field.field }}"
+                           ng-model="createZone.providerParams[field.field]"
                            ng-required="isDynamicZoneFieldRequired(field.field)"/>
                     <span class="help-block">{{ field.label }} for DNS Zone, for example:<code>{{field.value}}</code></span>
                 </modal-element>
