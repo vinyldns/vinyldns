@@ -56,7 +56,7 @@ lazy val apiSettings = Seq(
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart ++= Seq(
-    "-Dlogback.configurationFile=test/logback.xml",
+    "-Dlog4j.configurationFile=test/log4j2.xml",
     s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
   ),
   coverageExcludedPackages := "Boot.*"
@@ -71,6 +71,8 @@ lazy val apiAssemblySettings = Seq(
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "index.js") =>
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
+      MergeStrategy.discard
+    case PathList("META-INF", "org", "apache", "logging", "log4j", "core", "config", "plugins", "Log4j2Plugins.dat") =>
       MergeStrategy.discard
     case "simulacrum/op.class" | "simulacrum/op$.class" | "simulacrum/typeclass$.class"
          | "simulacrum/typeclass.class" | "simulacrum/noop.class" =>
@@ -116,8 +118,8 @@ lazy val coreBuildSettings = Seq(
   // do not use unused params as NoOpCrypto ignores its constructor, we should provide a way
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params"),
-  PB.targets in Compile := Seq(PB.gens.java("2.6.1") -> (sourceManaged in Compile).value),
-  PB.protocVersion := "-v261"
+  PB.targets in Compile := Seq(PB.gens.java("3.21.7") -> (sourceManaged in Compile).value),
+  PB.protocVersion := "3.21.7"
 )
 
 lazy val corePublishSettings = Seq(
