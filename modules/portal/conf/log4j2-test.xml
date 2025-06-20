@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-portal"
+                    serviceNodeName="vinyldns-portal"
+                    eventDataset="vinyldns-portal"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="play" level="INFO" />
+        <logger name="application" level="DEBUG" />
+
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

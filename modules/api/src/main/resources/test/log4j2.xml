@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-api"
+                    serviceNodeName="vinyldns-api"
+                    eventDataset="vinyldns-api"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.flywaydb" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="debug" additivity="true"/>
+        <Logger name="org.flywaydb.core.internal.command.DbMigrate" level="debug" additivity="true"/>
+        <logger name="com.zaxxer.hikari" level="WARN">
+            <AppenderRef ref="Console" />
+        </logger>
+        <!-- Suppress the memory pool log -->
+        <logger name="MemStats" level="WARN"/>
+
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+
+
+
+
+
+
+

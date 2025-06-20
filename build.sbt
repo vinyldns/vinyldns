@@ -56,7 +56,7 @@ lazy val apiSettings = Seq(
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart ++= Seq(
-    "-Dlogback.configurationFile=test/logback.xml",
+    "-Dlog4j.configurationFile=test/log4j2.xml",
     s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
   ),
   coverageExcludedPackages := "Boot.*"
