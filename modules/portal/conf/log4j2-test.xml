@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
+        <Console name="CONSOLE" target="SYSTEM_OUT">
             <EcsLayout
                     serviceName="vinyldns-portal"
                     serviceNodeName="vinyldns-portal"
@@ -11,11 +11,11 @@
         </Console>
     </Appenders>
     <Loggers>
-        <logger name="play" level="INFO" />
-        <logger name="application" level="DEBUG" />
+        <logger name="play" level="OFF" />
+        <logger name="application" level="OFF" />
 
-        <Root level="INFO">
-            <AppenderRef ref="Console"/>
+        <Root level="OFF">
+            <AppenderRef ref="CONSOLE"/>
         </Root>
     </Loggers>
 </Configuration>
