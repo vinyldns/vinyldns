@@ -11,18 +11,12 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.flywaydb" level="DEBUG" additivity="false">
+        <Logger name="org.flywaydb" level="INFO" additivity="false">
             <AppenderRef ref="CONSOLE"/>
         </Logger>
-        <Logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG" additivity="true"/>
-        <Logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG" additivity="true"/>
-        <logger name="com.zaxxer.hikari" level="WARN">
-            <AppenderRef ref="CONSOLE" />
-        </logger>
-        <!-- Suppress the memory pool log -->
-        <logger name="MemStats" level="WARN"/>
+        <Logger name="vinyldns.core.route.Monitor" level="OFF" additivity="true"/>
 
-        <Root level="INFO">
+        <Root level="OFF">
             <AppenderRef ref="CONSOLE"/>
         </Root>
     </Loggers>

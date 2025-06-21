@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="VINYLDNS_LOG_LEVEL">${env:VINYLDNS_LOG_LEVEL:-INFO}</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console appender using ECS layout -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-api"
+                    serviceNodeName="vinyldns-api"
+                    eventDataset="vinyldns-api"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="vinyldns.core.route.Monitor" level="OFF" additivity="false"/>
+        <Logger name="scalikejdbc.StatementExecutor$$anon$1" level="OFF" additivity="false"/>
+        <Logger name="com.zaxxer.hikari" level="ERROR" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+        </Logger>
+
+        <Root level="${VINYLDNS_LOG_LEVEL}">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+    </Loggers>
+</Configuration>

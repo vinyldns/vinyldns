@@ -11,16 +11,9 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.flywaydb" level="DEBUG" additivity="false">
-            <AppenderRef ref="CONSOLE"/>
-        </Logger>
-        <Logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG" additivity="true"/>
-        <Logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG" additivity="true"/>
-        <logger name="com.zaxxer.hikari" level="WARN">
+        <logger name="com.zaxxer.hikari" level="ERROR">
             <AppenderRef ref="CONSOLE" />
         </logger>
-        <!-- Suppress the memory pool log -->
-        <logger name="MemStats" level="WARN"/>
 
         <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>

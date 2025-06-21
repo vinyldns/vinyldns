@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-api"
+                    serviceNodeName="vinyldns-api"
+                    eventDataset="vinyldns-api"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+    </Loggers>
+</Configuration>
+
+
+
+
+
+
+
