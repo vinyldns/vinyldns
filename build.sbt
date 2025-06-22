@@ -72,6 +72,8 @@ lazy val apiAssemblySettings = Seq(
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
       MergeStrategy.discard
+    case PathList("META-INF", "org", "apache", "logging", "log4j", "core", "config", "plugins", "Log4j2Plugins.dat") =>
+      MergeStrategy.first
     case "simulacrum/op.class" | "simulacrum/op$.class" | "simulacrum/typeclass$.class"
          | "simulacrum/typeclass.class" | "simulacrum/noop.class" =>
       MergeStrategy.discard
