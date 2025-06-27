@@ -43,8 +43,8 @@ POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(
 
 GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
 POST          /api/zones/generate                @controllers.VinylDNS.generateZone
+DELETE        /api/zones/generate/:id            @controllers.VinylDNS.deleteGeneratedZone(id: String)
 GET           /api/zones/generate/info           @controllers.VinylDNS.getGeneratedZones
-
 
 GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)
 POST          /api/zones/:id/recordsets          @controllers.VinylDNS.addRecordSet(id: String)

@@ -66,6 +66,12 @@
             <button type="button" class="btn btn-default" data-dismiss="modal">
                 Close
             </button>
+            <button id="delete-zone-button"
+                    class="btn btn-danger pull-right"
+                    ng-if="isDelete"
+                    ng-click="deleteCreatedZone()">
+                Delete
+            </button>
         </modal-footer>
     </modal>
 </form>

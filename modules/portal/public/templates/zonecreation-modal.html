@@ -6,11 +6,11 @@
             </p>
             <br />
             <modal-element label="Zone Name" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameval.$invalid">
-                <input id="generate-zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" required/>
+                <input id="generate-zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" ng-disabled="isEditMode" required/>
                 <span class="help-block">Name for the DNS zone, for example:<code>"vinyldns.example.net."</code>.</span>
             </modal-element>
             <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">
-                <input id="generate-zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" required/>
+                <input id="generate-zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" ng-disabled="isEditMode" required/>
                 <span class="help-block">
                     The email distribution list for the zone.  Typically the distribution email for the org that owns
                     the zone.
@@ -35,7 +35,8 @@
                 </div>
             </modal-element>
             <modal-element label="Admin Group" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.admingroup.$invalid">
-                <select id="generate-zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" required>
+                <select id="generate-zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" ng-disabled="isEditMode"
+                        required>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
                         {{group.name}}
                         <span ng-show="group.description">({{group.description}})</span></option>
@@ -48,12 +49,12 @@
                 </span>
             </modal-element>
             <modal-element label="Name Server"
-                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0">
+                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0" ng-if="!isEditMode">
 
                 <input type="hidden"
                        name="nameservers"
                        ng-model="createZone.providerParams.nameservers"
-                       ng-required="createZone.providerParams.nameservers.length === 0" />
+                       ng-required="createZone.providerParams.nameservers.length === 0"/>
 
                 <!-- Dropdown -->
                 <div class="dropdown dropdown-container">
@@ -61,7 +62,8 @@
                             type="button"
                             data-toggle="dropdown"
                             aria-haspopup="true"
-                            aria-expanded="false">
+                            aria-expanded="false"
+                            ng-disabled="isEditMode" >
                         <span ng-if="createZone.providerParams.nameservers.length === 0">Select a NameServer</span>
                         <span ng-if="createZone.providerParams.nameservers.length > 0">{{ createZone.providerParams.nameservers.join(', ') }}</span>
                         <span class="caret pull-right dropdown-caret"></span>
@@ -94,13 +96,23 @@
                 </span>
             </modal-element>
 
+            <modal-element label="Name Servers" ng-if="isEditMode">
+                <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
+                    <input type="text" class="form-control"
+                           ng-model="createZone.providerParams.nameservers[$index]"
+                           name="nameserver-{{$index}}"
+                           disabled />
+                </div>
+            </modal-element>
+
             <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.allowedDNSProviders.$invalid">
                 <select id="zone-provider"
                         name="allowedDNSProviders"
                         class="form-control"
                         ng-model="createZone.provider"
                         ng-change="getCreateZoneTemplate(createZone.provider)"
-                        ng-options="dnsProvider for dnsProvider in provider" required>
+                        ng-options="dnsProvider for dnsProvider in provider"
+                        ng-disabled="isEditMode" required>
                     <option value="" disabled selected hidden>Select a provider</option>
                 </select>
 
@@ -120,14 +132,17 @@
                     <input type="hidden"
                            name="providerParams_{{ field.field }}"
                            ng-model="createZone.providerParams[field.field]"
-                           ng-required="isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"/>
+                           ng-required="isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"
+                    />
 
                     <div class="dropdown dropdown-container">
                         <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
                                 type="button"
                                 data-toggle="dropdown"
                                 aria-haspopup="true"
-                                aria-expanded="false">
+                                aria-expanded="false"
+                                ng-disabled="!field.editable"
+                        >
                             <span ng-if="!createZone.providerParams[field.field] || createZone.providerParams[field.field].length === 0">
                                 Select {{ field.label }}
                             </span>
@@ -168,7 +183,9 @@
                             name="providerParams_{{ field.field }}"
                             ng-model="createZone.providerParams[field.field]"
                             ng-required="isDynamicZoneFieldRequired(field.field)"
-                            ng-options="opt for opt in field.value track by opt">
+                            ng-options="opt for opt in field.value track by opt"
+                            ng-disabled="!field.editable"
+                    >
                         <option value="" disabled selected hidden> Select {{ field.label }} </option>
                     </select>
                     <span class="help-block">
@@ -184,7 +201,9 @@
                            class="form-control"
                            name="providerParams_{{ field.field }}"
                            ng-model="createZone.providerParams[field.field]"
-                           ng-required="isDynamicZoneFieldRequired(field.field)"/>
+                           ng-required="isDynamicZoneFieldRequired(field.field)"
+                           ng-disabled="!field.editable"
+                    />
                     <span class="help-block">{{ field.label }} for DNS Zone, for example:<code>{{field.value}}</code></span>
                 </modal-element>
             </div>
@@ -192,7 +211,18 @@
         </modal-body>
         <modal-footer>
             <button type="button" class="btn btn-default pull-left" ng-click="resetCreateZone()">Clear Form</button>
-            <button id="create-zone-button" class="btn btn-primary pull-right">Create</button>
+            <!-- Update Button -->
+            <button id="update-zone-button"
+                    class="btn btn-warning pull-right"
+                    ng-if="isEditMode">
+                Update
+            </button>
+            <!-- Create Button -->
+            <button id="create-zone-button"
+                    class="btn btn-primary pull-right"
+                    ng-if="!isEditMode">
+                Create
+            </button>
             <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetCreateZone()">
                 Close
             </button>

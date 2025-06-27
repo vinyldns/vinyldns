@@ -117,7 +117,7 @@ angular.module('service.zones', [])
         }
 
         this.getAllowedDNSProviders = function() {
-            var url = "config/allowedDNSProviders";
+            var url = "/config/allowedDNSProviders";
             return $http.get(url);
         }
 
@@ -134,8 +134,18 @@ angular.module('service.zones', [])
 
         this.generateZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
-            $log.debug("service.zones: sending zone", sanitizedPayload);
+            $log.debug("service.zones: sending zone create request", sanitizedPayload);
             return $http.post("/api/zones/generate", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
+        };
+
+        this.updateGeneratedZone = function (payload) {
+            var sanitizedPayload = this.sanitizeConnections(payload);
+            $log.debug("service.zones: sending zone update request", sanitizedPayload);
+            return $http.put("/api/zones/generate", sanitizedPayload, {headers: utilityService.getCsrfHeader()});
+        };
+
+        this.deleteGeneratedZone = function (id) {
+            return $http.delete("/api/zones/generate/"+id, {headers: utilityService.getCsrfHeader()});
         };
 
         this.delZone = function (id) {

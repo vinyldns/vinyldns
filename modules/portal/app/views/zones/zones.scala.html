@@ -44,7 +44,7 @@
                                 <div class="panel-heading">
                                     <div class="row flex">
                                         <div class="btn-group col-md-9 flex-1">
-                                            <button class="btn btn-default" data-toggle="modal" data-target="#zone_creation_modal" id="open-zone-create-modal-button">
+                                            <button class="btn btn-default" data-toggle="modal" data-target="#zone_creation_modal" id="open-zone-create-modal-button" ng-click="isCreateZone()">
                                                 <span class="fa fa-plus"></span> New Zone
                                             </button>
                                             <button id="generate-zone-refresh-button" class="btn btn-default" ng-click="refreshGeneratedZones()">
@@ -113,13 +113,18 @@
                                             <td>
                                                 <span ng-if="zone.accessLevel !== 'NoAccess'">
                                                     <button class="btn btn-info btn-sm me-2" data-toggle="modal" data-target="#zone_creation_view_modal"
-                                                            ng-if="zone.accessLevel === 'Read' || zone.accessLevel === 'Delete'"
+                                                            ng-if="zone.accessLevel === 'Read'|| zone.accessLevel === 'Delete'"
                                                             ng-click="viewCreatedZone(zone)">
                                                       View
                                                     </button>
-                                                    <button class="btn btn-danger btn-sm"
+                                                    <button class="btn btn-info btn-sm me-2" data-toggle="modal" data-target="#zone_creation_modal"
                                                             ng-if="zone.accessLevel === 'Delete'"
-                                                            ng-click="deleteCreatedZone(zone)">
+                                                            ng-click="updateCreatedInfo(zone,'update')">
+                                                      Update
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#zone_creation_view_modal"
+                                                            ng-if="zone.accessLevel === 'Delete'"
+                                                            ng-click="updateCreatedInfo(zone,'delete')">
                                                       Delete
                                                     </button>
                                                 </span>

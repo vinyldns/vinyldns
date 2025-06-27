@@ -88,6 +88,7 @@ angular.module('controller.zones', [])
     $scope.viewCreatedZone = function (createdZone) {
         $log.debug(createdZone)
         $scope.createZone = angular.copy(createdZone);
+        $scope.isEditMode = false;
 
         if (createdZone.provider) {
             $scope.getCreateZoneTemplate(createdZone.provider).then(function () {
@@ -100,6 +101,19 @@ angular.module('controller.zones', [])
             });
         }
 
+    };
+
+    $scope.updateCreatedInfo = function (createdZone,action) {
+        $log.debug(createdZone);
+        $scope.createZone = angular.copy(createdZone);
+
+        if (action === 'delete') {
+            $scope.isDelete = true
+        }else $scope.isDelete = false
+
+        if (createdZone.provider) {
+            $scope.getUpdateZoneTemplate(createdZone.provider);
+        }
     };
 
     $scope.addNameserver = function () {
@@ -173,7 +187,56 @@ angular.module('controller.zones', [])
                 const isSelect = config.type.toLowerCase().includes('select');
                 const value = isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
 
-                // 💡 Only initialize if undefined (optional safeguard)
+                // Only initialize if undefined
+                if ($scope.createZone[field] === undefined) {
+                    $scope.createZone[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
+                }
+                return {
+                    label,
+                    type: config.type,
+                    value,
+                    field,
+                    editable: true
+                };
+            });
+        });
+    };
+
+    $scope.isCreateZone = function() {
+        $scope.isEditMode = false;
+    }
+
+    $scope.getUpdatePayload = function(zone) {
+        const payload = {};
+        const template = $scope.updateZoneTemplate;
+
+        if (template && typeof template === 'object') {
+            Object.keys(template).forEach(function(label) {
+                const field = label.replace(/ /g, '').toLowerCase();
+                if (zone.hasOwnProperty(field)) {
+                    payload[field] = zone[field];
+                }
+            });
+        } else {
+            $log.warn("updateZoneTemplate is not set or invalid.");
+        }
+        return payload;
+    };
+
+    $scope.getUpdateZoneTemplate = function(provider) {
+        return zonesService.getCreateZoneTemplate(provider).then(function(results) {
+            const updateZoneFields = results.data["request-templates"]["update-zone"];
+            $scope.UpdateRequiredFields = results.data["required-fields"]["update-zone"];
+            const updateZone = JSON.parse(updateZoneFields);
+            $scope.updateZoneTemplate = updateZone;
+            $scope.isEditMode = true;
+
+            $scope.zoneFields = Object.entries(updateZone).map(([label, config]) => {
+                const field = label.replace(/ /g, '').toLowerCase();
+                const isSelect = config.type.toLowerCase().includes('select');
+                const value = isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
+
+                // Only initialize if undefined
                 if ($scope.createZone[field] === undefined) {
                     $scope.createZone[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
                 }
@@ -182,12 +245,12 @@ angular.module('controller.zones', [])
                     label,
                     type: config.type,
                     value,
-                    field
+                    field,
+                    editable: true
                 };
             });
         });
     };
-
 
     $scope.isDynamicZoneFieldRequired = function(fieldName) {
       return $scope.requiredFields && $scope.requiredFields.indexOf(fieldName) !== -1;
@@ -465,27 +528,84 @@ angular.module('controller.zones', [])
             });
     };
 
+    $scope.getUpdatePayload = function (zone) {
+      const providerParams = {};
+      const template = $scope.updateZoneTemplate || {};
+      for (const label in template) {
+        const field = label.replace(/ /g, '').toLowerCase();
+        const value = zone.providerParams[field];
+        if (
+          value !== undefined &&
+          value !== null &&
+          !(typeof value === 'string' && value.trim() === '') &&
+          !(Array.isArray(value) && value.length === 0)
+        ) {
+          providerParams[field] = value;
+        }
+      }
+      return {
+        groupId: zone.groupId,
+        zoneName: zone.zoneName,
+        email: zone.email,
+        provider: zone.provider,
+        providerParams
+      };
+    };
+
     $scope.addZoneCreation = function () {
         if ($scope.processing) {
             $log.debug('zoneCreation::processing is true; exiting');
             return;
         }
-
-        //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-        zonesService.generateZone($scope.createZone)
-            .then(function () {
-                $timeout($scope.refreshGeneratedZones(), 1000);
+        if (!$scope.isEditMode) {
+        // create zone service
+            zonesService.generateZone($scope.createZone)
+                .then(function () {
+                    $timeout($scope.refreshGeneratedZones(), 1000);
+                    $("#zone_creation_modal").modal("hide");
+                    $scope.processing = false;
+                })
+                .catch(function (error){
+                    $("#zone_creation_modal").modal("hide");
+                    $scope.zoneError = true;
+                    handleError(error, 'zonesService::generateZone-failure');
+                    $scope.processing = false;
+                });
+        }else {
+        // update zone service
+            const payload = $scope.getUpdatePayload($scope.createZone);
+            zonesService.updateGeneratedZone(payload)
+              .then(function () {
                 $("#zone_creation_modal").modal("hide");
                 $scope.processing = false;
-            })
-            .catch(function (error){
+              })
+              .catch(function (error){
                 $("#zone_creation_modal").modal("hide");
                 $scope.zoneError = true;
                 handleError(error, 'zonesService::generateZone-failure');
                 $scope.processing = false;
+              });
+        }
+    };
+
+    $scope.deleteCreatedZone = function () {
+        if (!confirm("Are you sure you want to delete this zone?")) return;
+        zonesService.deleteGeneratedZone($scope.createZone.id)
+            .then(function (response) {
+                $("#zone_creation_view_modal").modal("hide");
+                $log.debug("Deleting zone with ID:", $scope.createZone.id);
+                const zoneName = $scope.createZone.zoneName || 'unknown';
+                const msg = `${response.statusText} (HTTP ${response.status}): '${zoneName}' deleted`;
+                $scope.alerts = $scope.alerts || [];
+                $scope.alerts.push({ type: "success", content: msg });
+            })
+            .catch(function (error) {
+                $("#zone_creation_view_modal").modal("hide");
+                handleError(error, 'zonesService::sendZone-failure');
             });
     };
+
 
     function handleError(error, type) {
         $scope.zoneError = true;
