@@ -39,12 +39,15 @@ import org.json4s.jackson.JsonMethods._
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.networknt.schema.{JsonSchemaFactory, SpecVersion}
-import org.json4s.{JValue, JObject}
+import org.json4s.{JObject, JValue}
+
 import scala.util.Try
 import scala.jdk.CollectionConverters._
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.net.{HttpURLConnection, URL}
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.io.Source
 
 object ZoneService {
@@ -178,7 +181,7 @@ class ZoneService(
   def handleGenerateZoneRequest(
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
-                               ): Result[ZoneGenerationResponse] = {
+                               ): Result[GenerateZone] =
     for {
       // Validate input
       providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
@@ -209,26 +212,22 @@ class ZoneService(
 
       // Only parse JSON if the response is non-empty
       responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
-
-      // Create response object
       zoneGenerateResponse = ZoneGenerationResponse(
-        provider = request.provider,
-        responseCode = responseCode,
-        status = dnsConnResponse.getResponseMessage,
-        message = responseJson
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Create
       )
-      _ <- logger.info(s"response: $zoneGenerateResponse").toResult
+      zoneToGenerate = GenerateZone(request.copy(response = Some(zoneGenerateResponse)))
+      _ <- logger.info(s"zone generation response: Create: $zoneToGenerate").toResult
+      _ <- generateZoneRepository.save(zoneToGenerate).toResult[GenerateZone]
 
-      zoneToGenerate = GenerateZone(request)
-      _ <- generateZoneRepository.save(zoneToGenerate.copy(response = Some(zoneGenerateResponse))).toResult[GenerateZone]
-
-    } yield zoneGenerateResponse
-  }
+    } yield zoneToGenerate
 
   def handleUpdateGeneratedZoneRequest(
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
-                               ): Result[ZoneGenerationResponse] = {
+                               ): Result[GenerateZone] =
     for {
       existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
       _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
@@ -259,30 +258,28 @@ class ZoneService(
       // Only parse JSON if the response is non-empty
       responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
 
-      // Create response object
       zoneGenerateResponse = ZoneGenerationResponse(
-        provider = request.provider,
-        responseCode = responseCode,
-        status = dnsConnResponse.getResponseMessage,
-        message = responseJson
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Update
       )
-      _ <- logger.info(s"response: $zoneGenerateResponse").toResult
-
-      updatedZone = existingGeneratedZone.copy(
+      zoneToUpdate = existingGeneratedZone.copy(
         email = request.email,
         groupId = request.groupId,
-        providerParams = request.providerParams,
-        response = Some(zoneGenerateResponse)
+        providerParams = existingGeneratedZone.providerParams ++ request.providerParams,
+        response = Some(zoneGenerateResponse),
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       )
-      _ <- generateZoneRepository.save(updatedZone).toResult[GenerateZone]
+      _ <- logger.info(s"zone generation response: Update: $zoneToUpdate").toResult
+      _ <- generateZoneRepository.save(zoneToUpdate).toResult[GenerateZone]
+    } yield zoneToUpdate
 
-    } yield zoneGenerateResponse
-  }
 
   def handleDeleteGeneratedZoneRequest(
                                            generatedZoneId: String,
                                            auth: AuthPrincipal
-                                       ): Result[ZoneGenerationResponse] = {
+                                       ): Result[GenerateZone] =
     for {
       generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
       _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
@@ -309,20 +306,18 @@ class ZoneService(
 
       // Only parse JSON if the response is non-empty
       responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
-
-      // Create response object
       zoneGenerateResponse = ZoneGenerationResponse(
-        provider = generatedZone.provider,
-        responseCode = responseCode,
-        status = dnsConnResponse.getResponseMessage,
-        message = responseJson
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Delete
       )
-      _ <- logger.info(s"response: $zoneGenerateResponse").toResult
+      zoneToDelete = GenerateZone(request.copy(response = Some(zoneGenerateResponse)))
+      _ <- logger.info(s"zone generation response: Delete: $zoneToDelete").toResult
+      _ <- generateZoneRepository.delete(zoneToDelete).toResult[GenerateZone]
 
-      _ <- generateZoneRepository.delete(generatedZone).toResult[GenerateZone]
+    } yield zoneToDelete
 
-    } yield zoneGenerateResponse
-  }
 
   // Build a Generate Zone JSON request using template engine
   private def buildGenerateZoneRequestJson(

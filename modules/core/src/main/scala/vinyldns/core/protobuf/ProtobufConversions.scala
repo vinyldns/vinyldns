@@ -221,10 +221,13 @@ trait ProtobufConversions {
 
   def fromPB(zgr: VinylDNSProto.ZoneGenerationResponse): ZoneGenerationResponse =
     ZoneGenerationResponse(
-      zgr.getProvider,
-      zgr.getResponseCode.toInt,
-      zgr.getStatus,
-      if (Option(zgr.getMessage).exists(_.trim.nonEmpty)) parse(zgr.getMessage) else JNothing
+      if (zgr.hasResponseCode) Some(zgr.getResponseCode.toInt) else None,
+      if (zgr.hasStatus) Some(zgr.getStatus) else None,
+      if (Option(zgr.getMessage).exists(_.trim.nonEmpty)) {
+        try Some(parse(zgr.getMessage))
+        catch {case _: Throwable => Some(JString(zgr.getMessage))}
+      } else None,
+      GenerateZoneChangeType.withName(zgr.getChangeType)
     )
 
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =
@@ -527,14 +530,19 @@ trait ProtobufConversions {
     builder.build()
   }
 
-  def toPB(zgr: ZoneGenerationResponse): VinylDNSProto.ZoneGenerationResponse =
-    VinylDNSProto.ZoneGenerationResponse
+  def toPB(zgr: ZoneGenerationResponse): VinylDNSProto.ZoneGenerationResponse = {
+    val builder = VinylDNSProto.ZoneGenerationResponse
       .newBuilder()
-      .setProvider(zgr.provider)
-      .setResponseCode(zgr.responseCode.toLong)
-      .setStatus(zgr.status)
-      .setMessage(compact(render(zgr.message)))
-      .build()
+      .setChangeType(zgr.changeType.toString)
+    zgr.responseCode.foreach(rc => builder.setResponseCode(rc.toLong))
+    zgr.status.foreach(st => builder.setStatus(st))
+    zgr.message.foreach {
+      case JNothing =>
+      case JString(str) => builder.setMessage(str)
+      case other => builder.setMessage(compact(render(other)))
+    }
+    builder.build()
+  }
 
   def fromPB(data: VinylDNSProto.User): User =
     User(

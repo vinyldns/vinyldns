@@ -43,10 +43,10 @@ message GenerateZone {
 }
 
 message ZoneGenerationResponse {
-  required string provider = 1;
-  required int64 responseCode = 2;
-  required string Status = 3;
-  required string message = 4;
+  optional int64 responseCode = 1;
+  optional string Status = 2;
+  optional string message = 3;
+  optional string changeType = 4;
 }
 
 message ZoneACL {

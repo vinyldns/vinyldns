@@ -30,17 +30,17 @@ trait ZoneServiceAlgebra {
   def handleGenerateZoneRequest(
       request: ZoneGenerationInput,
       auth: AuthPrincipal
-  ): Result[ZoneGenerationResponse]
+  ): Result[GenerateZone]
 
   def handleUpdateGeneratedZoneRequest(
       request: ZoneGenerationInput,
       auth: AuthPrincipal
-  ): Result[ZoneGenerationResponse]
+  ): Result[GenerateZone]
 
   def handleDeleteGeneratedZoneRequest(
       generatedZoneId: String,
       auth: AuthPrincipal
-  ): Result[ZoneGenerationResponse]
+  ): Result[GenerateZone]
 
   def getGenerateZoneByName(
       zoneName: String,

@@ -32,6 +32,7 @@ import vinyldns.core.domain.{Encrypted, Encryption}
 import scala.collection.JavaConverters._
 import org.json4s._
 import org.json4s.JsonAST.JValue
+import vinyldns.core.domain.zone.GenerateZoneChangeType.GenerateZoneChangeType
 
 
 object ZoneStatus extends Enumeration {
@@ -42,6 +43,11 @@ object ZoneStatus extends Enumeration {
 object GenerateZoneStatus extends Enumeration {
   type GenerateZoneStatus = Value
   val Active, Deleted, Syncing = Value
+}
+
+object GenerateZoneChangeType extends Enumeration {
+  type GenerateZoneChangeType = Value
+  val Create, Update, Delete = Value
 }
 
 import vinyldns.core.domain.zone.ZoneStatus._
@@ -242,14 +248,13 @@ final case class UpdateGenerateZoneInput(
                                   providerParams: Map[String, JValue] = Map.empty,
                                   response: Option[ZoneGenerationResponse] = None,
                                   id: String = UUID.randomUUID().toString
-
                                 )
 
 case class ZoneGenerationResponse(
-                                   provider: String,
-                                   responseCode: Int,
-                                   status: String,
-                                   message: JValue
+                                   responseCode: Option[Int],
+                                   status: Option[String],
+                                   message: Option[JValue],
+                                   changeType: GenerateZoneChangeType
                                  )
 
 case class ZoneGenerationInput(
