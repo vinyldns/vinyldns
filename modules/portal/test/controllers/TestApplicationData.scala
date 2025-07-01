@@ -199,8 +199,8 @@ trait TestApplicationData { this: Mockito =>
        |  "members":     [ { "id": "${frodoUser.id}" },  { "id": "sauron-userId" } ],
        |  "admins":      [ { "id": "sauron-userId" } ]
        |  }
-     """.stripMargin
-  )
+     """.stripMargin)
+
   val hobbitGroupRequest: JsValue = Json.parse(s"""{
       | "name":        "hobbits",
       | "email":       "hobbitAdmin@shire.me",
