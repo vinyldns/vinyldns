@@ -57,7 +57,7 @@ describe('Service: zoneService', function () {
         });
 
     it('http backend gets called properly when deleting generate zone', function (done) {
-            this.$httpBackend.expectDELETE('/api/zones/generate').respond('zone deleted');
+            this.$httpBackend.expectDELETE('/api/zones/generate/id').respond('zone deleted');
             this.zonesService.deleteGeneratedZone('id')
                 .then(function(response) {
                     expect(response.data).toBe('zone deleted');
@@ -85,8 +85,8 @@ describe('Service: zoneService', function () {
         });
 
     it('http backend gets called properly when getting createZoneTemplate', function () {
-            this.$httpBackend.expectGET('/config/createZoneTemplate').respond('createZoneTemplate returned');
-            this.zonesService.getCreateZoneTemplate()
+            this.$httpBackend.expectGET('/config/createZoneTemplate/provider').respond('createZoneTemplate returned');
+            this.zonesService.getCreateZoneTemplate('provider')
                 .then(function(response) {
                     expect(response.data).toBe('createZoneTemplate returned');
                 });
