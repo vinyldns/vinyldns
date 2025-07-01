@@ -228,38 +228,38 @@ trait TestApplicationData { this: Mockito =>
 
   val validGenerateZoneId = "uuid-12345-abcdef"
 
-  val validGenerateZoneRequest: JsValue = Json.parse(s"""
-                                                        |{
-                                                        |  "groupId": "powerdns-group-uuid",
-                                                        |  "email": "hobbitAdmin@shire.me",
-                                                        |  "provider": "powerdns",
-                                                        |  "zoneName": "test.vinyldns.org.",
-                                                        |  "providerParams": {
-                                                        |    "kind": "Master",
-                                                        |    "nameservers": [
-                                                        |      { "id": "${frodoUser.id}" },
-                                                        |      { "id": "samwise-userId" }
-                                                        |    ]
-                                                        |  }
-                                                        |}
+  val validGenerateZoneRequest: JsValue = Json.parse(
+    s"""
+      |{
+      |  "groupId": "powerdns-group-uuid",
+      |  "email": "hobbitAdmin@shire.me",
+      |  "provider": "powerdns",
+      |  "zoneName": "test.vinyldns.org.",
+      |  "providerParams": {
+      |    "kind": "Master",
+      |    "nameservers": [
+      |      { "id": "${frodoUser.id}" },
+      |      { "id": "samwise-userId" }
+      |    ]
+      |  }
+    |}
 """.stripMargin)
 
-
-  val invalidGenerateZoneRequest: JsValue = Json.parse(s"""
-                                                        |{
-                                                        |  "groupId": "powerdns-group-uuid",
-                                                        |  "email": "hobbitAdmin@shire.me",
-                                                        |  "provider": "powerdns",
-                                                        |  "zoneName": "test.vinyldns.org.",
-                                                        |  "providerParams": {
-                                                        |    "nameservers": [
-                                                        |      { "id": "${frodoUser.id}" },
-                                                        |      { "id": "samwise-userId" }
-                                                        |    ]
-                                                        |  }
-                                                        |}
+  val invalidGenerateZoneRequest: JsValue = Json.parse(
+    s"""
+      |{
+      |  "groupId": "powerdns-group-uuid",
+      |  "email": "hobbitAdmin@shire.me",
+      |  "provider": "powerdns",
+      |  "zoneName": "test.vinyldns.org.",
+      |  "providerParams": {
+      |    "nameservers": [
+      |      { "id": "${frodoUser.id}" },
+      |      { "id": "samwise-userId" }
+      |    ]
+      |  }
+    |}
 """.stripMargin)
-
 
   val hobbitZoneId = "uuid-abcdef-12345"
   val hobbitZoneName = "hobbits"
