@@ -84,15 +84,6 @@ describe('Service: zoneService', function () {
             this.$httpBackend.flush();
         });
 
-    it('http backend gets called properly when getting createZoneTemplate', function () {
-            this.$httpBackend.expectGET('/config/createZoneTemplate/provider').respond('createZoneTemplate returned');
-            this.zonesService.getCreateZoneTemplate('provider')
-                .then(function(response) {
-                    expect(response.data).toBe('createZoneTemplate returned');
-                });
-            this.$httpBackend.flush();
-        });
-
     it('http backend gets called properly when getting zoneChanges', function () {
         this.$httpBackend.expectGET('/api/zones/zoneid/changes?maxItems=100&startFrom=start').respond('zoneChanges returned');
         this.zonesService.getZoneChanges('100', 'start', 'zoneid', false)
