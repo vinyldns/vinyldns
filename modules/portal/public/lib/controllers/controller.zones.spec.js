@@ -73,6 +73,8 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
+    //suppress unrelated HTTP
+        spyOn(zonesService, 'getGeneratedZoneNameservers').and.returnValue($q.when([]));
         var validDomains = spyOn(this.scope, 'validDomains')
                             .and.stub();
         this.scope.$digest();

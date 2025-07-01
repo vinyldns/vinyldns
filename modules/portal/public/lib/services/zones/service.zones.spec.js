@@ -37,7 +37,7 @@ describe('Service: zoneService', function () {
 
     it('http backend gets called properly when getting generated zones', function () {
         this.$httpBackend.expectGET('/api/zones/generate/info?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false').respond('zone returned');
-        this.zonesService.getZones('100', 'start', 'someQuery', false, false)
+        this.zonesService.getGeneratedZones('100', 'start', 'someQuery', false, false)
             .then(function(response) {
                 expect(response.data).toBe('zone returned');
             });
@@ -62,6 +62,33 @@ describe('Service: zoneService', function () {
                 .then(function(response) {
                     expect(response.data).toBe('zone deleted');
                     done();
+                });
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when getting name servers', function () {
+            this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond('nameservers returned');
+            this.zonesService.getNameservers()
+                .then(function(response) {
+                    expect(response.data).toBe('nameservers returned');
+                });
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when getting allowedDNSProviders', function () {
+            this.$httpBackend.expectGET('/config/allowedDNSProviders').respond('allowedDNSProviders returned');
+            this.zonesService.getAllowedDNSProviders()
+                .then(function(response) {
+                    expect(response.data).toBe('allowedDNSProviders returned');
+                });
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when getting createZoneTemplate', function () {
+            this.$httpBackend.expectGET('/config/createZoneTemplate').respond('createZoneTemplate returned');
+            this.zonesService.getCreateZoneTemplate()
+                .then(function(response) {
+                    expect(response.data).toBe('createZoneTemplate returned');
                 });
             this.$httpBackend.flush();
         });
