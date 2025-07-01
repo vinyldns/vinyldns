@@ -110,7 +110,7 @@ class FrontendController @Inject() (
     Future(Ok(views.html.dnsChanges.dnsChangeNew(request.user.userName)))
   }
 
-  def getAllowedDNSProviders: Action[AnyContent] = Action.async {
+  def getAllowedDNSProviders: Action[AnyContent] = userAction.async {
     Future {
       val providersConfig = configuration.getOptional[Configuration]("api.dns-provider-portal-fields.providers")
       val providerKeys = providersConfig match {
@@ -123,7 +123,7 @@ class FrontendController @Inject() (
     }
   }
 
-  def getCreateZoneTemplate(provider: String): Action[AnyContent] = Action.async {
+  def getCreateZoneTemplate(provider: String): Action[AnyContent] = userAction.async {
     Future {
       val templatesPath = s"api.dns-provider-portal-fields.providers.$provider.request-templates"
       val requiredPath = s"api.dns-provider-portal-fields.providers.$provider.required-fields"
