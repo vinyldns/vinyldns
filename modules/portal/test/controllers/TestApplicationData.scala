@@ -148,7 +148,8 @@ trait TestApplicationData { this: Mockito =>
     """.stripMargin)
 
   val hobbitGroupChangeId = "b6018a9b-c893-40e9-aa25-4ccfee460c18"
-  val hobbitGroupChange: JsValue = Json.parse(s"""{
+  val hobbitGroupChange: JsValue = Json.parse(
+    s"""{
       | "newGroup": {
       | "id":          "$hobbitGroupId",
       | "name":        "hobbits",
