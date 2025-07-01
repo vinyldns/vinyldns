@@ -201,7 +201,8 @@ trait TestApplicationData { this: Mockito =>
        |  }
      """.stripMargin)
 
-  val hobbitGroupRequest: JsValue = Json.parse(s"""{
+  val hobbitGroupRequest: JsValue = Json.parse(
+    s"""{
       | "name":        "hobbits",
       | "email":       "hobbitAdmin@shire.me",
       | "description": "Hobbits of the shire",
