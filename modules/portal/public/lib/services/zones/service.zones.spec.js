@@ -44,6 +44,28 @@ describe('Service: zoneService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when updating a generate zone', function (done) {
+            this.$httpBackend.expectPUT('/api/zones/generate').respond('update sent');
+            var sanitizeConnections = spyOn(this.zonesService, 'sanitizeConnections');
+            this.zonesService.updateGeneratedZone('id', 'zone')
+                .then(function(response) {
+                    expect(response.data).toBe('update sent');
+                    done();
+                });
+            expect(sanitizeConnections.calls.count()).toBe(1);
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when deleting generate zone', function (done) {
+            this.$httpBackend.expectDELETE('/api/zones/generate').respond('zone deleted');
+            this.zonesService.deleteGeneratedZone('id')
+                .then(function(response) {
+                    expect(response.data).toBe('zone deleted');
+                    done();
+                });
+            this.$httpBackend.flush();
+        });
+
     it('http backend gets called properly when getting zoneChanges', function () {
         this.$httpBackend.expectGET('/api/zones/zoneid/changes?maxItems=100&startFrom=start').respond('zoneChanges returned');
         this.zonesService.getZoneChanges('100', 'start', 'zoneid', false)
