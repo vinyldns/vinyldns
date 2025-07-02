@@ -37,6 +37,7 @@ describe('Controller: ZonesController', function () {
         this.scope.zones = {};
         this.$httpBackend = _$httpBackend_;
         this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond([]);
+        this.$httpBackend.expectGET('/config/allowedDNSProviders').respond([]);
 
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
@@ -75,19 +76,14 @@ describe('Controller: ZonesController', function () {
         this.controller = $controller('ZonesController', {'$scope': this.scope});
     }));
 
-    it('test that we properly get users groups when loading ZonesController', function(){
+    it('test that we properly get users groups when loading ZonesController', function() {
         spyOn(this.scope, 'validDomains').and.stub();
 
-        // Controller triggers GET request for nameservers
-        this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond([]);
-
         this.scope.$digest();
-        this.$httpBackend.flush(); // ← required to resolve pending HTTP calls
+        this.$httpBackend.flush(); // flushes all expected HTTP calls
 
-        expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
+        expect(this.scope.myGroups).toEqual([{ id: "all my groups", members: [{ id: "userId" }] }]);
     });
-
-
 
     it('nextPageMyZones should call getZones with the correct parameters', function () {
         var getZoneSets = spyOn(this.zonesService, 'getZones')
