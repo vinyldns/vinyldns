@@ -71,16 +71,20 @@ describe('Controller: ZonesController', function () {
         };
 
         this.controller = $controller('ZonesController', {'$scope': this.scope});
-    }));
+    }))
 
     it('test that we properly get users groups when loading ZonesController', function(){
-    //suppress unrelated HTTP
-        spyOn(this.zonesService, 'getNameservers').and.returnValue(this.zonesService.q.when([]));
-        var validDomains = spyOn(this.scope, 'validDomains')
-                            .and.stub();
+        // Mock HTTP call
+        $httpBackend.expectGET("/api/zones/generate/nameservers").respond(200, []);
+
+        spyOn(this.scope, 'validDomains').and.stub();
+
         this.scope.$digest();
+        $httpBackend.flush();
+
         expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
+
 
     it('nextPageMyZones should call getZones with the correct parameters', function () {
         var getZoneSets = spyOn(this.zonesService, 'getZones')
