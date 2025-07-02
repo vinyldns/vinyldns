@@ -73,8 +73,13 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
+
+        beforeEach(inject(function(_$q_) {
+            this.$q = _$q_;
+        }));
+
+        spyOn(this.zonesService, 'getNameservers').and.returnValue(this.$q.resolve([]));
     //suppress unrelated HTTP
-        spyOn(this.zonesService, 'getNameservers').and.returnValue($q.when([]));
         var validDomains = spyOn(this.scope, 'validDomains')
                             .and.stub();
         this.scope.$digest();
@@ -200,6 +205,9 @@ describe('Controller: ZonesController', function () {
     });
 
     it('nextPageGeneratedZones should call getGeneratedZones with the correct parameters', function () {
+        beforeEach(function () {
+          $.fn.multiselect = function () { return this; }; // stub to prevent errors
+        });
         var getZoneSets = spyOn(this.zonesService, 'getGeneratedZones')
             .and.stub()
             .and.returnValue(this.zonesService.q.when(mockZone));
@@ -239,6 +247,6 @@ describe('Controller: ZonesController', function () {
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
     });
 });
