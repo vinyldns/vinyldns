@@ -47,6 +47,7 @@ describe('Controller: ZonesController', function () {
             });
         };
 
+        $.fn.multiselect = function () { return this; };
         zonesService.getZones = function() {
             return $q.when({
                 data: {
@@ -73,13 +74,8 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
-
-        beforeEach(inject(function(_$q_) {
-            this.$q = _$q_;
-        }));
-
-        spyOn(this.zonesService, 'getNameservers').and.returnValue(this.$q.resolve([]));
     //suppress unrelated HTTP
+        spyOn(this.zonesService, 'getNameservers').and.returnValue(this.zonesService.q.when([]));
         var validDomains = spyOn(this.scope, 'validDomains')
                             .and.stub();
         this.scope.$digest();
@@ -205,9 +201,6 @@ describe('Controller: ZonesController', function () {
     });
 
     it('nextPageGeneratedZones should call getGeneratedZones with the correct parameters', function () {
-        beforeEach(function () {
-          $.fn.multiselect = function () { return this; }; // stub to prevent errors
-        });
         var getZoneSets = spyOn(this.zonesService, 'getGeneratedZones')
             .and.stub()
             .and.returnValue(this.zonesService.q.when(mockZone));
