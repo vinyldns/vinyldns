@@ -25,7 +25,7 @@ describe('Controller: ZonesController', function () {
         module('service.paging'),
         module('controller.zones')
     });
-    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
+    beforeEach(inject(function ($rootScope, $controller, $q ,_$httpBackend_, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.zonesService = zonesService;
@@ -35,6 +35,8 @@ describe('Controller: ZonesController', function () {
         this.scope.myGroups = {};
         this.scope.allGroups = {};
         this.scope.zones = {};
+        this.$httpBackend = _$httpBackend_;
+        this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond([]);
 
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
@@ -71,19 +73,20 @@ describe('Controller: ZonesController', function () {
         };
 
         this.controller = $controller('ZonesController', {'$scope': this.scope});
-    }))
+    }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
-        // Mock HTTP call
-        $httpBackend.expectGET("/api/zones/generate/nameservers").respond(200, []);
-
         spyOn(this.scope, 'validDomains').and.stub();
 
+        // Controller triggers GET request for nameservers
+        this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond([]);
+
         this.scope.$digest();
-        $httpBackend.flush();
+        this.$httpBackend.flush(); // ← required to resolve pending HTTP calls
 
         expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
+
 
 
     it('nextPageMyZones should call getZones with the correct parameters', function () {
