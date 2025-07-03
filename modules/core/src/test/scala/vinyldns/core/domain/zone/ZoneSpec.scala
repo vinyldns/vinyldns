@@ -80,18 +80,8 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result should include("groupId=\"" + generateBindZoneAuthorized.groupId + "\"")
       result should include("provider=\"" + generateBindZoneAuthorized.provider + "\"")
       result should include("zoneName=\"" + generateBindZoneAuthorized.zoneName + "\"")
-      result should include("serverId=\"" + generateBindZoneAuthorized.serverId + "\"")
-      result should include("masters=\"" + generateBindZoneAuthorized.masters + "\"")
-      result should include("nameservers=\"" + generateBindZoneAuthorized.nameservers + "\"")
-      result should include("description=\"" + generateBindZoneAuthorized.description + "\"")
-      result should include("visibility=\"" + generateBindZoneAuthorized.visibility + "\"")
-      result should include("accountId=\"" + generateBindZoneAuthorized.accountId + "\"")
-      result should include("projectId=\"" + generateBindZoneAuthorized.projectId + "\"")
-      result should include("ttl=\"" + generateBindZoneAuthorized.ttl + "\"")
-      result should include("refresh=\"" + generateBindZoneAuthorized.refresh + "\"")
-      result should include("retry=\"" + generateBindZoneAuthorized.retry + "\"")
-      result should include("expire=\"" + generateBindZoneAuthorized.expire + "\"")
-      result should include("negative_cache_ttl=\"" + generateBindZoneAuthorized.negative_cache_ttl + "\"")
+      result should include("status=\"" + generateBindZoneAuthorized.status + "\"")
+      result should include("created=\"" + generateBindZoneAuthorized.created + "\"")
     }
 
     "update a GenerateZone instance from UpdateGenerateZoneInput" in {
@@ -100,13 +90,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.groupId shouldEqual okGroup.id
       result.provider shouldEqual "bind"
       result.zoneName shouldEqual okZone.name
-      result.nameservers shouldEqual Some(List("bind_ns"))
-      result.admin_email shouldEqual Some("test@test.com")
-      result.ttl shouldEqual Some(3600)
-      result.refresh shouldEqual Some(6048000)
-      result.retry shouldEqual Some(86400)
-      result.expire shouldEqual Some(24192000)
-      result.negative_cache_ttl shouldEqual Some(6048000)
+      result.providerParams shouldEqual bindProviderParams
       result.response shouldEqual Some(bindZoneGenerationResponse)
       result.id shouldEqual "bindZoneId"
     }
@@ -116,13 +100,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.groupId shouldEqual okGroup.id
       result.provider shouldEqual "bind"
       result.zoneName shouldEqual okZone.name
-      result.nameservers shouldEqual Some(List("bind_ns"))
-      result.admin_email shouldEqual Some("test@test.com")
-      result.ttl shouldEqual Some(3600)
-      result.refresh shouldEqual Some(6048000)
-      result.retry shouldEqual Some(86400)
-      result.expire shouldEqual Some(24192000)
-      result.negative_cache_ttl shouldEqual Some(6048000)
+      result.providerParams shouldEqual bindProviderParams
       result.response shouldEqual Some(bindZoneGenerationResponse)
     }
   }

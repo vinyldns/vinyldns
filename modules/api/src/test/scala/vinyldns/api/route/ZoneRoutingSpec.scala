@@ -96,16 +96,14 @@ class ZoneRoutingSpec
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com")
+    providerParams = bindProviderParams
   )
   private val generatePdnsZoneAuthorized = GenerateZone(
     okGroup.id,
     "test@test.com",
     "pdns",
     okZone.name,
-    nameservers=Some(List("pdns_ns")),
-    admin_email=Some("test@test.com")
+    providerParams = powerDNSProviderParams
   )
 
   private val generateMarkTwainZoneAuthorized = GenerateZone(
@@ -113,8 +111,7 @@ class ZoneRoutingSpec
     "test@test.com",
     "markTwain",
     okZone.name,
-    nameservers=Some(List("pdns_ns")),
-    admin_email=Some("test@test.com")
+    providerParams = powerDNSProviderParams
   )
   private val okAsZoneDetails = ZoneDetails(ok, okGroup.name)
   private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
@@ -726,7 +723,7 @@ class ZoneRoutingSpec
 
     def dnsNameServers(): Result[List[String]] = List("127.0.0.1", "localhost").toResult
 
-    def handleGenerateZoneRequest(request: ZoneGenerationInput, auth: AuthPrincipal): EitherT[IO, Throwable, ZoneGenerationResponse] = {
+    def handleGenerateZoneRequest(request: ZoneGenerationInput, auth: AuthPrincipal): EitherT[IO, Throwable, GenerateZone] = {
       val outcome = request.zoneName match {
         case alreadyExistsGenerateZone.zoneName => Left(ZoneAlreadyExistsError(s"$request"))
         case notFoundGenerateZone.zoneName => Left(ZoneNotFoundError(s"$request"))
@@ -737,6 +734,36 @@ class ZoneRoutingSpec
           Left(NotAuthorizedError("unauth"))
       }
       outcome.toResult
+    }
+    def handleUpdateGeneratedZoneRequest(
+                    updateZoneInput: ZoneGenerationInput,
+                    auth: AuthPrincipal
+                  ): Result[GenerateZone] = {
+      val outcome = updateZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$updateZoneInput"))
+        case ok.email | connectionOk.email =>
+          Right(
+            updateBindZone
+          )
+        case error.email => Left(new RuntimeException("fail"))
+        case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
+      }
+      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
+    }
+
+    def handleDeleteGeneratedZoneRequest(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {
+      val outcome = zoneId match {
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
+        case ok.id | connectionOk.id =>
+          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Synced))
+        case error.id => Left(new RuntimeException("fail"))
+        case zone1.id => Left(ZoneUnavailableError(zoneId))
+      }
+      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
     }
 
     def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] = {

@@ -24,6 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
+import org.json4s.{JArray, JInt, JString, JValue}
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
@@ -39,6 +40,7 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
+import org.json4s.JsonDSL._
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
@@ -69,7 +71,22 @@ class ZoneServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection.apply("http://testbind.com", "http://test-pdns.com",  "bind-test-key", "pdns-test-key",List("test"),List("test"))
+
+  val mockDnsProviderApiConnection = DnsProviderApiConnection(
+    providers = Map(
+      "powerdns" -> DnsProviderConfig(
+        endpoints = Map("create" -> "/zones/generate", "update" -> "/zones/update"),
+        requestTemplates = Map(
+          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
+          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
+        ),
+        schemas = Map("zone" -> "powerdns"),
+        apiKey = "test-api-key"
+      )
+    ),
+    nameServers = List("ns1.example.com", "ns2.example.com"),
+    allowedProviders = List("powerdns")
+  )
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
   private val abcGeneratedZoneSummary = GenerateZoneSummaryInfo(abcGenerateZone, abcGroup.name, AccessLevel.Delete)
   private val xyzGeneratedZoneSummary = GenerateZoneSummaryInfo(xyzGenerateZone, xyzGroup.name, AccessLevel.NoAccess)
@@ -143,23 +160,32 @@ class ZoneServiceSpec
     connection = testConnection,
     adminGroupId = okGroup.id
   )
+  val bindZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+  val pdnsZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
 
-  private val bindZoneGenerationResponse = ZoneGenerationResponse("bind", 200, "bind", "bind")
-  private val pdnsZoneGenerationResponse = ZoneGenerationResponse("pdns", 200, "pdns", "pdns")
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  val powerDNSProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "kind"-> JString("Master"),
+  )
 
   private val generateBindZoneAuthorized = ZoneGenerationInput(
     okGroup.id,
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse)
   )
 
@@ -168,8 +194,7 @@ class ZoneServiceSpec
     "test@test.com",
     "powerdns",
     okZone.name,
-    nameservers=Some(List("pdns_ns")),
-    kind = Some("pdns"),
+    providerParams = powerDNSProviderParams,
     response=Some(pdnsZoneGenerationResponse)
   )
 
@@ -223,7 +248,7 @@ class ZoneServiceSpec
         override def getInputStream: InputStream = responseByteStream
       }
 
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, request, mockConnection).toOption.get
+      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
       result shouldBe a[HttpURLConnection]
     }
 
@@ -246,7 +271,7 @@ class ZoneServiceSpec
         override def getInputStream: InputStream = responseStream
       }
 
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, request, mockConnection).toOption.get
+      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
       result.getResponseCode shouldBe 500
     }
 
@@ -271,7 +296,7 @@ class ZoneServiceSpec
         override def getOutputStream: OutputStream = outputStream
       }
 
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, request, mockConnection).toOption.get
+      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
 
       result.getResponseCode shouldBe 200
       }

@@ -25,7 +25,8 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.proto.VinylDNSProto
-
+import org.json4s._
+import org.json4s.JsonDSL._
 import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -80,19 +81,25 @@ class ProtobufConversionsSpec
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
   )
-  private val zoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
+
+  private val zoneGenerationResponse = ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
   private val generateBindZone = GenerateZone(
     "test.zone.actor.groupId",
     "test@test.com",
     "bind",
     "test.zone.actor.zone",
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(zoneGenerationResponse)
   )
   private val aRs = RecordSet(

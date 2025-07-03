@@ -30,7 +30,7 @@ import cats.effect._
 import org.mockito.Matchers.any
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsProviderApiConnection, LegacyDnsBackend, Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsProviderApiConnection, DnsProviderConfig, LegacyDnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 import scala.util.matching.Regex
@@ -141,7 +141,22 @@ class ZoneConnectionValidatorSpec
     zc.copy(name = "backend-conn"),
     transfer.copy(name = "backend-transfer")
   )
-  val dnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("test"),List("test"))
+
+  val dnsProviderApiConnection = DnsProviderApiConnection(
+    providers = Map(
+      "powerdns" -> DnsProviderConfig(
+        endpoints = Map("create" -> "/zones/generate", "update" -> "/zones/update"),
+        requestTemplates = Map(
+          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
+          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
+        ),
+        schemas = Map("zone" -> "powerdns"),
+        apiKey = "test-api-key"
+      )
+    ),
+    nameServers = List("ns1.example.com", "ns2.example.com"),
+    allowedProviders = List("powerdns")
+  )
 
   val connections = ConfiguredDnsConnections(zc, transfer, List(backend),dnsProviderApiConnection)
 

@@ -18,7 +18,10 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
+import org.json4s.{JArray, JInt, JString, JValue}
 import vinyldns.core.domain.Encrypted
+import org.json4s.JsonDSL._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -77,21 +80,32 @@ object TestZoneData {
     zoneActive.copy(id = "sharedZoneId", shared = true, adminGroupId = abcGroup.id)
 
 
-  val bindZoneGenerationResponse: ZoneGenerationResponse = ZoneGenerationResponse("bind",5, "bind", "bind")
-  val pDnsZoneGenerationResponse: ZoneGenerationResponse = ZoneGenerationResponse("pdns",5, "pdns", "pdns")
+  val bindZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+  val pDnsZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  val powerDNSProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "kind"-> JString("Master"),
+  )
 
   val generateBindZoneAuthorized: GenerateZone = GenerateZone(
     okGroup.id,
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
@@ -100,28 +114,17 @@ object TestZoneData {
     "test@test.com",
     "powerdns",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = powerDNSProviderParams,
     response=Some(pDnsZoneGenerationResponse),
     id = "pDnsZoneId"
   )
+
   val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
     okGroup.id,
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
@@ -131,13 +134,7 @@ object TestZoneData {
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse),
     id = "bindZoneId"
   )
@@ -147,14 +144,7 @@ object TestZoneData {
     "test@test.com",
     "bind",
     abcZone.name,
-    nameservers=Some(List("bind_ns")),
-
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse)
   )
 
@@ -163,14 +153,7 @@ object TestZoneData {
     "test@test.com",
     "bind",
     xyzZone.name,
-    nameservers=Some(List("bind_ns")),
-
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse)
   )
 
