@@ -43,7 +43,7 @@ import vinyldns.core.domain.backend.BackendResolver
 import org.json4s.JsonDSL._
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
-import java.net.{HttpURLConnection, URL}
+import java.net.{HttpURLConnection, ProtocolException, URL}
 
 
 class ZoneServiceSpec
@@ -75,7 +75,7 @@ class ZoneServiceSpec
   val mockDnsProviderApiConnection = DnsProviderApiConnection(
     providers = Map(
       "powerdns" -> DnsProviderConfig(
-        endpoints = Map("create" -> "/zones/generate", "update" -> "/zones/update"),
+        endpoints = Map("create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones", "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones"),
         requestTemplates = Map(
           "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
           "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
@@ -230,77 +230,187 @@ class ZoneServiceSpec
     }
 
     "createDnsZoneService return a valid HttpURLConnection on success" in {
-      val dnsApiUrl = "http://valid.com"
       val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
       val request = """{"zone": "example.com"}"""
 
       // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
+      val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
         private val responseJson = """{"message": "Zone creation successfully"}"""
-        private val responseBytes = responseJson.getBytes("UTF-8")
-        private val responseByteStream = new ByteArrayInputStream(responseBytes)
+
+        private var requestMethod: String = _
+        private val outputBuffer = new ByteArrayOutputStream()
 
         override def disconnect(): Unit = {}
         override def usingProxy(): Boolean = false
         override def connect(): Unit = {}
 
-        override def getResponseCode: Int = 500
-        override def getInputStream: InputStream = responseByteStream
+        override def setRequestMethod(method: String): Unit = {
+          requestMethod = method
+        }
+
+        override def getRequestMethod: String = requestMethod
+
+        override def setDoOutput(flag: Boolean): Unit = {
+          doOutput = flag
+        }
+
+        override def getOutputStream: OutputStream = {
+          if (!doOutput) throw new ProtocolException("Output not enabled")
+          outputBuffer
+        }
+
+        override def getResponseCode: Int = {
+          // Simulate success for POST/PUT, error otherwise
+          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+        }
+
+        override def getInputStream: InputStream = {
+          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+        }
       }
 
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
       result shouldBe a[HttpURLConnection]
     }
 
-
     "return an error connection on failure" in {
-      val dnsApiUrl = "http://invalid-url"
       val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
       val request = """{"zone": "example.com"}"""
 
       // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
-        private val responseJson = """{"message": "Zone created successfully"}"""
-        private val responseStream = new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+      val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
+        private val responseJson = """{"message": "Zone creation successfully"}"""
+
+        private var requestMethod: String = _
+        private val outputBuffer = new ByteArrayOutputStream()
 
         override def disconnect(): Unit = {}
         override def usingProxy(): Boolean = false
         override def connect(): Unit = {}
 
-        override def getResponseCode: Int = 500
-        override def getInputStream: InputStream = responseStream
+        override def setRequestMethod(method: String): Unit = {
+          requestMethod = method
+        }
+
+        override def getRequestMethod: String = requestMethod
+
+        override def setDoOutput(flag: Boolean): Unit = {
+          doOutput = flag
+        }
+
+        override def getOutputStream: OutputStream = {
+          if (!doOutput) throw new ProtocolException("Output not enabled")
+          outputBuffer
+        }
+
+        override def getResponseCode: Int = {
+          // Simulate success for POST/PUT, error otherwise
+          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+        }
+
+        override def getInputStream: InputStream = {
+          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+        }
       }
 
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
-      result.getResponseCode shouldBe 500
-    }
-
-    "createDnsZoneService return a valid HttpURLConnection 200 response code on success" in {
-      val dnsApiUrl = "http://valid-url.com"
-      val dnsApiKey = "test-api-key"
-      val request = """{"zone": "example.com"}"""
-
-      // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL(dnsApiUrl)) {
-        private val responseJson = """{"message": "Zone created successfully"}"""
-        private val responseBytes = responseJson.getBytes("UTF-8")
-        private val responseByteStream = new ByteArrayInputStream(responseBytes)
-        private val outputStream = new ByteArrayOutputStream()
-
-        override def disconnect(): Unit = {}
-        override def usingProxy(): Boolean = false
-        override def connect(): Unit = {}
-
-        override def getResponseCode: Int = 200
-        override def getInputStream: InputStream = responseByteStream
-        override def getOutputStream: OutputStream = outputStream
-      }
-
-      val result = underTest.createDnsZoneService(dnsApiUrl, dnsApiKey, Some(request), mockConnection).toOption.get
-
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
       result.getResponseCode shouldBe 200
       }
 
+  }
+
+  "Update Generated Zones" should {
+    "createDnsZoneService return a valid HttpURLConnection on success" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "update-zone"
+      val request = """{"zone": "example.com"}"""
+
+      // Mock the HttpURLConnection
+      val mockConnection = new HttpURLConnection(new URL("http://update-valid-url")) {
+        private val responseJson = """{"message": "Zone creation successfully"}"""
+
+        private var requestMethod: String = _
+        private val outputBuffer = new ByteArrayOutputStream()
+
+        override def disconnect(): Unit = {}
+        override def usingProxy(): Boolean = false
+        override def connect(): Unit = {}
+
+        override def setRequestMethod(method: String): Unit = {
+          requestMethod = method
+        }
+
+        override def getRequestMethod: String = requestMethod
+
+        override def setDoOutput(flag: Boolean): Unit = {
+          doOutput = flag
+        }
+
+        override def getOutputStream: OutputStream = {
+          if (!doOutput) throw new ProtocolException("Output not enabled")
+          outputBuffer
+        }
+
+        override def getResponseCode: Int = {
+          // Simulate success for POST/PUT, error otherwise
+          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+        }
+
+        override def getInputStream: InputStream = {
+          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+        }
+      }
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
+      result shouldBe a[HttpURLConnection]
+    }
+
+    "return an error connection on failure" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "update-zone"
+      val request = """{"zone": "example.com"}"""
+
+      // Mock the HttpURLConnection
+      val mockConnection = new HttpURLConnection(new URL("http://update-valid-url")) {
+        private val responseJson = """{"message": "Zone creation successfully"}"""
+
+        private var requestMethod: String = _
+        private val outputBuffer = new ByteArrayOutputStream()
+
+        override def disconnect(): Unit = {}
+        override def usingProxy(): Boolean = false
+        override def connect(): Unit = {}
+
+        override def setRequestMethod(method: String): Unit = {
+          requestMethod = method
+        }
+
+        override def getRequestMethod: String = requestMethod
+
+        override def setDoOutput(flag: Boolean): Unit = {
+          doOutput = flag
+        }
+
+        override def getOutputStream: OutputStream = {
+          if (!doOutput) throw new ProtocolException("Output not enabled")
+          outputBuffer
+        }
+
+        override def getResponseCode: Int = {
+          // Simulate success for POST/PUT, error otherwise
+          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+        }
+
+        override def getInputStream: InputStream = {
+          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+        }
+      }
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
+      result.getResponseCode shouldBe 200
+    }
   }
 
   "Connecting Zones" should {
@@ -412,6 +522,7 @@ class ZoneServiceSpec
       val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
     }
+
     "return the result if the zone created includes an valid email" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 

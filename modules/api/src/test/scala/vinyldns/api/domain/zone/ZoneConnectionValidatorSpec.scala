@@ -145,7 +145,7 @@ class ZoneConnectionValidatorSpec
   val dnsProviderApiConnection = DnsProviderApiConnection(
     providers = Map(
       "powerdns" -> DnsProviderConfig(
-        endpoints = Map("create" -> "/zones/generate", "update" -> "/zones/update"),
+        endpoints = Map("create-zone" -> "/zones/generate", "update-zone" -> "/zones/update"),
         requestTemplates = Map(
           "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
           "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""

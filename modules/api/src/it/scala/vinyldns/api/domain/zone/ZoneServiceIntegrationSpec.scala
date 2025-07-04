@@ -18,6 +18,8 @@ package vinyldns.api.domain.zone
 
 import cats.data.NonEmptyList
 import cats.effect._
+import org.json4s.{JArray, JInt, JString, JValue}
+import org.json4s.JsonDSL._
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -36,7 +38,7 @@ import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser}
-import vinyldns.core.TestZoneData.{abcZone, bindZoneGenerationResponse, okZone}
+import vinyldns.core.TestZoneData.{abcZone, okZone}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -65,25 +67,53 @@ class ZoneServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
   private val mockMembershipService = mock[MembershipService]
-  private val mockDnsProviderApiConnection = DnsProviderApiConnection("test","test","test","test",List("name-servers"),List("bind","powerdns"))
+  val mockDnsProviderApiConnection = DnsProviderApiConnection(
+    providers = Map(
+      "powerdns" -> DnsProviderConfig(
+        endpoints = Map("create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones", "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones"),
+        requestTemplates = Map(
+          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
+          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
+        ),
+        schemas = Map("zone" -> "powerdns"),
+        apiKey = "test-api-key"
+      )
+    ),
+    nameServers = List("ns1.example.com", "ns2.example.com"),
+    allowedProviders = List("powerdns")
+  )
+
   private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
+
+  val bindZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+  val pdnsZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  val powerDNSProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "kind"-> JString("Master"),
+  )
 
   private val generateBindZoneAuthorized = GenerateZone(
     okGroup.id,
     "test@test.com",
     "bind",
     okZone.name,
-    nameservers=Some(List("bind_ns")),
-
-    admin_email=Some("test@test.com"),
-    ttl=Some(3600),
-    refresh=Some(6048000),
-    retry=Some(86400),
-    expire=Some(24192000),
-    negative_cache_ttl=Some(6048000),
+    providerParams = bindProviderParams,
     response=Some(bindZoneGenerationResponse)
   )
 
