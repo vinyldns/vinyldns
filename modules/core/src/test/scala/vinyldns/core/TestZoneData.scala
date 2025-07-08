@@ -22,6 +22,8 @@ import org.json4s.{JArray, JInt, JString, JValue}
 import vinyldns.core.domain.Encrypted
 import org.json4s.JsonDSL._
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
+import java.net.{HttpURLConnection, ProtocolException, URL}
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -80,81 +82,78 @@ object TestZoneData {
     zoneActive.copy(id = "sharedZoneId", shared = true, adminGroupId = abcGroup.id)
 
 
-  val bindZoneGenerationResponse: ZoneGenerationResponse =
-    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
-  val pDnsZoneGenerationResponse: ZoneGenerationResponse =
-    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
 
-  val bindProviderParams: Map[String, JValue] = Map(
-    "nameservers" -> JArray(List(JString("bind_ns"))),
-    "admin_email" -> JString("test@test.com"),
-    "ttl" -> JInt(3600),
-    "refresh" -> JInt(6048000),
-    "retry" -> JInt(86400),
-    "expire" -> JInt(24192000),
-    "negative_cache_ttl" -> JInt(6048000)
-  )
-
-  val powerDNSProviderParams: Map[String, JValue] = Map(
-    "nameservers" -> JArray(List(JString("bind_ns"))),
-    "kind"-> JString("Master"),
-  )
-
-  val generateBindZoneAuthorized: GenerateZone = GenerateZone(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
-  )
-  val generatePdnsZoneAuthorized: GenerateZone = GenerateZone(
-    okGroup.id,
-    "test@test.com",
-    "powerdns",
-    okZone.name,
-    providerParams = powerDNSProviderParams,
-    response=Some(pDnsZoneGenerationResponse),
-    id = "pDnsZoneId"
-  )
-
-  val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
-  )
-
-  val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
-  )
-
-  val abcGenerateZone = GenerateZone(
-    abcGroup.id,
-    "test@test.com",
-    "bind",
-    abcZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse)
-  )
-
-  val xyzGenerateZone = GenerateZone(
-    xyzGroup.id,
-    "test@test.com",
-    "bind",
-    xyzZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse)
+  val mockPowerDNSProviderApiConnection = DnsProviderApiConnection(
+    providers = Map(
+      "powerdns" -> DnsProviderConfig(
+        endpoints = Map(
+          "create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones",
+          "delete-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}",
+          "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}"
+        ),
+        requestTemplates = Map(
+          "create-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """,
+          "update-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """
+        ),
+        schemas = Map(
+          "create-zone" -> """{
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "PowerDNS Create Zone",
+                    "type": "object",
+                    "required": ["kind", "nameservers"],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": ["Native", "Master"]
+                      },
+                      "nameservers": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.$" }
+                      },
+                      "masters": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    },
+                    "additionalProperties": false
+                  }""",
+          "update-zone" -> """{
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "PowerDNS Update Zone",
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": ["Native", "Master"]
+                      },
+                      "masters": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    },
+                    "additionalProperties": false
+                  }"""
+        ),
+        apiKey = "test-api-key"
+      )
+    ),
+    nameServers = List("ns1.parent.com.,ns2.parent.com."),
+    allowedProviders = List("powerdns")
   )
 
   /* ACL RULES */
@@ -200,5 +199,192 @@ object TestZoneData {
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =
     ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)
+
+
+val createZoneAuthorized = ConnectZoneInput(
+    "ok.zone.recordsets.",
+    "test@test.com",
+    connection = testConnection,
+    adminGroupId = okGroup.id
+  )
+
+  val bindZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+  val pdnsZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("ns1.parent.com."))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  val powerDNSProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("ns1.parent.com."))),
+    "kind"-> JString("Master"),
+  )
+
+  val generateBindZoneAuthorized = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse)
+  )
+
+  val generatePdnsZoneAuthorized = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = powerDNSProviderParams,
+    response=Some(pdnsZoneGenerationResponse)
+  )
+
+  val generatePdnsInvalidZone = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(pdnsZoneGenerationResponse)
+  )
+
+val updateZoneAuthorized = UpdateZoneInput(
+    okZone.id,
+    "ok.zone.recordsets.",
+    "test@test.com",
+    connection = testConnection,
+    adminGroupId = okGroup.id
+  )
+
+  val generateBindZone: GenerateZone = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse),
+    id = "bindZoneId"
+  )
+  val generatePdnsZone: GenerateZone = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = powerDNSProviderParams,
+    response=Some(pdnsZoneGenerationResponse),
+    id = "pDnsZoneId"
+  )
+
+  val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse),
+    id = "bindZoneId"
+  )
+
+  val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse),
+    id = "bindZoneId"
+  )
+
+  val abcGenerateZone = GenerateZone(
+    abcGroup.id,
+    "test@test.com",
+    "bind",
+    abcZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse)
+  )
+
+  val xyzGenerateZone = GenerateZone(
+    xyzGroup.id,
+    "test@test.com",
+    "bind",
+    xyzZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse)
+  )
+
+val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
+    private val responseJson = """{"message": "Zone creation successfully"}"""
+
+    private var requestMethod: String = _
+    private val outputBuffer = new ByteArrayOutputStream()
+
+    override def disconnect(): Unit = {}
+    override def usingProxy(): Boolean = false
+    override def connect(): Unit = {}
+
+    override def setRequestMethod(method: String): Unit = {
+      requestMethod = method
+    }
+
+    override def getRequestMethod: String = requestMethod
+
+    override def setDoOutput(flag: Boolean): Unit = {
+      doOutput = flag
+    }
+
+    override def getOutputStream: OutputStream = {
+      if (!doOutput) throw new ProtocolException("Output not enabled")
+      outputBuffer
+    }
+
+    override def getResponseCode: Int = {
+      // Simulate success for POST/PUT, error otherwise
+      if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+    }
+
+    override def getInputStream: InputStream = {
+      new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
+    }
+    override def getResponseMessage: String = {
+      if (getResponseCode == 200) "OK"
+      else "Internal Server Error"
+    }
+  }
+
+val mockInvalidConnection = new HttpURLConnection(new URL("http://invalid-url")) {
+    private val errorJson = """{"error": "Invalid request: Unsupported DNS provider"}"""
+    private val outputBuffer = new ByteArrayOutputStream()
+
+    override def disconnect(): Unit = {}
+    override def usingProxy(): Boolean = false
+    override def connect(): Unit = {}
+
+    override def getRequestMethod: String = "INVALID"
+
+    override def setDoOutput(flag: Boolean): Unit = {
+      doOutput = flag
+    }
+
+    override def getOutputStream: OutputStream = {
+      if (!doOutput) throw new ProtocolException("Output not enabled")
+      outputBuffer
+    }
+
+    override def getResponseCode: Int = 400
+
+    override def getResponseMessage: String = "Bad Request"
+
+    override def getInputStream: InputStream = {
+      new ByteArrayInputStream(errorJson.getBytes("UTF-8"))
+    }
+  }
 
 }

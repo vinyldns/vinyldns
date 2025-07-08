@@ -24,7 +24,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
-import org.json4s.{JArray, JInt, JString, JValue}
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
@@ -33,17 +32,15 @@ import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.zone.{ZoneGenerationResponse, _}
+import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
-import org.json4s.JsonDSL._
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
-import java.net.{HttpURLConnection, ProtocolException, URL}
+import java.net.HttpURLConnection
 
 
 class ZoneServiceSpec
@@ -72,21 +69,6 @@ class ZoneServiceSpec
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
 
-  val mockDnsProviderApiConnection = DnsProviderApiConnection(
-    providers = Map(
-      "powerdns" -> DnsProviderConfig(
-        endpoints = Map("create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones", "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones"),
-        requestTemplates = Map(
-          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
-          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
-        ),
-        schemas = Map("zone" -> "powerdns"),
-        apiKey = "test-api-key"
-      )
-    ),
-    nameServers = List("ns1.example.com", "ns2.example.com"),
-    allowedProviders = List("powerdns")
-  )
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
   private val abcGeneratedZoneSummary = GenerateZoneSummaryInfo(abcGenerateZone, abcGroup.name, AccessLevel.Delete)
   private val xyzGeneratedZoneSummary = GenerateZoneSummaryInfo(xyzGenerateZone, xyzGroup.name, AccessLevel.NoAccess)
@@ -129,9 +111,13 @@ class ZoneServiceSpec
     mockBackendResolver,
     NoOpCrypto.instance,
     mockMembershipService,
-    mockDnsProviderApiConnection,
+    mockPowerDNSProviderApiConnection,
     mockGenerateZoneRepository
   )
+  {
+    override def createConnection(endpoint: String):  HttpURLConnection=
+      mockConnection
+  }
   private val underTestNew = new ZoneService(
     mockZoneRepo,
     mockGroupRepo,
@@ -150,60 +136,8 @@ class ZoneServiceSpec
       mockGroupChangeRepo,
       mockRecordSetRepo,
       mockValidEmailConfigEmpty),
-    mockDnsProviderApiConnection,
+    mockPowerDNSProviderApiConnection,
     mockGenerateZoneRepository
-  )
-
-  private val createZoneAuthorized = ConnectZoneInput(
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
-  )
-  val bindZoneGenerationResponse: ZoneGenerationResponse =
-    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
-  val pdnsZoneGenerationResponse: ZoneGenerationResponse =
-    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
-
-  val bindProviderParams: Map[String, JValue] = Map(
-    "nameservers" -> JArray(List(JString("bind_ns"))),
-    "admin_email" -> JString("test@test.com"),
-    "ttl" -> JInt(3600),
-    "refresh" -> JInt(6048000),
-    "retry" -> JInt(86400),
-    "expire" -> JInt(24192000),
-    "negative_cache_ttl" -> JInt(6048000)
-  )
-
-  val powerDNSProviderParams: Map[String, JValue] = Map(
-    "nameservers" -> JArray(List(JString("bind_ns"))),
-    "kind"-> JString("Master"),
-  )
-
-  private val generateBindZoneAuthorized = ZoneGenerationInput(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse)
-  )
-
-  private val generatePdnsZoneAuthorized = ZoneGenerationInput(
-    okGroup.id,
-    "test@test.com",
-    "powerdns",
-    okZone.name,
-    providerParams = powerDNSProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
-  )
-
-  private val updateZoneAuthorized = UpdateZoneInput(
-    okZone.id,
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
   )
 
   override protected def beforeEach(): Unit = {
@@ -212,204 +146,109 @@ class ZoneServiceSpec
     doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
+  "createDnsZoneService" should {
+    "return a valid HttpURLConnection on successful zone creation" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
+      val request = """{"zone": "example.com"}"""
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
+      result shouldBe a[HttpURLConnection]
+      result.getResponseCode shouldBe 200
+    }
+
+    "return an error connection on failure" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
+      val request = """{"zone": "example.com"}"""
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockInvalidConnection).toOption.get
+      result.getResponseCode shouldBe 400
+    }
+  }
+
   "Generating Zones" should {
-    "return an error response for invalid bind uri" in {
+    "return an error response for provider not supported" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =
         underTest.handleGenerateZoneRequest(generateBindZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
-
-      result shouldBe an[InvalidRequest]
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
     }
 
-    "return an error response for invalid pdns uri" in {
+    "return an valid response for valid request" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
       val result =
-        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().toOption.get
 
-      result shouldBe an[InvalidRequest]
+      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
+      result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
+      result.provider shouldBe generatePdnsZoneAuthorized.provider
     }
 
-    "createDnsZoneService return a valid HttpURLConnection on success" in {
-      val dnsApiKey = "test-api-key"
-      val dnsOperation = "create-zone"
-      val request = """{"zone": "example.com"}"""
+    "return an error response for invalid request" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
 
-      // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
-        private val responseJson = """{"message": "Zone creation successfully"}"""
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsInvalidZone, okAuth).value.unsafeRunSync().swap.toOption.get
 
-        private var requestMethod: String = _
-        private val outputBuffer = new ByteArrayOutputStream()
-
-        override def disconnect(): Unit = {}
-        override def usingProxy(): Boolean = false
-        override def connect(): Unit = {}
-
-        override def setRequestMethod(method: String): Unit = {
-          requestMethod = method
-        }
-
-        override def getRequestMethod: String = requestMethod
-
-        override def setDoOutput(flag: Boolean): Unit = {
-          doOutput = flag
-        }
-
-        override def getOutputStream: OutputStream = {
-          if (!doOutput) throw new ProtocolException("Output not enabled")
-          outputBuffer
-        }
-
-        override def getResponseCode: Int = {
-          // Simulate success for POST/PUT, error otherwise
-          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
-        }
-
-        override def getInputStream: InputStream = {
-          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
-        }
-      }
-
-      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
-      result shouldBe a[HttpURLConnection]
+      result shouldBe InvalidRequest("" +
+        "JSON schema validation error: $: " +
+        "property 'admin_email' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'expire' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'refresh' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'ttl' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: required " +
+        "property 'kind' not found; $: property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
     }
-
-    "return an error connection on failure" in {
-      val dnsApiKey = "test-api-key"
-      val dnsOperation = "create-zone"
-      val request = """{"zone": "example.com"}"""
-
-      // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
-        private val responseJson = """{"message": "Zone creation successfully"}"""
-
-        private var requestMethod: String = _
-        private val outputBuffer = new ByteArrayOutputStream()
-
-        override def disconnect(): Unit = {}
-        override def usingProxy(): Boolean = false
-        override def connect(): Unit = {}
-
-        override def setRequestMethod(method: String): Unit = {
-          requestMethod = method
-        }
-
-        override def getRequestMethod: String = requestMethod
-
-        override def setDoOutput(flag: Boolean): Unit = {
-          doOutput = flag
-        }
-
-        override def getOutputStream: OutputStream = {
-          if (!doOutput) throw new ProtocolException("Output not enabled")
-          outputBuffer
-        }
-
-        override def getResponseCode: Int = {
-          // Simulate success for POST/PUT, error otherwise
-          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
-        }
-
-        override def getInputStream: InputStream = {
-          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
-        }
-      }
-
-      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
-      result.getResponseCode shouldBe 200
-      }
-
   }
 
-  "Update Generated Zones" should {
-    "createDnsZoneService return a valid HttpURLConnection on success" in {
-      val dnsApiKey = "test-api-key"
-      val dnsOperation = "update-zone"
-      val request = """{"zone": "example.com"}"""
-
-      // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL("http://update-valid-url")) {
-        private val responseJson = """{"message": "Zone creation successfully"}"""
-
-        private var requestMethod: String = _
-        private val outputBuffer = new ByteArrayOutputStream()
-
-        override def disconnect(): Unit = {}
-        override def usingProxy(): Boolean = false
-        override def connect(): Unit = {}
-
-        override def setRequestMethod(method: String): Unit = {
-          requestMethod = method
-        }
-
-        override def getRequestMethod: String = requestMethod
-
-        override def setDoOutput(flag: Boolean): Unit = {
-          doOutput = flag
-        }
-
-        override def getOutputStream: OutputStream = {
-          if (!doOutput) throw new ProtocolException("Output not enabled")
-          outputBuffer
-        }
-
-        override def getResponseCode: Int = {
-          // Simulate success for POST/PUT, error otherwise
-          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
-        }
-
-        override def getInputStream: InputStream = {
-          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
-        }
-      }
-
-      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
-      result shouldBe a[HttpURLConnection]
+  "Update generated Zones" should {
+    "return an error response for provider not supported" in {
+      doReturn(IO.pure(Some(generateBindZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(generateBindZoneAuthorized.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
     }
 
-    "return an error connection on failure" in {
-      val dnsApiKey = "test-api-key"
-      val dnsOperation = "update-zone"
-      val request = """{"zone": "example.com"}"""
+    "return an valid response for valid request" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
 
-      // Mock the HttpURLConnection
-      val mockConnection = new HttpURLConnection(new URL("http://update-valid-url")) {
-        private val responseJson = """{"message": "Zone creation successfully"}"""
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(generatePdnsZoneAuthorized.copy(groupId = "update-group-id" ), okAuth).value.unsafeRunSync().toOption.get
+      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
+      result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
+      result.provider shouldBe generatePdnsZoneAuthorized.provider
+      result.groupId shouldBe "update-group-id"
+    }
 
-        private var requestMethod: String = _
-        private val outputBuffer = new ByteArrayOutputStream()
+    "return an error response for invalid request" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
 
-        override def disconnect(): Unit = {}
-        override def usingProxy(): Boolean = false
-        override def connect(): Unit = {}
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(generatePdnsInvalidZone.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
 
-        override def setRequestMethod(method: String): Unit = {
-          requestMethod = method
-        }
-
-        override def getRequestMethod: String = requestMethod
-
-        override def setDoOutput(flag: Boolean): Unit = {
-          doOutput = flag
-        }
-
-        override def getOutputStream: OutputStream = {
-          if (!doOutput) throw new ProtocolException("Output not enabled")
-          outputBuffer
-        }
-
-        override def getResponseCode: Int = {
-          // Simulate success for POST/PUT, error otherwise
-          if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
-        }
-
-        override def getInputStream: InputStream = {
-          new ByteArrayInputStream(responseJson.getBytes("UTF-8"))
-        }
-      }
-
-      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
-      result.getResponseCode shouldBe 200
+      result shouldBe InvalidRequest("" +
+        "JSON schema validation error: $: " +
+        "property 'admin_email' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'nameservers' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'expire' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'refresh' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'ttl' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
     }
   }
 

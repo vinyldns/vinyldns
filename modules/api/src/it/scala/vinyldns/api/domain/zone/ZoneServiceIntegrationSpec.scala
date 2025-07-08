@@ -70,16 +70,38 @@ class ZoneServiceIntegrationSpec
   val mockDnsProviderApiConnection = DnsProviderApiConnection(
     providers = Map(
       "powerdns" -> DnsProviderConfig(
-        endpoints = Map("create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones", "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones"),
-        requestTemplates = Map(
-          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
-          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
+        endpoints = Map(
+          "create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones",
+          "delete-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}",
+          "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}"
         ),
-        schemas = Map("zone" -> "powerdns"),
+        requestTemplates = Map(
+          "create-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """,
+          "update-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """
+        ),
+        schemas = Map(
+          "create-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Create Zone", "type": "object", "required": ["kind", "nameservers"], "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "nameservers": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.$" } }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }""",
+          "update-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Update Zone", "type": "object", "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }"""
+        ),
         apiKey = "test-api-key"
       )
     ),
-    nameServers = List("ns1.example.com", "ns2.example.com"),
+
+    nameServers = List("ns1.example.com.", "ns2.example.com."),
     allowedProviders = List("powerdns")
   )
 

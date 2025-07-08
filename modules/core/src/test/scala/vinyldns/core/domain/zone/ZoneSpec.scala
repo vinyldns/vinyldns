@@ -76,16 +76,16 @@ class ZoneSpec extends AnyWordSpec with Matchers {
     "toString should output a generate zone properly" in {
       val result = generateBindZoneAuthorized.toString
 
-      result should include("id=\"" + generateBindZoneAuthorized.id + "\"")
-      result should include("groupId=\"" + generateBindZoneAuthorized.groupId + "\"")
-      result should include("provider=\"" + generateBindZoneAuthorized.provider + "\"")
-      result should include("zoneName=\"" + generateBindZoneAuthorized.zoneName + "\"")
-      result should include("status=\"" + generateBindZoneAuthorized.status + "\"")
-      result should include("created=\"" + generateBindZoneAuthorized.created + "\"")
+      result should include("id=\"" + generateBindZone.id + "\"")
+      result should include("groupId=\"" + generateBindZone.groupId + "\"")
+      result should include("provider=\"" + generateBindZone.provider + "\"")
+      result should include("zoneName=\"" + generateBindZone.zoneName + "\"")
+      result should include("status=\"" + generateBindZone.status + "\"")
+      result should include("created=\"" + generateBindZone.created + "\"")
     }
 
     "update a GenerateZone instance from UpdateGenerateZoneInput" in {
-      val result = GenerateZone(updateBindZone, generateBindZoneAuthorized)
+      val result = GenerateZone(updateBindZone, generateBindZone)
 
       result.groupId shouldEqual okGroup.id
       result.provider shouldEqual "bind"

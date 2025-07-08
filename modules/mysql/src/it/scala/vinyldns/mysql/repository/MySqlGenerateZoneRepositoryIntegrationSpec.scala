@@ -20,7 +20,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.TestZoneData.{generateBindZoneAuthorized, generatePdnsZoneAuthorized}
+import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
 import vinyldns.core.domain.zone._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
@@ -45,10 +45,10 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
 
   "MySqlZoneRepository" should {
     "return the generate bind zone response when it is saved" in {
-      repo.save(generateBindZoneAuthorized).unsafeRunSync() shouldBe generateBindZoneAuthorized
+      repo.save(generateBindZone).unsafeRunSync() shouldBe generateBindZone
     }
     "return the generate powerDNS zone response when it is saved" in {
-      repo.save(generatePdnsZoneAuthorized).unsafeRunSync() shouldBe generatePdnsZoneAuthorized
+      repo.save(generatePdnsZone).unsafeRunSync() shouldBe generatePdnsZone
     }
   }
 }

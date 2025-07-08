@@ -20,7 +20,7 @@ import cats.effect.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.mockito.Mockito._
-import vinyldns.core.TestZoneData.generateBindZoneAuthorized
+import vinyldns.core.TestZoneData.generateBindZone
 
 class MySqlGenerateZoneRepositorySpec
     extends AnyWordSpec
@@ -31,14 +31,14 @@ class MySqlGenerateZoneRepositorySpec
 
   "MySqlGenerateZoneRepository.save" should {
     "only call once if save is successful" in {
-      doReturn(IO.pure(generateBindZoneAuthorized))
+      doReturn(IO.pure(generateBindZone))
         .when(repo)
-        .save(generateBindZoneAuthorized)
+        .save(generateBindZone)
 
-      val result = repo.save(generateBindZoneAuthorized).unsafeRunSync()
+      val result = repo.save(generateBindZone).unsafeRunSync()
 
-      verify(repo, times(1)).save(generateBindZoneAuthorized)
-      result shouldEqual generateBindZoneAuthorized
+      verify(repo, times(1)).save(generateBindZone)
+      result shouldEqual generateBindZone
     }
   }
 }

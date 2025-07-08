@@ -28,9 +28,10 @@ import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.domain.record._
 import cats.effect._
 import org.mockito.Matchers.any
+import vinyldns.core.TestZoneData.mockPowerDNSProviderApiConnection
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
-import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsProviderApiConnection, DnsProviderConfig, LegacyDnsBackend, Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, LegacyDnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 import scala.util.matching.Regex
@@ -142,23 +143,7 @@ class ZoneConnectionValidatorSpec
     transfer.copy(name = "backend-transfer")
   )
 
-  val dnsProviderApiConnection = DnsProviderApiConnection(
-    providers = Map(
-      "powerdns" -> DnsProviderConfig(
-        endpoints = Map("create-zone" -> "/zones/generate", "update-zone" -> "/zones/update"),
-        requestTemplates = Map(
-          "create-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }""",
-          "update-zone" -> """{ "Kind": { "type": "Select", "value": "Native, Master" } }"""
-        ),
-        schemas = Map("zone" -> "powerdns"),
-        apiKey = "test-api-key"
-      )
-    ),
-    nameServers = List("ns1.example.com", "ns2.example.com"),
-    allowedProviders = List("powerdns")
-  )
-
-  val connections = ConfiguredDnsConnections(zc, transfer, List(backend),dnsProviderApiConnection)
+  val connections = ConfiguredDnsConnections(zc, transfer, List(backend),mockPowerDNSProviderApiConnection)
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
