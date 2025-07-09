@@ -24,6 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
+import org.json4s.{JArray, JString}
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
@@ -210,7 +211,7 @@ class ZoneServiceSpec
   }
 
   "Update generated Zones" should {
-    "return an error response for provider not supported" in {
+    "return an error response for provider params not supported the correct provider" in {
       doReturn(IO.pure(Some(generateBindZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =
         underTest.handleUpdateGeneratedZoneRequest(generateBindZoneAuthorized.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
@@ -224,14 +225,16 @@ class ZoneServiceSpec
         .save(any[GenerateZone])
 
       val result =
-        underTest.handleUpdateGeneratedZoneRequest(generatePdnsZoneAuthorized.copy(groupId = "update-group-id" ), okAuth).value.unsafeRunSync().toOption.get
-      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
-      result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
-      result.provider shouldBe generatePdnsZoneAuthorized.provider
+        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(groupId = "update-group-id",providerParams = Map(
+          "kind"-> JString("Native")
+        )), okAuth).value.unsafeRunSync().toOption.get
+      result.zoneName shouldBe updatePdnsZoneAuthorized.zoneName
+      result.providerParams shouldBe Map("nameservers" -> JArray(List(JString("ns1.parent.com."))), "kind" -> JString("Native"))
+      result.provider shouldBe updatePdnsZoneAuthorized.provider
       result.groupId shouldBe "update-group-id"
     }
 
-    "return an error response for invalid request" in {
+    "return an error response for invalid request in provider params" in {
       doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       doReturn(IO.pure(generatePdnsZone))
         .when(mockGenerateZoneRepository)
@@ -249,6 +252,38 @@ class ZoneServiceSpec
         "property 'ttl' is not defined in the schema and the schema does not allow additional properties; $: " +
         "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: " +
         "property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
+    }
+    "return an error response for provider not supported" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(provider = "bind"), okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+    }
+  }
+
+  "Deleting Generated Zones" should {
+    "return an delete zone response" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .delete(any[GenerateZone])
+
+      val result =
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, okAuth).value.unsafeRunSync().toOption.get
+      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
+    }
+
+    "return an error if the user is not authorized for the zone" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
+      val error =
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, noAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
     }
   }
 

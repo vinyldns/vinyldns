@@ -165,7 +165,7 @@ class ZoneService(
     } yield generateZone
 
 
-  private def createConnection(apiUrl: String): HttpURLConnection = {
+  def createConnection(apiUrl: String): HttpURLConnection = {
    new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
   }
 

@@ -228,6 +228,10 @@ val createZoneAuthorized = ConnectZoneInput(
     "kind"-> JString("Master"),
   )
 
+  val updatePowerDNSProviderParams: Map[String, JValue] = Map(
+    "kind"-> JString("Master")
+  )
+
   val generateBindZoneAuthorized = ZoneGenerationInput(
     okGroup.id,
     "test@test.com",
@@ -243,6 +247,15 @@ val createZoneAuthorized = ConnectZoneInput(
     "powerdns",
     okZone.name,
     providerParams = powerDNSProviderParams,
+    response=Some(pdnsZoneGenerationResponse)
+  )
+
+  val updatePdnsZoneAuthorized = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = updatePowerDNSProviderParams,
     response=Some(pdnsZoneGenerationResponse)
   )
 
@@ -321,7 +334,7 @@ val updateZoneAuthorized = UpdateZoneInput(
   )
 
 val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
-    private val responseJson = """{"message": "Zone creation successfully"}"""
+    private val responseJson = """{"message": "Zone response success"}"""
 
     private var requestMethod: String = _
     private val outputBuffer = new ByteArrayOutputStream()
@@ -347,7 +360,7 @@ val mockConnection = new HttpURLConnection(new URL("http://valid-url")) {
 
     override def getResponseCode: Int = {
       // Simulate success for POST/PUT, error otherwise
-      if (Set("POST", "PUT").contains(requestMethod)) 200 else 500
+      if (Set("POST", "PUT", "DELETE").contains(requestMethod)) 200 else 500
     }
 
     override def getInputStream: InputStream = {
