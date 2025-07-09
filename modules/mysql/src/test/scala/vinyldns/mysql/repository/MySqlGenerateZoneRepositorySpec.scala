@@ -20,14 +20,17 @@ import cats.effect.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.mockito.Mockito._
+import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.TestZoneData.generateBindZone
 
 class MySqlGenerateZoneRepositorySpec
     extends AnyWordSpec
     with Matchers
+    with BeforeAndAfterEach
     {
   val repo = spy(new MySqlGenerateZoneRepository())
-
+  override def beforeEach(): Unit =
+    reset(repo)
 
   "MySqlGenerateZoneRepository.save" should {
     "only call once if save is successful" in {
@@ -38,6 +41,27 @@ class MySqlGenerateZoneRepositorySpec
       val result = repo.save(generateBindZone).unsafeRunSync()
 
       verify(repo, times(1)).save(generateBindZone)
+      result shouldEqual generateBindZone
+    }
+  }
+
+  "MySqlGenerateZoneRepository.delete" should {
+    "only call once if delete is successful" in {
+      doReturn(IO.pure(generateBindZone))
+        .when(repo)
+        .delete(generateBindZone)
+
+      doReturn(IO.pure(generateBindZone))
+        .when(repo)
+        .save(generateBindZone)
+
+      repo.save(generateBindZone).unsafeRunSync()
+
+      verify(repo, times(1)).save(generateBindZone)
+
+      val result = repo.delete(generateBindZone).unsafeRunSync()
+
+      verify(repo, times(1)).delete(generateBindZone)
       result shouldEqual generateBindZone
     }
   }
