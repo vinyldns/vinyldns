@@ -74,7 +74,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
 
   "Generate Zone" should {
     "toString should output a generate zone properly" in {
-      val result = generateBindZoneAuthorized.toString
+      val result = generateBindZone.toString
 
       result should include("id=\"" + generateBindZone.id + "\"")
       result should include("groupId=\"" + generateBindZone.groupId + "\"")
