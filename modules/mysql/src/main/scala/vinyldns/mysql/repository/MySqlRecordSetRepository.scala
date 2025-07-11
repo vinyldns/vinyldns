@@ -190,9 +190,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case (Some(zId), Some(rName)) =>
               //Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
               Some(sqls"zone_id = $zId AND fqdn LIKE ${rName.replace('*', '%')} ")
-              case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-              case (Some(zId), None) => Some(sqls"zone_id = $zId ")
-              case _ => None
+            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
+            case _ => None
           }
 
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
