@@ -178,7 +178,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
-                      recordTypeSort: RecordTypeSort,
+                      recordTypeSort: RecordTypeSort
                     ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -188,10 +188,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
-            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
-            case _ => None
+              //Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
+              Some(sqls"zone_id = $zId AND fqdn LIKE ${rName.replace('*', '%')} ")
+              case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+              case (Some(zId), None) => Some(sqls"zone_id = $zId ")
+              case _ => None
           }
 
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
@@ -277,6 +278,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val nextId = maxPlusOne
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+
+
 
           ListRecordSetResults(
             recordSets = newResults,
