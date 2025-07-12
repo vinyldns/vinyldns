@@ -35,13 +35,13 @@ class UserSyncTask(
   private val logger: Logger = LoggerFactory.getLogger("UserSyncTask")
 
   def run(): IO[Unit] = {
-    logger.error("Initiating user sync")
+    logger.info("Initiating user sync")
     for {
       allUsers <- userAccountAccessor.getAllUsers
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
       nonActiveUsers <- authenticator.getUsersNotInLdap(activeUsers)
       lockedUsers <- userAccountAccessor.lockUsers(nonActiveUsers)
-      _ <- IO(logger.error(s"""usersLocked="${lockedUsers
+      _ <- IO(logger.info(s"""usersLocked="${lockedUsers
         .map(_.userName)}"; userLockCount="${lockedUsers.size}" """))
     } yield ()
   }
