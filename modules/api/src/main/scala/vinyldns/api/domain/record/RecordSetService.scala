@@ -29,7 +29,7 @@ import cats.data._
 import cats.effect.IO
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -147,7 +147,7 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
+  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] = {
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
@@ -155,8 +155,9 @@ class RecordSetService(
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
-        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) {
+        isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange.map (_.ownerShipTransferStatus)).toResult
+        unchangedRecordSet (existing, recordSet).toResult} else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
         && !auth.isSuper) {
         recordSetOwnerShipApproveStatus(recordSet).toResult
@@ -173,12 +174,16 @@ class RecordSetService(
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) ().toResult
       else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      ownerTransferGroup <- getGroupInfo(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("None")))
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
+        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("None")), ownerTransferGroup, auth).toResult
       else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper) canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- if(OwnerShipTransferStatus.PendingReview == recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")
+      && existing.ownerGroupId == rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get)
+        isAlreadyOwnerGroupMember(existing.ownerGroupId.getOrElse("<none>")).toResult else ().toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
@@ -219,6 +224,7 @@ class RecordSetService(
         notifiers.notify(Notification(change)).toResult
       else ().toResult
     } yield change
+  }
 
   def deleteRecordSet(
                        recordSetId: String,
@@ -235,6 +241,15 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
+
+  def getGroupInfo(ids: Option[String]): Result[Option[Group]]= {
+    ids match {
+      case Some("None") => EitherT.pure[IO, Throwable](None)
+      case Some(value) => getGroupIfProvided(Some(value))
+      case None => EitherT.pure[IO, Throwable](None)
+    }
+
+  }
 
   //update ownership transfer is zone is shared
   def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone): Result[RecordSet] = {
@@ -263,7 +278,7 @@ class RecordSetService(
               case _ => recordSet.copy(
                 recordSetGroupChange = Some(ownerShipTransfer.copy(
                   ownerShipTransferStatus = OwnerShipTransferStatus.None,
-                  requestedOwnerGroupId = Some("null"))))
+                  requestedOwnerGroupId = None)))
             }
           for {
             recordSet <- recordSetOwnerApproval.toResult
@@ -288,11 +303,11 @@ class RecordSetService(
       } yield recordSet.copy(
         recordSetGroupChange = Some(ownerShipTransfer.copy(
           ownerShipTransferStatus = OwnerShipTransferStatus.None,
-          requestedOwnerGroupId = Some("null"))))
+          requestedOwnerGroupId = None)))
     else recordSet.copy(
       recordSetGroupChange = Some(ownerShipTransfer.copy(
         ownerShipTransferStatus = OwnerShipTransferStatus.None,
-        requestedOwnerGroupId = Some("null")))).toResult
+        requestedOwnerGroupId = None))).toResult
   }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
