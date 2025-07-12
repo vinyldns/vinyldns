@@ -1,4 +1,4 @@
-@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -23,7 +23,7 @@
             </div>
         </div>
 
-        @if(rootAccountCanReview) {
+        @if(rootAccountIsAdmin) {
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
                 <li class="active"><a href="#myRequests" data-toggle="tab" ng-click="getAllRequests(false)">My Requests</a></li>
@@ -171,7 +171,7 @@
 
                     </div>
                 </div>
-                @if(rootAccountCanReview){
+                @if(rootAccountIsAdmin){
             </div>
         </div>
         </div>
@@ -186,4 +186,4 @@
 
 @plugins = {}
 
-@main(rootAccountName)("DnsChangesController")("DNS Changes")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("DnsChangesController")("DNS Changes")(content)(plugins)

@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 @content = {
 <!-- PAGE CONTENT -->
 <div class="right_col" role="main">
@@ -490,4 +490,4 @@
     <script type='text/javascript' src='/public/js/ui.js'></script>
 }
 
-@main(rootAccountName)("ZonesController")("Zones")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("ZonesController")("Zones")(content)(plugins)
