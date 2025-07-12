@@ -205,7 +205,7 @@ else
 fi
 
 # shellcheck disable=SC2086
-docker-compose -f "${DOCKER_COMPOSE_CONFIG}" --env-file "${ENV_FILE}" up ${BUILD} -d ${SERVICE} || (
+docker compose -f "${DOCKER_COMPOSE_CONFIG}" --env-file "${ENV_FILE}" up ${BUILD} -d ${SERVICE} || (
   echo -e "${F_RED}Sorry, there was an error starting VinylDNS :-(\nTry resetting any existing containers with:\n\t${F_RESET}'$0 --reset'"; \
   exit 1; \
 )
