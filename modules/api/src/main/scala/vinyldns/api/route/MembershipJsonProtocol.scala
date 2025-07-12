@@ -19,12 +19,13 @@ package vinyldns.api.route
 import java.util.UUID
 import cats.data._
 import cats.implicits._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s._
 import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
-import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
+import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus, MembershipStatus}
 
 object MembershipJsonProtocol {
   final case class CreateGroupInput(
@@ -32,7 +33,8 @@ object MembershipJsonProtocol {
       email: String,
       description: Option[String],
       members: Set[UserId],
-      admins: Set[UserId]
+      admins: Set[UserId],
+      memberStatus : Option[MembershipStatus]
   )
   final case class UpdateGroupInput(
       id: String,
@@ -40,8 +42,14 @@ object MembershipJsonProtocol {
       email: String,
       description: Option[String],
       members: Set[UserId],
-      admins: Set[UserId]
+      admins: Set[UserId],
+      memberStatus : Option[MembershipStatus]
   )
+  final case class MemberStatusGroupInput(
+                                           pendingReviewMember: Set[String] = Set.empty,
+                                           rejectedMember: Set[String] = Set.empty,
+                                           approvedMember: Set[String] = Set.empty
+                                   )
 }
 
 /* Defines the JSON serialization to support the Membership Routes */
@@ -67,7 +75,9 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
+        (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
+        (js \ "memberStatus").optional[MembershipStatus]
+
       ).mapN(CreateGroupInput.apply)
   }
   case object UpdateGroupInputSerializer extends ValidationSerializer[UpdateGroupInput] {
@@ -78,8 +88,17 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
-        (js \ "admins").required[Set[UserId]]("Missing Group.admins")
+        (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
+        (js \ "memberStatus").optional[MembershipStatus]
       ).mapN(UpdateGroupInput.apply)
+  }
+  case object MemberStatusGroupInputSerializer extends ValidationSerializer[MemberStatusGroupInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, MemberStatusGroupInput] =
+      (
+        (js \ "members").default[Set[String]](Set.empty),
+        (js \ "admins").default[Set[String]](Set.empty),
+        (js \ "memberStatus").default[Set[String]](Set.empty)
+        ).mapN(MemberStatusGroupInput.apply)
   }
 
   /**
@@ -96,7 +115,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "memberIds").default[Set[String]](Set.empty),
-        (js \ "adminUserIds").default[Set[String]](Set.empty)
+        (js \ "adminUserIds").default[Set[String]](Set.empty),
+        (js \ "memberStatus").optional[MembershipStatus]
       ).mapN(Group.apply)
   }
 
@@ -110,7 +130,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "members").default[Set[UserId]](Set.empty),
-        (js \ "admins").default[Set[UserId]](Set.empty)
+        (js \ "admins").default[Set[UserId]](Set.empty),
+        (js \ "memberStatus").optional[MembershipStatus]
       ).mapN(GroupInfo.apply)
     }
 
@@ -122,7 +143,8 @@ trait MembershipJsonProtocol extends JsonValidation {
       ("created" -> Extraction.decompose(gi.created)) ~
       ("status" -> Extraction.decompose(gi.status)) ~
       ("members" -> Extraction.decompose(gi.members)) ~
-      ("admins" -> Extraction.decompose(gi.admins))
+      ("admins" -> Extraction.decompose(gi.admins)) ~
+        ("memberStatus" -> Extraction.decompose(gi.memberStatus))
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {

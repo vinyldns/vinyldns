@@ -34,10 +34,13 @@ trait MembershipServiceAlgebra {
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
+      membershipStatus: Option[MembershipStatus],
       authPrincipal: AuthPrincipal
   ): Result[Group]
 
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group]
+
+  def requestGroupMember(status : String, groupId: String , userId: String, authPrincipal: AuthPrincipal): Result[Group]
 
   def getGroup(id: String, authPrincipal: AuthPrincipal): Result[Group]
 

@@ -26,6 +26,11 @@ object GroupStatus extends Enumeration {
   val Active, Deleted = Value
 }
 
+object MemberStatus extends Enumeration {
+  type MemberStatus = Value
+  val Request, PendingReview, Rejected, Approved = Value
+}
+
 import vinyldns.core.domain.membership.GroupStatus._
 case class Group(
     name: String,
@@ -35,10 +40,48 @@ case class Group(
     created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     status: GroupStatus = GroupStatus.Active,
     memberIds: Set[String] = Set.empty,
-    adminUserIds: Set[String] = Set.empty
+    adminUserIds: Set[String] = Set.empty,
+    memberStatus: Option[MembershipStatus] = None
+
 ) {
+
   def addMember(user: User): Group =
     this.copy(memberIds = memberIds + user.id)
+
+  def pendingReviewMember(user: User): Group = {
+    val updatedMembershipStatus = memberStatus match {
+      case Some(status) =>
+        status.copy(pendingReviewMember = status.pendingReviewMember + user.id)
+      case None =>
+        MembershipStatus(pendingReviewMember = Set(user.id))
+    }
+    this.copy(memberStatus = Some(updatedMembershipStatus))
+  }
+
+  def approvedMember(user: User): Group = {
+    val updatedMembershipStatus = memberStatus match {
+      case Some(status) =>
+        status.copy(
+          pendingReviewMember = status.pendingReviewMember - user.id,
+          approvedMember = status.approvedMember + user.id)
+      case None =>
+        MembershipStatus(approvedMember = Set(user.id))
+    }
+    this.copy(memberStatus = Some(updatedMembershipStatus))
+    addMember(user)
+  }
+
+  def rejectedMember(user: User): Group = {
+    val updatedMembershipStatus = memberStatus match {
+      case Some(status) =>
+        status.copy(
+          pendingReviewMember = status.pendingReviewMember - user.id,
+          rejectedMember = status.rejectedMember + user.id)
+      case None =>
+        MembershipStatus(rejectedMember = Set(user.id))
+    }
+    this.copy(memberStatus = Some(updatedMembershipStatus))
+  }
 
   // If the user can be removed remove it, otherwise do nothing
   def removeMember(user: User): Group =
@@ -70,13 +113,20 @@ case class Group(
       emailUpdate: String,
       descriptionUpdate: Option[String],
       memberIdsUpdate: Set[String],
-      adminUserIdsUpdate: Set[String]
+      adminUserIdsUpdate: Set[String],
+      membershipStatusUpdate: Option[MembershipStatus],
   ): Group =
     this.copy(
       name = nameUpdate,
       email = emailUpdate,
       description = descriptionUpdate,
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
-      adminUserIds = adminUserIdsUpdate
+      adminUserIds = adminUserIdsUpdate,
+      memberStatus = membershipStatusUpdate
     )
 }
+case class MembershipStatus(
+                              pendingReviewMember: Set[String] = Set.empty,
+                              rejectedMember: Set[String] = Set.empty,
+                              approvedMember: Set[String] = Set.empty
+                            )
