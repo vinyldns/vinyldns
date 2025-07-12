@@ -572,15 +572,14 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
         return data
 
-    def get_recordset_change(self, zone_id, rs_id, change_id, **kwargs):
+    def get_recordset_change(self, zone_id, change_id, **kwargs):
         """
         Gets an existing recordset change
         :param zone_id: the zone id the recordset belongs to
-        :param rs_id: the id of the recordset to be retrieved
         :param change_id: the id of the change to be retrieved
         :return: the content of the response
         """
-        url = urljoin(self.index_url, "/zones/{0}/recordsets/{1}/changes/{2}".format(zone_id, rs_id, change_id))
+        url = urljoin(self.index_url, "/zones/{0}/recordsetchange/{1}".format(zone_id, change_id))
 
         response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
         return data
@@ -857,7 +856,7 @@ class VinylDNSClient(object):
         while change["status"] != expected_status and retries > 0:
             time.sleep(RETRY_WAIT)
             retries -= 1
-            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"], change["recordSet"]["id"],
+            latest_change = self.get_recordset_change(change["recordSet"]["zoneId"],
                                                       change["id"], status=(200, 404))
             if type(latest_change) != str:
                 change = latest_change
