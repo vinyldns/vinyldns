@@ -184,12 +184,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       IO {
         DB.readOnly { implicit s =>
           val maxPlusOne = maxItems.map(_ + 1)
-
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              //Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
-              Some(sqls"zone_id = $zId AND fqdn LIKE ${rName.replace('*', '%')} ")
+              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%').replace('.', '%')} ")
             case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
             case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
@@ -261,6 +259,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val finalQuery = appendQueries.append(finalQualifiers)
 
+
           val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
@@ -278,8 +277,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val nextId = maxPlusOne
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
-
-
 
           ListRecordSetResults(
             recordSets = newResults,

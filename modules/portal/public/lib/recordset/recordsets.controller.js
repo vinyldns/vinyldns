@@ -79,6 +79,7 @@
             var recordsPaging = pagingService.getNewPagingParams(100);
             var recordType = [];
             var recordName = [];
+            var recordSetName = [];
 
 
             // Initialize Bootstrap tooltips
@@ -88,20 +89,23 @@
 
             $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
-                $.ajax({
+              $.ajax({
                   url: "/api/recordsets?maxItems=100",
                   dataType: "json",
                   data: {recordNameFilter: request.term, nameSort: $scope.nameSort, zoneId: $scope.zoneId},
                   success: function( data ) {
                       const recordSearch =  JSON.parse(JSON.stringify(data));
                       response($.map(recordSearch.recordSets, function(item) {
+
                       return { label: 'name: ' + item.fqdn +' | type: ' + item.type + ' | zone_name: ' + item.zoneName,
                              value: item.fqdn +' | '+ item.type +' | '+ item.zoneName ,
-                             fqdn: item.fqdn, type: item.type, zoneName: item.zoneName, zoneId: item.zoneId}}))}
+                             fqdn: item.fqdn, type: item.type, zoneName: item.zoneName, zoneId: item.zoneId,
+                             recordName: item.name}}))}
                 });
               },
               minLength: 2,
               select: function (event, ui) {
+                  recordSetName = ui.item.recordName;
                   const customQueryValue = ui.item.fqdn + ' | ' + ui.item.type + ' | ' + ui.item.zoneId;
                   $scope.query = customQueryValue;
                   $("#record-search-text").val($scope.query);
@@ -133,7 +137,8 @@
             var zoneId = [];
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
-                recordName = queryRecord[0].trim();
+                //recordName = queryRecord[0].trim();
+                recordName = recordSetName;
                 recordType = queryRecord[1].trim();
                 zoneId = queryRecord[2].trim(); }
             else { recordName = $scope.query;
