@@ -192,6 +192,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
           }
+
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
           val pagingKey = PagingKey(startFrom)
 
