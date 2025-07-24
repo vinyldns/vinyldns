@@ -164,6 +164,10 @@ class ZoneService(
       generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
     } yield generateZone
 
+  def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] =
+    for {
+      generateZone <- getGeneratedZoneOrFail(ensureTrailingDot(zoneId))
+    } yield generateZone
 
   def createConnection(apiUrl: String): HttpURLConnection = {
    new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]

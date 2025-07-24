@@ -60,6 +60,8 @@ trait ZoneServiceAlgebra {
 
   def dnsNameServers(): Result[List[String]]
 
+  def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone]
+
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult]

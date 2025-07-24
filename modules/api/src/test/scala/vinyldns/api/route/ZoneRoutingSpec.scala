@@ -105,6 +105,14 @@ class ZoneRoutingSpec
     okZone.name,
     providerParams = powerDNSProviderParams
   )
+  val generatePdnsZoneAuthorizedd = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = powerDNSProviderParams,
+    response=Some(pdnsZoneGenerationResponse)
+  )
 
   private val generateMarkTwainZoneAuthorized = GenerateZone(
     okGroup.id,
@@ -176,6 +184,7 @@ class ZoneRoutingSpec
   private val ZoneChangeDeletedInfo5 = ZoneChangeDeletedInfo(
     deletedZoneChange5, okGroup.name, okUser.userName, AccessLevel.NoAccess)
 
+
   private val missingFields: JValue =
     ("invalidField" -> "randomValue") ~~
       ("connection" -> ("k" -> "value"))
@@ -186,6 +195,14 @@ class ZoneRoutingSpec
       ("email" -> "invalid-zone-status@test.com") ~~
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
+
+  private val generateZoneWithInvalidId: JValue =
+    ("id" -> true) ~~
+      ("name" -> "invalidZoneStatus.") ~~
+      ("email" -> "invalid-zone-status@test.com") ~~
+      ("groupId" -> "admin-group-id") ~~
+      ("provider" -> "valid-provider")
+
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val listZoneChangeResponse = ListZoneChangesResponse(
@@ -782,11 +799,22 @@ class ZoneRoutingSpec
 
   def zoneJson(zone: Zone): String = compact(render(Extraction.decompose(zone)))
 
+  def generateZoneJson(name: String, email: String): String =
+    generateZoneJson(ZoneGenerationInput(name, email, null, null, status = null, id = null))
+
+  def generateZoneJson(zone: ZoneGenerationInput): String = compact(render(Extraction.decompose(zone)))
+
   def post(zone: Zone): HttpRequest =
     Post("/zones").withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(zone)))
 
   def post(js: JValue): HttpRequest =
     Post("/zones").withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(js))))
+
+  def postGenerateZone(zone: ZoneGenerationInput): HttpRequest =
+    Post("/zones/generate").withEntity(HttpEntity(ContentTypes.`application/json`, generateZoneJson(zone)))
+
+  def postGenerateZone(js: JValue): HttpRequest =
+    Post("/zones/generate").withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(js))))
 
   def js(aclInfo: ACLRuleInfo): String = compact(render(Extraction.decompose(aclInfo)))
 
@@ -1017,6 +1045,69 @@ class ZoneRoutingSpec
       }
     }
   }
+
+  "POST generate zone" should {
+    "return 202 Accepted when the generate zone is created" in {
+      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+        status shouldBe Accepted
+      }
+    }
+
+    "return a fully populated zone in the response" in {
+      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+        val result = responseAs[GenerateZone]
+        Option(result.status) shouldBe defined
+        Option(result.created) shouldBe defined
+        result.email shouldBe generateBindZoneAuthorized.email
+        result.zoneName shouldBe generateBindZoneAuthorized.zoneName
+        Option(result.created) shouldBe defined
+        Option(result.status) shouldBe defined
+        result.updated shouldBe None
+        Option(result.id) shouldBe defined
+        result.groupId shouldBe "test"
+      }
+    }
+
+    "return 409 Conflict if the zone already exists" in {
+      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+        status shouldBe Conflict
+      }
+    }
+
+    "return 400 BadRequest if the zone adminGroupId is invalid" in {
+      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+      }
+    }
+
+    "return 403 Forbidden if the zone is shared and user is not authorized" in {
+      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+        status shouldBe Forbidden
+      }
+    }
+
+    "report missing data" in {
+      postGenerateZone(missingFields) ~> Route.seal(zoneRoute) ~> check {
+        status shouldBe BadRequest
+        val result = responseAs[JValue]
+        val errs = (result \ "errors").extractOpt[List[String]]
+        errs should not be None
+        errs.get.toSet shouldBe Set(
+          "Missing group id",
+          "Missing email",
+          "Missing provider",
+          "Missing zone name"
+        )
+      }
+    }
+
+    "ignore fields not defined in ConnectZoneInput" in {
+      postGenerateZone(generateZoneWithInvalidId) ~> Route.seal(zoneRoute) ~> check {
+        status shouldBe Accepted
+      }
+    }
+  }
+
 
   "POST zone" should {
     "return 202 Accepted when the zone is created" in {

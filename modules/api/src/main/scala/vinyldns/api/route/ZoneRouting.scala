@@ -201,8 +201,16 @@ class ZoneRoute(
       }
     } ~
     path("zones" /"generate"/ "name" / Segment) { zoneName =>
+      get & monitor("Endpoint.getGenerateZoneByName")
       authenticateAndExecute(zoneService.getGenerateZoneByName(zoneName, _)) { zone =>
         complete(StatusCodes.OK, zone)
+      }
+    } ~
+    path("zones" /"generate"/ Segment) { id =>
+      (get & monitor("Endpoint.getGenerateZone")) {
+        authenticateAndExecute(zoneService.getGeneratedZoneById(id, _)) { zone =>
+          complete(StatusCodes.OK, zone)
+        }
       }
     } ~
     path("zones" / "generate" / "allowedDNSProviders") {
