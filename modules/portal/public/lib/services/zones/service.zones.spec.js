@@ -27,8 +27,8 @@ describe('Service: zoneService', function () {
     }));
 
     it('http backend gets called properly when getting zones', function () {
-        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false').respond('zone returned');
-        this.zonesService.getZones('100', 'start', 'someQuery', false, false)
+        this.$httpBackend.expectGET('/api/zones?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false&includeReverse=true').respond('zone returned');
+        this.zonesService.getZones('100', 'start', 'someQuery', false, false, true)
             .then(function(response) {
                 expect(response.data).toBe('zone returned');
             });
@@ -50,6 +50,24 @@ describe('Service: zoneService', function () {
             .then(function(response) {
                 expect(response.data).toBe('zone sent');
                 done();
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('http backend gets called properly when getting my deleted zones', function () {
+        this.$httpBackend.expectGET('/api/zones/deleted/changes?maxItems=100&startFrom=start&nameFilter=someQuery&ignoreAccess=true').respond('deleted my zone returned');
+        this.zonesService.getDeletedZones('100', 'start', 'someQuery', true)
+            .then(function(response) {
+                expect(response.data).toBe('deleted my zone returned');
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('http backend gets called properly when getting all deleted zones', function () {
+        this.$httpBackend.expectGET('/api/zones/deleted/changes?maxItems=100&startFrom=start&nameFilter=someQuery&ignoreAccess=false').respond('deleted all zone returned');
+        this.zonesService.getDeletedZones('100', 'start', 'someQuery', false)
+            .then(function(response) {
+                expect(response.data).toBe('deleted all zone returned');
             });
         this.$httpBackend.flush();
     });

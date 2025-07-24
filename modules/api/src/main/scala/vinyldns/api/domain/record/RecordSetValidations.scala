@@ -20,13 +20,14 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.api.config.HighValueDomainConfig
+import vinyldns.api.domain.DomainValidations.validateIpv4Address
 import vinyldns.api.domain._
 import vinyldns.core.domain.DomainHelpers._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{OwnerShipTransferStatus, RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
 
@@ -236,6 +237,16 @@ object RecordSetValidations {
       )
     }
 
+    val isNotIPv4inCname = {
+      ensuring(
+        RecordSetValidation(
+          s"""Invalid CNAME: ${newRecordSet.records.head.toString.dropRight(1)}, valid CNAME record data cannot be an IP address."""
+        )
+      )(
+        validateIpv4Address(newRecordSet.records.head.toString.dropRight(1)).isInvalid
+      )
+    }
+
     for {
       _ <- isNotOrigin(
         newRecordSet,
@@ -243,6 +254,7 @@ object RecordSetValidations {
         "CNAME RecordSet cannot have name '@' because it points to zone origin"
       )
       _ <- noRecordWithName
+      _ <- isNotIPv4inCname
       _ <- RDataWithConsecutiveDots
       _ <- checkForDot(newRecordSet, zone, existingRecordSet, recordFqdnDoesNotExist, dottedHostZoneConfig, isRecordTypeAndUserAllowed, allowedDotsLimit)
     } yield ()
@@ -425,10 +437,66 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's zone ID.")
     )
 
+  /**
+   * Checks of the user is a superuser, the zone is shared, and the only record attribute being changed
+   * is the record owner group.
+   */
+  def canSuperUserUpdateOwnerGroup(
+    existing: RecordSet,
+    updates: RecordSet,
+    zone: Zone,
+    auth: AuthPrincipal
+  ): Boolean =
+    (updates.ownerGroupId != existing.ownerGroupId
+        && updates.zoneId == existing.zoneId
+        && updates.name == existing.name
+        && updates.typ == existing.typ
+        && updates.ttl == existing.ttl
+        && updates.records == existing.records
+        && zone.shared
+        && auth.isSuper)
+
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
       val searchRegex = "[a-zA-Z0-9].*[a-zA-Z0-9]+".r
       val wildcardRegex = raw"^\s*[*%].*[*%]\s*$$".r
       searchRegex.findFirstIn(recordNameFilter).isDefined && wildcardRegex.findFirstIn(recordNameFilter).isEmpty
     }
+
+  def unchangedRecordSet(
+                          existing: RecordSet,
+                          updates: RecordSet
+                        ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.typ == existing.typ &&
+        updates.records == existing.records &&
+        updates.id == existing.id &&
+        updates.zoneId == existing.zoneId &&
+        updates.name == existing.name &&
+        updates.ownerGroupId == existing.ownerGroupId &&
+        updates.ttl == existing.ttl,
+      (),
+      InvalidRequest("Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer")
+    )
+
+  def recordSetOwnerShipApproveStatus(
+                                       updates: RecordSet,
+                                     ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.AutoApproved &&
+        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyRejected,
+      (),
+      InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
+    )
+
+  def unchangedRecordSetOwnershipStatus(
+                                         updates: RecordSet,
+                                         existing: RecordSet
+                                       ): Either[Throwable, Unit] =
+    Either.cond(
+      updates.recordSetGroupChange == existing.recordSetGroupChange || existing.recordSetGroupChange.isEmpty,
+      (),
+      InvalidRequest("Cannot update RecordSet OwnerShip Status when zone is not shared.")
+    )
 }

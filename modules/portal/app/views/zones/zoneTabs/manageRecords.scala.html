@@ -5,13 +5,13 @@
 <div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled; defaultTtl = @meta.defaultTtl">
     <div class="panel-heading">
         <h3 class="panel-title">
-            <a class="collapse-link">
+            <a class="collapse-link" href data-toggle="collapse" data-target="#recordChangePreviewTableCollapse" aria-expanded="false" aria-controls="recordChangePreviewTableCollapse">
                 <i class="fa fa-chevron-down"></i>
                     Recent Record Changes
             </a>
         </h3>
     </div>
-
+    <div class="panel-collapse collapse in" id="recordChangePreviewTableCollapse">
     <div class="panel-body x_content panel-body-open">
         <button class="btn btn-default" ng-click="refreshRecordChangesPreview()"><span class="fa fa-refresh"></span> Refresh</button>
         <table id="recordChangePreviewTable" class="table table-condensed">
@@ -52,6 +52,7 @@
         </table>
             <!-- <button type="button" class="btn btn-info btn-sm">View full change log</button> -->
     </div>
+    </div>
 </div>
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
     <!-- END ACCORDION -->
@@ -59,37 +60,45 @@
     <!-- START RECORD TABLE -->
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h3 class="panel-title">Records {{ getRecordPageTitle() }}</h3>
-    </div>
+        <div class="row">
+            <div class="col-md-10">
+                <span class="panel-title bolder-font-weight">Records - {{recordSetCount}}</span>
+            </div>
+            <div class="col-md-2 pull-right">
+                <form class="input-group remove-bottom-margin" ng-submit="refreshRecords()">
+                    <div class="input-group remove-bottom-margin">
 
-    <div class="panel-body">
-      <div class="vinyldns-panel-top">
-        <div class="btn-group">
-            <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
-            <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
-            <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
-        </div>
-
-        <div>
-            <form class="input-group" ng-submit="refreshRecords()">
-                <div class="input-group">
-                    <span class="input-group-btn">
-                        <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
-                    </span>
-                    <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
-                </div>
+                        <span class="input-group-btn">
+                            <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                        </span>
+                        <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
+                    </div>
+                </form>
                 <div class="dropdown">
                     <a class="record-type-filter-heading force-cursor dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filter By Record Type <i class="fa fa-chevron-down"></i></a>
                     <ul class="dropdown-menu record-type-filters" aria-labelledby="dropdownMenu1">
                         <li ng-repeat="recordType in readRecordTypes"><input type="checkbox" ng-checked="selectedRecordTypes.indexOf(recordType) != -1" ng-click="toggleCheckedRecordType(recordType)"> {{recordType}}</li>
                     </ul>
                 </div>
-            </form>
+            </div>
         </div>
-      </div>
+    </div>
+
+    <div class="panel-body">
+        <div class="vinyldns-panel-top">
+            <div class="btn-group">
+                <span class="modal fade" id="loader" tabindex="-1" role="dialog" >
+                            <span class="spinner" ></span>
+                        </span>
+                <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
+                <button id="create-record-button" class="btn btn-default" ng-if="canReadZone && (zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl())" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
+                <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+            </div>
+        </div>
 
       <!-- PAGINATION -->
-      <div class="dataTables_paginate">
+        <div class="dataTables_paginate vinyldns_paginate">
+          <span class="vinyldns_page_number">{{ getRecordPageTitle() }}</span>
           <ul class="pagination">
               <li class="paginate_button previous">
                   <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
@@ -105,15 +114,26 @@
             <thead>
                 <tr>
                     <th class="col-md-4">
-                        <a class="force-cursor" ng-click="toggleNameSort()">Name
-                            <i class="fa {{nameSortSymbol}}"></i>
+                        <a class="fa-force-cursor" ng-click="toggleNameSort()">Name
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{nameSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{nameSortSymbolDown}}"></i>
+                            </div>
                         </a>
                     </th>
-                    <th>Type</th>
+                    <th>
+                        <a class="fa-force-cursor" ng-click="toggleRecordTypeSort()">Type
+                            <div class="fa-chevron-icon">
+                                <i class="fa fa-chevron-circle-up {{recordTypeSortSymbolUp}}"></i>
+                                <i class="fa fa-chevron-circle-down {{recordTypeSortSymbolDown}}"></i>
+                            </div>
+                        </a>
+                    </th>
                     <th>TTL</th>
                     <th class="col-md-4">Record Data</th>
                     @if(meta.sharedDisplayEnabled) {
                         <th ng-if="zoneInfo.shared">Owner Group Name</th>
+                        <th ng-if="zoneInfo.shared">OwnerShip Transfer Status</th>
                     }
                     <th>Actions</th>
                 </tr>
@@ -129,8 +149,8 @@
                             {{record.name}}
                         </div>
                     </td>
-                    <td class="wrap-long-text">{{record.type}}</td>
-                    <td class="wrap-long-text">{{record.ttl}}</td>
+                    <td>{{record.type}}</td>
+                    <td>{{record.ttl}}</td>
                     <td class="record-data">
                         <span ng-if="record.accessLevel != 'NoAccess'">
                         <span ng-if="record.type == 'A'">
@@ -317,36 +337,60 @@
                     @if(meta.sharedDisplayEnabled) {
                         <td ng-if="zoneInfo.shared">
                             <a ng-if="record.ownerGroupName && canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
-                            <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName"></span>
-                            <span ng-if="!record.ownerGroupId">Unowned</span>
+                            <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" ></span>                            <span ng-if="!record.ownerGroupId">Unowned</span>
                             <span ng-if="record.ownerGroupId && !record.ownerGroupName" class="text-danger" data-toggle="tooltip" data-placement="top"
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>
                         </td>
+                        <td ng-if="zoneInfo.shared">
+                            <span class="label label-success"
+                                  ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'ManuallyApproved' ||
+                                   record.recordSetGroupChange.ownerShipTransferStatus == 'AutoApproved'">Approved</span>
+                            <span class="label label-danger"
+                                  ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'ManuallyRejected'">Rejected</span>
+                            <span ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'None'"></span>
+                            <span class="label label-default"
+                                  ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'Cancelled'">Cancelled</span>
+                            <span class="label label-info"
+                                  ng-if= "record.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'">Pending Action</span>
+                        </td>
                     }
                     <td>
-                        <span ng-if="(canReadZone && record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
                             <div class="table-form-group">
                                 <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
                                 <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>
+                                <span ng-if="zoneInfo.shared && record.ownerGroupId == undefined && record.canBeEdited ">
+                                    <button class="btn btn-info btn-sm" ng-click="requestOwnerShip(record)">Request</button>
+                                </span>
                             </div>
+                        </span>
+                        <span ng-if="zoneInfo.shared && record.ownerGroupId != undefined && record.canBeEdited"
+                                ng-switch="record.isCurrentRecordSetOwner">
+                            <span ng-switch-when="false">
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record, true)">Request</button>
+                            </span>
+                            <span ng-switch-when="true" ng-if= record.recordSetGroupChange.ownerShipTransferStatus=="PendingReview">
+                                <button class="btn btn-info btn-sm" ng-click="requestOwnerShipTransfer(record, false)">Close Request</button>
+                            </span>
                         </span>
                     </td>
                 </tr>
             </tbody>
         </table>
 
-      <!-- PAGINATION -->
-      <div class="dataTables_paginate">
-          <ul class="pagination">
-              <li class="paginate_button previous">
-                  <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
-              </li>
-              <li class="paginate_button next">
-                  <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
-              </li>
-          </ul>
-      </div>
-      <!-- END PAGINATION -->
+        <!-- PAGINATION -->
+        <div class="dataTables_paginate vinyldns_paginate">
+            <span class="vinyldns_page_number">{{ getRecordPageTitle() }}</span>
+            <ul class="pagination">
+                <li class="paginate_button previous">
+                    <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                </li>
+                <li class="paginate_button next">
+                    <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                </li>
+            </ul>
+        </div>
+        <!-- END PAGINATION -->
 
     </div>
     <div class="panel-footer"></div>

@@ -9,6 +9,21 @@
         <div class="btn-group">
             <button class="btn btn-default" ng-click="refreshZoneChange()"><span class="fa fa-refresh"></span> Refresh</button>
         </div>
+
+        <!-- PAGINATION -->
+        <div class="dataTables_paginate vinyldns_paginate">
+            <span class="vinyldns_page_number">{{ getZoneHistoryPageNumber() }}</span>
+            <ul class="pagination">
+                <li class="paginate_button previous">
+                    <a ng-if="prevPageEnabled()" ng-click="prevPageZoneHistory()" class="paginate_button">Previous</a>
+                </li>
+                <li class="paginate_button next">
+                    <a ng-if="nextPageEnabled()" ng-click="nextPageZoneHistory()" class="paginate_button">Next</a>
+                </li>
+            </ul>
+        </div>
+        <!-- END PAGINATION -->
+
         <table id="zoneChangeDataTable" class="table table-hover table-striped">
             <thead>
                 <tr>
@@ -29,8 +44,11 @@
                     <td>{{ zoneChange.zone.shared ? "Shared" : "Private" }}</td>
                     <td>{{ zoneChange.zone.created }}</td>
                     <td>{{ zoneChange.zone.updated }}</td>
-                    <td>{{ zoneChange.changeType }}</td>
-                    <td><a ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                    <td>{{ zoneChange.changeType == "AutomatedSync" ? "Automated Sync" : zoneChange.changeType }}</td>
+                    <td ng-switch="zoneChange.zone.adminGroupName || '_undefined_'">
+                        <p ng-switch-when="_undefined_">Group has been deleted now.</p>
+                        <a ng-switch-default ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
+                    </td>
                     </td>
                     <td>
                         <button class="btn btn-info btn-sm"
@@ -43,8 +61,8 @@
         </table>
 
         <!-- PAGINATION -->
-        <div class="dataTables_paginate vinyldns_zones_paginate">
-            <span class="vinyldns_zones_page_number">{{ getZoneHistoryPageNumber() }}</span>
+        <div class="dataTables_paginate vinyldns_paginate">
+            <span class="vinyldns_page_number">{{ getZoneHistoryPageNumber() }}</span>
             <ul class="pagination">
                 <li class="paginate_button previous">
                     <a ng-if="prevPageEnabled()" ng-click="prevPageZoneHistory()" class="paginate_button">Previous</a>

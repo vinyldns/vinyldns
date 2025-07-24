@@ -18,7 +18,14 @@ package vinyldns.core.domain.record
 
 case class ListRecordSetChangesResults(
     items: List[RecordSetChange] = List[RecordSetChange](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
+    nextId: Option[Int] = None,
+    startFrom: Option[Int] = None,
     maxItems: Int = 100
 )
+
+case class ListFailedRecordSetChangesResults(
+                                        items: List[RecordSetChange] = List[RecordSetChange](),
+                                        nextId: Int = 0,
+                                        startFrom: Int = 0,
+                                        maxItems: Int = 100
+                                      )

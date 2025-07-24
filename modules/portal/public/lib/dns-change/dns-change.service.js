@@ -30,15 +30,35 @@
                     "allowManualReview": allowManualReview
                 }
                 var url = utilityService.urlBuilder('/api/dnschanges', params);
-                return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
+                let loader = $("#loader");
+                             loader.modal({
+                                           backdrop: "static",
+                                           keyboard: false, //remove option to close with keyboard
+                                           show: true //Display loader!
+                                          })
+                let promis =  $http.post(url, data, {headers: utilityService.getCsrfHeader()});
+
+                function hideLoader() {
+                    loader.modal("hide");
+
+                    // Manually remove the backdrop after the modal is hidden
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open');  // Remove the class that prevents scrolling
+                }
+                    // Hide loader when api gets response
+                promis.then(hideLoader, hideLoader).catch(hideLoader).finally(hideLoader);
+                return promis
             };
 
-            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus) {
+            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus, userName, dateTimeRangeStart, dateTimeRangeEnd) {
                 var params = {
                     "maxItems": maxItems,
                     "startFrom": startFrom,
                     "ignoreAccess": ignoreAccess,
-                    "approvalStatus": approvalStatus
+                    "approvalStatus": approvalStatus,
+                    "userName": userName,
+                    "dateTimeRangeStart": dateTimeRangeStart,
+                    "dateTimeRangeEnd": dateTimeRangeEnd
                 };
                 var url = utilityService.urlBuilder('/api/dnschanges', params);
                 return $http.get(url);

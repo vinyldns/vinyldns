@@ -238,6 +238,32 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
     }
 
+    "Get for '/recordsets'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.viewRecordSets()(FakeRequest(GET, "/recordsets"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/recordsets")
+      }
+      "render the recordset view page when the user is logged in" in new WithApplication(app) {
+        val result =
+          underTest.viewRecordSets()(
+            FakeRequest(GET, "/recordsets").withSession("username" -> "frodo").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentType(result) must beSome.which(_ == "text/html")
+        contentAsString(result) must contain("RecordSets | VinylDNS")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.viewRecordSets()(
+            FakeRequest(GET, "/recordsets")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
     "Get for login" should {
       "with ldap enabled" should {
         "render the login page when the user is not logged in" in new WithApplication(app) {

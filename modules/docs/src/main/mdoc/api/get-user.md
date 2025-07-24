@@ -6,7 +6,7 @@ section: "api"
 
 # Get User
 
-Gets a user corresponding to the given identifier (user ID or username)
+Gets a user corresponding to the given identifier (user ID or username).
 
 #### HTTP REQUEST
 
@@ -26,12 +26,19 @@ Gets a user corresponding to the given identifier (user ID or username)
 |----------|--------|:-------------------------|
 | id       | string | Unique UUID of the user  |
 | userName | string | The username of the user |
+| groupId  | Array of groupId's | The Group ID's of the user |
+
 
 #### EXAMPLE RESPONSE
 
 ```json
 {
   "id": "ok",
-  "userName": "ok"
+  "userName": "ok",
+  "groupId" : [
+    {
+      "id": "ok-group"
+    }
+  ]
 }
 ```

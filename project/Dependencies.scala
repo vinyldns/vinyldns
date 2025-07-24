@@ -15,7 +15,6 @@ object Dependencies {
   lazy val playV = "2.7.4"
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
-  lazy val ip4sV = "1.1.1"
   lazy val fs2V = "2.4.5"
   lazy val ficusV = "1.4.3"
 
@@ -25,7 +24,6 @@ object Dependencies {
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
-    "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
@@ -49,13 +47,13 @@ object Dependencies {
     "com.typesafe"              % "config"                          % configV,
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.47deg"                 %% "github4s"                       % "0.18.6",
-    "com.comcast"               %% "ip4s-core"                      % ip4sV,
-    "com.comcast"               %% "ip4s-cats"                      % ip4sV,
+    "com.comcast"               %% "ip4s-core"                      % "3.1.3",
     "com.iheart"                %% "ficus"                          % ficusV,
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
     "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources(),
-    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2"
+    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
+    "com.cronutils"             %  "cron-utils"                     % "9.1.6"
   )
 
   lazy val coreDependencies = Seq(
@@ -96,6 +94,7 @@ object Dependencies {
 
   lazy val r53Dependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sts"               % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-route53"           % awsV withSources()
   )
 

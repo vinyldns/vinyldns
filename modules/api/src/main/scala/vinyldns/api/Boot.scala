@@ -20,6 +20,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{Materializer, ActorMaterializer}
 import cats.effect.{Timer, IO, ContextShift}
+import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
@@ -46,10 +47,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
 import vinyldns.core.repository.DataStoreLoader
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
+
+  // Create a ScheduledExecutorService with a new single thread
+  private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
   private implicit val timer: Timer[IO] = IO.timer(ec)
@@ -90,9 +96,23 @@ object Boot extends App {
       msgsPerPoll <- IO.fromEither(MessageCount(vinyldnsConfig.messageQueueConfig.messagesPerPoll))
       notifiers <- NotifierLoader.loadAll(
         vinyldnsConfig.notifierConfigs,
-        repositories.userRepository
+        repositories.userRepository,
+        repositories.groupRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
+      // Schedule the zone sync task to be executed every 5 seconds
+      _ <- if (vinyldnsConfig.serverConfig.isZoneSyncScheduleAllowed){ IO(executor.scheduleAtFixedRate(() => {
+        val zoneChanges = for {
+          zoneChanges <- ZoneSyncScheduleHandler.zoneSyncScheduler(repositories.zoneRepository)
+          _ <- if (zoneChanges.nonEmpty) messageQueue.sendBatch(NonEmptyList.fromList(zoneChanges.toList).get) else IO.unit
+        } yield ()
+        zoneChanges.unsafeRunAsync {
+          case Right(_) =>
+            logger.debug("Zone sync scheduler ran successfully!")
+          case Left(error) =>
+            logger.error(s"An error occurred while performing the scheduled zone sync. Error: $error")
+        }
+      }, 0, 1, TimeUnit.SECONDS)) } else IO.unit
       _ <- CommandHandler.run(
         messageQueue,
         msgsPerPoll,
@@ -121,9 +141,10 @@ object Boot extends App {
         vinyldnsConfig.highValueDomainConfig,
         vinyldnsConfig.manualReviewConfig,
         vinyldnsConfig.batchChangeConfig,
-        vinyldnsConfig.scheduledChangesConfig
+        vinyldnsConfig.scheduledChangesConfig,
+        vinyldnsConfig.serverConfig.approvedNameServers
       )
-      val membershipService = MembershipService(repositories)
+      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
 
       val connectionValidator =
         new ZoneConnectionValidator(
@@ -141,7 +162,8 @@ object Boot extends App {
           vinyldnsConfig.highValueDomainConfig,
           vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
-          vinyldnsConfig.serverConfig.useRecordSetCache
+          vinyldnsConfig.serverConfig.useRecordSetCache,
+          notifiers
         )
       val zoneService = ZoneService(
         repositories,
@@ -150,7 +172,8 @@ object Boot extends App {
         zoneValidations,
         recordAccessValidations,
         backendResolver,
-        vinyldnsConfig.crypto
+        vinyldnsConfig.crypto,
+        membershipService
       )
       //limits configured in reference.conf passing here
       val limits = LimitsConfig(

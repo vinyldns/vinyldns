@@ -32,10 +32,11 @@ import vinyldns.core.domain.record._
 import scala.collection.mutable
 import cats.effect._
 import vinyldns.api.backend.dns.DnsConversions
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
 class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar with DnsConversions {
@@ -43,7 +44,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
   private val testZoneName = "vinyldns."
 
   private val testZoneConnection: Option[ZoneConnection] = Some(
-    ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
+    ZoneConnection(testZoneName, testZoneName, Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "127.0.0.1:19001")
   )
 
   private val mockBackendResolver = mock[BackendResolver]
@@ -95,7 +96,7 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
 
 
-      doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC)))
+      doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
         .when(mockRecordSetRepo)
         .listRecordSets(
           any[Option[String]],
@@ -104,7 +105,8 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           any[Option[String]],
           any[Option[Set[RecordType]]],
           any[Option[String]],
-          any[NameSort]
+          any[NameSort],
+          any[RecordTypeSort]
         )
 
       val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo)

@@ -15,12 +15,13 @@ section: "operator_menu"
 - [Queue Configuration](#queue-configuration)
 - [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
+- [Zone Connections](#zone-connections)
 - [Additional Configuration Settings](#additional-configuration-settings)
 - [Full Example Config](#full-example-config)
 
 There are a lot of configuration settings in VinylDNS. So much so that it may seem overwhelming to configure vinyldns to
 your environment. This document describes the configuration settings, highlighting the settings you are _most likely to
-change_. All of the configuration settings are captured at the end.
+change_. All the configuration settings are captured at the end.
 
 It is important to note that the `api` and `portal` have _different_ configuration. We will review the configuration for
 each separately.
@@ -271,7 +272,7 @@ vinyldns {
 }
 ```
 
-## Default Zone Connections
+## Zone Connections
 
 VinylDNS has three ways of indicating zone connections:
 
@@ -291,6 +292,7 @@ VinylDNS also ties in testing network connectivity to the default zone connectio
 checks. A value for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a
 default value of 10000 will be used if not provided.
 
+### Global Zone Connections Configuration:
 ```yaml
 vinyldns {
 
@@ -347,6 +349,93 @@ vinyldns {
 ]
 ```
 
+### Alternate Zone Connections Configuration:
+Below is an alternate way of setting zone connections configuration instead of using the [Global Zone Connections
+Configuration](#global-zone-connections-configuration)
+```yaml
+# configured backend providers
+backend {
+# Use "default" when dns backend legacy = true
+# otherwise, use the id of one of the connections in any of your backends
+default-backend-id = "default"
+
+# this is where we can save additional backends
+backend-providers = [
+  {
+    class-name = "vinyldns.api.backend.dns.DnsBackendProviderLoader"
+    settings = {
+      legacy = false
+      backends = [
+        {
+          id = "default"
+          zone-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            primary-server = "127.0.0.1:19001"
+          }
+          transfer-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            primary-server = "127.0.0.1:19001"
+          },
+          tsig-usage = "always"
+        },
+        {
+          id = "func-test-backend"
+          zone-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            primary-server = "127.0.0.1:19001"
+          }
+          transfer-connection = {
+            name = "vinyldns."
+            key-name = "vinyldns."
+            key = "nzisn+4G2ldMn0q1CV3vsg=="
+            primary-server = "127.0.0.1:19001"
+          },
+          tsig-usage = "always"
+        }
+      ]
+    }
+  }
+]
+}
+```
+
+Below is an example configuration of backend provider for AWS Route 53, in case we want to use AWS Route 53 as backend.
+```yaml
+backend {
+    default-backend-id = "r53"
+
+    backend-providers = [
+      {
+        class-name = "vinyldns.route53.backend.Route53BackendProviderLoader"
+        settings = {
+          backends = [
+            {
+                # AWS access key and secret key.
+                access-key = "your-access-key"
+                secret-key = "your-secret-key"
+
+                # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.
+                signing-region = "us-east-1"
+
+                # Endpoint to access r53
+                service-endpoint = "https://route53.amazonaws.com/"
+
+                id = "r53"
+            }
+          ]
+        }
+      }
+    ]
+  }
+```
+Make sure to add AWS name servers in [Approved Name Servers Config](#approved-name-servers).
+
 ## Additional Configuration Settings
 
 ### Approved Name Servers
@@ -387,6 +476,14 @@ Version of the application that is deployed. Currently, this is a configuration 
 
 **Note: You can get installation information including color, version, default key name, and processing-disabled by
 hitting the _status_ endpoint GET /status**
+
+### Is Zone Sync Schedule Allowed
+
+Used while deploying. Should be set to `true` only on one api server/instance and `false` on every other api servers/instances. 
+Thus automated sync will be done only once on a single server/instance instead of every api servers/instances.
+Set it to `true` while running locally or when we have only a single api server/instance.
+
+`is-zone-sync-schedule-allowed = true`
 
 ### HTTP Host and Port
 
@@ -475,6 +572,23 @@ sns {
   }
 }
 ```
+### Email Domain Configuration
+ This configuration setting determines the valid domains which are 
+ allowed in the email fields.
+
+ The `email-domains` field accepts a list of valid email domains. Wildcard matching 
+ is available; for example, `*dummy.com` means it will allow any 
+ subdomain within dummy.com like test.dummy.com. If the `email-domains` field is
+ left empty then it will accept any domain name. 
+ 
+The `number-of-dots` field controls the number of dots allowed after the `@` symbol in 
+an email. If this config value is left out, it will default to two.
+```yaml
+valid-email-config {
+   email-domains = ["test.com","*dummy.com"]
+   number-of-dots= 2
+}
+  ``` 
 
 ### Batch Manual Review Enabled <a id="manual-review" />
 
@@ -752,6 +866,12 @@ dotted-hosts = {
      }
   }
 
+  # Valid Email Domains
+  valid-email-config {
+    email-domains = ["test.com","*dummy.com"]
+    number-of-dots= 2
+  } 
+
   sns {
      # Path to notifier provider implementation
      class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
@@ -870,7 +990,10 @@ dotted-hosts = {
         # The time period within which the TCP binding process must be completed.
         # Set to `infinite` to disable.
         bind-timeout = 5s
-      
+        # A default request timeout is applied globally to all routes and can be configured using the 
+        # akka.http.server.request-timeout setting (which defaults to 20 seconds).
+        # request-timeout = 60s      
+  
         # Show verbose error messages back to the client
         verbose-error-messages = on
      }

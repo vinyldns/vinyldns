@@ -23,12 +23,18 @@ angular.module('controller.records', [])
 
     $scope.query = "";
     $scope.nameSort = "asc";
-    $scope.nameSortSymbol = "fa-chevron-up";
+    $scope.recordTypeSort = "none";
+    $scope.nameSortSymbolUp = "toggle-on";
+    $scope.nameSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
+    $scope.recordTypeSortSymbolDown = "toggle-off";
     $scope.alerts = [];
 
     $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.ownerShipTransferStatus = ['AutoApproved', 'Cancelled', 'ManuallyApproved', 'ManuallyRejected', 'Requested', 'PendingReview'];
     $scope.readRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', "SOA", 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.selectedRecordTypes = [];
+    $scope.naptrFlags = ["U", "S", "A", "P"];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
@@ -41,14 +47,23 @@ angular.module('controller.records', [])
         {name: '(254) PRIVATEOID', number: 254}]
     $scope.dsDigestTypes = [{name: '(1) SHA1', number: 1}, {name: '(2) SHA256', number: 2}, {name: '(3) GOSTR341194', number: 3}, {name: '(4) SHA384', number: 4}]
     $scope.records = {};
+    $scope.isOwnerShipRequest = true;
     $scope.recordsetChangesPreview = {};
     $scope.recordsetChanges = {};
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
     $scope.profile = {};
+    $scope.recordSetCount = 0;
+    $scope.canViewZone = false;
 
     var loadZonesPromise;
     var loadRecordsPromise;
+
+   	$scope.ownerShipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                           {value: 'ManuallyRejected',  label: 'Reject'}];
+
+	$scope.ownerShipTransferRequestorStatus = [{value: 'Requested',  label: 'Request'},
+	                                        {value: 'Cancelled',  label: 'Cancel'}];
 
     $scope.recordModalState = {
         CREATE: 0,
@@ -76,6 +91,7 @@ angular.module('controller.records', [])
     $scope.isZoneAdmin = false;
     $scope.canReadZone = false;
     $scope.canCreateRecords = false;
+    $scope.isCurrentRecordSetOwner = false;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -83,9 +99,59 @@ angular.module('controller.records', [])
     // paging status for record changes
     var changePaging = pagingService.getNewPagingParams(100);
 
+    // Initialize Bootstrap tooltips
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    // Function to copy the ID to clipboard
+    $scope.copyToClipboard = function() {
+        utilityService.copyToClipboard($scope.zoneInfo.id);
+        // Trigger success alert using utilityService
+        var alert = utilityService.success('Successfully copied Zone ID to clipboard');
+        $scope.alerts.push(alert);
+    };
+
     /**
       * Modal control functions
       */
+
+    $scope.recordSetGroupOwnerShipStatus = function recordSetGroupOwnerShipStatus(groupId, profileId, record) {
+        function success(response) {
+           var ownerShipTransferStatus;
+           if (response.data.members.some(x => x.id === profileId)){
+           ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
+           $scope.currentOwnerShipTransferApprover= true;
+            record.isCurrentRecordSetOwner = true;}
+           else{ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
+            $scope.currentOwnerShipTransferApprover= false;
+           record.isCurrentRecordSetOwner= false;}
+          $scope.ownerShipTransferStatus = ownerShipTransferStatus
+        }
+        return groupsService
+            .getGroupMemberList(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroupMemberList-failure');
+            });
+    };
+
+    function getGroup(groupId) {
+        if (groupId != undefined && groupId != "null"){
+            $log.log('groupsService::getGroup-success');
+            function success(response) {
+                 $scope.recordSetRequestedOwnerShipName = response.data.name;
+
+            }
+            return groupsService
+                .getGroup(groupId)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getGroup-failure');
+                });
+         }
+        else {$scope.recordSetRequestedOwnerShipName = "None";}
+    };
 
     $scope.deleteRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
@@ -125,6 +191,12 @@ angular.module('controller.records', [])
 
     $scope.editRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
+        if ($scope.currentRecord.recordSetGroupChange == undefined){
+            $scope.currentRecord.recordSetGroupChange = {}
+            $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+            $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved");
+        }
+        getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.recordModal = {
             previous: angular.copy(record),
             action: $scope.recordModalState.UPDATE,
@@ -136,6 +208,89 @@ angular.module('controller.records', [])
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
+    };
+
+    $scope.requestOwnerShip = function(record) {
+            $scope.currentRecord = angular.copy(record);
+            if ($scope.currentRecord.recordSetGroupChange == undefined){
+                $scope.currentRecord.recordSetGroupChange = {}
+                $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+                $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved");
+            }
+            $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved");
+            $scope.recordModal = {
+                action: $scope.recordModalState.UPDATE,
+                title: "Request OwnerShip transfer",
+                basics: $scope.recordModalParams.readOnly,
+                details: $scope.recordModalParams.editable,
+                sharedZone: $scope.zoneInfo.shared,
+                sharedDisplayEnabled: $scope.sharedDisplayEnabled,
+                isCurrentRecordOwnerGroup : false
+            };
+        $scope.recordOwnerShipForm.$setPristine();
+            $("#record_modal_ownership").modal("show");
+        };
+
+    $scope.requestOwnerShipTransfer = function(record, isOwnerShipRequest) {
+            $scope.currentRecord = angular.copy(record);
+            if (record.recordSetGroupChange == undefined){
+                record.recordSetGroupChange = {}
+            }
+            $scope.currentRecord.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
+            $scope.recordModal = {
+                previous: angular.copy(record),
+                action: $scope.recordModalState.UPDATE,
+                title: "Request OwnerShip transfer",
+                basics: $scope.recordModalParams.readOnly,
+                details: $scope.recordModalParams.editable,
+                sharedZone: $scope.zoneInfo.shared,
+                sharedDisplayEnabled: $scope.sharedDisplayEnabled,
+                isCurrentRecordOwnerGroup : false
+            };
+
+        var currentRecordOwnerGroupId = $scope.currentRecord.ownerGroupId;
+        if (isOwnerShipRequest && $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus != "PendingReview") {
+        $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(null);
+        $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null);
+        }else ($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy(null))
+        getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
+        $scope.ownerShipTransferApprover = false;
+        $scope.ownerShipTransferRequestor = false;
+
+        if (currentRecordOwnerGroupId != undefined){$scope.recordModal.isCurrentRecordOwnerGroup = true
+        }else{ $scope.recordModal.isCurrentRecordOwnerGroup = false }
+
+        if ($scope.zoneInfo.shared == true && $scope.recordModal.isCurrentRecordOwnerGroup){
+            $scope.recordSetGroupOwnerShipStatus(currentRecordOwnerGroupId, $scope.profile.id, record);
+            $scope.ownerShipTransferApproverStatus.forEach(function(ownerShipTransferApproverStatus, index) {
+                if (ownerShipTransferApproverStatus.value.indexOf($scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus) > -1)
+                    {$scope.ownerShipTransferApprover = true}else{$scope.ownerShipTransferRequestor = true}})
+        }
+        $scope.recordOwnerShipForm.$setPristine();
+            $("#record_modal_ownership_transfer").modal("show");
+        };
+
+    $scope.requestedOwnerShip = function() {
+
+        var record = angular.copy($scope.currentRecord);
+        record['onlyFour'] = true;
+        if ($scope.recordOwnerShipForm.$valid) {
+            updateRecordSet(record);
+            $scope.recordOwnerShipForm.$setPristine();
+            $("#record_modal_ownership").modal('hide');
+        }
+    };
+
+    $scope.submitRequestedOwnerShipTransfer = function () {
+        var record = angular.copy($scope.currentRecord);
+        record['onlyFour'] = true;
+        var invalidRecordOwnerShipForm = $scope.recordOwnerShipForm.ownerGroupStatus.$viewValue != null &&
+                                         $scope.recordOwnerShipForm.ownerGroupStatus.$viewValue
+        if ($scope.recordOwnerShipForm.$valid && invalidRecordOwnerShipForm) {
+            updateRecordSet(record);
+            $scope.recordOwnerShipForm.$setPristine();
+            $("#record_modal_ownership_transfer").modal('hide');
+        }
     };
 
     $scope.confirmUpdate = function() {
@@ -183,11 +338,15 @@ angular.module('controller.records', [])
 
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
+        if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
+             if (record.ownerGroupId != $scope.recordModal.previous.ownerGroupId && $scope.isZoneAdmin){
+                    record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+                    record.recordSetGroupChange.ownerShipTransferStatus = angular.copy("ManuallyApproved");
+             }
+        } else {record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);}
         record['onlyFour'] = true;
-
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);
-
             $scope.addRecordForm.$setPristine();
             $("#record_modal").modal('hide');
         }
@@ -369,6 +528,7 @@ angular.module('controller.records', [])
     function determineAdmin(){
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
+        $scope.canViewZone = $scope.canReadZone || $scope.isZoneAdmin || $scope.zoneInfo.shared;
         $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || canCreateRecordsViaAcl() || $scope.zoneInfo.shared;
 
         function canCreateRecordsViaAcl() {
@@ -400,7 +560,7 @@ angular.module('controller.records', [])
 
     $scope.refreshZone = function() {
         function success(response) {
-            $log.log('recordsService::getZone-success');
+            $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             // Get current user's groups and determine if they're an admin of this zone
             getMembership()
@@ -415,7 +575,7 @@ angular.module('controller.records', [])
 
     $scope.syncZone = function() {
         function success(response) {
-            $log.log('recordsService::syncZone-success');
+            $log.debug('recordsService::syncZone-success');
             location.reload();
         }
         return recordsService
@@ -428,7 +588,7 @@ angular.module('controller.records', [])
 
     $scope.refreshRecordChangesPreview = function() {
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             var newChanges = [];
             angular.forEach(response.data.recordSetChanges, function(change) {
                 newChanges.push(change);
@@ -446,7 +606,7 @@ angular.module('controller.records', [])
     $scope.refreshRecordChanges = function() {
         changePaging = pagingService.resetPaging(changePaging);
         function success(response) {
-            $log.log('recordsService::getRecordSetChanges-success');
+            $log.debug('recordsService::getRecordSetChanges-success');
             changePaging.next = response.data.nextId;
             updateChangeDisplay(response.data.recordSetChanges)
         }
@@ -469,12 +629,12 @@ angular.module('controller.records', [])
     $scope.refreshRecords = function() {
         recordsPaging = pagingService.resetPaging(recordsPaging);
         function success(response) {
-            $log.log('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
+            $log.debug('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
             recordsPaging.next = response.data.nextId;
             updateRecordDisplay(response.data.recordSets);
         }
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, undefined, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::listRecordSetsByZone-failure');
@@ -488,7 +648,13 @@ angular.module('controller.records', [])
                 angular.forEach(records, function(record) {
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
+                angular.forEach(newRecords, function(record) {
+                    if(record.ownerGroupId != undefined) {
+                        $scope.recordSetGroupOwnerShipStatus(record.ownerGroupId, $scope.profile.id, record);
+                    }else {record.isCurrentRecordSetOwner= null;}
+                });
                 $scope.records = newRecords;
+                $scope.getRecordSetCount();
                 if($scope.records.length > 0) {
                   $("td.dataTables_empty").hide();
                 } else {
@@ -496,6 +662,19 @@ angular.module('controller.records', [])
                 }
             });
     };
+
+    $scope.getRecordSetCount = function getRecordSetsCount() {
+        function success(response) {
+                 $log.debug('RecordService::getRecordSetsCount-success',  response.data);
+                 return $scope.recordSetCount = response.data.count
+             }
+             return recordsService
+                 .getRecordSetCount($scope.zoneId)
+                 .then(success)
+                 .catch(function (error) {
+                     handleError(error, 'groupsService::getRecordSetsCount-failure');
+                 });
+    }
 
     /**
      * Recordset paging
@@ -515,7 +694,7 @@ angular.module('controller.records', [])
     $scope.prevPage = function() {
         var startFrom = pagingService.getPrevStartFrom(recordsPaging);
         return recordsService
-            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+            .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, startFrom, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
             .then(function(response) {
                 recordsPaging = pagingService.prevPageUpdate(response.data.nextId, recordsPaging);
                 updateRecordDisplay(response.data.recordSets);
@@ -527,7 +706,7 @@ angular.module('controller.records', [])
 
     $scope.nextPage = function() {
         return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, recordsPaging.next, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
                 .then(function(response) {
                 var recordSets = response.data.recordSets;
                 recordsPaging = pagingService.nextPageUpdate(recordSets, response.data.nextId, recordsPaging);
@@ -542,12 +721,33 @@ angular.module('controller.records', [])
     };
 
     $scope.toggleNameSort = function() {
+    $scope.recordTypeSort = "none"
+    $scope.recordTypeSortSymbolDown = "toggle-off";
+    $scope.recordTypeSortSymbolUp = "toggle-off";
         if ($scope.nameSort == "asc") {
             $scope.nameSort = "desc";
-            $scope.nameSortSymbol = "fa-chevron-down";
+            $scope.nameSortSymbolDown = "toggle-on";
+            $scope.nameSortSymbolUp = "toggle-off";
         } else {
             $scope.nameSort = "asc";
-            $scope.nameSortSymbol = "fa-chevron-up";
+            $scope.nameSortSymbolDown = "toggle-off";
+            $scope.nameSortSymbolUp = "toggle-on";
+        }
+        return $scope.refreshRecords();
+    };
+
+    $scope.toggleRecordTypeSort = function() {
+        $scope.nameSort = ""
+        $scope.nameSortSymbolDown = "toggle-off";
+        $scope.nameSortSymbolUp = "toggle-off";
+        if ($scope.recordTypeSort == "asc") {
+            $scope.recordTypeSort = "desc";
+            $scope.recordTypeSortSymbolDown = "toggle-on";
+            $scope.recordTypeSortSymbolUp = "toggle-off";
+        } else {
+            $scope.recordTypeSort = "asc";
+            $scope.recordTypeSortSymbolDown = "toggle-off";
+            $scope.recordTypeSortSymbolUp = "toggle-on";
         }
         return $scope.refreshRecords();
     };
@@ -607,7 +807,7 @@ angular.module('controller.records', [])
     function profileSuccess(results) {
         if (results.data) {
             $scope.profile = results.data;
-            $log.log('profileService::getAuthenticatedUserData-success');
+            $log.debug('profileService::getAuthenticatedUserData-success');
         }
     }
 

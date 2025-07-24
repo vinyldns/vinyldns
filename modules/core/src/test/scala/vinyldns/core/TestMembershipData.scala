@@ -16,6 +16,8 @@
 
 package vinyldns.core
 
+
+import vinyldns.core.domain.Encrypted
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -29,18 +31,18 @@ object TestMembershipData {
     id = "ok",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "okAccessKey",
-    secretKey = "okSecretKey",
+    secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
     lastName = Some("ok"),
     email = Some("test@test.com")
   )
 
-  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
-  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
-  val xyzUser = User("xyz", "xyzAccess", "xyzSecret")
-  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
-  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
-  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
+  val dummyUser = User("dummyName", "dummyAccess", Encrypted("dummySecret"))
+  val superUser = User("super", "superAccess", Encrypted("superSecret"), isSuper = true)
+  val xyzUser = User("xyz", "xyzAccess", Encrypted("xyzSecret"))
+  val supportUser = User("support", "supportAccess", Encrypted("supportSecret"), isSupport = true)
+  val lockedUser = User("locked", "lockedAccess", Encrypted("lockedSecret"), lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", Encrypted("sharedSecret"))
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -48,7 +50,7 @@ object TestMembershipData {
       id = "dummy%03d".format(runner),
       created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
       accessKey = "dummy",
-      secretKey = "dummy"
+      secretKey = Encrypted("dummy")
     )
   }
 
@@ -117,15 +119,15 @@ object TestMembershipData {
     memberGroupIds = List(abcGroup.id, okGroup.id)
   )
 
-  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
+  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id, oneUserDummyGroup.id))
 
-  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
+  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", Encrypted("secret")), Seq.empty)
 
   val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
 
   val supportUserAuth: AuthPrincipal = AuthPrincipal(supportUser, Seq(okGroup.id))
 
-  val superUserAuth = AuthPrincipal(superUser, Seq.empty)
+  val superUserAuth: AuthPrincipal = AuthPrincipal(superUser, Seq.empty)
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(

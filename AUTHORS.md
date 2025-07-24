@@ -21,12 +21,14 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Joe Crowe
 - Jearvon Dharrie
 - Andrew Dunn
+- Josh Edwards
 - Ryan Emerle
 - David Grizzanti
 - Alejandro Guirao
 - Daniel Jin
 - Harry Kauffman
 - Krista Khare
+- Sokitha Krishnan
 - Patrick Lee
 - Sheree Liu
 - Michael Ly
@@ -41,8 +43,9 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Khalid Reid
 - Timo Schmid
 - Trent Schmidt
-- Nick Spadaccino
+- Arpit Shah
 - Ghafar Shah
+- Nick Spadaccino
 - Rebecca Star
 - Jess Stodola
 - Juan Valencia

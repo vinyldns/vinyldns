@@ -50,6 +50,11 @@ case class ChangeSet(
     status: ChangeSetStatus
 ) {
 
+  def withRecordSetChange(recordSetChanges: Seq[RecordSetChange]): ChangeSet =
+    copy(
+      changes = recordSetChanges
+    )
+
   def complete(change: RecordSetChange): ChangeSet = {
     val updatedChanges = this.changes.filterNot(_.id == change.id) :+ change
     if (isFinished)

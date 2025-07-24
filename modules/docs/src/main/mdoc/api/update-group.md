@@ -6,7 +6,7 @@ section: "api"
 
 # Update Group
 
-Updates a Group in VinylDNS
+Updates a Group in VinylDNS.
 
 #### HTTP REQUEST
 

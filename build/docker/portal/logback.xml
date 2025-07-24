@@ -15,6 +15,10 @@
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
 
+  <logger name="com.zaxxer.hikari" level="ERROR">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
   <root level="${VINYLDNS_LOG_LEVEL}">
     <appender-ref ref="CONSOLE" />
   </root>

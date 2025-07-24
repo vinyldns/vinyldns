@@ -18,6 +18,7 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
+import vinyldns.core.domain.Encrypted
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -25,7 +26,7 @@ object TestZoneData {
 
   /* ZONE CONNECTIONS */
   val testConnection: Option[ZoneConnection] = Some(
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+    ZoneConnection("vinyldns.", "vinyldns.", Encrypted("nzisn+4G2ldMn0q1CV3vsg=="), "10.1.1.1")
   )
 
   /* ZONES */
@@ -51,9 +52,21 @@ object TestZoneData {
     connection = testConnection
   )
 
+  val abcZoneDeleted: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id, status = ZoneStatus.Deleted)
+  val xyzZoneDeleted: Zone = Zone("xyz.zone.recordsets.", "abc@xyz.com", adminGroupId = xyzGroup.id, status = ZoneStatus.Deleted)
+
   val zoneDeleted: Zone = Zone(
     "some.deleted.zone.",
     "test@test.com",
+    adminGroupId = abcGroup.id,
+    status = ZoneStatus.Deleted,
+    connection = testConnection
+  )
+
+  val zoneDeletedOkGroup: Zone = Zone(
+    "some.deleted.zone.",
+    "test@test.com",
+    adminGroupId = okGroup.id,
     status = ZoneStatus.Deleted,
     connection = testConnection
   )
@@ -87,6 +100,22 @@ object TestZoneData {
   )
 
   val zoneUpdate: ZoneChange = zoneChangePending.copy(status = ZoneChangeStatus.Synced)
+
+  val abcDeletedZoneChange: ZoneChange = ZoneChange(
+    abcZoneDeleted,
+    "ok",
+    ZoneChangeType.Create,
+    ZoneChangeStatus.Synced,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
+  )
+
+  val xyzDeletedZoneChange: ZoneChange = ZoneChange(
+    xyzZoneDeleted,
+    "ok",
+    ZoneChangeType.Create,
+    ZoneChangeStatus.Synced,
+    created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(1000)
+  )
 
   def makeTestPendingZoneChange(zone: Zone): ZoneChange =
     ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)

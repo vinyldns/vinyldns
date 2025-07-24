@@ -127,15 +127,15 @@ class BatchChangeJsonProtocolSpec
     addCNAMEChangeInputJson
   )
 
-  val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
+  val addAChangeInput = AddChangeInput("foo.", A, None, Some(3600), AData("1.1.1.1"))
 
-  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A)
+  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A, None)
 
-  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
+  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, None, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
-  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData(Fqdn("buzz.")))
+  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, None, Some(200), CNAMEData(Fqdn("buzz.")))
 
-  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData(Fqdn("test.com.")))
+  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, None, Some(200), PTRData(Fqdn("test.com.")))
 
   val fooDiscoveryError = ZoneDiscoveryError("foo.")
 
@@ -180,7 +180,7 @@ class BatchChangeJsonProtocolSpec
       val result = ChangeInputSerializer.fromJson(json)
 
       result should haveInvalid(
-        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX"
+        s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, MX, NS, SRV and NAPTR"
       )
     }
 
@@ -211,7 +211,7 @@ class BatchChangeJsonProtocolSpec
       )
       val result = ChangeInputSerializer.fromJson(json).value
 
-      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
+      result shouldBe AddChangeInput("foo.", A, None, None, AData("1.1.1.1"))
     }
 
     "return an error if the record is not specified for add" in {
@@ -225,11 +225,32 @@ class BatchChangeJsonProtocolSpec
 
       resultAAAA should haveInvalid("Missing BatchChangeInput.changes.record.address")
     }
+
+    "return an error if the record data is not specified for NS" in {
+      val jsonNS = buildAddChangeInputJson(Some("foo."), Some(NS), Some(3600))
+      val resultNS = ChangeInputSerializer.fromJson(jsonNS)
+
+      resultNS should haveInvalid("Missing BatchChangeInput.changes.record.nsdname")
+    }
+
+    "return an error if the record data is not specified for SRV" in {
+      val jsonSRV = buildAddChangeInputJson(Some("foo."), Some(SRV), Some(3600))
+      val resultSRV = ChangeInputSerializer.fromJson(jsonSRV)
+
+      resultSRV should haveInvalid("Missing BatchChangeInput.changes.record.priority and Missing BatchChangeInput.changes.record.weight and Missing BatchChangeInput.changes.record.port and Missing BatchChangeInput.changes.record.target")
+    }
+
+    "return an error if the record data is not specified for NAPTR" in {
+      val jsonNAPTR = buildAddChangeInputJson(Some("foo."), Some(NAPTR), Some(3600))
+      val resultNAPTR = ChangeInputSerializer.fromJson(jsonNAPTR)
+
+      resultNAPTR should haveInvalid("Missing BatchChangeInput.changes.record.order and Missing BatchChangeInput.changes.record.preference and Missing BatchChangeInput.changes.record.flags and Missing BatchChangeInput.changes.record.service and Missing BatchChangeInput.changes.record.regexp and Missing BatchChangeInput.changes.record.replacement")
+    }
   }
 
   "serializing ChangeInputSerializer to JSON" should {
     "successfully serialize valid data for delete" in {
-      val deleteChangeInput = DeleteRRSetChangeInput("foo.", A, Some(AData("1.1.1.1")))
+      val deleteChangeInput = DeleteRRSetChangeInput("foo.", A, None, Some(AData("1.1.1.1")))
       val json: JObject = buildDeleteRRSetInputJson(Some("foo."), Some(A), Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.toJson(deleteChangeInput)
 

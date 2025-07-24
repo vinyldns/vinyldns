@@ -24,7 +24,6 @@ import org.mockito.Mockito.{doReturn, verify}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
-import vinyldns.api.CatsHelpers
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record._
@@ -35,8 +34,7 @@ import scala.concurrent.ExecutionContext
 class BatchChangeHandlerSpec
     extends AnyWordSpec
     with MockitoSugar
-    with BeforeAndAfterEach
-    with CatsHelpers {
+    with BeforeAndAfterEach {
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
@@ -77,7 +75,7 @@ class BatchChangeHandlerSpec
   "notify on batch change complete" in {
     doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
-    await(batchRepo.save(completedBatchChange))
+    batchRepo.save(completedBatchChange).unsafeRunSync()
 
     BatchChangeHandler
       .process(batchRepo, notifiers, BatchChangeCommand(completedBatchChange.id))
@@ -92,7 +90,7 @@ class BatchChangeHandlerSpec
     val partiallyFailedBatchChange =
       completedBatchChange.copy(changes = List(addChange.copy(status = SingleChangeStatus.Failed)))
 
-    await(batchRepo.save(partiallyFailedBatchChange))
+    batchRepo.save(partiallyFailedBatchChange).unsafeRunSync()
 
     BatchChangeHandler
       .process(batchRepo, notifiers, BatchChangeCommand(partiallyFailedBatchChange.id))

@@ -1,3 +1,5 @@
+<div>
+
 <form name="addRecordForm" role="form" class="form-horizontal" novalidate>
     <modal modal-id="record_modal" modal-title="{{ recordModal.title }}">
         <modal-body>
@@ -59,7 +61,7 @@
             <modal-element ng-if="currentRecord.type == 'PTR'"
                            label="FQDN (one per line)"
                            invalid-when="addRecordForm.$submitted && addRecordForm.ptrRecordData.$invalid">
-                <textarea name="recordData"
+                <textarea name="ptrRecordData"
                           ng-model="currentRecord.ptrRecordData"
                           rows="5"
                           class="form-control"
@@ -116,6 +118,7 @@
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in dsAlgorithms"
                                     ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -126,6 +129,7 @@
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in dsDigestTypes"
                                     ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -324,7 +328,7 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['preference_' + ($index)].$invalid}">
-                            <input name="weight_{{$index}}"
+                            <input name="preference_{{$index}}"
                                    class="form-control"
                                    ng-model="item.preference"
                                    ng-class="recordModal.details.class"
@@ -332,15 +336,19 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['flags_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
-                                   class="form-control"
-                                   ng-model="item.flags"
-                                   ng-class="recordModal.details.class"
-                                   ng-readonly="recordModal.details.readOnly"
-                                   required/>
+                            <select name="flags_{{$index}}"
+                                    class="form-control"
+                                    id="set-dropdown-width"
+                                    ng-model="item.flags"
+                                    ng-class="recordModal.details.class"
+                                    ng-options="flag for flag in naptrFlags"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
+                                    required>
+                            </select>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['service_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
+                            <input name="service_{{$index}}"
                                    class="form-control"
                                    ng-model="item.service"
                                    ng-class="recordModal.details.class"
@@ -348,14 +356,14 @@
                                    required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['regexp_' + ($index)].$invalid}">
-                            <input name="flags_{{$index}}"
+                            <input name="regexp_{{$index}}"
                                    class="form-control"
                                    ng-model="item.regexp"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['replacement_' + ($index)].$invalid}">
-                            <input name="target_{{$index}}"
+                            <input name="replacement_{{$index}}"
                                    class="form-control"
                                    ng-model="item.replacement"
                                    ng-class="recordModal.details.class"
@@ -392,6 +400,8 @@
                                     ng-model="item.algorithm"
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in sshfpAlgorithms"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -401,6 +411,8 @@
                                     ng-model="item.type"
                                     ng-class="recordModal.basics.class"
                                     ng-options="item.number as item.name for item in sshfpTypes"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    ng-disabled="recordModal.details.readOnly"
                                     required>
                             </select>
                         </td>
@@ -458,10 +470,19 @@
                     <option value="" selected="selected">Please choose a record owner group</option>
                 </select>
                 <modal-invalid>
-                    Record Owner Group is required for records in shared zones
+                    Owner Group transfer status is required for records in shared zones
                 </modal-invalid>
             </modal-element>
-
+            <modal-element label="Requested Record Owner Group"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.recordSetGroupChange.requestedOwnerGroupId.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.previous.recordSetGroupChange.ownerShipTransferStatus=='PendingReview'">
+                <input name="requestedOwnerGroupName"
+                       class="form-control"
+                       ng-model="recordSetRequestedOwnerShipName"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.basics.readOnly"
+                       placeholder="">
+            </modal-element>
         </modal-body>
         <modal-footer>
             <span ng-if="recordModal.action == recordModalState.CREATE">
@@ -496,3 +517,97 @@
         </modal-footer>
     </modal>
 </form>
+<form name="recordOwnerShipForm" role="form" class="form-horizontal" novalidate>
+    <!--Request ownership for unowned records in shared zones-->
+    <modal modal-id="record_modal_ownership" modal-title="Request OwnerShip">
+        <modal-body>
+            <modal-element label="Record Owner Group Request"
+                           invalid-when="recordOwnerShipForm.$submitted && recordOwnerShipForm.requestOwnerGroupId.$invalid"
+                           ng-if = "recordModal.sharedDisplayEnabled && recordModal.sharedZone && !recordModal.isCurrentRecordOwnerGroup && currentRecord.ownerGroupId == undefined">
+                <select name="requestOwnerGroupId"
+                        class="form-control"
+                        ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
+                        ng-disabled="recordModal.details.readOnly"
+                        ng-class="recordModal.details.class"
+                        ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                        required>
+                    <option value="" selected="selected">Please choose a record owner group</option>
+                </select>
+                <modal-invalid>
+                    Requesting Record Owner Group is required for records in shared zones
+                </modal-invalid>
+            </modal-element>
+        </modal-body>
+        <modal-footer>
+            <span>
+                <button type="button" class="btn btn-default" data-dismiss="modal"  ng-click="closeRecordModal()">Close</button>
+                <button class="btn btn-primary pull-right"  ng-click="requestedOwnerShip()" id="requested_ownership">Request</button>
+            </span>
+        </modal-footer>
+    </modal>
+    <!--Request and approve ownership for owned records in shared zones-->
+    <modal modal-id="record_modal_ownership_transfer" modal-title="OwnerShip Transfer">
+            <modal-body>
+                <modal-element label="Record Owner Group Request"
+                               invalid-when="recordOwnerShipForm.$submitted && recordOwnerShipForm.requestedOwnerGroupId1.$invalid"
+                               ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone"
+                               ng-switch="currentOwnerShipTransferApprover || recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'">
+                    <select name="requestedOwnerGroupId1"
+                            class="form-control"
+                            ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
+                            ng-switch-when="false"
+                            ng-disabled="recordModal.details.readOnly"
+                            ng-class="recordModal.details.class"
+                            ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                            required>
+                        <option value="" selected="selected">Please choose a record owner group</option>
+                    </select>
+                    <modal-invalid>
+                        Record Owner Group is required for records in shared zones
+                    </modal-invalid>
+                    <input name="requestedOwnerGroupId2"
+                           class="form-control"
+                           ng-switch-default
+                           ng-model="recordSetRequestedOwnerShipName"
+                           ng-class="recordModal.details.class"
+                           ng-readonly="recordModal.basics.readOnly"
+                           >
+                </modal-element>
+
+                <modal-element label="Record Owner Group Status"
+                               invalid-when="recordOwnerShipForm.$submitted && (recordOwnerShipForm.ownerGroupStatus.$invalid
+                                             || recordOwnerShipForm.ownerGroupStatus.$viewValue == null || !recordOwnerShipForm.ownerGroupStatus.$viewValue)"
+                               ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone "
+                               ng-switch="!currentOwnerShipTransferApprover">
+                    <select name="ownerGroupStatus"
+                            class="form-control"
+                            ng-switch-when="false"
+                            ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
+                            ng-class="recordModal.details.class"
+                            ng-options="ownerShipTransferApproverStatus.value as ownerShipTransferApproverStatus.label for ownerShipTransferApproverStatus in ownerShipTransferStatus" required>
+                        <option value= ""  selected="selected">Please choose a record owner group status</option>
+
+                    </select>
+                    <select name="ownerGroupStatus"
+                            class="form-control"
+                            ng-switch-default
+                            ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
+                            ng-class="recordModal.details.class">
+                        <option value= ""  selected="selected">Please choose a record owner group status</option>
+                        <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'" value="Cancelled" required>Cancel</option>
+                        <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus != 'PendingReview'" value="Requested" required>Request</option>
+                    </select>
+                    <modal-invalid>
+                        Owner Group transfer status is required for records in shared zones
+                    </modal-invalid>
+                </modal-element>
+            </modal-body>
+            <modal-footer>
+            <span>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
+                <button class="btn btn-primary pull-right" ng-click="submitRequestedOwnerShipTransfer()" id="update_recordset_ownership_request">Submit</button>
+            </span>
+            </modal-footer>
+</modal>
+</form>
+</div>

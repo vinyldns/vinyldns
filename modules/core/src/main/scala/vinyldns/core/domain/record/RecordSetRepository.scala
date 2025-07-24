@@ -20,6 +20,7 @@ import cats.effect._
 import scalikejdbc.DB
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
 import vinyldns.core.repository.Repository
 
 trait RecordSetRepository extends Repository {
@@ -33,7 +34,8 @@ trait RecordSetRepository extends Repository {
       recordNameFilter: Option[String],
       recordTypeFilter: Option[Set[RecordType]],
       recordOwnerGroupFilter: Option[String],
-      nameSort: NameSort
+      nameSort: NameSort,
+      recordTypeSort: RecordTypeSort
   ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]

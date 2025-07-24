@@ -48,10 +48,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     */
   private final val PUT_ZONE =
     sql"""
-       |INSERT INTO zone(id, name, admin_group_id, data)
-       |     VALUES ({id}, {name}, {adminGroupId}, {data}) ON DUPLICATE KEY
+       |INSERT INTO zone(id, name, admin_group_id, zone_sync_schedule, data)
+       |     VALUES ({id}, {name}, {adminGroupId}, {recurrenceSchedule}, {data}) ON DUPLICATE KEY
        |     UPDATE name=VALUES(name),
        |            admin_group_id=VALUES(admin_group_id),
+       |            zone_sync_schedule=VALUES(zone_sync_schedule),
        |            data=VALUES(data);
         """.stripMargin
 
@@ -70,9 +71,16 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     */
   private final val PUT_ZONE_ACCESS =
     sql"""
-       |REPLACE INTO zone_access(accessor_id, zone_id)
-       |      VALUES ({accessorId}, {zoneId})
+       |REPLACE INTO zone_access(accessor_id, zone_id, zone_status)
+       |      VALUES ({accessorId}, {zoneId}, {zoneStatus})
         """.stripMargin
+
+  private final val UPDATE_ZONE_ACCESS =
+    sql"""
+         |UPDATE zone_access
+         |  SET zone_status = {zoneStatus}
+         |  WHERE zone_id = {zoneId}
+      """.stripMargin
 
   private final val DELETE_ZONE_ACCESS =
     sql"""
@@ -116,11 +124,18 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       |  FROM zone
        """.stripMargin
 
+  private final val BASE_GET_ALL_ZONES_SQL =
+    """
+      |SELECT data
+      |  FROM zone
+      |  WHERE zone_sync_schedule IS NOT NULL
+       """.stripMargin
+
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
     sql"""
          |SELECT zone_id
-         |  FROM zone_access z
-         | WHERE z.accessor_id = (?)
+         |  FROM zone_access za
+         | WHERE za.accessor_id = (?) AND za.zone_status <> 'Deleted'
          | LIMIT 1
         """.stripMargin
 
@@ -207,6 +222,19 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  def getAllZonesWithSyncSchedule: IO[Set[Zone]] =
+    monitor("repo.ZoneJDBC.getAllZonesWithSyncSchedule") {
+      IO {
+        DB.readOnly { implicit s =>
+          SQL(
+            BASE_GET_ALL_ZONES_SQL
+          ).map(extractZone(1))
+            .list()
+            .apply()
+        }.toSet
+      }
+    }
+
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] =
     if (zoneNames.isEmpty) {
       IO.pure(Set())
@@ -242,7 +270,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
        startFrom: Option[String] = None,
        maxItems: Int = 100,
        adminGroupIds: Set[String],
-       ignoreAccess: Boolean = false
+       ignoreAccess: Boolean = false,
+       includeReverse: Boolean = true
   ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
       IO {
@@ -252,11 +281,26 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
+          val noReverseRegex =
+            if (!includeReverse)
+              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            else None
+
           if(adminGroupIds.nonEmpty) {
             val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
             sb.append(s" WHERE admin_group_id IN ($groupIds) ")
           } else {
             sb.append(s" WHERE admin_group_id IN ('') ")
+          }
+
+          if (!includeReverse) {
+            sb.append(" AND ")
+            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+          }
+          
+          if(startFrom.isDefined){
+            sb.append(" AND ")
+            sb.append(s"z.name > '${startFrom.get}'")
           }
 
           sb.append(s" GROUP BY z.name ")
@@ -283,6 +327,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             maxItems = maxItems,
             zonesFilter = None,
             ignoreAccess = ignoreAccess,
+            includeReverse = includeReverse
           )
         }
       }
@@ -302,7 +347,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false
+      ignoreAccess: Boolean = false,
+      includeReverse: Boolean = true
   ): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
@@ -312,14 +358,37 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-            startFrom.map(os => s"z.name > '$os'")
-          ).flatten
+          val noReverseRegex =
+            if (!includeReverse)
+              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            else None
+
+          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          } else {
+            List(
+              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
+              startFrom.map(os => s"z.name > '$os'")
+            ).flatten
+          }
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")
             sb.append(filters.mkString(" AND "))
+          }
+
+          if (!includeReverse) {
+            if (filters.nonEmpty) {
+              sb.append(" AND ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
+            else {
+              sb.append(" WHERE ")
+              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            }
           }
 
           sb.append(s" GROUP BY z.name ")
@@ -344,7 +413,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             startFrom = startFrom,
             maxItems = maxItems,
             zonesFilter = zoneNameFilter,
-            ignoreAccess = ignoreAccess
+            ignoreAccess = ignoreAccess,
+            includeReverse = includeReverse
           )
         }
       }
@@ -414,6 +484,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           'id -> zone.id,
           'name -> zone.name,
           'adminGroupId -> zone.adminGroupId,
+          'recurrenceSchedule -> zone.recurrenceSchedule,
           'data -> toPB(zone).toByteArray
         ): _*
       )
@@ -439,10 +510,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     val sqlParameters: Seq[Seq[(Symbol, Any)]] =
       zone.acl.rules.toSeq
         .map(r => r.userId.orElse(r.groupId).getOrElse("EVERYONE")) // if the user and group are empty, assert everyone
-        .map(userOrGroupId => Seq('accessorId -> userOrGroupId, 'zoneId -> zone.id))
+        .map(userOrGroupId => Seq('accessorId -> userOrGroupId, 'zoneId -> zone.id, 'zoneStatus -> zone.status.toString))
 
     // we MUST make sure that we put the admin group id as an accessor to this zone
-    val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id)
+    val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id,'zoneStatus -> zone.status.toString)
 
     // make sure that we do a distinct, so that we don't generate unnecessary inserts
     PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
@@ -451,6 +522,12 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private def deleteZone(zone: Zone)(implicit session: DBSession): Zone = {
     DELETE_ZONE.bind(zone.id).update().apply()
+    zone
+  }
+
+  private def updateZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
+    UPDATE_ZONE_ACCESS.bindByName(
+      'zoneStatus ->zone.status.toString, 'zoneId ->zone.id).update().apply()
     zone
   }
 
@@ -468,6 +545,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       IO {
         DB.localTx { implicit s =>
           deleteZone(zone)
+          updateZoneAccess(zone)
         }
       }
     }

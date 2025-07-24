@@ -41,6 +41,19 @@ angular.module('controller.membership', []).controller('MembershipController', f
         return $sce.trustAsHtml(message);
     };
 
+    // Initialize Bootstrap tooltips
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    // Function to copy the ID to clipboard
+    $scope.copyToClipboard = function() {
+        utilityService.copyToClipboard($scope.membership.group.id);
+        // Trigger success alert using utilityService
+        var alert = utilityService.success('Successfully copied Group ID to clipboard');
+        $scope.alerts.push(alert);
+    };
+
     // paging status for group changes
     var changePaging = pagingService.getNewPagingParams(100);
 
@@ -49,9 +62,43 @@ angular.module('controller.membership', []).controller('MembershipController', f
         $scope.alerts.push(alert);
     }
 
+    $scope.canViewGroup = false;
+    $scope.canSeeGroup = function (members) {
+        if (members && members.length > 0) {
+            var isMember = members.some(x => x.id === $scope.profile.id);
+            var isSupport = $scope.profile.isSupport;
+            var isSuper = $scope.profile.isSuper;
+            return isMember || isSupport || isSuper;
+        }
+        else {
+            return false
+        }
+    }
+
+    function profileSuccess(results) {
+        //if data is provided
+        if (results.data) {
+            //update user profile data
+            //make user profile available to page
+            $scope.profile = results.data;
+            $log.debug($scope.profile);
+            //load data in grid
+            $scope.refresh();
+        }
+    }
+
+    function profileFailure(results) {
+        $scope.profile = $scope.profile || {};
+    }
+
+    //get user data on groups view load
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
+
     $scope.getGroupMemberList = function(groupId) {
         function success(response) {
-            $log.log('groupsService::getGroupMemberList-success');
+            $log.debug('groupsService::getGroupMemberList-success');
             return response.data;
         }
         return groupsService
@@ -64,7 +111,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
 
     $scope.getGroup = function(groupId) {
         function success(response) {
-            $log.log('groupsService::getGroup-success');
+            $log.debug('groupsService::getGroup-success');
             return response.data;
         }
         return groupsService
@@ -93,7 +140,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
     };
 
     $scope.addMember = function() {
-        $log.log('addGroupMember::newMemberData', $scope.newMemberData);
+        $log.debug('addGroupMember::newMemberData', $scope.newMemberData);
         function lookupAccountSuccess(response) {
             if (response.data) {
                 $scope.membership.group.members.push({ id: response.data.id });
@@ -132,7 +179,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
             return user.id != memberId;
         };
 
-        $log.log('removing group member ' + memberId + ' from group ' + $scope.membership.group.id);
+        $log.debug('removing group member ' + memberId + ' from group ' + $scope.membership.group.id);
 
         $scope.membership.group.admins = $scope.membership.group.admins.filter(keepUser);
         $scope.membership.group.members = $scope.membership.group.members.filter(keepUser);
@@ -160,13 +207,13 @@ angular.module('controller.membership', []).controller('MembershipController', f
             return user.id != member.id;
         };
 
-        $log.log('toggleAdmin::toggled for member', member);
+        $log.debug('toggleAdmin::toggled for member', member);
 
         if(member.isAdmin) {
-            $log.log('toggleAdmin::toggled making an admin');
+            $log.debug('toggleAdmin::toggled making an admin');
             $scope.membership.group.admins.push({ id: member.id });
         } else {
-            $log.log('toggleAdmin::toggled removing as admin');
+            $log.debug('toggleAdmin::toggled removing as admin');
             $scope.membership.group.admins = $scope.membership.group.admins.filter(keepUser);
         }
 
@@ -192,17 +239,21 @@ angular.module('controller.membership', []).controller('MembershipController', f
     $scope.getGroupInfo = function (id) {
         //store group membership
         function getGroupSuccess(result) {
-            $log.log('refresh::getGroupSuccess-success', result);
+            $log.debug('refresh::getGroupSuccess-success', result);
             //update groups
             $scope.membership.group = result;
 
             determineAdmin();
 
             function getGroupMemberListSuccess(result) {
-                $log.log('refresh::getGroupMemberList-success', result);
+                $log.debug('refresh::getGroupMemberList-success', result);
                 //update groups
                 $scope.membership.members = result.members;
                 $scope.membershipLoaded = true;
+                $scope.canViewGroup = $scope.canSeeGroup($scope.membership.members);
+                if($scope.canViewGroup){
+                    $scope.refreshGroupChanges(id);
+                }
                 return result;
             }
 
@@ -223,13 +274,12 @@ angular.module('controller.membership', []).controller('MembershipController', f
     $scope.refresh = function () {
         var id = $location.absUrl().toString();
         id = id.substring(id.lastIndexOf('/') + 1);
-        $log.log('loading group with id ', id);
+        $log.debug('loading group with id ', id);
 
         $scope.isGroupAdmin = false;
 
         $scope.resetNewMemberData();
         $scope.getGroupInfo(id);
-        $scope.refreshGroupChanges(id);
     };
 
     $scope.refreshGroupChanges = function(id) {

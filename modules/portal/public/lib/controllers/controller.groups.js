@@ -28,6 +28,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.ignoreAccess = false;
     $scope.hasGroups = false;
     $scope.query = "";
+    $scope.validEmailDomains= [];
+    $scope.maxGroupItemsDisplay = 3000;
 
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
@@ -38,20 +40,22 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.alerts.push(alert);
         $scope.processing = false;
     }
-
     //views
     //shared modal
     var modalDialog;
 
     $scope.openModal = function (evt) {
         $scope.currentGroup = {};
+        $scope.validDomains();
         void (evt && evt.preventDefault());
         if (!modalDialog) {
+
             modalDialog = angular.element('#modal_new_group').modal();
         }
-        modalDialog.modal('show');
-    };
 
+        modalDialog.modal('show');
+
+    };
     $scope.closeModal = function (evt) {
         void (evt && evt.preventDefault());
         if (!modalDialog) {
@@ -69,7 +73,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.refresh();
         return true;
     };
-
     // Autocomplete for group search
     $("#group-search-text").autocomplete({
       source: function( request, response ) {
@@ -112,10 +115,10 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-        $log.log('createGroup::called', $scope.data);
+        $log.debug('createGroup::called', $scope.data);
 
         if ($scope.processing) {
-            $log.log('createGroup::processing is true; exiting');
+            $log.debug('createGroup::processing is true; exiting');
             return;
         }
         //flag to prevent multiple clicks until previous promise has resolved.
@@ -196,17 +199,33 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     function getGroups() {
         function success(response) {
-            $log.log('groupsService::getGroups-success');
+            $log.debug('groupsService::getGroups-success');
             return response.data;
         }
 
         return groupsService
-            .getGroups($scope.ignoreAccess, $scope.query)
+            .getGroups($scope.ignoreAccess, $scope.query, $scope.maxGroupItemsDisplay)
             .then(success)
             .catch(function (error) {
                 handleError(error, 'groupsService::getGroups-failure');
             });
-    }
+  }
+
+    //Function for fetching list of valid domains
+     $scope.validDomains=function getValidEmailDomains() {
+            function success(response) {
+                 $log.debug('groupsService::listEmailDomains-success', response);
+                 $scope.validEmailDomains = response.data;
+                 return $scope.validEmailDomains
+            }
+            return groupsService
+                .listEmailDomains($scope.ignoreAccess, $scope.query)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'groupsService::listEmailDomains-failure');
+                });
+        }
+
 
     // Return true if there are no groups created by the user
     $scope.haveNoGroups = function (groupLength) {
@@ -228,51 +247,80 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     $scope.editGroup = function (groupInfo) {
         $scope.currentGroup = groupInfo;
+        $scope.initialGroup = {
+            name: $scope.currentGroup.name,
+            email: $scope.currentGroup.email,
+            description: $scope.currentGroup.description
+        };
+        $scope.hasChanges = false;
+        $scope.validDomains();
         $("#modal_edit_group").modal("show");
+    };
+
+    // Function to check for changes
+    $scope.checkForChanges = function() {
+        $scope.hasChanges =
+            $scope.currentGroup.name !== $scope.initialGroup.name ||
+            $scope.currentGroup.email !== $scope.initialGroup.email ||
+            ($scope.currentGroup.description !== $scope.initialGroup.description &&
+            !($scope.currentGroup.description === "" && $scope.initialGroup.description === undefined));
+    };
+
+    $scope.getGroupAndUpdate = function(groupId, name, email, description) {
+        function success(response) {
+            $log.debug('groupsService::getGroup-success');
+            $scope.currentGroup = response.data;
+
+            //data from user form values
+            var payload =
+                {
+                    'id': $scope.currentGroup.id,
+                    'name': name,
+                    'email': email,
+                    'members': $scope.currentGroup.members,
+                    'admins': $scope.currentGroup.admins
+                };
+            if (description) {
+                payload['description'] = description;
+            }
+
+            //update group success callback
+            function success(response) {
+                var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
+                $scope.alerts.push(alert);
+                $scope.closeEditModal();
+                $scope.reset();
+                $scope.refresh();
+                return response.data;
+            }
+            return groupsService.updateGroup(groupId, payload)
+                .then(success)
+                .catch(function (error) {
+                    $scope.closeEditModal();
+                    handleError(error, 'groupsService::updateGroup-failure');
+                });
+        }
+
+        return groupsService
+            .getGroup(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroup-failure');
+            });
     };
 
     $scope.submitEditGroup = function (name, email, description) {
         //prevent user executing service call multiple times
         //if true prevent, if false allow for execution of rest of code
         //ng-href='/groups'
-        $log.log('updateGroup::called', $scope.data);
-
         if ($scope.processing) {
-            $log.log('updateGroup::processing is true; exiting');
+            $log.debug('updateGroup::processing is true; exiting');
             return;
         }
+
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-
-        //data from user form values
-        var payload =
-            {
-                'id': $scope.currentGroup.id,
-                'name': name,
-                'email': email,
-                'members': $scope.currentGroup.members,
-                'admins': $scope.currentGroup.admins
-            };
-
-        if (description) {
-            payload['description'] = description;
-        }
-
-        //update group success callback
-        function success(response) {
-            var alert = utilityService.success('Successfully Updated Group: ' + name, response, 'updateGroup::updateGroup successful');
-            $scope.alerts.push(alert);
-            $scope.closeEditModal();
-            $scope.reset();
-            $scope.refresh();
-            return response.data;
-        }
-
-        return groupsService.updateGroup($scope.currentGroup.id, payload)
-            .then(success)
-            .catch(function (error) {
-                handleError(error, 'groupsService::updateGroup-failure');
-            });
+        $scope.getGroupAndUpdate($scope.currentGroup.id, name, email, description);
     };
 
     $scope.confirmDeleteGroup = function (groupInfo) {
@@ -301,7 +349,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             //update user profile data
             //make user profile available to page
             $scope.profile = results.data;
-            $log.log($scope.profile);
+            $log.debug($scope.profile);
             //load data in grid
             $scope.refresh();
         }

@@ -64,6 +64,8 @@ describe('Controller: ZonesController', function () {
     }));
 
     it('test that we properly get users groups when loading ZonesController', function(){
+        var validDomains = spyOn(this.scope, 'validDomains')
+                            .and.stub();
         this.scope.$digest();
         expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
     });
@@ -78,12 +80,13 @@ describe('Controller: ZonesController', function () {
         var expectedQuery = this.scope.query;
         var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
+        var expectedincludeReverse = true;
 
         this.scope.nextPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
     });
 
     it('prevPageMyZones should call getZones with the correct parameters', function () {
@@ -96,18 +99,92 @@ describe('Controller: ZonesController', function () {
         var expectedQuery = this.scope.query;
         var expectedSearchByAdminGroup = this.scope.searchByAdminGroup;
         var expectedignoreAccess = false;
+        var expectedincludeReverse = true;
 
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
 
         this.scope.nextPageMyZones();
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedignoreAccess, expectedincludeReverse]);
+    });
+
+    it('nextPageZones should call getDeletedZones with the correct parameters', function () {
+        mockDeletedZone = {zonesDeletedInfo:[ {
+                                                        zoneChanges: [{ zone: {
+                                                            name: "dummy.",
+                                                            email: "test@test.com",
+                                                            status: "Deleted",
+                                                            created: "2017-02-15T14:58:39Z",
+                                                            account: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                                            acl: {rules: []},
+                                                            adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                                            id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                                            shared: false,
+                                                            status: "Active",
+                                                            latestSync: "2017-02-15T14:58:39Z",
+                                                            isTest: true
+                                                        }}],maxItems: 100}]};
+        var getDeletedZoneSets = spyOn(this.zonesService, 'getDeletedZones')
+            .and.stub()
+            .and.returnValue(this.zonesService.q.when(mockDeletedZone));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = false;
+
+        this.scope.nextPageMyDeletedZones();
+
+        expect(getDeletedZoneSets.calls.count()).toBe(1);
+        expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
+    });
+
+    it('prevPageZones should call getDeletedZones with the correct parameters', function () {
+
+        mockDeletedZone = {zonesDeletedInfo:[ {
+                                                        zoneChanges: [{ zone: {
+                                                            name: "dummy.",
+                                                            email: "test@test.com",
+                                                            status: "Deleted",
+                                                            created: "2017-02-15T14:58:39Z",
+                                                            account: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                                            acl: {rules: []},
+                                                            adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+                                                            id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+                                                            shared: false,
+                                                            status: "Active",
+                                                            latestSync: "2017-02-15T14:58:39Z",
+                                                            isTest: true
+                                                        }}],maxItems: 100}]};
+        var getDeletedZoneSets = spyOn(this.zonesService, 'getDeletedZones')
+            .and.stub()
+            .and.returnValue(this.zonesService.q.when(mockDeletedZone));
+
+        var expectedMaxItems = 100;
+        var expectedStartFrom = undefined;
+        var expectedQuery = this.scope.query;
+        var expectedIgnoreAccess = false;
+
+        this.scope.prevPageMyDeletedZones();
+
+        expect(getDeletedZoneSets.calls.count()).toBe(1);
+        expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
+
+        this.scope.nextPageMyDeletedZones();
+        this.scope.prevPageMyDeletedZones();
+
+        expect(getDeletedZoneSets.calls.count()).toBe(3);
+        expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
+
     });
 });

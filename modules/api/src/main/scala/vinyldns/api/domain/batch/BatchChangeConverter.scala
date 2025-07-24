@@ -34,8 +34,6 @@ import vinyldns.core.queue.MessageQueue
 class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
-  private val notExistCompletedMessage: String = "This record does not exist." +
-    "No further action is required."
   private val failedMessage: String = "Error queueing RecordSetChange for processing"
   private val logger = LoggerFactory.getLogger(classOf[BatchChangeConverter])
 
@@ -125,7 +123,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           change match {
             case _: SingleDeleteRRSetChange if change.recordSetId.isEmpty =>
               // Mark as Complete since we don't want to throw it as an error
-              change.withDoesNotExistMessage(notExistCompletedMessage)
+              change.withDoesNotExistMessage
             case _ =>
               // Failure here means there was a message queue issue for this change
               change.withFailureMessage(failedMessage)
@@ -138,9 +136,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     // Update if Single change is Failed or if a record that does not exist is deleted
     val failedAndNotExistsChanges = batchChange.changes.collect {
-      case change if change.status == SingleChangeStatus.Failed || change.systemMessage.contains(notExistCompletedMessage) => change
+      case change if change.status == SingleChangeStatus.Failed => change
     }
-    batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    val storeChanges = batchChangeRepo.updateSingleChanges(failedAndNotExistsChanges).as(())
+    storeChanges
   }.toBatchResult
 
   def createRecordSetChangesForBatch(
@@ -215,7 +214,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         }
     }
 
-    // New record set for add/update or single delete
+    // New record set for add/update/full deletes
     lazy val newRecordSet = {
       val firstAddChange = singleChangeNel.collect {
         case sac: SingleAddChange => sac
@@ -233,6 +232,33 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             recordName,
             recordType,
             ttl,
+            RecordSetStatus.Pending,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS),
+            None,
+            proposedRecordData.toList,
+            ownerGroupId = setOwnerGroupId,
+            recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
+          )
+      }
+    }
+
+    // New record set for single delete which exists in dns backend but not in vinyl
+    lazy val newDeleteRecordSet = {
+      val firstDeleteChange = singleChangeNel.collect {
+        case sad: SingleDeleteRRSetChange => sad
+      }.headOption
+
+      val newTtlRecordNameTuple = firstDeleteChange
+        .map(del => del.recordName)
+        .orElse(existingRecordSet.map(rs => Some(rs.name)))
+
+      newTtlRecordNameTuple.collect{
+        case Some(recordName) =>
+          RecordSet(
+            zone.id,
+            recordName,
+            recordType,
+            7200L,
             RecordSetStatus.Pending,
             Instant.now.truncatedTo(ChronoUnit.MILLIS),
             None,
@@ -257,7 +283,12 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           existingRs <- existingRecordSet
           newRs <- newRecordSet
         } yield RecordSetChangeGenerator.forUpdate(existingRs, newRs, zone, userId, singleChangeIds)
-      case _ => None // This case should never happen
+      case OutOfSync =>
+        newDeleteRecordSet.map { newDelRs =>
+          RecordSetChangeGenerator.forOutOfSync(newDelRs, zone, userId, singleChangeIds)
+        }
+      case _ =>
+        None // This case should never happen
     }
   }
 }

@@ -20,28 +20,33 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
+
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
-
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import vinyldns.core.notifier.Notification
+
 import javax.mail.internet.InternetAddress
 import org.mockito.Matchers.{eq => eqArg, _}
 import org.mockito.Mockito._
 import org.mockito.ArgumentCaptor
 import cats.effect.IO
+
 import javax.mail.{Address, Message}
-import vinyldns.core.domain.membership.User
 import _root_.vinyldns.core.domain.batch._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.AData
+import vinyldns.core.domain.record.{AData, OwnerShipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import vinyldns.core.domain.Encrypted
 
 import scala.collection.JavaConverters._
 import vinyldns.core.notifier.NotifierConfig
+import vinyldns.core.TestMembershipData.{dummyGroup, dummyUser, okGroup, okUser}
+import vinyldns.core.TestRecordSetData.{ownerShipTransfer, rsOk}
+import vinyldns.core.TestZoneData.okZone
 
 object MockTransport extends MockitoSugar {
   val mockTransport: Transport = mock[Transport]
@@ -68,6 +73,7 @@ class EmailNotifierSpec
   import MockTransport._
 
   val mockUserRepository: UserRepository = mock[UserRepository]
+  val mockGroupRepository: GroupRepository = mock[GroupRepository]
   val session: Session = Session.getInstance(new Properties())
   session.setProvider(
     new Provider(
@@ -100,6 +106,17 @@ class EmailNotifierSpec
       "testBatch"
     )
 
+
+  def reccordSetChange: RecordSetChange =
+    RecordSetChange(
+      okZone,
+      rsOk.copy(ownerGroupId= Some(okGroup.id),recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(dummyGroup.id)))),
+      "system",
+      RecordSetChangeType.Create,
+      RecordSetChangeStatus.Complete
+    )
+
   "Email Notifier" should {
     "do nothing for unsupported Notifications" in {
       val emailConfig: Config = ConfigFactory.parseMap(
@@ -110,7 +127,7 @@ class EmailNotifierSpec
         ).asJava
       )
       val notifier = new EmailNotifierProvider()
-        .load(NotifierConfig("", emailConfig), mockUserRepository)
+        .load(NotifierConfig("", emailConfig), mockUserRepository, mockGroupRepository)
         .unsafeRunSync()
 
       notifier.notify(new Notification("this won't be supported ever")) should be(IO.unit)
@@ -120,10 +137,11 @@ class EmailNotifierSpec
       val notifier = new EmailNotifier(
         EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
-      doReturn(IO.pure(Some(User("testUser", "access", "secret"))))
+      doReturn(IO.pure(Some(User("testUser", "access", Encrypted("secret")))))
         .when(mockUserRepository)
         .getUser("test")
 
@@ -132,11 +150,60 @@ class EmailNotifierSpec
       verify(mockUserRepository).getUser("test")
     }
 
+    "send an email to a user for recordSet ownership transfer" in {
+      val fromAddress = new InternetAddress("test@test.com")
+
+      val notifier = new EmailNotifier(
+        EmailNotifierConfig(fromAddress, new Properties()),
+        session,
+        mockUserRepository,
+        mockGroupRepository
+      )
+      val expectedAddresses = Array[Address](new InternetAddress("test@test.com"),new InternetAddress("test@test.com"))
+      val messageArgument = ArgumentCaptor.forClass(classOf[Message])
+      val dummyGrp = dummyGroup.copy(memberIds = Set(dummyUser.id))
+      val dummyUsr = dummyUser.copy(id=dummyUser.id,email = Some("test@test.com"))
+
+      doNothing().when(mockTransport).connect()
+      doNothing()
+        .when(mockTransport)
+        .sendMessage(messageArgument.capture(), eqArg(expectedAddresses))
+      doNothing().when(mockTransport).close()
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepository)
+        .getGroup(okGroup.id)
+      doReturn(IO.pure(Some(dummyGrp)))
+        .when(mockGroupRepository)
+        .getGroup(dummyGrp.id)
+      doReturn(IO.pure(Some(okUser)))
+        .when(mockUserRepository)
+        .getUser(okUser.id)
+      doReturn(IO.pure(Some(dummyUsr)))
+        .when(mockUserRepository)
+        .getUser(dummyGrp.memberIds.head)
+
+      val rsc = reccordSetChange.copy(userId = okUser.id)
+
+      notifier.notify(Notification(rsc)).unsafeRunSync()
+      val message = messageArgument.getValue
+      message.getFrom should be(Array(fromAddress))
+      message.getContentType should be("text/html; charset=us-ascii")
+      message.getAllRecipients should be(expectedAddresses)
+      message.getSubject should be(s"VinylDNS RecordSet change ${rsc.id} results")
+
+      val content = message.getContent.asInstanceOf[String]
+
+      content.contains(rsc.id) should be(true)
+      content.contains(rsc.recordSet.ownerGroupId.get) should be(true)
+      content.contains(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get).get) should be(true)
+    }
+
     "do nothing when user not found" in {
       val notifier = new EmailNotifier(
         EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
       doReturn(IO.pure(None))
@@ -148,16 +215,17 @@ class EmailNotifierSpec
       verify(mockUserRepository).getUser("test")
     }
 
-    "send an email to a user" in {
+    "send an email to a user for batch change" in {
       val fromAddress = new InternetAddress("test@test.com")
       val notifier = new EmailNotifier(
         EmailNotifierConfig(fromAddress, new Properties()),
         session,
-        mockUserRepository
+        mockUserRepository,
+        mockGroupRepository
       )
 
       doReturn(
-        IO.pure(Some(User("testUser", "access", "secret", None, None, Some("testuser@test.com"))))
+        IO.pure(Some(User("testUser", "access", Encrypted("secret"), None, None, Some("testuser@test.com"))))
       ).when(mockUserRepository)
         .getUser("test")
 

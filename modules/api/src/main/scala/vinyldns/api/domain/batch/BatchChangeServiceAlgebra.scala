@@ -19,6 +19,7 @@ package vinyldns.api.domain.batch
 import vinyldns.api.domain.batch.BatchChangeInterfaces.BatchResult
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeInfo, BatchChangeSummaryList}
 
 // $COVERAGE-OFF$
@@ -33,9 +34,13 @@ trait BatchChangeServiceAlgebra {
 
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int],
       maxItems: Int,
       ignoreAccess: Boolean,
+      batchStatus: Option[BatchChangeStatus],
       approvalStatus: Option[BatchChangeApprovalStatus]
   ): BatchResult[BatchChangeSummaryList]
 

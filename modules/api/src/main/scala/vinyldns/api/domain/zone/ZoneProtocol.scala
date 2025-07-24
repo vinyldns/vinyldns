@@ -21,8 +21,8 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnerShipTransfer}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
@@ -44,6 +44,8 @@ case class ZoneInfo(
                      adminGroupName: String,
                      latestSync: Option[Instant],
                      backendId: Option[String],
+                     recurrenceSchedule: Option[String],
+                     scheduleRequestor: Option[String],
                      accessLevel: AccessLevel
                    )
 
@@ -70,7 +72,31 @@ object ZoneInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       backendId = zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
+    )
+}
+
+case class ZoneDetails(
+                     name: String,
+                     email: String,
+                     status: ZoneStatus,
+                     adminGroupId: String,
+                     adminGroupName: String,
+                   )
+
+object ZoneDetails {
+  def apply(
+             zone: Zone,
+             groupName: String,
+           ): ZoneDetails =
+    ZoneDetails(
+      name = zone.name,
+      email = zone.email,
+      status = zone.status,
+      adminGroupId = zone.adminGroupId,
+      adminGroupName = groupName,
     )
 }
 
@@ -90,6 +116,8 @@ case class ZoneSummaryInfo(
                             adminGroupName: String,
                             latestSync: Option[Instant],
                             backendId: Option[String],
+                            recurrenceSchedule: Option[String],
+                            scheduleRequestor: Option[String],
                             accessLevel: AccessLevel
                           )
 
@@ -111,6 +139,29 @@ object ZoneSummaryInfo {
       adminGroupName = groupName,
       latestSync = zone.latestSync,
       zone.backendId,
+      recurrenceSchedule = zone.recurrenceSchedule,
+      scheduleRequestor = zone.scheduleRequestor,
+      accessLevel = accessLevel
+    )
+}
+
+case class ZoneChangeDeletedInfo(
+                         zoneChange: ZoneChange,
+                         adminGroupName: String,
+                         userName: String,
+                         accessLevel: AccessLevel
+                          )
+
+object ZoneChangeDeletedInfo {
+  def apply(zoneChange: List[ZoneChange],
+            groupName: String,
+            userName: String,
+            accessLevel: AccessLevel)
+  : ZoneChangeDeletedInfo =
+    ZoneChangeDeletedInfo(
+      zoneChange= zoneChange,
+      groupName = groupName,
+      userName = userName,
       accessLevel = accessLevel
     )
 }
@@ -129,6 +180,7 @@ case class RecordSetListInfo(
                               accessLevel: AccessLevel,
                               ownerGroupId: Option[String],
                               ownerGroupName: Option[String],
+                              recordSetGroupChange: Option[OwnerShipTransfer],
                               fqdn: Option[String]
                             )
 
@@ -148,6 +200,7 @@ object RecordSetListInfo {
       accessLevel = accessLevel,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = recordSet.ownerGroupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn
     )
 }
@@ -165,6 +218,7 @@ case class RecordSetInfo(
                           account: String,
                           ownerGroupId: Option[String],
                           ownerGroupName: Option[String],
+                          recordSetGroupChange: Option[OwnerShipTransfer],
                           fqdn: Option[String]
                         )
 
@@ -183,6 +237,7 @@ object RecordSetInfo {
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = groupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn
     )
 }
@@ -200,6 +255,7 @@ case class RecordSetGlobalInfo(
                                 account: String,
                                 ownerGroupId: Option[String],
                                 ownerGroupName: Option[String],
+                                recordSetGroupChange: Option[OwnerShipTransfer],
                                 fqdn: Option[String],
                                 zoneName: String,
                                 zoneShared: Boolean
@@ -225,6 +281,7 @@ object RecordSetGlobalInfo {
       account = recordSet.account,
       ownerGroupId = recordSet.ownerGroupId,
       ownerGroupName = groupName,
+      recordSetGroupChange = recordSet.recordSetGroupChange,
       fqdn = recordSet.fqdn,
       zoneName = zoneName,
       zoneShared = zoneShared
@@ -266,8 +323,11 @@ case class ListZonesResponse(
                               startFrom: Option[String] = None,
                               nextId: Option[String] = None,
                               maxItems: Int = 100,
-                              ignoreAccess: Boolean = false
+                              ignoreAccess: Boolean = false,
+                              includeReverse: Boolean = true
                             )
+
+case class RecordSetCount( count: Int = 0 )
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)

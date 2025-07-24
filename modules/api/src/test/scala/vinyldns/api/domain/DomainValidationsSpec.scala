@@ -22,7 +22,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import vinyldns.api.ValidationTestImprovements._
-import vinyldns.core.domain.{InvalidDomainName, InvalidCname, InvalidLength}
+import vinyldns.core.domain.{InvalidDomainName, Fqdn, InvalidCname, InvalidLength}
 
 class DomainValidationsSpec
     extends AnyPropSpec
@@ -77,6 +77,54 @@ class DomainValidationsSpec
     validateHostName("asterisk.domain*.name.") shouldBe invalid
   }
 
+  property("Shortest fqdn name should be valid") {
+    val fqdn = Fqdn("a.")
+    validateCname(fqdn, false) shouldBe valid
+  }
+
+  property("Ip address in cname should be invalid") {
+    val fqdn = Fqdn("1.2.3.4")
+    validateCname(fqdn, false) shouldBe invalid
+  }
+
+  property("Longest fqdn name should be valid") {
+    val fqdn = Fqdn(("a" * 50 + ".") * 5)
+    validateCname(fqdn, false) shouldBe valid
+  }
+
+  property("fqdn name should pass property-based testing") {
+    forAll(domainGenerator) { domain: String =>
+      val domains= Fqdn(domain)
+      whenever(validateHostName(domains).isValid) {
+        domains.fqdn.length should be > 0
+        domains.fqdn.length should be < 256
+        (domains.fqdn should fullyMatch).regex(validFQDNRegex)
+        domains.fqdn should endWith(".")
+      }
+    }
+  }
+
+  property("fqdn names beginning with invalid characters should fail with InvalidCname") {
+    validateCname(Fqdn("/slash.domain.name."), false).failWith[InvalidCname]
+    validateCname(Fqdn("-hyphen.domain.name."), false).failWith[InvalidCname]
+  }
+
+  property("fqdn names with underscores should pass property-based testing") {
+    validateCname(Fqdn("_underscore.domain.name."), false).isValid
+    validateCname(Fqdn("under_score.domain.name."), false).isValid
+    validateCname(Fqdn("underscore._domain.name."), false).isValid
+  }
+
+  // For wildcard records. '*' can only be in the beginning followed by '.' and domain name
+  property("fqdn names beginning with asterisk should pass property-based testing") {
+    validateCname(Fqdn("*.domain.name."), false) shouldBe valid
+    validateCname(Fqdn("aste*risk.domain.name."),false) shouldBe invalid
+    validateCname(Fqdn("*asterisk.domain.name."),false) shouldBe invalid
+    validateCname(Fqdn("asterisk*.domain.name."),false) shouldBe invalid
+    validateCname(Fqdn("asterisk.*domain.name."),false)shouldBe invalid
+    validateCname(Fqdn("asterisk.domain*.name."),false) shouldBe invalid
+  }
+
   property("Valid Ipv4 addresses should pass property-based testing") {
     forAll(validIpv4Gen) { validIp: String =>
       val res = validateIpv4Address(validIp)
@@ -112,50 +160,50 @@ class DomainValidationsSpec
   }
 
   property("Shortest cname should be valid") {
-    validateCname("a.",true) shouldBe valid
-    validateCname("a.",false) shouldBe valid
+    validateIsReverseCname("a.",true) shouldBe valid
+    validateIsReverseCname("a.",false) shouldBe valid
 
   }
 
   property("Longest cname should be valid") {
     val name = ("a" * 50 + ".") * 5
-    validateCname(name,true) shouldBe valid
-    validateCname(name,false) shouldBe valid
+    validateIsReverseCname(name,true) shouldBe valid
+    validateIsReverseCname(name,false) shouldBe valid
 
   }
 
   property("Cnames with underscores should pass property-based testing") {
-    validateCname("_underscore.domain.name.",true).isValid
-    validateCname("under_score.domain.name.",true).isValid
-    validateCname("underscore._domain.name.",true).isValid
-    validateCname("_underscore.domain.name.",false).isValid
-    validateCname("under_score.domain.name.",false).isValid
-    validateCname("underscore._domain.name.",false).isValid
+    validateIsReverseCname("_underscore.domain.name.",true).isValid
+    validateIsReverseCname("under_score.domain.name.",true).isValid
+    validateIsReverseCname("underscore._domain.name.",true).isValid
+    validateIsReverseCname("_underscore.domain.name.",false).isValid
+    validateIsReverseCname("under_score.domain.name.",false).isValid
+    validateIsReverseCname("underscore._domain.name.",false).isValid
   }
 
   // For wildcard records. '*' can only be in the beginning followed by '.' and domain name
   property("Cnames beginning with asterisk should pass property-based testing") {
-    validateCname("*.domain.name.",true) shouldBe valid
-    validateCname("aste*risk.domain.name.",true) shouldBe invalid
-    validateCname("*asterisk.domain.name.",true) shouldBe invalid
-    validateCname("asterisk*.domain.name.",true) shouldBe invalid
-    validateCname("asterisk.*domain.name.",true) shouldBe invalid
-    validateCname("asterisk.domain*.name.",true) shouldBe invalid
-    validateCname("*.domain.name.",false) shouldBe valid
-    validateCname("aste*risk.domain.name.",false) shouldBe invalid
-    validateCname("*asterisk.domain.name.",false) shouldBe invalid
-    validateCname("asterisk*.domain.name.",false) shouldBe invalid
-    validateCname("asterisk.*domain.name.",false) shouldBe invalid
-    validateCname("asterisk.domain*.name.",false) shouldBe invalid
+    validateIsReverseCname("*.domain.name.",true) shouldBe valid
+    validateIsReverseCname("aste*risk.domain.name.",true) shouldBe invalid
+    validateIsReverseCname("*asterisk.domain.name.",true) shouldBe invalid
+    validateIsReverseCname("asterisk*.domain.name.",true) shouldBe invalid
+    validateIsReverseCname("asterisk.*domain.name.",true) shouldBe invalid
+    validateIsReverseCname("asterisk.domain*.name.",true) shouldBe invalid
+    validateIsReverseCname("*.domain.name.",false) shouldBe valid
+    validateIsReverseCname("aste*risk.domain.name.",false) shouldBe invalid
+    validateIsReverseCname("*asterisk.domain.name.",false) shouldBe invalid
+    validateIsReverseCname("asterisk*.domain.name.",false) shouldBe invalid
+    validateIsReverseCname("asterisk.*domain.name.",false) shouldBe invalid
+    validateIsReverseCname("asterisk.domain*.name.",false) shouldBe invalid
   }
   property("Cname names with forward slash should pass with reverse zone") {
-    validateCname("/slash.cname.name.",true).isValid
-    validateCname("slash./cname.name.",true).isValid
-    validateCname("slash.cname./name.",true).isValid
+    validateIsReverseCname("/slash.cname.name.",true).isValid
+    validateIsReverseCname("slash./cname.name.",true).isValid
+    validateIsReverseCname("slash.cname./name.",true).isValid
   }
   property("Cname names with forward slash should fail with forward zone") {
-    validateCname("/slash.cname.name.",false).failWith[InvalidCname]
-    validateCname("slash./cname.name.",false).failWith[InvalidCname]
-    validateCname("slash.cname./name.",false).failWith[InvalidCname]
+    validateIsReverseCname("/slash.cname.name.",false).failWith[InvalidCname]
+    validateIsReverseCname("slash./cname.name.",false).failWith[InvalidCname]
+    validateIsReverseCname("slash.cname./name.",false).failWith[InvalidCname]
   }
 }

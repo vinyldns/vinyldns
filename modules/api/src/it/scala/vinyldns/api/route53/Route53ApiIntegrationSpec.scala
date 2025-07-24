@@ -30,7 +30,7 @@ import vinyldns.api.engine.ZoneSyncHandler
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
-import vinyldns.core.domain.record.{NameSort, RecordType}
+import vinyldns.core.domain.record.{NameSort, RecordType, RecordTypeSort}
 import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneChangeType}
 import vinyldns.core.health.HealthCheck.HealthCheck
 import vinyldns.route53.backend.{Route53Backend, Route53BackendConfig}
@@ -57,6 +57,8 @@ class Route53ApiIntegrationSpec
           "test",
           Some("access"),
           Some("secret"),
+          None,
+          None,
           sys.env.getOrElse("R53_SERVICE_ENDPOINT", "http://localhost:19003"),
           "us-east-1"
         )
@@ -120,7 +122,7 @@ class Route53ApiIntegrationSpec
 
       // We should have both the record we created above as well as at least one NS record
       val results = recordSetRepository
-        .listRecordSets(Some(testZone.id), None, None, None, None, None, NameSort.ASC)
+        .listRecordSets(Some(testZone.id), None, None, None, None, None, NameSort.ASC, RecordTypeSort.ASC)
         .unsafeRunSync()
       results.recordSets.map(_.typ).distinct should contain theSameElementsAs List(
         rsOk.typ,
