@@ -36,11 +36,13 @@ module.exports = function(grunt) {
           {expand: true, flatten: true, src: ['node_modules/moment/min/moment.min.js'], dest: 'public/js'},
           {expand: true, flatten: true, src: ['node_modules/jquery-ui-dist/jquery-ui.js'], dest: 'public/js'},
           {expand: true, flatten: true, src: ['node_modules/angular-cron-jobs/dist/angular-cron-jobs.min.js'], dest: 'public/js'},
+          {expand: true, flatten: true, src: ['node_modules/bootstrap-multiselect/dist/js/bootstrap-multiselect.min.js'], dest: 'public/js'},
 
           {expand: true, flatten: true, src: ['node_modules/bootstrap/dist/css/bootstrap.min.css'], dest: 'public/css'},
           {expand: true, flatten: true, src: ['node_modules/font-awesome/css/font-awesome.min.css'], dest: 'public/css'},
           {expand: true, flatten: true, src: ['node_modules/jquery-ui-dist/jquery-ui.css'], dest: 'public/css'},
           {expand: true, flatten: true, src: ['node_modules/angular-cron-jobs/dist/angular-cron-jobs.min.css'], dest: 'public/css'},
+          {expand: true, flatten: true, src: ['node_modules/bootstrap-multiselect/dist/css/bootstrap-multiselect.css'], dest: 'public/css'},
 
           // We're picking just the resources we need from the gentelella UI framework and temporarily storing them in mapped/ui/
           {expand: true, flatten: true, cwd: 'node_modules/gentelella', dest: 'mapped/ui', src: '**/jquery.{smartWizard,dataTables.min,mousewheel.min}.js'},
