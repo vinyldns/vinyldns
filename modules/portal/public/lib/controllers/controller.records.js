@@ -123,7 +123,8 @@ angular.module('controller.records', [])
            || $scope.profile.isSupport){
                ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
                $scope.currentOwnerShipTransferApprover= true;
-               record.isCurrentRecordSetOwner = true;}
+               record.isCurrentRecordSetOwner = true;
+           }
            else{
                ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
                $scope.currentOwnerShipTransferApprover= false;
