@@ -38,6 +38,9 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "2.0.17",
+    "org.apache.logging.log4j"  %  "log4j-api"                      % "2.25.0",
+    "org.apache.logging.log4j"  %  "log4j-core"                     % "2.25.0",
+    "org.apache.logging.log4j"  %  "log4j-slf4j2-impl"              % "2.25.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
@@ -52,10 +55,10 @@ object Dependencies {
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
     "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources(),
-    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
-    "com.cronutils"             %  "cron-utils"                     % "9.1.6",
     "com.networknt"             % "json-schema-validator"           % "1.5.2",
     "com.fasterxml.jackson.module" %% "jackson-module-scala"        % "2.18.0",
+    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
+    "com.cronutils"             %  "cron-utils"                     % "9.1.6"
   )
 
   lazy val coreDependencies = Seq(
@@ -69,17 +72,16 @@ object Dependencies {
     "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.5.18",
     "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "javax.xml.bind"            %  "jaxb-api"                       % "2.3.0",
     "javax.activation"          %  "activation"                     % "1.1.1",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
-    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2",
-    "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4",
     "org.json4s"                %% "json4s-ext"                     % "3.6.1",
-    "org.json4s"                %% "json4s-jackson"                 % "3.5.3"
+    "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
+    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
+    "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4"
   )
 
   lazy val mysqlDependencies = Seq(
@@ -132,6 +134,6 @@ object Dependencies {
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
     "com.iheart"                %% "ficus"                          % ficusV,
-    "co.elastic.logging"        %  "logback-ecs-encoder"            % "1.3.2"
+    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0"
   )
 }
