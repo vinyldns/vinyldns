@@ -54,6 +54,7 @@ lazy val testSettings = Seq(
 lazy val apiSettings = Seq(
   name := "api",
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
+  dependencyOverrides += "org.typelevel" % "cats-core_2.12" % "2.7.0",
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart ++= Seq(
     "-Dlog4j.configurationFile=test/log4j2.xml",
