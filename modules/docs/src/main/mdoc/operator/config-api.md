@@ -811,6 +811,8 @@ dotted-hosts = {
         }
         record-change {
         }
+        generate-zone {
+        }
      }
   }
   

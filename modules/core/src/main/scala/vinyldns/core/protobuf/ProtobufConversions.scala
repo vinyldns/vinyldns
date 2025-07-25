@@ -31,6 +31,9 @@ import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+import org.json4s.jackson.JsonMethods._
+import org.json4s.{JValue, JString}
+import org.json4s.JsonAST._
 
 trait ProtobufConversions {
 
@@ -182,6 +185,50 @@ trait ProtobufConversions {
 
     builder.build()
   }
+
+  def fromPB(zn: VinylDNSProto.GenerateZone): GenerateZone = {
+    // status conversion, is this necessary?
+    val pbStatus = zn.getStatus
+    val status =
+      if (pbStatus.startsWith("Pending")) GenerateZoneStatus.Active
+      else GenerateZoneStatus.withName(pbStatus)
+
+    // convert the providerParams map from protobuf Map[String, String] to scala Map[String, JValue]
+    val providerParams: Map[String, JValue] = zn.getProviderParamsMap.asScala
+      .map { case (k, v) => k -> parseParamValue(v) } // convert the JSON string into a json4s JValue
+      .toMap
+
+    zone.GenerateZone(
+      groupId = zn.getGroupId,
+      email = zn.getEmail,
+      provider = zn.getProvider,
+      zoneName = zn.getZoneName,
+      status = status,
+      providerParams = providerParams,
+      id = zn.getId,
+      response = if (zn.hasResponse) Some(fromPB(zn.getResponse)) else None,
+      created = Instant.ofEpochMilli(zn.getCreated),
+      updated = if (zn.hasUpdated) Some(Instant.ofEpochMilli(zn.getUpdated)) else None
+    )
+  }
+
+  private def parseParamValue(value: String): JValue =
+    try {
+      parse(value) // Try parsing as JSON
+    } catch {
+      case _: Exception => JString(value) // Fallback to string
+    }
+
+  def fromPB(zgr: VinylDNSProto.ZoneGenerationResponse): ZoneGenerationResponse =
+    ZoneGenerationResponse(
+      if (zgr.hasResponseCode) Some(zgr.getResponseCode.toInt) else None,
+      if (zgr.hasStatus) Some(zgr.getStatus) else None,
+      if (Option(zgr.getMessage).exists(_.trim.nonEmpty)) {
+        try Some(parse(zgr.getMessage))
+        catch {case _: Throwable => Some(JString(zgr.getMessage))}
+      } else None,
+      GenerateZoneChangeType.withName(zgr.getChangeType)
+    )
 
   def fromPB(rd: VinylDNSProto.RecordData, rt: RecordType): RecordData =
     rt match {
@@ -454,6 +501,46 @@ trait ProtobufConversions {
 
     zoneChange.systemMessage.map(builder.setSystemMessage)
 
+    builder.build()
+  }
+
+
+  def toPB(generateZone: GenerateZone): VinylDNSProto.GenerateZone = {
+    val builder = VinylDNSProto.GenerateZone
+      .newBuilder()
+      .setId(generateZone.id)
+      .setGroupId(generateZone.groupId)
+      .setEmail(generateZone.email)
+      .setCreated(generateZone.created.toEpochMilli)
+      .setProvider(generateZone.provider)
+      .setZoneName(generateZone.zoneName)
+      .setStatus(generateZone.status.toString)
+
+    // Handle optional standard fields
+    generateZone.response.foreach(gz => builder.setResponse(toPB(gz)))
+    generateZone.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
+
+    // Convert providerParams map to Protobuf map
+    generateZone.providerParams.foreach {
+      case (key, value) =>
+        val strValue = compact(render(value))  // Convert JValue to String
+        builder.putProviderParams(key, strValue)
+    }
+
+    builder.build()
+  }
+
+  def toPB(zgr: ZoneGenerationResponse): VinylDNSProto.ZoneGenerationResponse = {
+    val builder = VinylDNSProto.ZoneGenerationResponse
+      .newBuilder()
+      .setChangeType(zgr.changeType.toString)
+    zgr.responseCode.foreach(rc => builder.setResponseCode(rc.toLong))
+    zgr.status.foreach(st => builder.setStatus(st))
+    zgr.message.foreach {
+      case JNothing =>
+      case JString(str) => builder.setMessage(str)
+      case other => builder.setMessage(compact(render(other)))
+    }
     builder.build()
   }
 
