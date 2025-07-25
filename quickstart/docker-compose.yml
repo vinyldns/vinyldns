@@ -38,7 +38,7 @@ services:
         DOCKER_FILE_PATH: "build/docker/api"
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
-      - ../build/docker/api/logback.xml:/opt/vinyldns/conf/logback.xml
+      - ../build/docker/api/log4j2.xml:/opt/vinyldns/conf/log4j2.xml
     env_file:
       - "${ENV_FILE:-.env}"
     ports:
@@ -63,7 +63,7 @@ services:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     volumes:
       - ../build/docker/portal/application.conf:/opt/vinyldns/conf/application.conf
-      - ../build/docker/portal/logback.xml:/opt/vinyldns/conf/logback.xml
+      - ../build/docker/portal/log4j2.xml:/opt/vinyldns/conf/log4j2.xml
     depends_on:
       - ldap
 
