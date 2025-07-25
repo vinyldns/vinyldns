@@ -119,13 +119,15 @@ angular.module('controller.records', [])
     $scope.recordSetGroupOwnerShipStatus = function recordSetGroupOwnerShipStatus(groupId, profileId, record) {
         function success(response) {
            var ownerShipTransferStatus;
-           if (response.data.members.some(x => x.id === profileId)){
-           ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
-           $scope.currentOwnerShipTransferApprover= true;
-            record.isCurrentRecordSetOwner = true;}
-           else{ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
-            $scope.currentOwnerShipTransferApprover= false;
-           record.isCurrentRecordSetOwner= false;}
+           if (response.data.members.some(x => x.id === profileId) || $scope.profile.isSuper
+           || $scope.profile.isSupport){
+               ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
+               $scope.currentOwnerShipTransferApprover= true;
+               record.isCurrentRecordSetOwner = true;}
+           else{
+               ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
+               $scope.currentOwnerShipTransferApprover= false;
+               record.isCurrentRecordSetOwner= false;}
           $scope.ownerShipTransferStatus = ownerShipTransferStatus
         }
         return groupsService
