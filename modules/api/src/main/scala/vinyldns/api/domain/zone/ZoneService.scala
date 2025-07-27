@@ -166,7 +166,7 @@ class ZoneService(
 
   def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] =
     for {
-      generateZone <- getGeneratedZoneOrFail(ensureTrailingDot(zoneId))
+      generateZone <- getGeneratedZoneOrFail(zoneId)
     } yield generateZone
 
   def createConnection(apiUrl: String): HttpURLConnection = {
@@ -187,11 +187,12 @@ class ZoneService(
                                  auth: AuthPrincipal
                                ): Result[GenerateZone] =
     for {
+      _ <- validateZoneName(request.zoneName).toResult
+      _ <- membershipService.emailValidation(request.email)
       // Validate input
       providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
-      _ <- validateZoneName(request.zoneName).toResult
-      _ <- schemaValidationResult(providerConfig, "create-zone", request.providerParams)
 
+      _ <- schemaValidationResult(providerConfig, "create-zone", request.providerParams)
       _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
 
       // Build request and endpoint
@@ -234,6 +235,7 @@ class ZoneService(
                                ): Result[GenerateZone] =
     for {
       existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
+      _ <- membershipService.emailValidation(request.email)
       _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
 
       // Validate input
@@ -286,6 +288,7 @@ class ZoneService(
                                        ): Result[GenerateZone] =
     for {
       generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
+
       _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
 
       providerConfig <- validateProvider(generatedZone.provider, dnsProviderApiConnection.providers).toResult
