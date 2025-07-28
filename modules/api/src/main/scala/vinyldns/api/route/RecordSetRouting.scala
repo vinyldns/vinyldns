@@ -42,7 +42,8 @@ case class ListGlobalRecordSetsResponse(
                                          recordNameFilter: String,
                                          recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
-                                         nameSort: NameSort
+                                         nameSort: NameSort,
+                                         zoneId: Option[String]
                                        )
 
 case class ListRecordSetsByZoneResponse(
@@ -150,7 +151,8 @@ class RecordSetRoute(
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC"),
-          "recordTypeSort".as[String].?("NONE")
+          "recordTypeSort".as[String].?("NONE"),
+          "zoneId".?
         ) {
           (
             startFrom: Option[String],
@@ -159,7 +161,8 @@ class RecordSetRoute(
             recordTypeFilter: Option[String],
             recordOwnerGroupFilter: Option[String],
             nameSort: String,
-            recordTypeSort: String
+            recordTypeSort: String,
+            zoneId: Option[String]
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
             handleRejections(invalidQueryHandler) {
@@ -177,7 +180,9 @@ class RecordSetRoute(
                       recordOwnerGroupFilter,
                       NameSort.find(nameSort),
                       _,
-                      RecordTypeSort.find(recordTypeSort)
+                      RecordTypeSort.find(recordTypeSort),
+                      zoneId
+
                     )
                 ) { rsResponse =>
                   complete(StatusCodes.OK, rsResponse)

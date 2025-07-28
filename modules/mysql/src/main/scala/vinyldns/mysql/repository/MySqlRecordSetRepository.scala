@@ -178,17 +178,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
-                      recordTypeSort: RecordTypeSort,
+                      recordTypeSort: RecordTypeSort
                     ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
           val maxPlusOne = maxItems.map(_ + 1)
-
           // setup optional filters
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
+              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%').replace('.', '%')} ")
             case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
             case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
@@ -259,6 +258,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val appendQueries = initialQuery.append(appendOpts)
 
           val finalQuery = appendQueries.append(finalQualifiers)
+
 
           val results = sql"$finalQuery"
             .map(toRecordSet)
