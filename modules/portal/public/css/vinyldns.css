@@ -583,6 +583,15 @@ input[type="file"] {
 
 .remove-bottom-margin {
     margin-bottom: 0px;
+    width: 30rem;
+}
+
+.record-tag{
+    width: 50rem;
+}
+
+.searchbar{
+    width: 32rem;
 }
 
 .reduce-font-weight {
