@@ -66,6 +66,7 @@ class SharedZoneTestContext(object):
         self.ip4_10_prefix = None
         self.ip4_classless_prefix = None
         self.ip6_prefix = None
+        self.ok_generate_zone = None
 
 
     def setup(self):
@@ -117,6 +118,24 @@ class SharedZoneTestContext(object):
             }
             self.history_group = self.history_client.create_group(history_group, status=200)
             self.confirm_member_in_group(self.history_client, self.history_group)
+
+            ok_generate_zone = self.ok_vinyldns_client.generate_zone(
+                {
+                    "groupId": self.ok_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName": f"mttest{partition_id}.example.org.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202)
+
+            # # initialize history
+            self.ok_vinyldns_client.wait_until_generate_zone_active(ok_generate_zone["id"])
 
             history_zone_change = self.history_client.create_zone(
                 {

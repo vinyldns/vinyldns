@@ -206,7 +206,7 @@ class ZoneRoute(
         complete(StatusCodes.OK, zone)
       }
     } ~
-    path("zones" /"generate"/ Segment) { id =>
+    path("zones" /"generate" / "id" / Segment) { id =>
       (get & monitor("Endpoint.getGenerateZone")) {
         authenticateAndExecute(zoneService.getGeneratedZoneById(id, _)) { zone =>
           complete(StatusCodes.OK, zone)
