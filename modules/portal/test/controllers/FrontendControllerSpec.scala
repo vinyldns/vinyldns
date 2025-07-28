@@ -50,12 +50,15 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+  val superUserAccessor: UserAccountAccessor = buildMockSuperUserAccountAccessor
   val disabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, disabledOidcAuthenticator)
   val enabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, enabledOidcAuthenticator)
   val lockedSec: SecuritySupport =
     new LegacySecuritySupport(components, lockedUserAccessor, config, disabledOidcAuthenticator)
+  val superSec: SecuritySupport =
+    new LegacySecuritySupport(components, superUserAccessor, config, disabledOidcAuthenticator)
 
   val underTest = new FrontendController(
     components,
@@ -67,6 +70,12 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     components,
     config,
     lockedSec
+  )
+
+  val superUserUnderTest = new FrontendController(
+    components,
+    config,
+    superSec
   )
 
   val oidcUnderTest = new FrontendController(
@@ -384,6 +393,40 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
     }
 
+    "Get for '/settings'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = superUserUnderTest.viewSettings()(FakeRequest(GET, "/settings"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/settings")
+      }
+      "render the settings view page when the user is logged in and the user is a super or support user" in new WithApplication(app) {
+        val result =
+          superUserUnderTest.viewSettings()(
+            FakeRequest(GET, "/settings").withSession("username" -> "sgamgee").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentType(result) must beSome.which(_ == "text/html")
+        contentAsString(result) must contain("Settings | VinylDNS")
+      }
+      "redirect to the forbidden page when a user is not a super or support user" in new WithApplication(app) {
+        val result =
+          underTest.viewSettings()(
+            FakeRequest(GET, "/settings").withSession("username" -> "frodo").withCSRFToken
+          )
+        status(result) mustEqual FORBIDDEN
+        contentAsString(result) mustEqual "You are not authorized to access this page."
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.viewSettings()(
+            FakeRequest(GET, "/settings")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
     "Get for '/dnschanges/id'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewBatchChange("some-id")(FakeRequest(GET, "/dnschanges/some-id"))
@@ -473,6 +516,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     accessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
     accessor.create(any[User]).returns(IO.pure(lockedFrodoUser))
     accessor.getUserByKey(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+    accessor
+  }
+
+  def buildMockSuperUserAccountAccessor: UserAccountAccessor = {
+    val accessor = mock[UserAccountAccessor]
+    accessor.get(anyString).returns(IO.pure(Some(superSamAccount)))
+    accessor.create(any[User]).returns(IO.pure(superSamAccount))
+    accessor.getUserByKey(anyString).returns(IO.pure(Some(superSamAccount)))
     accessor
   }
 }
