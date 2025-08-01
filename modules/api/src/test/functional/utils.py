@@ -393,6 +393,18 @@ def clear_zones(client):
         if len(zone_ids_to_delete) > 0:
             client.abandon_zones(zone_ids_to_delete)
 
+def clear_generated_zones(client):
+    # Get the groups for the ok user
+    groups = client.list_all_my_groups()
+    group_ids = [x["id"] for x in groups]
+
+    zones = client.list_generated_zones()["zones"]
+    if len(zones) > 0:
+        # we only want to delete zones that the ok user "owns"
+        zones_to_delete = [x for x in zones if (x["groupId"] in group_ids or x["account"] in group_ids) and x["accessLevel"] == "Delete"]
+        zone_ids_to_delete = [x["id"] for x in zones_to_delete]
+        if len(zone_ids_to_delete) > 0:
+            client.abandon_generated_zones(zone_ids_to_delete)
 
 def clear_groups(client, exclude=[]):
     groups = client.list_all_my_groups()

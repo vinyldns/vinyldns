@@ -150,8 +150,7 @@ final case class GenerateZone(
                                response: Option[ZoneGenerationResponse] = None,
                                id: String = UUID.randomUUID().toString,
                                created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-                               updated: Option[Instant] = None,
-
+                               updated: Option[Instant] = None
                      ){
     override def toString: String = {
       val sb = new StringBuilder

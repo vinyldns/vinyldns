@@ -27,9 +27,23 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run run-local run-deps-bg clean-containers
+.PHONY: all build init-network start-pdns run run-local run-deps-bg clean-containers
 
-all: build run
+all: build init-network start-pdns run
+
+init-network:
+	@set -euo pipefail
+	docker network inspect vinyldns_func_test_network &> /dev/null && docker network rm vinyldns_func_test_network || true
+	docker network create vinyldns_func_test_network
+
+start-pdns:
+	@set -euo pipefail
+	docker run -d --name vinyldns-pdns-auth \
+	  -p 19005:19005 -p 1053:53 -p 1053:53/udp \
+	  -e PDNS_AUTH_API_KEY="vinyldns_pdns_auth_api_key" \
+	  --network vinyldns_func_test_network \
+	  pdns-auth:0.1
+	docker cp $(ROOT_DIR)/quickstart/pdns/pdns.conf vinyldns-pdns-auth:/etc/powerdns/pdns.conf
 
 build:
 	@set -euo pipefail
@@ -39,7 +53,7 @@ build:
 run:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	docker run -i $${USE_TTY} $(DOCKER_PARAMS) --network vinyldns_func_test_network -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 # Runs the dependencies for the functional test in the background
 # This is useful when running the tests on your host machine against the API in a container
@@ -47,12 +61,12 @@ run-deps-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) --entrypoint "/initialize.sh" -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) all tail-logs
+	docker run -d $${USE_TTY} --network vinyldns_func_test_network --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) --entrypoint "/initialize.sh" -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) all tail-logs
 
 run-local:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) --network vinyldns_func_test_network -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
 
 clean-containers:
 	@set -euo pipefail

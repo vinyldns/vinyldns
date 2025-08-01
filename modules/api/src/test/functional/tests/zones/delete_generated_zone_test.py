@@ -4,7 +4,7 @@ from utils import *
 
 
 @pytest.mark.serial
-def test_delete_zone_success(shared_zone_test_context):
+def test_delete_generated_zone_success(shared_zone_test_context):
     """
     Test deleting a zone
     """
@@ -29,10 +29,8 @@ def test_delete_zone_success(shared_zone_test_context):
         result_zone = client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
-        print("result_zone---------                         ----------------------------",result_zone["id"])
-
         client.delete_generated_zone(result_zone["id"], status=202)
-        #client.wait_until_generated_zone_deleted(result_zone["id"])
+        client.wait_until_generated_zone_deleted(result_zone["id"])
 
         client.get_generate_zone(result_zone["id"], status=404)
         result_zone = None
@@ -40,9 +38,8 @@ def test_delete_zone_success(shared_zone_test_context):
         if result_zone:
             client.abandon_generated_zones([result_zone["id"]], status=202)
 
-
 @pytest.mark.serial
-def test_delete_zone_twice(shared_zone_test_context):
+def test_delete_generated_zone_twice(shared_zone_test_context):
     """
     Test deleting a zone with deleted status returns 404
     """
@@ -77,7 +74,7 @@ def test_delete_zone_twice(shared_zone_test_context):
             client.abandon_generated_zones([result_zone["id"]], status=202)
 
 
-def test_delete_zone_returns_404_if_zone_not_found(shared_zone_test_context):
+def test_delete_generated_zone_returns_404_if_zone_not_found(shared_zone_test_context):
     """
     Test deleting a zone returns a 404 if the zone was not found
     """
@@ -85,7 +82,7 @@ def test_delete_zone_returns_404_if_zone_not_found(shared_zone_test_context):
     client.delete_generated_zone("nothere", status=404)
 
 
-def test_delete_zone_no_authorization(shared_zone_test_context):
+def test_delete_generated_zone_no_authorization(shared_zone_test_context):
     """
     Test deleting a zone without authorization
     """

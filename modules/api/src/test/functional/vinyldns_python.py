@@ -29,6 +29,7 @@ class VinylDNSClient(object):
             "Content-Type": "application/json"
         }
         self.created_zones = []
+        self.generated_zones = []
         self.created_groups = []
         self.signer = AwsSigV4RequestSigner(self.index_url, access_key, secret_key)
         self.session = self.requests_retry_session()
@@ -46,6 +47,9 @@ class VinylDNSClient(object):
 
     def clear_zones(self):
         self.abandon_zones(self.created_zones)
+
+    def clear_generate_zones(self):
+        self.abandon_generated_zones(self.generated_zones)
 
     def tear_down(self):
         self.session.close()
@@ -358,8 +362,6 @@ class VinylDNSClient(object):
         url = urljoin(self.index_url, "/zones/generate/{0}".format(zone_id))
         response, data = self.make_request(url, "DELETE", self.headers, not_found_ok=True, **kwargs)
 
-        print("delete ----------------------------                            ",response,data)
-
         return data
 
     def create_zone(self, zone, **kwargs):
@@ -389,13 +391,12 @@ class VinylDNSClient(object):
 
     def update_generate_zone(self, zone, **kwargs):
         """
-        Updates a zone
-        :param zone: the zone to be created
-        :return: the content of the response
-        """
-        url = urljoin(self.index_url, "/zones/generate/{0}".format(zone["id"]))
+         Updates a zone
+         :param zone: the zone to be update
+         :return: the content of the response
+         """
+        url = urljoin(self.index_url, "/zones/generate")
         response, data = self.make_request(url, "PUT", self.headers, json.dumps(zone), not_found_ok=True, **kwargs)
-
         return data
 
     def sync_zone(self, zone_id, **kwargs):
@@ -594,7 +595,7 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
         return data
 
-    def list_generate_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False,
+    def list_generated_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False,
                    ignore_access=False, **kwargs):
         """
         Gets a list of zones that currently exist
@@ -917,15 +918,12 @@ class VinylDNSClient(object):
         :return: True when the zone deletion is complete False if the timeout expires
         """
         retries = MAX_RETRIES
-        print("errrrrr  ------------       --------------------------------                   ",zone_id)
 
         url = urljoin(self.index_url, "/zones/generate/id/{0}".format(zone_id))
-        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, status=(200, 400), **kwargs)
-        print("errrrrr  ------------       --------------------------------                   ",response,data)
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, status=(200, 404), **kwargs)
         while response != 400 and retries > 0:
             url = urljoin(self.index_url, "/zones/generate/id/{0}".format(zone_id))
-            response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, status=(200, 400), **kwargs)
-            print("errrrrr  ------------       --------------------------------                   ",response,data)
+            response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, status=(200, 404), **kwargs)
             retries -= 1
             time.sleep(RETRY_WAIT)
 

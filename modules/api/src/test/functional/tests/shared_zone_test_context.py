@@ -7,6 +7,7 @@ from tests.list_batch_summaries_test_context import ListBatchChangeSummariesTest
 from tests.list_groups_test_context import ListGroupsTestContext
 from tests.list_recordsets_test_context import ListRecordSetsTestContext
 from tests.list_zones_test_context import ListZonesTestContext
+from tests.list_generated_zones_test_context import ListGeneratedZonesTestContext
 from tests.test_data import TestData
 from utils import *
 from vinyldns_python import VinylDNSClient
@@ -37,7 +38,9 @@ class SharedZoneTestContext(object):
                         self.support_user_client, self.super_user_client, self.unassociated_client,
                         self.test_user_client, self.history_client, self.non_user_client]
         self.list_zones = ListZonesTestContext(partition_id)
+        self.list_generated_zones = ListGeneratedZonesTestContext(partition_id)
         self.list_zones_client = self.list_zones.client
+        self.list_generated_zones_client = self.list_generated_zones.client
         self.list_records_context = ListRecordSetsTestContext(partition_id)
         self.list_groups_context = ListGroupsTestContext(partition_id)
         self.list_batch_summaries_context = ListBatchChangeSummariesTestContext(partition_id)
@@ -67,7 +70,8 @@ class SharedZoneTestContext(object):
         self.ip4_classless_prefix = None
         self.ip6_prefix = None
         self.ok_generate_zone = None
-
+        self.dummy_generate_zone = None
+        self.system_test_generate_zone = None
 
     def setup(self):
         if self.setup_started:
@@ -119,7 +123,7 @@ class SharedZoneTestContext(object):
             self.history_group = self.history_client.create_group(history_group, status=200)
             self.confirm_member_in_group(self.history_client, self.history_group)
 
-            ok_generate_zone = self.ok_vinyldns_client.generate_zone(
+            self.ok_generate_zone = self.ok_vinyldns_client.generate_zone(
                 {
                     "groupId": self.ok_group["id"],
                     "email": "test@test.com",
@@ -135,7 +139,38 @@ class SharedZoneTestContext(object):
                 }, status=202)
 
             # # initialize history
-            self.ok_vinyldns_client.wait_until_generate_zone_active(ok_generate_zone["id"])
+            self.ok_vinyldns_client.wait_until_generate_zone_active(self.ok_generate_zone["id"])
+
+            self.dummy_generate_zone = self.dummy_vinyldns_client.generate_zone(
+                {
+                    "groupId": self.dummy_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName": f"dummy{partition_id}.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202)
+
+            self.system_test_generate_zone = self.ok_vinyldns_client.generate_zone(
+                {
+                    "groupId": self.ok_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName":  f"system-test{partition_id}.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202
+            )
 
             history_zone_change = self.history_client.create_zone(
                 {
@@ -482,6 +517,12 @@ class SharedZoneTestContext(object):
             # note: there are no state to load, the tests only need the client
             self.list_zones_client = self.list_zones.client
 
+            # initialize list generated zones, only do this when constructing the whole!
+            self.list_generated_zones.setup()
+
+            # note: there are no state to load, the tests only need the client
+            self.list_generated_zones_client = self.list_generated_zones.client
+
             # build the list of records; note: we do need to save the test records
             self.list_records_context.setup()
 
@@ -590,6 +631,7 @@ class SharedZoneTestContext(object):
         """
         try:
             self.list_zones.tear_down()
+            self.list_generated_zones.tear_down()
             self.list_records_context.tear_down()
 
             if self.list_batch_summaries_context:

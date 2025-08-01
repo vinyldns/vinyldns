@@ -288,7 +288,6 @@ class ZoneService(
                                        ): Result[GenerateZone] =
     for {
       generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
-
       _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
 
       providerConfig <- validateProvider(generatedZone.provider, dnsProviderApiConnection.providers).toResult
@@ -299,6 +298,7 @@ class ZoneService(
         email = generatedZone.email,
         providerParams = generatedZone.providerParams
       )
+
       endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("delete-zone"), request)
 
       dnsProviderConn <- createConnection(endpoint).toResult
@@ -319,7 +319,7 @@ class ZoneService(
         message = Some(responseJson),
         changeType = GenerateZoneChangeType.Delete
       )
-      zoneToDelete = GenerateZone(request.copy(response = Some(zoneGenerateResponse)))
+      zoneToDelete = GenerateZone(request.copy(response = Some(zoneGenerateResponse))).copy(id = generatedZone.id)
       _ <- logger.info(s"zone generation response: Delete: $zoneToDelete").toResult
       _ <- generateZoneRepository.delete(zoneToDelete).toResult[GenerateZone]
 

@@ -41,9 +41,9 @@ def test_generate_zone_success(shared_zone_test_context):
         assert_that(get_zone["status"], is_("Active"))
         assert_that(get_zone["provider"], is_(zone["provider"]))
 
-    # finally:
-    #     if result_zone:
-    #         client.abandon_generated_zones([result_zone["id"]], status=202)
+    finally:
+        if result_zone:
+            client.abandon_generated_zones([result_zone["id"]], status=202)
 
 
 def test_generate_zone_fails_no_authorization(shared_zone_test_context):
@@ -72,8 +72,6 @@ def test_generate_zone_missing_zone_data(shared_zone_test_context):
 
     errors = client.generate_zone(zone, status=400)["errors"]
     assert_that(errors, contains_inanyorder('Missing group id', 'Missing email', 'Missing provider', 'Missing zone name'))
-
-
 
 def test_generate_zone_invalid_zone_data(shared_zone_test_context):
     """
@@ -185,13 +183,9 @@ def test_generate_zone_unsupported_providers(shared_zone_test_context):
             ]
         }
     }
-
     result = shared_zone_test_context.ok_vinyldns_client.generate_zone(zone, status=400)
-    print("result-         -----------------------------------           ",result)
 
     assert_that(result, contains_string("Unsupported DNS provider: cloudFare"))
-
-
 
 @pytest.mark.serial
 def test_generate_zone_bad_connection(shared_zone_test_context):
@@ -259,9 +253,8 @@ def test_user_cannot_generate_zone_with_failed_validations(shared_zone_test_cont
     }
 
     result = shared_zone_test_context.ok_vinyldns_client.generate_zone(zone, status=400)
-    print("result-         -----------------------------------           ",result)
-    assert_that(result, contains_string(f"Invalid zone name: {zone_name}"))
 
+    assert_that(result, contains_string(f"Invalid zone name: {zone_name}"))
 
 @pytest.mark.serial
 def test_generate_zone_invalid_fields(shared_zone_test_context):
@@ -284,9 +277,8 @@ def test_generate_zone_invalid_fields(shared_zone_test_context):
     }
 
     result = shared_zone_test_context.ok_vinyldns_client.generate_zone(zone, status=400)
-    print("result-         -----------------------------------           ",result)
+
     assert_that(result, contains_string("JSON schema validation error: $: required property 'kind' not found; $: "
                                         "property 'TTL' is not defined in the schema and the schema does "
                                         "not allow additional properties")
                 )
-
