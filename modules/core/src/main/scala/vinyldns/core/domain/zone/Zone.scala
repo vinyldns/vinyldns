@@ -18,19 +18,36 @@ package vinyldns.core.domain.zone
 
 import java.util.UUID
 import cats.effect.IO
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
+
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.{Encrypted, Encryption}
+
 import scala.collection.JavaConverters._
+import org.json4s._
+import org.json4s.JsonAST.JValue
+import vinyldns.core.domain.zone.GenerateZoneChangeType.GenerateZoneChangeType
+
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
   val Active, Deleted, Syncing = Value
+}
+
+object GenerateZoneStatus extends Enumeration {
+  type GenerateZoneStatus = Value
+  val Active, Deleted, Syncing = Value
+}
+
+object GenerateZoneChangeType extends Enumeration {
+  type GenerateZoneChangeType = Value
+  val Create, Update, Delete = Value
 }
 
 import vinyldns.core.domain.zone.ZoneStatus._
@@ -88,8 +105,8 @@ final case class Zone(
 }
 
 object Zone {
-  def apply(createZoneInput: CreateZoneInput, isTest: Boolean): Zone = {
-    import createZoneInput._
+  def apply(connectZoneInput: ConnectZoneInput, isTest: Boolean): Zone = {
+    import connectZoneInput._
 
     Zone(
       name,
@@ -123,8 +140,78 @@ object Zone {
     )
   }
 }
+final case class GenerateZone(
+                               groupId: String,
+                               email: String,
+                               provider: String,
+                               zoneName: String,
+                               status:  GenerateZoneStatus = GenerateZoneStatus.Active,
+                               providerParams: Map[String, JValue] = Map.empty,
+                               response: Option[ZoneGenerationResponse] = None,
+                               id: String = UUID.randomUUID().toString,
+                               created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                               updated: Option[Instant] = None
+                     ){
+    override def toString: String = {
+      val sb = new StringBuilder
+      sb.append("GenerateZone: [")
+      sb.append("id=\"").append(id).append("\"; ")
+      sb.append("groupId=\"").append(groupId).append("\"; ")
+      sb.append("email=\"").append(email).append("\"; ")
+      sb.append("provider=\"").append(provider).append("\"; ")
+      sb.append("zoneName=\"").append(zoneName).append("\"; ")
+      sb.append("status=\"").append(status).append("\"; ")
+      sb.append("created=\"").append(created).append("\"; ")
+      updated.map(sb.append("updated=\"").append(_).append("\"; "))
+      sb.append("]")
+      sb.toString
+    }
+}
 
-final case class CreateZoneInput(
+object GenerateZone {
+  def apply(zoneGenerationInput: ZoneGenerationInput): GenerateZone = {
+    import zoneGenerationInput._
+
+    GenerateZone(
+      groupId,
+      email,
+      provider,
+      zoneName,
+      status,
+      providerParams,
+      response
+    )
+  }
+
+  def apply(updateGenerateZoneInput: UpdateGenerateZoneInput, currentGenerateZone: GenerateZone): GenerateZone = {
+    import updateGenerateZoneInput._
+
+    currentGenerateZone.copy(
+      groupId,
+      email,
+      provider,
+      zoneName ,
+      status,
+      providerParams,
+      response
+    )
+  }
+}
+
+case class RRSet(
+                  comments: List[String],
+                  name: String,
+                  records: List[Record],
+                  ttl: Int,
+                  `type`: String
+                )
+
+case class Record(
+    content: String,
+    disabled: Boolean
+)
+
+final case class ConnectZoneInput(
     name: String,
     email: String,
     connection: Option[ZoneConnection] = None,
@@ -150,6 +237,35 @@ final case class UpdateZoneInput(
     scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
 )
+
+final case class UpdateGenerateZoneInput(
+                                  groupId: String,
+                                  email: String,
+                                  provider: String,
+                                  zoneName: String,
+                                  status: GenerateZoneStatus = GenerateZoneStatus.Active,
+                                  providerParams: Map[String, JValue] = Map.empty,
+                                  response: Option[ZoneGenerationResponse] = None,
+                                  id: String = UUID.randomUUID().toString
+                                )
+
+case class ZoneGenerationResponse(
+                                   responseCode: Option[Int],
+                                   status: Option[String],
+                                   message: Option[JValue],
+                                   changeType: GenerateZoneChangeType
+                                 )
+
+case class ZoneGenerationInput(
+    groupId: String,
+    email: String,
+    provider: String,
+    zoneName: String,
+    status: GenerateZoneStatus = GenerateZoneStatus.Active,
+    providerParams: Map[String, JValue] = Map.empty,
+    response: Option[ZoneGenerationResponse] = None,
+    id: String = UUID.randomUUID().toString
+                              )
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
@@ -225,10 +341,25 @@ final case class LegacyDnsBackend(
   )
 }
 
+case class DnsProviderConfig(
+    endpoints: Map[String, String],
+    requestTemplates: Map[String, String],
+    schemas: Map[String, String],
+    apiKey: String
+  )
+
+case class DnsProviderApiConnection(
+    providers: Map[String, DnsProviderConfig],
+    nameServers: List[String],
+    allowedProviders: List[String]
+  )
+
+
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
-    dnsBackends: List[LegacyDnsBackend]
+    dnsBackends: List[LegacyDnsBackend],
+    dnsProviderApiConnection : DnsProviderApiConnection
 )
 object ConfiguredDnsConnections {
   def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
@@ -272,6 +403,53 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
+  val dnsProviderApiConfig = {
+    if (config.hasPath("vinyldns.backend.backend-providers")) {
+      val providersConfig = config
+        .getConfigList("vinyldns.backend.backend-providers")
+        .asScala
+        .find(_.hasPath("settings.dns-provider-api.providers"))
+        .map(_.getConfig("settings.dns-provider-api.providers"))
+        .getOrElse(ConfigFactory.empty())
+
+      val allowedProviders: List[String] = providersConfig.root().keySet().asScala.toList
+
+      val nameServers = config
+        .getConfigList("vinyldns.backend.backend-providers")
+        .asScala
+        .find(_.hasPath("settings.dns-provider-api.name-servers"))
+        .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
+        .getOrElse(List.empty[String])
+
+      val providerConfigs: Map[String, DnsProviderConfig] = providersConfig.root().keySet().asScala.map { provider =>
+        val providerConfig = providersConfig.getConfig(provider)
+
+        // Helper to turn a Config section into a Map[String, String]
+        def configToMap(config: com.typesafe.config.Config): Map[String, String] =
+          config.entrySet().asScala.map { entry =>
+            val key = entry.getKey
+            val value = config.getString(key)
+            key -> value
+          }.toMap
+
+        val endpoints = configToMap(providerConfig.getConfig("endpoints"))
+        val requestTemplates = configToMap(providerConfig.getConfig("request-templates"))
+        val schemas = configToMap(providerConfig.getConfig("schemas"))
+        val apiKey = providerConfig.getString("api-key")
+
+        provider -> DnsProviderConfig(
+          endpoints = endpoints,
+          requestTemplates = requestTemplates,
+          schemas = schemas,
+          apiKey = apiKey
+        )
+      }.toMap
+
+      DnsProviderApiConnection(providerConfigs, nameServers, allowedProviders)
+    } else {
+      DnsProviderApiConnection(Map.empty, List.empty[String], List.empty[String])
     }
+  }
+  ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
+}
 }

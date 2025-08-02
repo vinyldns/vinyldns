@@ -24,12 +24,12 @@ import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
+import org.json4s.{JArray, JString}
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.core.domain.record.RecordSetRepository
-//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
@@ -40,6 +40,9 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
+
+import java.net.HttpURLConnection
+
 
 class ZoneServiceSpec
     extends AnyWordSpec
@@ -65,7 +68,14 @@ class ZoneServiceSpec
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
+  private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
+
+  private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
+  private val abcGeneratedZoneSummary = GenerateZoneSummaryInfo(abcGenerateZone, abcGroup.name, AccessLevel.Delete)
+  private val xyzGeneratedZoneSummary = GenerateZoneSummaryInfo(xyzGenerateZone, xyzGroup.name, AccessLevel.NoAccess)
+
+
+
   private val mockMembershipService = new MembershipService(mockGroupRepo,
     mockUserRepo,
     mockMembershipRepo,
@@ -101,8 +111,14 @@ class ZoneServiceSpec
     new AccessValidations(),
     mockBackendResolver,
     NoOpCrypto.instance,
-    mockMembershipService
+    mockMembershipService,
+    mockPowerDNSProviderApiConnection,
+    mockGenerateZoneRepository
   )
+  {
+    override def createConnection(endpoint: String):  HttpURLConnection=
+      mockConnection
+  }
   private val underTestNew = new ZoneService(
     mockZoneRepo,
     mockGroupRepo,
@@ -120,22 +136,9 @@ class ZoneServiceSpec
       mockZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      mockValidEmailConfigNew)
-  )
-
-  private val createZoneAuthorized = CreateZoneInput(
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
-  )
-
-  private val updateZoneAuthorized = UpdateZoneInput(
-    okZone.id,
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
+      mockValidEmailConfigEmpty),
+    mockPowerDNSProviderApiConnection,
+    mockGenerateZoneRepository
   )
 
   override protected def beforeEach(): Unit = {
@@ -144,7 +147,147 @@ class ZoneServiceSpec
     doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
-  "Creating Zones" should {
+  "createDnsZoneService" should {
+    "return a valid HttpURLConnection on successful zone creation" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
+      val request = """{"zone": "example.com"}"""
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockConnection).toOption.get
+      result shouldBe a[HttpURLConnection]
+      result.getResponseCode shouldBe 200
+    }
+
+    "return an error connection on failure" in {
+      val dnsApiKey = "test-api-key"
+      val dnsOperation = "create-zone"
+      val request = """{"zone": "example.com"}"""
+
+      val result = underTest.createDnsZoneService(dnsApiKey,dnsOperation, Some(request), mockInvalidConnection).toOption.get
+      result.getResponseCode shouldBe 400
+    }
+  }
+
+  "Generating Zones" should {
+    "return an error response for provider not supported" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      val result =
+        underTest.handleGenerateZoneRequest(generateBindZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+    }
+
+    "return an valid response for valid request" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().toOption.get
+
+      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
+      result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
+      result.provider shouldBe generatePdnsZoneAuthorized.provider
+    }
+
+    "return an error response for invalid request" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsInvalidZone, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe InvalidRequest("" +
+        "JSON schema validation error: $: " +
+        "property 'admin_email' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'expire' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'refresh' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'ttl' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: required " +
+        "property 'kind' not found; $: property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
+    }
+  }
+
+  "Update generated Zones" should {
+    "return an error response for provider params not supported the correct provider" in {
+      doReturn(IO.pure(Some(generateBindZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(generateBindZoneAuthorized.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+    }
+
+    "return an valid response for valid request" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(groupId = "update-group-id",providerParams = Map(
+          "kind"-> JString("Native")
+        )), okAuth).value.unsafeRunSync().toOption.get
+      result.zoneName shouldBe updatePdnsZoneAuthorized.zoneName
+      result.providerParams shouldBe Map("nameservers" -> JArray(List(JString("ns1.parent.com."))), "kind" -> JString("Native"))
+      result.provider shouldBe updatePdnsZoneAuthorized.provider
+      result.groupId shouldBe "update-group-id"
+    }
+
+    "return an error response for invalid request in provider params" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(generatePdnsInvalidZone.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe InvalidRequest("" +
+        "JSON schema validation error: $: " +
+        "property 'admin_email' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'nameservers' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'expire' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'refresh' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'ttl' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: " +
+        "property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
+    }
+    "return an error response for provider not supported" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(provider = "bind"), okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+    }
+  }
+
+  "Deleting Generated Zones" should {
+    "return an delete zone response" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .delete(any[GenerateZone])
+
+      val result =
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, okAuth).value.unsafeRunSync().toOption.get
+      result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
+    }
+
+    "return an error if the user is not authorized for the zone" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
+      val error =
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, noAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
+    }
+  }
+
+  "Connecting Zones" should {
     "return an appropriate zone change response" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -253,6 +396,7 @@ class ZoneServiceSpec
       val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
     }
+
     "return the result if the zone created includes an valid email" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -1082,6 +1226,209 @@ class ZoneServiceSpec
       val result: ListZonesResponse =
         underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
       result.zones shouldBe List(abcZoneSummary, xyzZoneSummary)
+      result.nextId shouldBe Some("zone6.")
+    }
+  }
+
+  "ListGeneratedZones" should {
+    "not fail with no zones returned" in {
+      doReturn(IO.pure(ListGeneratedZonesResults(List())))
+        .when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse = underTest.listGeneratedZones(abcAuth).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List()
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe false
+    }
+
+    "return the appropriate zones" in {
+      doReturn(IO.pure(ListGeneratedZonesResults(List(abcGenerateZone))))
+        .when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse = underTest.listGeneratedZones(abcAuth).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe false
+    }
+
+    "return all zones" in {
+      doReturn(IO.pure(ListGeneratedZonesResults(List(abcGenerateZone, xyzGenerateZone), ignoreAccess = true)))
+        .when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, None, 100, true)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, ignoreAccess = true).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
+    "name filter must be used to return zones by admin group name, when search by admin group option is true" in {
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroupsByName(any[String])
+      doReturn(IO.pure(ListGeneratedZonesResults(List(abcGenerateZone), ignoreAccess = true, zonesFilter = Some("abcGroup"))))
+        .when(mockGenerateZoneRepository)
+        .listGeneratedZonesByAdminGroupIds(abcAuth, None, 100, Set(abcGroup.id), ignoreAccess = true)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      // When searchByAdminGroup is true, zones are filtered by admin group name given in nameFilter
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, Some("abcGroup"), None, 100, searchByAdminGroup = true, ignoreAccess = true).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe Some("abcGroup")
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
+    "name filter must be used to return zone by zone name, when search by admin group option is false" in {
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+      doReturn(IO.pure(ListGeneratedZonesResults(List(abcGenerateZone), ignoreAccess = true, zonesFilter = Some("abcZone"))))
+        .when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, Some("abcZone"), None, 100, true)
+
+      // When searchByAdminGroup is false, zone name given in nameFilter is returned
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, Some("abcZone"), None, 100, searchByAdminGroup = false, ignoreAccess = true).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe Some("abcZone")
+      result.nextId shouldBe None
+      result.ignoreAccess shouldBe true
+    }
+
+    "return Unknown group name if zone admin group cannot be found" in {
+      doReturn(IO.pure(ListGeneratedZonesResults(List(abcGenerateZone, xyzGenerateZone))))
+        .when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth).value.unsafeRunSync().toOption.get
+      val expectedZones =
+        List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary).map(_.copy(groupName = "Unknown group name"))
+      result.zones shouldBe expectedZones
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+    }
+
+    "set the nextId appropriately" in {
+      doReturn(
+        IO.pure(
+          ListGeneratedZonesResults(
+            List(abcGenerateZone, xyzGenerateZone),
+            maxItems = 2,
+            nextId = Some("zone2."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, None, 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, maxItems = 2).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary)
+      result.maxItems shouldBe 2
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe Some("zone2.")
+    }
+
+    "set the nameFilter when provided" in {
+      doReturn(
+        IO.pure(
+          ListGeneratedZonesResults(
+            List(abcGenerateZone, xyzGenerateZone),
+            zonesFilter = Some("foo"),
+            maxItems = 2,
+            nextId = Some("zone2."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, Some("foo"), None, 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary)
+      result.nameFilter shouldBe Some("foo")
+      result.nextId shouldBe Some("zone2.")
+      result.maxItems shouldBe 2
+    }
+
+    "set the startFrom when provided" in {
+      doReturn(
+        IO.pure(
+          ListGeneratedZonesResults(
+            List(abcGenerateZone, xyzGenerateZone),
+            startFrom = Some("zone4."),
+            maxItems = 2,
+            ignoreAccess = false
+          )
+        )
+      ).when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, Some("zone4."), 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary)
+      result.startFrom shouldBe Some("zone4.")
+    }
+
+    "set the nextId to be the current result set size plus the start from" in {
+      doReturn(
+        IO.pure(
+          ListGeneratedZonesResults(
+            List(abcGenerateZone, xyzGenerateZone),
+            startFrom = Some("zone4."),
+            maxItems = 2,
+            nextId = Some("zone6."),
+            ignoreAccess = false
+          )
+        )
+      ).when(mockGenerateZoneRepository)
+        .listGenerateZones(abcAuth, None, Some("zone4."), 2, false)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListGeneratedZonesResponse =
+        underTest.listGeneratedZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value.unsafeRunSync().toOption.get
+      result.zones shouldBe List(abcGeneratedZoneSummary, xyzGeneratedZoneSummary)
       result.nextId shouldBe Some("zone6.")
     }
   }
