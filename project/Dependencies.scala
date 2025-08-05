@@ -114,12 +114,12 @@ object Dependencies {
     "com.typesafe.akka"         %% "akka-stream-testkit"            % akkaV,
     "junit"                     %  "junit"                          % "4.12"
   )
-
+  val playLogbackExclude = ExclusionRule("com.typesafe.play", "play-logback")
   lazy val portalDependencies = Seq(
     "com.typesafe.play"         %% "play-json"                      % "2.7.4",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
-    "com.typesafe.play"         %% "play-guice"                     % playV,
+    "com.typesafe.play"         %% "play-guice"                     % playV excludeAll playLogbackExclude,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
     "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
     // Netty is to get past a ClassNotFoundError for UnixChannelOption
@@ -130,9 +130,6 @@ object Dependencies {
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
     "com.iheart"                %% "ficus"                          % ficusV,
-    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
-    "org.apache.logging.log4j"  %  "log4j-slf4j2-impl"              % "2.25.1",
-    "org.apache.logging.log4j"  %  "log4j-api"                      % "2.25.1",
-    "org.apache.logging.log4j"  %  "log4j-core"                     % "2.25.1"
+    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0"
   )
 }
