@@ -116,19 +116,19 @@ object Dependencies {
   )
   val playLogbackExclude = ExclusionRule("com.typesafe.play", "play-logback")
   lazy val portalDependencies = Seq(
-    "com.typesafe.play"         %% "play-json"                      % "2.7.4",
+    "com.typesafe.play"         %% "play-json"                      % "2.7.4" excludeAll playLogbackExclude,
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.typesafe.play"         %% "play-jdbc"                      % playV,
+    "com.typesafe.play"         %% "play-jdbc"                      % playV excludeAll playLogbackExclude,
     "com.typesafe.play"         %% "play-guice"                     % playV excludeAll playLogbackExclude,
-    "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "com.typesafe.play"         %% "play-ahc-ws"                    % playV excludeAll playLogbackExclude,
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test" excludeAll playLogbackExclude,
     // Netty is to get past a ClassNotFoundError for UnixChannelOption
     // https://discuss.lightbend.com/t/integration-tests-using-play-2-7-2-are-using-the-nettyserver/4458/3
     "io.netty"                  %  "netty-transport-native-unix-common" % "4.1.37.Final" % "test",
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V,
-    "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
+    "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test" excludeAll playLogbackExclude,
     "com.iheart"                %% "ficus"                          % ficusV,
     "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0"
   )
