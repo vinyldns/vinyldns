@@ -33,7 +33,7 @@ EXPOSE 9000
 ENV JVM_OPTS=""
 ENV INIT_SCRIPT="/bin/true"
 ENTRYPOINT ["/bin/bash", "-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/conf/application.conf \
-                                -Dlog4j2.configurationFile=/opt/vinyldns/conf/log4j2.xml \
+                                -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
                                 -Dvinyldns.version=$(cat /opt/vinyldns/version) \
                                 -cp /opt/vinyldns/lib_extra/*:/opt/vinyldns/vinyldns-api.jar \
                                 vinyldns.api.Boot" ]

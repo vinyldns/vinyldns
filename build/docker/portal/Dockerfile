@@ -41,7 +41,7 @@ EXPOSE 9001
 ENV JVM_OPTS=""
 ENV INIT_SCRIPT="/bin/true"
 ENTRYPOINT ["/bin/bash","-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dvinyldns.version=$(cat /opt/vinyldns/version) \
-                               -Dlog4j2.configurationFile=/opt/vinyldns/conf/log4j2.xml \
+                               -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
                                -Dconfig.file=/opt/vinyldns/conf/application.conf \
                                -cp /opt/vinyldns/conf:/opt/vinyldns/lib/*:/opt/vinyldns/lib_extra/* \
                                play.core.server.ProdServerStart"]
