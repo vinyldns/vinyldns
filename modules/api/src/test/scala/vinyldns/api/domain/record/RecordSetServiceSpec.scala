@@ -1801,7 +1801,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = sharedAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = Some("123ab")
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1827,7 +1828,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = okAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = Some("123ab")
           )
           .value.unsafeRunSync().swap.toOption.get
 
