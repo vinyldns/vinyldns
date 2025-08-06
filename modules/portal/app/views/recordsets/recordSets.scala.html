@@ -380,7 +380,7 @@
                             </td>
                             }
                             <td>
-                                <span><button class="btn btn-info btn-sm" ng-disabled="(record.ownerGroupName && !canAccessGroup(record.ownerGroupId))" ng-click="viewRecordHistory(record.fqdn, record.type, record.zoneId)">View History</button></span>
+                                <span><button class="btn btn-info btn-sm" ng-disabled="(record.ownerGroupName && !canAccessGroup(record.ownerGroupId))" ng-click="viewRecordHistory(record.fqdn, record.type, record.zoneId, record.id)">View History</button></span>
                             </td>
                         </tr>
                         </tbody>
@@ -418,7 +418,16 @@
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
                     </button>
-                    <div class="modal-title">Record History</div>
+                    <div class="modal-title"><h4>Record History</h4></div>
+                    <div class="col-md-12">
+                        <p><strong>Record ID:</strong> {{recordId}}
+                            <span class="small-copy-button" ng-click="copyToClipboard()"
+                                  data-toggle="tooltip" data-placement="top" title="Copy Zone ID to clipboard">
+                            <i class="fa fa-clone"></i>
+                        </span>
+                        </p>
+                    </div>
+
                 </div>
                 <div class="modal-body">
                     <!-- START SIMPLE DATATABLE -->
