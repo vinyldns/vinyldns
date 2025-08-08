@@ -54,9 +54,10 @@ lazy val testSettings = Seq(
 lazy val apiSettings = Seq(
   name := "api",
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
+  dependencyOverrides += "org.typelevel" % "cats-core_2.12" % "2.7.0",
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart ++= Seq(
-    "-Dlogback.configurationFile=test/logback.xml",
+    "-Dlog4j.configurationFile=test/log4j2.xml",
     s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
   ),
   coverageExcludedPackages := "Boot.*"
@@ -72,6 +73,8 @@ lazy val apiAssemblySettings = Seq(
       MergeStrategy.discard
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
       MergeStrategy.discard
+    case PathList("META-INF", "org", "apache", "logging", "log4j", "core", "config", "plugins", "Log4j2Plugins.dat") =>
+      MergeStrategy.first
     case "simulacrum/op.class" | "simulacrum/op$.class" | "simulacrum/typeclass$.class"
          | "simulacrum/typeclass.class" | "simulacrum/noop.class" =>
       MergeStrategy.discard

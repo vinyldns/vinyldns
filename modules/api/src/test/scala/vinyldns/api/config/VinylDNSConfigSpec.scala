@@ -52,6 +52,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
         group,
         membership,
         groupChange,
+        generateZone,
         zoneChange,
         recordChange,
         recordSetCache
@@ -60,7 +61,6 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
     "properly load the notifier configs" in {
       val notifierConfigs = underTest.notifierConfigs
-
       notifierConfigs.length shouldBe 1
 
       notifierConfigs.head.className shouldBe "someclass"
