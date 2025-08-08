@@ -23,7 +23,7 @@ RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) &&
 
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
 COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf
-COPY ${DOCKER_FILE_PATH}/logback.xml /opt/vinyldns/conf
+COPY ${DOCKER_FILE_PATH}/log4j2.xml /opt/vinyldns/conf
 
 # Mount the volume for config file and lib extras
 VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
@@ -33,7 +33,7 @@ EXPOSE 9000
 ENV JVM_OPTS=""
 ENV INIT_SCRIPT="/bin/true"
 ENTRYPOINT ["/bin/bash", "-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dconfig.file=/opt/vinyldns/conf/application.conf \
-                                -Dlogback.configurationFile=/opt/vinyldns/conf/logback.xml \
+                                -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
                                 -Dvinyldns.version=$(cat /opt/vinyldns/version) \
                                 -cp /opt/vinyldns/lib_extra/*:/opt/vinyldns/vinyldns-api.jar \
                                 vinyldns.api.Boot" ]
