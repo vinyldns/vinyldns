@@ -62,10 +62,20 @@
             };
 
             // Function to copy the Record ID to clipboard
-            $scope.copyToClipboard = function() {
-                 utilityService.copyToClipboard($scope.recordId);
+            $scope.copyToClipboard = function(type) {
+                let valueToCopy = '';
+                let alert_message = '';
+                if (type === 'record') {
+                    valueToCopy = $scope.recordId;
+                    alert_message = 'Successfully copied Record ID to clipboard';
+                } else if (type === 'zone') {
+                    valueToCopy = $scope.zoneId;
+                    alert_message = 'Successfully copied Zone ID to clipboard';
+                }
+
+                 utilityService.copyToClipboard(valueToCopy);
                  // Trigger success alert using utilityService
-                 var alert = utilityService.success('Successfully copied Record ID to clipboard');
+                 var alert = utilityService.success(alert_message);
                  $scope.alerts.push(alert);
             };
 
@@ -132,6 +142,7 @@
                $scope.recordFqdn = recordFqdn;
                $scope.recordType = recordType;
                $scope.recordId = recordId;
+               $scope.zoneId = zoneId;
                $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType, zoneId);
                $("#record_history_modal").modal("show");
             };
