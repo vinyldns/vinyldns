@@ -17,15 +17,6 @@
     display: none !important;
 }
 
-.id-content{
-    box-shadow: 3px 10px 20px rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
-    border: 0.5px solid gray;
-    width: max-content;
-    display: flex;
-    padding: 3px;
-}
-
 .table-cell-list {
     list-style-position: inside;
     padding-left:0;

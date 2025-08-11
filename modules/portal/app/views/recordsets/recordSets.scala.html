@@ -419,15 +419,13 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
                     </button>
                     <div class="modal-title"><h4>Record History</h4></div>
-                    <div class="col-md-12 id-content">
+                    <div class="col-md-12">
                         <p style="margin: 0;" ><strong>Record ID:</strong> {{recordId}}
                             <span class="small-copy-button" ng-click="copyToClipboard('record')"
                                   data-toggle="tooltip" data-placement="top" title="Copy Record ID to clipboard">
                             <i class="fa fa-clone"></i>
                         </span>
                         </p>
-                        <div style="width: 1px;height: 30px;background-color: gray;width: 1px;height: 20px;
-                        background-color: gray;margin: 2px 5px;"></div>
                         <p style="margin: 0;"><strong>Zone ID:</strong> {{zoneId}}
                             <span class="small-copy-button" ng-click="copyToClipboard('zone')"
                                   data-toggle="tooltip" data-placement="top" title="Copy Zone ID to clipboard">
@@ -445,7 +443,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="btn-group">
-                                <button class="btn btn-default" ng-click="refreshRecordChangeHistory(recordFqdn, recordType)"><span class="fa fa-refresh"></span> Refresh</button>
+                                <button class="btn btn-default" ng-click="refreshRecordChangeHistory(recordFqdn, recordType, zoneId)"><span class="fa fa-refresh"></span> Refresh</button>
                             </div>
 
                             <!-- PAGINATION -->
