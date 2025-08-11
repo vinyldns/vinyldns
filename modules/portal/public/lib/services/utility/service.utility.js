@@ -66,10 +66,10 @@ angular.module('service.utility', [])
         if (navigator.clipboard) {
             navigator.clipboard.writeText(id)
                 .then(() => {
-                    console.log("Copied to clipboard successfully!");
+                    $log.debug(type, 'Copied to clipboard successfully!');
                 })
                 .catch(err => {
-                    console.error("Failed to copy: ", err);
+                    $log.debug(type, 'Failed to copy:', err);
                 });
         } else {
             // Create a temporary input element to hold the ID
