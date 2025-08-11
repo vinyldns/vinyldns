@@ -185,13 +185,20 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         DB.readOnly { implicit s =>
           val maxPlusOne = maxItems.map(_ + 1)
           // setup optional filters
-          val zoneAndNameFilters = (zoneId, recordNameFilter) match {
-            case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%').replace('.', '%')} ")
-            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
-            case _ => None
+          val cleanedZoneId: Option[String] = zoneId.filter(_.trim.nonEmpty)
+          val zoneAndNameFilters: Option[SQLSyntax] = {
+            (cleanedZoneId, recordNameFilter) match {
+              case (Some(zId), Some(rName)) =>
+                Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%').replace('.', '%')}")
+              case (None, Some(fqdn)) =>
+                Some(sqls"fqdn LIKE ${fqdn.replace('*', '%').replace('.', '%')}")
+              case (Some(zId), None) =>
+                Some(sqls"zone_id = $zId")
+              case (None, None) =>
+                None
+            }
           }
+
 
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
           val pagingKey = PagingKey(startFrom)
@@ -258,7 +265,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val appendQueries = initialQuery.append(appendOpts)
 
           val finalQuery = appendQueries.append(finalQualifiers)
-
 
           val results = sql"$finalQuery"
             .map(toRecordSet)
