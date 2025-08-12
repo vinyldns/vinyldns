@@ -147,7 +147,7 @@ The current maintainers (people who can merge pull requests) are:
 
 - Arpit Shah ([@arpit4ever](https://github.com/arpit4ever))
 - Nick Spadaccino ([@nspadaccino](https://github.com/nspadaccino))
-- Jay Velkumar ([@Jay07GIT](https://github.com/Jay07GIT))
+- Jayaraj Velkumar ([@Jay07GIT](https://github.com/Jay07GIT))
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 
