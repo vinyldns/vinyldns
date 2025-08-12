@@ -28,6 +28,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Daniel Jin
 - Harry Kauffman
 - Krista Khare
+- Sokitha Krishnan
 - Patrick Lee
 - Sheree Liu
 - Michael Ly
