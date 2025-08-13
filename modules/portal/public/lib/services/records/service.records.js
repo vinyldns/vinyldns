@@ -19,7 +19,7 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
+        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter,zoneId) {
             if (typeFilter == "") {
                 typeFilter = null;
             }
@@ -37,7 +37,8 @@ angular.module('service.records', [])
                 "recordNameFilter": nameFilter,
                 "recordTypeFilter": typeFilter,
                 "nameSort": nameSort,
-                "recordOwnerGroupFilter": ownerGroupFilter
+                "recordOwnerGroupFilter": ownerGroupFilter,
+                "zoneId": zoneId,
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
 
