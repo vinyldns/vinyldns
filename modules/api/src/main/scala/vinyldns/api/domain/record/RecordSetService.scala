@@ -147,16 +147,17 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
-  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] = {
+  def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
+      _ <- if(recordSet.recordSetGroupChange.isDefined)
+        isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange).toResult else ().toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) {
-        isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange.map (_.ownerShipTransferStatus)).toResult
         unchangedRecordSet (existing, recordSet).toResult} else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
         && !auth.isSuper) {
@@ -224,7 +225,6 @@ class RecordSetService(
         notifiers.notify(Notification(change)).toResult
       else ().toResult
     } yield change
-  }
 
   def deleteRecordSet(
                        recordSetId: String,
@@ -281,6 +281,7 @@ class RecordSetService(
                   requestedOwnerGroupId = None)))
             }
           for {
+            _ <- canChangeFromPendingReview(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
             recordSet <- recordSetOwnerApproval.toResult
           } yield recordSet
         }
@@ -291,10 +292,17 @@ class RecordSetService(
                 recordSet.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(
                   ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
                   requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
-              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview => recordSet.copy(
+              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview if existing.ownerGroupId.isDefined =>
+                recordSet.copy(
                 recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview)))
+              case OwnerShipTransferStatus.Requested if existing.ownerGroupId.isEmpty => recordSet.copy(
+                ownerGroupId = ownerShipTransfer.requestedOwnerGroupId,
+                recordSetGroupChange = Some(ownerShipTransfer.copy(
+                  ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,
+                  requestedOwnerGroupId = ownerShipTransfer.requestedOwnerGroupId)))
             }
           for {
+            _ <- isValidCancelOwnerShipTransferStatus(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
             recordSet <- recordSetOwnerRequest.toResult
           } yield recordSet
         }
