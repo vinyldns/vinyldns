@@ -481,11 +481,7 @@ class RecordSetServiceIntegrationSpec
         .value
         .unsafeRunSync()
 
-      val change = rightValue(result).asInstanceOf[RecordSetChange]
-      change.recordSet.name shouldBe "shared-record"
-      change.recordSet.ownerGroupId.get shouldBe group.id
-      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.AutoApproved
-      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+      leftValue(result) shouldBe a[InvalidRequest]
     }
 
     "approve ownership transfer request, if user requested for ownership transfer" in {
