@@ -146,7 +146,6 @@ angular.module('controller.records', [])
                     ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
                 }
             }
-
             $scope.ownerShipTransferStatus = ownerShipTransferStatus;
 
         } catch (error) {
