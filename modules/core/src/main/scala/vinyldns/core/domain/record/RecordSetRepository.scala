@@ -35,7 +35,8 @@ trait RecordSetRepository extends Repository {
       recordTypeFilter: Option[Set[RecordType]],
       recordOwnerGroupFilter: Option[String],
       nameSort: NameSort,
-      recordTypeSort: RecordTypeSort
+      recordTypeSort: RecordTypeSort,
+      isFromPortal: Boolean = false
   ): IO[ListRecordSetResults]
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]
