@@ -81,11 +81,12 @@ class MembershipService(
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
+      membershipStatus: Option[MembershipStatus],
       authPrincipal: AuthPrincipal
   ): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds, membershipStatus)
       _ <- groupValidation(newGroup)
       _ <- emailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
@@ -109,6 +110,36 @@ class MembershipService(
       _ <- isNotInZoneAclRule(existingGroup)
       deletedGroup <- deleteGroupData(GroupChange.forDelete(existingGroup, authPrincipal), existingGroup).toResult[Group]
     } yield deletedGroup
+
+  def requestGroupMember(status : String, groupId: String , userId: String, authPrincipal: AuthPrincipal): Result[Group] =
+    {
+        for{
+         existingGroup <- getExistingGroup(groupId)
+         user <- getUser(userId, authPrincipal)
+          newGroup =
+           status match {
+             case "Request" =>
+               existingGroup.pendingReviewMember(user)
+             case "Approved" =>
+               canEditGroup(existingGroup, authPrincipal).toResult
+               existingGroup.approvedMember(user)
+             case "Rejected" =>
+               canEditGroup(existingGroup, authPrincipal).toResult
+               existingGroup.rejectedMember(user)
+           }
+          group <- updateGroup(
+            groupId,
+            newGroup.name,
+            newGroup.email,
+            newGroup.description,
+            newGroup.memberIds,
+            newGroup.adminUserIds,
+            newGroup.memberStatus,
+            authPrincipal
+          )
+        }
+          yield group
+    }
 
   def createGroupData(
    groupChangeData: GroupChange,
