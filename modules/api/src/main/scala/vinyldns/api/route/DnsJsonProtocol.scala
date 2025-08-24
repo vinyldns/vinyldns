@@ -120,6 +120,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "backendId").optional[String],
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
+        (js \ "customMessage").optional[String],
         ).mapN(CreateZoneInput.apply)
   }
 
@@ -139,6 +140,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
         (js \ "backendId").optional[String],
+        (js \ "customMessage").optional[String],
         ).mapN(UpdateZoneInput.apply)
   }
 
