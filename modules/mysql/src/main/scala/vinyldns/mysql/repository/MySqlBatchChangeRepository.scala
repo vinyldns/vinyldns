@@ -278,9 +278,7 @@ class MySqlBatchChangeRepository
           val uname = userName.map(uname => s"bc.user_name = '$uname'")
           val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined)
             Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          } else {
-            None
-          }
+            else None
           val opts = uid ++ as ++ bs ++ uname ++ dtRange
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)

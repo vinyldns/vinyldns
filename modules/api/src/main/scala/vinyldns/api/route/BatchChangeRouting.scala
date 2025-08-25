@@ -102,6 +102,7 @@ class BatchChangeRoute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
                         userName,
+                        groupName,
                         dateTimeRangeStart,
                         dateTimeRangeEnd,
                         startFrom,
