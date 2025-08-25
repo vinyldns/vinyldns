@@ -605,7 +605,7 @@ class BatchChangeService(
         map(_.groups.map(_.members.map(_.id).mkString("', '")).mkString).getOrElse("None").toBatchResult
       uid = if (groupName.isDefined) Some(mId) else userId
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
+        .getBatchChangeSummaries(uid, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
