@@ -100,8 +100,22 @@ trait ProtobufConversions {
       records =
         rs.getRecordList.asScala.map(rd => fromPB(rd, RecordType.withName(rs.getTyp))).toList,
       account = rs.getAccount,
-      ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None
+      ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None ,
+      recordSetGroupChange = if (rs.hasRecordSetGroupChange) Some(fromPB(rs.getRecordSetGroupChange)) else None,
     )
+
+  def fromPB(rsa: VinylDNSProto.ownerShipTransfer): OwnerShipTransfer =
+    record.OwnerShipTransfer(
+      ownerShipTransferStatus = OwnerShipTransferStatus.withName(rsa.getOwnerShipTransferStatus),
+      requestedOwnerGroupId = if (rsa.hasRequestedOwnerGroupId) Some(rsa.getRequestedOwnerGroupId) else None)
+
+  def toPB(rsa: OwnerShipTransfer): VinylDNSProto.ownerShipTransfer = {
+    val builder = VinylDNSProto.ownerShipTransfer
+      .newBuilder()
+      .setOwnerShipTransferStatus(rsa.ownerShipTransferStatus.toString)
+    rsa.requestedOwnerGroupId.foreach(id => builder.setRequestedOwnerGroupId(id))
+    builder.build()
+  }
 
   def fromPB(zn: VinylDNSProto.Zone): Zone = {
     val pbStatus = zn.getStatus
@@ -377,6 +391,7 @@ trait ProtobufConversions {
 
     rs.updated.foreach(dt => builder.setUpdated(dt.toEpochMilli))
     rs.ownerGroupId.foreach(id => builder.setOwnerGroupId(id))
+    rs.recordSetGroupChange.foreach(rsg => builder.setRecordSetGroupChange(toPB(rsg)))
 
     // Map the records, first map to bytes, and then map the bytes to a record data instance
     rs.records.map(toRecordData).foreach(rd => builder.addRecord(rd))

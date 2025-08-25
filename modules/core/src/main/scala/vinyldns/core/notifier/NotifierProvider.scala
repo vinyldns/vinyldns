@@ -15,9 +15,9 @@
  */
 
 package vinyldns.core.notifier
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import cats.effect.IO
 
 trait NotifierProvider {
-  def load(config: NotifierConfig, userRepository: UserRepository): IO[Notifier]
+  def load(config: NotifierConfig, userRepository: UserRepository, groupRepository: GroupRepository): IO[Notifier]
 }

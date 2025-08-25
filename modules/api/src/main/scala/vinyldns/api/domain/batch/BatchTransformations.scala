@@ -236,19 +236,36 @@ object BatchTransformations {
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
 
-      // Note: "Add" where an Add and DeleteRecordSet is provided for a DNS record that does not exist.
-      // Adds the record if it doesn't exist and ignores the delete.
       val logicalChangeType = (addChangeRecordDataSet.nonEmpty, deleteChangeSet.nonEmpty) match {
         case (true, true) =>
-          if((deleteChangeSet -- existingRecords).nonEmpty) LogicalChangeType.Add else LogicalChangeType.Update
-        case (true, false) => LogicalChangeType.Add
-        case (false, true) =>
-          if ((existingRecords -- deleteChangeSet).isEmpty) {
-            LogicalChangeType.FullDelete
+          if (existingRecords.isEmpty) {
+            // Note: "Add" where an Add and DeleteRecordSet is provided for a DNS record that does not exist.
+            // Adds the record if it doesn't exist and ignores the delete.
+            LogicalChangeType.Add
           } else {
+            // Note: "Update" where an Add and DeleteRecordSet is provided for a DNS record that exist, but record data for DeleteRecordSet does not exist.
+            // Updates the record and ignores the delete.
             LogicalChangeType.Update
           }
-        case (false, false) => LogicalChangeType.NotEditedInBatch
+        case (true, false) => LogicalChangeType.Add
+        case (false, true) =>
+          if (existingRecords == deleteChangeSet) {
+            LogicalChangeType.FullDelete
+          } else if (existingRecords.nonEmpty) {
+            LogicalChangeType.Update
+          } else {
+            LogicalChangeType.OutOfSync
+          }
+        case (false, false) =>
+          if(changes.exists {
+            case _: DeleteRRSetChangeForValidation => true
+            case _ => false
+            }
+          ){
+            LogicalChangeType.OutOfSync
+          } else {
+            LogicalChangeType.NotEditedInBatch
+          }
       }
 
       new ValidationChanges(addChangeRecordDataSet, deleteChangeSet, proposedRecordData, logicalChangeType)
@@ -270,6 +287,6 @@ object BatchTransformations {
 
   object LogicalChangeType extends Enumeration {
     type LogicalChangeType = Value
-    val Add, FullDelete, Update, NotEditedInBatch = Value
+    val Add, FullDelete, Update, NotEditedInBatch, OutOfSync = Value
   }
 }

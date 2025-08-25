@@ -18,6 +18,10 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
+    <logger name="BANNER_LOGGER" level="INFO" additivity="false">
+        <appender-ref ref="BANNER_APPENDER"/>
+    </logger>
+
     <root level="${VINYLDNS_LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>
     </root>

@@ -280,7 +280,10 @@ angular.module('service.records', [])
                 "id": record.id,
                 "name": record.name,
                 "type": record.type,
-                "ttl": Number(record.ttl)
+                "ttl": Number(record.ttl),
+                "isCurrentRecordSetOwner": record.isCurrentRecordSetOwner,
+                "recordSetGroupChange": record.recordSetGroupChange
+
             };
             switch (record.type) {
                 case 'A':

@@ -118,7 +118,13 @@
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
                                     <td ng-bind="batchChange.createdTimestamp"></td>
                                     <td ng-if="ignoreAccess" ng-bind="batchChange.userName"></td>
-                                    <td><a href="/dnschanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
+                                    <td>
+                                        <a href="/dnschanges/{{batchChange.id}}">{{batchChange.id}}</a>
+                                        <span class="small-copy-button" ng-click="copyToClipboard(batchChange.id)"
+                                              data-toggle="tooltip" data-placement="top" title="Copy Batch ID to clipboard">
+                                            <i class="fa fa-clone"></i>
+                                        </span>
+                                    </td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
                                         <span ng-if="batchChange.status == 'Complete'" class="label label-success">{{batchChange.status}}</span>

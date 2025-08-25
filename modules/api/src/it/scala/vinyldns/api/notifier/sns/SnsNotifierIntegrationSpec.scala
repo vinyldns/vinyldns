@@ -111,7 +111,7 @@ class SnsNotifierIntegrationSpec
           sns.subscribe(topic, "sqs", queueUrl)
         }
         notifier <- new SnsNotifierProvider()
-          .load(NotifierConfig("", snsConfig), userRepository)
+          .load(NotifierConfig("", snsConfig), userRepository, groupRepository)
         _ <- notifier.notify(Notification(batchChange))
         _ <- IO.sleep(1.seconds)
         messages <- IO {

@@ -23,6 +23,7 @@ import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
@@ -38,7 +39,6 @@ object RecordSetChangeHandler extends TransactionProvider {
   private val outOfSyncFailureMessage: String = "This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."
   private val incompatibleRecordFailureMessage: String = "Incompatible record in DNS."
   private val syncZoneMessage: String = "This record set is out of sync with the DNS backend. Sync this zone before attempting to update this record set."
-  private val wrongRecordDataMessage: String = "The record data entered doesn't exist. Please enter the correct record data or leave the field empty if it's a delete operation."
   private val recordConflictMessage: String = "Conflict due to the record having the same name as an NS record in the same zone. Please create the record using the DNS service the NS record has been delegated to (ex. AWS r53), or use a different record name."
 
   final case class Requeue(change: RecordSetChange) extends Throwable
@@ -93,15 +93,31 @@ object RecordSetChangeHandler extends TransactionProvider {
   ): IO[Unit] =
     executeWithinTransaction { db: DB =>
       for {
-       _ <-  recordSetRepository.apply(db, changeSet)
-       _ <-  recordChangeRepository.save(db, changeSet)
-       _ <-  recordSetCacheRepository.save(db, changeSet)
        // Update single changes within this transaction to rollback the changes made to recordset and record change repo
        // when exception occurs while updating single changes
        singleBatchChanges <- batchChangeRepository.getSingleChanges(
          recordSetChange.singleBatchChangeIds
        )
        singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
+       updatedChangeSet = if (singleChangeStatusUpdates.size == 1) {
+         // Filter out RecordSetChange from changeSet if systemMessage matches
+         val filteredChangeSetChanges = changeSet.changes.filterNot { recordSetChange =>
+           // Find the corresponding singleChangeStatusUpdate by recordChangeId
+           singleChangeStatusUpdates.exists { singleChange =>
+             singleChange.recordChangeId.contains(recordSetChange.id) &&
+               singleChange.systemMessage.exists(msg =>
+                 msg == nonExistentRecordDeleteMessage || msg == nonExistentRecordDataDeleteMessage
+               )
+           }
+         }
+         // Create a new ChangeSet with filtered changes
+         changeSet.copy(changes = filteredChangeSetChanges)
+       } else {
+         changeSet
+       }
+       _ <-  recordSetRepository.apply(db, updatedChangeSet)
+       _ <-  recordChangeRepository.save(db, updatedChangeSet)
+       _ <-  recordSetCacheRepository.save(db, updatedChangeSet)
        _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
       } yield ()
     }
@@ -194,6 +210,16 @@ object RecordSetChangeHandler extends TransactionProvider {
         case RecordSetChangeType.Delete =>
           if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
           else AlreadyApplied(change) // we did not find the record set, so already applied
+
+        case RecordSetChangeType.Sync =>
+          if (existingRecords.nonEmpty) {
+            Failure(
+              change,
+              outOfSyncFailureMessage
+            )
+          } else {
+            AlreadyApplied(change)
+          }
       }
     }
 
@@ -393,16 +419,10 @@ object RecordSetChangeHandler extends TransactionProvider {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
-        if(message == outOfSyncFailureMessage){
+        if(message == outOfSyncFailureMessage || message == incompatibleRecordFailureMessage){
           Completed(
             change.failed(
               syncZoneMessage
-            )
-          )
-        } else if (message == incompatibleRecordFailureMessage) {
-          Completed(
-            change.failed(
-              wrongRecordDataMessage
             )
           )
         } else if (message == "referral") {

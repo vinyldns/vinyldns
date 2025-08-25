@@ -24,6 +24,7 @@ import java.time.Instant
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
@@ -48,11 +49,11 @@ class MySqlBatchChangeRepository
   private final val PUT_BATCH_CHANGE =
     sql"""
        |            INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
-       |                                     approval_status, reviewer_id, review_comment, review_timestamp,
+       |                                     approval_status, batch_status, reviewer_id, review_comment, review_timestamp,
        |                                     scheduled_time, cancelled_timestamp)
        |                 VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId}, {approvalStatus},
-       |                 {reviewerId}, {reviewComment}, {reviewTimestamp}, {scheduledTime}, {cancelledTimestamp})
-       |ON DUPLICATE KEY UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
+       |                 {batchStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp}, {scheduledTime}, {cancelledTimestamp})
+       |ON DUPLICATE KEY UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus}, batch_status={batchStatus},
        |                        reviewer_id={reviewerId}, review_comment={reviewComment}, review_timestamp={reviewTimestamp},
        |                        scheduled_time={scheduledTime}, cancelled_timestamp={cancelledTimestamp}
        """.stripMargin
@@ -70,14 +71,14 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
          |SELECT user_id, user_name, created_time, comments, owner_group_id,
-         |       approval_status, reviewer_id, review_comment, review_timestamp, scheduled_time, cancelled_timestamp
+         |       approval_status, batch_status, reviewer_id, review_comment, review_timestamp, scheduled_time, cancelled_timestamp
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
     sql"""
-         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
+         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status, bc.batch_status,
          |       bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp
          |  FROM batch_change bc
          |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
@@ -86,13 +87,13 @@ class MySqlBatchChangeRepository
 
   private final val GET_BATCH_CHANGE_SUMMARY_BASE =
     """
-      |SELECT batch_change_page.id, user_id, user_name, created_time, comments, owner_group_id, approval_status, reviewer_id,
+      |SELECT batch_change_page.id, user_id, user_name, created_time, comments, owner_group_id, approval_status, batch_status, reviewer_id,
       |       review_comment, review_timestamp, scheduled_time, cancelled_timestamp,
       |       SUM(CASE WHEN sc.status LIKE 'Failed' OR sc.status LIKE 'Rejected' THEN 1 ELSE 0 END) AS fail_count,
       |       SUM(CASE WHEN sc.status LIKE 'Pending' OR sc.status LIKE 'NeedsReview' THEN 1 ELSE 0 END) AS pending_count,
       |       SUM(CASE sc.status WHEN 'Complete' THEN 1 ELSE 0 END) AS complete_count,
       |       SUM(CASE sc.status WHEN 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count
-      |              FROM (SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
+      |              FROM (SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status, bc.batch_status,
       |                           bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp
       |                    FROM batch_change bc
         """.stripMargin
@@ -121,6 +122,13 @@ class MySqlBatchChangeRepository
          |       data={data}, status={status},
          |       record_set_change_id={recordSetChangeId},
          |       record_set_id={recordSetId}, zone_id={zoneId}
+         | WHERE id={id}
+        """.stripMargin
+
+  private final val UPDATE_BATCH_CHANGE =
+    sql"""
+         |UPDATE batch_change
+         |   SET batch_status={batchStatus}
          | WHERE id={id}
         """.stripMargin
 
@@ -181,6 +189,24 @@ class MySqlBatchChangeRepository
             .apply()
           batchMeta.copy(changes = changes)
         }
+
+    var failCount = 0
+    var pendingCount = 0
+    var completeCount = 0
+    var cancelledCount = 0
+
+    singleChanges.foreach { sc =>
+      if (sc.status.toString == "Failed" || sc.status.toString == "Rejected") {
+        failCount += 1
+      } else if (sc.status.toString == "Pending" || sc.status.toString == "NeedsReview") {
+        pendingCount += 1
+      } else if (sc.status.toString == "Complete") {
+        completeCount += 1
+      } else {
+        cancelledCount += 1
+      }
+    }
+
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       IO {
         logger.info(s"Updating single change status: ${singleChanges.map(ch => (ch.id, ch.status))}")
@@ -190,6 +216,8 @@ class MySqlBatchChangeRepository
             batchParams = singleChanges.map(convertSingleChangeToParams)
             _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             batchChange <- getBatchFromSingleChangeId(headChange.id)
+            batchStatus = BatchChangeStatus.calculateBatchStatus(batchChange.approvalStatus, pendingCount > 0, failCount > 0, completeCount > 0, batchChange.scheduledTime.isDefined)
+            _ = UPDATE_BATCH_CHANGE.bindByName('batchStatus -> batchStatus.toString, 'id -> batchChange.id).update().apply()
           } yield batchChange
         }}
     }
@@ -234,6 +262,7 @@ class MySqlBatchChangeRepository
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
+      batchStatus: Option[BatchChangeStatus],
       approvalStatus: Option[BatchChangeApprovalStatus]
   ): IO[BatchChangeSummaryList] =
     monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
@@ -245,11 +274,14 @@ class MySqlBatchChangeRepository
 
           val uid = userId.map(u => s"bc.user_id in ('$u')")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
+          val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
           val uname = userName.map(uname => s"bc.user_name = '$uname'")
           val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined)
             Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          else None
-          val opts = uid ++ as ++ uname ++ dtRange
+          } else {
+            None
+          }
+          val opts = uid ++ as ++ bs ++ uname ++ dtRange
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
@@ -303,6 +335,7 @@ class MySqlBatchChangeRepository
             nextId,
             maxItems,
             ignoreAccess,
+            batchStatus,
             approvalStatus
           )
         }
@@ -345,6 +378,33 @@ class MySqlBatchChangeRepository
   private def saveBatchChange(
       batchChange: BatchChange
   )(implicit session: DBSession): BatchChange = {
+
+    var failCount = 0
+    var pendingCount = 0
+    var completeCount = 0
+    var cancelledCount = 0
+
+    batchChange.changes.foreach { sc =>
+      if (sc.status.toString == "Failed" || sc.status.toString == "Rejected") {
+        failCount += 1
+      } else if (sc.status.toString == "Pending" || sc.status.toString == "NeedsReview") {
+        pendingCount += 1
+      } else if (sc.status.toString == "Complete") {
+        completeCount += 1
+      } else {
+        cancelledCount += 1
+      }
+    }
+
+    val batchStatus = BatchChangeStatus
+      .calculateBatchStatus(
+        batchChange.approvalStatus,
+        pendingCount > 0,
+        failCount > 0,
+        completeCount > 0,
+        batchChange.scheduledTime.isDefined
+      )
+
     PUT_BATCH_CHANGE
       .bindByName(
         Seq(
@@ -355,6 +415,7 @@ class MySqlBatchChangeRepository
           'comments -> batchChange.comments,
           'ownerGroupId -> batchChange.ownerGroupId,
           'approvalStatus -> fromApprovalStatus(batchChange.approvalStatus),
+          'batchStatus -> fromBatchStatus(batchStatus),
           'reviewerId -> batchChange.reviewerId,
           'reviewComment -> batchChange.reviewComment,
           'reviewTimestamp -> batchChange.reviewTimestamp,
@@ -419,6 +480,18 @@ class MySqlBatchChangeRepository
       case BatchChangeApprovalStatus.Cancelled => 5
     }
 
+  def fromBatchStatus(typ: BatchChangeStatus): String =
+    typ match {
+      case BatchChangeStatus.Cancelled => "Cancelled"
+      case BatchChangeStatus.Complete => "Complete"
+      case BatchChangeStatus.Failed => "Failed"
+      case BatchChangeStatus.PartialFailure => "PartialFailure"
+      case BatchChangeStatus.PendingProcessing => "PendingProcessing"
+      case BatchChangeStatus.PendingReview => "PendingReview"
+      case BatchChangeStatus.Rejected => "Rejected"
+      case BatchChangeStatus.Scheduled => "Scheduled"
+    }
+
   def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
     key match {
       case Some(1) => BatchChangeApprovalStatus.AutoApproved
@@ -428,6 +501,20 @@ class MySqlBatchChangeRepository
       case Some(5) => BatchChangeApprovalStatus.Cancelled
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
+
+  def toBatchChangeStatus(key: Option[String]): BatchChangeStatus = {
+    key match {
+      case Some("Cancelled") => BatchChangeStatus.Cancelled
+      case Some("Complete") => BatchChangeStatus.Complete
+      case Some("Failed") => BatchChangeStatus.Failed
+      case Some("PartialFailure") => BatchChangeStatus.PartialFailure
+      case Some("PendingProcessing") => BatchChangeStatus.PendingProcessing
+      case Some("PendingReview") => BatchChangeStatus.PendingReview
+      case Some("Rejected") => BatchChangeStatus.Rejected
+      case Some("Scheduled") => BatchChangeStatus.Scheduled
+      case _ => BatchChangeStatus.Complete
+    }
+  }
 
   def toDateTime(ts: Timestamp): Instant = ts.toInstant
 }

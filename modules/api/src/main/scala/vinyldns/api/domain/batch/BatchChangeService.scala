@@ -35,6 +35,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
@@ -592,6 +593,7 @@ class BatchChangeService(
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
@@ -603,7 +605,7 @@ class BatchChangeService(
         map(_.groups.map(_.members.map(_.id).mkString("', '")).mkString).getOrElse("None").toBatchResult
       uid = if (groupName.isDefined) Some(mId) else userId
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(uid, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, approvalStatus)
+        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult

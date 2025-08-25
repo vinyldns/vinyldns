@@ -32,47 +32,47 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
 
   private final val PUT_GROUP =
     sql"""
-         |REPLACE INTO groups(id, name, data, description, created_timestamp, email)
+         |REPLACE INTO `groups`(id, name, data, description, created_timestamp, email)
          | VALUES ({id}, {name}, {data}, {description}, {createdTimestamp}, {email})
        """.stripMargin
 
   private final val DELETE_GROUP =
     sql"""
-         |DELETE FROM groups
+         |DELETE FROM `groups`
          | WHERE id = ?
        """.stripMargin
 
   private final val GET_GROUP_BY_ID =
     sql"""
          |SELECT data
-         |  FROM groups
+         |  FROM `groups`
          | WHERE id = ?
        """.stripMargin
 
   private final val GET_GROUP_BY_NAME =
     sql"""
          |SELECT data
-         |  FROM groups
+         |  FROM `groups`
          | WHERE name = ?
        """.stripMargin
 
   private final val GET_ALL_GROUPS =
     sql"""
          |SELECT data
-         |  FROM groups
+         |  FROM `groups`
        """.stripMargin
 
   private val BASE_GET_GROUPS_BY_IDS =
     """
       |SELECT data
-      |  FROM groups
+      |  FROM `groups`
       | WHERE id
     """.stripMargin
 
   private val BASE_GET_GROUPS_BY_NAMES =
     """
       |SELECT data
-      |  FROM groups
+      |  FROM `groups`
       | WHERE name
     """.stripMargin
 
@@ -187,7 +187,7 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
     monitor("repo.Group.getGroupByName") {
       IO {
         logger.debug(s"Getting groups with name: $nameFilter")
-        val initialQuery = "SELECT data FROM groups WHERE name"
+        val initialQuery = "SELECT data FROM `groups` WHERE name"
         val sb = new StringBuilder
         sb.append(initialQuery)
         val groupsLike = if (nameFilter.contains('*')) {

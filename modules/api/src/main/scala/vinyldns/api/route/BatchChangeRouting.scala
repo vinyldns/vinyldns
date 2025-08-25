@@ -93,33 +93,33 @@ class BatchChangeRoute(
           ) =>
             {
               val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
-
-              handleRejections(invalidQueryHandler) {
-                validate(
-                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                  s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
-                ) {
-                  authenticateAndExecute(
-                    batchChangeService.listBatchChangeSummaries(
-                      _,
-                      userName,
-                      groupName,
-                      dateTimeRangeStart,
-                      dateTimeRangeEnd,
-                      startFrom,
-                      maxItems,
-                      ignoreAccess,
-                      convertApprovalStatus
-                    )
-                  ) { summaries =>
-                    complete(StatusCodes.OK, summaries)
+                handleRejections(invalidQueryHandler) {
+                  validate(
+                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive."
+                  ) {
+                    authenticateAndExecute(
+                      batchChangeService.listBatchChangeSummaries(
+                        _,
+                        userName,
+                        dateTimeRangeStart,
+                        dateTimeRangeEnd,
+                        startFrom,
+                        maxItems,
+                        ignoreAccess,
+                        // TODO: Update batch status from None to its actual value when the feature is ready for release
+                        None,
+                        convertApprovalStatus
+                      )
+                    ) { summaries =>
+                      complete(StatusCodes.OK, summaries)
+                    }
                   }
                 }
               }
             }
         }
-      }
-    } ~
+      } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>

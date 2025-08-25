@@ -52,6 +52,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
+  private val bannerLogger = LoggerFactory.getLogger("BANNER_LOGGER")
 
   // Create a ScheduledExecutorService with a new single thread
   private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
@@ -96,7 +97,8 @@ object Boot extends App {
       msgsPerPoll <- IO.fromEither(MessageCount(vinyldnsConfig.messageQueueConfig.messagesPerPoll))
       notifiers <- NotifierLoader.loadAll(
         vinyldnsConfig.notifierConfigs,
-        repositories.userRepository
+        repositories.userRepository,
+        repositories.groupRepository
       )
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the zone sync task to be executed every 5 seconds
@@ -161,7 +163,8 @@ object Boot extends App {
           vinyldnsConfig.highValueDomainConfig,
           vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
-          vinyldnsConfig.serverConfig.useRecordSetCache
+          vinyldnsConfig.serverConfig.useRecordSetCache,
+          notifiers
         )
       val zoneService = ZoneService(
         repositories,
@@ -245,7 +248,7 @@ object Boot extends App {
       logger.info(
         s"STARTING VINYLDNS SERVER ON ${vinyldnsConfig.httpConfig.host}:${vinyldnsConfig.httpConfig.port}"
       )
-      logger.info(banner)
+      bannerLogger.info(banner)
 
       // Starts up our http server
       implicit val actorSystem: ActorSystem = system
