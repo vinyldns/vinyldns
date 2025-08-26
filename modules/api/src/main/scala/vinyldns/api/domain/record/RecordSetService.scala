@@ -511,7 +511,7 @@ class RecordSetService(
                       nameSort: NameSort,
                       authPrincipal: AuthPrincipal,
                       recordTypeSort: RecordTypeSort
-                    ): Result[ListGlobalRecordSetsResponse] =
+                     ): Result[ListGlobalRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
       formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
@@ -540,7 +540,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      None
     )
 
   /**
@@ -563,7 +564,8 @@ class RecordSetService(
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
                         authPrincipal: AuthPrincipal,
-                        recordTypeSort: RecordTypeSort
+                        recordTypeSort: RecordTypeSort,
+                        zoneId: Option[String]
                       ): Result[ListGlobalRecordSetsResponse] = {
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -571,7 +573,7 @@ class RecordSetService(
       recordSetResults <- if (useRecordSetCache) {
         // Search the cache
         recordSetCacheRepository.listRecordSetData(
-          None,
+          zoneId,//None,
           startFrom,
           maxItems,
           Some(formattedRecordNameFilter),
@@ -582,7 +584,7 @@ class RecordSetService(
       } else {
         // Search the record table directly
         recordSetRepository.listRecordSets(
-          None,
+          zoneId,//None,
           startFrom,
           maxItems,
           Some(formattedRecordNameFilter),
@@ -605,7 +607,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      None
     )
   }
 
