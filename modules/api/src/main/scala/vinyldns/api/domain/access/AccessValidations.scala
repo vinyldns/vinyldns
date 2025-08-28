@@ -84,7 +84,6 @@ class AccessValidations(
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] = {
     val superUserCanUpdateOrNot = if (auth.isSuper) true else false
-
     val accessLevel =
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
     ensuring(
