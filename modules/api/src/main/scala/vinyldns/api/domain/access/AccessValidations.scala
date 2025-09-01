@@ -91,7 +91,7 @@ class AccessValidations(
         s"User ${auth.signedInUser.userName} does not have access to update " +
           s"$recordName.${zone.name}"
       )
-    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOwnerGroup )
+    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOwnerGroup)
   }
 
   def canDeleteRecordSet(
