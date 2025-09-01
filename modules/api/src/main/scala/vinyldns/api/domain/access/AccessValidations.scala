@@ -83,15 +83,15 @@ class AccessValidations(
       superUserCanUpdateOwnerGroup: Boolean = false,
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] = {
-    val superUserCanUpdateOrNot = if (auth.isSuper) true else false
-    val accessLevel =
+    val accessLevel = {
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
+    }
     ensuring(
       NotAuthorizedError(
         s"User ${auth.signedInUser.userName} does not have access to update " +
           s"$recordName.${zone.name}"
       )
-    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOrNot)
+    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOwnerGroup )
   }
 
   def canDeleteRecordSet(
