@@ -17,13 +17,14 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType, MembershipStatus}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
 class MySqlGroupChangeRepositoryIntegrationSpec
@@ -47,7 +48,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   override protected def afterAll(): Unit = clear()
 
   def generateGroupChanges(groupId: String, numChanges: Int): Seq[GroupChange] = {
-    val group = Group(name = "test", id = groupId, email = "test@test.com")
+    val group = Group(name = "test", id = groupId, email = "test@test.com",memberStatus = Some(MembershipStatus(Set(),Set(),Set())))
     for {
       i <- 1 to numChanges
     } yield GroupChange(
