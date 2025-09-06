@@ -81,7 +81,8 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "ok"}, {"id": "support-user-id"}],
-                "admins": [{"id": "ok"}]
+                "admins": [{"id": "ok"}],
+                "memberStatus": ""
             }
 
             self.ok_group = self.ok_vinyldns_client.create_group(ok_group, status=200)

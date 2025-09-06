@@ -35,7 +35,7 @@ final case class GroupInfo(
     status: GroupStatus = GroupStatus.Active,
     members: Set[UserId] = Set.empty,
     admins: Set[UserId] = Set.empty,
-    memberStatus: Option[MembershipStatus] = None
+    membershipAccessStatus: Option[MembershipAccessStatus] = None
 )
 object GroupInfo {
   def apply(group: Group): GroupInfo = fromGroup(group, abridged = false, None)
@@ -52,7 +52,7 @@ object GroupInfo {
               else group.memberIds).map(UserId),
     admins = (if (abridged && authPrincipal.isDefined) group.adminUserIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupAdmin(group))
               else group.adminUserIds).map(UserId),
-    memberStatus = group.memberStatus
+    membershipAccessStatus = group.membershipAccessStatus
   )
 }
 

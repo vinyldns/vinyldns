@@ -16,8 +16,9 @@
 
 package vinyldns.core.domain.membership
 
-import java.util.UUID
+import vinyldns.core.domain.auth.AuthPrincipal
 
+import java.util.UUID
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -41,46 +42,66 @@ case class Group(
     status: GroupStatus = GroupStatus.Active,
     memberIds: Set[String] = Set.empty,
     adminUserIds: Set[String] = Set.empty,
-    memberStatus: Option[MembershipStatus] = None
+    membershipAccessStatus: Option[MembershipAccessStatus] = None
 
 ) {
 
   def addMember(user: User): Group =
     this.copy(memberIds = memberIds + user.id)
 
-  def pendingReviewMember(user: User): Group = {
-    val updatedMembershipStatus = memberStatus match {
+  def pendingReviewMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.PendingReview.toString
+    )
+
+    val updatedMembershipStatus = membershipAccessStatus match {
       case Some(status) =>
-        status.copy(pendingReviewMember = status.pendingReviewMember + user.id)
+        status.copy(pendingReviewMember = status.pendingReviewMember + updatedMembershipAction)
       case None =>
-        MembershipStatus(pendingReviewMember = Set(user.id))
+        MembershipAccessStatus(pendingReviewMember = Set(updatedMembershipAction))
     }
-    this.copy(memberStatus = Some(updatedMembershipStatus))
+
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus))
   }
 
-  def approvedMember(user: User): Group = {
-    val updatedMembershipStatus = memberStatus match {
+  def approvedMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.Approved.toString
+    )
+    val updatedMembershipStatus = membershipAccessStatus match {
       case Some(status) =>
         status.copy(
-          pendingReviewMember = status.pendingReviewMember - user.id,
-          approvedMember = status.approvedMember + user.id)
+          pendingReviewMember = status.pendingReviewMember.filterNot(_.userId == user.id),
+          approvedMember = status.approvedMember + updatedMembershipAction)
       case None =>
-        MembershipStatus(approvedMember = Set(user.id))
+        MembershipAccessStatus(approvedMember = Set(updatedMembershipAction))
     }
-    this.copy(memberStatus = Some(updatedMembershipStatus))
-    addMember(user)
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus)).addMember(user)
   }
 
-  def rejectedMember(user: User): Group = {
-    val updatedMembershipStatus = memberStatus match {
+  def rejectedMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.Rejected.toString
+    )
+    val updatedMembershipStatus = membershipAccessStatus match {
       case Some(status) =>
         status.copy(
-          pendingReviewMember = status.pendingReviewMember - user.id,
-          rejectedMember = status.rejectedMember + user.id)
+          pendingReviewMember = status.pendingReviewMember.filterNot(_.userId == user.id),
+          rejectedMember = status.rejectedMember + updatedMembershipAction
+        )
       case None =>
-        MembershipStatus(rejectedMember = Set(user.id))
+        MembershipAccessStatus(rejectedMember = Set(updatedMembershipAction))
     }
-    this.copy(memberStatus = Some(updatedMembershipStatus))
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus))
   }
 
   // If the user can be removed remove it, otherwise do nothing
@@ -114,7 +135,7 @@ case class Group(
       descriptionUpdate: Option[String],
       memberIdsUpdate: Set[String],
       adminUserIdsUpdate: Set[String],
-      membershipStatusUpdate: Option[MembershipStatus],
+      membershipStatusUpdate: Option[MembershipAccessStatus],
   ): Group =
     this.copy(
       name = nameUpdate,
@@ -122,11 +143,20 @@ case class Group(
       description = descriptionUpdate,
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
       adminUserIds = adminUserIdsUpdate,
-      memberStatus = membershipStatusUpdate
+      membershipAccessStatus = membershipStatusUpdate
     )
 }
-case class MembershipStatus(
-                              pendingReviewMember: Set[String] = Set.empty,
-                              rejectedMember: Set[String] = Set.empty,
-                              approvedMember: Set[String] = Set.empty
+case class MembershipAccessStatus(
+                              pendingReviewMember: Set[MembershipAccess] = Set.empty,
+                              rejectedMember: Set[MembershipAccess] = Set.empty,
+                              approvedMember: Set[MembershipAccess] = Set.empty
                             )
+
+
+case class MembershipAccess(
+                         userId: String,
+                         created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                         submittedBy: String = "System",
+                         description: Option[String] = None,
+                         status: String = "System"
+                       )

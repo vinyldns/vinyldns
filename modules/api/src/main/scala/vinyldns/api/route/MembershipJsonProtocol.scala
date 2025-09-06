@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit
 import org.json4s._
 import org.json4s.JsonDSL._
 import vinyldns.api.domain.membership._
-import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus, MembershipStatus}
+import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus, MembershipAccessStatus}
 
 object MembershipJsonProtocol {
   final case class CreateGroupInput(
@@ -34,7 +34,7 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserId],
       admins: Set[UserId],
-      memberStatus : Option[MembershipStatus]
+      memberStatus : Option[MembershipAccessStatus]
   )
   final case class UpdateGroupInput(
       id: String,
@@ -43,7 +43,7 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserId],
       admins: Set[UserId],
-      memberStatus : Option[MembershipStatus]
+      memberStatus : Option[MembershipAccessStatus]
   )
   final case class MemberStatusGroupInput(
                                            pendingReviewMember: Set[String] = Set.empty,
@@ -76,7 +76,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "description").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
-        (js \ "memberStatus").optional[MembershipStatus]
+        (js \ "memberStatus").optional[MembershipAccessStatus]
 
       ).mapN(CreateGroupInput.apply)
   }
@@ -89,7 +89,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "description").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
-        (js \ "memberStatus").optional[MembershipStatus]
+        (js \ "membershipAccessStatus").optional[MembershipAccessStatus]
       ).mapN(UpdateGroupInput.apply)
   }
   case object MemberStatusGroupInputSerializer extends ValidationSerializer[MemberStatusGroupInput] {
@@ -97,7 +97,7 @@ trait MembershipJsonProtocol extends JsonValidation {
       (
         (js \ "members").default[Set[String]](Set.empty),
         (js \ "admins").default[Set[String]](Set.empty),
-        (js \ "memberStatus").default[Set[String]](Set.empty)
+        (js \ "membershipAccessStatus").default[Set[String]](Set.empty)
         ).mapN(MemberStatusGroupInput.apply)
   }
 
@@ -116,7 +116,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "memberIds").default[Set[String]](Set.empty),
         (js \ "adminUserIds").default[Set[String]](Set.empty),
-        (js \ "memberStatus").optional[MembershipStatus]
+        (js \ "membershipAccessStatus").optional[MembershipAccessStatus]
       ).mapN(Group.apply)
   }
 
@@ -131,7 +131,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "members").default[Set[UserId]](Set.empty),
         (js \ "admins").default[Set[UserId]](Set.empty),
-        (js \ "memberStatus").optional[MembershipStatus]
+        (js \ "membershipAccessStatus").optional[MembershipAccessStatus]
       ).mapN(GroupInfo.apply)
     }
 
@@ -144,7 +144,7 @@ trait MembershipJsonProtocol extends JsonValidation {
       ("status" -> Extraction.decompose(gi.status)) ~
       ("members" -> Extraction.decompose(gi.members)) ~
       ("admins" -> Extraction.decompose(gi.admins)) ~
-        ("memberStatus" -> Extraction.decompose(gi.memberStatus))
+      ("membershipAccessStatus" -> Extraction.decompose(gi.membershipAccessStatus))
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {

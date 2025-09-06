@@ -23,7 +23,7 @@ import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
-import vinyldns.core.domain.membership.{Group, LockStatus}
+import vinyldns.core.domain.membership.{Group, LockStatus, MembershipAccess}
 
 class MembershipRoute(
     membershipService: MembershipServiceAlgebra,
@@ -161,10 +161,17 @@ class MembershipRoute(
         }
       }
     } ~
-    path("groups" / Segment / "users" / Segment / Segment) { (groupId , userId, memberStatus) =>
+    path("groups" / Segment  / "access" ) { groupId =>
       (put & monitor("Endpoint.memberStatus")) {
-        authenticateAndExecute(membershipService.requestGroupMember(memberStatus, groupId, userId,  _)) { group =>
-          complete(StatusCodes.OK, GroupInfo(group))
+        authenticateAndExecuteWithEntity[Group, MembershipAccess](
+          (authPrincipal, input) =>
+            membershipService.requestGroupMember(
+              input.userId,
+              input.description,
+              input.status,
+              groupId,
+              authPrincipal
+            )) { membershipAccess => complete(StatusCodes.OK, membershipAccess)
         }
       }
     } ~

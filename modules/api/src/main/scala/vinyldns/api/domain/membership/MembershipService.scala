@@ -81,7 +81,7 @@ class MembershipService(
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
-      membershipStatus: Option[MembershipStatus],
+      membershipStatus: Option[MembershipAccessStatus],
       authPrincipal: AuthPrincipal
   ): Result[Group] =
     for {
@@ -111,35 +111,38 @@ class MembershipService(
       deletedGroup <- deleteGroupData(GroupChange.forDelete(existingGroup, authPrincipal), existingGroup).toResult[Group]
     } yield deletedGroup
 
-  def requestGroupMember(status : String, groupId: String , userId: String, authPrincipal: AuthPrincipal): Result[Group] =
-    {
-        for{
-         existingGroup <- getExistingGroup(groupId)
-         user <- getUser(userId, authPrincipal)
-          newGroup =
-           status match {
-             case "Request" =>
-               existingGroup.pendingReviewMember(user)
-             case "Approved" =>
-               canEditGroup(existingGroup, authPrincipal).toResult
-               existingGroup.approvedMember(user)
-             case "Rejected" =>
-               canEditGroup(existingGroup, authPrincipal).toResult
-               existingGroup.rejectedMember(user)
-           }
-          group <- updateGroup(
-            groupId,
-            newGroup.name,
-            newGroup.email,
-            newGroup.description,
-            newGroup.memberIds,
-            newGroup.adminUserIds,
-            newGroup.memberStatus,
-            authPrincipal
-          )
+  def requestGroupMember(
+                          userId: String,
+                          description: Option[String],
+                          status: String,
+                          groupId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[Group] =
+    for{
+      existingGroup <- getExistingGroup(groupId)
+      user <- getUser(userId, authPrincipal)
+      newGroup =
+        status match {
+          case "Request" =>
+            existingGroup.pendingReviewMember(user, description, authPrincipal)
+          case "Approved" =>
+            canEditGroup(existingGroup, authPrincipal).toResult
+            existingGroup.approvedMember(user, description, authPrincipal)
+          case "Rejected" =>
+            canEditGroup(existingGroup, authPrincipal).toResult
+            existingGroup.rejectedMember(user, description,authPrincipal)
         }
-          yield group
-    }
+      group <- updateGroup(
+        groupId,
+        newGroup.name,
+        newGroup.email,
+        newGroup.description,
+        newGroup.memberIds,
+        newGroup.adminUserIds,
+        newGroup.membershipAccessStatus,
+        authPrincipal
+      )
+    } yield group
 
   def createGroupData(
    groupChangeData: GroupChange,
