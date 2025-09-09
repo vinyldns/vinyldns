@@ -215,9 +215,9 @@ angular.module('controller.records', [])
             if ($scope.currentRecord.recordSetGroupChange == undefined){
                 $scope.currentRecord.recordSetGroupChange = {}
                 $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
-                $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved");
+                $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("Requested");
             }
-            $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("AutoApproved");
+            $scope.currentRecord.recordSetGroupChange.ownerShipTransferStatus = angular.copy("Requested");
             $scope.recordModal = {
                 action: $scope.recordModalState.UPDATE,
                 title: "Request OwnerShip transfer",
