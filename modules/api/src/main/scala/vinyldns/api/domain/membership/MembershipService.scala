@@ -121,28 +121,27 @@ class MembershipService(
     for{
       existingGroup <- getExistingGroup(groupId)
       user <- getUser(userId, authPrincipal)
-      newGroup =
-        status match {
-          case "Request" =>
-            existingGroup.pendingReviewMember(user, description, authPrincipal)
-          case "Approved" =>
-            canEditGroup(existingGroup, authPrincipal).toResult
-            existingGroup.approvedMember(user, description, authPrincipal)
-          case "Rejected" =>
-            canEditGroup(existingGroup, authPrincipal).toResult
-            existingGroup.rejectedMember(user, description,authPrincipal)
-        }
-      group <- updateGroup(
-        groupId,
-        newGroup.name,
-        newGroup.email,
-        newGroup.description,
-        newGroup.memberIds,
-        newGroup.adminUserIds,
-        newGroup.membershipAccessStatus,
-        authPrincipal
-      )
-    } yield group
+
+      newGroup <- status match {
+        case "Request" =>
+          IO(existingGroup.pendingReviewMember(user, description, authPrincipal)).toResult
+        case "Approved" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.approvedMember(user, description, authPrincipal)
+        case "Rejected" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.rejectedMember(user, description, authPrincipal)
+        case _ =>
+          InvalidGroupRequestError("Invalid membership transfer status").asLeft.toResult
+      }
+      addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
+      addedNonAdmins = newGroup.memberIds.diff(existingGroup.memberIds).diff(addedAdmins) ++
+        existingGroup.adminUserIds.diff(newGroup.adminUserIds).intersect(newGroup.memberIds)
+      removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
+      _ <- updateGroupData(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal), newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
+    } yield newGroup
 
   def createGroupData(
    groupChangeData: GroupChange,
