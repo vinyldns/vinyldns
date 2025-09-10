@@ -18,6 +18,7 @@ body {
 }
 
 a {
+  font-weight: bold;
   color: #0066CC;
 }
 
@@ -28,8 +29,9 @@ a {
 }
 
 .btn-primary:hover {
-    background-color: #262626;
-    border-color: #262626;
+    background-color: #000000;
+    border-color: #000000;
+    color: #fff;
 }
 
 .btn-info, .btn-info:disabled:hover {
@@ -131,6 +133,7 @@ a {
 /* TABS */
 ul.bar_tabs {
   background: var(--background-color-panel-body);
+  margin:0;
 }
 
 ul.bar_tabs>li.active {
@@ -142,6 +145,10 @@ ul.bar_tabs>li.active {
 ul.bar_tabs>li a {
   background: #F5F5F5;
   color: #555555;
+}
+
+ul.bar_tabs>li{
+   background: none !important; 
 }
 
 .nav.nav-tabs > li.active>a{
@@ -163,7 +170,7 @@ ul.bar_tabs>li a{
     color: var(--text-color);
 }
 
-.nav.nav-tabs > li >a:{
+.nav.nav-tabs > li >a:focus{
     background-color: var(--background-color-panel);
     color: var(--text-color);
 }

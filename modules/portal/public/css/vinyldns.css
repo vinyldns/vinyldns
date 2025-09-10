@@ -21,7 +21,12 @@
     --background-color-panel : #f5f5f5;
     --background-color-panel-body : #fff;
     --border-color: #ddd;
-    --border-bottom-nav-menu: #D9DEE4
+    --border-color-btn: #ddd;
+    --border-bottom-nav-menu: #D9DEE4;
+    --background-color-filter: #ffffff;
+    --border-color-row: #ddd;
+    --border-color-modal:#e5e5e5;
+    --background-color-form-disabled : #eee;
 }
 
 /* Dark theme color values */
@@ -32,7 +37,22 @@
     --background-color-panel : #22262C;
     --background-color-panel-body : #22262C;
     --border-color:  #3f3f3f;
+    --border-color-btn: #4e4e4e;
     --border-bottom-nav-menu: #3f3f3f;
+    --background-color-filter: #22262C;
+    --border-color-row: #3f3f3f;
+    --border-color-modal:#3e3e3e;
+    --background-color-form-disabled: none;
+}
+/* .ul.bar_tabs{
+    border-bottom: 2px solid #E6E9ED;
+} */
+.form-control[disabled], .form-control[readonly], fieldset[disabled] .form-control{
+    background-color: var(--background-color-form-disabled);
+}
+
+.filter-bg{
+    background-color: var(--background-color-filter);
 }
 
 .color {
@@ -56,6 +76,7 @@
 .modal-header {
     background-color: var(--background-color);
     color: var(--text-color);
+    border-bottom: 1px solid var(--border-color-modal);
 }
 
 .modal-header .close{
@@ -71,11 +92,16 @@
 .modal-footer {
     background-color: var(--background-color);
     color: var(--text-color);
+    border-top: 1px solid var(--border-color-modal);
 }
 
 .modal-title {
     background-color: var(--background-color);
     color: var(--text-color);
+}
+
+hr{
+   border-top: 1px solid var(--border-color-modal); 
 }
 
 .table-cell-list {
@@ -108,15 +134,15 @@ a.action-link {
     border-color: var(--border-color);
 }
 
-.ng-scope {
+/* .ng-scope {
     background: var(--background-color-panel-body);
     color: var(--text-color);
-}
+} */
 
-.ng-scope> .form-control {
+/* .ng-scope> .form-control {
     background: var(--background-color-panel-body);
     color: var(--text-color);
-}
+} */
 
 .form-control.record-edit {
     background: var(--background-color);
@@ -463,7 +489,7 @@ label.switch {
 }
 
 .panel-tabs {
-    padding-top: 5px;
+    padding-top: 30px;
     background-color: var(--background-color-panel-body);
     color: var(--text-color);
 }
@@ -579,7 +605,7 @@ label.switch {
 .btn-default {
     background-color: var(--background-color-panel-body);
     color: var(--text-color);
-    border-color: var(--border-color);
+    border-color: var(--border-color-btn);
 
 }
 
@@ -761,6 +787,28 @@ input[type="text"] select{
       color: var(--text-color);
 }
 
+ /* .record-row:hover >td{
+    transform: scale(1.01);
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+} */
+
+.record-row:hover > td {
+    transform: scale(1.01);
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+    border-top: 1.5px solid var(--border-color-row);
+    border-bottom: 1.5px solid var(--border-color-row);
+}
+
+.record-row:hover > td:first-child {
+    border-left: 1.5px solid var(--border-color-row);
+}
+
+.record-row:hover > td:last-child {
+    border-right: 1.5px solid var(--border-color-row);
+}
+
 .ui-autocomplete {
     max-height: 200px;
     width:150px;
@@ -814,20 +862,23 @@ input[type="text"] select{
 #toggle-checkbox
 {
     cursor: pointer;
-    top: -8px;
-    left: -450px;
+    /* top: -8px;
+    left: -450px; */
+    top: unset;
+    left: unset;
     display: block;
     position: relative;
     width: 60px;
     height: 30px;
-    margin: 0 auto;
+    /* margin: 0 auto; */
+    margin: 0 3rem;
     background-color: #979797;
     border-radius: 20px;
     transform: translateY(-50%);
-    cursor: pointer;
     transition: 0.3s ease background-color;
     overflow: hidden;
     border-color: rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
 }
 
 #star
@@ -916,6 +967,7 @@ input[type="text"] select{
 #toggle-theme:checked + #toggle-checkbox #moon:before
 {
     background-color: #979797;
+}
 
 .full-width {
     width: 100%;
@@ -939,4 +991,65 @@ input[type="text"] select{
 
 .flex-1{
     flex: 1;
+}
+
+a.action-link {
+    background: var(--background-color-panel-body);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    margin-bottom: 1rem;
+ }
+
+.theme-content{
+  display: flex;
+}
+
+/* input[type="text"] select{
+     transition: 0.3s ease background-color;
+     overflow: hidden;
+     border-color: rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+} */
+
+
+@media (max-width: 768px) {
+  #toggle-checkbox {
+   width: 50px;
+    height: 25px;
+  }
+
+  .star {
+    font-size: 18px;
+ }
+
+  #moon {
+        width: 16px;
+    height: 16px;
+  }
+
+  #moon:before {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  #toggle-checkbox {
+    width: 40px;
+    height: 20px;
+  }
+
+  .star {
+    font-size: 14px;
+  }
+
+  #moon {
+    width: 12px;
+   height: 12px;
+ }
+
+  #moon:before {
+    width: 12px;
+    height: 12px;
+  }
 }
