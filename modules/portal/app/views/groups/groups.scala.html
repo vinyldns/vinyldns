@@ -347,7 +347,7 @@
                                    name="name"
                                    class="form-control"
                                    ng-model="currentGroup.name"
-                                   ng-model-options="{ updateOn: 'submit' }"
+                                   ng-change="checkForChanges()"
                                    type="text"
                                    required>
                             </input>
@@ -360,7 +360,7 @@
                                    name="email"
                                    class="form-control"
                                    ng-model="currentGroup.email"
-                                   ng-model-options="{ updateOn: 'submit' }"
+                                   ng-change="checkForChanges()"
                                    type="text"
                                    required>
                             </input>
@@ -389,7 +389,7 @@
                                    name="description"
                                    class="form-control"
                                    ng-model="currentGroup.description"
-                                   ng-model-options="{ updateOn: 'submit' }"
+                                   ng-change="checkForChanges()"
                                    type="text">
                             </input>
                             <span class="help-block">
@@ -399,7 +399,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="edit-group-button" class="btn btn-primary pull-right">Update</button>
+                    <button id="edit-group-button" class="btn btn-primary pull-right" ng-disabled="submitEditGroupForm.$invalid || !hasChanges">Update</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeEditModal()">Close</button>
                 </div>
             </div>

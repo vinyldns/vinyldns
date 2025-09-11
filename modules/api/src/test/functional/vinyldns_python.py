@@ -460,9 +460,10 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_recordset_change_history(self, fqdn, record_type, start_from=None, max_items=None, **kwargs):
+    def list_recordset_change_history(self, zone_id, fqdn, record_type, start_from=None, max_items=None, **kwargs):
         """
-        Gets the record's change history for the given record fqdn and record type
+        Gets the record's change history for the given zone, record fqdn and record type
+        :param zone_id: the id of the zone to retrieve
         :param fqdn: the record's fqdn
         :param record_type: the record's type
         :param start_from: the start key of the page
@@ -474,6 +475,7 @@ class VinylDNSClient(object):
             args.append("startFrom={0}".format(start_from))
         if max_items is not None:
             args.append("maxItems={0}".format(max_items))
+        args.append("zoneId={0}".format(zone_id))
         args.append("fqdn={0}".format(fqdn))
         args.append("recordType={0}".format(record_type))
         url = urljoin(self.index_url, "recordsetchange/history") + "?" + "&".join(args)
@@ -555,6 +557,17 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         url = urljoin(self.index_url, "/zones/{0}/recordsets/{1}".format(zone_id, rs_id))
+
+        response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
+        return data
+
+    def get_recordset_count(self, zone_id,**kwargs):
+        """
+        Get count of record set in managed records tab
+        :param zone_id: the zone id the recordset belongs to
+        :return: the value of count
+        """
+        url = urljoin(self.index_url, "/zones/{0}/recordsetcount".format(zone_id))
 
         response, data = self.make_request(url, "GET", self.headers, None, not_found_ok=True, **kwargs)
         return data
@@ -849,12 +862,6 @@ class VinylDNSClient(object):
             if type(latest_change) != str:
                 change = latest_change
 
-        if change["status"] != expected_status:
-            print("Failed waiting for record change status")
-            print(json.dumps(change, indent=3))
-            if "systemMessage" in change:
-                print("systemMessage is " + change["systemMessage"])
-
         assert_that(change["status"], is_(expected_status))
         return change
 
@@ -878,10 +885,6 @@ class VinylDNSClient(object):
                 change = change
             else:
                 change = latest_change
-
-        if not self.batch_is_completed(change):
-            print("Failed waiting for record change status")
-            print(change)
 
         assert_that(self.batch_is_completed(change), is_(True))
         return change

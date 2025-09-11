@@ -41,7 +41,13 @@
 
         <div class="row">
             <div class="col-md-12">
-                <p><strong>ID:</strong> {{batch.id}}</p>
+                <p><strong>ID:</strong> {{batch.id}}
+                    <span class="small-copy-button" ng-click="copyToClipboard()"
+                          data-toggle="tooltip" data-placement="top" title="Copy Batch ID to clipboard">
+                        <i class="fa fa-clone"></i>
+                    </span>
+                    <button class="btn-right-corner" ng-click="exportToCSV(batch.id)">Export CSV</button>
+                </p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="'@rootAccountName' != batch.userName"><strong>Submitter:</strong> {{batch.userName}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
@@ -193,6 +199,9 @@
                                     <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && batch.approvalStatus == 'AutoApproved'
                                              && change.status =='Complete'">
                                         ℹ️ {{change.systemMessage}}
+                                    </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && change.status =='Failed'">
+                                        {{change.systemMessage}}
                                     </div>
                                 </td>
                             </tr>

@@ -26,6 +26,19 @@
             $scope.reviewConfirmationMsg;
             $scope.reviewType;
 
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
+            // Function to copy the ID to clipboard
+            $scope.copyToClipboard = function() {
+                utilityService.copyToClipboard($scope.batch.id);
+                // Trigger success alert using utilityService
+                var alert = utilityService.success('Successfully copied Batch ID to clipboard');
+                $scope.alerts.push(alert);
+            };
+
             $scope.getBatchChange = function(batchChangeId) {
                 function success(response) {
                     $scope.batch = response.data;
@@ -137,6 +150,35 @@
             $scope.cancelCancel = function() {
                 $("#cancel_batch_change").modal("hide");
             }
+
+            $scope.exportToCSV = function (batchId) {
+              var filename = batchId + '.csv';
+              var csv = [];
+              var changes = document.querySelectorAll("table tr");
+              $log.debug(batchId)
+              var colOrder = [0, 4, 1, 6, 5, 2, 3, 7, 8];
+
+                for (var i = 0; i < changes.length; i++) {
+                    var row = [], cols = changes[i].querySelectorAll("td, th");
+
+                    for (var j = 0; j < colOrder.length; j++) {
+                        var colIndex = colOrder[j];
+                        if (cols[colIndex]) {
+                            row.push('"' + cols[colIndex].innerText + '"');
+                        }
+                    }
+                csv.push(row.join(","));
+              }
+              var csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+              // link to export csv
+              var downloadBatchChanges = document.createElement("a");
+              downloadBatchChanges.download = filename;
+              downloadBatchChanges.href = window.URL.createObjectURL(csvFile);
+              document.body.appendChild(downloadBatchChanges);
+              downloadBatchChanges.click();
+              document.body.removeChild(downloadBatchChanges);
+            }
+
 
             $timeout($scope.refresh, 0);
     });

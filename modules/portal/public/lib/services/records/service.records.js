@@ -77,7 +77,16 @@ angular.module('service.records', [])
                 "recordTypeSort": recordTypeSort
             };
             var url = utilityService.urlBuilder("/api/zones/"+id+"/recordsets", params);
-            return $http.get(url);
+            let loader = $("#loader");
+            loader.modal({
+                          backdrop: "static", //remove ability to close modal with click
+                          keyboard: false, //remove option to close with keyboard
+                          show: true //Display loader!
+                          })
+            let promis =  $http.get(url);
+            // Hide loader when api gets response
+            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            return promis;
         };
 
         this.getRecordSet = function (rsid) {
@@ -100,6 +109,10 @@ angular.module('service.records', [])
             return $http.get("/api/zones/"+zid);
         };
 
+        this.getRecordSetCount = function (zid) {
+        return $http.get("/api/zones/"+zid+"/recordsetcount");
+        };
+
         this.getCommonZoneDetails = function (zid) {
             return $http.get("/api/zones/"+zid+"/details");
         };
@@ -120,9 +133,10 @@ angular.module('service.records', [])
             return $http.get(url);
         };
 
-        this.listRecordSetChangeHistory = function (maxItems, startFrom, fqdn, recordType) {
+        this.listRecordSetChangeHistory = function (zoneId, maxItems, startFrom, fqdn, recordType) {
             var url = '/api/recordsetchange/history';
             var params = {
+                "zoneId": zoneId,
                 "maxItems": maxItems,
                 "startFrom": startFrom,
                 "fqdn": fqdn,
@@ -266,7 +280,10 @@ angular.module('service.records', [])
                 "id": record.id,
                 "name": record.name,
                 "type": record.type,
-                "ttl": Number(record.ttl)
+                "ttl": Number(record.ttl),
+                "isCurrentRecordSetOwner": record.isCurrentRecordSetOwner,
+                "recordSetGroupChange": record.recordSetGroupChange
+
             };
             switch (record.type) {
                 case 'A':

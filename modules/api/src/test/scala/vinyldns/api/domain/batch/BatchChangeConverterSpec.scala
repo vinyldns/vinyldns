@@ -26,6 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
@@ -37,10 +38,6 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
 class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
-  private val nonExistentRecordDeleteMessage: String = "This record does not exist. " +
-    "No further action is required."
-  private val nonExistentRecordDataDeleteMessage: String = "Record data entered does not exist. " +
-    "No further action is required."
 
   private def makeSingleAddChange(
                                    name: String,
@@ -64,7 +61,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     )
   }
 
-  private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone) = {
+  private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone, systemMessage: Option[String] = None) = {
     val fqdn = s"$name.${zone.name}"
     SingleDeleteRRSetChange(
       Some(zone.id),
@@ -74,7 +71,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       typ,
       None,
       SingleChangeStatus.Pending,
-      None,
+      systemMessage,
       None,
       None
     )
@@ -88,18 +85,19 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
     AddChangeForValidation(
       okZone,
       s"$recordName",
-      AddChangeInput(s"$recordName.ok.", typ, Some(123), recordData),
+      AddChangeInput(s"$recordName.ok.", typ, None, Some(123), recordData),
       7200L
     )
 
   private def makeDeleteRRSetChangeForValidation(
                                                   recordName: String,
-                                                  typ: RecordType = RecordType.A
+                                                  typ: RecordType = RecordType.A,
+                                                  systemMessage: Option[String] = None
                                                 ): DeleteRRSetChangeForValidation =
     DeleteRRSetChangeForValidation(
       okZone,
       s"$recordName",
-      DeleteRRSetChangeInput(s"$recordName.ok.", typ)
+      DeleteRRSetChangeInput(s"$recordName.ok.", typ, systemMessage, None)
     )
 
   private val addSingleChangesGood = List(
@@ -165,19 +163,19 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   )
 
   private val singleChangesOneDelete = List(
-    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A)
-  )
-
-  private val singleChangesOneDeleteGood = List(
-    makeSingleDeleteRRSetChange("aToDelete", A).copy(recordData = Some(AData("2.3.4.6"))),
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A, okZone, Some(nonExistentRecordDeleteMessage))
   )
 
   private val changeForValidationOneDelete = List(
-    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A)
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A, Some(nonExistentRecordDeleteMessage))
   )
 
-  private val changeForValidationOneDeleteGood = List(
-    makeDeleteRRSetChangeForValidation("aToDelete", A)
+  private val singleChangesOneDataDelete = List(
+    makeSingleDeleteRRSetChange("DataDoesNotExistToDelete", A, okZone, Some(nonExistentRecordDataDeleteMessage))
+  )
+
+  private val changeForValidationOneDataDelete = List(
+    makeDeleteRRSetChangeForValidation("DataDoesNotExistToDelete", A, Some(nonExistentRecordDataDeleteMessage))
   )
 
   private val singleChangesOneBad = List(
@@ -555,7 +553,7 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       savedBatch shouldBe Some(returnedBatch)
     }
 
-    "set status to complete when deleting a record that does not exist" in {
+    "set status to pending when deleting a record that does not exist" in {
       val batchWithBadChange =
         BatchChange(
           okUser.id,
@@ -579,10 +577,45 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
 
       // validate completed status returned
       val receivedChange = returnedBatch.changes(0)
-      receivedChange.status shouldBe SingleChangeStatus.Complete
+      receivedChange.status shouldBe SingleChangeStatus.Pending
       receivedChange.recordChangeId shouldBe None
       receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Complete)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Pending)
+
+      // check the update has been made in the DB
+      val savedBatch: Option[BatchChange] =
+        batchChangeRepo.getBatchChange(batchWithBadChange.id).unsafeRunSync()
+      savedBatch shouldBe Some(returnedBatch)
+    }
+
+    "set status to pending when deleting a record data that does not exist" in {
+      val batchWithBadChange =
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          singleChangesOneDataDelete,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      val result =
+        underTest
+          .sendBatchForProcessing(
+            batchWithBadChange,
+            existingZones,
+            ChangeForValidationMap(changeForValidationOneDataDelete.map(_.validNel), existingRecordSets),
+            None
+          )
+          .value.unsafeRunSync().toOption.get
+
+      val returnedBatch = result.batchChange
+
+      // validate completed status returned
+      val receivedChange = returnedBatch.changes(0)
+      receivedChange.status shouldBe SingleChangeStatus.Pending
+      receivedChange.recordChangeId shouldBe None
+      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDataDelete(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage), status = SingleChangeStatus.Pending)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
@@ -618,45 +651,6 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       val notSaved: Option[BatchChange] =
         batchChangeRepo.getBatchChange(batchChangeUnsupported.id).unsafeRunSync()
       notSaved shouldBe None
-    }
-  }
-
-  "updateBatchChange" should {
-    "update the batch change system message when there is a delete request with non-existent record data" in {
-      val batchWithBadChange =
-        BatchChange(
-          okUser.id,
-          okUser.userName,
-          None,
-          Instant.now.truncatedTo(ChronoUnit.MILLIS),
-          singleChangesOneDeleteGood,
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved
-        )
-      val result =
-        underTest
-          .updateBatchChange(
-            batchWithBadChange,
-            ChangeForValidationMap(changeForValidationOneDeleteGood.map(_.validNel), existingRecordSets),
-          )
-
-      // validate the batch change returned
-      val receivedChange = result.changes(0)
-      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
-      result.changes(0) shouldBe singleChangesOneDeleteGood(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage))
-    }
-  }
-
-  "matchRecordData" should {
-    "check if the record data given matches the record data present" in {
-      val recordData = List(AData("1.2.3.5"), AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
-      val result1 = underTest.matchRecordData(recordData, AData("1.2.3.5"))
-      result1 shouldBe true
-      val result2 = underTest.matchRecordData(recordData, AData("1.2.3.4"))
-      result2 shouldBe false
-      val result3 = underTest.matchRecordData(recordData, AAAAData("caec:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
-      result3 shouldBe true
-      val result4 = underTest.matchRecordData(recordData, AAAAData("abcd:cec6:c4ef:bb7b:1a78:d055:216d:3a78"))
-      result4 shouldBe false
     }
   }
 

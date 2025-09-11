@@ -254,7 +254,7 @@ class MembershipService(
         .getGroupChange(groupChangeId)
         .toResult[Option[GroupChange]]
       _ <- isGroupChangePresent(result).toResult
-      _ <- canSeeGroup(result.get.newGroup.id, authPrincipal).toResult
+      _ <- canSeeGroupChange(result.get.newGroup.id, authPrincipal).toResult
       allUserIds = getGroupUserIds(Seq(result.get))
       allUserMap <- getUsers(allUserIds).map(_.users.map(x => x.id -> x.userName).toMap.withDefaultValue("unknown user"))
       groupChangeMessage <- determineGroupDifference(Seq(result.get), allUserMap)
@@ -266,12 +266,12 @@ class MembershipService(
 
   def getGroupActivity(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int,
       authPrincipal: AuthPrincipal
   ): Result[ListGroupChangesResponse] =
     for {
-      _ <- canSeeGroup(groupId, authPrincipal).toResult
+      _ <- canSeeGroupChange(groupId, authPrincipal).toResult
       result <- groupChangeRepo
         .getGroupChanges(groupId, startFrom, maxItems)
         .toResult[ListGroupChangesResults]
@@ -285,7 +285,7 @@ class MembershipService(
     } yield ListGroupChangesResponse(
       groupChanges.map(change => GroupChangeInfo.apply(change.copy(userName = userMap.get(change.userId)))),
       startFrom,
-      result.lastEvaluatedTimeStamp,
+      result.nextId,
       maxItems
     )
 
@@ -361,6 +361,14 @@ class MembershipService(
       .getUserByIdOrName(userIdentifier)
       .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
       .toResult[User]
+
+
+  def getUserDetails(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
+    for{
+        user <- getUser(userIdentifier,authPrincipal)
+        group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
+    } yield UserResponseInfo(user.id, Some(user.userName), group)
+
 
   def getUsers(
       userIds: Set[String],

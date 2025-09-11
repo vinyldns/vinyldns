@@ -248,6 +248,11 @@ a.action-link {
     border-bottom-left-radius: 4px;
 }
 
+.btn-right-corner {
+    float: right;
+    margin-left: 10px;
+}
+
 .form-control.zone-edit {
     background-color: var(--background-color);
     color: var(--text-color);
@@ -417,6 +422,7 @@ body {
 
 .page-title {
     padding: 10px 20px 0;
+    height: 100%;
 }
 
 .page-content-wrap {
@@ -721,6 +727,10 @@ input[type="text"] select{
 
 .vinyldns_page_number {
     margin-right: 10px;
+}
+
+.vinyldns_paginate_button {
+    margin-right: 8px;
 }
 
 .no-top-margin {
@@ -1052,4 +1062,3 @@ a.action-link {
     width: 12px;
     height: 12px;
   }
-}

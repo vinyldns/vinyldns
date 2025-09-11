@@ -92,6 +92,12 @@ object BatchChangeStatus extends Enumeration {
           case _ => BatchChangeStatus.Complete
         }
     }
+
+  private val valueMap =
+    BatchChangeStatus.values.map(v => v.toString.toLowerCase -> v).toMap
+
+  def find(status: String): Option[BatchChangeStatus] =
+    valueMap.get(status.toLowerCase)
 }
 
 object BatchChangeApprovalStatus extends Enumeration {

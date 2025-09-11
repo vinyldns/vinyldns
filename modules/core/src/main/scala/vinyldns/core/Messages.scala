@@ -64,9 +64,6 @@ object Messages {
   // Error displayed when NSData field is not a positive integer
   val NSDataError = "NS data must be a positive integer"
 
-  // Error displayed when importing files other than .csv
-  val ImportError = "Import failed. Not a valid file. File should be of ‘.csv’ type."
-
   /*
    *  Error displayed when user is not authorized to make changes to the record
    *
@@ -87,4 +84,8 @@ object Messages {
   val InvalidEmailValidationErrorMsg = "Please enter a valid Email."
 
   val DotsValidationErrorMsg = "Please enter a valid Email. Number of dots allowed after @ is"
+
+  val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
+
+  val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
 }

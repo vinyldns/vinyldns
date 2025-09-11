@@ -31,6 +31,7 @@
             $scope.groups = [];
             $scope.recordFqdn = undefined;
             $scope.recordType = undefined;
+            $scope.recordId = undefined;
             $scope.recordsetChanges = {};
             $scope.currentRecord = {};
             $scope.zoneInfo = {};
@@ -59,6 +60,25 @@
                 CONFIRM_DELETE: 4,
                 VIEW_DETAILS: 5
             };
+
+            // Function to copy the Record ID to clipboard
+            $scope.copyToClipboard = function(type) {
+                let valueToCopy = '';
+                let alert_message = '';
+                if (type === 'record') {
+                    valueToCopy = $scope.recordId;
+                    alert_message = 'Successfully copied Record ID to clipboard';
+                } else if (type === 'zone') {
+                    valueToCopy = $scope.zoneId;
+                    alert_message = 'Successfully copied Zone ID to clipboard';
+                }
+
+                 utilityService.copyToClipboard(valueToCopy);
+                 // Trigger success alert using utilityService
+                 var alert = utilityService.success(alert_message);
+                 $scope.alerts.push(alert);
+            };
+
             // read-only data for setting various classes/attributes in record modal
             $scope.recordModalParams = {
                 readOnly: {
@@ -79,6 +99,11 @@
             var recordsPaging = pagingService.getNewPagingParams(100);
             var recordType = [];
             var recordName = [];
+
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
 
             $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
@@ -113,10 +138,12 @@
                           .append("<div>" + recordSet + "</div>")
                           .appendTo(ul); };
 
-            $scope.viewRecordHistory = function(recordFqdn, recordType) {
+            $scope.viewRecordHistory = function(recordFqdn, recordType, zoneId, recordId) {
                $scope.recordFqdn = recordFqdn;
                $scope.recordType = recordType;
-               $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType);
+               $scope.recordId = recordId;
+               $scope.zoneId = zoneId;
+               $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType, zoneId);
                $("#record_history_modal").modal("show");
             };
 
@@ -245,7 +272,7 @@
                     });
             };
 
-            $scope.refreshRecordChangeHistory = function(recordFqdn, recordType) {
+            $scope.refreshRecordChangeHistory = function(recordFqdn, recordType, zoneId) {
                 changePaging = pagingService.resetPaging(changePaging);
                 function success(response) {
                     $scope.zoneId = response.data.zoneId;
@@ -254,7 +281,7 @@
                     updateChangeDisplay(response.data.recordSetChanges)
                 }
                 return recordsService
-                    .listRecordSetChangeHistory(changePaging.maxItems, undefined, recordFqdn, recordType)
+                    .listRecordSetChangeHistory(zoneId, changePaging.maxItems, undefined, recordFqdn, recordType)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'recordsService::getRecordSetChangeHistory-failure');
@@ -264,6 +291,9 @@
             /**
              * Record change history paging
              */
+             $scope.getRecordChangePageTitle = function() {
+                return pagingService.getPanelTitle(changePaging);
+             };
 
             $scope.changeHistoryPrevPageEnabled = function() {
                 return pagingService.prevPageEnabled(changePaging);
@@ -276,7 +306,7 @@
             $scope.changeHistoryPrevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(changePaging);
                 return recordsService
-                    .listRecordSetChangeHistory(changePaging.maxItems, startFrom, $scope.recordFqdn, $scope.recordType)
+                    .listRecordSetChangeHistory($scope.zoneId, changePaging.maxItems, startFrom, $scope.recordFqdn, $scope.recordType)
                     .then(function(response) {
                         changePaging = pagingService.prevPageUpdate(response.data.nextId, changePaging);
                         updateChangeDisplay(response.data.recordSetChanges);
@@ -288,7 +318,7 @@
 
             $scope.changeHistoryNextPage = function() {
                 return recordsService
-                    .listRecordSetChangeHistory(changePaging.maxItems, changePaging.next, $scope.recordFqdn, $scope.recordType)
+                    .listRecordSetChangeHistory($scope.zoneId, changePaging.maxItems, changePaging.next, $scope.recordFqdn, $scope.recordType)
                     .then(function(response) {
                         var changes = response.data.recordSetChanges;
                         changePaging = pagingService.nextPageUpdate(changes, response.data.nextId, changePaging);

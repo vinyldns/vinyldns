@@ -47,10 +47,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
   object TestData {
     def generateSingleAddChange(
-        recordType: RecordType,
-        recordData: RecordData,
-        status: SingleChangeStatus = Pending,
-        errors: List[SingleChangeError] = List.empty
+      recordType: RecordType,
+      recordData: RecordData,
+      status: SingleChangeStatus = Pending,
+      errors: List[SingleChangeError] = List.empty
     ): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
@@ -141,7 +141,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plusMillis(1000), ownerGroupId = None)
     val otherUserBatchChange: BatchChange =
-      randomBatchChange().copy(userId = "Other", createdTimestamp = timeBase.plusMillis(50000))
+      randomBatchChange().copy(userId = "Other", userName = "Other", createdTimestamp = timeBase.plusMillis(50000))
     val change_three: BatchChange = failedBatchChange.copy(createdTimestamp = timeBase.plusMillis(100000))
     val change_four: BatchChange =
       partialFailureBatchChange.copy(createdTimestamp = timeBase.plusMillis(1000000))
@@ -150,6 +150,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         createdTimestamp = timeBase.plusMillis(10000000),
         approvalStatus = BatchChangeApprovalStatus.ManuallyRejected
       )
+    val change_six: BatchChange =
+      completeBatchChange.copy(createdTimestamp = timeBase.plusMillis(2000), ownerGroupId = None)
   }
 
   import TestData._
@@ -512,6 +514,213 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), expectedChanges)
     }
 
+    "get batch change summaries by user name" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(None, userName = Some(pendingBatchChange.userName))
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four),
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two),
+          BatchChangeSummary(change_one)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user name with maxItems" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(None, userName = Some(pendingBatchChange.userName), maxItems = 3)
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four),
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two)
+        ),
+        None,
+        Some(3),
+        3
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user name with explicit startFrom" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            userName = Some(pendingBatchChange.userName),
+            startFrom = Some(1),
+            maxItems = 3
+          )
+        } yield retrieved
+
+      // sorted from most recent descending. startFrom uses zero-based indexing.
+      // Expect to get only the second batch change, change_3.
+      // No nextId because the maxItems (3) equals the number of batch changes the user has after the offset (3)
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two),
+          BatchChangeSummary(change_one)
+        ),
+        Some(1),
+        None,
+        3
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user name with explicit startFrom and maxItems" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            userName = Some(pendingBatchChange.userName),
+            startFrom = Some(1),
+            maxItems = 1
+          )
+        } yield retrieved
+
+      // sorted from most recent descending. startFrom uses zero-based indexing.
+      // Expect to get only the second batch change, change_3.
+      // Expect the ID of the next batch change to be 2.
+      val expectedChanges =
+      BatchChangeSummaryList(List(BatchChangeSummary(change_three)), Some(1), Some(2), 1)
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get second page of batch change summaries by user name" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved1 <- repo.getBatchChangeSummaries(None, userName = Some(pendingBatchChange.userName), maxItems = 1)
+          retrieved2 <- repo.getBatchChangeSummaries(
+            None,
+            userName = Some(pendingBatchChange.userName),
+            startFrom = retrieved1.nextId
+          )
+        } yield (retrieved1, retrieved2)
+
+      val expectedChanges =
+        BatchChangeSummaryList(List(BatchChangeSummary(change_four)), None, Some(1), 1)
+
+      val secondPageExpectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two),
+          BatchChangeSummary(change_one)
+        ),
+        Some(1),
+        None
+      )
+      val retrieved = f.unsafeRunSync()
+      areSame(retrieved._1, expectedChanges)
+      areSame(retrieved._2, secondPageExpectedChanges)
+    }
+
+    "get batch change summaries by user name and approval status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            Some(pendingBatchChange.userName),
+            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
+          )
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four),
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user ID, user name and approval status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
+            Some(pendingBatchChange.userName),
+            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
+          )
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four),
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(change_two)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "return empty list if a batch change summary is not found by user name" in {
+      val batchChangeSummaries = repo.getBatchChangeSummaries(None, userName = Some("doesnotexist")).unsafeRunSync()
+      batchChangeSummaries.batchChanges shouldBe empty
+    }
+
     "get batch change summaries by user ID" in {
       val f =
         for {
@@ -684,6 +893,59 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "return empty list if a batch change summary is not found by user ID" in {
       val batchChangeSummaries = repo.getBatchChangeSummaries(Some("doesnotexist")).unsafeRunSync()
+      batchChangeSummaries.batchChanges shouldBe empty
+    }
+
+    "get batch change summaries by batch change status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(None, batchStatus = Some(BatchChangeStatus.PartialFailure))
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user ID, approval status and batch change status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
+            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved),
+            batchStatus = Some(BatchChangeStatus.Complete)
+          )
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_two)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "return empty list if a batch change summary is not found for a batch change status" in {
+      val batchChangeSummaries = repo.getBatchChangeSummaries(None, batchStatus = Some(BatchChangeStatus.Scheduled)).unsafeRunSync()
       batchChangeSummaries.batchChanges shouldBe empty
     }
 

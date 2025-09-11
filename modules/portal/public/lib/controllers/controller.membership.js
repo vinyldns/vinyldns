@@ -41,6 +41,19 @@ angular.module('controller.membership', []).controller('MembershipController', f
         return $sce.trustAsHtml(message);
     };
 
+    // Initialize Bootstrap tooltips
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    // Function to copy the ID to clipboard
+    $scope.copyToClipboard = function() {
+        utilityService.copyToClipboard($scope.membership.group.id);
+        // Trigger success alert using utilityService
+        var alert = utilityService.success('Successfully copied Group ID to clipboard');
+        $scope.alerts.push(alert);
+    };
+
     // paging status for group changes
     var changePaging = pagingService.getNewPagingParams(100);
 
@@ -48,6 +61,40 @@ angular.module('controller.membership', []).controller('MembershipController', f
         var alert = utilityService.failure(error, type);
         $scope.alerts.push(alert);
     }
+
+    $scope.canViewGroup = false;
+    $scope.canSeeGroup = function (members) {
+        if (members && members.length > 0) {
+            var isMember = members.some(x => x.id === $scope.profile.id);
+            var isSupport = $scope.profile.isSupport;
+            var isSuper = $scope.profile.isSuper;
+            return isMember || isSupport || isSuper;
+        }
+        else {
+            return false
+        }
+    }
+
+    function profileSuccess(results) {
+        //if data is provided
+        if (results.data) {
+            //update user profile data
+            //make user profile available to page
+            $scope.profile = results.data;
+            $log.debug($scope.profile);
+            //load data in grid
+            $scope.refresh();
+        }
+    }
+
+    function profileFailure(results) {
+        $scope.profile = $scope.profile || {};
+    }
+
+    //get user data on groups view load
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
 
     $scope.getGroupMemberList = function(groupId) {
         function success(response) {
@@ -203,6 +250,10 @@ angular.module('controller.membership', []).controller('MembershipController', f
                 //update groups
                 $scope.membership.members = result.members;
                 $scope.membershipLoaded = true;
+                $scope.canViewGroup = $scope.canSeeGroup($scope.membership.members);
+                if($scope.canViewGroup){
+                    $scope.refreshGroupChanges(id);
+                }
                 return result;
             }
 
@@ -229,7 +280,6 @@ angular.module('controller.membership', []).controller('MembershipController', f
 
         $scope.resetNewMemberData();
         $scope.getGroupInfo(id);
-        $scope.refreshGroupChanges(id);
     };
 
     $scope.refreshGroupChanges = function(id) {
