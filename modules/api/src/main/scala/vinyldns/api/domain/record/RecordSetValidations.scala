@@ -447,12 +447,12 @@ object RecordSetValidations {
     zone: Zone,
     auth: AuthPrincipal
   ): Boolean =
-    (updates.ownerGroupId != existing.ownerGroupId
-        && updates.zoneId == existing.zoneId
-        && updates.name == existing.name
-        && updates.typ == existing.typ
-        && updates.ttl == existing.ttl
-        && updates.records == existing.records
+    ((updates.ownerGroupId != existing.ownerGroupId
+        || updates.zoneId != existing.zoneId
+        || updates.name != existing.name
+        || updates.typ != existing.typ
+        || updates.ttl != existing.ttl
+        || updates.records != existing.records)
         && zone.shared
         && auth.isSuper)
 
