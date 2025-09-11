@@ -39,7 +39,7 @@ import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupI
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
-import vinyldns.core.domain.membership.{Group, LockStatus, MembershipStatus}
+import vinyldns.core.domain.membership.{Group, LockStatus, MembershipAccessStatus}
 
 class MembershipRoutingSpec
     extends AnyWordSpec
@@ -374,7 +374,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -411,7 +411,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -441,7 +441,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
       Put("/groups/notFound").withEntity(
@@ -471,7 +471,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
       Put("/groups/forbidden").withEntity(
@@ -493,7 +493,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 
@@ -515,7 +515,7 @@ class MembershipRoutingSpec
           any[Option[String]],
           any[Set[String]],
           any[Set[String]],
-          any[Option[MembershipStatus]],
+          any[Option[MembershipAccessStatus]],
           any[AuthPrincipal]
         )
 

@@ -16,7 +16,7 @@
 
 package vinyldns.core.protobuf
 
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, MembershipStatus}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, MembershipAccessStatus}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -31,7 +31,7 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
           Some("a test group"),
           memberIds = Set("foo", "bar"),
           adminUserIds = Set("foo", "bar"),
-          memberStatus = Some(MembershipStatus(Set(),Set(),Set()))
+          membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
         )
 
       val roundTrip = fromPB(toPB(group))
@@ -47,7 +47,7 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
           description = None,
           memberIds = Set("foo", "bar"),
           adminUserIds = Set("foo", "bar"),
-          memberStatus = Some(MembershipStatus(Set(),Set(),Set()))
+          membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
         )
 
       val roundTrip = fromPB(toPB(group))
@@ -64,7 +64,7 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
         Some("a test group"),
         memberIds = Set("foo", "bar"),
         adminUserIds = Set("foo", "bar"),
-        memberStatus = Some(MembershipStatus(Set(),Set(),Set()))
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
       val oldGroup = Group(
         "ok",
@@ -72,7 +72,7 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
         Some("a changed group"),
         memberIds = Set("foo"),
         adminUserIds = Set("foo"),
-        memberStatus = Some(MembershipStatus(Set(),Set(),Set()))
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
 
       val groupChange =
@@ -97,7 +97,7 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
         Some("a test group"),
         memberIds = Set("foo", "bar"),
         adminUserIds = Set("foo", "bar"),
-        memberStatus = Some(MembershipStatus(Set(),Set(),Set()))
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set()))
       )
 
       val groupChange =

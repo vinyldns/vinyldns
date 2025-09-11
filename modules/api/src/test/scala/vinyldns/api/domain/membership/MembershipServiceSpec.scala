@@ -488,7 +488,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync()
@@ -550,7 +550,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               dummyAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -576,7 +576,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -602,7 +602,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -622,7 +622,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -650,7 +650,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -672,7 +672,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               Set(),
               Set(),
-              updatedInfo.memberStatus,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
