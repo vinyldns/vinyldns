@@ -70,6 +70,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   "MySqlGroupChangeRepository.save" should {
     "successfully save a group change" in {
       val groupChange = generateGroupChanges("group-1", 1).head
+
       saveGroupChangeData(repo, groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
     }
