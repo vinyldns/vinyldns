@@ -24,7 +24,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType, MembershipStatus}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType, MembershipAccessStatus}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
 class MySqlGroupChangeRepositoryIntegrationSpec
@@ -48,7 +48,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   override protected def afterAll(): Unit = clear()
 
   def generateGroupChanges(groupId: String, numChanges: Int): Seq[GroupChange] = {
-    val group = Group(name = "test", id = groupId, email = "test@test.com",memberStatus = Some(MembershipStatus(Set(),Set(),Set())))
+    val group = Group(name = "test", id = groupId, email = "test@test.com",membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set())))
     for {
       i <- 1 to numChanges
     } yield GroupChange(
