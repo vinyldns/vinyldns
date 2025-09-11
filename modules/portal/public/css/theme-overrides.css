@@ -28,6 +28,10 @@ a {
     color: #fff;
 }
 
+.btn-search-border{
+    border-color: #000000 !important;
+}
+
 .btn-primary:hover {
     background-color: #000000;
     border-color: #000000;
